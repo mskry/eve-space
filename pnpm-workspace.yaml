@@ -1,0 +1,14 @@
+packages:
+  - 'api'
+
+injectWorkspacePackages: true
+
+allowBuilds:
+  esbuild: true
+  fsevents: true
+  lefthook: true
+  msw: true
+  vue-demi: true
+
+minimumReleaseAgeExclude:
+  - '@evespace/esi-client@2.0.0'

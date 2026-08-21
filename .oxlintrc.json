@@ -1,0 +1,61 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "categories": {
+    "correctness": "error",
+    "perf": "warn",
+    "suspicious": "warn"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    ".claude/**",
+    ".nuxt/**",
+    ".opencode/**",
+    ".output/**",
+    "coverage/**",
+    "**/coverage/**",
+    "dist/**",
+    "**/dist/**",
+    "node_modules/**",
+    "openspec/**",
+    "sde-ingest/target/**"
+  ],
+  "options": {
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "overrides": [
+    {
+      "files": ["app/**/*.ts", "app/**/*.vue", "layers/**/*.ts", "layers/**/*.vue"],
+      "env": {
+        "browser": true,
+        "vue": true
+      }
+    },
+    {
+      "files": ["api/**/*.ts", "*.ts"],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": ["api/src/db/migrate.ts"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.spec.ts"],
+      "env": {
+        "node": true,
+        "vitest": true
+      },
+      "rules": {
+        "no-await-in-loop": "off",
+        "vitest/require-mock-type-parameters": "off"
+      }
+    }
+  ],
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "node", "vue", "vitest"]
+}

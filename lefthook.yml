@@ -1,0 +1,53 @@
+# https://lefthook.dev/configuration/
+#
+# Nothing lands unless lint and formatting are clean, both test suites pass, and
+# knip reports no dead code. Use `pnpm lint:fix` / `pnpm format` for the
+# mechanical fixes and `pnpm knip` to see what is unreachable.
+#
+# The checks are repository-wide rather than staged-file-scoped on purpose:
+# dead-code analysis is a cross-file property, so linting only the staged files
+# would miss the breakage a commit actually creates.
+#
+# `typecheck` runs on push only. It is the slowest check (~20s for vue-tsc across
+# the Nuxt app) and it is the one that catches `.vue` and type-level regressions
+# that lint, knip, and Vitest all miss, so it guards the shared branch without
+# taxing every local commit.
+
+pre-commit:
+  parallel: false
+  jobs:
+    - name: lint
+      run: pnpm lint
+
+    - name: format
+      run: pnpm format:check
+
+    - name: knip
+      run: pnpm knip
+
+    - name: test:frontend
+      run: pnpm test:frontend
+
+    - name: test:api
+      run: pnpm test:api
+
+pre-push:
+  parallel: false
+  jobs:
+    - name: lint
+      run: pnpm lint
+
+    - name: format
+      run: pnpm format:check
+
+    - name: knip
+      run: pnpm knip
+
+    - name: typecheck
+      run: pnpm typecheck
+
+    - name: test:frontend
+      run: pnpm test:frontend
+
+    - name: test:api
+      run: pnpm test:api

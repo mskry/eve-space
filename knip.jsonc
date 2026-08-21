@@ -1,0 +1,24 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        // Resolved by path at build time by @pinia/colada-nuxt, never imported.
+        "colada.options.ts",
+        // Ambient module augmentation, picked up by tsconfig include rather than an import.
+        "app/types/**/*.d.ts",
+        // Nuxt layer: auto-registered components and auto-imported composables/plugins.
+        "layers/*/nuxt.config.ts",
+        "layers/*/app/components/**/*.vue",
+        "layers/*/app/{composables,plugins,utils}/**/*.ts",
+      ],
+      // vue-tsc is invoked by Nuxt's `typescript.typeCheck`, not by an import.
+      "ignoreDependencies": ["vue-tsc"],
+    },
+    "api": {
+      // The Hono contract root: `AppType` is consumed by the Nuxt workspace, not by the API itself.
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts", "tests/**/*.ts"],
+    },
+  },
+}

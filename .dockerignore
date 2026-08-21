@@ -1,0 +1,10 @@
+node_modules
+.pnpm-store
+.git
+.nuxt
+.output
+coverage
+dist
+.env
+.env.*
+*.log

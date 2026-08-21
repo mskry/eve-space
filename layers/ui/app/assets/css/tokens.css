@@ -1,0 +1,63 @@
+:root,
+[data-theme='void'] {
+  color-scheme: dark;
+
+  --ui-canvas: #060b0f;
+  --ui-surface: rgba(11, 19, 24, 0.86);
+  --ui-surface-solid: #0b1318;
+  --ui-surface-raised: #111a20;
+  --ui-control: #080e12;
+  --ui-text: #e8edf0;
+  --ui-text-muted: #83919b;
+  --ui-text-subtle: #63717b;
+  --ui-text-faint: #4f5a62;
+  --ui-border: rgba(170, 194, 206, 0.17);
+  --ui-border-strong: rgba(170, 194, 206, 0.28);
+  --ui-primary: #51e0c1;
+  --ui-primary-hover: #89f6df;
+  --ui-on-primary: #06110f;
+  --ui-warning: #ff8a44;
+  --ui-danger: #ff5f66;
+  --ui-shadow: rgba(0, 0, 0, 0.4);
+  --ui-image-text: rgba(255, 255, 255, 0.72);
+  --ui-image-scrim: rgba(3, 7, 9, 0.8);
+  --ui-logo-background: #222;
+  --ui-font-body: 'Arial Narrow', 'Roboto Condensed', 'Helvetica Neue', sans-serif;
+  --ui-font-mono: monospace;
+  --ui-radius-control: 0;
+  --ui-radius-panel: 0;
+
+  /* Compatibility aliases while feature styles move into the UI layer. */
+  --ink: var(--ui-text);
+  --muted: var(--ui-text-muted);
+  --panel: var(--ui-surface);
+  --line: var(--ui-border);
+  --accent: var(--ui-primary);
+  --orange: var(--ui-warning);
+  --danger: var(--ui-danger);
+}
+
+[data-theme='high-sec'] {
+  color-scheme: light;
+
+  --ui-canvas: #e8eef0;
+  --ui-surface: rgba(255, 255, 255, 0.88);
+  --ui-surface-solid: #f7fafb;
+  --ui-surface-raised: #dce6e9;
+  --ui-control: #f8fbfc;
+  --ui-text: #13232b;
+  --ui-text-muted: #5d6d76;
+  --ui-text-subtle: #6d7b83;
+  --ui-text-faint: #87949a;
+  --ui-border: rgba(19, 35, 43, 0.17);
+  --ui-border-strong: rgba(19, 35, 43, 0.28);
+  --ui-primary: #087f75;
+  --ui-primary-hover: #0a968a;
+  --ui-on-primary: #f7ffff;
+  --ui-warning: #a64d16;
+  --ui-danger: #b52f3a;
+  --ui-shadow: rgba(32, 49, 57, 0.18);
+  --ui-image-text: rgba(255, 255, 255, 0.88);
+  --ui-image-scrim: rgba(10, 22, 27, 0.76);
+  --ui-logo-background: #222;
+}
