@@ -16,7 +16,7 @@ process.env.NUXT_PUBLIC_API_BASE = `http://127.0.0.1:${apiAddress.port}`
 
 afterAll(() => new Promise<void>((resolve) => apiServer.close(() => resolve())))
 
-describe('Nuxt public query SSR failure', async () => {
+describe('Nuxt anonymous SSR boundary', async () => {
   await setup({
     rootDir: fileURLToPath(new URL('..', import.meta.url)),
     build: true,
@@ -26,10 +26,11 @@ describe('Nuxt public query SSR failure', async () => {
     setupTimeout: 120_000,
   })
 
-  it('renders the default layout when public API queries fail', async () => {
+  it('renders the authorization route instead of anonymous dashboard content', async () => {
     const html = await $fetch('/')
 
-    expect(html).toContain('Command overview')
+    expect(html).toContain('Authorize your capsuleer')
+    expect(html).not.toContain('Command overview')
     expect(html).toContain('data-ssr="true"')
     expect(html).toContain('ApiQueryError')
   })

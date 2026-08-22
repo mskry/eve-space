@@ -1,6 +1,11 @@
 export const PUBLIC_QUERY_KEYS = {
   root: ['public'] as const,
   systemStatus: () => [...PUBLIC_QUERY_KEYS.root, 'system-status'] as const,
+  corporations: () => [...PUBLIC_QUERY_KEYS.root, 'corporations'] as const,
+  corporation: (corporationId: number) =>
+    [...PUBLIC_QUERY_KEYS.corporations(), corporationId] as const,
+  corporationAllianceHistory: (corporationId: number) =>
+    [...PUBLIC_QUERY_KEYS.corporation(corporationId), 'alliance-history'] as const,
 }
 
 export const AUTH_QUERY_KEYS = {

@@ -1,15 +1,15 @@
 <script setup lang="ts">
+import Fuse, { type IFuseOptions } from 'fuse.js'
 import { useQuery } from '@pinia/colada'
 import { characterSkillsQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
 
-definePageMeta({ title: 'Character Skills' })
+definePageMeta({ title: 'Character Skills', layout: 'character' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { typeImage } = useEveImages()
 const { authSession } = useAuthSession(apiClient)
 const characterId = computed(() => {
   const value = Array.isArray(route.params.characterId)
@@ -80,8 +80,52 @@ const levelFiveSummary = computed(() => {
 
   return { count, skillpoints: skillpoints.toLocaleString('en-US') }
 })
+const search = ref('')
+const searchTerm = computed(() => search.value.trim())
+useCustomHighlight({
+  highlightName: 'skill-search',
+  term: searchTerm,
+  selector: '.skill-group-name, .skill-identity strong',
+})
+const fuseOptions: IFuseOptions<Record<string, unknown>> = {
+  keys: ['name'],
+  threshold: 0.18,
+  ignoreLocation: true,
+  minMatchCharLength: 2,
+}
+
+function fuzzyContains(name: string, token: string): boolean {
+  if (!name || !token) return false
+  const fuse = new Fuse([{ name }], fuseOptions as IFuseOptions<{ name: string }>)
+  return fuse.search(token).length > 0
+}
+
+function groupMatchesAllTokens(name: string, tokens: string[]): boolean {
+  return tokens.every((tok) => fuzzyContains(name, tok))
+}
+
+const filteredGroups = computed(() => {
+  const groups = skills.value?.groups ?? []
+  const raw = searchTerm.value
+  if (!raw) return groups
+  const tokens = raw.toLowerCase().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return groups
+  return groups.flatMap((group) => {
+    if (groupMatchesAllTokens(group.name ?? '', tokens)) return [group]
+    const hits = group.skills.filter((skill) => groupMatchesAllTokens(skill.name ?? '', tokens))
+    if (hits.length) {
+      return [
+        { ...group, skills: hits, trainedSp: hits.reduce((sum, s) => sum + s.skillpoints, 0) },
+      ]
+    }
+    return []
+  })
+})
+const filteredSkillCount = computed(() =>
+  filteredGroups.value.reduce((sum, g) => sum + g.skills.length, 0),
+)
 const skillGroupColumns = computed(() => {
-  const groups = (skills.value?.groups ?? []).map((group, index) => ({ group, index }))
+  const groups = filteredGroups.value.map((group, index) => ({ group, index }))
   const midpoint = Math.ceil(groups.length / 2)
   return [groups.slice(0, midpoint), groups.slice(midpoint)]
 })
@@ -124,20 +168,13 @@ const skillGroupColumns = computed(() => {
           <img src="/images/eve-skillbook.png" alt="" />
         </template>
         <template #eyebrow>CHARACTER SKILLS</template>
-        <template #value>{{ totalSpLabel }}</template>
-        <template #label>SKILL POINTS</template>
+        <template #value>{{ totalSpLabel }} SP</template>
+        <template #label>TOTAL SKILL POINTS</template>
 
-        <dl class="skills-summary-stats">
-          <div>
-            <dt>GROUPS</dt>
-            <dd>{{ skills.groups.length }}</dd>
-          </div>
+        <dl class="skills-summary-stats skills-summary-stats--inline">
           <div>
             <dt>UNALLOCATED</dt>
-            <dd class="skill-injector-value">
-              <img :src="typeImage(40520, 'icon', 32)" alt="" />
-              <span>{{ unallocatedSpLabel }} SP</span>
-            </dd>
+            <dd>{{ unallocatedSpLabel }} SP</dd>
           </div>
           <div>
             <dt>LEVEL V SKILLS</dt>
@@ -154,10 +191,35 @@ const skillGroupColumns = computed(() => {
         </div>
       </CharacterSummaryCard>
 
+      <div class="skills-search-row">
+        <span class="history-search-status skills-search-status" aria-live="polite">
+          <template v-if="!searchTerm">&nbsp;</template>
+          <template v-else-if="filteredGroups.length === 0">NO MATCHES</template>
+          <template v-else
+            >{{ filteredGroups.length }} / {{ skills.groups.length }} GROUPS MATCHED</template
+          >
+        </span>
+        <UiToolbar class="skills-toolbar" label="Skills search">
+          <input
+            v-model="search"
+            type="search"
+            autocomplete="off"
+            placeholder="Search skills or groups"
+            aria-label="Search skills by name or group"
+          />
+        </UiToolbar>
+      </div>
+
       <div v-if="skills.groups.length === 0" class="skills-empty">
         <span>00 / NO RECORDS</span>
         <h2>No trained skills returned</h2>
         <p>This character's authorized ESI skill archive is currently empty.</p>
+      </div>
+
+      <div v-else-if="filteredGroups.length === 0" class="skills-empty skills-empty--search">
+        <span>00 / NO MATCHES</span>
+        <h2>No matching skills</h2>
+        <p>No groups or skills match "{{ searchTerm }}".</p>
       </div>
 
       <div v-else class="skill-groups">
@@ -166,53 +228,55 @@ const skillGroupColumns = computed(() => {
           :key="columnIndex"
           class="skill-group-column"
         >
-          <UiCollapsible
-            v-for="entry in column"
-            :key="entry.group.groupId ?? 'unknown'"
-            class="skill-group"
-            :class="{ 'skill-group--unknown': entry.group.groupId === null }"
-            :default-open="entry.index === 0"
-          >
-            <template #trigger>
-              <button class="skill-group-trigger" type="button">
-                <span class="skill-group-heading">
-                  <span>{{ String(entry.index + 1).padStart(2, '0') }} / SKILL GROUP</span>
-                  <span class="skill-group-name" role="heading" aria-level="2">{{
-                    entry.group.name
-                  }}</span>
-                  <span v-if="entry.group.groupId === null" class="skill-group-warning">
-                    Static data unavailable for these skill IDs.
+          <TransitionGroup name="skill-group">
+            <UiCollapsible
+              v-for="entry in column"
+              :key="`${entry.group.groupId ?? 'unknown'}-${entry.index}-${searchTerm}`"
+              class="skill-group"
+              :class="{ 'skill-group--unknown': entry.group.groupId === null }"
+              :default-open="Boolean(searchTerm)"
+            >
+              <template #trigger>
+                <button class="skill-group-trigger" type="button">
+                  <span class="skill-group-heading">
+                    <span>{{ String(entry.index + 1).padStart(2, '0') }} / SKILL GROUP</span>
+                    <span class="skill-group-name" role="heading" aria-level="2">{{
+                      entry.group.name
+                    }}</span>
+                    <span v-if="entry.group.groupId === null" class="skill-group-warning">
+                      Static data unavailable for these skill IDs.
+                    </span>
                   </span>
-                </span>
-                <strong>{{ entry.group.trainedSp.toLocaleString('en-US') }} SP</strong>
-                <span class="skill-group-toggle" aria-hidden="true" />
-              </button>
-            </template>
-            <ul class="skill-list">
-              <li v-for="skill in entry.group.skills" :key="skill.typeId" class="skill-row">
-                <div class="skill-identity">
-                  <strong>{{ skill.name }}</strong>
-                  <span>{{ skill.skillpoints.toLocaleString('en-US') }} SP</span>
-                </div>
-                <div class="skill-levels">
-                  <div
-                    class="skill-level-track"
-                    :aria-label="`Active level ${skill.activeLevel}; trained level ${skill.trainedLevel} of 5`"
-                  >
-                    <span
-                      v-for="level in 5"
-                      :key="level"
-                      :class="{
-                        'is-trained': level <= skill.trainedLevel,
-                        'is-active': level <= skill.activeLevel,
-                      }"
-                      aria-hidden="true"
-                    />
+                  <strong>{{ entry.group.trainedSp.toLocaleString('en-US') }} SP</strong>
+                  <span class="skill-group-toggle" aria-hidden="true" />
+                </button>
+              </template>
+              <ul class="skill-list">
+                <li v-for="skill in entry.group.skills" :key="skill.typeId" class="skill-row">
+                  <div class="skill-identity">
+                    <strong>{{ skill.name }}</strong>
+                    <span>{{ skill.skillpoints.toLocaleString('en-US') }} SP</span>
                   </div>
-                </div>
-              </li>
-            </ul>
-          </UiCollapsible>
+                  <div class="skill-levels">
+                    <div
+                      class="skill-level-track"
+                      :aria-label="`Active level ${skill.activeLevel}; trained level ${skill.trainedLevel} of 5`"
+                    >
+                      <span
+                        v-for="level in 5"
+                        :key="level"
+                        :class="{
+                          'is-trained': level <= skill.trainedLevel,
+                          'is-active': level <= skill.activeLevel,
+                        }"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </UiCollapsible>
+          </TransitionGroup>
         </div>
       </div>
     </template>

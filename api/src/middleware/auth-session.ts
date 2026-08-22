@@ -16,3 +16,10 @@ export const loadSession = createMiddleware<SessionEnv>(async (context, next) =>
   context.set('session', sessionToken ? await findSession(sessionToken) : null)
   await next()
 })
+
+export const requireSession = createMiddleware<SessionEnv>(async (context, next) => {
+  if (!context.var.session) {
+    return context.json({ code: 'AUTH_REQUIRED', message: 'Log in with EVE Online first.' }, 401)
+  }
+  await next()
+})

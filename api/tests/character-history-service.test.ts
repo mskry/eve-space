@@ -21,7 +21,7 @@ beforeEach(() => {
 })
 
 describe('character employment history service', () => {
-  test('deduplicates corporation IDs, resolves names, and sorts newest first', async () => {
+  test('deduplicates corporation IDs and resolves names without reordering ESI records', async () => {
     mocks.listCorporationHistory.mockResolvedValue([
       { corporation_id: 2, record_id: 2, start_date: '2020-01-01T00:00:00Z' },
       { corporation_id: 1, record_id: 3, start_date: '2024-01-01T00:00:00Z' },
@@ -36,9 +36,9 @@ describe('character employment history service', () => {
     const history = await getCharacterEmploymentHistory(90_000_101)
 
     expect(mocks.resolveNames).toHaveBeenCalledWith({ body: [2, 1] })
-    expect(history.map((entry) => entry.recordId)).toEqual([3, 2, 1])
-    expect(history[0]?.corporation.name).toBe('First Corporation')
-    expect(history[1]?.corporation.name).toBe('Second Corporation')
+    expect(history.map((entry) => entry.recordId)).toEqual([2, 3, 1])
+    expect(history[0]?.corporation.name).toBe('Second Corporation')
+    expect(history[1]?.corporation.name).toBe('First Corporation')
   })
 
   test('retains deleted and unresolved records when name enrichment fails', async () => {
@@ -61,15 +61,66 @@ describe('character employment history service', () => {
         recordId: 2,
         startDate: '2022-01-01T00:00:00Z',
         isDeleted: true,
-        corporation: { id: 3, name: 'Deleted corporation' },
+        corporation: { id: 3, name: 'Deleted corporation', isNpc: true },
       },
       {
         recordId: 1,
         startDate: '2020-01-01T00:00:00Z',
         isDeleted: false,
-        corporation: { id: 4, name: 'Unknown corporation' },
+        corporation: { id: 4, name: 'Unknown corporation', isNpc: true },
       },
     ])
+  })
+
+  test('does not split transient name-resolution failures into additional ESI requests', async () => {
+    mocks.listCorporationHistory.mockResolvedValue([
+      { corporation_id: 10, record_id: 3, start_date: '2024-01-01T00:00:00Z' },
+      { corporation_id: 20, record_id: 2, start_date: '2023-01-01T00:00:00Z' },
+      { corporation_id: 30, record_id: 1, start_date: '2022-01-01T00:00:00Z' },
+    ])
+    mocks.resolveNames.mockRejectedValue({ status: 503 })
+
+    const history = await getCharacterEmploymentHistory(90_000_106)
+
+    expect(history.map((entry) => entry.corporation.name)).toEqual([
+      'Unknown corporation',
+      'Unknown corporation',
+      'Unknown corporation',
+    ])
+    expect(mocks.resolveNames).toHaveBeenCalledOnce()
+    expect(mocks.resolveNames).toHaveBeenCalledWith({ body: [10, 20, 30] })
+  })
+
+  test('splits deterministic invalid-ID batches so valid names survive', async () => {
+    mocks.listCorporationHistory.mockResolvedValue([
+      { corporation_id: 40, record_id: 3, start_date: '2024-01-01T00:00:00Z' },
+      { corporation_id: 50, record_id: 2, start_date: '2023-01-01T00:00:00Z' },
+      { corporation_id: 60, record_id: 1, start_date: '2022-01-01T00:00:00Z' },
+    ])
+    mocks.resolveNames.mockImplementation(async ({ body }: { body: number[] }) => {
+      if (body.includes(50)) throw { status: 404 }
+      return body.map((id) => ({ category: 'corporation', id, name: `Corporation ${id}` }))
+    })
+
+    const history = await getCharacterEmploymentHistory(90_000_107)
+
+    expect(history.map((entry) => entry.corporation.name)).toEqual([
+      'Corporation 40',
+      'Unknown corporation',
+      'Corporation 60',
+    ])
+    expect(mocks.resolveNames).toHaveBeenCalledTimes(5)
+  })
+
+  test('flags NPC corporations by ID range', async () => {
+    mocks.listCorporationHistory.mockResolvedValue([
+      { corporation_id: 1_000_166, record_id: 2, start_date: '2024-01-01T00:00:00Z' },
+      { corporation_id: 98_571_108, record_id: 1, start_date: '2020-01-01T00:00:00Z' },
+    ])
+
+    const history = await getCharacterEmploymentHistory(90_000_105)
+
+    expect(history.map((entry) => entry.corporation.isNpc)).toEqual([true, false])
   })
 
   test('does not resolve names for empty history and reuses cached results', async () => {

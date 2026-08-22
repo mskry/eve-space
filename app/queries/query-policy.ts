@@ -10,4 +10,6 @@ export const QUERY_POLICY = {
   characterHistory: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   wallet: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   walletTransactions: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
+  corporation: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
+  corporationAllianceHistory: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
 } as const

@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { useQuery, useQueryCache } from '@pinia/colada'
+import { useQueryCache } from '@pinia/colada'
 import { characterHistoryQuery, characterSkillsQuery } from '../../queries/characters'
-import { canRunProtectedQuery, prefetchProtectedQuery } from '../../queries/query-cache'
+import { prefetchProtectedQuery } from '../../queries/query-cache'
 import { walletQuery } from '../../queries/wallet'
-import { inferCloneState } from '../../utils/clone-state'
 
-definePageMeta({ title: 'Characters' })
+definePageMeta({ title: 'Characters', layout: 'character' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -28,16 +27,7 @@ const characterId = computed(() => {
 const selectedCharacter = computed(() =>
   characters.value.find((character) => character.characterId === characterId.value),
 )
-const isSkillsRoute = computed(() => route.path.endsWith('/skills'))
-const shellSkillsQuery = useQuery(() => ({
-  ...characterSkillsQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled:
-    isSkillsRoute.value &&
-    canRunProtectedQuery(import.meta.client, authSession.value.authenticated, characterId.value),
-}))
-const shellCloneState = computed(() =>
-  isSkillsRoute.value ? inferCloneState(shellSkillsQuery.data.value) : undefined,
-)
+const isCharacterLandingPage = computed(() => route.path === `/characters/${characterId.value}`)
 const characterBreadcrumb = computed(() => {
   const name = selectedCharacter.value?.name
   if (!name) return 'CHARACTERS'
@@ -165,15 +155,12 @@ useHead({
             <p class="eyebrow">{{ characterBreadcrumb }}</p>
             <h1>
               <span>{{ selectedCharacter.name }}</span>
-              <UiTooltip v-if="shellCloneState" :content="shellCloneState.toUpperCase()">
-                <span
-                  class="character-clone-state"
-                  tabindex="0"
-                  :aria-label="shellCloneState.toUpperCase()"
-                >
-                  <img :src="`/images/eve-${shellCloneState}-clone.png`" alt="" />
-                </span>
-              </UiTooltip>
+              <span
+                v-if="selectedCharacter.isMain && isCharacterLandingPage"
+                class="main-character-badge"
+              >
+                MAIN
+              </span>
             </h1>
             <p>
               {{ selectedCharacter.corporation.name }}
@@ -182,7 +169,6 @@ useHead({
               </template>
             </p>
           </div>
-          <span v-if="selectedCharacter.isMain" class="main-character-badge">MAIN</span>
         </div>
       </header>
 

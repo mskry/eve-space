@@ -6,9 +6,11 @@ import { secureHeaders } from 'hono/secure-headers'
 import { env } from './env.js'
 import { adminRoutes } from './routes/admin.js'
 import { characterRoutes } from './routes/characters.js'
+import { corporationRoutes } from './routes/corporations.js'
 import { healthRoutes } from './routes/health.js'
 import { statusRoutes } from './routes/status.js'
 import { ssoRoutes } from './sso-routes.js'
+import { loadSession, requireSession } from './middleware/auth-session.js'
 
 export const app = new Hono()
   .use('*', secureHeaders())
@@ -16,8 +18,11 @@ export const app = new Hono()
   .use('/auth/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
   .route('/health', healthRoutes)
   .route('/api/status', statusRoutes)
+  .use('/api/admin/*', loadSession, requireSession)
+  .use('/api/corporations/*', loadSession, requireSession)
   .route('/api/admin', adminRoutes)
   .route('/api/me/characters', characterRoutes)
+  .route('/api/corporations', corporationRoutes)
   .route('/auth', ssoRoutes)
 
 app.notFound((context) => context.json({ message: 'Route not found' }, 404))

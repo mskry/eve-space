@@ -15,6 +15,7 @@
   --ui-border-strong: rgba(170, 194, 206, 0.28);
   --ui-primary: #51e0c1;
   --ui-primary-hover: #89f6df;
+  --ui-loader: #a3a52c;
   --ui-on-primary: #06110f;
   --ui-warning: #ff8a44;
   --ui-danger: #ff5f66;
@@ -24,6 +25,9 @@
   --ui-logo-background: #222;
   --ui-font-body: 'Arial Narrow', 'Roboto Condensed', 'Helvetica Neue', sans-serif;
   --ui-font-mono: monospace;
+  --ui-font-display-size: clamp(1.75rem, 3vw, 2.5rem);
+  --ui-font-display-weight: 300;
+  --ui-font-h3-size: 1.17em;
   --ui-radius-control: 0;
   --ui-radius-panel: 0;
 
@@ -53,6 +57,7 @@
   --ui-border-strong: rgba(19, 35, 43, 0.28);
   --ui-primary: #087f75;
   --ui-primary-hover: #0a968a;
+  --ui-loader: #74751d;
   --ui-on-primary: #f7ffff;
   --ui-warning: #a64d16;
   --ui-danger: #b52f3a;

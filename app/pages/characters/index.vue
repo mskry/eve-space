@@ -2,7 +2,6 @@
 import { useQueryCache } from '@pinia/colada'
 import { characterOverviewQuery, type CharacterRosterEntry } from '../../queries/characters'
 import { prefetchProtectedQuery } from '../../queries/query-cache'
-import { formatBirthdayShort, formatCompactAmount } from '../../utils/character-format'
 
 definePageMeta({ title: 'Characters' })
 
@@ -214,17 +213,8 @@ useHead({ title: 'Character Roster // EVE Space' })
                   <span class="roster-identity-name">
                     <h2>{{ character.name }}</h2>
                   </span>
-                  <span
-                    v-if="character.birthday || typeof character.securityStatus === 'number'"
-                    class="roster-born"
-                  >
-                    <span v-if="character.birthday">
-                      Born {{ formatBirthdayShort(character.birthday) }}
-                    </span>
-                    <template v-if="typeof character.securityStatus === 'number'">
-                      <span v-if="character.birthday" aria-hidden="true">•</span>
-                      <SecurityStatus :value="character.securityStatus" />
-                    </template>
+                  <span v-if="character.birthday" class="roster-born">
+                    Born {{ formatBirthdayShort(character.birthday) }}
                   </span>
                   <span class="roster-org">
                     <UiTooltip :content="character.corporation.name" :arrow="false">
@@ -251,6 +241,9 @@ useHead({ title: 'Character Roster // EVE Space' })
                 </span>
               </NuxtLink>
               <div class="roster-stats">
+                <span v-if="typeof character.securityStatus === 'number'" class="roster-stat">
+                  <SecurityStatus :value="character.securityStatus" />
+                </span>
                 <span class="roster-stat">
                   <span class="sr-only">Location:</span>
                   <span class="roster-location-icon" aria-hidden="true">

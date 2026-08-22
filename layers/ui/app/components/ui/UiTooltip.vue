@@ -3,12 +3,13 @@ import { TooltipArrow, TooltipContent, TooltipPortal, TooltipRoot, TooltipTrigge
 
 withDefaults(
   defineProps<{
-    content: string
+    content?: string
     disabled?: boolean
     side?: 'top' | 'right' | 'bottom' | 'left'
     arrow?: boolean
   }>(),
   {
+    content: '',
     disabled: false,
     side: 'top',
     arrow: true,
@@ -23,7 +24,7 @@ withDefaults(
     </TooltipTrigger>
     <TooltipPortal>
       <TooltipContent class="ui-tooltip-content" :side="side" :side-offset="10">
-        {{ content }}
+        <slot name="content">{{ content }}</slot>
         <TooltipArrow v-if="arrow" class="ui-tooltip-arrow" :width="8" :height="4" />
       </TooltipContent>
     </TooltipPortal>

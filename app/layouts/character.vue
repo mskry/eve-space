@@ -1,5 +1,5 @@
 <template>
-  <DashboardShell>
+  <DashboardShell hide-topbar>
     <slot />
   </DashboardShell>
 </template>

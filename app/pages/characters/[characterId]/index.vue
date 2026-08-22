@@ -3,9 +3,8 @@ import { useQuery } from '@pinia/colada'
 import { characterOverviewQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
-import { formatBirthday } from '../../../utils/character-format'
 
-definePageMeta({ title: 'Character Overview' })
+definePageMeta({ title: 'Character Overview', layout: 'character' })
 
 const route = useRoute()
 const { factionLogo, typeImage } = useEveImages()
@@ -190,6 +189,10 @@ const genderSymbol = computed(() => {
           <section class="character-detail-group character-detail-group--identity">
             <h2>IDENTITY</h2>
             <dl>
+              <div>
+                <dt>SECURITY STATUS</dt>
+                <dd><SecurityStatus :value="character.securityStatus" /></dd>
+              </div>
               <div>
                 <dt>RACE</dt>
                 <dd>{{ character.race }}</dd>

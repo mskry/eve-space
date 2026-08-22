@@ -1,5 +1,6 @@
 import { EsiClient } from '@evespace/esi-client'
 import { esiFetch } from './esi-fetch.js'
+import { eveDescriptionToPlainText } from './eve-description.js'
 
 const esi = new EsiClient({ fetch: esiFetch })
 // ESI currently returns nullable ship_type_id values that are stricter than the pinned bloodline schema.
@@ -70,7 +71,7 @@ export async function getCharacterProfile(characterId: number) {
     securityStatus: character.security_status ?? 0,
     achievementScore: character.achievement_score,
     corporationTitle: character.corporation_title,
-    bio: toPlainText(character.description),
+    bio: eveDescriptionToPlainText(character.description),
     // Militia allegiance; unset for characters outside Faction Warfare.
     factionId: character.faction_id ?? null,
     corporation: {
@@ -100,73 +101,4 @@ export async function getCharacterAffiliation(characterId: number) {
     corporationId: character.corporation_id,
     allianceId: character.alliance_id ?? null,
   }
-}
-
-// EVE bios are user-authored HTML. The UI renders this as escaped text, so stripping markup here
-// is purely cosmetic - it keeps font/color tags out of the visible string.
-function toPlainText(html: string | undefined) {
-  if (!html) return undefined
-  const text = html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-  const normalized = decodeLegacyUnicodeLiteral(text).trim()
-  return normalized || undefined
-}
-
-function decodeLegacyUnicodeLiteral(value: string) {
-  const literal = /^[uU](['"])([\s\S]*)\1$/.exec(value)
-  if (!literal) return value
-
-  const body = literal[2]!
-  let decoded = ''
-  for (let index = 0; index < body.length; index += 1) {
-    const character = body[index]!
-    if (character !== '\\' || index === body.length - 1) {
-      decoded += character
-      continue
-    }
-
-    const escape = body[index + 1]!
-    const digits = escape === 'u' ? 4 : escape === 'U' ? 8 : 0
-    if (digits) {
-      const hex = body.slice(index + 2, index + 2 + digits)
-      if (hex.length === digits && /^[0-9a-f]+$/i.test(hex)) {
-        const codePoint = Number.parseInt(hex, 16)
-        if (digits === 4 || codePoint <= 0x10ffff) {
-          decoded += digits === 4 ? String.fromCharCode(codePoint) : String.fromCodePoint(codePoint)
-          index += digits + 1
-          continue
-        }
-      }
-    }
-
-    const escapedCharacter =
-      escape === 'n'
-        ? '\n'
-        : escape === 'r'
-          ? '\r'
-          : escape === 't'
-            ? '\t'
-            : escape === '\\' || escape === "'" || escape === '"'
-              ? escape
-              : undefined
-    if (escapedCharacter !== undefined) {
-      decoded += escapedCharacter
-      index += 1
-      continue
-    }
-
-    decoded += `\\${escape}`
-    index += 1
-  }
-  return decoded
 }

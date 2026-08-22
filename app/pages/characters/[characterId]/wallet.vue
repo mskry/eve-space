@@ -4,7 +4,7 @@ import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { walletQuery, walletTransactionsQuery } from '../../../queries/wallet'
 import { ApiQueryError } from '../../../utils/query-error'
 
-definePageMeta({ title: 'Character Wallet' })
+definePageMeta({ title: 'Character Wallet', layout: 'character' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -160,7 +160,7 @@ watch(
     </div>
     <template v-else-if="wallet">
       <CharacterSummaryCard>
-        <template #icon><AppIcon name="wallet" /></template>
+        <template #icon><img :src="typeImage(52996, 'icon')" alt="" aria-hidden="true" /></template>
         <template #eyebrow>CHARACTER WALLET</template>
         <template #value>{{ formattedWalletBalance }} ISK</template>
         <template #label>AUTHORIZED BALANCE</template>

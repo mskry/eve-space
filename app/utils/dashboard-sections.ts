@@ -2,7 +2,8 @@ export type DashboardIcon =
   | 'overview'
   | 'character'
   | 'wallet'
-  | 'integrations'
+  | 'corporation'
+  | 'settings'
   | 'location'
   | 'ship'
   | 'auth'
@@ -32,10 +33,10 @@ export const dashboardSections: DashboardSection[] = [
     access: 'authorized',
   },
   {
-    label: 'Integrations',
-    description: 'Connected services and scopes',
-    to: '/integrations',
-    icon: 'integrations',
+    label: 'Settings',
+    description: 'Dashboard configuration',
+    to: '/settings/integrations',
+    icon: 'settings',
     access: 'public',
   },
   {

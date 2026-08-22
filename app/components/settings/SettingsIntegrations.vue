@@ -1,7 +1,4 @@
 <script setup lang="ts">
-definePageMeta({ title: 'Integrations' })
-useHead({ title: 'Integrations // EVE Space' })
-
 const integrations = [
   {
     name: 'EVE Public ESI',
@@ -31,15 +28,15 @@ const integrations = [
 </script>
 
 <template>
-  <div class="section-page integrations-page">
-    <header class="page-heading">
+  <section class="settings-subsection" aria-labelledby="settings-integrations-heading">
+    <header class="settings-subsection-heading">
       <div>
-        <p class="eyebrow">INTEGRATIONS</p>
-        <h1>Integrations</h1>
+        <p class="eyebrow">01 / SETTINGS</p>
+        <h2 id="settings-integrations-heading">Integrations</h2>
       </div>
-      <p>Each service owns an explicit route and authorization boundary within the dashboard.</p>
+      <p>Connected services and their authorization boundaries.</p>
     </header>
-    <section class="integration-list">
+    <div class="integration-list">
       <article
         v-for="(integration, index) in integrations"
         :key="integration.name"
@@ -52,6 +49,6 @@ const integrations = [
         </div>
         <span class="integration-state" :class="integration.tone">{{ integration.state }}</span>
       </article>
-    </section>
-  </div>
+    </div>
+  </section>
 </template>

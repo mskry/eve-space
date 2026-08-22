@@ -14,6 +14,7 @@ import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { unauthenticatedSession } from '../app/queries/auth'
 import { characterOverviewQuery } from '../app/queries/characters'
+import { corporationQuery } from '../app/queries/corporations'
 import { canRunProtectedQuery, clearAuthenticatedQueries } from '../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../app/queries/query-keys'
 import { systemStatusQuery } from '../app/queries/system-status'
@@ -105,6 +106,27 @@ describe('SSR and authentication query boundaries', () => {
 
     expect(revivedError).toBeInstanceOf(queryError.constructor)
     expect(revivedError).toMatchObject({ name: queryError.name, message: queryError.message })
+  })
+
+  it('catches corporation query failures during SSR', async () => {
+    queryServer.use(
+      http.get('http://localhost/api/corporations/404', () =>
+        HttpResponse.json({ message: 'Corporation not found.' }, { status: 404 }),
+      ),
+    )
+    const apiClient = createApiClient('http://localhost')
+    const Root = defineComponent({
+      setup() {
+        useQuery(corporationQuery({ apiClient, corporationId: 404 }))
+        return () => h('span', 'corporation fallback')
+      },
+    })
+    const pinia = createPinia()
+    const app = createSSRApp(Root)
+    app.use(pinia)
+    app.use(PiniaColada, coladaOptions)
+
+    await expect(renderToString(app)).resolves.toContain('corporation fallback')
   })
 
   it('does not run a protected SSR query and enables it after browser authentication', async () => {
