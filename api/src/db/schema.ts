@@ -195,6 +195,7 @@ export const eveTokens = pgTable(
       mode: 'date',
     }).notNull(),
     scopes: jsonb().$type<string[]>().default([]).notNull(),
+    tokenVersion: integer('token_version').default(0).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [

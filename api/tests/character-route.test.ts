@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/auth-store.js', () => ({
+  CharacterTokenNotFoundError: class CharacterTokenNotFoundError extends Error {},
   deleteCharacter: mocks.deleteCharacter,
   findOwnedCharacter: mocks.findOwnedCharacter,
   findSession: mocks.findSession,
@@ -37,6 +38,7 @@ vi.mock('../src/token-service.js', () => ({
       super(`Missing ${scope}`)
     }
   },
+  TokenRefreshUnavailableError: class TokenRefreshUnavailableError extends Error {},
 }))
 
 vi.mock('../src/character-profile.js', () => ({

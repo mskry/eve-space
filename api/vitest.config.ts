@@ -5,6 +5,7 @@ export default defineConfig({
     clearMocks: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    exclude: ['tests/integration/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       include: [

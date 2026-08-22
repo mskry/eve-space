@@ -15,6 +15,7 @@
     "start:container": "node dist/db/migrate.js && node dist/server.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:postgres": "vitest run --config vitest.postgres.config.ts",
     "typecheck": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     "@types/node": "^24.3.0",
     "@vitest/coverage-v8": "^4.1.11",
     "drizzle-kit": "^0.31.10",
+    "testcontainers": "11.14.0",
     "tsx": "^4.23.12",
     "typescript": "~5.9.3",
     "vitest": "^4.1.11"

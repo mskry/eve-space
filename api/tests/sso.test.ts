@@ -40,6 +40,7 @@ vi.mock('../src/env.js', () => ({
 }))
 
 vi.mock('../src/auth-store.js', () => ({
+  CharacterTokenNotFoundError: class CharacterTokenNotFoundError extends Error {},
   CharacterOwnershipConflictError: mocks.OwnershipConflict,
   attachCharacter: mocks.attachCharacter,
   consumeOAuthState: mocks.consumeOAuthState,

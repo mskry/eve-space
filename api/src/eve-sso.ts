@@ -37,6 +37,7 @@ const claimsSchema = z
   .passthrough()
 
 const metadataUrl = 'https://login.eveonline.com/.well-known/oauth-authorization-server'
+const refreshTimeoutMs = 10_000
 let metadataPromise: ReturnType<typeof loadMetadata> | undefined
 
 async function loadMetadata() {
@@ -94,6 +95,7 @@ export async function refreshAccessToken(refreshToken: string) {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
+    signal: AbortSignal.timeout(refreshTimeoutMs),
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
