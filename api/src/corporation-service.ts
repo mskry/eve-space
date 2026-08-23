@@ -1,7 +1,15 @@
 import { createCorporationClient } from '@evespace/esi-client/domains/corporation'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
 import type { EsiResponseMetadata } from '@evespace/esi-client'
+import { env } from './env.js'
 import { esiFetch } from './esi-fetch.js'
+import {
+  esiCooldownFallbackSeconds,
+  esiErrorBudgetFloor,
+  notFoundCacheTtlMs,
+  npcCorporationCacheTtlMs,
+  publicProfileCacheTtlMs,
+} from './esi-policy.js'
 import { eveDescriptionToPlainText } from './eve-description.js'
 
 const esi = createCorporationClient({ fetch: esiFetch }).withMetadata()
@@ -19,10 +27,10 @@ const npcCache = new Map<string, CacheEntry<number[]>>()
 const corporationRequests = new Map<number, Promise<CorporationPublic>>()
 const allianceHistoryRequests = new Map<number, Promise<AllianceHistoryEntry[]>>()
 let npcRequest: Promise<number[]> | undefined
-const cacheTtlMs = 5 * 60_000
-const notFoundCacheTtlMs = 60_000
-const maxCorporationCacheEntries = 200
-const maxNotFoundCacheEntries = 500
+// Sized relative to the per-resource cache budget: corporations are shared across characters, and
+// negative lookups are a single timestamp each, so both hold more entries than a character cache.
+const maxCorporationCacheEntries = env.ESI_CACHE_MAX_ENTRIES * 2
+const maxNotFoundCacheEntries = env.ESI_CACHE_MAX_ENTRIES * 5
 let esiCooldownUntil = 0
 
 interface CorporationPublic {
@@ -97,7 +105,8 @@ async function loadCorporationPublic(corporationId: number): Promise<Corporation
   } catch (error) {
     const cooldownSeconds = applyEsiCooldown(error)
     cacheNotFoundCorporation(corporationId, error)
-    if (errorStatus(error) === 429) throw new CorporationEsiCooldownError(cooldownSeconds ?? 60)
+    if (errorStatus(error) === 429)
+      throw new CorporationEsiCooldownError(cooldownSeconds ?? esiCooldownFallbackSeconds)
     throw error
   }
 
@@ -138,7 +147,12 @@ async function loadCorporationPublic(corporationId: number): Promise<Corporation
     warHistory: [],
   }
 
-  setBoundedCache(corporationCache, corporationId, data, resolveExpiry(metadata, cacheTtlMs))
+  setBoundedCache(
+    corporationCache,
+    corporationId,
+    data,
+    resolveExpiry(metadata, publicProfileCacheTtlMs),
+  )
   return data
 }
 
@@ -173,7 +187,8 @@ async function loadCorporationAllianceHistory(
   } catch (error) {
     const cooldownSeconds = applyEsiCooldown(error)
     cacheNotFoundCorporation(corporationId, error)
-    if (errorStatus(error) === 429) throw new CorporationEsiCooldownError(cooldownSeconds ?? 60)
+    if (errorStatus(error) === 429)
+      throw new CorporationEsiCooldownError(cooldownSeconds ?? esiCooldownFallbackSeconds)
     throw error
   }
 
@@ -192,7 +207,12 @@ async function loadCorporationAllianceHistory(
     recordId: entry.record_id,
     startDate: entry.start_date,
   }))
-  setBoundedCache(allianceHistoryCache, corporationId, data, resolveExpiry(metadata, cacheTtlMs))
+  setBoundedCache(
+    allianceHistoryCache,
+    corporationId,
+    data,
+    resolveExpiry(metadata, publicProfileCacheTtlMs),
+  )
   return data
 }
 
@@ -208,12 +228,19 @@ export async function getNpcCorporations(): Promise<number[]> {
     .then((response) => {
       applyEsiCooldown(response.meta)
       const npcIds = response.data
-      setBoundedCache(npcCache, key, npcIds, resolveExpiry(response.meta, 60 * 60_000), 10)
+      setBoundedCache(
+        npcCache,
+        key,
+        npcIds,
+        resolveExpiry(response.meta, npcCorporationCacheTtlMs),
+        10,
+      )
       return npcIds
     })
     .catch((error: unknown) => {
       const cooldownSeconds = applyEsiCooldown(error)
-      if (errorStatus(error) === 429) throw new CorporationEsiCooldownError(cooldownSeconds ?? 60)
+      if (errorStatus(error) === 429)
+        throw new CorporationEsiCooldownError(cooldownSeconds ?? esiCooldownFallbackSeconds)
       throw error
     })
     .finally(() => {
@@ -245,8 +272,8 @@ async function resolveNames(ids: number[]): Promise<Map<number, string>> {
     }
   }
 
-  const chunks = Array.from({ length: Math.ceil(ids.length / 1_000) }, (_, i) =>
-    ids.slice(i * 1_000, (i + 1) * 1_000),
+  const chunks = Array.from({ length: Math.ceil(ids.length / 500) }, (_, i) =>
+    ids.slice(i * 500, (i + 1) * 500),
   )
   await Promise.all(chunks.map(resolveChunk))
   return names
@@ -282,9 +309,12 @@ function applyEsiCooldown(value: unknown): number | undefined {
   let cooldownSeconds: number | undefined
 
   if (status === 429) {
-    cooldownSeconds = parseNumber(metadata?.headers['retry-after']) ?? 60
-  } else if (metadata?.errorLimit?.remaining !== undefined && metadata.errorLimit.remaining <= 10) {
-    cooldownSeconds = metadata.errorLimit.reset ?? 60
+    cooldownSeconds = parseNumber(metadata?.headers['retry-after']) ?? esiCooldownFallbackSeconds
+  } else if (
+    metadata?.errorLimit?.remaining !== undefined &&
+    metadata.errorLimit.remaining <= esiErrorBudgetFloor
+  ) {
+    cooldownSeconds = metadata.errorLimit.reset ?? esiCooldownFallbackSeconds
   }
 
   if (cooldownSeconds !== undefined) {

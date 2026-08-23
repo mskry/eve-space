@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, gt, lte, sql } from 'drizzle-orm'
 import { db } from './db/client.js'
+import { characterLockKey, characterLockNamespace } from './db/locks.js'
 import { characters, eveTokens, oauthStates, sessions, users } from './db/schema.js'
+import { env } from './env.js'
 import { encryptTokens, hashToken } from './security.js'
 
 export interface CharacterSummary {
@@ -43,7 +45,10 @@ export class CharacterTokenNotFoundError extends Error {
 type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type TokenReader = Pick<DatabaseTransaction, 'select'>
 type TokenWriter = Pick<DatabaseTransaction, 'update'>
-const characterLockNamespace = 1_163_277_105
+const incrementTokenVersion = sql`${eveTokens.tokenVersion} + 1`
+
+/** How long an unconsumed authorization round-trip stays redeemable. */
+const oauthStateTtlMs = 10 * 60 * 1_000
 
 interface CharacterAuthorizationInput {
   characterId: number
@@ -81,7 +86,7 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
     intent: context.intent,
     userId: context.intent === 'login' ? null : context.userId,
     characterId: context.intent === 'reauthorize' ? context.characterId : null,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    expiresAt: new Date(Date.now() + oauthStateTtlMs),
   })
 }
 
@@ -304,7 +309,7 @@ export async function updateCharacterToken(
       encryptedTokens: input.encryptedTokens,
       accessTokenExpiresAt: input.expiresAt,
       scopes: input.scopes,
-      tokenVersion: sql`${eveTokens.tokenVersion} + 1`,
+      tokenVersion: incrementTokenVersion,
       updatedAt: new Date(),
     })
     .where(
@@ -323,7 +328,11 @@ export async function withCharacterTokenRefreshLock<T>(
 ) {
   try {
     return await db.transaction(async (transaction) => {
-      await transaction.execute(sql`set local lock_timeout = '5s'`)
+      // Bounded rather than unlimited so a wedged holder cannot pin every caller, but longer than
+      // the SSO round-trip below so a queued replica waits for the winner's rotated token.
+      await transaction.execute(
+        sql.raw(`set local lock_timeout = '${env.TOKEN_REFRESH_LOCK_TIMEOUT_MS}ms'`),
+      )
       await lockCharacterRow(transaction, characterId)
       const token = await findCharacterToken(characterId, transaction)
       if (!token) throw new CharacterTokenNotFoundError()
@@ -393,7 +402,7 @@ async function upsertCharacterToken(
       set: {
         scopes,
         ...token,
-        tokenVersion: sql`${eveTokens.tokenVersion} + 1`,
+        tokenVersion: incrementTokenVersion,
         updatedAt: new Date(),
       },
     })
@@ -401,7 +410,7 @@ async function upsertCharacterToken(
 
 async function lockCharacterRow(transaction: DatabaseTransaction, characterId: number) {
   await transaction.execute(
-    sql`select pg_advisory_xact_lock(${characterLockNamespace}, ${characterId})`,
+    sql`select pg_advisory_xact_lock(${characterLockNamespace}, ${characterLockKey(characterId)})`,
   )
 }
 

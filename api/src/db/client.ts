@@ -6,7 +6,7 @@ import * as schema from './schema.js'
 // Raw client: kept for connectivity pings (health.ts, system-status-service.ts)
 // and graceful shutdown (server.ts). All table queries go through `db`.
 export const sql = postgres(env.DATABASE_URL, {
-  max: 10,
+  max: env.DATABASE_POOL_MAX,
   idle_timeout: 20,
   connect_timeout: 10,
   onnotice: () => {},

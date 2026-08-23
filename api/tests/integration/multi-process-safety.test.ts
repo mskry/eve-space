@@ -1,6 +1,7 @@
 import postgres from 'postgres'
-import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers'
+import { migrationLockId } from '../../src/db/locks.js'
 import { loadMigrations, runMigrations } from '../../src/db/migration-runner.js'
 
 let container: StartedTestContainer
@@ -28,6 +29,15 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await container.stop()
+})
+
+beforeEach(async () => {
+  const connection = postgres(databaseUrl)
+  try {
+    await connection.unsafe('drop schema public cascade; create schema public;').simple()
+  } finally {
+    await connection.end()
+  }
 })
 
 async function waitForDatabase(url: string) {
@@ -89,6 +99,27 @@ describe('multi-process safety', () => {
     }
   })
 
+  test('generates one stable planner offset for the installation', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runMigrations(connection)
+      const [first] = await connection<{ planner_schedule_offset_ms: number }[]>`
+        select planner_schedule_offset_ms from deployment_installation_settings where id = 1
+      `
+      await runMigrations(connection)
+      const [second] = await connection<{ planner_schedule_offset_ms: number }[]>`
+        select planner_schedule_offset_ms from deployment_installation_settings where id = 1
+      `
+
+      expect(first?.planner_schedule_offset_ms).toBeGreaterThanOrEqual(0)
+      expect(first?.planner_schedule_offset_ms).toBeLessThan(60_000)
+      expect(second).toEqual(first)
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('rolls back a failed migration with its migration record', async () => {
     const connection = postgres(databaseUrl)
 
@@ -139,12 +170,42 @@ describe('multi-process safety', () => {
     }
   })
 
+  test('does not revalidate an already-applied migration', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runMigrations(connection, [{ name: 'legacy.sql', sql: 'select 1' }])
+      await expect(
+        runMigrations(connection, [{ name: 'legacy.sql', sql: 'vacuum' }]),
+      ).resolves.toBeUndefined()
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('bounds migration advisory-lock waits', async () => {
+    const holder = await postgres(databaseUrl).reserve()
+    const contender = postgres(databaseUrl)
+
+    try {
+      await holder`select pg_advisory_lock(${migrationLockId})`
+      await expect(runMigrations(contender, [], { lockTimeoutMs: 100 })).rejects.toMatchObject({
+        code: '55P03',
+      })
+    } finally {
+      await holder`select pg_advisory_unlock(${migrationLockId})`
+      holder.release()
+      await contender.end()
+    }
+  })
+
   test('persists one rotated refresh token across independent token-service instances', async () => {
     const connection = postgres(databaseUrl)
     const characterId = 1404328063
     const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
     const scope = 'esi-wallet.read_character_wallet.v1'
-    const { encryptTokens } = await import('../../src/security.js')
+    await runMigrations(connection)
+    const { decryptTokens, encryptTokens } = await import('../../src/security.js')
 
     await connection`insert into users (id) values (${userId})`
     await connection`
@@ -217,10 +278,7 @@ describe('multi-process safety', () => {
         select encrypted_tokens, token_version from eve_tokens where character_id = ${characterId}
       `
       expect(stored?.token_version).toBe(1)
-      expect(encryptTokens).toBeTypeOf('function')
-      expect(
-        (await import('../../src/security.js')).decryptTokens(stored!.encrypted_tokens),
-      ).toEqual({
+      expect(decryptTokens(stored!.encrypted_tokens)).toEqual({
         accessToken: 'rotated-access-token',
         refreshToken: 'rotated-refresh-token',
       })

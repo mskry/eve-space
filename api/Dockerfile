@@ -30,6 +30,6 @@ WORKDIR /app
 COPY --from=build /prod/api ./
 
 USER node
-EXPOSE 8787
 
+# The Compose worker service overrides this with start:worker; only the API runs migrations.
 CMD ["pnpm", "--config.verify-deps-before-run=false", "start:container"]

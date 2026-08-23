@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import { z } from 'zod'
-import { getSsoConfig } from './env.js'
+import { env, getSsoConfig } from './env.js'
 
 const metadataSchema = z.object({
   issuer: z.string().url(),
@@ -37,17 +37,26 @@ const claimsSchema = z
   .passthrough()
 
 const metadataUrl = 'https://login.eveonline.com/.well-known/oauth-authorization-server'
-const refreshTimeoutMs = 10_000
+// The token call is the slow leg and gets the full budget. Discovery and JWKS are small, cached
+// process-wide after the first success, and share half of it each, so a refresh holding the
+// per-character advisory lock costs at most 2 x EVE_SSO_TIMEOUT_MS -- the bound `env.ts` enforces
+// against TOKEN_REFRESH_LOCK_TIMEOUT_MS.
+const tokenTimeoutMs = env.EVE_SSO_TIMEOUT_MS
+const discoveryTimeoutMs = Math.ceil(env.EVE_SSO_TIMEOUT_MS / 2)
 let metadataPromise: ReturnType<typeof loadMetadata> | undefined
 
 async function loadMetadata() {
-  const response = await fetch(metadataUrl)
+  const response = await fetch(metadataUrl, { signal: AbortSignal.timeout(discoveryTimeoutMs) })
   if (!response.ok) throw new Error(`EVE SSO metadata returned HTTP ${response.status}`)
   return metadataSchema.parse(await response.json())
 }
 
 function getEveMetadata() {
-  metadataPromise ??= loadMetadata()
+  // Cache the success only; a retained rejection would fail every later SSO call in this process.
+  metadataPromise ??= loadMetadata().catch((error: unknown) => {
+    metadataPromise = undefined
+    throw error
+  })
   return metadataPromise
 }
 
@@ -95,7 +104,7 @@ export async function refreshAccessToken(refreshToken: string) {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    signal: AbortSignal.timeout(refreshTimeoutMs),
+    signal: AbortSignal.timeout(tokenTimeoutMs),
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
@@ -109,7 +118,9 @@ export async function refreshAccessToken(refreshToken: string) {
 export async function verifyAccessToken(accessToken: string) {
   const config = getSsoConfig()
   const metadata = await getEveMetadata()
-  const jwks = createRemoteJWKSet(new URL(metadata.jwks_uri))
+  const jwks = createRemoteJWKSet(new URL(metadata.jwks_uri), {
+    timeoutDuration: discoveryTimeoutMs,
+  })
   const { payload } = await jwtVerify(accessToken, jwks, {
     issuer: [metadata.issuer, 'https://login.eveonline.com/', 'login.eveonline.com'],
     audience: 'EVE Online',

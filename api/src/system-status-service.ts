@@ -1,6 +1,8 @@
 import { createStatusClient } from '@evespace/esi-client/domains/status'
 import { sql } from './db/client.js'
 import { esiFetch } from './esi-fetch.js'
+import { esiErrorBudgetFloor } from './esi-policy.js'
+import { probeQueueStatus, type QueueStatus } from './queue/status.js'
 
 const cacheTtlMs = 30_000
 const esiClient = createStatusClient({ fetch: esiFetch }).withMetadata()
@@ -35,6 +37,7 @@ export interface SystemStatus {
     }
     database: DatabaseStatus
     esi: EsiStatus
+    queue: QueueStatus
   }
 }
 
@@ -54,13 +57,19 @@ export function getSystemStatus() {
 }
 
 async function probeSystemStatus(now: number): Promise<SystemStatus> {
-  const [database, esi] = await Promise.all([probeDatabase(), probeEsi()])
+  const [database, esi, queue] = await Promise.all([
+    probeDatabase(),
+    probeEsi(),
+    probeQueueStatus(),
+  ])
   const unavailableCount =
     Number(database.status === 'unavailable') + Number(esi.status === 'unavailable')
   const status =
     unavailableCount === 2
       ? 'unavailable'
-      : database.status === 'operational' && esi.status === 'operational'
+      : database.status === 'operational' &&
+          esi.status === 'operational' &&
+          queue.status === 'operational'
         ? 'operational'
         : 'degraded'
 
@@ -75,6 +84,7 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
       },
       database,
       esi,
+      queue,
     },
   }
   return cache
@@ -101,7 +111,7 @@ async function probeEsi(): Promise<EsiStatus> {
       status:
         response.data.vip ||
         response.data.players === 0 ||
-        (errorBudgetRemaining !== null && errorBudgetRemaining <= 10)
+        (errorBudgetRemaining !== null && errorBudgetRemaining <= esiErrorBudgetFloor)
           ? 'degraded'
           : 'operational',
       latencyMs: Date.now() - startedAt,

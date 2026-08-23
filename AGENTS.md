@@ -4,57 +4,11 @@ These instructions apply to the entire repository. Preserve the architecture and
 
 ## Runtime Architecture
 
-```text
-Browser -> Nuxt 4 :3000
-   |          |
-   |          +-> EVE Image Server or compatible CDN
-   |
-   +----------+-> Hono :8788 -> PostgreSQL :5432
-                         |
-                         +-> EVE SSO and ESI
-```
-
 - Nuxt renders the UI and may fetch public API data during SSR. Browser-side auth and character-owned requests call Hono directly with credentials enabled.
-- Hono owns all EVE SSO, ESI, session, token, encryption, cache, and persistence behavior.
-- PostgreSQL stores users, characters, encrypted EVE tokens, OAuth state, and sessions.
-- Redis and background workers are intentionally deferred. Do not introduce compatibility code for them without a concrete requirement.
-- Docker Compose runs Hono and PostgreSQL. Nuxt normally runs on the host.
-
-## Repository Layout
-
-- `app/app.vue`: Nuxt provider/layout/page entrypoint plus development-only Pinia Colada devtools.
-- `app/layouts/default.vue`: persistent dashboard shell and section navigation.
-- `app/layouts/auth.vue`: focused EVE authorization surface.
-- `app/pages/characters/`: character roster plus nested character-ID-scoped overview, skills, wallet, and employment-history routes.
-- `app/pages/`: routed overview, authorization, character, and integration sections.
-- `app/components/AppSidebar.vue`: registry-driven navigation rendered as a collapsible desktop icon rail and inside the mobile UI drawer.
-- `app/utils/dashboard-sections.ts`: extension registry for dashboard plugins and integrations.
-- `app/queries/`: typed Pinia Colada query definitions, hierarchical keys, cache policy, cleanup, and guarded prefetch helpers.
-- `app/composables/`: auth and character-roster orchestration over shared queries plus focused non-query utilities.
-- `colada.options.ts`: global in-memory query, retry, and metadata-driven hook configuration; private data is never persisted.
-- `app/composables/useEveImages.ts`: typed EVE Image Server URL provider using the configurable public image base.
-- `app/assets/css/main.css`: product page styling and responsive rules; consume semantic UI tokens rather than literal colors.
-- `app/utils/api-client.ts`: auto-imported typed Hono RPC client factory used by Nuxt.
-- `layers/ui/`: auto-registered local Nuxt layer containing the theme contract and reusable UI primitives.
-- `layers/ui/app/assets/css/tokens.css`: runtime theme palettes and semantic CSS custom properties.
-- `layers/ui/app/components/ui/`: Reka UI-backed providers, theme controls, and interaction primitives.
-- `layers/ui/app/composables/useTheme.ts`: SSR-safe theme preference persisted in a SameSite cookie.
-- `api/src/index.ts`: root Hono middleware, mounted routes, global errors, and exported `AppType`.
-- `api/src/server.ts`: Node socket startup and graceful shutdown only.
-- `api/src/routes/`: owned character, status, and health route modules.
-- `api/src/sso-routes.ts`: EVE authorization, callback, session, and logout routes.
-- `api/src/eve-sso.ts`: OAuth exchange, refresh, metadata discovery, and JWT verification.
-- `api/src/middleware/`: reusable Hono middleware and its context-variable types.
-- `api/src/auth-store.ts`: PostgreSQL persistence for auth state.
-- `api/src/security.ts`: hashing and AES-256-GCM token encryption.
-- `api/src/token-service.ts`: encrypted token loading and automatic refresh.
-- `api/src/character-skills-service.ts`: protected ESI skills mapped to local SDE names and groups.
-- `api/src/character-history-service.ts`: public ESI corporation history mapped to named employment records.
-- `api/src/wallet-service.ts`: ESI wallet calls, caching, revalidation, and quota handling.
-- `api/src/system-status-service.ts`: cached API, PostgreSQL, and Tranquility telemetry.
-- `api/src/character-profile.ts`: composed public character DTO and short-lived cache.
-- `api/src/validation.ts`: Hono Zod validator wrapper preserving `{ message }` errors.
-- `api/migrations/`: ordered PostgreSQL migrations.
+- The API and worker share server-only ownership of EVE SSO, ESI, session, token, encryption, cache, and persistence behavior.
+- Queue/coordination Redis is a dedicated durable BullMQ instance: AOF with `appendfsync always`, `noeviction`, capacity health checks, and a persistent volume. It must remain separate from a future disposable cache Redis instance.
+- The worker is a separate Node process built from the `api` workspace. It never runs migrations or an HTTP socket, verifies its required database migration directly, and has a non-HTTP dependency healthcheck.
+- Nuxt normally runs on the host rather than under Docker Compose.
 
 ## API And Contract Rules
 
@@ -104,6 +58,7 @@ Browser -> Nuxt 4 :3000
 - Wallet access requires `esi-wallet.read_character_wallet.v1`; preserve scope checks and reauthorization responses.
 - Keep auth cookies HttpOnly, SameSite Lax, high priority, and secure when `SESSION_COOKIE_SECURE` is enabled.
 - Keep credentialed CORS restricted to `WEB_ORIGIN`.
+- Private data is never persisted by the client query cache; keep `colada.options.ts` in-memory only.
 - Never commit `.env`; document new settings in `.env.example`.
 
 ## ESI And Caching
@@ -129,14 +84,8 @@ Browser -> Nuxt 4 :3000
 - Required runtime: Node.js 22.18 or newer, ESM only.
 - API TypeScript uses `NodeNext`; retain `.js` extensions in relative TypeScript imports.
 - pnpm is the only package manager for this repository. The root `pnpm-lock.yaml` is authoritative; do not add npm or Yarn lockfiles.
-- The exact package manager version is pinned in root `package.json`. Use Corepack rather than a separately versioned global pnpm installation.
-- Install dependencies with:
-
-```bash
-corepack enable
-pnpm install --frozen-lockfile
-```
-
+- Use Corepack rather than a separately versioned global pnpm installation.
+- Install with `corepack enable` then `pnpm install --frozen-lockfile`.
 - Run relevant checks after changes. For API or shared-contract changes, run all of these:
 
 ```bash
@@ -144,10 +93,13 @@ pnpm lint
 pnpm format:check
 pnpm --filter @eve-space/api typecheck
 pnpm --filter @eve-space/api test:coverage
+pnpm --filter @eve-space/api test:redis
+pnpm --filter @eve-space/api test:postgres
 pnpm --filter @eve-space/api build
 pnpm build
 ```
 
 - API tests use Vitest with Hono `testClient()` for typed routes and `app.request()` for raw URL or HEAD behavior.
 - Mock EVE and PostgreSQL boundaries in route tests; exercise real routing, validation, cookies, redirects, and global error handling.
+- In Docker-capable development and CI environments, run the thresholded `test:redis` Testcontainers suite and `test:postgres` coordination suite in addition to mocked route tests.
 - For runtime changes, rebuild with `docker compose up -d --build api`, verify `docker compose ps`, and probe representative valid and invalid routes.

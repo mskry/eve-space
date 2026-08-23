@@ -1,5 +1,7 @@
 import { EsiClient } from '@evespace/esi-client'
+import { env } from './env.js'
 import { esiFetch } from './esi-fetch.js'
+import { publicProfileCacheTtlMs } from './esi-policy.js'
 import { eveDescriptionToPlainText } from './eve-description.js'
 
 const esi = new EsiClient({ fetch: esiFetch })
@@ -90,8 +92,9 @@ export async function getCharacterProfile(characterId: number) {
         : null,
   }
 
-  if (cache.size >= 100) cache.delete(cache.keys().next().value ?? characterId)
-  cache.set(characterId, { profile, expiresAt: Date.now() + 5 * 60 * 1000 })
+  if (cache.size >= env.ESI_CACHE_MAX_ENTRIES)
+    cache.delete(cache.keys().next().value ?? characterId)
+  cache.set(characterId, { profile, expiresAt: Date.now() + publicProfileCacheTtlMs })
   return profile
 }
 

@@ -7,6 +7,8 @@
     ".output/**",
     "coverage/**",
     "**/coverage/**",
+    "coverage-redis/**",
+    "**/coverage-redis/**",
     "dist/**",
     "**/dist/**",
     "node_modules/**",
