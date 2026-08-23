@@ -7,11 +7,10 @@ A small EVE Online character application with:
 - Local Nuxt UI layer with Reka UI primitives
 - Hono API and EVE SSO service
 - PostgreSQL 17 in OrbStack / Docker Compose
+- Redis 7 durable queue/coordination storage and a separate backend worker
 - `@evespace/esi-client` for public ESI requests
 - Multi-character application accounts with one selectable main character
 - Character-ID-scoped overview, skills, wallet, and employment-history views
-
-Redis and a background worker are intentionally not part of this first POC.
 
 The Nuxt UI uses routed dashboard sections. The default layout owns the persistent sidebar and top bar, while the authorization route uses a focused auth layout. New integrations register a route and sidebar entry without modifying the shell.
 
@@ -90,13 +89,14 @@ Start Nuxt on the host:
 pnpm dev
 ```
 
-Open `http://localhost:3000`. The API is available at `http://localhost:8788`.
+This starts PostgreSQL, durable queue Redis, the Hono API, and the worker. Open `http://localhost:3000`. The API is available at `http://localhost:8788`.
 
 Useful commands:
 
 ```bash
 docker compose ps
 docker compose logs -f api
+docker compose logs -f worker queue-redis
 pnpm stack:down
 ```
 
@@ -110,21 +110,25 @@ pnpm format:check
 pnpm test:frontend
 pnpm --filter @eve-space/api test
 pnpm --filter @eve-space/api test:coverage
+pnpm --filter @eve-space/api test:redis
+pnpm --filter @eve-space/api test:postgres
 ```
 
 Run `pnpm lint:fix` for safe lint fixes and `pnpm format` to format supported files.
 
-Coverage thresholds cover SSO routes, session middleware, character resources, status telemetry, and the wallet cache/quota state machine.
+Coverage thresholds cover SSO routes, session middleware, character resources, status telemetry, the wallet cache/quota state machine, and queue registry/admission/scheduling behavior. `test:redis` runs its own thresholded Testcontainers suite against Redis 7.4 Alpine; `test:postgres` exercises real PostgreSQL migration and token-refresh coordination.
 
 ## Service Boundaries
 
 ```text
-Browser -> Nuxt :3000 -> Hono :8788 -> PostgreSQL :5432
-                             |
-                             +-> EVE SSO and ESI
+Browser -> Nuxt :3000 -> Hono API :8788 -> PostgreSQL :5432
+                              |                  ^
+                              +-> EVE SSO and ESI |
+                       Queue Redis :6379 <- Worker (no HTTP)
+                            (durable)
 ```
 
-Nuxt does not hold EVE credentials or call `@evespace/esi-client`. Hono owns public ESI requests, OAuth callbacks, character ownership checks, token encryption, sessions, and persistence. An EVE Space user can own multiple individually authorized characters, and each character route loads resources for its explicit owned character ID.
+Nuxt does not hold EVE credentials or call `@evespace/esi-client`. The API and worker share server-only ESI, OAuth, character ownership, token encryption, session, and persistence behavior. An EVE Space user can own multiple individually authorized characters, and each character route loads resources for its explicit owned character ID.
 
 Nuxt constructs EVE Image Server URLs locally and lets browsers fetch those public assets directly. Image requests do not consume Hono or ESI API capacity.
 
@@ -174,6 +178,38 @@ PostgreSQL data is retained in the `postgres_data` Compose volume. To intentiona
 ```bash
 docker compose down --volumes
 ```
+
+## Queue Redis Operations
+
+Queue Redis is durable BullMQ storage, not a cache. Compose runs `redis:7.4.7-alpine` with AOF and `appendfsync always`, a `noeviction` policy, `QUEUE_REDIS_MAXMEMORY`, and the `queue_redis_data` volume. The healthcheck fails when usage reaches 90% of the configured limit, so alert on an unhealthy queue Redis service before writes are rejected.
+
+Compose publishes Queue Redis to the local host at `QUEUE_REDIS_PORT` so a host-run worker can use the default `redis://localhost:6379` URL. Do not publish this port in production; use an authenticated private endpoint instead.
+
+For production, pin the validated Redis image to an immutable digest, configure authentication, and require TLS whenever Redis traffic leaves a private host network. Set `QUEUE_REDIS_URL` to a `rediss://` URL for that topology; never put credentials in job payloads, logs, or source control.
+
+Back up the AOF and Redis data volume on a schedule aligned with the recovery objective, test restores, and retain backups independently of container lifecycle. Queue retention and admission settings are documented in `.env.example`; tune the memory limit and high-water mark from measured load before production deployment.
+
+The database migration generates and persists a random planner offset for each installation, so replicas share one value and independent installations do not converge on a constant default. Set `QUEUE_PLANNER_SCHEDULE_OFFSET_MS` only to override that persisted value, and give every worker replica in one deployment the same override. Planner-produced jobs also receive a random delay up to `QUEUE_PLANNER_INITIAL_DELAY_MAX_MS`; the worker rejects a configuration whose offset plus maximum delay reaches the next planner occurrence. This first-dispatch staggering is separate from retry backoff jitter.
+
+Inspect only aggregate queue state through `GET /api/status`; it reports reachability, worker heartbeat, depth, lag, active/retrying/failed counts, planner pause state, and the latest scheduler outcome without Redis endpoints, keys, or payloads. The queue keyspace is versioned under `eve-space:v1`; change the version only with an explicit migration/recovery plan.
+
+To retry failed derived diagnostics after addressing a dependency, use a private operator shell with BullMQ's `queue.retryJobs({ state: 'failed' })`. To cancel pending derived work, use `queue.remove(jobId)` for a specific waiting or delayed job, or `queue.drain(true)` only after stopping workers and producers. Do not use `obliterate` on a running queue.
+
+For queue disaster recovery, stop API producers and workers, restore the Redis AOF/data volume, start queue Redis, then start workers and API. If the queue contents are intentionally discarded, start the worker after the API: all shipped job types are `derived`, so the planner reconstructs work from PostgreSQL on its next interval. PostgreSQL remains authoritative; do not place EVE tokens, credentials, session bearers, or encryption material in queue payloads, names, logs, or Redis keys.
+
+### Rollback verification
+
+`scripts/verify-worker-rollback.sh` is a guarded local-Compose rollback exercise. It requires an already available, previously deployed API image and deliberately flushes the dedicated queue Redis database after checking every registered job is `derived`. The script stops API/worker producers, starts the previous API image against the existing PostgreSQL volume, checks API health, discards queue contents, restores the current API and worker, and checks worker/API health.
+
+Run it only against disposable local Compose data:
+
+```bash
+EVE_SPACE_PREVIOUS_API_IMAGE=registry.example/eve-space-api:previous \
+EVE_SPACE_CONFIRM_QUEUE_DISCARD=1 \
+./scripts/verify-worker-rollback.sh
+```
+
+Do not run it without a real previous image. It intentionally refuses to infer or fabricate one.
 
 ## Current SDK Caveat
 

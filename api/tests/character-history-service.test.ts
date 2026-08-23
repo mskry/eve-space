@@ -135,7 +135,7 @@ describe('character employment history service', () => {
 
   test('chunks unusually large corporation ID sets', async () => {
     mocks.listCorporationHistory.mockResolvedValue(
-      Array.from({ length: 1_001 }, (_, index) => ({
+      Array.from({ length: 501 }, (_, index) => ({
         corporation_id: index + 1,
         record_id: index + 1,
         start_date: new Date(index * 1_000).toISOString(),
@@ -145,7 +145,7 @@ describe('character employment history service', () => {
     await getCharacterEmploymentHistory(90_000_104)
 
     expect(mocks.resolveNames).toHaveBeenCalledTimes(2)
-    expect(mocks.resolveNames.mock.calls[0]?.[0].body).toHaveLength(1_000)
-    expect(mocks.resolveNames.mock.calls[1]?.[0].body).toEqual([1_001])
+    expect(mocks.resolveNames.mock.calls[0]?.[0].body).toHaveLength(500)
+    expect(mocks.resolveNames.mock.calls[1]?.[0].body).toEqual([501])
   })
 })

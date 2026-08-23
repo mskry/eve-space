@@ -258,6 +258,25 @@ describe('corporation service', () => {
     expect(mocks.getPublicInfo).toHaveBeenCalledTimes(2)
   })
 
+  test('resolves unusually large alliance ID sets in 500-ID chunks', async () => {
+    mocks.listAllianceHistory.mockResolvedValue(
+      esiResponse(
+        Array.from({ length: 501 }, (_, index) => ({
+          alliance_id: index + 1,
+          is_deleted: false,
+          record_id: index + 1,
+          start_date: new Date(index * 1_000).toISOString(),
+        })),
+      ),
+    )
+
+    await service.getCorporationAllianceHistory(90_000_022)
+
+    expect(mocks.resolveNames).toHaveBeenCalledTimes(2)
+    expect(mocks.resolveNames.mock.calls[0]?.[0].body).toHaveLength(500)
+    expect(mocks.resolveNames.mock.calls[1]?.[0].body).toEqual([501])
+  })
+
   test('retains valid alliance names when a 404 name batch contains one unavailable ID', async () => {
     mocks.listAllianceHistory.mockResolvedValue(
       esiResponse([

@@ -16,8 +16,10 @@
       "ignoreDependencies": ["vue-tsc"],
     },
     "api": {
-      // The Hono contract root: `AppType` is consumed by the Nuxt workspace, not by the API itself.
-      "entry": ["src/index.ts"],
+      // Process roots. `AppType` in src/index.ts is consumed by the Nuxt workspace rather than by
+      // the API itself; the worker pair is reached through package scripts that point at `dist`,
+      // which knip cannot resolve back to source.
+      "entry": ["src/index.ts", "src/worker.ts", "src/worker-health.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
     },
   },

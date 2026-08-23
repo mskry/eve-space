@@ -28,7 +28,7 @@ import { env } from '../env.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
-import { ScopeRequiredError } from '../token-service.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../token-service.js'
 import { zValidator } from '../validation.js'
 
 type Section<Data> =
@@ -203,29 +203,19 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
       try {
         return context.json(await getCharacterSkills(characterId))
       } catch (error) {
+        if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
         if (error instanceof ScopeRequiredError) {
-          return context.json(
-            {
-              code: 'EVE_SCOPE_REQUIRED',
-              message: 'Authorize skills access for this character.',
-              requiredScope: error.scope,
-              authorizeUrl: reauthorizationUrl(characterId),
-            },
-            403,
+          return scopeRequired(
+            context,
+            characterId,
+            'Authorize skills access for this character.',
+            error.scope,
           )
         }
 
         const status = errorStatus(error)
         if (status === 401 || status === 403) {
-          return context.json(
-            {
-              code: 'EVE_REAUTH_REQUIRED',
-              message: 'EVE authorization is no longer valid.',
-              requiredScope: characterSkillsScope,
-              authorizeUrl: reauthorizationUrl(characterId),
-            },
-            403,
-          )
+          return reauthorizationRequired(context, characterId, characterSkillsScope)
         }
         return context.json(
           { code: 'ESI_UNAVAILABLE', message: 'EVE Online ESI is temporarily unavailable.' },
@@ -250,15 +240,13 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
         context.header('Cache-Control', `private, max-age=${maxAge}`)
         return context.json({ characterId, ...wallet })
       } catch (error) {
+        if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
         if (error instanceof ScopeRequiredError) {
-          return context.json(
-            {
-              code: 'EVE_SCOPE_REQUIRED',
-              message: 'Authorize wallet access for this character.',
-              requiredScope: error.scope,
-              authorizeUrl: reauthorizationUrl(characterId),
-            },
-            403,
+          return scopeRequired(
+            context,
+            characterId,
+            'Authorize wallet access for this character.',
+            error.scope,
           )
         }
         if (error instanceof WalletQuotaError) {
@@ -274,15 +262,7 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
         }
         const status = errorStatus(error)
         if (status === 401 || status === 403) {
-          return context.json(
-            {
-              code: 'EVE_REAUTH_REQUIRED',
-              message: 'EVE authorization is no longer valid.',
-              requiredScope: walletScope,
-              authorizeUrl: reauthorizationUrl(characterId),
-            },
-            403,
-          )
+          return reauthorizationRequired(context, characterId, walletScope)
         }
         return context.json(
           { code: 'ESI_UNAVAILABLE', message: 'Unable to retrieve the EVE wallet balance.' },
@@ -307,15 +287,13 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
         context.header('Cache-Control', `private, max-age=${maxAge}`)
         return context.json({ characterId, ...wallet })
       } catch (error) {
+        if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
         if (error instanceof ScopeRequiredError) {
-          return context.json(
-            {
-              code: 'EVE_SCOPE_REQUIRED',
-              message: 'Authorize wallet access for this character.',
-              requiredScope: error.scope,
-              authorizeUrl: reauthorizationUrl(characterId),
-            },
-            403,
+          return scopeRequired(
+            context,
+            characterId,
+            'Authorize wallet access for this character.',
+            error.scope,
           )
         }
         if (error instanceof WalletQuotaError) {
@@ -331,15 +309,7 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
         }
         const status = errorStatus(error)
         if (status === 401 || status === 403) {
-          return context.json(
-            {
-              code: 'EVE_REAUTH_REQUIRED',
-              message: 'EVE authorization is no longer valid.',
-              requiredScope: walletScope,
-              authorizeUrl: reauthorizationUrl(characterId),
-            },
-            403,
-          )
+          return reauthorizationRequired(context, characterId, walletScope)
         }
         return context.json(
           { code: 'ESI_UNAVAILABLE', message: 'Unable to retrieve wallet transactions.' },
@@ -378,6 +348,9 @@ async function resolveSection<Data>(
   try {
     return { status: 'ok', data: await load() }
   } catch (error) {
+    if (error instanceof TokenRefreshUnavailableError) {
+      return { status: 'unavailable', message: 'EVE token refresh is temporarily unavailable.' }
+    }
     if (error instanceof ScopeRequiredError) {
       return {
         status: 'scope-required',
@@ -397,6 +370,45 @@ async function resolveSection<Data>(
     }
     return { status: 'unavailable', message: 'EVE Online ESI is temporarily unavailable.' }
   }
+}
+
+function tokenRefreshUnavailable(context: Context) {
+  return context.json(
+    {
+      code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
+      message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
+    },
+    503,
+  )
+}
+
+function scopeRequired(
+  context: Context,
+  characterId: number,
+  message: string,
+  requiredScope: string,
+) {
+  return context.json(
+    {
+      code: 'EVE_SCOPE_REQUIRED',
+      message,
+      requiredScope,
+      authorizeUrl: reauthorizationUrl(characterId),
+    },
+    403,
+  )
+}
+
+function reauthorizationRequired(context: Context, characterId: number, requiredScope: string) {
+  return context.json(
+    {
+      code: 'EVE_REAUTH_REQUIRED',
+      message: 'EVE authorization is no longer valid.',
+      requiredScope,
+      authorizeUrl: reauthorizationUrl(characterId),
+    },
+    403,
+  )
 }
 
 function reauthorizationUrl(characterId: number) {

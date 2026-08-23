@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/auth-store.js', () => ({
+  CharacterTokenNotFoundError: class CharacterTokenNotFoundError extends Error {},
   deleteCharacter: vi.fn(),
   findOwnedCharacter: mocks.findOwnedCharacter,
   findSession: mocks.findSession,
@@ -24,6 +25,7 @@ vi.mock('../src/token-service.js', () => ({
       super(`Missing ${scope}`)
     }
   },
+  TokenRefreshUnavailableError: class TokenRefreshUnavailableError extends Error {},
 }))
 
 vi.mock('../src/character-skills-service.js', () => ({
@@ -42,7 +44,7 @@ vi.mock('../src/character-overview-service.js', () => ({
 }))
 
 import { characterRoutes } from '../src/routes/characters.js'
-import { ScopeRequiredError } from '../src/token-service.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../src/token-service.js'
 
 const character = {
   characterId: 1404328063,
@@ -157,6 +159,18 @@ describe('character skills route', () => {
     expect(await response.json()).toEqual({
       code: 'ESI_UNAVAILABLE',
       message: 'EVE Online ESI is temporarily unavailable.',
+    })
+  })
+
+  test('maps token refresh contention to a controlled unavailable response', async () => {
+    mocks.getCharacterSkills.mockRejectedValue(new TokenRefreshUnavailableError())
+
+    const response = await authorizedRequest(`/${character.characterId}/skills`)
+
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({
+      code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
+      message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
     })
   })
 })

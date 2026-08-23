@@ -49,6 +49,25 @@ export const deploymentAdmins = pgTable(
 
 export type DeploymentOrganizationType = 'corporation' | 'alliance'
 
+export const deploymentInstallationSettings = pgTable(
+  'deployment_installation_settings',
+  {
+    id: smallint().default(1).primaryKey().notNull(),
+    plannerScheduleOffsetMs: integer('planner_schedule_offset_ms')
+      .default(sql`floor(random() * 60000)::integer`)
+      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+  },
+  (_table) => [
+    check('deployment_installation_settings_singleton_check', sql`id = 1`),
+    check(
+      'deployment_installation_settings_planner_offset_check',
+      sql`planner_schedule_offset_ms >= 0`,
+    ),
+  ],
+)
+
 export const deploymentSettings = pgTable(
   'deployment_settings',
   {
@@ -195,6 +214,7 @@ export const eveTokens = pgTable(
       mode: 'date',
     }).notNull(),
     scopes: jsonb().$type<string[]>().default([]).notNull(),
+    tokenVersion: integer('token_version').default(0).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [

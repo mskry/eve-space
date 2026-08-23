@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   createStatusClient: vi.fn(),
   getStatus: vi.fn(),
+  probeQueueStatus: vi.fn(),
   sql: vi.fn(),
 }))
 
@@ -18,6 +19,10 @@ vi.mock('../src/esi-fetch.js', () => ({
   esiFetch: vi.fn(),
 }))
 
+vi.mock('../src/queue/status.js', () => ({
+  probeQueueStatus: mocks.probeQueueStatus,
+}))
+
 beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
@@ -27,6 +32,7 @@ beforeEach(() => {
   })
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
   mocks.getStatus.mockResolvedValue(statusResponse())
+  mocks.probeQueueStatus.mockResolvedValue(queueStatus())
 })
 
 afterEach(() => {
@@ -49,6 +55,7 @@ describe('system status service', () => {
         api: { status: 'operational' },
         database: { status: 'operational' },
         esi: { status: 'operational', players: 31_337 },
+        queue: { status: 'operational' },
       },
     })
     await expect(second).resolves.toEqual(await first)
@@ -117,6 +124,23 @@ describe('system status service', () => {
     })
   })
 
+  test('degrades safe telemetry when queue Redis is unavailable', async () => {
+    mocks.probeQueueStatus.mockResolvedValue({
+      ...queueStatus(),
+      status: 'unavailable',
+      depth: null,
+      workerHeartbeatAt: null,
+    })
+    const { getSystemStatus } = await import('../src/system-status-service.js')
+
+    await expect(getSystemStatus()).resolves.toMatchObject({
+      status: 'degraded',
+      services: {
+        queue: { status: 'unavailable', depth: null, workerHeartbeatAt: null },
+      },
+    })
+  })
+
   test('reports ESI VIP mode as degraded', async () => {
     mocks.getStatus.mockResolvedValue({
       ...statusResponse(),
@@ -157,5 +181,19 @@ function statusResponse(errorLimit = { remaining: 99, reset: 10 }) {
       headers: {},
       errorLimit,
     },
+  }
+}
+
+function queueStatus() {
+  return {
+    status: 'operational' as const,
+    workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
+    depth: 0,
+    oldestWaitingAgeSeconds: null,
+    active: 0,
+    retrying: 0,
+    failed: 0,
+    plannerPaused: false,
+    latestSchedulerOutcome: 'registered' as const,
   }
 }

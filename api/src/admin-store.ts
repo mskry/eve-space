@@ -1,5 +1,6 @@
 import { and, eq, gt, sql } from 'drizzle-orm'
 import { db } from './db/client.js'
+import { deploymentSetupLockId } from './db/locks.js'
 import {
   adminSessions,
   deploymentAdmins,
@@ -52,7 +53,7 @@ export async function createDeployment(input: {
   organization: DeploymentSettingsRecord['organization']
 }): Promise<AdminSessionAccount> {
   return db.transaction(async (transaction) => {
-    await transaction.execute(sql`select pg_advisory_xact_lock(1163283537)`)
+    await transaction.execute(sql`select pg_advisory_xact_lock(${deploymentSetupLockId})`)
     const [existing] = await transaction
       .select({ id: deploymentSettings.id })
       .from(deploymentSettings)

@@ -3,6 +3,12 @@ import type {
   EsiErrorLimitMetadata,
   EsiResponseMetadata,
 } from '@evespace/esi-client'
+import { env } from './env.js'
+import {
+  esiCooldownFallbackSeconds,
+  esiDefaultCacheTtlMs,
+  esiErrorBudgetFloor,
+} from './esi-policy.js'
 import { getCharacterAccessToken } from './token-service.js'
 
 export interface EsiQuota {
@@ -42,8 +48,6 @@ interface CacheEntry<Data> {
   quota: EsiQuota
 }
 
-const defaultMaxEntries = 100
-
 /**
  * Per-character cache for a protected ESI resource: honours the response's own expiry, revalidates
  * with etag/last-modified, de-duplicates concurrent loads, and backs off on quota or error-budget
@@ -61,7 +65,7 @@ export function createCharacterResourceCache<Data>(options: {
   const cache = new Map<number, CacheEntry<Data>>()
   const inFlight = new Map<number, Promise<CachedEsiResult<Data>>>()
   const cooldowns = new Map<number, number>()
-  const maxEntries = options.maxEntries ?? defaultMaxEntries
+  const maxEntries = options.maxEntries ?? env.ESI_CACHE_MAX_ENTRIES
 
   async function get(characterId: number): Promise<CachedEsiResult<Data>> {
     const now = Date.now()
@@ -119,15 +123,19 @@ export function createCharacterResourceCache<Data>(options: {
       }
 
       if (status === 429) {
-        const retryAfter = parseNumber(metadata?.headers['retry-after']) ?? 60
+        const retryAfter =
+          parseNumber(metadata?.headers['retry-after']) ?? esiCooldownFallbackSeconds
         const retryAt = Date.now() + retryAfter * 1000
         setBounded(cooldowns, characterId, retryAt, maxEntries)
         if (cached) return toResult(cached, 'cache', true, retryAt)
         throw new EsiQuotaError(retryAfter)
       }
 
-      if (metadata?.errorLimit?.remaining !== undefined && metadata.errorLimit.remaining <= 10) {
-        const reset = metadata.errorLimit.reset ?? 60
+      if (
+        metadata?.errorLimit?.remaining !== undefined &&
+        metadata.errorLimit.remaining <= esiErrorBudgetFloor
+      ) {
+        const reset = metadata.errorLimit.reset ?? esiCooldownFallbackSeconds
         const retryAt = Date.now() + reset * 1000
         setBounded(cooldowns, characterId, retryAt, maxEntries)
         if (cached) return toResult(cached, 'cache', true, retryAt)
@@ -138,8 +146,9 @@ export function createCharacterResourceCache<Data>(options: {
   }
 
   function applyErrorBudgetCooldown(characterId: number, errorLimit?: EsiErrorLimitMetadata) {
-    if (errorLimit?.remaining !== undefined && errorLimit.remaining <= 10) {
-      setBounded(cooldowns, characterId, Date.now() + (errorLimit.reset ?? 60) * 1000, maxEntries)
+    if (errorLimit?.remaining !== undefined && errorLimit.remaining <= esiErrorBudgetFloor) {
+      const reset = errorLimit.reset ?? esiCooldownFallbackSeconds
+      setBounded(cooldowns, characterId, Date.now() + reset * 1000, maxEntries)
     }
   }
 
@@ -168,7 +177,7 @@ function resolveExpiry(cacheMetadata?: EsiCacheMetadata) {
 
   const maxAge = cacheMetadata?.cacheControl?.match(/max-age=(\d+)/i)?.[1]
   if (maxAge) return Date.now() + Number(maxAge) * 1000
-  return Date.now() + 60_000
+  return Date.now() + esiDefaultCacheTtlMs
 }
 
 function getQuota(metadata: EsiResponseMetadata): EsiQuota {

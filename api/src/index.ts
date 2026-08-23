@@ -4,6 +4,7 @@ import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 import { env } from './env.js'
+import { CharacterTokenNotFoundError } from './auth-store.js'
 import { adminRoutes } from './routes/admin.js'
 import { characterRoutes } from './routes/characters.js'
 import { corporationRoutes } from './routes/corporations.js'
@@ -11,6 +12,7 @@ import { healthRoutes } from './routes/health.js'
 import { statusRoutes } from './routes/status.js'
 import { ssoRoutes } from './sso-routes.js'
 import { loadSession, requireSession } from './middleware/auth-session.js'
+import { TokenRefreshUnavailableError } from './token-service.js'
 
 export const app = new Hono()
   .use('*', secureHeaders())
@@ -28,6 +30,12 @@ export const app = new Hono()
 app.notFound((context) => context.json({ message: 'Route not found' }, 404))
 
 app.onError((error, context) => {
+  if (error instanceof CharacterTokenNotFoundError) {
+    return context.json({ message: 'EVE authorization is temporarily unavailable.' }, 503)
+  }
+  if (error instanceof TokenRefreshUnavailableError) {
+    return context.json({ message: 'EVE token refresh is temporarily unavailable.' }, 503)
+  }
   if (error instanceof HTTPException) {
     return context.json({ message: error.message }, error.status)
   }

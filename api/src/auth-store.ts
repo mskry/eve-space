@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, gt, lte, sql } from 'drizzle-orm'
 import { db } from './db/client.js'
+import { characterLockKey, characterLockNamespace } from './db/locks.js'
 import { characters, eveTokens, oauthStates, sessions, users } from './db/schema.js'
+import { env } from './env.js'
 import { encryptTokens, hashToken } from './security.js'
 
 export interface CharacterSummary {
@@ -25,7 +27,28 @@ export interface StoredCharacterToken {
   encryptedTokens: string
   accessTokenExpiresAt: Date
   scopes: string[]
+  tokenVersion: number
 }
+
+export class TokenRefreshLockUnavailableError extends Error {
+  constructor() {
+    super('Token refresh coordination is unavailable')
+  }
+}
+
+export class CharacterTokenNotFoundError extends Error {
+  constructor() {
+    super('No EVE token is stored for this character')
+  }
+}
+
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type TokenReader = Pick<DatabaseTransaction, 'select'>
+type TokenWriter = Pick<DatabaseTransaction, 'update'>
+const incrementTokenVersion = sql`${eveTokens.tokenVersion} + 1`
+
+/** How long an unconsumed authorization round-trip stays redeemable. */
+const oauthStateTtlMs = 10 * 60 * 1_000
 
 interface CharacterAuthorizationInput {
   characterId: number
@@ -63,7 +86,7 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
     intent: context.intent,
     userId: context.intent === 'login' ? null : context.userId,
     characterId: context.intent === 'reauthorize' ? context.characterId : null,
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    expiresAt: new Date(Date.now() + oauthStateTtlMs),
   })
 }
 
@@ -95,7 +118,7 @@ export async function saveLogin(
   const token = prepareToken(input)
 
   await db.transaction(async (transaction) => {
-    await transaction.execute(sql`select pg_advisory_xact_lock(${input.characterId})`)
+    await lockCharacterRow(transaction, input.characterId)
 
     const [existingCharacter] = await transaction
       .select({ userId: characters.userId })
@@ -125,7 +148,7 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
   const token = prepareToken(input)
 
   await db.transaction(async (transaction) => {
-    await transaction.execute(sql`select pg_advisory_xact_lock(${input.characterId})`)
+    await lockCharacterRow(transaction, input.characterId)
     const [existingCharacter] = await transaction
       .select({ userId: characters.userId })
       .from(characters)
@@ -149,7 +172,7 @@ export async function reauthorizeCharacter(
 
   const token = prepareToken(input)
   await db.transaction(async (transaction) => {
-    await transaction.execute(sql`select pg_advisory_xact_lock(${input.characterId})`)
+    await lockCharacterRow(transaction, input.characterId)
     const [ownedCharacter] = await transaction
       .select({ characterId: characters.characterId })
       .from(characters)
@@ -178,7 +201,7 @@ export async function findOwnedCharacter(
   const [record] = await db
     .select(characterSelection)
     .from(characters)
-    .where(and(eq(characters.userId, userId), eq(characters.characterId, characterId)))
+    .where(ownedCharacterFilter(userId, characterId))
   return record ?? null
 }
 
@@ -187,17 +210,12 @@ export async function setMainCharacter(
   characterId: number,
 ): Promise<CharacterSummary | null> {
   return db.transaction(async (transaction) => {
-    const [user] = await transaction
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, userId))
-      .for('update')
-    if (!user) return null
+    if (!(await lockUserRow(transaction, userId))) return null
 
     const [target] = await transaction
       .select(characterSelection)
       .from(characters)
-      .where(and(eq(characters.userId, userId), eq(characters.characterId, characterId)))
+      .where(ownedCharacterFilter(userId, characterId))
     if (!target) return null
     if (target.isMain) return target
 
@@ -205,30 +223,25 @@ export async function setMainCharacter(
     await transaction
       .update(characters)
       .set({ isMain: true, updatedAt: new Date() })
-      .where(and(eq(characters.userId, userId), eq(characters.characterId, characterId)))
+      .where(ownedCharacterFilter(userId, characterId))
     return { ...target, isMain: true }
   })
 }
 
 export async function deleteCharacter(userId: string, characterId: number) {
   return db.transaction(async (transaction) => {
-    const [user] = await transaction
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, userId))
-      .for('update')
-    if (!user) return 'not-found' as const
+    if (!(await lockUserRow(transaction, userId))) return 'not-found' as const
 
     const [target] = await transaction
       .select({ isMain: characters.isMain })
       .from(characters)
-      .where(and(eq(characters.userId, userId), eq(characters.characterId, characterId)))
+      .where(ownedCharacterFilter(userId, characterId))
     if (!target) return 'not-found' as const
     if (target.isMain) return 'main-character' as const
 
     const [deleted] = await transaction
       .delete(characters)
-      .where(and(eq(characters.userId, userId), eq(characters.characterId, characterId)))
+      .where(ownedCharacterFilter(userId, characterId))
       .returning({ characterId: characters.characterId })
     return deleted ? ('deleted' as const) : ('not-found' as const)
   })
@@ -266,33 +279,69 @@ export async function deleteSession(sessionToken: string) {
 
 export async function findCharacterToken(
   characterId: number,
+  connection: TokenReader = db,
 ): Promise<StoredCharacterToken | null> {
-  const [record] = await db
+  const [record] = await connection
     .select({
       encryptedTokens: eveTokens.encryptedTokens,
       accessTokenExpiresAt: eveTokens.accessTokenExpiresAt,
       scopes: eveTokens.scopes,
+      tokenVersion: eveTokens.tokenVersion,
     })
     .from(eveTokens)
     .where(eq(eveTokens.characterId, characterId))
   return record ?? null
 }
 
-export async function updateCharacterToken(input: {
-  characterId: number
-  encryptedTokens: string
-  expiresAt: Date
-  scopes: string[]
-}) {
-  await db
+export async function updateCharacterToken(
+  input: {
+    characterId: number
+    encryptedTokens: string
+    expiresAt: Date
+    scopes: string[]
+    tokenVersion: number
+  },
+  connection: TokenWriter = db,
+) {
+  const [updated] = await connection
     .update(eveTokens)
     .set({
       encryptedTokens: input.encryptedTokens,
       accessTokenExpiresAt: input.expiresAt,
       scopes: input.scopes,
+      tokenVersion: incrementTokenVersion,
       updatedAt: new Date(),
     })
-    .where(eq(eveTokens.characterId, input.characterId))
+    .where(
+      and(
+        eq(eveTokens.characterId, input.characterId),
+        eq(eveTokens.tokenVersion, input.tokenVersion),
+      ),
+    )
+    .returning({ tokenVersion: eveTokens.tokenVersion })
+  return Boolean(updated)
+}
+
+export async function withCharacterTokenRefreshLock<T>(
+  characterId: number,
+  operation: (token: StoredCharacterToken, transaction: DatabaseTransaction) => Promise<T>,
+) {
+  try {
+    return await db.transaction(async (transaction) => {
+      // Bounded rather than unlimited so a wedged holder cannot pin every caller, but longer than
+      // the SSO round-trip below so a queued replica waits for the winner's rotated token.
+      await transaction.execute(
+        sql.raw(`set local lock_timeout = '${env.TOKEN_REFRESH_LOCK_TIMEOUT_MS}ms'`),
+      )
+      await lockCharacterRow(transaction, characterId)
+      const token = await findCharacterToken(characterId, transaction)
+      if (!token) throw new CharacterTokenNotFoundError()
+      return operation(token, transaction)
+    })
+  } catch (error) {
+    if (hasPostgresErrorCode(error, '55P03')) throw new TokenRefreshLockUnavailableError()
+    throw error
+  }
 }
 
 const characterSelection = {
@@ -325,7 +374,7 @@ function prepareToken(input: CharacterAuthorizationInput) {
 }
 
 async function updateCharacterIdentity(
-  transaction: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  transaction: DatabaseTransaction,
   input: CharacterAuthorizationInput,
 ) {
   await transaction
@@ -340,7 +389,7 @@ async function updateCharacterIdentity(
 }
 
 async function upsertCharacterToken(
-  transaction: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  transaction: DatabaseTransaction,
   characterId: number,
   scopes: string[],
   token: { encryptedTokens: string; accessTokenExpiresAt: Date },
@@ -350,6 +399,34 @@ async function upsertCharacterToken(
     .values({ characterId, scopes, ...token })
     .onConflictDoUpdate({
       target: eveTokens.characterId,
-      set: { scopes, ...token, updatedAt: new Date() },
+      set: {
+        scopes,
+        ...token,
+        tokenVersion: incrementTokenVersion,
+        updatedAt: new Date(),
+      },
     })
+}
+
+async function lockCharacterRow(transaction: DatabaseTransaction, characterId: number) {
+  await transaction.execute(
+    sql`select pg_advisory_xact_lock(${characterLockNamespace}, ${characterLockKey(characterId)})`,
+  )
+}
+
+async function lockUserRow(transaction: DatabaseTransaction, userId: string) {
+  const [user] = await transaction
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, userId))
+    .for('update')
+  return Boolean(user)
+}
+
+function ownedCharacterFilter(userId: string, characterId: number) {
+  return and(eq(characters.userId, userId), eq(characters.characterId, characterId))
+}
+
+function hasPostgresErrorCode(error: unknown, code: string) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code
 }

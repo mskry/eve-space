@@ -1,6 +1,8 @@
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
+import { env } from './env.js'
 import { esiFetch } from './esi-fetch.js'
+import { publicProfileCacheTtlMs } from './esi-policy.js'
 
 export interface CharacterEmploymentHistoryEntry {
   recordId: number
@@ -47,8 +49,8 @@ async function resolveCorporationNames(corporationIds: number[]) {
     }
   }
 
-  const chunks = Array.from({ length: Math.ceil(corporationIds.length / 1_000) }, (_, index) =>
-    corporationIds.slice(index * 1_000, (index + 1) * 1_000),
+  const chunks = Array.from({ length: Math.ceil(corporationIds.length / 500) }, (_, index) =>
+    corporationIds.slice(index * 500, (index + 1) * 500),
   )
   await Promise.all(chunks.map(resolveChunk))
   return names
@@ -87,7 +89,8 @@ export async function getCharacterEmploymentHistory(
     },
   }))
 
-  if (cache.size >= 100) cache.delete(cache.keys().next().value ?? characterId)
-  cache.set(characterId, { history, expiresAt: Date.now() + 5 * 60_000 })
+  if (cache.size >= env.ESI_CACHE_MAX_ENTRIES)
+    cache.delete(cache.keys().next().value ?? characterId)
+  cache.set(characterId, { history, expiresAt: Date.now() + publicProfileCacheTtlMs })
   return history
 }
