@@ -21,9 +21,15 @@ export async function startWorker() {
   const platform = await startWorkerPlatform()
   console.log('Worker dependencies verified')
 
-  await shutdown
+  const reason = await Promise.race([
+    shutdown.then(() => 'signal' as const),
+    platform.stopped.then(() => 'run-loop-stopped' as const),
+  ])
+  if (reason === 'run-loop-stopped')
+    console.error('Worker processing loop ended; shutting down this replica')
   await platform.close(env.WORKER_SHUTDOWN_TIMEOUT_MS)
   await sql.end({ timeout: 5 })
+  if (reason === 'run-loop-stopped') process.exitCode = 1
 }
 
 startWorker().catch(async (error) => {

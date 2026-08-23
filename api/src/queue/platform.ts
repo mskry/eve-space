@@ -116,12 +116,14 @@ export async function startWorkerPlatform() {
       reason: sanitizeJobFailure(error),
     })
   })
-  void worker.run().catch((error: unknown) => {
-    console.error('Worker run loop stopped', sanitizeJobFailure(error))
-  })
   let closing: Promise<boolean> | undefined
+  // BullMQ does not restart the processing loop after `run()` settles.
+  const stopped = worker.run().catch((error: unknown) => {
+    if (!closing) console.error('Worker run loop stopped', sanitizeJobFailure(error))
+  })
 
   return {
+    stopped,
     close(timeoutMs = env.WORKER_SHUTDOWN_TIMEOUT_MS) {
       closing ??= (async () => {
         stopHeartbeat()

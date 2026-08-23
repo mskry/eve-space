@@ -2,6 +2,11 @@
 
 These instructions apply to the entire repository. Preserve the architecture and security boundaries below unless the user explicitly requests an architectural change.
 
+## Code Comments
+
+- Keep comments rare. Add one only when it explains a non-obvious invariant, constraint, or rationale that the code cannot express clearly.
+- Do not add comments that restate control flow, narrate test setup or mechanics, explain obvious assignments, or duplicate names and assertions. Remove excessive generated comments before finalizing changes.
+
 ## Runtime Architecture
 
 - Nuxt renders the UI and may fetch public API data during SSR. Browser-side auth and character-owned requests call Hono directly with credentials enabled.
