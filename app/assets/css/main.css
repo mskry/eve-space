@@ -2575,19 +2575,6 @@ main {
   border-color: color-mix(in srgb, var(--ui-primary) 55%, var(--ui-border));
 }
 
-.roster-main-marker {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  color: var(--ui-primary);
-  opacity: 0.58;
-  pointer-events: none;
-}
-
 /* Decorative race/faction watermark; sits under the stretched card link. */
 .roster-race-mark {
   position: absolute;
@@ -2598,11 +2585,6 @@ main {
   pointer-events: none;
   object-fit: contain;
   opacity: 0.12;
-}
-
-.roster-main-marker svg {
-  width: 18px;
-  height: 18px;
 }
 
 .roster-card-link {
@@ -2655,8 +2637,8 @@ main {
 
 .roster-identity-name {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -2671,17 +2653,6 @@ main {
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.roster-born {
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-  color: var(--ui-text-muted);
-  font: 10px/1.2 var(--ui-font-mono);
-  letter-spacing: 0.02em;
 }
 
 .roster-stats {
@@ -2750,17 +2721,6 @@ main {
 .roster-location-icon,
 .roster-ship-icon {
   color: var(--ui-text-muted);
-}
-
-.main-character-badge {
-  position: relative;
-  top: -0.45em;
-  padding: 4px 7px;
-  flex: 0 0 auto;
-  border: 1px solid color-mix(in srgb, var(--ui-primary) 44%, transparent);
-  color: var(--ui-primary);
-  font: 700 7px/1 var(--ui-font-mono);
-  letter-spacing: 0.1em;
 }
 
 .roster-org {

@@ -27,7 +27,6 @@ const characterId = computed(() => {
 const selectedCharacter = computed(() =>
   characters.value.find((character) => character.characterId === characterId.value),
 )
-const isCharacterLandingPage = computed(() => route.path === `/characters/${characterId.value}`)
 const characterBreadcrumb = computed(() => {
   const name = selectedCharacter.value?.name
   if (!name) return 'CHARACTERS'
@@ -155,12 +154,7 @@ useHead({
             <p class="eyebrow">{{ characterBreadcrumb }}</p>
             <h1>
               <span>{{ selectedCharacter.name }}</span>
-              <span
-                v-if="selectedCharacter.isMain && isCharacterLandingPage"
-                class="main-character-badge"
-              >
-                MAIN
-              </span>
+              <UiMainCharacterMark v-if="selectedCharacter.isMain" variant="badge" />
             </h1>
             <p>
               {{ selectedCharacter.corporation.name }}

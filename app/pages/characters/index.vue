@@ -183,12 +183,6 @@ useHead({ title: 'Character Roster // EVE Space' })
                 alt=""
                 aria-hidden="true"
               />
-              <span v-if="character.isMain" class="roster-main-marker" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="m3.5 8 4.5 4 4-7 4 7 4.5-4-1.5 9H5L3.5 8Z" />
-                  <path d="M5 20h14" />
-                </svg>
-              </span>
               <NuxtLink
                 class="roster-card-link"
                 :to="`/characters/${character.characterId}`"
@@ -212,9 +206,7 @@ useHead({ title: 'Character Roster // EVE Space' })
                 <span class="roster-identity">
                   <span class="roster-identity-name">
                     <h2>{{ character.name }}</h2>
-                  </span>
-                  <span v-if="character.birthday" class="roster-born">
-                    Born {{ formatBirthdayShort(character.birthday) }}
+                    <UiMainCharacterMark v-if="character.isMain" variant="icon" />
                   </span>
                   <span class="roster-org">
                     <UiTooltip :content="character.corporation.name" :arrow="false">
