@@ -3,6 +3,8 @@ import { env } from '../env.js'
 import { closeQueueRedisConnection, createProbeRedisConnection } from './redis.js'
 import {
   operationsQueueName,
+  outboxRelayOutcomeKey,
+  outboxRelayStateKey,
   plannerStateKey,
   queuePrefix,
   schedulerOutcomeKey,
@@ -23,7 +25,15 @@ export interface QueueStatus {
   retrying: number | null
   failed: number | null
   plannerPaused: boolean
+  outboxRelayPaused: boolean
+  latestOutboxRelayOutcome: OutboxRelayOutcome | null
   latestSchedulerOutcome: 'registered' | null
+}
+
+export interface OutboxRelayOutcome {
+  outcome: 'idle' | 'published' | 'partial-failure' | 'failed' | 'paused'
+  category: 'queue-unavailable' | 'queue-rejected' | 'invalid-event' | 'unknown' | null
+  recordedAt: string
 }
 
 /**
@@ -39,13 +49,24 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
   })
   try {
     await connection.ping()
-    const [counts, waiting, delayed, beats, plannerState, schedulerOutcome] = await Promise.all([
+    const [
+      counts,
+      waiting,
+      delayed,
+      beats,
+      plannerState,
+      outboxRelayState,
+      outboxRelayOutcome,
+      schedulerOutcome,
+    ] = await Promise.all([
       queue.getJobCounts('waiting', 'delayed', 'active', 'failed'),
       queue.getJobs(['waiting'], 0, 0, true),
       // Admission bounds normal depth; cap inspection as a final safeguard if producers race.
       queue.getJobs(['delayed'], 0, env.QUEUE_HIGH_WATER_MARK, true),
       readWorkerHeartbeats(connection, scopedWorkerId),
       connection.get(plannerStateKey),
+      connection.get(outboxRelayStateKey),
+      connection.get(outboxRelayOutcomeKey),
       connection.get(schedulerOutcomeKey),
     ])
     const heartbeat = latestHeartbeat(beats)
@@ -70,6 +91,8 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       retrying: delayed.filter((job) => job.attemptsMade > 0).length,
       failed: counts.failed ?? 0,
       plannerPaused: plannerState === 'paused',
+      outboxRelayPaused: outboxRelayState === 'paused',
+      latestOutboxRelayOutcome: parseOutboxRelayOutcome(outboxRelayOutcome),
       latestSchedulerOutcome: schedulerOutcome === 'registered' ? 'registered' : null,
     }
   } catch {
@@ -83,10 +106,35 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       retrying: null,
       failed: null,
       plannerPaused: false,
+      outboxRelayPaused: false,
+      latestOutboxRelayOutcome: null,
       latestSchedulerOutcome: null,
     }
   } finally {
     await Promise.allSettled([queue.close(), closeQueueRedisConnection(connection)])
+  }
+}
+
+function parseOutboxRelayOutcome(value: string | null): OutboxRelayOutcome | null {
+  if (!value) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const outcome = 'outcome' in parsed ? parsed.outcome : null
+    const category = 'category' in parsed ? parsed.category : null
+    const recordedAt = 'recordedAt' in parsed ? parsed.recordedAt : null
+    if (
+      !['idle', 'published', 'partial-failure', 'failed', 'paused'].includes(outcome as string) ||
+      ![null, 'queue-unavailable', 'queue-rejected', 'invalid-event', 'unknown'].includes(
+        category as string | null,
+      ) ||
+      typeof recordedAt !== 'string' ||
+      Number.isNaN(Date.parse(recordedAt))
+    )
+      return null
+    return { outcome, category, recordedAt } as OutboxRelayOutcome
+  } catch {
+    return null
   }
 }
 

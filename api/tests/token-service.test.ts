@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => {
   return {
     CharacterTokenNotFoundError,
     TokenRefreshLockUnavailableError,
+    appendDomainEvent: vi.fn(),
     decryptTokens: vi.fn(),
     encryptTokens: vi.fn(),
     findCharacterToken: vi.fn(),
@@ -22,6 +23,10 @@ vi.mock('../src/auth-store.js', () => ({
   findCharacterToken: mocks.findCharacterToken,
   updateCharacterToken: mocks.updateCharacterToken,
   withCharacterTokenRefreshLock: mocks.withCharacterTokenRefreshLock,
+}))
+
+vi.mock('../src/domain-event-store.js', () => ({
+  appendDomainEvent: mocks.appendDomainEvent,
 }))
 
 vi.mock('../src/eve-sso.js', () => ({
@@ -41,8 +46,10 @@ import {
 } from '../src/token-service.js'
 
 const characterId = 1404328063
+const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const scope = 'esi-wallet.read_character_wallet.v1'
 const expired = {
+  userId,
   encryptedTokens: 'original',
   accessTokenExpiresAt: new Date(0),
   scopes: [scope],
@@ -99,6 +106,36 @@ describe('token refresh', () => {
     })
 
     await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('new-access')
+    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+  })
+
+  test('records normalized material scope changes only for the winning update', async () => {
+    mocks.updateCharacterToken.mockResolvedValue(true)
+    mocks.verifyAccessToken.mockResolvedValue({
+      characterId,
+      characterName: 'Test',
+      scopes: ['z.scope', scope, 'a.scope', 'z.scope'],
+    })
+    mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
+      operation({ ...expired, scopes: ['removed.scope', scope] }, {}),
+    )
+
+    await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('new-access')
+    expect(mocks.updateCharacterToken).toHaveBeenCalledWith(
+      expect.objectContaining({ scopes: ['a.scope', scope, 'z.scope'] }),
+      expect.anything(),
+    )
+    expect(mocks.appendDomainEvent).toHaveBeenCalledWith(expect.anything(), {
+      type: 'character.scopes-changed',
+      payloadVersion: 1,
+      aggregateId: String(characterId),
+      payload: {
+        userId,
+        characterId,
+        addedScopes: ['a.scope', 'z.scope'],
+        removedScopes: ['removed.scope'],
+      },
+    })
   })
 
   test('returns the persisted winner when the compare-and-set loses', async () => {
@@ -110,6 +147,7 @@ describe('token refresh', () => {
     )
 
     await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('winner-access')
+    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })
 
   test('fails with a named error when a compare-and-set winner disappears', async () => {
@@ -132,6 +170,7 @@ describe('token refresh', () => {
 
     await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('winner-access')
     expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })
 
   test('maps lock contention to a controlled unavailable error', async () => {
@@ -172,6 +211,20 @@ describe('token refresh', () => {
     await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
       ScopeRequiredError,
     )
+    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+  })
+
+  test('does not mutate or emit an event for a transient SSO refresh failure', async () => {
+    mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
+      operation(expired, {}),
+    )
+    mocks.refreshAccessToken.mockRejectedValue(new Error('temporary SSO failure'))
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toThrow(
+      'temporary SSO failure',
+    )
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })
 
   test('retains the current refresh token when EVE does not rotate it', async () => {

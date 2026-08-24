@@ -33,6 +33,21 @@ describe('queue admission control', () => {
     ).rejects.toBeInstanceOf(QueueAdmissionError)
   })
 
+  test('pauses outbox relay independently without rejecting committed work', async () => {
+    const subject = queue({ waiting: 2 })
+
+    await expect(admitQueueWork(subject as never, 'domain-event', 'outbox', 2)).resolves.toEqual({
+      admitted: false,
+      depth: 2,
+      reason: 'outbox-paused',
+    })
+    expect(subject.client.set).toHaveBeenCalledWith('eve-space:v1:outbox-relay:state', 'paused')
+    expect(subject.client.set).not.toHaveBeenCalledWith(
+      'eve-space:v1:planner:state',
+      expect.anything(),
+    )
+  })
+
   test('coalesces planner work already active, waiting, or delayed', async () => {
     const subject = queue({ jobs: [{ data: { operationId: 'diagnostic' } }] })
 
@@ -62,5 +77,16 @@ describe('queue admission control', () => {
       admitted: true,
     })
     expect(subject.client.del).not.toHaveBeenCalled()
+  })
+
+  test('resumes only outbox relay after queue depth recovers', async () => {
+    const subject = queue()
+
+    await expect(admitQueueWork(subject as never, 'domain-event', 'outbox')).resolves.toMatchObject(
+      { admitted: true },
+    )
+    expect(subject.client.del).toHaveBeenCalledWith('eve-space:v1:outbox-relay:state')
+    expect(subject.client.del).not.toHaveBeenCalledWith('eve-space:v1:planner:state')
+    expect(subject.getJobs).not.toHaveBeenCalled()
   })
 })

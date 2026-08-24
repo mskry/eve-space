@@ -17,6 +17,12 @@ describe('environment configuration', () => {
       QUEUE_PLANNER_SCHEDULE: '*/15 * * * *',
       QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: 60_000,
       QUEUE_LAG_DEGRADED_SECONDS: 300,
+      OUTBOX_RELAY_INTERVAL_MS: 5_000,
+      OUTBOX_RELAY_BATCH_SIZE: 100,
+      OUTBOX_RELAY_CLAIM_TTL_MS: 30_000,
+      OUTBOX_RELAY_RETRY_DELAY_MS: 10_000,
+      OUTBOX_LAG_DEGRADED_SECONDS: 300,
+      DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS: 30,
       WORKER_HEARTBEAT_INTERVAL_MS: 15_000,
       WORKER_SHUTDOWN_TIMEOUT_MS: 30_000,
       DATABASE_POOL_MAX: 10,
@@ -69,6 +75,26 @@ describe('environment configuration', () => {
       'refresh concurrency that can consume the whole connection pool',
       { DATABASE_POOL_MAX: '10', TOKEN_REFRESH_CONCURRENCY: '10' },
       'Expected fewer than DATABASE_POOL_MAX (10)',
+    ],
+    [
+      'an outbox batch larger than queue admission capacity',
+      { QUEUE_HIGH_WATER_MARK: '10', OUTBOX_RELAY_BATCH_SIZE: '11' },
+      'Expected no more than QUEUE_HIGH_WATER_MARK (10)',
+    ],
+    [
+      'an outbox claim that can expire before the next relay pass',
+      { OUTBOX_RELAY_INTERVAL_MS: '5000', OUTBOX_RELAY_CLAIM_TTL_MS: '5000' },
+      'Expected more than OUTBOX_RELAY_INTERVAL_MS (5000)',
+    ],
+    [
+      'an outbox retry delay shorter than the relay interval',
+      { OUTBOX_RELAY_INTERVAL_MS: '5000', OUTBOX_RELAY_RETRY_DELAY_MS: '4999' },
+      'Expected at least OUTBOX_RELAY_INTERVAL_MS (5000)',
+    ],
+    [
+      'an outbox lag threshold no longer than claim recovery',
+      { OUTBOX_RELAY_CLAIM_TTL_MS: '30000', OUTBOX_LAG_DEGRADED_SECONDS: '30' },
+      'Expected a duration longer than OUTBOX_RELAY_CLAIM_TTL_MS (30000ms)',
     ],
   ])('rejects %s', (_, values, message) => {
     expect(() => parseEnvironment(values)).toThrow(message)

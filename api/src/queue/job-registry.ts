@@ -1,22 +1,29 @@
-import { UnrecoverableError } from 'bullmq'
+import { UnrecoverableError, type Queue } from 'bullmq'
 import { z } from 'zod'
 import { sql } from '../db/client.js'
+import { DomainEventNotFoundError } from '../domain-event-handlers.js'
+import { DomainEventValidationError } from '../domain-events.js'
+import { env } from '../env.js'
 import { operationsQueueName } from './namespaces.js'
 
-type JobDurability = 'derived' | 'authoritative'
 type RetryClassification = 'retryable' | 'permanent'
 
-export interface JobDefinition<Payload> {
+interface BaseJobDefinition<Payload> {
   name: string
   queueName: typeof operationsQueueName
   payload: z.ZodType<Payload>
-  durability: JobDurability
   attempts: number
   operationIdentity(payload: Payload): string
   classifyError(error: unknown): RetryClassification
   /** `signal` aborts when a scheduler lease is lost mid-run; long operations should honour it. */
-  process(payload: Payload, signal?: AbortSignal): Promise<void>
+  process(payload: Payload, signal?: AbortSignal, context?: { queue: Queue }): Promise<void>
 }
+
+export type JobDefinition<Payload> = BaseJobDefinition<Payload> &
+  (
+    | { durability: 'derived'; recovery?: never }
+    | { durability: 'authoritative'; recovery: 'outbox' }
+  )
 
 const diagnosticPayload = z.object({ operationId: z.literal('queue-diagnostic') }).strict()
 
@@ -49,7 +56,71 @@ const plannerJob: JobDefinition<z.infer<typeof plannerPayload>> = {
   },
 }
 
-const jobRegistry = [diagnosticJob, plannerJob] as const
+const domainEventPayload = z.object({ eventId: z.uuid() }).strict()
+
+const domainEventJob: JobDefinition<z.infer<typeof domainEventPayload>> = {
+  name: 'domain-event',
+  queueName: operationsQueueName,
+  payload: domainEventPayload,
+  durability: 'authoritative',
+  recovery: 'outbox',
+  attempts: 5,
+  operationIdentity: ({ eventId }) => domainEventJobId(eventId),
+  classifyError: (error) =>
+    error instanceof DomainEventValidationError || error instanceof DomainEventNotFoundError
+      ? 'permanent'
+      : 'retryable',
+  async process({ eventId }) {
+    const { dispatchDomainEvent } = await import('../domain-event-handlers.js')
+    await dispatchDomainEvent(eventId)
+  },
+}
+
+const outboxRelayPayload = z.object({ operationId: z.literal('outbox-relay') }).strict()
+
+const outboxRelayJob: JobDefinition<z.infer<typeof outboxRelayPayload>> = {
+  name: 'outbox-relay',
+  queueName: operationsQueueName,
+  payload: outboxRelayPayload,
+  durability: 'derived',
+  attempts: 3,
+  operationIdentity: ({ operationId }) => operationId,
+  classifyError: () => 'retryable',
+  async process(_payload, signal, context) {
+    if (!context) throw new Error('Outbox relay queue context is unavailable')
+    const { runOutboxRelayBatch } = await import('./outbox-relay.js')
+    await runOutboxRelayBatch(context.queue, { signal })
+  },
+}
+
+const eventRetentionPayload = z
+  .object({ operationId: z.literal('domain-event-retention') })
+  .strict()
+
+const eventRetentionJob: JobDefinition<z.infer<typeof eventRetentionPayload>> = {
+  name: 'domain-event-retention',
+  queueName: operationsQueueName,
+  payload: eventRetentionPayload,
+  durability: 'derived',
+  attempts: 3,
+  operationIdentity: ({ operationId }) => operationId,
+  classifyError: () => 'retryable',
+  async process(_payload, signal) {
+    signal?.throwIfAborted()
+    const { deletePublishedDomainEvents } = await import('../domain-event-store.js')
+    await deletePublishedDomainEvents({
+      retentionMs: env.DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS * 24 * 60 * 60 * 1_000,
+    })
+  },
+}
+
+const jobRegistry = [
+  diagnosticJob,
+  plannerJob,
+  domainEventJob,
+  outboxRelayJob,
+  eventRetentionJob,
+] as const
 
 export function listJobDefinitions(): readonly JobDefinition<unknown>[] {
   return jobRegistry
@@ -61,8 +132,8 @@ export function verifyJobRegistry(
   for (const job of registry) {
     if (job.durability !== 'derived' && job.durability !== 'authoritative')
       throw new Error(`Job ${job.name ?? 'unknown'} must declare a durability classification`)
-    if (job.durability !== 'derived')
-      throw new Error(`Authoritative job ${job.name ?? 'unknown'} requires an outbox-backed change`)
+    if (job.durability === 'authoritative' && job.recovery !== 'outbox')
+      throw new Error(`Authoritative job ${job.name ?? 'unknown'} requires outbox recovery`)
   }
 }
 
@@ -75,6 +146,26 @@ export function validateJobPayload(job: JobDefinition<unknown>, payload: unknown
   if (!parsed.success) throw new UnrecoverableError(`Invalid ${job.name} job payload`)
   assertSafeJobPayload(parsed.data)
   return parsed.data
+}
+
+export function domainEventJobId(eventId: string) {
+  return `domain-event-${z.uuid().parse(eventId)}`
+}
+
+export function jobOptions(definition: JobDefinition<unknown>, jobId?: string) {
+  return {
+    attempts: definition.attempts,
+    backoff: { type: 'exponential' as const, delay: 1_000, jitter: 0.25 },
+    ...(jobId ? { jobId } : {}),
+    removeOnComplete: {
+      age: env.QUEUE_COMPLETED_RETENTION_AGE_SECONDS,
+      count: env.QUEUE_COMPLETED_RETENTION_COUNT,
+    },
+    removeOnFail: {
+      age: env.QUEUE_FAILED_RETENTION_AGE_SECONDS,
+      count: env.QUEUE_FAILED_RETENTION_COUNT,
+    },
+  }
 }
 
 export function assertSafeJobPayload(payload: unknown) {

@@ -61,6 +61,12 @@ const schema = z.object({
   QUEUE_PLANNER_SCHEDULE_OFFSET_MS: optionalNonNegativeInteger,
   QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: positiveInteger.default(60_000),
   QUEUE_LAG_DEGRADED_SECONDS: positiveInteger.default(300),
+  OUTBOX_RELAY_INTERVAL_MS: positiveInteger.default(5_000),
+  OUTBOX_RELAY_BATCH_SIZE: positiveInteger.default(100),
+  OUTBOX_RELAY_CLAIM_TTL_MS: positiveInteger.default(30_000),
+  OUTBOX_RELAY_RETRY_DELAY_MS: positiveInteger.default(10_000),
+  OUTBOX_LAG_DEGRADED_SECONDS: positiveInteger.default(300),
+  DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS: positiveInteger.default(30),
   WORKER_HEARTBEAT_INTERVAL_MS: positiveInteger.default(15_000),
   WORKER_SHUTDOWN_TIMEOUT_MS: positiveInteger.default(30_000),
   // Must be stable across a container's processes: the healthcheck runs beside the worker.
@@ -92,6 +98,38 @@ const schemaWithInvariants = schema.superRefine((values, context) => {
       code: 'custom',
       path: ['TOKEN_REFRESH_CONCURRENCY'],
       message: `Expected fewer than DATABASE_POOL_MAX (${values.DATABASE_POOL_MAX}) so refreshes cannot consume every pooled connection`,
+    })
+  }
+
+  if (values.OUTBOX_RELAY_BATCH_SIZE > values.QUEUE_HIGH_WATER_MARK) {
+    context.addIssue({
+      code: 'custom',
+      path: ['OUTBOX_RELAY_BATCH_SIZE'],
+      message: `Expected no more than QUEUE_HIGH_WATER_MARK (${values.QUEUE_HIGH_WATER_MARK})`,
+    })
+  }
+
+  if (values.OUTBOX_RELAY_CLAIM_TTL_MS <= values.OUTBOX_RELAY_INTERVAL_MS) {
+    context.addIssue({
+      code: 'custom',
+      path: ['OUTBOX_RELAY_CLAIM_TTL_MS'],
+      message: `Expected more than OUTBOX_RELAY_INTERVAL_MS (${values.OUTBOX_RELAY_INTERVAL_MS})`,
+    })
+  }
+
+  if (values.OUTBOX_RELAY_RETRY_DELAY_MS < values.OUTBOX_RELAY_INTERVAL_MS) {
+    context.addIssue({
+      code: 'custom',
+      path: ['OUTBOX_RELAY_RETRY_DELAY_MS'],
+      message: `Expected at least OUTBOX_RELAY_INTERVAL_MS (${values.OUTBOX_RELAY_INTERVAL_MS})`,
+    })
+  }
+
+  if (values.OUTBOX_LAG_DEGRADED_SECONDS * 1_000 <= values.OUTBOX_RELAY_CLAIM_TTL_MS) {
+    context.addIssue({
+      code: 'custom',
+      path: ['OUTBOX_LAG_DEGRADED_SECONDS'],
+      message: `Expected a duration longer than OUTBOX_RELAY_CLAIM_TTL_MS (${values.OUTBOX_RELAY_CLAIM_TTL_MS}ms)`,
     })
   }
 })

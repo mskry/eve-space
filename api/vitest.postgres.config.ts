@@ -5,6 +5,7 @@ export default defineConfig({
     clearMocks: true,
     environment: 'node',
     include: ['tests/integration/**/*.test.ts'],
+    exclude: ['tests/integration/redis/**/*.test.ts'],
     testTimeout: 60_000,
     hookTimeout: 60_000,
   },

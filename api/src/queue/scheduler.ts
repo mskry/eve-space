@@ -4,16 +4,26 @@ import type { QueueRedisConnection } from './redis.js'
 import { env } from '../env.js'
 import { schedulerLockKey, schedulerOutcomeKey } from './namespaces.js'
 import { schedulerLockRenewalMs, schedulerLockTtlMs, workerHeartbeatTtlSeconds } from './policy.js'
-import { getJobDefinition, type JobDefinition } from './job-registry.js'
+import { getJobDefinition, jobOptions, type JobDefinition } from './job-registry.js'
 
 export const diagnosticSchedulerId = 'diagnostic-planner'
+export const outboxRelaySchedulerId = 'outbox-relay'
+export const eventRetentionSchedulerId = 'domain-event-retention'
 export const diagnosticOverlapPolicy = 'skip' as const
+export const eventRetentionIntervalMs = 24 * 60 * 60 * 1_000
 
 export function createPlannerRepeatStrategy(
   deploymentOffsetMs: number,
   initialDelayMaximumMs: number,
 ): RepeatStrategy {
   return async (millis, options, name) => {
+    if (options.every) {
+      if (options.pattern) throw new Error('Scheduler cannot define both pattern and every')
+      return (
+        Math.floor(millis / options.every) * options.every +
+        (options.immediately ? 0 : options.every)
+      )
+    }
     const next = await defaultRepeatStrategy(millis, options)
     if (name !== 'planner' || next === undefined) return next
 
@@ -46,19 +56,32 @@ export async function registerSchedulers(queue: Queue) {
   await queue.upsertJobScheduler(diagnosticSchedulerId, schedulerOptions(diagnosticOverlapPolicy), {
     name: planner.name,
     data: { operationId: 'queue-planner' },
-    opts: {
-      attempts: planner.attempts,
-      backoff: { type: 'exponential', delay: 1_000, jitter: 0.25 },
-      removeOnComplete: {
-        age: env.QUEUE_COMPLETED_RETENTION_AGE_SECONDS,
-        count: env.QUEUE_COMPLETED_RETENTION_COUNT,
-      },
-      removeOnFail: {
-        age: env.QUEUE_FAILED_RETENTION_AGE_SECONDS,
-        count: env.QUEUE_FAILED_RETENTION_COUNT,
-      },
-    },
+    opts: jobOptions(planner),
   })
+  const relay = getJobDefinition('outbox-relay') as JobDefinition<{
+    operationId: 'outbox-relay'
+  }>
+  await queue.upsertJobScheduler(
+    outboxRelaySchedulerId,
+    intervalSchedulerOptions(env.OUTBOX_RELAY_INTERVAL_MS),
+    {
+      name: relay.name,
+      data: { operationId: 'outbox-relay' },
+      opts: jobOptions(relay),
+    },
+  )
+  const retention = getJobDefinition('domain-event-retention') as JobDefinition<{
+    operationId: 'domain-event-retention'
+  }>
+  await queue.upsertJobScheduler(
+    eventRetentionSchedulerId,
+    intervalSchedulerOptions(eventRetentionIntervalMs),
+    {
+      name: retention.name,
+      data: { operationId: 'domain-event-retention' },
+      opts: jobOptions(retention),
+    },
+  )
   await queue
     .getBackend()
     .client.then((connection) =>
@@ -71,6 +94,20 @@ function schedulerOptions(overlap: typeof diagnosticOverlapPolicy) {
   // BullMQ Job Schedulers implement skip overlap by producing the next occurrence only when the
   // preceding scheduled job begins processing.
   return { pattern: env.QUEUE_PLANNER_SCHEDULE }
+}
+
+function intervalSchedulerOptions(intervalMs: number) {
+  return { every: intervalMs }
+}
+
+export function getJobScheduler(jobName: string) {
+  if (jobName === 'planner')
+    return { schedulerId: diagnosticSchedulerId, overlap: diagnosticOverlapPolicy }
+  if (jobName === 'outbox-relay')
+    return { schedulerId: outboxRelaySchedulerId, overlap: diagnosticOverlapPolicy }
+  if (jobName === 'domain-event-retention')
+    return { schedulerId: eventRetentionSchedulerId, overlap: diagnosticOverlapPolicy }
+  return undefined
 }
 
 export class SchedulerLeaseLostError extends Error {
