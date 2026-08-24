@@ -171,7 +171,7 @@ The API exports its chained Hono `AppType`. Nuxt uses `hono/client` to build URL
 
 ## Database
 
-The migrations create users, one-to-many attached characters, encrypted per-character EVE tokens, intent-bound OAuth states, sessions, SDE reference tables, and migration history. A partial unique index prevents more than one main character per user. Migrations run automatically when the API container starts.
+The migrations create users, one-to-many attached characters, encrypted per-character EVE tokens, intent-bound OAuth states, sessions, transactional domain events, SDE reference tables, and migration history. A partial unique index prevents more than one main character per user. Migrations run automatically when the API container starts.
 
 PostgreSQL data is retained in the `postgres_data` Compose volume. To intentionally delete local database data:
 
@@ -191,15 +191,49 @@ Back up the AOF and Redis data volume on a schedule aligned with the recovery ob
 
 The database migration generates and persists a random planner offset for each installation, so replicas share one value and independent installations do not converge on a constant default. Set `QUEUE_PLANNER_SCHEDULE_OFFSET_MS` only to override that persisted value, and give every worker replica in one deployment the same override. Planner-produced jobs also receive a random delay up to `QUEUE_PLANNER_INITIAL_DELAY_MAX_MS`; the worker rejects a configuration whose offset plus maximum delay reaches the next planner occurrence. This first-dispatch staggering is separate from retry backoff jitter.
 
-Inspect only aggregate queue state through `GET /api/status`; it reports reachability, worker heartbeat, depth, lag, active/retrying/failed counts, planner pause state, and the latest scheduler outcome without Redis endpoints, keys, or payloads. The queue keyspace is versioned under `eve-space:v1`; change the version only with an explicit migration/recovery plan.
+Inspect only aggregate queue state through `GET /api/status`; it reports reachability, worker heartbeat, depth, lag, active/retrying/failed counts, planner and outbox pause states, scheduler state, and the latest sanitized relay outcome without Redis endpoints, keys, or payloads. The separate `eventRelay` section reports pending PostgreSQL event count and oldest age. The queue keyspace is versioned under `eve-space:v1`; change the version only with an explicit migration/recovery plan.
 
 To retry failed derived diagnostics after addressing a dependency, use a private operator shell with BullMQ's `queue.retryJobs({ state: 'failed' })`. To cancel pending derived work, use `queue.remove(jobId)` for a specific waiting or delayed job, or `queue.drain(true)` only after stopping workers and producers. Do not use `obliterate` on a running queue.
 
-For queue disaster recovery, stop API producers and workers, restore the Redis AOF/data volume, start queue Redis, then start workers and API. If the queue contents are intentionally discarded, start the worker after the API: all shipped job types are `derived`, so the planner reconstructs work from PostgreSQL on its next interval. PostgreSQL remains authoritative; do not place EVE tokens, credentials, session bearers, or encryption material in queue payloads, names, logs, or Redis keys.
+For queue disaster recovery, stop API producers and workers, restore the Redis AOF/data volume, start queue Redis, then start workers and API. Derived jobs are reconstructed by their planners. Authoritative event jobs are reconstructed from retained PostgreSQL `domain_events` only through the guarded re-drive command below; restarting the worker automatically relays events that were never marked published but does not assume already-published work was lost. PostgreSQL remains authoritative; do not place EVE tokens, credentials, session bearers, encryption material, event payloads, or secrets in queue payloads, names, logs, or Redis keys.
+
+## Transactional Domain Events
+
+Material changes to EVE Space's local EVE SSO projection append a versioned event in the same PostgreSQL transaction. Version 1 currently covers character attachment, character detachment, main-character change, and material ESI scope-set change. Login sessions, logout, unchanged reauthorization, routine token rotation, and transient ESI authorization errors do not create domain events.
+
+The worker runs a skip-overlap outbox relay every five seconds by default. It claims bounded PostgreSQL batches without holding a transaction across Redis I/O, validates each row independently, publishes only `{ eventId }` with a deterministic BullMQ job ID, and acknowledges publication by claim token. An incompatible stored event records a sanitized `invalid-event` failure without blocking valid companions. A crash before enqueue leaves an expiring claim; a crash after enqueue but before acknowledgement retries the same logical job identity. This is at-least-once transport, not exactly-once external delivery. Consumers must persist effects by event ID or recompute a convergent result from current authoritative state.
+
+Unpublished and claimed rows are never removed by age-based retention. Published rows remain available for queue-loss recovery for `DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS`, which defaults to 30 days. Keep every parser for a payload version until all rows using it have left that horizon. Queue completed/failed history is a separate operational retention policy.
+
+Inspect a recovery range without changing it:
+
+```bash
+pnpm --filter @eve-space/api outbox:redrive -- \
+  --from 2026-08-01T00:00:00Z \
+  --to 2026-08-02T00:00:00Z \
+  --time-field publication \
+  --limit 1000 \
+  --dry-run
+```
+
+After operators have stopped producers and workers and confirmed that queue data was intentionally lost or discarded, remove `--dry-run` and add `--confirm-queue-discard`. Before changing PostgreSQL, the command verifies that BullMQ has no retained job under any selected event's deterministic ID; unrelated scheduled jobs do not block recovery. The command reopens the original event IDs and starts their pending-age clock at re-drive; it does not create new event occurrences or bypass consumer idempotency. Repeat bounded ranges until the dry-run count reaches zero, then start the worker.
+
+### Outbox operator exercise
+
+Run this only against disposable local Compose queue data. It preserves PostgreSQL but deliberately exercises queue-loss handling.
+
+1. Start the API and queue, but stop the worker with `docker compose stop worker`.
+2. Through the normal UI or authenticated API, attach a character, detach a non-main character, change main character, or materially change scopes.
+3. Call `curl --silent http://localhost:8788/api/status` and verify `services.eventRelay.pendingCount` increased without any event payload appearing.
+4. Start the worker with `docker compose up -d --no-build worker`; within the configured lag window, verify the pending count drains and the relay outcome is successful.
+5. Exercise the enqueue-success/acknowledgement-failure boundary against real Redis with `pnpm --filter @eve-space/api exec vitest run --config vitest.redis.config.ts tests/integration/redis/worker-platform.test.ts -t "deduplicates concurrent event relay and retries enqueue-success acknowledgement failure"`.
+6. With a genuine previous API image and at least one retained event, run the guarded rollback exercise below. It snapshots PostgreSQL recovery, clears only Queue Redis, reopens published events under their original IDs, and verifies worker/API health.
+
+After any interrupted test run, confirm no orphaned Vitest forks or Testcontainers remain before repeating the exercise.
 
 ### Rollback verification
 
-`scripts/verify-worker-rollback.sh` is a guarded local-Compose rollback exercise. It requires an already available, previously deployed API image and deliberately flushes the dedicated queue Redis database after checking every registered job is `derived`. The script stops API/worker producers, starts the previous API image against the existing PostgreSQL volume, checks API health, discards queue contents, restores the current API and worker, and checks worker/API health.
+`scripts/verify-worker-rollback.sh` is a guarded local-Compose rollback exercise. It requires an already available, previously deployed API image and at least one retained PostgreSQL event. Before deliberately flushing the dedicated queue Redis database, it verifies every authoritative job declares outbox recovery and snapshots the event recovery rows. It confirms that snapshot survives queue discard, verifies selected BullMQ identities are absent, reopens retained published events under their original IDs, restores the current API and worker, waits for the PostgreSQL backlog to drain, and checks worker/API health.
 
 Run it only against disposable local Compose data:
 

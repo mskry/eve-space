@@ -2,6 +2,8 @@ import { and, asc, desc, eq, gt, lte, sql } from 'drizzle-orm'
 import { db } from './db/client.js'
 import { characterLockKey, characterLockNamespace } from './db/locks.js'
 import { characters, eveTokens, oauthStates, sessions, users } from './db/schema.js'
+import { appendDomainEvent } from './domain-event-store.js'
+import { normalizeScopeSet } from './domain-events.js'
 import { env } from './env.js'
 import { encryptTokens, hashToken } from './security.js'
 
@@ -24,6 +26,7 @@ export type OAuthStateContext =
   | { intent: 'reauthorize'; userId: string; characterId: number }
 
 export interface StoredCharacterToken {
+  userId: string
   encryptedTokens: string
   accessTokenExpiresAt: Date
   scopes: string[]
@@ -121,8 +124,9 @@ export async function saveLogin(
     await lockCharacterRow(transaction, input.characterId)
 
     const [existingCharacter] = await transaction
-      .select({ userId: characters.userId })
+      .select(authorizationCharacterSelection)
       .from(characters)
+      .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
       .where(eq(characters.characterId, input.characterId))
 
     let userId = existingCharacter?.userId
@@ -135,7 +139,24 @@ export async function saveLogin(
       await updateCharacterIdentity(transaction, input)
     }
 
-    await upsertCharacterToken(transaction, input.characterId, input.scopes, token)
+    const scopes = normalizeScopeSet(input.scopes)
+    await upsertCharacterToken(transaction, input.characterId, scopes, token)
+    if (existingCharacter) {
+      await appendScopeChangeEvent(
+        transaction,
+        userId,
+        input.characterId,
+        existingCharacter.scopes ?? [],
+        scopes,
+      )
+    } else {
+      await appendDomainEvent(transaction, {
+        type: 'character.attached',
+        payloadVersion: 1,
+        aggregateId: String(input.characterId),
+        payload: characterSnapshotFromInput(input, userId, true, scopes),
+      })
+    }
     await transaction.insert(sessions).values({
       sessionHash: hashToken(input.sessionToken),
       userId,
@@ -150,8 +171,9 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
   await db.transaction(async (transaction) => {
     await lockCharacterRow(transaction, input.characterId)
     const [existingCharacter] = await transaction
-      .select({ userId: characters.userId })
+      .select(authorizationCharacterSelection)
       .from(characters)
+      .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
       .where(eq(characters.characterId, input.characterId))
 
     if (existingCharacter && existingCharacter.userId !== input.userId)
@@ -160,7 +182,24 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
     if (existingCharacter) await updateCharacterIdentity(transaction, input)
     else await transaction.insert(characters).values(characterValues(input, input.userId, false))
 
-    await upsertCharacterToken(transaction, input.characterId, input.scopes, token)
+    const scopes = normalizeScopeSet(input.scopes)
+    await upsertCharacterToken(transaction, input.characterId, scopes, token)
+    if (existingCharacter) {
+      await appendScopeChangeEvent(
+        transaction,
+        input.userId,
+        input.characterId,
+        existingCharacter.scopes ?? [],
+        scopes,
+      )
+    } else {
+      await appendDomainEvent(transaction, {
+        type: 'character.attached',
+        payloadVersion: 1,
+        aggregateId: String(input.characterId),
+        payload: characterSnapshotFromInput(input, input.userId, false, scopes),
+      })
+    }
   })
 }
 
@@ -174,15 +213,24 @@ export async function reauthorizeCharacter(
   await db.transaction(async (transaction) => {
     await lockCharacterRow(transaction, input.characterId)
     const [ownedCharacter] = await transaction
-      .select({ characterId: characters.characterId })
+      .select(authorizationCharacterSelection)
       .from(characters)
+      .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
       .where(
         and(eq(characters.characterId, input.characterId), eq(characters.userId, input.userId)),
       )
 
     if (!ownedCharacter) throw new CharacterOwnershipError()
     await updateCharacterIdentity(transaction, input)
-    await upsertCharacterToken(transaction, input.characterId, input.scopes, token)
+    const scopes = normalizeScopeSet(input.scopes)
+    await upsertCharacterToken(transaction, input.characterId, scopes, token)
+    await appendScopeChangeEvent(
+      transaction,
+      input.userId,
+      input.characterId,
+      ownedCharacter.scopes ?? [],
+      scopes,
+    )
   })
 }
 
@@ -219,11 +267,28 @@ export async function setMainCharacter(
     if (!target) return null
     if (target.isMain) return target
 
+    const [previousMain] = await transaction
+      .select({ characterId: characters.characterId })
+      .from(characters)
+      .where(and(eq(characters.userId, userId), eq(characters.isMain, true)))
+
     await transaction.update(characters).set({ isMain: false }).where(eq(characters.userId, userId))
     await transaction
       .update(characters)
       .set({ isMain: true, updatedAt: new Date() })
       .where(ownedCharacterFilter(userId, characterId))
+    if (previousMain) {
+      await appendDomainEvent(transaction, {
+        type: 'character.main-changed',
+        payloadVersion: 1,
+        aggregateId: userId,
+        payload: {
+          userId,
+          previousMainCharacterId: previousMain.characterId,
+          newMainCharacterId: characterId,
+        },
+      })
+    }
     return { ...target, isMain: true }
   })
 }
@@ -233,8 +298,9 @@ export async function deleteCharacter(userId: string, characterId: number) {
     if (!(await lockUserRow(transaction, userId))) return 'not-found' as const
 
     const [target] = await transaction
-      .select({ isMain: characters.isMain })
+      .select(authorizationCharacterSelection)
       .from(characters)
+      .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
       .where(ownedCharacterFilter(userId, characterId))
     if (!target) return 'not-found' as const
     if (target.isMain) return 'main-character' as const
@@ -243,7 +309,14 @@ export async function deleteCharacter(userId: string, characterId: number) {
       .delete(characters)
       .where(ownedCharacterFilter(userId, characterId))
       .returning({ characterId: characters.characterId })
-    return deleted ? ('deleted' as const) : ('not-found' as const)
+    if (!deleted) return 'not-found' as const
+    await appendDomainEvent(transaction, {
+      type: 'character.detached',
+      payloadVersion: 1,
+      aggregateId: String(characterId),
+      payload: characterSnapshotFromRecord(target),
+    })
+    return 'deleted' as const
   })
 }
 
@@ -283,12 +356,14 @@ export async function findCharacterToken(
 ): Promise<StoredCharacterToken | null> {
   const [record] = await connection
     .select({
+      userId: characters.userId,
       encryptedTokens: eveTokens.encryptedTokens,
       accessTokenExpiresAt: eveTokens.accessTokenExpiresAt,
       scopes: eveTokens.scopes,
       tokenVersion: eveTokens.tokenVersion,
     })
     .from(eveTokens)
+    .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
     .where(eq(eveTokens.characterId, characterId))
   return record ?? null
 }
@@ -308,7 +383,7 @@ export async function updateCharacterToken(
     .set({
       encryptedTokens: input.encryptedTokens,
       accessTokenExpiresAt: input.expiresAt,
-      scopes: input.scopes,
+      scopes: normalizeScopeSet(input.scopes),
       tokenVersion: incrementTokenVersion,
       updatedAt: new Date(),
     })
@@ -352,6 +427,12 @@ const characterSelection = {
   isMain: characters.isMain,
 }
 
+const authorizationCharacterSelection = {
+  userId: characters.userId,
+  ...characterSelection,
+  scopes: eveTokens.scopes,
+}
+
 function characterValues(input: CharacterAuthorizationInput, userId: string, isMain: boolean) {
   return {
     characterId: input.characterId,
@@ -361,6 +442,64 @@ function characterValues(input: CharacterAuthorizationInput, userId: string, isM
     allianceId: input.allianceId,
     isMain,
   }
+}
+
+function characterSnapshotFromInput(
+  input: CharacterAuthorizationInput,
+  userId: string,
+  isMain: boolean,
+  scopes: string[],
+) {
+  return {
+    userId,
+    characterId: input.characterId,
+    characterName: input.characterName,
+    corporationId: input.corporationId,
+    allianceId: input.allianceId,
+    isMain,
+    scopes,
+  }
+}
+
+function characterSnapshotFromRecord(record: {
+  userId: string
+  characterId: number
+  name: string
+  corporationId: number
+  allianceId: number | null
+  isMain: boolean
+  scopes: string[] | null
+}) {
+  return {
+    userId: record.userId,
+    characterId: record.characterId,
+    characterName: record.name,
+    corporationId: record.corporationId,
+    allianceId: record.allianceId,
+    isMain: record.isMain,
+    scopes: normalizeScopeSet(record.scopes ?? []),
+  }
+}
+
+async function appendScopeChangeEvent(
+  transaction: DatabaseTransaction,
+  userId: string,
+  characterId: number,
+  previousScopes: string[],
+  nextScopes: string[],
+) {
+  const previous = new Set(normalizeScopeSet(previousScopes))
+  const next = new Set(normalizeScopeSet(nextScopes))
+  const addedScopes = [...next].filter((scope) => !previous.has(scope))
+  const removedScopes = [...previous].filter((scope) => !next.has(scope))
+  if (addedScopes.length === 0 && removedScopes.length === 0) return
+
+  await appendDomainEvent(transaction, {
+    type: 'character.scopes-changed',
+    payloadVersion: 1,
+    aggregateId: String(characterId),
+    payload: { userId, characterId, addedScopes, removedScopes },
+  })
 }
 
 function prepareToken(input: CharacterAuthorizationInput) {

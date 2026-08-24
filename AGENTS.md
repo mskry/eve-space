@@ -12,7 +12,9 @@ These instructions apply to the entire repository. Preserve the architecture and
 - Nuxt renders the UI and may fetch public API data during SSR. Browser-side auth and character-owned requests call Hono directly with credentials enabled.
 - The API and worker share server-only ownership of EVE SSO, ESI, session, token, encryption, cache, and persistence behavior.
 - Queue/coordination Redis is a dedicated durable BullMQ instance: AOF with `appendfsync always`, `noeviction`, capacity health checks, and a persistent volume. It must remain separate from a future disposable cache Redis instance.
-- The worker is a separate Node process built from the `api` workspace. It never runs migrations or an HTTP socket, verifies its required database migration directly, and has a non-HTTP dependency healthcheck.
+- The worker is a separate Node process built from the `api` workspace. It never runs migrations or an HTTP socket, verifies its required database migration directly, and has a non-HTTP dependency healthcheck. Backlog age degrades `/api/status` but not worker liveness; restarting the worker cannot be the response to work only that worker can drain.
+- PostgreSQL `domain_events` rows are the acceptance and queue-loss recovery record for occurrence-based work. Material state and its event commit in one transaction; Redis jobs contain only the stable event ID.
+- Domain-event relay and worker execution are at-least-once. Every event consumer must persist by event ID or converge from current PostgreSQL state; provider delivery ledgers and RBAC audit retention belong to their own capabilities.
 - Nuxt normally runs on the host rather than under Docker Compose.
 
 ## API And Contract Rules
@@ -59,6 +61,7 @@ These instructions apply to the entire repository. Preserve the architecture and
 - Session bearer values are random and stored only as SHA-256 hashes.
 - EVE access and refresh tokens are encrypted with AES-256-GCM before persistence.
 - Refresh tokens, the EVE client secret, and `TOKEN_ENCRYPTION_KEY` must never reach Nuxt or logs.
+- Domain-event payloads, queue jobs, telemetry, and logs must never contain tokens, session bearers, credentials, encryption material, or secrets.
 - JWT signature, expiration, issuer, and required audiences must remain verified.
 - Wallet access requires `esi-wallet.read_character_wallet.v1`; preserve scope checks and reauthorization responses.
 - Keep auth cookies HttpOnly, SameSite Lax, high priority, and secure when `SESSION_COOKIE_SECURE` is enabled.
@@ -82,6 +85,7 @@ These instructions apply to the entire repository. Preserve the architecture and
 - Add schema changes as new ordered migrations; do not rewrite an already-applied migration.
 - The API container runs migrations before opening its HTTP socket.
 - PostgreSQL data persists in the `postgres_data` Compose volume.
+- Unpublished domain events never expire by age. Published events remain available for the configured queue-loss replay horizon, which defaults to 30 days and is independent from BullMQ job-history retention.
 - Never destroy local database data unless the user explicitly requests it.
 
 ## Tooling And Verification

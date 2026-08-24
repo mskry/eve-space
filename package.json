@@ -20,6 +20,7 @@
     "test:frontend": "vitest run --config vitest.config.ts",
     "test:frontend:coverage": "vitest run --config vitest.config.ts --coverage",
     "test:api": "pnpm --filter @eve-space/api test",
+    "test:e2e": "node -e \"require('node:fs').rmSync('.output', { recursive: true, force: true })\" && nuxt build && vitest run --config vitest.e2e.config.ts",
     "typecheck": "nuxt typecheck && pnpm --filter @eve-space/api typecheck",
     "generate": "nuxt generate",
     "preview": "nuxt preview",

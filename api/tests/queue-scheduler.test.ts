@@ -4,13 +4,17 @@ import {
   createPlannerRepeatStrategy,
   diagnosticOverlapPolicy,
   diagnosticSchedulerId,
+  eventRetentionIntervalMs,
+  eventRetentionSchedulerId,
+  getJobScheduler,
+  outboxRelaySchedulerId,
   plannerInitialDelay,
   registerSchedulers,
   runWithSchedulerOverlapPolicy,
   SchedulerLeaseLostError,
 } from '../src/queue/scheduler.js'
 
-test('upserts one stable BullMQ scheduler with skip overlap policy', async () => {
+test('upserts stable skip-overlap planner, relay, and retention schedulers', async () => {
   const client = { set: vi.fn() }
   const queue = {
     upsertJobScheduler: vi.fn(),
@@ -19,7 +23,8 @@ test('upserts one stable BullMQ scheduler with skip overlap policy', async () =>
 
   await registerSchedulers(queue as never)
 
-  expect(queue.upsertJobScheduler).toHaveBeenCalledWith(
+  expect(queue.upsertJobScheduler).toHaveBeenNthCalledWith(
+    1,
     diagnosticSchedulerId,
     { pattern: '*/15 * * * *' },
     {
@@ -33,6 +38,35 @@ test('upserts one stable BullMQ scheduler with skip overlap policy', async () =>
       },
     },
   )
+  expect(queue.upsertJobScheduler).toHaveBeenNthCalledWith(
+    2,
+    outboxRelaySchedulerId,
+    { every: 5_000 },
+    {
+      name: 'outbox-relay',
+      data: { operationId: 'outbox-relay' },
+      opts: expect.objectContaining({ attempts: 3 }),
+    },
+  )
+  expect(queue.upsertJobScheduler).toHaveBeenNthCalledWith(
+    3,
+    eventRetentionSchedulerId,
+    { every: eventRetentionIntervalMs },
+    {
+      name: 'domain-event-retention',
+      data: { operationId: 'domain-event-retention' },
+      opts: expect.objectContaining({ attempts: 3 }),
+    },
+  )
+  expect(getJobScheduler('outbox-relay')).toEqual({
+    schedulerId: outboxRelaySchedulerId,
+    overlap: 'skip',
+  })
+  expect(getJobScheduler('domain-event-retention')).toEqual({
+    schedulerId: eventRetentionSchedulerId,
+    overlap: 'skip',
+  })
+  expect(getJobScheduler('domain-event')).toBeUndefined()
   expect(client.set).toHaveBeenCalledWith('eve-space:v1:scheduler:outcome', 'registered', {
     EX: 60,
   })
@@ -51,6 +85,21 @@ test('applies a stable deployment offset without crossing the next occurrence', 
   await expect(
     createPlannerRepeatStrategy(14 * 60_000, 60_000)(now, options, 'planner'),
   ).rejects.toThrow('must fit before its next occurrence')
+})
+
+test('preserves fixed intervals used by outbox and retention schedulers', async () => {
+  const now = Date.parse('2026-08-23T12:00:01.250Z')
+  const strategy = createPlannerRepeatStrategy(30_000, 60_000)
+
+  await expect(strategy(now, { every: 5_000 }, 'outbox-relay')).resolves.toBe(
+    Date.parse('2026-08-23T12:00:05.000Z'),
+  )
+  await expect(strategy(now, { every: 5_000, immediately: true }, 'outbox-relay')).resolves.toBe(
+    Date.parse('2026-08-23T12:00:00.000Z'),
+  )
+  await expect(strategy(now, { every: 5_000, pattern: '* * * * * *' }, 'invalid')).rejects.toThrow(
+    'both pattern and every',
+  )
 })
 
 test('bounds each planner output delay before the next schedule occurrence', async () => {

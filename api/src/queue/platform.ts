@@ -1,10 +1,12 @@
 import { Queue, UnrecoverableError, Worker, type Job, type RepeatStrategy } from 'bullmq'
 import { loadPlannerScheduleOffset } from '../deployment-installation-settings.js'
+import { verifyDomainEventHandlers } from '../domain-event-handlers.js'
 import { env } from '../env.js'
 import { admitQueueWork } from './admission.js'
 import { sanitizeJobFailure } from './failures.js'
 import {
   getJobDefinition,
+  jobOptions,
   type JobDefinition,
   validateJobPayload,
   verifyJobRegistry,
@@ -16,9 +18,8 @@ import {
   createWorkerRedisConnection,
 } from './redis.js'
 import {
-  diagnosticOverlapPolicy,
-  diagnosticSchedulerId,
   createPlannerRepeatStrategy,
+  getJobScheduler,
   plannerInitialDelay,
   registerSchedulers,
   runWithSchedulerOverlapPolicy,
@@ -61,17 +62,8 @@ export async function enqueueDiagnostic(
     // Admission and the delay lookup are round trips; the lease can go while they are in flight.
     signal?.throwIfAborted()
     await queue.add(definition.name, payload, {
-      attempts: definition.attempts,
-      backoff: { type: 'exponential', delay: 1_000, jitter: 0.25 },
+      ...jobOptions(definition),
       ...(delay > 0 ? { delay } : {}),
-      removeOnComplete: {
-        age: env.QUEUE_COMPLETED_RETENTION_AGE_SECONDS,
-        count: env.QUEUE_COMPLETED_RETENTION_COUNT,
-      },
-      removeOnFail: {
-        age: env.QUEUE_FAILED_RETENTION_AGE_SECONDS,
-        count: env.QUEUE_FAILED_RETENTION_COUNT,
-      },
     })
     return admission
   } finally {
@@ -81,15 +73,17 @@ export async function enqueueDiagnostic(
 
 export async function startWorkerPlatform() {
   verifyJobRegistry()
+  verifyDomainEventHandlers()
   const plannerRepeatStrategy = createPlannerRepeatStrategy(
     await loadPlannerScheduleOffset(),
     env.QUEUE_PLANNER_INITIAL_DELAY_MAX_MS,
   )
   const connection = createWorkerRedisConnection()
   const activeJobs = createActiveJobTracker()
+  const queue = createOperationsQueue(plannerRepeatStrategy)
   const worker = new Worker(
     operationsQueueName,
-    (job) => activeJobs.run(() => processJob(job, connection)),
+    (job) => activeJobs.run(() => processJob(job, connection, queue)),
     {
       connection,
       concurrency: env.QUEUE_OPERATION_CONCURRENCY,
@@ -99,7 +93,6 @@ export async function startWorkerPlatform() {
       autorun: false,
     },
   )
-  const queue = createOperationsQueue(plannerRepeatStrategy)
   let stopHeartbeat: () => void
   try {
     await registerSchedulers(queue)
@@ -113,6 +106,8 @@ export async function startWorkerPlatform() {
   worker.on('failed', (job, error) => {
     console.error('Worker job failed', {
       jobName: job?.name ?? 'unknown',
+      ...domainEventJobLogContext(job),
+      category: sanitizeJobFailure(error),
       reason: sanitizeJobFailure(error),
     })
   })
@@ -173,29 +168,45 @@ function forceDisconnect(
   connection.disconnect()
   queueConnections.get(queue)?.disconnect()
   // BullMQ's duplicated blocking client is not ours to close, and alone keeps the process alive.
-  void Promise.allSettled([worker.disconnect(), queue.disconnect()])
+  void Promise.allSettled([worker.close(true), worker.disconnect(), queue.disconnect()])
 }
 
-async function processJob(job: Job, connection: ReturnType<typeof createWorkerRedisConnection>) {
+async function processJob(
+  job: Job,
+  connection: ReturnType<typeof createWorkerRedisConnection>,
+  queue: Queue,
+) {
   const definition = getJobDefinition(job.name)
   if (!definition) throw new UnrecoverableError(`Unknown job type ${job.name}`)
   const payload = validateJobPayload(definition, job.data)
   try {
-    if (job.name === 'planner') {
+    const scheduler = getJobScheduler(job.name)
+    if (scheduler) {
       await runWithSchedulerOverlapPolicy(
         connection,
-        diagnosticSchedulerId,
-        diagnosticOverlapPolicy,
-        (signal) => definition.process(payload as never, signal),
+        scheduler.schedulerId,
+        scheduler.overlap,
+        (signal) => definition.process(payload as never, signal, { queue }),
       )
     } else {
-      await definition.process(payload as never)
+      await definition.process(payload as never, undefined, { queue })
     }
+    if (definition.name === 'domain-event')
+      console.info('Domain event job processed', domainEventJobLogContext(job))
   } catch (error) {
     if (definition.classifyError(error) === 'permanent')
       throw new UnrecoverableError('Permanent job failure')
     throw error
   }
+}
+
+function domainEventJobLogContext(job: Job | undefined) {
+  if (job?.name !== 'domain-event' || typeof job.data !== 'object' || job.data === null) return {}
+  const eventId = 'eventId' in job.data ? job.data.eventId : null
+  return typeof eventId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)
+    ? { eventId }
+    : {}
 }
 
 async function closeQueue(queue: Queue) {

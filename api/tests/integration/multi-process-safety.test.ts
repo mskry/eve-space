@@ -146,6 +146,42 @@ describe('multi-process safety', () => {
     }
   })
 
+  test('rolls back every domain-event migration object when the migration fails', async () => {
+    const connection = postgres(databaseUrl)
+    const migration = (await loadMigrations()).find(({ name }) => name === '009_domain_events.sql')
+    expect(migration).toBeDefined()
+
+    try {
+      await expect(
+        runMigrations(connection, [
+          {
+            name: migration!.name,
+            sql: `${migration!.sql}\nselect missing_domain_event_migration_function();`,
+          },
+        ]),
+      ).rejects.toThrow('missing_domain_event_migration_function')
+
+      const [objects] = await connection<
+        { table_exists: boolean; function_exists: boolean; migration_count: number }[]
+      >`
+        select
+          to_regclass('domain_events') is not null as table_exists,
+          to_regprocedure('prevent_domain_event_envelope_update()') is not null as function_exists,
+          (
+            select count(*)::integer from schema_migrations
+            where name = '009_domain_events.sql'
+          ) as migration_count
+      `
+      expect(objects).toEqual({
+        table_exists: false,
+        function_exists: false,
+        migration_count: 0,
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('rejects migrations that cannot run in a transaction', async () => {
     const connection = postgres(databaseUrl)
 

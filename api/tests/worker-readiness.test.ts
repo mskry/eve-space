@@ -22,7 +22,7 @@ describe('worker readiness', () => {
 
     await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
       healthy: false,
-      reason: 'Missing migration 008_deployment_installation_settings.sql',
+      reason: 'Missing migration 010_domain_event_relay_safety.sql',
     })
   })
 
@@ -37,16 +37,19 @@ describe('worker readiness', () => {
     )
   })
 
-  test('fails health when the worker heartbeat or queue lag is degraded', async () => {
+  test('keeps worker health green while fresh-heartbeat backlog telemetry is degraded', async () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true }])
       .mockResolvedValueOnce([{ applied: true }])
-    const queueProbe = vi.fn().mockResolvedValue({ status: 'degraded' })
+    const queueProbe = vi.fn().mockResolvedValue({
+      status: 'degraded',
+      workerHeartbeatAt: new Date().toISOString(),
+      oldestWaitingAgeSeconds: 301,
+    })
 
     await expect(checkWorkerDependencies(connection as never, queueProbe)).resolves.toEqual({
-      healthy: false,
-      reason: 'Worker or queue degraded',
+      healthy: true,
     })
   })
 
@@ -67,7 +70,10 @@ describe('worker readiness', () => {
       .fn()
       .mockResolvedValueOnce([{ exists: true }])
       .mockResolvedValueOnce([{ applied: true }])
-    const queueProbe = vi.fn().mockResolvedValue({ status: 'operational' })
+    const queueProbe = vi.fn().mockResolvedValue({
+      status: 'operational',
+      workerHeartbeatAt: new Date().toISOString(),
+    })
 
     await expect(assertWorkerReadiness(connection as never)).resolves.toBeUndefined()
 
@@ -97,7 +103,7 @@ describe('worker readiness', () => {
     const connection = vi.fn().mockResolvedValueOnce([{ exists: false }])
 
     await expect(assertWorkerDependencies(connection as never, vi.fn())).rejects.toThrow(
-      'Worker dependency unavailable: Missing migration 008_deployment_installation_settings.sql',
+      'Worker dependency unavailable: Missing migration 010_domain_event_relay_safety.sql',
     )
   })
 
@@ -114,7 +120,7 @@ describe('worker readiness', () => {
     // The same state must still read unhealthy for an already-started worker.
     await expect(
       checkWorkerDependencies(appliedMigrationConnection() as never, queueProbe),
-    ).resolves.toEqual({ healthy: false, reason: 'Worker or queue degraded' })
+    ).resolves.toEqual({ healthy: false, reason: 'Worker heartbeat stale' })
   })
 
   test('refuses to start when the queue Redis is unreachable', async () => {
@@ -133,8 +139,19 @@ describe('worker readiness', () => {
     const queueProbe = vi.fn()
 
     await expect(assertWorkerStartupDependencies(connection as never, queueProbe)).rejects.toThrow(
-      'Worker dependency unavailable: Missing migration 008_deployment_installation_settings.sql',
+      'Worker dependency unavailable: Missing migration 010_domain_event_relay_safety.sql',
     )
     expect(queueProbe).not.toHaveBeenCalled()
+  })
+
+  test('fails an already-running worker when its scoped heartbeat is stale', async () => {
+    const queueProbe = vi.fn().mockResolvedValue({
+      status: 'degraded',
+      workerHeartbeatAt: new Date(0).toISOString(),
+    })
+
+    await expect(
+      checkWorkerDependencies(appliedMigrationConnection() as never, queueProbe),
+    ).resolves.toEqual({ healthy: false, reason: 'Worker heartbeat stale' })
   })
 })

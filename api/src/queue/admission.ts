@@ -1,6 +1,6 @@
 import type { Queue } from 'bullmq'
 import { env } from '../env.js'
-import { plannerStateKey } from './namespaces.js'
+import { outboxRelayStateKey, plannerStateKey } from './namespaces.js'
 
 export class QueueAdmissionError extends Error {
   constructor() {
@@ -11,13 +11,13 @@ export class QueueAdmissionError extends Error {
 export interface QueueAdmission {
   admitted: boolean
   depth: number
-  reason?: 'planner-paused' | 'on-demand-rejected' | 'coalesced'
+  reason?: 'planner-paused' | 'outbox-paused' | 'on-demand-rejected' | 'coalesced'
 }
 
 export async function admitQueueWork(
   queue: Queue,
   operationIdentity: string,
-  source: 'planner' | 'on-demand',
+  source: 'planner' | 'on-demand' | 'outbox',
   highWaterMark = env.QUEUE_HIGH_WATER_MARK,
 ): Promise<QueueAdmission> {
   const counts = await queue.getJobCounts('waiting', 'delayed')
@@ -29,6 +29,12 @@ export async function admitQueueWork(
         .client.then((connection) => connection.set(plannerStateKey, 'paused'))
       return { admitted: false, depth, reason: 'planner-paused' }
     }
+    if (source === 'outbox') {
+      await queue
+        .getBackend()
+        .client.then((connection) => connection.set(outboxRelayStateKey, 'paused'))
+      return { admitted: false, depth, reason: 'outbox-paused' }
+    }
     throw new QueueAdmissionError()
   }
 
@@ -37,6 +43,8 @@ export async function admitQueueWork(
     if (await hasActiveOperation(queue, operationIdentity))
       return { admitted: false, depth, reason: 'coalesced' }
   }
+  if (source === 'outbox')
+    await queue.getBackend().client.then((connection) => connection.del(outboxRelayStateKey))
 
   return { admitted: true, depth }
 }

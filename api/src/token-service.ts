@@ -6,6 +6,8 @@ import {
   withCharacterTokenRefreshLock,
 } from './auth-store.js'
 import type { StoredCharacterToken } from './auth-store.js'
+import { appendDomainEvent } from './domain-event-store.js'
+import { normalizeScopeSet } from './domain-events.js'
 import { env } from './env.js'
 import { refreshAccessToken, verifyAccessToken } from './eve-sso.js'
 import { decryptTokens, encryptTokens } from './security.js'
@@ -112,6 +114,8 @@ async function refreshCharacterToken(
     if (identity.characterId !== characterId)
       throw new Error('Refreshed token belongs to a different character')
     requireScope(identity.scopes, requiredScope)
+    const previousScopes = new Set(normalizeScopeSet(stored.scopes))
+    const nextScopes = normalizeScopeSet(identity.scopes)
 
     // The advisory lock currently serializes writers. Keep the compare-and-set as a final guard
     // against a future uncoordinated caller overwriting a rotated refresh token.
@@ -123,12 +127,25 @@ async function refreshCharacterToken(
           refreshToken: refreshed.refresh_token ?? currentTokens.refreshToken,
         }),
         expiresAt: new Date(Date.now() + refreshed.expires_in * 1000),
-        scopes: identity.scopes,
+        scopes: nextScopes,
         tokenVersion: stored.tokenVersion,
       },
       transaction,
     )
-    if (updated) return refreshed.access_token
+    if (updated) {
+      const nextScopeSet = new Set(nextScopes)
+      const addedScopes = nextScopes.filter((scope) => !previousScopes.has(scope))
+      const removedScopes = [...previousScopes].filter((scope) => !nextScopeSet.has(scope))
+      if (addedScopes.length > 0 || removedScopes.length > 0) {
+        await appendDomainEvent(transaction, {
+          type: 'character.scopes-changed',
+          payloadVersion: 1,
+          aggregateId: String(characterId),
+          payload: { userId: stored.userId, characterId, addedScopes, removedScopes },
+        })
+      }
+      return refreshed.access_token
+    }
 
     const winner = await findCharacterToken(characterId, transaction)
     if (!winner) throw new CharacterTokenNotFoundError()

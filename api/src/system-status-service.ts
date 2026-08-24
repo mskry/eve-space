@@ -1,5 +1,6 @@
 import { createStatusClient } from '@evespace/esi-client/domains/status'
 import { sql } from './db/client.js'
+import { probeDomainEventStatus, type DomainEventStatus } from './domain-event-status.js'
 import { esiFetch } from './esi-fetch.js'
 import { esiErrorBudgetFloor } from './esi-policy.js'
 import { probeQueueStatus, type QueueStatus } from './queue/status.js'
@@ -38,6 +39,7 @@ export interface SystemStatus {
     database: DatabaseStatus
     esi: EsiStatus
     queue: QueueStatus
+    eventRelay: DomainEventStatus
   }
 }
 
@@ -62,6 +64,7 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
     probeEsi(),
     probeQueueStatus(),
   ])
+  const eventRelay = await probeDomainEventStatus(queue)
   const unavailableCount =
     Number(database.status === 'unavailable') + Number(esi.status === 'unavailable')
   const status =
@@ -69,7 +72,8 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
       ? 'unavailable'
       : database.status === 'operational' &&
           esi.status === 'operational' &&
-          queue.status === 'operational'
+          queue.status === 'operational' &&
+          eventRelay.status === 'operational'
         ? 'operational'
         : 'degraded'
 
@@ -85,6 +89,7 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
       database,
       esi,
       queue,
+      eventRelay,
     },
   }
   return cache

@@ -36,9 +36,27 @@ function withHeartbeats(beats: Record<string, string | null>) {
 
 beforeEach(() => {
   vi.resetModules()
+  mocks.connection.ping.mockReset()
+  mocks.connection.get.mockReset()
+  mocks.connection.smembers.mockReset()
+  mocks.connection.mget.mockReset()
+  mocks.queue.close.mockReset()
+  mocks.queue.getJobCounts.mockReset()
+  mocks.queue.getJobs.mockReset()
+  mocks.close.mockReset()
   mocks.connection.ping.mockResolvedValue('PONG')
   withHeartbeats({ 'worker-a': '2026-08-20T12:00:00.000Z' })
-  mocks.connection.get.mockResolvedValueOnce(null).mockResolvedValueOnce('registered')
+  mocks.connection.get
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce(
+      JSON.stringify({
+        outcome: 'published',
+        category: null,
+        recordedAt: '2026-08-20T12:00:00.000Z',
+      }),
+    )
+    .mockResolvedValueOnce('registered')
   mocks.queue.getJobCounts.mockResolvedValue({ waiting: 1, delayed: 2, active: 3, failed: 4 })
   mocks.queue.getJobs.mockImplementation(async ([state]: string[]) =>
     state === 'waiting'
@@ -57,6 +75,13 @@ describe('queue telemetry probe', () => {
       active: 3,
       retrying: 1,
       failed: 4,
+      plannerPaused: false,
+      outboxRelayPaused: false,
+      latestOutboxRelayOutcome: {
+        outcome: 'published',
+        category: null,
+        recordedAt: '2026-08-20T12:00:00.000Z',
+      },
       latestSchedulerOutcome: 'registered',
     })
     expect(mocks.queue.getJobs).toHaveBeenCalledWith(['waiting'], 0, 0, true)
@@ -77,6 +102,8 @@ describe('queue telemetry probe', () => {
       retrying: null,
       failed: null,
       plannerPaused: false,
+      outboxRelayPaused: false,
+      latestOutboxRelayOutcome: null,
       latestSchedulerOutcome: null,
     })
   })
@@ -84,7 +111,11 @@ describe('queue telemetry probe', () => {
   test('reports a healthy empty queue with a current heartbeat', async () => {
     withHeartbeats({ 'worker-a': new Date().toISOString() })
     mocks.connection.get.mockReset()
-    mocks.connection.get.mockResolvedValueOnce('paused').mockResolvedValueOnce(null)
+    mocks.connection.get
+      .mockResolvedValueOnce('paused')
+      .mockResolvedValueOnce('paused')
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
     mocks.queue.getJobCounts.mockResolvedValue({ waiting: 0, delayed: 0, active: 0, failed: 0 })
     mocks.queue.getJobs.mockResolvedValue([])
     const { probeQueueStatus } = await import('../src/queue/status.js')
@@ -95,6 +126,7 @@ describe('queue telemetry probe', () => {
       depth: 0,
       oldestWaitingAgeSeconds: null,
       plannerPaused: true,
+      outboxRelayPaused: true,
       latestSchedulerOutcome: null,
     })
   })
@@ -109,6 +141,24 @@ describe('queue telemetry probe', () => {
       status: 'degraded',
       retrying: 0,
       workerHeartbeatAt: 'not-a-date',
+    })
+  })
+
+  test('discards malformed relay outcomes instead of exposing Redis contents', async () => {
+    withHeartbeats({ 'worker-a': new Date().toISOString() })
+    mocks.connection.get.mockReset()
+    mocks.connection.get
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce('redis://private-host payload')
+      .mockResolvedValueOnce('registered')
+    mocks.queue.getJobCounts.mockResolvedValue({ waiting: 0, delayed: 0, active: 0, failed: 0 })
+    mocks.queue.getJobs.mockResolvedValue([])
+    const { probeQueueStatus } = await import('../src/queue/status.js')
+
+    await expect(probeQueueStatus()).resolves.toMatchObject({
+      status: 'operational',
+      latestOutboxRelayOutcome: null,
     })
   })
 

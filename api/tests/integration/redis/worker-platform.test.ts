@@ -5,6 +5,7 @@ import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainer
 
 let container: StartedTestContainer
 let redisUrl: string
+let containerRunning = false
 let platforms: Array<{ close(): Promise<unknown> }> = []
 
 beforeAll(async () => {
@@ -13,6 +14,7 @@ beforeAll(async () => {
     .withExposedPorts(6379)
     .withWaitStrategy(Wait.forLogMessage(/Ready to accept connections/))
     .start()
+  containerRunning = true
   redisUrl = `redis://${container.getHost()}:${container.getMappedPort(6379)}`
 })
 
@@ -20,6 +22,7 @@ afterEach(async () => {
   await Promise.all(platforms.map((platform) => platform.close()))
   platforms = []
   vi.doUnmock('../../../src/db/client.js')
+  vi.doUnmock('../../../src/domain-event-store.js')
   vi.doUnmock('../../../src/deployment-installation-settings.js')
   vi.doUnmock('../../../src/queue/scheduler.js')
   vi.doUnmock('../../../src/queue/worker-lifecycle.js')
@@ -28,7 +31,7 @@ afterEach(async () => {
 })
 
 afterAll(async () => {
-  await container.stop()
+  if (containerRunning) await container.stop()
 })
 
 describe('durable worker platform', () => {
@@ -42,8 +45,8 @@ describe('durable worker platform', () => {
 
     await expect(enqueueDiagnostic('on-demand')).resolves.toMatchObject({ admitted: true })
     const queue = createOperationsQueue()
-    await waitFor(async () => (await queue.getCompletedCount()) === 1)
-    expect(await queue.getJobSchedulersCount()).toBe(1)
+    await waitFor(async () => (await countJobs(queue, 'completed', 'diagnostic')) === 1)
+    expect(await queue.getJobSchedulersCount()).toBe(3)
     expect(sql).toHaveBeenCalled()
 
     const { getJobDefinition } = await import('../../../src/queue/job-registry.js')
@@ -58,15 +61,14 @@ describe('durable worker platform', () => {
       plannerCalls += 1
       await plannerBlocked
     }
-    const completedBeforePlanner = await queue.getCompletedCount()
     await Promise.all([
       queue.add('planner', { operationId: 'queue-planner' }),
       queue.add('planner', { operationId: 'queue-planner' }),
     ])
-    await waitFor(async () => (await queue.getCompletedCount()) > completedBeforePlanner)
+    await waitFor(() => Promise.resolve(plannerCalls === 1))
     expect(plannerCalls).toBe(1)
     releasePlanner?.()
-    await waitFor(async () => (await queue.getCompletedCount()) >= completedBeforePlanner + 2)
+    await waitFor(async () => (await countJobs(queue, 'completed', 'planner')) >= 2)
     planner.process = originalPlannerProcess
 
     const diagnostic = getJobDefinition('diagnostic') as unknown as {
@@ -80,25 +82,25 @@ describe('durable worker platform', () => {
     const blocked = new Promise<void>((resolve) => (release = resolve))
     diagnostic.process = async () => blocked
     await enqueueDiagnostic('on-demand')
-    await waitFor(async () => (await queue.getActiveCount()) === 1)
+    await waitFor(async () => (await countJobs(queue, 'active', 'diagnostic')) === 1)
     await expect(enqueueDiagnostic('planner')).resolves.toMatchObject({
       admitted: false,
       reason: 'coalesced',
     })
     release?.()
-    await waitFor(async () => (await queue.getCompletedCount()) >= 2)
+    await waitFor(async () => (await countJobs(queue, 'completed', 'diagnostic')) >= 2)
 
     diagnostic.process = async () => {
       throw new Error('permanent diagnostic failure')
     }
     diagnostic.classifyError = () => 'permanent'
     await enqueueDiagnostic('on-demand')
-    await waitFor(async () => (await queue.getFailedCount()) === 1)
+    await waitFor(async () => (await countJobs(queue, 'failed', 'diagnostic')) === 1)
 
     diagnostic.classifyError = () => 'retryable'
     diagnostic.attempts = 1
     await enqueueDiagnostic('on-demand')
-    await waitFor(async () => (await queue.getFailedCount()) === 2)
+    await waitFor(async () => (await countJobs(queue, 'failed', 'diagnostic')) === 2)
     diagnostic.process = originalProcess
     diagnostic.classifyError = originalClassification
     diagnostic.attempts = 3
@@ -248,7 +250,12 @@ describe('durable worker platform', () => {
           prefix: queuePrefix,
         },
       )
-      await queue.add('diagnostic', { operationId: 'queue-diagnostic' }, { removeOnComplete: true })
+      const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
+      await queue.add(
+        'domain-event',
+        { eventId },
+        { jobId: `domain-event-${eventId}`, removeOnComplete: true },
+      )
       await started
       await stoppedWorker.close(true)
       await closeQueueRedisConnection(stoppedConnection)
@@ -274,6 +281,72 @@ describe('durable worker platform', () => {
     } finally {
       await queue.close()
       await closeQueueRedisConnection(producer)
+    }
+  })
+
+  test('deduplicates concurrent event relay and retries enqueue-success acknowledgement failure', async () => {
+    const { runOutboxRelayBatch } = await import('../../../src/queue/outbox-relay.js')
+    const { assertSelectedDomainEventJobsAbsent } =
+      await import('../../../src/domain-event-redrive-queue.js')
+    const { createProducerRedisConnection, closeQueueRedisConnection } =
+      await import('../../../src/queue/redis.js')
+    const { operationsQueueName, queuePrefix } = await import('../../../src/queue/namespaces.js')
+    const connection = createProducerRedisConnection(redisUrl)
+    const queue = new Queue(`${operationsQueueName}-event-relay`, {
+      connection,
+      prefix: queuePrefix,
+    })
+    const eventId = 'a4fc5c0f-fb4d-4423-af88-9af3a8b60b86'
+    const claimToken = 'b7e7be31-3547-48aa-baaa-9b86e89e4420'
+    const claim = {
+      valid: true as const,
+      event: { eventId },
+      claimToken,
+      claimExpiresAt: new Date(Date.now() + 30_000),
+      publishAttempts: 1,
+    }
+    const acknowledge = vi.fn().mockResolvedValue(true)
+    const recordFailure = vi.fn().mockResolvedValue(true)
+    const dependencies = {
+      claim: vi.fn().mockResolvedValue([claim]),
+      acknowledge,
+      recordFailure,
+    }
+
+    try {
+      await Promise.all([
+        runOutboxRelayBatch(queue, { highWaterMark: 10 }, dependencies as never),
+        runOutboxRelayBatch(queue, { highWaterMark: 10 }, dependencies as never),
+      ])
+      expect(await queue.getWaitingCount()).toBe(1)
+      expect((await queue.getWaiting())[0]?.id).toBe(`domain-event-${eventId}`)
+      await expect(assertSelectedDomainEventJobsAbsent([eventId], queue)).rejects.toThrow(
+        'selected domain-event jobs still exist',
+      )
+
+      acknowledge.mockRejectedValueOnce(new Error('acknowledgement unavailable'))
+      await expect(
+        runOutboxRelayBatch(queue, { highWaterMark: 10 }, dependencies as never),
+      ).resolves.toMatchObject({ failed: 1 })
+      expect(recordFailure).toHaveBeenCalledWith(expect.objectContaining({ category: 'unknown' }))
+      expect(await queue.getWaitingCount()).toBe(1)
+
+      acknowledge.mockResolvedValue(true)
+      await expect(
+        runOutboxRelayBatch(queue, { highWaterMark: 10 }, dependencies as never),
+      ).resolves.toMatchObject({ published: 1 })
+      expect(await queue.getWaitingCount()).toBe(1)
+
+      await queue.obliterate({ force: true })
+      expect(await queue.getJobCounts('waiting', 'delayed', 'active')).toMatchObject({ waiting: 0 })
+      await expect(assertSelectedDomainEventJobsAbsent([eventId], queue)).resolves.toBeUndefined()
+      await expect(
+        runOutboxRelayBatch(queue, { highWaterMark: 10 }, dependencies as never),
+      ).resolves.toMatchObject({ published: 1 })
+      expect((await queue.getWaiting())[0]?.id).toBe(`domain-event-${eventId}`)
+    } finally {
+      await queue.close()
+      await closeQueueRedisConnection(connection)
     }
   })
 
@@ -307,6 +380,13 @@ describe('durable worker platform', () => {
         expect(jobs.filter((job) => job.data.operationId === 'subject-a')).toHaveLength(1)
       }
 
+      await expect(
+        admitQueueWork(queue, 'domain-event', 'outbox', highWaterMark),
+      ).resolves.toMatchObject({
+        admitted: false,
+        reason: 'outbox-paused',
+      })
+
       await queue.drain(true)
       await expect(
         admitQueueWork(queue, 'subject-a', 'planner', highWaterMark),
@@ -314,6 +394,9 @@ describe('durable worker platform', () => {
         admitted: true,
         depth: 0,
       })
+      await expect(
+        admitQueueWork(queue, 'domain-event', 'outbox', highWaterMark),
+      ).resolves.toMatchObject({ admitted: true })
       await queue.add('derived', { operationId: 'subject-a' })
       await expect(queue.getWaitingCount()).resolves.toBe(1)
     } finally {
@@ -331,14 +414,23 @@ describe('durable worker platform', () => {
     const queue = new Queue(queueName, { connection: beforeRestart, prefix: queuePrefix })
 
     try {
-      await queue.add('derived', { operationId: 'waiting-subject' })
-      await queue.add('derived', { operationId: 'delayed-subject' }, { delay: 60_000 })
+      await queue.add(
+        'domain-event',
+        { eventId: 'a4fc5c0f-fb4d-4423-af88-9af3a8b60b86' },
+        { jobId: 'domain-event-a4fc5c0f-fb4d-4423-af88-9af3a8b60b86' },
+      )
+      await queue.add(
+        'domain-event',
+        { eventId: 'b9d03bf1-b12a-4b61-89b5-ad15f2de53ab' },
+        { jobId: 'domain-event-b9d03bf1-b12a-4b61-89b5-ad15f2de53ab', delay: 60_000 },
+      )
     } finally {
       await queue.close()
       await closeQueueRedisConnection(beforeRestart)
     }
 
     await container.restart()
+    containerRunning = true
     redisUrl = `redis://${container.getHost()}:${container.getMappedPort(6379)}`
     await waitForRedis(redisUrl)
     const afterRestart = createProducerRedisConnection(redisUrl)
@@ -375,7 +467,7 @@ describe('durable worker platform', () => {
     ).resolves.toBeUndefined()
     await expect(
       assertWorkerDependencies(migratedConnection() as never, probeQueueStatus),
-    ).rejects.toThrow('Worker dependency unavailable: Worker or queue degraded')
+    ).rejects.toThrow('Worker dependency unavailable: Worker heartbeat stale')
 
     platforms.push(await startWorkerPlatform())
 
@@ -417,11 +509,9 @@ describe('durable worker platform', () => {
       // A worker surviving the failed startup would consume this without heartbeat telemetry.
       await queue.add('diagnostic', { operationId: 'queue-diagnostic' })
       await new Promise((resolve) => setTimeout(resolve, 1_000))
-      await expect(queue.getJobCounts('waiting', 'active', 'completed')).resolves.toMatchObject({
-        waiting: 1,
-        active: 0,
-        completed: 0,
-      })
+      await expect(countJobs(queue, 'waiting', 'diagnostic')).resolves.toBe(1)
+      await expect(countJobs(queue, 'active', 'diagnostic')).resolves.toBe(0)
+      await expect(countJobs(queue, 'completed', 'diagnostic')).resolves.toBe(0)
     } finally {
       await queue.drain(true)
       await closeOperationsQueue(queue)
@@ -456,11 +546,9 @@ describe('durable worker platform', () => {
 
     const queue = createOperationsQueue()
     try {
-      await expect(queue.getJobCounts('waiting', 'active', 'completed')).resolves.toMatchObject({
-        waiting: 1,
-        active: 0,
-        completed: 0,
-      })
+      await expect(countJobs(queue, 'waiting', 'diagnostic')).resolves.toBe(1)
+      await expect(countJobs(queue, 'active', 'diagnostic')).resolves.toBe(0)
+      await expect(countJobs(queue, 'completed', 'diagnostic')).resolves.toBe(0)
     } finally {
       await queue.drain(true)
       await closeOperationsQueue(queue)
@@ -541,27 +629,31 @@ describe('durable worker platform', () => {
     }
   })
 
-  // Must stay last: the Redis pause it uses blocks every client for its duration.
+  // Must stay last: it stops the suite's shared Redis container.
   test('bounds shutdown when the queue Redis stops answering', async () => {
-    await flushQueueRedis()
+    await integrationDeadline(flushQueueRedis(), 5_000, 'Redis flush')
     const timedOut = vi.spyOn(console, 'error').mockImplementation(() => {})
     const workerDisconnect = vi.spyOn(Worker.prototype, 'disconnect')
     const { startWorkerPlatform } = await loadPlatform(vi.fn().mockResolvedValue([{ ok: 1 }]))
-    const platform = await startWorkerPlatform()
+    const platform = await integrationDeadline(startWorkerPlatform(), 5_000, 'worker startup')
 
-    const pauser = new Redis(redisUrl, { maxRetriesPerRequest: 1 })
-    pauser.on('error', () => {})
-    await pauser.call('CLIENT', 'PAUSE', '5000', 'ALL')
-    pauser.disconnect()
+    await integrationDeadline(container.stop(), 10_000, 'Redis stop')
+    containerRunning = false
+    const workerPause = vi
+      .spyOn(Worker.prototype, 'pause')
+      .mockReturnValue(new Promise<void>(() => {}))
 
     const startedAt = Date.now()
-    await expect(platform.close(1_000)).resolves.toBeTypeOf('boolean')
+    await expect(
+      integrationDeadline(platform.close(1_000), 5_000, 'worker shutdown'),
+    ).resolves.toBeTypeOf('boolean')
     expect(Date.now() - startedAt).toBeLessThan(3_000)
     expect(timedOut).toHaveBeenCalledWith(
       'Worker shutdown exceeded its timeout; dropping queue connections',
     )
     // Dropping only our own connections would leave BullMQ's blocking client retrying.
     expect(workerDisconnect).toHaveBeenCalled()
+    workerPause.mockRestore()
     workerDisconnect.mockRestore()
     timedOut.mockRestore()
   })
@@ -585,6 +677,16 @@ async function flushQueueRedis() {
 async function loadPlatform(sql: ReturnType<typeof vi.fn>) {
   process.env.QUEUE_REDIS_URL = redisUrl
   vi.doMock('../../../src/db/client.js', () => ({ sql }))
+  vi.doMock('../../../src/domain-event-store.js', () => ({
+    claimPendingDomainEvents: vi.fn().mockResolvedValue([]),
+    deletePublishedDomainEvents: vi.fn().mockResolvedValue(0),
+    getPendingDomainEventAggregates: vi
+      .fn()
+      .mockResolvedValue({ pendingCount: 0, oldestPendingAt: null }),
+    loadDomainEvent: vi.fn().mockResolvedValue(null),
+    markDomainEventPublished: vi.fn().mockResolvedValue(true),
+    recordDomainEventPublishFailure: vi.fn().mockResolvedValue(true),
+  }))
   vi.doMock('../../../src/deployment-installation-settings.js', () => ({
     loadPlannerScheduleOffset: vi
       .fn()
@@ -624,4 +726,26 @@ async function waitForRedis(url: string) {
       connection.disconnect()
     }
   }, 20_000)
+}
+
+async function countJobs(
+  queue: Queue,
+  state: 'waiting' | 'active' | 'completed' | 'failed',
+  name: string,
+) {
+  return (await queue.getJobs([state])).filter((job) => job.name === name).length
+}
+
+async function integrationDeadline<T>(operation: Promise<T>, timeoutMs: number, label: string) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs)
+      }),
+    ])
+  } finally {
+    clearTimeout(timer)
+  }
 }

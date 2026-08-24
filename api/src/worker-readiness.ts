@@ -1,7 +1,8 @@
 import { sql } from './db/client.js'
+import { workerHeartbeatStaleAfterMs } from './queue/policy.js'
 import { probeQueueStatus } from './queue/status.js'
 
-export const expectedWorkerMigration = '008_deployment_installation_settings.sql'
+export const expectedWorkerMigration = '010_domain_event_relay_safety.sql'
 
 export class WorkerSchemaNotReadyError extends Error {
   constructor() {
@@ -72,8 +73,10 @@ export async function checkWorkerDependencies(
 ) {
   const dependencies = await checkSchemaAndQueueReachability(connection, queueProbe)
   if (!dependencies.healthy) return dependencies
-  if (dependencies.queue.status !== 'operational')
-    return { healthy: false as const, reason: 'Worker or queue degraded' }
+  const heartbeatAt = dependencies.queue.workerHeartbeatAt
+  const heartbeatTime = heartbeatAt ? Date.parse(heartbeatAt) : Number.NaN
+  if (Number.isNaN(heartbeatTime) || Date.now() - heartbeatTime > workerHeartbeatStaleAfterMs)
+    return { healthy: false as const, reason: 'Worker heartbeat stale' }
   return { healthy: true as const }
 }
 

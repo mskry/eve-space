@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   createStatusClient: vi.fn(),
   getStatus: vi.fn(),
+  probeDomainEventStatus: vi.fn(),
   probeQueueStatus: vi.fn(),
   sql: vi.fn(),
 }))
@@ -19,6 +20,10 @@ vi.mock('../src/esi-fetch.js', () => ({
   esiFetch: vi.fn(),
 }))
 
+vi.mock('../src/domain-event-status.js', () => ({
+  probeDomainEventStatus: mocks.probeDomainEventStatus,
+}))
+
 vi.mock('../src/queue/status.js', () => ({
   probeQueueStatus: mocks.probeQueueStatus,
 }))
@@ -33,6 +38,7 @@ beforeEach(() => {
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
   mocks.getStatus.mockResolvedValue(statusResponse())
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
+  mocks.probeDomainEventStatus.mockResolvedValue(eventRelayStatus())
 })
 
 afterEach(() => {
@@ -56,12 +62,14 @@ describe('system status service', () => {
         database: { status: 'operational' },
         esi: { status: 'operational', players: 31_337 },
         queue: { status: 'operational' },
+        eventRelay: { status: 'operational', pendingCount: 0 },
       },
     })
     await expect(second).resolves.toEqual(await first)
     await expect(getSystemStatus()).resolves.toEqual(await first)
     expect(mocks.sql).toHaveBeenCalledOnce()
     expect(mocks.getStatus).toHaveBeenCalledOnce()
+    expect(mocks.probeDomainEventStatus).toHaveBeenCalledWith(queueStatus())
   })
 
   test('reports degraded status for database failure and a low ESI budget', async () => {
@@ -131,13 +139,36 @@ describe('system status service', () => {
       depth: null,
       workerHeartbeatAt: null,
     })
+    mocks.probeDomainEventStatus.mockResolvedValue(
+      eventRelayStatus({ status: 'unavailable', pendingCount: 3 }),
+    )
     const { getSystemStatus } = await import('../src/system-status-service.js')
 
     await expect(getSystemStatus()).resolves.toMatchObject({
       status: 'degraded',
       services: {
         queue: { status: 'unavailable', depth: null, workerHeartbeatAt: null },
+        eventRelay: { status: 'unavailable', pendingCount: 3 },
       },
+    })
+  })
+
+  test.each([
+    {
+      name: 'lagged',
+      eventRelay: eventRelayStatus({ status: 'degraded', oldestPendingAgeSeconds: 301 }),
+    },
+    {
+      name: 'paused',
+      eventRelay: eventRelayStatus({ status: 'degraded', relayPaused: true }),
+    },
+  ])('includes a $name event relay in overall degradation', async ({ eventRelay }) => {
+    mocks.probeDomainEventStatus.mockResolvedValue(eventRelay)
+    const { getSystemStatus } = await import('../src/system-status-service.js')
+
+    await expect(getSystemStatus()).resolves.toMatchObject({
+      status: 'degraded',
+      services: { eventRelay },
     })
   })
 
@@ -188,12 +219,26 @@ function queueStatus() {
   return {
     status: 'operational' as const,
     workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
+    workers: 1,
     depth: 0,
     oldestWaitingAgeSeconds: null,
     active: 0,
     retrying: 0,
     failed: 0,
     plannerPaused: false,
+    outboxRelayPaused: false,
+    latestOutboxRelayOutcome: null,
     latestSchedulerOutcome: 'registered' as const,
+  }
+}
+
+function eventRelayStatus(overrides: Record<string, unknown> = {}) {
+  return {
+    status: 'operational' as const,
+    pendingCount: 0,
+    oldestPendingAgeSeconds: null,
+    relayPaused: false,
+    latestRelayOutcome: null,
+    ...overrides,
   }
 }

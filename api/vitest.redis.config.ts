@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     clearMocks: true,
     environment: 'node',
-    include: ['tests/integration/redis/**/*.test.ts'],
+    include: ['tests/integration/redis/**/*.test.ts', 'tests/queue-platform-logging.test.ts'],
     testTimeout: 60_000,
     hookTimeout: 60_000,
     coverage: {

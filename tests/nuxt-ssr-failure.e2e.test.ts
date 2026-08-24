@@ -19,7 +19,14 @@ afterAll(() => new Promise<void>((resolve) => apiServer.close(() => resolve())))
 describe('Nuxt anonymous SSR boundary', async () => {
   await setup({
     rootDir: fileURLToPath(new URL('..', import.meta.url)),
-    build: true,
+    build: false,
+    nuxtConfig: {
+      nitro: {
+        output: {
+          dir: fileURLToPath(new URL('../.output', import.meta.url)),
+        },
+      },
+    },
     browser: false,
     server: true,
     captureServerLogs: false,

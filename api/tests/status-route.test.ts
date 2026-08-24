@@ -33,6 +33,35 @@ describe('system status route', () => {
           errorBudgetRemaining: 99,
           errorBudgetResetSeconds: 10,
         },
+        queue: {
+          status: 'operational',
+          workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
+          workers: 1,
+          depth: 0,
+          oldestWaitingAgeSeconds: null,
+          active: 0,
+          retrying: 0,
+          failed: 0,
+          plannerPaused: false,
+          outboxRelayPaused: false,
+          latestOutboxRelayOutcome: {
+            outcome: 'published',
+            category: null,
+            recordedAt: '2026-08-20T11:59:58.000Z',
+          },
+          latestSchedulerOutcome: 'registered',
+        },
+        eventRelay: {
+          status: 'operational',
+          pendingCount: 0,
+          oldestPendingAgeSeconds: null,
+          relayPaused: false,
+          latestRelayOutcome: {
+            outcome: 'published',
+            category: null,
+            recordedAt: '2026-08-20T11:59:58.000Z',
+          },
+        },
       },
     })
 
@@ -42,9 +71,112 @@ describe('system status route', () => {
     expect(response.headers.get('cache-control')).toBe(
       'public, max-age=15, stale-while-revalidate=30',
     )
-    expect(await response.json()).toMatchObject({
+    expect(await response.json()).toEqual({
       status: 'operational',
-      services: { esi: { players: 31_337 } },
+      checkedAt: '2026-08-20T12:00:00.000Z',
+      cachedUntil: '2026-08-20T12:00:30.000Z',
+      services: {
+        api: { status: 'operational', uptimeSeconds: 120 },
+        database: { status: 'operational', latencyMs: 3 },
+        esi: {
+          status: 'operational',
+          latencyMs: 80,
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          players: 31_337,
+          serverVersion: '2.5.7',
+          startedAt: '2026-08-20T11:00:00Z',
+          vip: false,
+          errorBudgetRemaining: 99,
+          errorBudgetResetSeconds: 10,
+        },
+        queue: {
+          status: 'operational',
+          workerHeartbeatAt: '2026-08-20T12:00:00.000Z',
+          workers: 1,
+          depth: 0,
+          oldestWaitingAgeSeconds: null,
+          active: 0,
+          retrying: 0,
+          failed: 0,
+          plannerPaused: false,
+          outboxRelayPaused: false,
+          latestOutboxRelayOutcome: {
+            outcome: 'published',
+            category: null,
+            recordedAt: '2026-08-20T11:59:58.000Z',
+          },
+          latestSchedulerOutcome: 'registered',
+        },
+        eventRelay: {
+          status: 'operational',
+          pendingCount: 0,
+          oldestPendingAgeSeconds: null,
+          relayPaused: false,
+          latestRelayOutcome: {
+            outcome: 'published',
+            category: null,
+            recordedAt: '2026-08-20T11:59:58.000Z',
+          },
+        },
+      },
+    })
+  })
+
+  test.each([
+    {
+      name: 'lagged',
+      eventRelay: {
+        status: 'degraded',
+        pendingCount: 4,
+        oldestPendingAgeSeconds: 301,
+        relayPaused: false,
+        latestRelayOutcome: null,
+      },
+    },
+    {
+      name: 'paused',
+      eventRelay: {
+        status: 'degraded',
+        pendingCount: 1,
+        oldestPendingAgeSeconds: 2,
+        relayPaused: true,
+        latestRelayOutcome: {
+          outcome: 'paused',
+          category: null,
+          recordedAt: '2026-08-20T12:00:00.000Z',
+        },
+      },
+    },
+    {
+      name: 'unavailable',
+      eventRelay: {
+        status: 'unavailable',
+        pendingCount: 7,
+        oldestPendingAgeSeconds: 20,
+        relayPaused: false,
+        latestRelayOutcome: null,
+      },
+    },
+  ])('preserves the $name event relay DTO', async ({ eventRelay }) => {
+    mocks.getSystemStatus.mockResolvedValue({
+      status: 'degraded',
+      checkedAt: '2026-08-20T12:00:00.000Z',
+      cachedUntil: '2026-08-20T12:00:30.000Z',
+      services: {
+        api: { status: 'operational', uptimeSeconds: 120 },
+        database: { status: 'operational', latencyMs: 3 },
+        esi: { status: 'operational' },
+        queue: { status: 'operational' },
+        eventRelay,
+      },
+    })
+
+    const response = await client.index.$get()
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      status: 'degraded',
+      services: { eventRelay },
     })
   })
 })
