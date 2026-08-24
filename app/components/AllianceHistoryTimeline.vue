@@ -75,7 +75,7 @@ function formatEmploymentDate(value: string) {
         placeholder="Search alliance name or ID"
         aria-label="Search alliance history by name or ID"
       />
-      <span class="history-search-status" aria-live="polite">
+      <span class="app-search-status" aria-live="polite">
         <template v-if="!searchTerm">&nbsp;</template>
         <template v-else-if="matches.size === 0">NO MATCHES</template>
         <template v-else>{{ matches.size }} / {{ timeline.length }} MATCHED</template>

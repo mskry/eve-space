@@ -10,6 +10,10 @@
   letter-spacing: 0.1em;
 }
 
+.app-state-panel--compact {
+  min-height: 280px;
+}
+
 @property --tidi-fill {
   syntax: '<angle>';
   inherits: false;

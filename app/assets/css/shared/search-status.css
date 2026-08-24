@@ -1,0 +1,6 @@
+.app-search-status {
+  color: var(--ui-text-muted);
+  font: 700 8px/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
