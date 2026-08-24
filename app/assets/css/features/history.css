@@ -35,13 +35,6 @@
   box-shadow: inset 2px 0 0 var(--ui-primary);
 }
 
-.history-search-status {
-  color: var(--ui-text-muted);
-  font: 700 8px/1 var(--ui-font-mono);
-  letter-spacing: 0.12em;
-  white-space: nowrap;
-}
-
 .history-npc-toggle {
   display: inline-flex;
   align-items: center;

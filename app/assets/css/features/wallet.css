@@ -195,7 +195,3 @@
 .wallet-transaction-value .is-sell {
   color: var(--accent);
 }
-
-.app-state-panel--compact {
-  min-height: 280px;
-}

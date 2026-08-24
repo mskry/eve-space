@@ -1,14 +1,4 @@
 /* Dashboard shell */
-.app-icon {
-  width: 22px;
-  height: 22px;
-  display: block;
-  stroke: currentColor;
-  stroke-width: 1.5;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-}
-
 .dashboard-shell {
   min-height: 100vh;
 }
@@ -282,35 +272,6 @@
     filter: blur(5px);
     transform: translateX(26px) scaleX(2.5);
   }
-}
-
-.sidebar-brand {
-  min-height: 58px;
-  padding: 0 10px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.sidebar-brand-copy,
-.sidebar-brand-copy strong,
-.sidebar-brand-copy small {
-  display: block;
-}
-
-.sidebar-brand-copy strong {
-  font-size: 13px;
-  letter-spacing: 0.2em;
-}
-
-.sidebar-brand-copy small {
-  margin-top: 5px;
-  color: var(--muted);
-  font: 8px/1 monospace;
-  letter-spacing: 0.15em;
 }
 
 .sidebar-nav {
