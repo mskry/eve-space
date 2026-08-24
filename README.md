@@ -52,17 +52,22 @@ Create `.env` from `.env.example`, then supply:
 
 ```dotenv
 NUXT_PUBLIC_EVE_IMAGE_BASE=https://images.evetech.net
+POSTGRES_PASSWORD=your-url-safe-random-postgres-password
+DATABASE_URL=postgres://eve_space:your-url-safe-random-postgres-password@localhost:5432/eve_space
 EVE_CLIENT_ID=your-client-id
 EVE_CLIENT_SECRET=your-client-secret
 TOKEN_ENCRYPTION_KEY=your-base64-encoded-32-byte-key
 ADMIN_SETUP_SECRET=your-high-entropy-one-time-setup-secret
 ```
 
-Generate the encryption key with:
+Generate a URL-safe PostgreSQL password and the encryption key with:
 
 ```bash
+openssl rand -hex 32
 openssl rand -base64 32
 ```
+
+Use the same hex output for `POSTGRES_PASSWORD` and the password component of `DATABASE_URL`.
 
 The client secret, encryption key, and setup secret must remain server-side. Never provide EVE account credentials to this application; the browser authenticates directly with EVE Online.
 
