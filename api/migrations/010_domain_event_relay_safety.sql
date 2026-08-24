@@ -1,6 +1,8 @@
 alter table domain_events add column pending_since timestamptz;
 
-update domain_events set pending_since = occurred_at;
+update domain_events
+set pending_since = occurred_at
+where pending_since is null;
 
 alter table domain_events
   alter column pending_since set default now(),

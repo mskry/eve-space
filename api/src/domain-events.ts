@@ -165,7 +165,7 @@ const storedEnvelope = z
   .strict()
 
 export function normalizeScopeSet(scopes: readonly string[]) {
-  return [...new Set(scopes)].toSorted()
+  return [...new Set(scopes)].toSorted((left, right) => left.localeCompare(right))
 }
 
 export function listDomainEventDefinitions() {

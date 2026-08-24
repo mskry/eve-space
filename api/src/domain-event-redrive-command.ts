@@ -1,4 +1,6 @@
 const maximumDomainEventRedriveLimit = 1_000
+const domainEventRedriveFlags = new Set(['--dry-run', '--confirm-queue-discard'])
+const domainEventRedriveValueArguments = new Set(['--from', '--to', '--time-field', '--limit'])
 
 interface DomainEventRedriveOptions {
   from: Date
@@ -22,31 +24,17 @@ interface DomainEventRedriveDependencies {
 export function parseDomainEventRedriveArgs(
   args: readonly string[],
 ): DomainEventRedriveCommandOptions {
+  const commandArgs = args[0] === '--' ? args.slice(1) : args
   const values = new Map<string, string>()
-  let dryRun = false
-  let queueDiscardConfirmed = false
+  const flags = new Set<string>()
 
-  for (let index = 0; index < args.length; index += 1) {
-    const argument = args[index]!
-    if (argument === '--' && index === 0) continue
-    if (argument === '--dry-run') {
-      if (dryRun) throw new Error('Duplicate argument: --dry-run')
-      dryRun = true
+  for (let index = 0; index < commandArgs.length; index += 1) {
+    const argument = commandArgs[index]!
+    if (domainEventRedriveFlags.has(argument)) {
+      addUniqueFlag(flags, argument)
       continue
     }
-    if (argument === '--confirm-queue-discard') {
-      if (queueDiscardConfirmed) throw new Error('Duplicate argument: --confirm-queue-discard')
-      queueDiscardConfirmed = true
-      continue
-    }
-    if (!['--from', '--to', '--time-field', '--limit'].includes(argument))
-      throw new Error(`Unknown argument: ${argument}`)
-    if (values.has(argument)) throw new Error(`Duplicate argument: ${argument}`)
-
-    const value = args[index + 1]
-    if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`)
-    values.set(argument, value)
-    index += 1
+    index = collectValueArgument(commandArgs, index, values)
   }
 
   const from = parseTimestamp(requiredValue(values, '--from'), '--from')
@@ -68,8 +56,8 @@ export function parseDomainEventRedriveArgs(
     to,
     limit,
     timeField: selector === 'occurrence' ? 'occurredAt' : 'publishedAt',
-    dryRun,
-    queueDiscardConfirmed,
+    dryRun: flags.has('--dry-run'),
+    queueDiscardConfirmed: flags.has('--confirm-queue-discard'),
   }
 }
 
@@ -98,6 +86,23 @@ function requiredValue(values: ReadonlyMap<string, string>, argument: string) {
   const value = values.get(argument)
   if (!value) throw new Error(`Missing required argument: ${argument}`)
   return value
+}
+
+function addUniqueFlag(flags: Set<string>, argument: string) {
+  if (flags.has(argument)) throw new Error(`Duplicate argument: ${argument}`)
+  flags.add(argument)
+}
+
+function collectValueArgument(args: readonly string[], index: number, values: Map<string, string>) {
+  const argument = args[index]!
+  if (!domainEventRedriveValueArguments.has(argument))
+    throw new Error(`Unknown argument: ${argument}`)
+  if (values.has(argument)) throw new Error(`Duplicate argument: ${argument}`)
+
+  const value = args[index + 1]
+  if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`)
+  values.set(argument, value)
+  return index + 1
 }
 
 function parseTimestamp(value: string, argument: string) {
