@@ -44,8 +44,8 @@ describe('ESI resilience layer', () => {
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
     const load = vi.fn().mockResolvedValue(result({ name: 'Bandera' }))
     const resource = {
-      operation: 'public-character' as const,
-      resource: 'character-90000001',
+      operation: 'public-corporation' as const,
+      resource: 'corporation-90000001',
       load,
     }
 
@@ -69,8 +69,8 @@ describe('ESI resilience layer', () => {
         }),
     )
     const pending = layer.get({
-      operation: 'public-character',
-      resource: 'character-90000001',
+      operation: 'public-corporation',
+      resource: 'corporation-90000001',
       load,
     })
 
@@ -86,10 +86,10 @@ describe('ESI resilience layer', () => {
     const envelope = serializedEnvelope({
       freshUntil: now - 1,
       retainUntil: now + 60_000,
-      fence: 7,
+      fence: 6,
     })
     cache.get.mockResolvedValue(envelope)
-    mocks.getCommitted.mockResolvedValue(7)
+    mocks.getCommitted.mockResolvedValue(6)
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
     const notModified = Object.assign(new Error('Not modified'), {
       status: 304,
@@ -98,9 +98,10 @@ describe('ESI resilience layer', () => {
     const load = vi.fn().mockRejectedValue(notModified)
 
     await expect(
-      layer.get({ operation: 'public-character', resource: 'character-90000001', load }),
+      layer.get({ operation: 'public-corporation', resource: 'corporation-90000001', load }),
     ).resolves.toMatchObject({ data: { name: 'cached' }, source: 'not-modified', stale: false })
     expect(load).toHaveBeenCalledWith({ ifNoneMatch: '"etag"', ifModifiedSince: 'yesterday' })
+    expect(JSON.parse(cache.set.mock.calls[0]?.[1] as string)).toMatchObject({ fence: lease.fence })
   })
 
   test('rejects obsolete envelope versions before a stale DTO can be read', async () => {
@@ -111,7 +112,7 @@ describe('ESI resilience layer', () => {
     const load = vi.fn().mockResolvedValue(result({ name: 'replacement' }))
 
     await expect(
-      layer.get({ operation: 'public-character', resource: 'character-90000001', load }),
+      layer.get({ operation: 'public-corporation', resource: 'corporation-90000001', load }),
     ).resolves.toMatchObject({ data: { name: 'replacement' }, source: 'esi' })
   })
 
@@ -122,25 +123,37 @@ describe('ESI resilience layer', () => {
     )
     mocks.getCommitted.mockResolvedValue(7)
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
-    const load = vi.fn().mockRejectedValue(new EsiQuotaError(15))
+    const load = vi.fn().mockRejectedValue(esiRateLimited(15))
 
     await expect(
-      layer.get({ operation: 'public-character', resource: 'character-90000001', load }),
-    ).resolves.toMatchObject({ data: { name: 'cached' }, source: 'cache', stale: true })
+      layer.get({ operation: 'public-corporation', resource: 'corporation-90000001', load }),
+    ).resolves.toMatchObject({
+      data: { name: 'cached' },
+      source: 'cache',
+      stale: true,
+      retryAt: new Date(now + 15_000).toISOString(),
+    })
   })
 
   test('retains a private entry for conditional revalidation without serving it stale', async () => {
-    const cache = redis()
-    cache.get.mockResolvedValue(
-      serializedEnvelope({ freshUntil: now - 1, retainUntil: now + 60_000, fence: 7 }),
-    )
-    mocks.getCommitted.mockResolvedValue(7)
-    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
-    const load = vi.fn().mockRejectedValue(new EsiQuotaError(15))
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2)
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ...result({ name: 'cached' }),
+        meta: {
+          status: 200,
+          headers: {},
+          cache: { cacheControl: 'max-age=60', etag: '"etag"', lastModified: 'yesterday' },
+        },
+      })
+      .mockRejectedValueOnce(esiRateLimited(12))
 
+    await layer.get({ operation: 'wallet-balance', resource: 'wallet-balance-character-1', load })
+    await vi.advanceTimersByTimeAsync(60_001)
     await expect(
       layer.get({ operation: 'wallet-balance', resource: 'wallet-balance-character-1', load }),
-    ).rejects.toEqual(new EsiQuotaError(15))
+    ).rejects.toEqual(new EsiQuotaError(12))
     expect(load).toHaveBeenCalledWith({ ifNoneMatch: '"etag"', ifModifiedSince: 'yesterday' })
   })
 
@@ -149,8 +162,8 @@ describe('ESI resilience layer', () => {
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
     const load = vi.fn().mockResolvedValue(result({ name: 'cached' }))
 
-    await layer.get({ operation: 'public-character', resource: 'character-1', load })
-    await layer.get({ operation: 'public-character', resource: 'character-2', load })
+    await layer.get({ operation: 'public-corporation', resource: 'corporation-1', load })
+    await layer.get({ operation: 'public-corporation', resource: 'corporation-2', load })
     expect(mocks.initialize).toHaveBeenCalledOnce()
   })
 
@@ -162,7 +175,7 @@ describe('ESI resilience layer', () => {
     const load = vi.fn().mockResolvedValue(result({ name: 'replacement' }))
 
     await expect(
-      layer.get({ operation: 'public-character', resource: 'character-90000001', load }),
+      layer.get({ operation: 'public-corporation', resource: 'corporation-90000001', load }),
     ).resolves.toMatchObject({ source: 'esi' })
     expect(mocks.getLeaseTtl).toHaveBeenCalled()
     expect(mocks.acquire).toHaveBeenCalledTimes(2)
@@ -178,6 +191,43 @@ describe('ESI resilience layer', () => {
     ).resolves.toMatchObject({ source: 'esi' })
     expect(cache.get).not.toHaveBeenCalled()
     expect(cache.set).not.toHaveBeenCalled()
+  })
+
+  test('keeps private values in the bounded process-local cache', async () => {
+    const cache = redis()
+    const coordination = redis()
+    const layer = new EsiResilienceLayer(cache as never, coordination as never, 2)
+    const load = vi.fn().mockResolvedValue(result({ balance: 1 }))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      resource: 'wallet-balance-character-1',
+      load,
+    }
+
+    await layer.get(resource)
+    await layer.get(resource)
+
+    expect(load).toHaveBeenCalledOnce()
+    expect(cache.ping).not.toHaveBeenCalled()
+    expect(cache.get).not.toHaveBeenCalled()
+    expect(cache.set).not.toHaveBeenCalled()
+    expect(coordination.ping).not.toHaveBeenCalled()
+  })
+
+  test('evicts local-only values after one hundred entries', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2)
+    const load = vi.fn().mockResolvedValue(result({ balance: 1 }))
+    const resource = (characterId: number) => ({
+      operation: 'wallet-balance' as const,
+      resource: `wallet-balance-character-${characterId}`,
+      load,
+    })
+
+    for (const characterId of Array.from({ length: 101 }, (_, index) => index + 1))
+      await layer.get(resource(characterId))
+    await layer.get(resource(1))
+
+    expect(load).toHaveBeenCalledTimes(102)
   })
 
   test('does not pass validators for a non-revalidating operation', async () => {
@@ -197,14 +247,14 @@ describe('ESI resilience layer', () => {
     const load = vi.fn().mockResolvedValue(result({ name: 'fallback' }))
 
     await expect(
-      layer.get({ operation: 'public-character', resource: 'character-90000001', load }),
+      layer.get({ operation: 'public-corporation', resource: 'corporation-90000001', load }),
     ).resolves.toMatchObject({ data: { name: 'fallback' } })
     expect(mocks.acquire).toHaveBeenCalled()
 
     cache.ping.mockResolvedValue('PONG')
     mocks.initialize.mockRejectedValueOnce(new Error('coordination unavailable'))
     await expect(
-      layer.get({ operation: 'public-character', resource: 'character-90000002', load }),
+      layer.get({ operation: 'public-corporation', resource: 'corporation-90000002', load }),
     ).resolves.toMatchObject({ data: { name: 'fallback' } })
   })
 })
@@ -233,5 +283,12 @@ function serializedEnvelope(overrides: Partial<Record<string, unknown>>) {
     quota: {},
     fence: 7,
     ...overrides,
+  })
+}
+
+function esiRateLimited(retryAfterSeconds: number) {
+  return Object.assign(new Error('Rate limited'), {
+    status: 429,
+    metadata: { status: 429, headers: { 'retry-after': String(retryAfterSeconds) } },
   })
 }

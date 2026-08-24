@@ -111,17 +111,17 @@ describe('ESI resilience Redis coordination', () => {
 
     const layer = new EsiResilienceLayer(cache, coordination, 2)
     await expect(
-      layer.get({ operation: 'public-character', resource, load: loadValidated }),
+      layer.get({ operation: 'public-corporation', resource, load: loadValidated }),
     ).resolves.toMatchObject({ data: { name: 'validated' }, source: 'esi' })
     await expect(
-      cache.get(cacheEnvelopeKey(namespace, 'public-character', resource)),
+      cache.get(cacheEnvelopeKey(namespace, 'public-corporation', resource)),
     ).resolves.toContain('validated')
   })
 
   test('treats an envelope without a committed identity as a miss', async () => {
     const namespace = await initializeCacheNamespace(cache, coordination)
     const resource = 'character-90000001'
-    const key = cacheEnvelopeKey(namespace, 'public-character', resource)
+    const key = cacheEnvelopeKey(namespace, 'public-corporation', resource)
     await cache.set(
       key,
       JSON.stringify({
@@ -136,7 +136,7 @@ describe('ESI resilience Redis coordination', () => {
     )
     const layer = new EsiResilienceLayer(cache, coordination, 2)
     await expect(
-      layer.get({ operation: 'public-character', resource, load: loadValidated }),
+      layer.get({ operation: 'public-corporation', resource, load: loadValidated }),
     ).resolves.toMatchObject({
       data: { name: 'validated' },
       source: 'esi',

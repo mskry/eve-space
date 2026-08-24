@@ -1,6 +1,6 @@
 import { env } from '../env.js'
 
-type EsiValueCache = 'shared' | 'none'
+type EsiValueCache = 'shared' | 'local' | 'none'
 
 export interface EsiOperationPolicy {
   valueCache: EsiValueCache
@@ -37,8 +37,14 @@ const publicRead = {
   retry: { attempts: 3, initialDelayMs: 500, maximumDelayMs: 10_000 },
 } as const satisfies EsiOperationPolicy
 
-const privateRead = {
+const localRead = {
   ...publicRead,
+  valueCache: 'local',
+  collapse: false,
+} as const satisfies EsiOperationPolicy
+
+const privateRead = {
+  ...localRead,
   maximumStaleAgeMs: 0,
   allowStale: false,
 } as const satisfies EsiOperationPolicy
@@ -59,7 +65,7 @@ const noValueCache = {
 
 export const esiOperationPolicies = {
   status: publicRead,
-  'public-character': publicRead,
+  'public-character': localRead,
   'public-corporation': publicRead,
   'public-alliance': publicRead,
   'universe-races': publicRead,

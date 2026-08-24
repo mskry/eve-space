@@ -71,14 +71,43 @@ describe('character affiliation synchronization', () => {
         selectDue: async () => [{ characterId: 3 }, { characterId: 1 }, { characterId: 2 }],
       }),
     ).resolves.toEqual({ planned: 1, reason: 'scheduled' })
-    expect(queue.add).toHaveBeenCalledWith(
-      'affiliation',
-      { operationId: 'affiliation-1-2-3', characterIds: [1, 2, 3] },
-      expect.objectContaining({ jobId: 'affiliation-1-2-3' }),
-    )
+    const call = queue.add.mock.calls[0]
+    if (!call) throw new Error('Expected planner to enqueue an affiliation batch')
+    const [, payload, options] = call
+    expect(payload).toEqual({
+      operationId: expect.stringMatching(/^affiliation-1-2-3--[0-9a-f-]{36}$/),
+      characterIds: [1, 2, 3],
+    })
+    expect(options).toEqual(expect.objectContaining({ jobId: payload.operationId }))
     expect(client.set).toHaveBeenCalledWith(
       'eve-space:v1:planner:affiliation:outcome',
       expect.stringContaining('"outcome":"scheduled"'),
     )
+  })
+
+  test('gives recurring batches distinct job identities', async () => {
+    const client = { del: vi.fn(), set: vi.fn() }
+    const queue = {
+      add: vi.fn(),
+      getBackend: () => ({ client: Promise.resolve(client) }),
+      getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0 }),
+      getJobs: vi.fn().mockResolvedValue([]),
+    }
+    const dependencies = {
+      cooldownActive: async () => false,
+      selectDue: async () => [{ characterId: 1 }],
+    }
+
+    await runAffiliationPlannerWithDependencies(queue as never, undefined, dependencies)
+    await runAffiliationPlannerWithDependencies(queue as never, undefined, dependencies)
+
+    const firstCall = queue.add.mock.calls[0]
+    const secondCall = queue.add.mock.calls[1]
+    if (!firstCall || !secondCall) throw new Error('Expected both planner runs to enqueue a batch')
+    const first = firstCall[1].operationId
+    const second = secondCall[1].operationId
+    expect(first).not.toBe(second)
+    expect(firstCall[2]).toEqual(expect.objectContaining({ jobId: first }))
+    expect(secondCall[2]).toEqual(expect.objectContaining({ jobId: second }))
   })
 })

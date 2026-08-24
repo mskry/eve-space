@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { Queue } from 'bullmq'
 import { acquireEsiRequestPermit, EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCoordinationConnection } from '../esi-resilience/transport.js'
@@ -50,9 +51,13 @@ export async function runAffiliationPlannerWithDependencies(
     const characterIds = due
       .map((character) => character.characterId)
       .toSorted((left, right) => left - right)
+    const refreshId = randomUUID()
     for (const batch of partitionAffiliationCharacterIds(characterIds)) {
       signal?.throwIfAborted()
-      const payload = { operationId: affiliationOperationIdentity(batch), characterIds: batch }
+      const payload = {
+        operationId: affiliationOperationIdentity(batch, refreshId),
+        characterIds: batch,
+      }
       // oxlint-disable-next-line no-await-in-loop
       const admission = await admitQueueWork(
         queue,

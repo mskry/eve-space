@@ -37,12 +37,13 @@ export function updateNotModifiedEnvelope<Data>(
   metadata: EsiResponseMetadata | undefined,
   policy: EsiOperationPolicy,
   now = Date.now(),
+  fence = envelope.fence,
 ): EsiCacheEnvelope<Data> {
   const refreshed = createCacheEnvelope({
     data: envelope.data,
     metadata,
     policy,
-    fence: envelope.fence,
+    fence,
     now,
   })
   return {

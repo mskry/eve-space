@@ -29,6 +29,14 @@ describe('ESI operation policies', () => {
       collapse: false,
       revalidate: false,
     })
+    expect(getEsiOperationPolicy('public-character')).toMatchObject({
+      valueCache: 'local',
+      collapse: false,
+    })
+    expect(getEsiOperationPolicy('wallet-balance')).toMatchObject({
+      valueCache: 'local',
+      allowStale: false,
+    })
   })
 
   test('fails closed for an unregistered operation name', () => {

@@ -11,7 +11,9 @@ export const affiliationBatchLimit = 1_000
 
 export const affiliationJobPayload = z
   .object({
-    operationId: z.string().regex(/^affiliation-[0-9]+(?:-[0-9]+)*$/),
+    operationId: z
+      .string()
+      .regex(/^affiliation-[0-9]+(?:-[0-9]+)*(?:--[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})?$/i),
     characterIds: z.array(z.number().int().positive()).min(1).max(affiliationBatchLimit),
   })
   .strict()
@@ -50,9 +52,9 @@ export function partitionAffiliationCharacterIds(characterIds: readonly number[]
   return batches
 }
 
-export function affiliationOperationIdentity(characterIds: readonly number[]) {
+export function affiliationOperationIdentity(characterIds: readonly number[], refreshId?: string) {
   const ordered = characterIds.toSorted((left, right) => left - right)
-  return `affiliation-${ordered.join('-')}`
+  return `affiliation-${ordered.join('-')}${refreshId ? `--${refreshId}` : ''}`
 }
 
 export async function processAffiliationBatch(
