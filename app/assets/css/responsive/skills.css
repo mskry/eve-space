@@ -1,0 +1,44 @@
+@media (max-width: 1100px) {
+  .skill-groups,
+  .skills-search-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .skills-access-state,
+  .skill-row {
+    grid-template-columns: 1fr;
+  }
+
+  .skills-access-state .ui-action-primary {
+    width: max-content;
+  }
+
+  .skill-levels {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .skills-summary-stats {
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .skill-group-trigger {
+    grid-template-columns: minmax(0, 1fr) 1.375rem;
+    align-items: start;
+  }
+
+  .skill-group-trigger > strong {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .skill-group-toggle {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}

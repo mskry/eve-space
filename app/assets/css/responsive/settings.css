@@ -1,0 +1,27 @@
+@media (max-width: 760px) {
+  .settings-subsection-heading {
+    display: block;
+  }
+
+  .settings-subsection-heading > p {
+    margin-top: 12px;
+  }
+
+  .integration-row {
+    grid-template-columns: 30px 1fr;
+    padding: 20px 16px;
+  }
+
+  .integration-state {
+    grid-column: 2;
+    width: max-content;
+  }
+
+  .access-locked-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .access-locked-panel .ui-action-primary {
+    width: max-content;
+  }
+}

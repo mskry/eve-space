@@ -1,0 +1,8 @@
+@media (max-width: 760px) {
+  .roster-heading-copy {
+    max-width: none;
+    margin-top: 18px;
+    display: grid;
+    justify-items: start;
+  }
+}

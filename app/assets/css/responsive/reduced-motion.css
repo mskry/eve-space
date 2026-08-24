@@ -1,0 +1,25 @@
+@media (prefers-reduced-motion: reduce) {
+  .app-scanner,
+  .app-scanner::before,
+  .app-scanner::after,
+  .sidebar-toggle .app-icon,
+  .sidebar-toggle .sidebar-icon,
+  .sidebar-toggle .sidebar-icon::after,
+  .dashboard-sidebar .sidebar-brand-copy,
+  .dashboard-sidebar .sidebar-label,
+  .dashboard-sidebar .access-mark,
+  .dashboard-sidebar .sidebar-session-copy,
+  .dashboard-sidebar .sidebar-auth-link span,
+  .system-status-pulse,
+  .roster-add-card,
+  .roster-card,
+  .roster-add-card .add-character-icon,
+  .skill-group .ui-collapsible-content {
+    animation: none !important;
+  }
+  .dashboard-sidebar,
+  .dashboard-workspace,
+  .roster-portrait img {
+    transition: none !important;
+  }
+}

@@ -198,26 +198,28 @@ function formatDuration(milliseconds: number) {
   <section class="character-history-route">
     <div
       v-if="historyStatus === 'loading' && !history"
-      class="state-panel compact-state"
+      class="app-state-panel app-state-panel--compact"
       aria-live="polite"
     >
-      <div class="scanner" aria-hidden="true" />
+      <div class="app-scanner" aria-hidden="true" />
       <p>Resolving corporation archive...</p>
     </div>
     <div
       v-else-if="historyStatus === 'error' || historyStatus === 'not-found'"
-      class="state-panel error-panel compact-state"
+      class="app-state-panel app-error-panel app-state-panel--compact"
       role="alert"
     >
-      <span class="error-code">{{ historyStatus === 'not-found' ? '404' : 'ERR / HISTORY' }}</span>
+      <span class="app-error-code">{{
+        historyStatus === 'not-found' ? '404' : 'ERR / HISTORY'
+      }}</span>
       <h2>Employment history unavailable</h2>
       <p>{{ historyMessage }}</p>
-      <button class="secondary-action" type="button" @click="historyQuery.refetch()">
+      <button class="ui-action-secondary" type="button" @click="historyQuery.refetch()">
         RETRY UPLINK
       </button>
     </div>
-    <div v-else-if="timeline.length === 0" class="state-panel compact-state">
-      <span class="error-code">NO RECORDS</span>
+    <div v-else-if="timeline.length === 0" class="app-state-panel app-state-panel--compact">
+      <span class="app-error-code">NO RECORDS</span>
       <h2>No employment history</h2>
       <p>ESI returned no corporation history records for this character.</p>
     </div>
@@ -343,6 +345,11 @@ function formatDuration(milliseconds: number) {
     </template>
   </section>
 </template>
+
+<style>
+@import url('~/assets/css/features/history.css');
+@import url('~/assets/css/responsive/history.css');
+</style>
 
 <style scoped>
 .employment-name-link {

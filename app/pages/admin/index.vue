@@ -79,14 +79,18 @@ useHead({ title: 'Administration // EVE Space' })
   <div class="section-page admin-page">
     <header class="page-heading">
       <div>
-        <p class="eyebrow">DEPLOYMENT ADMINISTRATION</p>
+        <p class="ui-eyebrow">DEPLOYMENT ADMINISTRATION</p>
         <h1>Owner controls</h1>
       </div>
       <p>Configure the EVE organization that owns this deployment and anchors character access.</p>
     </header>
 
-    <div v-if="!adminSession?.authenticated" class="state-panel compact-state" aria-live="polite">
-      <div class="scanner" aria-hidden="true" />
+    <div
+      v-if="!adminSession?.authenticated"
+      class="app-state-panel app-state-panel--compact"
+      aria-live="polite"
+    >
+      <div class="app-scanner" aria-hidden="true" />
       <p>Verifying deployment owner session...</p>
     </div>
 
@@ -96,10 +100,10 @@ useHead({ title: 'Administration // EVE Space' })
         <div class="admin-panel-heading">
           <span>OWNER</span>
           <div>
-            <p class="eyebrow">LOCAL ADMINISTRATOR</p>
+            <p class="ui-eyebrow">LOCAL ADMINISTRATOR</p>
             <h2>{{ adminSession.account.email }}</h2>
           </div>
-          <button class="secondary-action" type="button" @click="logoutMutation.mutate()">
+          <button class="ui-action-secondary" type="button" @click="logoutMutation.mutate()">
             SIGN OUT
           </button>
         </div>
@@ -116,7 +120,7 @@ useHead({ title: 'Administration // EVE Space' })
             alt=""
           />
           <div>
-            <p class="eyebrow">DEPLOYMENT OWNER</p>
+            <p class="ui-eyebrow">DEPLOYMENT OWNER</p>
             <h2>{{ adminSession.account.organization.name }}</h2>
             <span>
               [{{ adminSession.account.organization.ticker }}] /
@@ -139,11 +143,16 @@ useHead({ title: 'Administration // EVE Space' })
             inputmode="numeric"
             required
         /></label>
-        <p v-if="errorMessage" class="inline-error" role="alert">{{ errorMessage }}</p>
-        <button class="primary-action" type="submit" :disabled="submitting">
+        <p v-if="errorMessage" class="ui-inline-error" role="alert">{{ errorMessage }}</p>
+        <button class="ui-action-primary" type="submit" :disabled="submitting">
           {{ submitting ? 'VERIFYING...' : 'UPDATE ORGANIZATION' }}
         </button>
       </form>
     </template>
   </div>
 </template>
+
+<style>
+@import url('~/assets/css/pages/admin.css');
+@import url('~/assets/css/responsive/admin.css');
+</style>

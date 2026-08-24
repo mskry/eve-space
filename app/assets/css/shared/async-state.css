@@ -1,0 +1,82 @@
+.app-state-panel {
+  min-height: 480px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font: 11px/1 monospace;
+  letter-spacing: 0.1em;
+}
+
+@property --tidi-fill {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 306deg;
+}
+
+.app-scanner {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 24px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  isolation: isolate;
+  padding: 3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    color-mix(in srgb, var(--ui-loader) 20%, transparent) 0deg 198deg,
+    transparent 198deg 252deg,
+    color-mix(in srgb, var(--ui-loader) 20%, transparent) 252deg 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.app-scanner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 252deg,
+    var(--ui-loader) 0deg var(--tidi-fill),
+    transparent var(--tidi-fill) 360deg
+  );
+  animation: tidi-drain 4s linear forwards;
+}
+
+@keyframes tidi-drain {
+  to {
+    --tidi-fill: 0deg;
+  }
+}
+
+.app-error-panel {
+  text-align: center;
+}
+
+.app-error-panel h2 {
+  margin: 14px 0 4px;
+  color: var(--ink);
+  font: 300 36px/1 sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.app-error-panel p {
+  max-width: 430px;
+  line-height: 1.5;
+}
+
+.app-error-code {
+  color: var(--danger);
+}

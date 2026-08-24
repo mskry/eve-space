@@ -1,0 +1,44 @@
+@media (max-width: 760px) {
+  .dashboard-sidebar--persistent {
+    display: none;
+  }
+
+  .mobile-navigation-trigger {
+    display: grid;
+    flex: 0 0 auto;
+  }
+
+  .dashboard-workspace,
+  .dashboard-shell--sidebar-expanded .dashboard-workspace {
+    margin-left: 0;
+    padding-bottom: 0;
+  }
+
+  .dashboard-topbar {
+    min-height: 64px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .topbar-heading {
+    gap: 10px;
+  }
+
+  .topbar-status {
+    gap: 10px;
+  }
+
+  .topbar-system-status-copy {
+    display: none;
+  }
+
+  .topbar-system-status i {
+    width: 7px;
+    height: 7px;
+    margin-right: 0;
+  }
+
+  .dashboard-content {
+    padding: 30px 16px 44px;
+  }
+}
