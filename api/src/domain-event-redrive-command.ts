@@ -28,13 +28,15 @@ export function parseDomainEventRedriveArgs(
   const values = new Map<string, string>()
   const flags = new Set<string>()
 
-  for (let index = 0; index < commandArgs.length; index += 1) {
+  for (let index = 0; index < commandArgs.length;) {
     const argument = commandArgs[index]!
     if (domainEventRedriveFlags.has(argument)) {
       addUniqueFlag(flags, argument)
+      index += 1
       continue
     }
-    index = collectValueArgument(commandArgs, index, values)
+    collectValueArgument(argument, commandArgs[index + 1], values)
+    index += 2
   }
 
   const from = parseTimestamp(requiredValue(values, '--from'), '--from')
@@ -93,16 +95,17 @@ function addUniqueFlag(flags: Set<string>, argument: string) {
   flags.add(argument)
 }
 
-function collectValueArgument(args: readonly string[], index: number, values: Map<string, string>) {
-  const argument = args[index]!
+function collectValueArgument(
+  argument: string,
+  value: string | undefined,
+  values: Map<string, string>,
+) {
   if (!domainEventRedriveValueArguments.has(argument))
     throw new Error(`Unknown argument: ${argument}`)
   if (values.has(argument)) throw new Error(`Duplicate argument: ${argument}`)
 
-  const value = args[index + 1]
   if (!value || value.startsWith('--')) throw new Error(`Missing value for ${argument}`)
   values.set(argument, value)
-  return index + 1
 }
 
 function parseTimestamp(value: string, argument: string) {

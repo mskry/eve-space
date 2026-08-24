@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-eve_space}
       POSTGRES_USER: ${POSTGRES_USER:-eve_space}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eve_space}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
@@ -56,7 +56,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8787
-      DATABASE_URL: postgres://${POSTGRES_USER:-eve_space}:${POSTGRES_PASSWORD:-eve_space}@postgres:5432/${POSTGRES_DB:-eve_space}
+      DATABASE_URL: postgres://${POSTGRES_USER:-eve_space}@postgres:5432/${POSTGRES_DB:-eve_space}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
       EVE_CLIENT_ID: ${EVE_CLIENT_ID:-}
       EVE_CLIENT_SECRET: ${EVE_CLIENT_SECRET:-}
@@ -98,7 +99,8 @@ services:
         required: false
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER:-eve_space}:${POSTGRES_PASSWORD:-eve_space}@postgres:5432/${POSTGRES_DB:-eve_space}
+      DATABASE_URL: postgres://${POSTGRES_USER:-eve_space}@postgres:5432/${POSTGRES_DB:-eve_space}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       QUEUE_REDIS_URL: redis://queue-redis:6379
       QUEUE_PLANNER_SCHEDULE: ${QUEUE_PLANNER_SCHEDULE:-*/15 * * * *}
       QUEUE_PLANNER_SCHEDULE_OFFSET_MS: ${QUEUE_PLANNER_SCHEDULE_OFFSET_MS:-}

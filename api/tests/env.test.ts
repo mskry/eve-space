@@ -2,9 +2,11 @@ import { describe, expect, test } from 'vitest'
 
 import { parseEnvironment } from '../src/env.js'
 
+const databaseEnvironment = { DATABASE_URL: 'postgres://localhost:5432/eve_space' }
+
 describe('environment configuration', () => {
   test('provides safe durable queue defaults', () => {
-    const env = parseEnvironment({})
+    const env = parseEnvironment(databaseEnvironment)
 
     expect(env).toMatchObject({
       QUEUE_REDIS_URL: 'redis://localhost:6379',
@@ -62,7 +64,7 @@ describe('environment configuration', () => {
       'Too small: expected number to be >0',
     ],
   ])('rejects an invalid %s', (_, values, message) => {
-    expect(() => parseEnvironment(values)).toThrow(message)
+    expect(() => parseEnvironment({ ...databaseEnvironment, ...values })).toThrow(message)
   })
 
   test.each([
@@ -97,12 +99,13 @@ describe('environment configuration', () => {
       'Expected a duration longer than OUTBOX_RELAY_CLAIM_TTL_MS (30000ms)',
     ],
   ])('rejects %s', (_, values, message) => {
-    expect(() => parseEnvironment(values)).toThrow(message)
+    expect(() => parseEnvironment({ ...databaseEnvironment, ...values })).toThrow(message)
   })
 
   test('accepts scaling settings that keep both invariants', () => {
     expect(() =>
       parseEnvironment({
+        ...databaseEnvironment,
         DATABASE_POOL_MAX: '40',
         EVE_SSO_TIMEOUT_MS: '15000',
         TOKEN_REFRESH_LOCK_TIMEOUT_MS: '45000',
@@ -113,17 +116,21 @@ describe('environment configuration', () => {
 
   test('accepts a six-field planner schedule', () => {
     expect(
-      parseEnvironment({ QUEUE_PLANNER_SCHEDULE: '0 */5 * * * *' }).QUEUE_PLANNER_SCHEDULE,
+      parseEnvironment({
+        ...databaseEnvironment,
+        QUEUE_PLANNER_SCHEDULE: '0 */5 * * * *',
+      }).QUEUE_PLANNER_SCHEDULE,
     ).toBe('0 */5 * * * *')
   })
 
   test('accepts an explicit planner offset and treats an empty value as the persisted default', () => {
     expect(
-      parseEnvironment({ QUEUE_PLANNER_SCHEDULE_OFFSET_MS: '12345' })
+      parseEnvironment({ ...databaseEnvironment, QUEUE_PLANNER_SCHEDULE_OFFSET_MS: '12345' })
         .QUEUE_PLANNER_SCHEDULE_OFFSET_MS,
     ).toBe(12_345)
     expect(
-      parseEnvironment({ QUEUE_PLANNER_SCHEDULE_OFFSET_MS: '' }).QUEUE_PLANNER_SCHEDULE_OFFSET_MS,
+      parseEnvironment({ ...databaseEnvironment, QUEUE_PLANNER_SCHEDULE_OFFSET_MS: '' })
+        .QUEUE_PLANNER_SCHEDULE_OFFSET_MS,
     ).toBeUndefined()
   })
 })

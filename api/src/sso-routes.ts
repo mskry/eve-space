@@ -25,6 +25,7 @@ import { zValidator } from './validation.js'
 
 const oauthStateCookie = 'eve_space_oauth_state'
 const sessionDurationSeconds = 7 * 24 * 60 * 60
+type CharacterAuthorization = Omit<Parameters<typeof attachCharacter>[0], 'userId'>
 const callbackQuery = z.object({
   code: z.string().min(1, 'EVE SSO returned an empty authorization code.').optional(),
   error: z.string().min(1, 'EVE SSO returned an empty error code.').optional(),
@@ -64,8 +65,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
   .get('/eve/callback', zValidator('query', callbackQuery), async (context) => {
     const { error: authorizationError, code, state } = context.req.valid('query')
     const cookieState = getCookie(context, oauthStateCookie)
-    const stateContext =
-      state && tokensMatch(state, cookieState) ? await consumeOAuthState(state) : null
+    const stateContext = await consumeValidOAuthState(state, cookieState)
 
     deleteCookie(context, oauthStateCookie, {
       path: '/auth/eve/callback',
@@ -75,13 +75,8 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     if (authorizationError) return redirectForIntent(context, stateContext, 'cancelled')
     if (!code) return redirectForIntent(context, stateContext, 'error')
 
-    let boundSession: Awaited<ReturnType<typeof findSession>> = null
-    if (stateContext.intent !== 'login') {
-      const sessionToken = getCookie(context, sessionCookie)
-      boundSession = sessionToken ? await findSession(sessionToken) : null
-      if (!boundSession || boundSession.userId !== stateContext.userId)
-        return redirectForIntent(context, stateContext, 'error')
-    }
+    if (!(await hasBoundSession(context, stateContext)))
+      return redirectForIntent(context, stateContext, 'error')
 
     try {
       const tokens = await exchangeAuthorizationCode(code)
@@ -101,28 +96,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
         expiresIn: tokens.expires_in,
       }
 
-      if (stateContext.intent === 'login') {
-        const sessionToken = createOpaqueToken()
-        await saveLogin({
-          ...authorization,
-          sessionToken,
-          sessionExpiresAt: new Date(Date.now() + sessionDurationSeconds * 1000),
-        })
-        setCookie(
-          context,
-          sessionCookie,
-          sessionToken,
-          sessionCookieOptions(sessionDurationSeconds),
-        )
-      } else if (stateContext.intent === 'attach') {
-        await attachCharacter({ ...authorization, userId: stateContext.userId })
-      } else {
-        await reauthorizeCharacter({
-          ...authorization,
-          userId: stateContext.userId,
-          expectedCharacterId: stateContext.characterId,
-        })
-      }
+      await saveAuthorizationForIntent(context, stateContext, authorization)
 
       return redirectForIntent(context, stateContext, 'success', identity.characterId)
     } catch (error) {
@@ -171,6 +145,49 @@ async function startAuthorization(context: Context, stateContext: OAuthStateCont
     maxAge: 10 * 60,
   })
   return context.redirect((await createAuthorizationUrl(state)).toString())
+}
+
+async function consumeValidOAuthState(state: string | undefined, cookieState: string | undefined) {
+  if (!state || !tokensMatch(state, cookieState)) return null
+  return consumeOAuthState(state)
+}
+
+async function hasBoundSession(context: Context, stateContext: OAuthStateContext) {
+  if (stateContext.intent === 'login') return true
+
+  const sessionToken = getCookie(context, sessionCookie)
+  if (!sessionToken) return false
+
+  const session = await findSession(sessionToken)
+  return session?.userId === stateContext.userId
+}
+
+async function saveAuthorizationForIntent(
+  context: Context,
+  stateContext: OAuthStateContext,
+  authorization: CharacterAuthorization,
+) {
+  switch (stateContext.intent) {
+    case 'login': {
+      const sessionToken = createOpaqueToken()
+      await saveLogin({
+        ...authorization,
+        sessionToken,
+        sessionExpiresAt: new Date(Date.now() + sessionDurationSeconds * 1000),
+      })
+      setCookie(context, sessionCookie, sessionToken, sessionCookieOptions(sessionDurationSeconds))
+      return
+    }
+    case 'attach':
+      await attachCharacter({ ...authorization, userId: stateContext.userId })
+      return
+    case 'reauthorize':
+      await reauthorizeCharacter({
+        ...authorization,
+        userId: stateContext.userId,
+        expectedCharacterId: stateContext.characterId,
+      })
+  }
 }
 
 function redirectForIntent(

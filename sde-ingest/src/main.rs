@@ -14,8 +14,7 @@ use zip::ZipArchive;
 
 fn main() -> Result<()> {
     load_env();
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://eve_space:eve_space@localhost:5432/eve_space".to_string());
+    let database_url = std::env::var("DATABASE_URL").context("DATABASE_URL must be set")?;
 
     let http = reqwest::blocking::Client::builder()
         .user_agent("eve-space-sde-ingest/0.1")
