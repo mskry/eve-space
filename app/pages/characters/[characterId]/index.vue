@@ -4,7 +4,7 @@ import { characterOverviewQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
 
-definePageMeta({ title: 'Character Overview', layout: 'character' })
+definePageMeta({ title: 'Character Overview', layout: 'headerless' })
 
 const route = useRoute()
 const { factionLogo, typeImage } = useEveImages()
@@ -172,8 +172,23 @@ const genderSymbol = computed(() => {
                   <span>{{ shipLabel }}</span>
                 </dd>
               </div>
-              <div v-if="character.factionId">
-                <dt>MILITIA</dt>
+            </dl>
+          </section>
+          <section class="character-detail-group character-detail-group--identity">
+            <h2>IDENTITY</h2>
+            <dl>
+              <div
+                :class="
+                  character.factionId
+                    ? 'character-detail-col-start'
+                    : 'character-detail-wide character-detail-col-start'
+                "
+              >
+                <dt>SECURITY STATUS</dt>
+                <dd><SecurityStatus :value="character.securityStatus" /></dd>
+              </div>
+              <div v-if="character.factionId" class="character-detail-col-end">
+                <dt>FACTION</dt>
                 <dd>
                   <img
                     class="militia-mark"
@@ -184,24 +199,19 @@ const genderSymbol = computed(() => {
                   />
                 </dd>
               </div>
-            </dl>
-          </section>
-          <section class="character-detail-group character-detail-group--identity">
-            <h2>IDENTITY</h2>
-            <dl>
-              <div>
-                <dt>SECURITY STATUS</dt>
-                <dd><SecurityStatus :value="character.securityStatus" /></dd>
-              </div>
-              <div>
+              <div class="character-detail-col-start">
                 <dt>RACE</dt>
                 <dd>{{ character.race }}</dd>
               </div>
-              <div>
+              <div class="character-detail-col-end">
                 <dt>BLOODLINE</dt>
                 <dd>{{ character.bloodline }}</dd>
               </div>
-              <div>
+              <div class="character-detail-col-start">
+                <dt>DATE OF BIRTH</dt>
+                <dd>{{ formattedBirthday }}</dd>
+              </div>
+              <div class="character-detail-col-end">
                 <dt>GENDER</dt>
                 <dd>
                   <span class="gender-symbol" :title="character.gender" aria-hidden="true">
@@ -209,10 +219,6 @@ const genderSymbol = computed(() => {
                   </span>
                   <span class="sr-only">{{ character.gender }}</span>
                 </dd>
-              </div>
-              <div>
-                <dt>DATE OF BIRTH</dt>
-                <dd>{{ formattedBirthday }}</dd>
               </div>
               <div v-if="character.corporationTitle" class="character-detail-wide">
                 <dt>CORPORATION TITLE</dt>

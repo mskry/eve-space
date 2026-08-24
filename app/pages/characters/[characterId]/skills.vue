@@ -5,7 +5,7 @@ import { characterSkillsQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
 
-definePageMeta({ title: 'Character Skills', layout: 'character' })
+definePageMeta({ title: 'Character Skills', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()

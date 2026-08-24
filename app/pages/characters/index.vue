@@ -3,7 +3,7 @@ import { useQueryCache } from '@pinia/colada'
 import { characterOverviewQuery, type CharacterRosterEntry } from '../../queries/characters'
 import { prefetchProtectedQuery } from '../../queries/query-cache'
 
-definePageMeta({ title: 'Characters' })
+definePageMeta({ title: 'Characters', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -102,8 +102,7 @@ watch(deleteDialogOpen, async (open) => {
   const characterLink = document.querySelector<HTMLAnchorElement>(
     `a[href="/characters/${deleteCandidate.value.characterId}"]`,
   )
-  const focusTarget =
-    characterLink ?? document.querySelector<HTMLButtonElement>('.roster-add-action')
+  const focusTarget = characterLink ?? document.querySelector<HTMLButtonElement>('.roster-add-card')
   focusTarget?.focus()
 })
 
@@ -304,13 +303,32 @@ useHead({ title: 'Character Roster // EVE Space' })
             <template v-else>Delete character</template>
           </UiContextMenuItem>
         </UiContextMenu>
-      </section>
-      <div class="roster-add">
-        <button class="roster-add-action" type="button" @click="attachCharacter">
-          <span class="add-character-icon" aria-hidden="true">+</span>
-          ADD CHARACTER
+        <button class="roster-card roster-add-card" type="button" @click="attachCharacter">
+          <span class="roster-ghost-top" aria-hidden="true">
+            <span class="roster-ghost-portrait" />
+            <span class="roster-ghost-identity">
+              <span class="roster-ghost-line roster-ghost-line--name" />
+              <span class="roster-ghost-org">
+                <span class="roster-ghost-badge" />
+              </span>
+            </span>
+          </span>
+          <span class="roster-ghost-stats" aria-hidden="true">
+            <span class="roster-ghost-line roster-ghost-line--stat-short" />
+            <span class="roster-ghost-line roster-ghost-line--stat" />
+            <span class="roster-ghost-line roster-ghost-line--stat-mid" />
+            <span class="roster-ghost-value-stats">
+              <span class="roster-ghost-line" />
+              <span class="roster-ghost-separator">•</span>
+              <span class="roster-ghost-line" />
+            </span>
+          </span>
+          <span class="roster-add-overlay">
+            <span class="add-character-icon" aria-hidden="true">+</span>
+            ADD CHARACTER
+          </span>
         </button>
-      </div>
+      </section>
       <UiConfirmDialog
         v-model:open="deleteDialogOpen"
         :title="`Delete ${deleteCandidate?.name ?? 'character'}?`"

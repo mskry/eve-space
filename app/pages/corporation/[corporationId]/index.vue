@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { corporationAllianceHistoryQuery, corporationQuery } from '../../../queries/corporations'
 
-definePageMeta({ title: 'Corporation', layout: 'character' })
+definePageMeta({ title: 'Corporation', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
