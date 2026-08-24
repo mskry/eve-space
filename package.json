@@ -14,7 +14,7 @@
     "sde:ingest": "cargo run --release --manifest-path sde-ingest/Cargo.toml --",
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",
-    "knip": "knip",
+    "knip": "DATABASE_URL=postgres://localhost:5432/eve_space knip",
     "stack:up": "docker compose up --build -d",
     "stack:down": "docker compose down",
     "test:frontend": "vitest run --config vitest.config.ts",

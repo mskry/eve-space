@@ -5,6 +5,13 @@ import { characterHistoryQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
 
+interface EmploymentSummary {
+  name: string
+  duration: number
+  earliestStart: string
+  latestEnd: string | undefined
+}
+
 definePageMeta({ title: 'Employment History', layout: 'character' })
 
 const route = useRoute()
@@ -57,10 +64,7 @@ const timeline = computed(() =>
 )
 
 const playerEmploymentSummary = computed(() => {
-  const corporations = new Map<
-    number,
-    { name: string; duration: number; earliestStart: string; latestEnd: string | undefined }
-  >()
+  const corporations = new Map<number, EmploymentSummary>()
 
   for (const entry of timeline.value) {
     if (entry.corporation.isNpc || entry.isDeleted) continue
@@ -72,18 +76,8 @@ const playerEmploymentSummary = computed(() => {
     corporations.set(entry.corporation.id, {
       name: entry.corporation.name,
       duration: (current?.duration ?? 0) + duration,
-      earliestStart:
-        !current || Date.parse(entry.startDate) < Date.parse(current.earliestStart)
-          ? entry.startDate
-          : current.earliestStart,
-      latestEnd:
-        !current?.latestEnd || !entry.endDate
-          ? (entry.endDate ?? current?.latestEnd)
-          : !current?.latestEnd
-            ? entry.endDate
-            : Date.parse(entry.endDate) > Date.parse(current.latestEnd)
-              ? entry.endDate
-              : current.latestEnd,
+      earliestStart: earliestStart(current, entry.startDate),
+      latestEnd: latestEnd(current, entry.endDate),
     })
   }
 
@@ -99,6 +93,17 @@ const playerEmploymentSummary = computed(() => {
     (left, right) => right.duration - left.duration || left.name.localeCompare(right.name),
   )[0]
 })
+
+function earliestStart(current: EmploymentSummary | undefined, startDate: string) {
+  if (!current || Date.parse(startDate) < Date.parse(current.earliestStart)) return startDate
+  return current.earliestStart
+}
+
+function latestEnd(current: EmploymentSummary | undefined, endDate: string | undefined) {
+  const currentEnd = current?.latestEnd
+  if (!currentEnd || !endDate) return endDate ?? currentEnd
+  return Date.parse(endDate) > Date.parse(currentEnd) ? endDate : currentEnd
+}
 
 const longestNpcInterlude = computed(() => {
   let longest:

@@ -25,7 +25,7 @@ const cronSchedule = z
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8788),
-  DATABASE_URL: z.string().url().default('postgres://eve_space:eve_space@localhost:5432/eve_space'),
+  DATABASE_URL: z.string().url(),
   DATABASE_POOL_MAX: positiveInteger.default(10),
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
   EVE_CLIENT_ID: optionalValue,

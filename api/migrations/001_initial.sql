@@ -30,16 +30,18 @@ create table eve_tokens (
 );
 
 create table oauth_states (
-  state_hash char(64) primary key,
+  state_hash varchar(64) primary key,
   expires_at timestamptz not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint oauth_states_state_hash_length_check check (length(state_hash) = 64)
 );
 
 create table sessions (
-  session_hash char(64) primary key,
+  session_hash varchar(64) primary key,
   user_id uuid not null references users(id) on delete cascade,
   expires_at timestamptz not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint sessions_session_hash_length_check check (length(session_hash) = 64)
 );
 
 create index sessions_user_id_idx on sessions (user_id);

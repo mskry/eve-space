@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     clearMocks: true,
     environment: 'node',
+    env: {
+      DATABASE_URL: 'postgres://localhost:5432/eve_space',
+    },
     include: ['tests/**/*.test.ts'],
     exclude: ['tests/integration/**/*.test.ts'],
     coverage: {

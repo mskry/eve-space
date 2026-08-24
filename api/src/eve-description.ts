@@ -1,5 +1,17 @@
 // EVE bios and corp descriptions are user-authored HTML with legacy unicode literals.
 // The UI renders this as escaped text, so stripping markup here is purely cosmetic.
+const legacyUnicodePrefixes = new Set(['u', 'U'])
+const legacyUnicodeQuotes = new Set(["'", '"'])
+const unicodeEscapeLengths: Readonly<Record<string, number>> = { u: 4, U: 8 }
+const escapedCharacters: Readonly<Record<string, string>> = {
+  n: '\n',
+  r: '\r',
+  t: '\t',
+  '\\': '\\',
+  "'": "'",
+  '"': '"',
+}
+
 export function eveDescriptionToPlainText(html: string | undefined | null): string | undefined {
   if (!html) return undefined
   const text = html
@@ -19,10 +31,9 @@ export function eveDescriptionToPlainText(html: string | undefined | null): stri
 }
 
 function decodeLegacyUnicodeLiteral(value: string) {
-  const literal = /^[uU](['"])([\s\S]*)\1$/.exec(value)
-  if (!literal) return value
+  const body = legacyUnicodeBody(value)
+  if (body === undefined) return value
 
-  const body = literal[2]!
   let decoded = ''
   for (let index = 0; index < body.length; index += 1) {
     const character = body[index]!
@@ -31,38 +42,32 @@ function decodeLegacyUnicodeLiteral(value: string) {
       continue
     }
 
-    const escape = body[index + 1]!
-    const digits = escape === 'u' ? 4 : escape === 'U' ? 8 : 0
-    if (digits) {
-      const hex = body.slice(index + 2, index + 2 + digits)
-      if (hex.length === digits && /^[0-9a-f]+$/i.test(hex)) {
-        const codePoint = Number.parseInt(hex, 16)
-        if (digits === 4 || codePoint <= 0x10ffff) {
-          decoded += digits === 4 ? String.fromCharCode(codePoint) : String.fromCodePoint(codePoint)
-          index += digits + 1
-          continue
-        }
-      }
-    }
-
-    const escapedCharacter =
-      escape === 'n'
-        ? '\n'
-        : escape === 'r'
-          ? '\r'
-          : escape === 't'
-            ? '\t'
-            : escape === '\\' || escape === "'" || escape === '"'
-              ? escape
-              : undefined
-    if (escapedCharacter !== undefined) {
-      decoded += escapedCharacter
-      index += 1
-      continue
-    }
-
-    decoded += `\\${escape}`
-    index += 1
+    const [escaped, consumed] = decodeEscape(body, index + 1)
+    decoded += escaped
+    index += consumed
   }
   return decoded
+}
+
+function legacyUnicodeBody(value: string) {
+  if (value.length < 3 || !legacyUnicodePrefixes.has(value[0]!)) return undefined
+
+  const quote = value[1]!
+  if (!legacyUnicodeQuotes.has(quote) || value.at(-1) !== quote) return undefined
+  return value.slice(2, -1)
+}
+
+function decodeEscape(body: string, escapeIndex: number): [value: string, consumed: number] {
+  const escape = body[escapeIndex]!
+  const digits = unicodeEscapeLengths[escape]
+  if (digits !== undefined) {
+    const hex = body.slice(escapeIndex + 1, escapeIndex + 1 + digits)
+    if (hex.length === digits && /^[0-9a-f]+$/i.test(hex)) {
+      const codePoint = Number.parseInt(hex, 16)
+      if (digits === 4 || codePoint <= 0x10ffff)
+        return [String.fromCodePoint(codePoint), digits + 1]
+    }
+  }
+
+  return [escapedCharacters[escape] ?? `\\${escape}`, 1]
 }

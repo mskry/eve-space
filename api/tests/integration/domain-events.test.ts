@@ -1,4 +1,5 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
+import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
@@ -19,18 +20,19 @@ import { runOutboxRelayBatch } from '../../src/queue/outbox-relay.js'
 
 let container: StartedTestContainer
 let databaseUrl: string
+const databasePassword = randomUUID()
 
 beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_PASSWORD: 'eve_space',
+      POSTGRES_PASSWORD: databasePassword,
       POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/))
     .start()
-  databaseUrl = `postgres://eve_space:eve_space@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`
+  databaseUrl = `postgres://eve_space:${databasePassword}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`
   await waitForDatabase(databaseUrl)
 })
 

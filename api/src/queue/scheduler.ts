@@ -39,12 +39,12 @@ export function createPlannerRepeatStrategy(
 
 export async function plannerInitialDelay(
   now = Date.now(),
-  options: RepeatOptions = { pattern: env.QUEUE_PLANNER_SCHEDULE },
+  options?: RepeatOptions,
   maximumMs = env.QUEUE_PLANNER_INITIAL_DELAY_MAX_MS,
   sample: (maximumInclusive: number) => number = (maximumInclusive) =>
     randomInt(1, maximumInclusive + 1),
 ) {
-  const next = await defaultRepeatStrategy(now, options)
+  const next = await defaultRepeatStrategy(now, options ?? { pattern: env.QUEUE_PLANNER_SCHEDULE })
   if (next === undefined) return 0
 
   const boundedMaximum = Math.min(maximumMs, Math.max(0, next - now - 1))

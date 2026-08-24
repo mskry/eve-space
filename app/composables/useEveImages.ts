@@ -47,6 +47,16 @@ export function useEveImages() {
 
 function normalizeImageId(value: EveImageId) {
   const id = String(value)
-  if (!/^[1-9]\d*$/.test(id)) throw new TypeError(`Invalid EVE image ID: ${id}`)
+  if (!isPositiveInteger(id)) throw new TypeError(`Invalid EVE image ID: ${id}`)
   return id
+}
+
+function isPositiveInteger(value: string) {
+  if (value.length === 0 || value.charCodeAt(0) < 49 || value.charCodeAt(0) > 57) return false
+
+  for (let index = 1; index < value.length; index += 1) {
+    const code = value.charCodeAt(index)
+    if (code < 48 || code > 57) return false
+  }
+  return true
 }

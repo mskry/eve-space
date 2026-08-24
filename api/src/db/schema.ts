@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm'
 import {
   bigint,
   boolean,
-  char,
   check,
   doublePrecision,
   foreignKey,
@@ -16,6 +15,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  varchar,
 } from 'drizzle-orm/pg-core'
 import type {
   DomainEventAggregateType,
@@ -105,12 +105,13 @@ export const deploymentSettings = pgTable(
 export const adminSessions = pgTable(
   'admin_sessions',
   {
-    sessionHash: char('session_hash', { length: 64 }).primaryKey().notNull(),
+    sessionHash: varchar('session_hash', { length: 64 }).primaryKey().notNull(),
     adminId: uuid('admin_id').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [
+    check('admin_sessions_session_hash_length_check', sql`length(session_hash) = 64`),
     index('admin_sessions_admin_id_idx').on(table.adminId),
     index('admin_sessions_expires_at_idx').on(table.expiresAt),
     foreignKey({
@@ -150,7 +151,7 @@ export type AuthorizationIntent = 'login' | 'attach' | 'reauthorize'
 export const oauthStates = pgTable(
   'oauth_states',
   {
-    stateHash: char('state_hash', { length: 64 }).primaryKey().notNull(),
+    stateHash: varchar('state_hash', { length: 64 }).primaryKey().notNull(),
     intent: text().$type<AuthorizationIntent>().default('login').notNull(),
     userId: uuid('user_id'),
     characterId: bigint('character_id', { mode: 'number' }),
@@ -158,6 +159,7 @@ export const oauthStates = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [
+    check('oauth_states_state_hash_length_check', sql`length(state_hash) = 64`),
     index('oauth_states_expires_at_idx').using(
       'btree',
       table.expiresAt.asc().nullsLast().op('timestamptz_ops'),
@@ -191,12 +193,13 @@ export const oauthStates = pgTable(
 export const sessions = pgTable(
   'sessions',
   {
-    sessionHash: char('session_hash', { length: 64 }).primaryKey().notNull(),
+    sessionHash: varchar('session_hash', { length: 64 }).primaryKey().notNull(),
     userId: uuid('user_id').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [
+    check('sessions_session_hash_length_check', sql`length(session_hash) = 64`),
     index('sessions_expires_at_idx').using(
       'btree',
       table.expiresAt.asc().nullsLast().op('timestamptz_ops'),
@@ -294,7 +297,6 @@ export const domainEvents = pgTable(
 )
 
 export type DomainEventRow = typeof domainEvents.$inferSelect
-export type NewDomainEventRow = typeof domainEvents.$inferInsert
 
 // EVE Static Data Export tables, populated by /sde-ingest (see its README),
 // not by this API. Modeled here purely for typed reads.

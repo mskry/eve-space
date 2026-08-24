@@ -28,5 +28,5 @@ export const characterLockNamespace = 1_163_277_105
 export function characterLockKey(characterId: number) {
   const high = Math.floor(characterId / 2 ** 32)
   const low = characterId % 2 ** 32
-  return (low ^ high) | 0
+  return Math.trunc(low ^ high)
 }

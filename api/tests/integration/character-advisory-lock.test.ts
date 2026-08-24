@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers'
@@ -5,19 +6,20 @@ import { characterLockKey, characterLockNamespace } from '../../src/db/locks.js'
 
 let container: StartedTestContainer
 let sql: postgres.Sql
+const databasePassword = randomUUID()
 
 beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
     .withEnvironment({
       POSTGRES_DB: 'eve_space',
-      POSTGRES_PASSWORD: 'eve_space',
+      POSTGRES_PASSWORD: databasePassword,
       POSTGRES_USER: 'eve_space',
     })
     .withExposedPorts(5432)
     .withWaitStrategy(Wait.forLogMessage(/database system is ready to accept connections/))
     .start()
   sql = postgres(
-    `postgres://eve_space:eve_space@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`,
+    `postgres://eve_space:${databasePassword}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`,
   )
   const deadline = Date.now() + 10_000
   while (Date.now() < deadline) {

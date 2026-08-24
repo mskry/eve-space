@@ -23,10 +23,11 @@ create table deployment_settings (
 );
 
 create table admin_sessions (
-  session_hash char(64) primary key,
+  session_hash varchar(64) primary key,
   admin_id uuid not null references deployment_admins(id) on delete cascade,
   expires_at timestamptz not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint admin_sessions_session_hash_length_check check (length(session_hash) = 64)
 );
 
 create index admin_sessions_admin_id_idx on admin_sessions (admin_id);

@@ -110,39 +110,57 @@ export function createCharacterResourceCache<Data>(options: {
       const status = getErrorStatus(error)
       const metadata = getErrorMetadata(error)
 
-      if (status === 304 && cached) {
-        const entry: CacheEntry<Data> = {
-          ...cached,
-          expiresAt: resolveExpiry(metadata?.cache),
-          etag: metadata?.cache?.etag ?? cached.etag,
-          lastModified: metadata?.cache?.lastModified ?? cached.lastModified,
-          quota: metadata ? getQuota(metadata) : cached.quota,
-        }
-        setBounded(cache, characterId, entry, maxEntries)
-        return toResult(entry, 'not-modified', false)
-      }
-
-      if (status === 429) {
-        const retryAfter =
-          parseNumber(metadata?.headers['retry-after']) ?? esiCooldownFallbackSeconds
-        const retryAt = Date.now() + retryAfter * 1000
-        setBounded(cooldowns, characterId, retryAt, maxEntries)
-        if (cached) return toResult(cached, 'cache', true, retryAt)
-        throw new EsiQuotaError(retryAfter)
-      }
-
-      if (
-        metadata?.errorLimit?.remaining !== undefined &&
-        metadata.errorLimit.remaining <= esiErrorBudgetFloor
-      ) {
-        const reset = metadata.errorLimit.reset ?? esiCooldownFallbackSeconds
-        const retryAt = Date.now() + reset * 1000
-        setBounded(cooldowns, characterId, retryAt, maxEntries)
-        if (cached) return toResult(cached, 'cache', true, retryAt)
-      }
+      if (status === 304 && cached) return storeNotModified(characterId, cached, metadata)
+      if (status === 429) return recoverFromRateLimit(characterId, cached, metadata)
+      if (hasExhaustedErrorBudget(metadata))
+        return recoverFromErrorBudget(characterId, cached, metadata.errorLimit, error)
 
       throw error
     }
+  }
+
+  function storeNotModified(
+    characterId: number,
+    cached: CacheEntry<Data>,
+    metadata?: EsiResponseMetadata,
+  ) {
+    const entry: CacheEntry<Data> = {
+      ...cached,
+      expiresAt: resolveExpiry(metadata?.cache),
+      etag: metadata?.cache?.etag ?? cached.etag,
+      lastModified: metadata?.cache?.lastModified ?? cached.lastModified,
+      quota: metadata ? getQuota(metadata) : cached.quota,
+    }
+    setBounded(cache, characterId, entry, maxEntries)
+    return toResult(entry, 'not-modified', false)
+  }
+
+  function recoverFromRateLimit(
+    characterId: number,
+    cached: CacheEntry<Data> | undefined,
+    metadata?: EsiResponseMetadata,
+  ) {
+    const retryAfter = parseNumber(metadata?.headers['retry-after']) ?? esiCooldownFallbackSeconds
+    const retryAt = startCooldown(characterId, retryAfter)
+    if (cached) return toResult(cached, 'cache', true, retryAt)
+    throw new EsiQuotaError(retryAfter)
+  }
+
+  function recoverFromErrorBudget(
+    characterId: number,
+    cached: CacheEntry<Data> | undefined,
+    errorLimit: EsiErrorLimitMetadata,
+    error: unknown,
+  ) {
+    const retryAt = startCooldown(characterId, errorLimit.reset ?? esiCooldownFallbackSeconds)
+    if (cached) return toResult(cached, 'cache', true, retryAt)
+    throw error
+  }
+
+  function startCooldown(characterId: number, seconds: number) {
+    const retryAt = Date.now() + seconds * 1000
+    setBounded(cooldowns, characterId, retryAt, maxEntries)
+    return retryAt
   }
 
   function applyErrorBudgetCooldown(characterId: number, errorLimit?: EsiErrorLimitMetadata) {
@@ -153,6 +171,15 @@ export function createCharacterResourceCache<Data>(options: {
   }
 
   return { get }
+}
+
+function hasExhaustedErrorBudget(
+  metadata: EsiResponseMetadata | undefined,
+): metadata is EsiResponseMetadata & { errorLimit: EsiErrorLimitMetadata } {
+  return (
+    metadata?.errorLimit?.remaining !== undefined &&
+    metadata.errorLimit.remaining <= esiErrorBudgetFloor
+  )
 }
 
 function toResult<Data>(

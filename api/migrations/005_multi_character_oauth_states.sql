@@ -6,7 +6,7 @@ alter table oauth_states
     check (intent in ('login', 'attach', 'reauthorize')),
   add constraint oauth_states_context_check
     check (
-      (intent = 'login' and user_id is null and character_id is null)
+      (intent = 'login' and user_id is null and character_id is null) -- NOSONAR: PostgreSQL DDL has no reusable string constants.
       or (intent = 'attach' and user_id is not null and character_id is null)
       or (intent = 'reauthorize' and user_id is not null and character_id is not null)
     ),
