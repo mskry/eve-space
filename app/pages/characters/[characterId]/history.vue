@@ -12,7 +12,7 @@ interface EmploymentSummary {
   latestEnd: string | undefined
 }
 
-definePageMeta({ title: 'Employment History', layout: 'character' })
+definePageMeta({ title: 'Employment History', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()

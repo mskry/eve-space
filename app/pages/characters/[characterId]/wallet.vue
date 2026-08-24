@@ -4,7 +4,7 @@ import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { walletQuery, walletTransactionsQuery } from '../../../queries/wallet'
 import { ApiQueryError } from '../../../utils/query-error'
 
-definePageMeta({ title: 'Character Wallet', layout: 'character' })
+definePageMeta({ title: 'Character Wallet', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()

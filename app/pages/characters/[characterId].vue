@@ -4,7 +4,7 @@ import { characterHistoryQuery, characterSkillsQuery } from '../../queries/chara
 import { prefetchProtectedQuery } from '../../queries/query-cache'
 import { walletQuery } from '../../queries/wallet'
 
-definePageMeta({ title: 'Characters', layout: 'character' })
+definePageMeta({ title: 'Characters', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
