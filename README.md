@@ -7,7 +7,7 @@ A small EVE Online character application with:
 - Local Nuxt UI layer with Reka UI primitives
 - Hono API and EVE SSO service
 - PostgreSQL 17 in OrbStack / Docker Compose
-- Redis 7 durable queue/coordination storage and a separate backend worker
+- Redis 7 durable queue/coordination storage, an isolated disposable ESI cache, and a separate backend worker
 - `@evespace/esi-client` for public ESI requests
 - Multi-character application accounts with one selectable main character
 - Character-ID-scoped overview, skills, wallet, and employment-history views
@@ -94,14 +94,14 @@ Start Nuxt on the host:
 pnpm dev
 ```
 
-This starts PostgreSQL, durable queue Redis, the Hono API, and the worker. Open `http://localhost:3000`. The API is available at `http://localhost:8788`.
+This starts PostgreSQL, durable queue Redis, disposable cache Redis, the Hono API, and the worker. Open `http://localhost:3000`. The API is available at `http://localhost:8788`.
 
 Useful commands:
 
 ```bash
 docker compose ps
 docker compose logs -f api
-docker compose logs -f worker queue-redis
+docker compose logs -f worker queue-redis cache-redis
 pnpm stack:down
 ```
 
@@ -129,8 +129,10 @@ Coverage thresholds cover SSO routes, session middleware, character resources, s
 Browser -> Nuxt :3000 -> Hono API :8788 -> PostgreSQL :5432
                               |                  ^
                               +-> EVE SSO and ESI |
-                       Queue Redis :6379 <- Worker (no HTTP)
-                            (durable)
+                        Queue Redis :6379 <- Worker (no HTTP)
+                             (durable coordination)
+                        Cache Redis :6380
+                             (disposable ESI values)
 ```
 
 Nuxt does not hold EVE credentials or call `@evespace/esi-client`. The API and worker share server-only ESI, OAuth, character ownership, token encryption, session, and persistence behavior. An EVE Space user can own multiple individually authorized characters, and each character route loads resources for its explicit owned character ID.
@@ -144,7 +146,7 @@ The API exports its chained Hono `AppType`. Nuxt uses `hono/client` to build URL
 ## API Routes
 
 - `GET /health` checks API and PostgreSQL availability.
-- `GET /api/status` returns cached API, PostgreSQL, and Tranquility telemetry.
+- `GET /api/status` returns replica-local API, PostgreSQL, Tranquility, queue, and safe ESI resilience telemetry.
 - `GET /api/me/characters` returns the authenticated user's attached character roster.
 - `GET /api/me/characters/:characterId` returns an owned character's profile, location, ship, and skill-point summary.
 - `PATCH /api/me/characters/:characterId/main` atomically selects an owned character as the account main.
@@ -201,6 +203,24 @@ Inspect only aggregate queue state through `GET /api/status`; it reports reachab
 To retry failed derived diagnostics after addressing a dependency, use a private operator shell with BullMQ's `queue.retryJobs({ state: 'failed' })`. To cancel pending derived work, use `queue.remove(jobId)` for a specific waiting or delayed job, or `queue.drain(true)` only after stopping workers and producers. Do not use `obliterate` on a running queue.
 
 For queue disaster recovery, stop API producers and workers, restore the Redis AOF/data volume, start queue Redis, then start workers and API. Derived jobs are reconstructed by their planners. Authoritative event jobs are reconstructed from retained PostgreSQL `domain_events` only through the guarded re-drive command below; restarting the worker automatically relays events that were never marked published but does not assume already-published work was lost. PostgreSQL remains authoritative; do not place EVE tokens, credentials, session bearers, encryption material, event payloads, or secrets in queue payloads, names, logs, or Redis keys.
+
+## Cache Redis Operations
+
+Cache Redis holds only disposable ESI response envelopes. Compose runs `redis:7.4.7-alpine` with `CACHE_REDIS_MAXMEMORY`, `allkeys-lfu`, no AOF, no RDB snapshot, and no data volume. Eviction and complete loss are expected cache misses; they must never affect BullMQ jobs, cooldowns, leases, or PostgreSQL state. Alert when the cache Redis healthcheck reports memory use above 90% of its configured limit, then adjust capacity from observed hit rate and eviction pressure.
+
+For production, pin the validated Redis image to an immutable digest, require authentication, and require TLS whenever traffic leaves a private host network. Set `CACHE_REDIS_URL` to the authenticated `rediss://` endpoint; never log or commit its credentials. Do not back up the cache role. Cache-key namespace changes intentionally create a cold cache, and invalidation is performed by advancing that namespace rather than deleting queue/coordination keys.
+
+### Affiliation Capacity Fixture
+
+The affiliation benchmark uses a disposable PostgreSQL database with 10,000 synthetic users, characters, and token rows. Half have unexpired sessions, half have expired sessions, and the fixture includes representative corporation and alliance IDs. No credentials or production character data are used. On 2026-08-24, PostgreSQL 17 selected a representative 1,000-ID due batch from 5,000 due characters in 0.165 ms and a worst-case 1,000-ID batch from 10,000 due characters in 0.463 ms using `characters_due_affiliation_check_idx`; the all-due run produces ten 1,000-ID batches.
+
+Record the Compose image versions, cache capacity, queue capacity, active/inactive intervals, and query plans whenever this fixture is rerun. Real near-term due sets are smaller than this worst case because only SSO-authorized characters exist in `characters`; unsynchronized alliance members are not present yet.
+
+ESI envelopes are namespaced by an envelope format version and a coordination-controlled namespace version. Advance the namespace version to invalidate all cached ESI values after a DTO or envelope change; do not delete Queue Redis keys, because it owns BullMQ jobs, cooldowns, leases, and fencing identities. If Queue Redis is reset while Cache Redis survives, the missing coordination sentinel advances the cache namespace automatically. Expect a cold-cache period after that recovery: requests refill values under normal ESI concurrency and cooldown policies.
+
+`GET /api/status` exposes only aggregate cache and coordination reachability, global/public cooldown windows, and per-operation upstream outcome counters with each operation's cache policy. It never exposes Redis URLs, keys, principals, cached payloads, or credentials. A first failed dependency probe is `degraded`; three consecutive failed probes are `unavailable`. These states degrade status telemetry but do not make the API container healthcheck fail, because `/health` remains a local PostgreSQL probe.
+
+Affiliation refresh is derived work. Inspect `services.queue.depth`, `oldestWaitingAgeSeconds`, `plannerPaused`, and `latestAffiliationPlannerOutcome` in `/api/status` to distinguish a normal idle planner from cooldown, admission, coalescing, or failed planning. The planner reconstructs due batches from PostgreSQL after queue loss, so do not manually recreate jobs or put character credentials in a queue payload.
 
 ## Transactional Domain Events
 

@@ -72,12 +72,18 @@ These instructions apply to the entire repository. Preserve the architecture and
 ## ESI And Caching
 
 - Use `@evespace/esi-client` rather than ad hoc ESI fetch calls.
+- Discover endpoint paths, required scopes, route-specific cache behavior, and OpenAPI `x-rate-limit` metadata through the EVE API Explorer before implementing an ESI integration.
 - Enrich character skills from local `sde_types` and `sde_groups` in one bounded query; retain ESI records with deterministic unknown labels when static rows are missing.
-- Preserve the configured ESI user agent and SDK response validation.
+- Preserve the configured identifiable ESI user agent and SDK response validation. Browser requests that must identify themselves use `X-User-Agent`; server requests use `User-Agent`.
+- Preserve `X-Compatibility-Date` on ESI requests. The compatibility date is not a future date and API changes take effect at 11:00 UTC.
 - Live `GetUniverseBloodlines` data can contain nullable `ship_type_id` values that conflict with the SDK 2.0.0 schema. Response validation is disabled only for that operation; do not broaden the exception.
 - Wallet cache expiry follows ESI `Expires` or `Cache-Control` metadata.
 - Preserve conditional requests using ETag or Last-Modified and reuse cached data on `304`.
-- Preserve concurrent request collapsing, `429` cooldowns, ESI error-budget cooldowns, and stale fallback behavior.
+- Do not refresh ESI resources before their expiry. Respect `Expires`, `ETag`/`If-None-Match`, and `Last-Modified`; bypassing ESI caching can result in a ban.
+- Preserve concurrent request collapsing, `429` cooldowns using `Retry-After`, ESI error-budget cooldowns, and stale fallback behavior.
+- Account for both ESI rate-limit systems: route-group floating-window buckets and the legacy global error limit. Do not operate at either limit; spread periodic work and slow down as `X-Ratelimit-Remaining` approaches zero.
+- Avoid preventable ESI errors: 2xx costs 2 bucket tokens, 3xx costs 1, 4xx costs 5 (except 429), and 5xx costs 0. Legacy error-limit headers are `X-ESI-Error-Limit-Remain` and `X-ESI-Error-Limit-Reset`.
+- For cursor-paginated routes, treat `before` and `after` tokens as opaque. Initial collection pages backward with `before`; persist the initial `after` token for incremental updates. Deduplicate by keeping existing records from `before` pages and replacing them from `after` pages.
 - Wallet and public character caches are bounded to 100 entries, process-local, and reset when the API restarts.
 
 ## Persistence

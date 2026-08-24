@@ -3,23 +3,39 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   allianceInfo: vi.fn(),
   corporationInfo: vi.fn(),
+  get: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client/domains/alliance', () => ({
-  createAllianceClient: () => ({ getPublicInfo: mocks.allianceInfo }),
+  createAllianceClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.allianceInfo }) }),
 }))
 
 vi.mock('@evespace/esi-client/domains/corporation', () => ({
-  createCorporationClient: () => ({ getPublicInfo: mocks.corporationInfo }),
+  createCorporationClient: () => ({
+    withMetadata: () => ({ getPublicInfo: mocks.corporationInfo }),
+  }),
 }))
 
-vi.mock('../src/esi-fetch.js', () => ({ esiFetch: vi.fn() }))
+vi.mock('../src/esi-resilience/resilience.js', () => ({
+  getEsiResilienceLayer: () => ({ get: mocks.get }),
+}))
+vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 import { resolveDeploymentOrganization } from '../src/deployment-organization.js'
 
 beforeEach(() => {
-  mocks.allianceInfo.mockResolvedValue({ name: 'Test Alliance', ticker: 'TEST' })
-  mocks.corporationInfo.mockResolvedValue({ name: 'Test Corporation', ticker: 'CORP' })
+  mocks.get.mockImplementation(async (resource) => {
+    const response = await resource.load({})
+    return { data: response.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
+  })
+  mocks.allianceInfo.mockResolvedValue({
+    data: { name: 'Test Alliance', ticker: 'TEST' },
+    meta: { headers: {} },
+  })
+  mocks.corporationInfo.mockResolvedValue({
+    data: { name: 'Test Corporation', ticker: 'CORP' },
+    meta: { headers: {} },
+  })
 })
 
 describe('deployment organization resolution', () => {
@@ -30,7 +46,7 @@ describe('deployment organization resolution', () => {
       name: 'Test Alliance',
       ticker: 'TEST',
     })
-    expect(mocks.allianceInfo).toHaveBeenCalledWith(99)
+    expect(mocks.allianceInfo).toHaveBeenCalledWith(99, {})
   })
 
   test('maps a corporation ID to stable deployment details', async () => {
@@ -40,6 +56,6 @@ describe('deployment organization resolution', () => {
       name: 'Test Corporation',
       ticker: 'CORP',
     })
-    expect(mocks.corporationInfo).toHaveBeenCalledWith(98)
+    expect(mocks.corporationInfo).toHaveBeenCalledWith(98, {})
   })
 })

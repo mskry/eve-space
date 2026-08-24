@@ -44,6 +44,7 @@ vi.mock('../src/character-overview-service.js', () => ({
 }))
 
 import { characterRoutes } from '../src/routes/characters.js'
+import { EsiQuotaError } from '../src/esi-resilience/cooldowns.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../src/token-service.js'
 
 const character = {
@@ -159,6 +160,20 @@ describe('character skills route', () => {
     expect(await response.json()).toEqual({
       code: 'ESI_UNAVAILABLE',
       message: 'EVE Online ESI is temporarily unavailable.',
+    })
+  })
+
+  test('maps ESI concurrency and cooldown deferrals to a retryable response', async () => {
+    mocks.getCharacterSkills.mockRejectedValue(new EsiQuotaError(12))
+
+    const response = await authorizedRequest(`/${character.characterId}/skills`)
+
+    expect(response.status).toBe(429)
+    expect(response.headers.get('retry-after')).toBe('12')
+    await expect(response.json()).resolves.toEqual({
+      code: 'ESI_COOLDOWN',
+      message: 'EVE Online ESI is temporarily rate limited.',
+      retryAfterSeconds: 12,
     })
   })
 

@@ -1,7 +1,8 @@
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance'
 import { createCorporationClient } from '@evespace/esi-client/domains/corporation'
 import type { DeploymentOrganizationType } from './db/schema.js'
-import { esiFetch } from './esi-fetch.js'
+import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
+import { createEsiTransport } from './esi-resilience/transport.js'
 
 export interface DeploymentOrganization {
   type: DeploymentOrganizationType
@@ -15,10 +16,28 @@ export async function resolveDeploymentOrganization(
   id: number,
 ): Promise<DeploymentOrganization> {
   if (type === 'alliance') {
-    const alliance = await createAllianceClient({ fetch: esiFetch }).getPublicInfo(id)
+    const alliance = (
+      await getEsiResilienceLayer().get({
+        operation: 'public-alliance',
+        resource: `alliance-${id}`,
+        load: (revalidation) =>
+          createAllianceClient({ fetch: createEsiTransport('public-alliance') })
+            .withMetadata()
+            .getPublicInfo(id, revalidation),
+      })
+    ).data
     return { type, id, name: alliance.name, ticker: alliance.ticker }
   }
 
-  const corporation = await createCorporationClient({ fetch: esiFetch }).getPublicInfo(id)
+  const corporation = (
+    await getEsiResilienceLayer().get({
+      operation: 'public-corporation',
+      resource: `corporation-${id}`,
+      load: (revalidation) =>
+        createCorporationClient({ fetch: createEsiTransport('public-corporation') })
+          .withMetadata()
+          .getPublicInfo(id, revalidation),
+    })
+  ).data
   return { type, id, name: corporation.name, ticker: corporation.ticker }
 }

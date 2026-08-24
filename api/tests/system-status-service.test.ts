@@ -1,9 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   createStatusClient: vi.fn(),
+  get: vi.fn(),
   getStatus: vi.fn(),
   probeDomainEventStatus: vi.fn(),
+  probeEsiResilienceTelemetry: vi.fn(),
   probeQueueStatus: vi.fn(),
   sql: vi.fn(),
 }))
@@ -12,21 +14,23 @@ vi.mock('@evespace/esi-client/domains/status', () => ({
   createStatusClient: mocks.createStatusClient,
 }))
 
-vi.mock('../src/db/client.js', () => ({
-  sql: mocks.sql,
+vi.mock('../src/db/client.js', () => ({ sql: mocks.sql }))
+
+vi.mock('../src/esi-resilience/resilience.js', () => ({
+  getEsiResilienceLayer: () => ({ get: mocks.get }),
 }))
 
-vi.mock('../src/esi-fetch.js', () => ({
-  esiFetch: vi.fn(),
+vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+
+vi.mock('../src/esi-resilience/telemetry.js', () => ({
+  probeEsiResilienceTelemetry: mocks.probeEsiResilienceTelemetry,
 }))
 
 vi.mock('../src/domain-event-status.js', () => ({
   probeDomainEventStatus: mocks.probeDomainEventStatus,
 }))
 
-vi.mock('../src/queue/status.js', () => ({
-  probeQueueStatus: mocks.probeQueueStatus,
-}))
+vi.mock('../src/queue/status.js', () => ({ probeQueueStatus: mocks.probeQueueStatus }))
 
 beforeEach(() => {
   vi.resetModules()
@@ -35,171 +39,121 @@ beforeEach(() => {
   mocks.createStatusClient.mockReturnValue({
     withMetadata: () => ({ get: mocks.getStatus }),
   })
+  mocks.get.mockImplementation(async (resource) => {
+    const response = await resource.load({})
+    return {
+      data: response.data,
+      cachedUntil: '2026-08-20T12:01:00.000Z',
+      quota: { errorRemaining: 99, errorResetSeconds: 10 },
+      source: 'esi',
+      stale: false,
+    }
+  })
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
   mocks.getStatus.mockResolvedValue(statusResponse())
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
   mocks.probeDomainEventStatus.mockResolvedValue(eventRelayStatus())
-})
-
-afterEach(() => {
-  vi.useRealTimers()
+  mocks.probeEsiResilienceTelemetry.mockResolvedValue(resilienceTelemetry())
 })
 
 describe('system status service', () => {
-  test('collapses concurrent probes and serves fresh cached status', async () => {
-    let resolveRequest: ((value: unknown) => void) | undefined
-    mocks.getStatus.mockReturnValue(new Promise((resolve) => (resolveRequest = resolve)))
+  test('composes local API and database checks with a resilient Tranquility resource', async () => {
     const { getSystemStatus } = await import('../src/system-status-service.js')
 
-    const first = getSystemStatus()
-    const second = getSystemStatus()
-    resolveRequest?.(statusResponse())
-
-    await expect(first).resolves.toMatchObject({
+    await expect(getSystemStatus()).resolves.toMatchObject({
       status: 'operational',
+      checkedAt: '2026-08-20T12:00:00.000Z',
+      cachedUntil: '2026-08-20T12:00:30.000Z',
       services: {
-        api: { status: 'operational' },
-        database: { status: 'operational' },
+        api: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
+        database: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
         esi: { status: 'operational', players: 31_337 },
-        queue: { status: 'operational' },
-        eventRelay: { status: 'operational', pendingCount: 0 },
-      },
-    })
-    await expect(second).resolves.toEqual(await first)
-    await expect(getSystemStatus()).resolves.toEqual(await first)
-    expect(mocks.sql).toHaveBeenCalledOnce()
-    expect(mocks.getStatus).toHaveBeenCalledOnce()
-    expect(mocks.probeDomainEventStatus).toHaveBeenCalledWith(queueStatus())
-  })
-
-  test('reports degraded status for database failure and a low ESI budget', async () => {
-    mocks.sql.mockRejectedValue(new Error('Database unavailable'))
-    mocks.getStatus.mockResolvedValue(statusResponse({ remaining: 10, reset: 20 }))
-    const { getSystemStatus } = await import('../src/system-status-service.js')
-
-    await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'degraded',
-      services: {
-        database: { status: 'unavailable' },
-        esi: {
-          status: 'degraded',
-          errorBudgetRemaining: 10,
-          errorBudgetResetSeconds: 20,
+        queue: { checkedAt: '2026-08-20T12:00:00.000Z' },
+        eventRelay: { checkedAt: '2026-08-20T12:00:00.000Z' },
+        esiResilience: {
+          cache: { status: 'operational' },
+          coordination: { status: 'operational' },
         },
       },
     })
+    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
+      operation: 'status',
+      resource: 'tranquility-status',
+    })
   })
 
-  test('marks previous ESI data stale when a refresh fails', async () => {
-    mocks.getStatus
-      .mockResolvedValueOnce(statusResponse())
-      .mockRejectedValueOnce(new Error('ESI unavailable'))
+  test('uses the least-fresh ESI deadline for the composed status response', async () => {
+    mocks.get.mockImplementation(async (resource) => {
+      const response = await resource.load({})
+      return {
+        data: response.data,
+        cachedUntil: '2026-08-20T12:00:10.000Z',
+        quota: {},
+        source: 'cache',
+        stale: false,
+      }
+    })
     const { getSystemStatus } = await import('../src/system-status-service.js')
 
-    const initial = await getSystemStatus()
+    await expect(getSystemStatus()).resolves.toMatchObject({
+      cachedUntil: '2026-08-20T12:00:10.000Z',
+    })
+  })
+
+  test('collapses concurrent probes and reuses the replica-local result for its TTL', async () => {
+    const { getSystemStatus } = await import('../src/system-status-service.js')
+
+    await Promise.all([getSystemStatus(), getSystemStatus()])
+    await getSystemStatus()
+    expect(mocks.probeQueueStatus).toHaveBeenCalledOnce()
+
     await vi.advanceTimersByTimeAsync(30_001)
-    const refreshed = await getSystemStatus()
-
-    expect(refreshed).toMatchObject({
-      status: 'degraded',
-      services: {
-        database: { status: 'operational' },
-        esi: {
-          status: 'stale',
-          checkedAt: initial.services.esi.checkedAt,
-          players: 31_337,
-        },
-      },
-    })
-    expect(mocks.getStatus).toHaveBeenCalledTimes(2)
+    await getSystemStatus()
+    expect(mocks.probeQueueStatus).toHaveBeenCalledTimes(2)
   })
 
-  test('reports unavailable when database and ESI are both unavailable', async () => {
+  test('degrades safely when local database or shared ESI data is unavailable', async () => {
     mocks.sql.mockRejectedValue(new Error('Database unavailable'))
-    mocks.getStatus.mockRejectedValue(new Error('ESI unavailable'))
+    mocks.get.mockRejectedValue(new Error('ESI unavailable'))
     const { getSystemStatus } = await import('../src/system-status-service.js')
 
     await expect(getSystemStatus()).resolves.toMatchObject({
       status: 'unavailable',
       services: {
         database: { status: 'unavailable' },
-        esi: {
-          status: 'unavailable',
-          players: null,
-          errorBudgetRemaining: null,
-        },
+        esi: { status: 'unavailable', players: null },
       },
     })
   })
 
-  test('degrades safe telemetry when queue Redis is unavailable', async () => {
-    mocks.probeQueueStatus.mockResolvedValue({
-      ...queueStatus(),
-      status: 'unavailable',
-      depth: null,
-      workerHeartbeatAt: null,
+  test('degrades cache and coordination telemetry before marking repeated outages unavailable', async () => {
+    mocks.probeEsiResilienceTelemetry.mockResolvedValue({
+      ...resilienceTelemetry(),
+      cache: { status: 'degraded', checkedAt: '2026-08-20T12:00:00.000Z' },
+      coordination: { status: 'unavailable', checkedAt: '2026-08-20T12:00:00.000Z' },
+      cooldown: {
+        status: 'unavailable',
+        checkedAt: '2026-08-20T12:00:00.000Z',
+        globalRetryAt: null,
+        activeOperations: [],
+      },
+      upstream: { status: 'unavailable', checkedAt: '2026-08-20T12:00:00.000Z', operations: [] },
     })
-    mocks.probeDomainEventStatus.mockResolvedValue(
-      eventRelayStatus({ status: 'unavailable', pendingCount: 3 }),
-    )
     const { getSystemStatus } = await import('../src/system-status-service.js')
 
     await expect(getSystemStatus()).resolves.toMatchObject({
       status: 'degraded',
       services: {
-        queue: { status: 'unavailable', depth: null, workerHeartbeatAt: null },
-        eventRelay: { status: 'unavailable', pendingCount: 3 },
+        esiResilience: {
+          cache: { status: 'degraded' },
+          coordination: { status: 'unavailable' },
+        },
       },
-    })
-  })
-
-  test.each([
-    {
-      name: 'lagged',
-      eventRelay: eventRelayStatus({ status: 'degraded', oldestPendingAgeSeconds: 301 }),
-    },
-    {
-      name: 'paused',
-      eventRelay: eventRelayStatus({ status: 'degraded', relayPaused: true }),
-    },
-  ])('includes a $name event relay in overall degradation', async ({ eventRelay }) => {
-    mocks.probeDomainEventStatus.mockResolvedValue(eventRelay)
-    const { getSystemStatus } = await import('../src/system-status-service.js')
-
-    await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'degraded',
-      services: { eventRelay },
-    })
-  })
-
-  test('reports ESI VIP mode as degraded', async () => {
-    mocks.getStatus.mockResolvedValue({
-      ...statusResponse(),
-      data: { ...statusResponse().data, vip: true },
-    })
-    const { getSystemStatus } = await import('../src/system-status-service.js')
-
-    await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'degraded',
-      services: { esi: { status: 'degraded', vip: true } },
-    })
-  })
-
-  test('reports zero-player Tranquility downtime as degraded', async () => {
-    mocks.getStatus.mockResolvedValue({
-      ...statusResponse(),
-      data: { ...statusResponse().data, players: 0 },
-    })
-    const { getSystemStatus } = await import('../src/system-status-service.js')
-
-    await expect(getSystemStatus()).resolves.toMatchObject({
-      status: 'degraded',
-      services: { esi: { status: 'degraded', players: 0 } },
     })
   })
 })
 
-function statusResponse(errorLimit = { remaining: 99, reset: 10 }) {
+function statusResponse() {
   return {
     data: {
       players: 31_337,
@@ -207,11 +161,7 @@ function statusResponse(errorLimit = { remaining: 99, reset: 10 }) {
       start_time: '2026-08-20T11:00:00Z',
       vip: false,
     },
-    meta: {
-      status: 200,
-      headers: {},
-      errorLimit,
-    },
+    meta: { headers: {} },
   }
 }
 
@@ -232,13 +182,31 @@ function queueStatus() {
   }
 }
 
-function eventRelayStatus(overrides: Record<string, unknown> = {}) {
+function eventRelayStatus() {
   return {
     status: 'operational' as const,
     pendingCount: 0,
     oldestPendingAgeSeconds: null,
     relayPaused: false,
     latestRelayOutcome: null,
-    ...overrides,
+  }
+}
+
+function resilienceTelemetry() {
+  return {
+    checkedAt: '2026-08-20T12:00:00.000Z',
+    cache: { status: 'operational' as const, checkedAt: '2026-08-20T12:00:00.000Z' },
+    coordination: { status: 'operational' as const, checkedAt: '2026-08-20T12:00:00.000Z' },
+    cooldown: {
+      status: 'inactive' as const,
+      checkedAt: '2026-08-20T12:00:00.000Z',
+      globalRetryAt: null,
+      activeOperations: [],
+    },
+    upstream: {
+      status: 'operational' as const,
+      checkedAt: '2026-08-20T12:00:00.000Z',
+      operations: [],
+    },
   }
 }

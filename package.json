@@ -12,7 +12,7 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "sde:ingest": "cargo run --release --manifest-path sde-ingest/Cargo.toml --",
-    "lint": "oxlint .",
+    "lint": "oxlint . && node scripts/verify-esi-egress.mjs",
     "lint:fix": "oxlint --fix .",
     "knip": "DATABASE_URL=postgres://localhost:5432/eve_space knip",
     "stack:up": "docker compose up --build -d",

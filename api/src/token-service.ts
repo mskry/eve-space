@@ -33,22 +33,30 @@ export class TokenRefreshUnavailableError extends Error {
 }
 
 export async function getCharacterAccessToken(characterId: number, requiredScope: string) {
+  return (await getCharacterAuthorization(characterId, requiredScope)).accessToken
+}
+
+export async function getCharacterAuthorization(characterId: number, requiredScope: string) {
   const stored = await findCharacterToken(characterId)
   if (!stored) throw new CharacterTokenNotFoundError()
   requireScope(stored.scopes, requiredScope)
 
   const tokens = decryptTokens(stored.encryptedTokens)
   if (stored.accessTokenExpiresAt.getTime() > Date.now() + tokenFreshnessSkewMs)
-    return tokens.accessToken
+    return { accessToken: tokens.accessToken, tokenVersion: stored.tokenVersion }
 
-  const existingRefresh = refreshes.get(characterId)
-  if (existingRefresh) return existingRefresh
-
-  const refresh = withRefreshCapacity(() =>
-    refreshCharacterToken(characterId, requiredScope, stored),
-  ).finally(() => refreshes.delete(characterId))
-  refreshes.set(characterId, refresh)
-  return refresh
+  let refresh = refreshes.get(characterId)
+  if (!refresh) {
+    refresh = withRefreshCapacity(() =>
+      refreshCharacterToken(characterId, requiredScope, stored),
+    ).finally(() => refreshes.delete(characterId))
+    refreshes.set(characterId, refresh)
+  }
+  const accessToken = await refresh
+  const refreshed = await findCharacterToken(characterId)
+  if (!refreshed) throw new CharacterTokenNotFoundError()
+  requireScope(refreshed.scopes, requiredScope)
+  return { accessToken, tokenVersion: refreshed.tokenVersion }
 }
 
 /**

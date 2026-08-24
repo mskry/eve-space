@@ -43,6 +43,32 @@ services:
       timeout: 3s
       retries: 10
 
+  cache-redis:
+    image: redis:7.4.7-alpine
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'no',
+        '--save',
+        '',
+        '--maxmemory',
+        '${CACHE_REDIS_MAXMEMORY:-256mb}',
+        '--maxmemory-policy',
+        'allkeys-lfu',
+      ]
+    ports:
+      - '${CACHE_REDIS_PORT:-6380}:6379'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'redis-cli ping | grep -qx PONG && redis-cli --raw config get maxmemory-policy | grep -qx allkeys-lfu && maxmemory=$$(redis-cli --raw config get maxmemory | grep -E ''^[0-9]+$$'') && used=$$(redis-cli --raw info memory | grep ''^used_memory:'' | cut -d: -f2) && test "$$maxmemory" -gt 0 && test "$$used" -lt "$$((maxmemory * 90 / 100))"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build:
       context: .
@@ -68,6 +94,7 @@ services:
       ADMIN_SETUP_SECRET: ${ADMIN_SETUP_SECRET:-}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
       QUEUE_REDIS_URL: redis://queue-redis:6379
+      CACHE_REDIS_URL: redis://cache-redis:6379
     ports:
       - '8788:8787'
     depends_on:
@@ -75,6 +102,8 @@ services:
         condition: service_healthy
       queue-redis:
         condition: service_healthy
+      cache-redis:
+        condition: service_started
     healthcheck:
       test:
         [
@@ -102,6 +131,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-eve_space}@postgres:5432/${POSTGRES_DB:-eve_space}
       PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       QUEUE_REDIS_URL: redis://queue-redis:6379
+      CACHE_REDIS_URL: redis://cache-redis:6379
       QUEUE_PLANNER_SCHEDULE: ${QUEUE_PLANNER_SCHEDULE:-*/15 * * * *}
       QUEUE_PLANNER_SCHEDULE_OFFSET_MS: ${QUEUE_PLANNER_SCHEDULE_OFFSET_MS:-}
       QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: ${QUEUE_PLANNER_INITIAL_DELAY_MAX_MS:-60000}
@@ -110,6 +140,8 @@ services:
         condition: service_healthy
       queue-redis:
         condition: service_healthy
+      cache-redis:
+        condition: service_started
     healthcheck:
       test: ['CMD', 'node', 'dist/worker-health.js']
       interval: 30s

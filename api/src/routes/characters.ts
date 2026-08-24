@@ -25,6 +25,7 @@ import {
   WalletQuotaError,
 } from '../wallet-service.js'
 import { env } from '../env.js'
+import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
@@ -203,6 +204,7 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
       try {
         return context.json(await getCharacterSkills(characterId))
       } catch (error) {
+        if (error instanceof EsiQuotaError) return esiCooldown(context, error)
         if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
         if (error instanceof ScopeRequiredError) {
           return scopeRequired(
@@ -331,7 +333,8 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
           characterId,
           history: await getCharacterEmploymentHistory(characterId),
         })
-      } catch {
+      } catch (error) {
+        if (error instanceof EsiQuotaError) return esiCooldown(context, error)
         return context.json(
           { code: 'ESI_UNAVAILABLE', message: 'Employment history is temporarily unavailable.' },
           502,
@@ -379,6 +382,18 @@ function tokenRefreshUnavailable(context: Context) {
       message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
     },
     503,
+  )
+}
+
+function esiCooldown(context: Context, error: EsiQuotaError) {
+  context.header('Retry-After', String(error.retryAfterSeconds))
+  return context.json(
+    {
+      code: 'ESI_COOLDOWN',
+      message: 'EVE Online ESI is temporarily rate limited.',
+      retryAfterSeconds: error.retryAfterSeconds,
+    },
+    429,
   )
 }
 

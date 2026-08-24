@@ -57,6 +57,13 @@ beforeEach(() => {
       }),
     )
     .mockResolvedValueOnce('registered')
+    .mockResolvedValueOnce(
+      JSON.stringify({
+        outcome: 'scheduled',
+        planned: 2,
+        recordedAt: '2026-08-20T12:00:00.000Z',
+      }),
+    )
   mocks.queue.getJobCounts.mockResolvedValue({ waiting: 1, delayed: 2, active: 3, failed: 4 })
   mocks.queue.getJobs.mockImplementation(async ([state]: string[]) =>
     state === 'waiting'
@@ -83,6 +90,11 @@ describe('queue telemetry probe', () => {
         recordedAt: '2026-08-20T12:00:00.000Z',
       },
       latestSchedulerOutcome: 'registered',
+      latestAffiliationPlannerOutcome: {
+        outcome: 'scheduled',
+        planned: 2,
+        recordedAt: '2026-08-20T12:00:00.000Z',
+      },
     })
     expect(mocks.queue.getJobs).toHaveBeenCalledWith(['waiting'], 0, 0, true)
     expect(mocks.queue.getJobs).toHaveBeenCalledWith(['delayed'], 0, 1_000, true)
@@ -105,6 +117,7 @@ describe('queue telemetry probe', () => {
       outboxRelayPaused: false,
       latestOutboxRelayOutcome: null,
       latestSchedulerOutcome: null,
+      latestAffiliationPlannerOutcome: null,
     })
   })
 
@@ -114,6 +127,7 @@ describe('queue telemetry probe', () => {
     mocks.connection.get
       .mockResolvedValueOnce('paused')
       .mockResolvedValueOnce('paused')
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
     mocks.queue.getJobCounts.mockResolvedValue({ waiting: 0, delayed: 0, active: 0, failed: 0 })
@@ -152,6 +166,7 @@ describe('queue telemetry probe', () => {
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce('redis://private-host payload')
       .mockResolvedValueOnce('registered')
+      .mockResolvedValueOnce('redis://private-host payload')
     mocks.queue.getJobCounts.mockResolvedValue({ waiting: 0, delayed: 0, active: 0, failed: 0 })
     mocks.queue.getJobs.mockResolvedValue([])
     const { probeQueueStatus } = await import('../src/queue/status.js')
@@ -159,6 +174,7 @@ describe('queue telemetry probe', () => {
     await expect(probeQueueStatus()).resolves.toMatchObject({
       status: 'operational',
       latestOutboxRelayOutcome: null,
+      latestAffiliationPlannerOutcome: null,
     })
   })
 

@@ -2,6 +2,7 @@ import { Queue } from 'bullmq'
 import { env } from '../env.js'
 import { closeQueueRedisConnection, createProbeRedisConnection } from './redis.js'
 import {
+  affiliationPlannerOutcomeKey,
   operationsQueueName,
   outboxRelayOutcomeKey,
   outboxRelayStateKey,
@@ -28,6 +29,13 @@ export interface QueueStatus {
   outboxRelayPaused: boolean
   latestOutboxRelayOutcome: OutboxRelayOutcome | null
   latestSchedulerOutcome: 'registered' | null
+  latestAffiliationPlannerOutcome: AffiliationPlannerOutcome | null
+}
+
+interface AffiliationPlannerOutcome {
+  outcome: 'scheduled' | 'idle' | 'cooldown' | 'paused' | 'coalesced' | 'failed'
+  planned: number
+  recordedAt: string
 }
 
 export interface OutboxRelayOutcome {
@@ -58,6 +66,7 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       outboxRelayState,
       outboxRelayOutcome,
       schedulerOutcome,
+      affiliationPlannerOutcome,
     ] = await Promise.all([
       queue.getJobCounts('waiting', 'delayed', 'active', 'failed'),
       queue.getJobs(['waiting'], 0, 0, true),
@@ -68,6 +77,7 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       connection.get(outboxRelayStateKey),
       connection.get(outboxRelayOutcomeKey),
       connection.get(schedulerOutcomeKey),
+      connection.get(affiliationPlannerOutcomeKey),
     ])
     const heartbeat = latestHeartbeat(beats)
     const oldest = waiting[0]
@@ -94,6 +104,7 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       outboxRelayPaused: outboxRelayState === 'paused',
       latestOutboxRelayOutcome: parseOutboxRelayOutcome(outboxRelayOutcome),
       latestSchedulerOutcome: schedulerOutcome === 'registered' ? 'registered' : null,
+      latestAffiliationPlannerOutcome: parseAffiliationPlannerOutcome(affiliationPlannerOutcome),
     }
   } catch {
     return {
@@ -109,6 +120,7 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       outboxRelayPaused: false,
       latestOutboxRelayOutcome: null,
       latestSchedulerOutcome: null,
+      latestAffiliationPlannerOutcome: null,
     }
   } finally {
     await Promise.allSettled([queue.close(), closeQueueRedisConnection(connection)])
@@ -133,6 +145,30 @@ function parseOutboxRelayOutcome(value: string | null): OutboxRelayOutcome | nul
     )
       return null
     return { outcome, category, recordedAt } as OutboxRelayOutcome
+  } catch {
+    return null
+  }
+}
+
+function parseAffiliationPlannerOutcome(value: string | null): AffiliationPlannerOutcome | null {
+  if (!value) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const outcome = 'outcome' in parsed ? parsed.outcome : null
+    const planned = 'planned' in parsed ? parsed.planned : null
+    const recordedAt = 'recordedAt' in parsed ? parsed.recordedAt : null
+    if (
+      !['scheduled', 'idle', 'cooldown', 'paused', 'coalesced', 'failed'].includes(
+        outcome as string,
+      ) ||
+      !Number.isSafeInteger(planned) ||
+      (planned as number) < 0 ||
+      typeof recordedAt !== 'string' ||
+      Number.isNaN(Date.parse(recordedAt))
+    )
+      return null
+    return { outcome, planned, recordedAt } as AffiliationPlannerOutcome
   } catch {
     return null
   }

@@ -32,7 +32,12 @@ describe('environment configuration', () => {
       TOKEN_REFRESH_LOCK_TIMEOUT_MS: 45_000,
       TOKEN_REFRESH_CONCURRENCY: 4,
       TOKEN_REFRESH_QUEUE_TIMEOUT_MS: 30_000,
-      ESI_CACHE_MAX_ENTRIES: 100,
+      CACHE_REDIS_URL: 'redis://localhost:6380',
+      ESI_CACHE_L1_MAX_ENTRIES: 250,
+      ESI_CACHE_MAX_RETENTION_SECONDS: 86_400,
+      ESI_OPERATION_CONCURRENCY: 6,
+      AFFILIATION_ACTIVE_INTERVAL_SECONDS: 3_600,
+      AFFILIATION_INACTIVE_INTERVAL_SECONDS: 86_400,
     })
     expect(env.QUEUE_PLANNER_SCHEDULE_OFFSET_MS).toBeUndefined()
   })
@@ -41,6 +46,11 @@ describe('environment configuration', () => {
     [
       'queue URL',
       { QUEUE_REDIS_URL: 'http://localhost:6379' },
+      'Expected a redis:// or rediss:// URL',
+    ],
+    [
+      'cache URL',
+      { CACHE_REDIS_URL: 'http://localhost:6380' },
       'Expected a redis:// or rediss:// URL',
     ],
     [
@@ -97,6 +107,14 @@ describe('environment configuration', () => {
       'an outbox lag threshold no longer than claim recovery',
       { OUTBOX_RELAY_CLAIM_TTL_MS: '30000', OUTBOX_LAG_DEGRADED_SECONDS: '30' },
       'Expected a duration longer than OUTBOX_RELAY_CLAIM_TTL_MS (30000ms)',
+    ],
+    [
+      'an inactive affiliation interval shorter than the active interval',
+      {
+        AFFILIATION_ACTIVE_INTERVAL_SECONDS: '3600',
+        AFFILIATION_INACTIVE_INTERVAL_SECONDS: '3599',
+      },
+      'Expected AFFILIATION_INACTIVE_INTERVAL_SECONDS to be at least AFFILIATION_ACTIVE_INTERVAL_SECONDS',
     ],
   ])('rejects %s', (_, values, message) => {
     expect(() => parseEnvironment({ ...databaseEnvironment, ...values })).toThrow(message)

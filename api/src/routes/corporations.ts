@@ -3,11 +3,11 @@ import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { getConnInfo } from '@hono/node-server/conninfo'
 import {
-  CorporationEsiCooldownError,
   getCorporationAllianceHistory,
   getCorporationPublic,
   getNpcCorporations,
 } from '../corporation-service.js'
+import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { zValidator } from '../validation.js'
 import { z } from 'zod'
 
@@ -64,7 +64,7 @@ export const corporationRoutes = new Hono()
       const npcIds = await getNpcCorporations()
       return context.json({ corporationIds: npcIds })
     } catch (error) {
-      if (error instanceof CorporationEsiCooldownError) {
+      if (error instanceof EsiQuotaError) {
         context.header('Retry-After', String(error.retryAfterSeconds))
         return context.json(
           {
@@ -90,7 +90,7 @@ export const corporationRoutes = new Hono()
         const corporation = await getCorporationPublic(corporationId)
         return context.json({ corporation })
       } catch (error) {
-        if (error instanceof CorporationEsiCooldownError) {
+        if (error instanceof EsiQuotaError) {
           context.header('Retry-After', String(error.retryAfterSeconds))
           return context.json(
             {
@@ -123,7 +123,7 @@ export const corporationRoutes = new Hono()
         const history = await getCorporationAllianceHistory(corporationId)
         return context.json({ corporationId, history })
       } catch (error) {
-        if (error instanceof CorporationEsiCooldownError) {
+        if (error instanceof EsiQuotaError) {
           context.header('Retry-After', String(error.retryAfterSeconds))
           return context.json(
             {

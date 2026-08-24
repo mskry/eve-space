@@ -2,10 +2,29 @@ import { createSkillsClient } from '@evespace/esi-client/domains/skills'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from './db/client.js'
 import { sdeGroups, sdeTypes } from './db/schema.js'
-import { esiFetch } from './esi-fetch.js'
-import { getCharacterAccessToken } from './token-service.js'
+import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
+import { createEsiTransport } from './esi-resilience/transport.js'
+import { getCharacterAuthorization } from './token-service.js'
 
 export const characterSkillsScope = 'esi-skills.read_skills.v1'
+
+export async function getCharacterSkillsData(characterId: number) {
+  const authorization = await getCharacterAuthorization(characterId, characterSkillsScope)
+  return (
+    await getEsiResilienceLayer().get({
+      operation: 'skills',
+      resource: `skills-character-${characterId}`,
+      principal: `character-${characterId}`,
+      load: (revalidation) =>
+        createSkillsClient({
+          fetch: createEsiTransport('skills', `character-${characterId}`),
+          token: authorization.accessToken,
+        })
+          .withMetadata()
+          .getSkills(characterId, revalidation),
+    })
+  ).data
+}
 
 export interface CharacterSkills {
   totalSp: number
@@ -25,9 +44,7 @@ export interface CharacterSkills {
 }
 
 export async function getCharacterSkills(characterId: number): Promise<CharacterSkills> {
-  const accessToken = await getCharacterAccessToken(characterId, characterSkillsScope)
-  const skills = createSkillsClient({ fetch: esiFetch, token: accessToken })
-  const result = await skills.getSkills(characterId)
+  const result = await getCharacterSkillsData(characterId)
 
   if (result.skills.length === 0) {
     return {

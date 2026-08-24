@@ -1,6 +1,15 @@
-import { Queue, UnrecoverableError, Worker, type Job, type RepeatStrategy } from 'bullmq'
+import {
+  DelayedError,
+  Queue,
+  UnrecoverableError,
+  Worker,
+  type Job,
+  type RepeatStrategy,
+} from 'bullmq'
+import { AffiliationCooldownError } from '../affiliation-sync.js'
 import { loadPlannerScheduleOffset } from '../deployment-installation-settings.js'
 import { verifyDomainEventHandlers } from '../domain-event-handlers.js'
+import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { env } from '../env.js'
 import { admitQueueWork } from './admission.js'
 import { sanitizeJobFailure } from './failures.js'
@@ -194,6 +203,10 @@ async function processJob(
     if (definition.name === 'domain-event')
       console.info('Domain event job processed', domainEventJobLogContext(job))
   } catch (error) {
+    if (error instanceof AffiliationCooldownError || error instanceof EsiQuotaError) {
+      await job.moveToDelayed(Date.now() + error.retryAfterSeconds * 1_000, job.token)
+      throw new DelayedError('ESI cooldown deferred this job')
+    }
     if (definition.classifyError(error) === 'permanent')
       throw new UnrecoverableError('Permanent job failure')
     throw error

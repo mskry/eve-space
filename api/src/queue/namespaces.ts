@@ -7,6 +7,7 @@ export const plannerStateKey = `${queuePrefix}:planner:state`
 export const outboxRelayStateKey = `${queuePrefix}:outbox-relay:state`
 export const outboxRelayOutcomeKey = `${queuePrefix}:outbox-relay:outcome`
 export const schedulerOutcomeKey = `${queuePrefix}:scheduler:outcome`
+export const affiliationPlannerOutcomeKey = `${queuePrefix}:planner:affiliation:outcome`
 export const schedulerLockKey = (schedulerId: string) =>
   `${queuePrefix}:scheduler:${schedulerId}:lock`
 
@@ -18,5 +19,6 @@ export const queueNamespaces = [
   outboxRelayStateKey,
   outboxRelayOutcomeKey,
   schedulerOutcomeKey,
+  affiliationPlannerOutcomeKey,
   `${queuePrefix}:scheduler:*:lock`,
 ] as const

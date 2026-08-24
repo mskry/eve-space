@@ -36,12 +36,19 @@ const schema = z.object({
     .string()
     .min(1)
     .default('EveSpace/0.1 (eve:Bandera Primary) @evespace/esi-client/2.0.0'),
+  ESI_COMPATIBILITY_DATE: z.string().date().default('2026-08-23'),
   TOKEN_ENCRYPTION_KEY: optionalValue,
   EVE_SSO_TIMEOUT_MS: positiveInteger.default(15_000),
   TOKEN_REFRESH_LOCK_TIMEOUT_MS: positiveInteger.default(45_000),
   TOKEN_REFRESH_CONCURRENCY: positiveInteger.default(4),
   TOKEN_REFRESH_QUEUE_TIMEOUT_MS: positiveInteger.default(30_000),
-  ESI_CACHE_MAX_ENTRIES: positiveInteger.default(100),
+  CACHE_REDIS_URL: redisUrl.default('redis://localhost:6380'),
+  ESI_CACHE_L1_MAX_ENTRIES: positiveInteger.default(250),
+  ESI_CACHE_MAX_RETENTION_SECONDS: positiveInteger.default(86_400),
+  ESI_OPERATION_CONCURRENCY: positiveInteger.default(6),
+  ESI_OPERATION_QUEUE_TIMEOUT_MS: positiveInteger.default(30_000),
+  AFFILIATION_ACTIVE_INTERVAL_SECONDS: positiveInteger.default(3_600),
+  AFFILIATION_INACTIVE_INTERVAL_SECONDS: positiveInteger.default(86_400),
   ADMIN_SETUP_SECRET: z.preprocess(
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
     z.string().min(32).optional(),
@@ -130,6 +137,15 @@ const schemaWithInvariants = schema.superRefine((values, context) => {
       code: 'custom',
       path: ['OUTBOX_LAG_DEGRADED_SECONDS'],
       message: `Expected a duration longer than OUTBOX_RELAY_CLAIM_TTL_MS (${values.OUTBOX_RELAY_CLAIM_TTL_MS}ms)`,
+    })
+  }
+
+  if (values.AFFILIATION_INACTIVE_INTERVAL_SECONDS < values.AFFILIATION_ACTIVE_INTERVAL_SECONDS) {
+    context.addIssue({
+      code: 'custom',
+      path: ['AFFILIATION_INACTIVE_INTERVAL_SECONDS'],
+      message:
+        'Expected AFFILIATION_INACTIVE_INTERVAL_SECONDS to be at least AFFILIATION_ACTIVE_INTERVAL_SECONDS',
     })
   }
 })
