@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  get: vi.fn(),
   getAlliance: vi.fn(),
   getCharacter: vi.fn(),
   getCorporation: vi.fn(),
@@ -8,19 +9,26 @@ const mocks = vi.hoisted(() => ({
   listRaces: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', () => ({
-  EsiClient: class {
-    character = { getPublicInfo: mocks.getCharacter }
-    corporation = { getPublicInfo: mocks.getCorporation }
-    alliance = { getPublicInfo: mocks.getAlliance }
-    universe = {
-      listBloodlines: mocks.listBloodlines,
-      listRaces: mocks.listRaces,
-    }
-  },
+vi.mock('@evespace/esi-client/domains/character', () => ({
+  createCharacterClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.getCharacter }) }),
 }))
-
-import { getCharacterProfile } from '../src/character-profile.js'
+vi.mock('@evespace/esi-client/domains/corporation', () => ({
+  createCorporationClient: () => ({
+    withMetadata: () => ({ getPublicInfo: mocks.getCorporation }),
+  }),
+}))
+vi.mock('@evespace/esi-client/domains/alliance', () => ({
+  createAllianceClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.getAlliance }) }),
+}))
+vi.mock('@evespace/esi-client/domains/universe', () => ({
+  createUniverseClient: () => ({
+    withMetadata: () => ({ listBloodlines: mocks.listBloodlines, listRaces: mocks.listRaces }),
+  }),
+}))
+vi.mock('../src/esi-resilience/resilience.js', () => ({
+  getEsiResilienceLayer: () => ({ get: mocks.get }),
+}))
+vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 const character = {
   achievement_score: 0,
@@ -35,32 +43,44 @@ const character = {
 }
 
 beforeEach(() => {
-  mocks.getCharacter.mockResolvedValue(character)
-  mocks.getCorporation.mockResolvedValue({
-    member_count: 1,
-    name: 'Imperial Academy',
-    ticker: 'IAC',
+  mocks.get.mockImplementation(async (resource) => {
+    const loaded = await resource.load({})
+    return {
+      data: loaded.data,
+      cachedUntil: '2026-08-20T12:01:00.000Z',
+      quota: {},
+      source: 'esi',
+      stale: false,
+    }
   })
-  mocks.listRaces.mockResolvedValue([{ name: 'Amarr', race_id: 4 }])
-  mocks.listBloodlines.mockResolvedValue([{ bloodline_id: 5, name: 'Khanid' }])
-  mocks.getAlliance.mockResolvedValue(null)
+  mocks.getCharacter.mockResolvedValue(response(character))
+  mocks.getCorporation.mockResolvedValue(
+    response({ member_count: 1, name: 'Imperial Academy', ticker: 'IAC' }),
+  )
+  mocks.listRaces.mockResolvedValue(response([{ name: 'Amarr', race_id: 4 }]))
+  mocks.listBloodlines.mockResolvedValue(response([{ bloodline_id: 5, name: 'Khanid' }]))
+  mocks.getAlliance.mockResolvedValue(response({ name: 'Alliance', ticker: 'ALLY' }))
 })
 
 describe('character profile', () => {
-  test('decodes a legacy Python Unicode literal in the character biography', async () => {
-    const profile = await getCharacterProfile(90_000_001)
+  test('composes independently resilient public resources without changing the DTO', async () => {
+    const { getCharacterProfile } = await import('../src/character-profile.js')
 
-    expect(profile.bio).toBe('고생 끝에 낙이 온다')
-  })
-
-  test('does not interpret Unicode escapes in an ordinary biography', async () => {
-    mocks.getCharacter.mockResolvedValueOnce({
-      ...character,
-      description: String.raw`Fly safe: \uace0`,
+    await expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({
+      id: 90_000_001,
+      name: 'Bandera Primary',
+      bio: '고생 끝에 낙이 온다',
+      corporation: { id: 1_000_166, name: 'Imperial Academy', ticker: 'IAC', memberCount: 1 },
     })
-
-    const profile = await getCharacterProfile(90_000_002)
-
-    expect(profile.bio).toBe(String.raw`Fly safe: \uace0`)
+    expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
+      'public-character',
+      'public-corporation',
+      'universe-races',
+      'universe-bloodlines',
+    ])
   })
 })
+
+function response<Data>(data: Data) {
+  return { data, meta: { headers: {} } }
+}

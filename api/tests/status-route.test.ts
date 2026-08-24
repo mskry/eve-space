@@ -14,7 +14,7 @@ import { statusRoutes } from '../src/routes/status.js'
 const client = testClient(statusRoutes)
 
 describe('system status route', () => {
-  test('returns cached public telemetry', async () => {
+  test('returns replica-local private telemetry', async () => {
     mocks.getSystemStatus.mockResolvedValue({
       status: 'operational',
       checkedAt: '2026-08-20T12:00:00.000Z',
@@ -50,6 +50,11 @@ describe('system status route', () => {
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
           latestSchedulerOutcome: 'registered',
+          latestAffiliationPlannerOutcome: {
+            outcome: 'scheduled',
+            planned: 2,
+            recordedAt: '2026-08-20T12:00:00.000Z',
+          },
         },
         eventRelay: {
           status: 'operational',
@@ -62,6 +67,22 @@ describe('system status route', () => {
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
         },
+        esiResilience: {
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          cache: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
+          coordination: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
+          cooldown: {
+            status: 'inactive',
+            checkedAt: '2026-08-20T12:00:00.000Z',
+            globalRetryAt: null,
+            activeOperations: [],
+          },
+          upstream: {
+            status: 'operational',
+            checkedAt: '2026-08-20T12:00:00.000Z',
+            operations: [],
+          },
+        },
       },
     })
 
@@ -69,7 +90,7 @@ describe('system status route', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toBe(
-      'public, max-age=15, stale-while-revalidate=30',
+      'private, max-age=15, stale-while-revalidate=30',
     )
     expect(await response.json()).toEqual({
       status: 'operational',
@@ -106,6 +127,11 @@ describe('system status route', () => {
             recordedAt: '2026-08-20T11:59:58.000Z',
           },
           latestSchedulerOutcome: 'registered',
+          latestAffiliationPlannerOutcome: {
+            outcome: 'scheduled',
+            planned: 2,
+            recordedAt: '2026-08-20T12:00:00.000Z',
+          },
         },
         eventRelay: {
           status: 'operational',
@@ -116,6 +142,22 @@ describe('system status route', () => {
             outcome: 'published',
             category: null,
             recordedAt: '2026-08-20T11:59:58.000Z',
+          },
+        },
+        esiResilience: {
+          checkedAt: '2026-08-20T12:00:00.000Z',
+          cache: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
+          coordination: { status: 'operational', checkedAt: '2026-08-20T12:00:00.000Z' },
+          cooldown: {
+            status: 'inactive',
+            checkedAt: '2026-08-20T12:00:00.000Z',
+            globalRetryAt: null,
+            activeOperations: [],
+          },
+          upstream: {
+            status: 'operational',
+            checkedAt: '2026-08-20T12:00:00.000Z',
+            operations: [],
           },
         },
       },

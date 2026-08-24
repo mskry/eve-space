@@ -11,7 +11,7 @@ import {
 describe('job registry', () => {
   test('registers classified jobs with stable identities and authoritative recovery', () => {
     verifyJobRegistry()
-    expect(listJobDefinitions()).toHaveLength(5)
+    expect(listJobDefinitions()).toHaveLength(6)
     const job = getJobDefinition('diagnostic') as {
       operationIdentity(payload: { operationId: 'queue-diagnostic' }): string
       durability: string
@@ -24,6 +24,7 @@ describe('job registry', () => {
       recovery: 'outbox',
       attempts: 5,
     })
+    expect(getJobDefinition('affiliation')).toMatchObject({ durability: 'derived', attempts: 5 })
   })
 
   test('fails verification for omitted classifications or unbacked authoritative jobs', () => {

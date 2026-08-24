@@ -2,7 +2,7 @@ import { sql } from './db/client.js'
 import { workerHeartbeatStaleAfterMs } from './queue/policy.js'
 import { probeQueueStatus } from './queue/status.js'
 
-export const expectedWorkerMigration = '010_domain_event_relay_safety.sql'
+export const expectedWorkerMigration = '011_character_affiliation_sync.sql'
 
 export class WorkerSchemaNotReadyError extends Error {
   constructor() {

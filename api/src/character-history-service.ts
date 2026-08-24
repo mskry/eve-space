@@ -1,8 +1,7 @@
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
-import { env } from './env.js'
-import { esiFetch } from './esi-fetch.js'
-import { publicProfileCacheTtlMs } from './esi-policy.js'
+import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
+import { createEsiTransport } from './esi-resilience/transport.js'
 
 export interface CharacterEmploymentHistoryEntry {
   recordId: number
@@ -22,9 +21,6 @@ function isNpcCorporation(corporationId: number) {
   return corporationId < FIRST_PLAYER_CORPORATION_ID
 }
 
-const character = createCharacterClient({ fetch: esiFetch })
-const universe = createUniverseClient({ fetch: esiFetch })
-const cache = new Map<number, { expiresAt: number; history: CharacterEmploymentHistoryEntry[] }>()
 const MAX_NAME_RESOLUTION_SPLITS = 64
 
 async function resolveCorporationNames(corporationIds: number[]) {
@@ -33,8 +29,15 @@ async function resolveCorporationNames(corporationIds: number[]) {
 
   async function resolveChunk(ids: number[]): Promise<void> {
     try {
-      const resolved = await universe.resolveNames({ body: ids })
-      for (const entry of resolved) {
+      const resolved = await getEsiResilienceLayer().get({
+        operation: 'universe-resolve-names',
+        resource: `names-${ids.join('-')}`,
+        load: () =>
+          createUniverseClient({ fetch: createEsiTransport('universe-resolve-names') })
+            .withMetadata()
+            .resolveNames({ body: ids }),
+      })
+      for (const entry of resolved.data) {
         if (entry.category === 'corporation') names.set(entry.id, entry.name)
       }
     } catch (error) {
@@ -65,10 +68,16 @@ function errorStatus(error: unknown): number | undefined {
 export async function getCharacterEmploymentHistory(
   characterId: number,
 ): Promise<CharacterEmploymentHistoryEntry[]> {
-  const cached = cache.get(characterId)
-  if (cached && cached.expiresAt > Date.now()) return cached.history
-
-  const records = await character.listCorporationHistory(characterId)
+  const records = (
+    await getEsiResilienceLayer().get({
+      operation: 'employment-history',
+      resource: `employment-history-${characterId}`,
+      load: (revalidation) =>
+        createCharacterClient({ fetch: createEsiTransport('employment-history') })
+          .withMetadata()
+          .listCorporationHistory(characterId, revalidation),
+    })
+  ).data
   const corporationIds = [
     ...new Set(
       records.filter((record) => !record.is_deleted).map((record) => record.corporation_id),
@@ -89,8 +98,5 @@ export async function getCharacterEmploymentHistory(
     },
   }))
 
-  if (cache.size >= env.ESI_CACHE_MAX_ENTRIES)
-    cache.delete(cache.keys().next().value ?? characterId)
-  cache.set(characterId, { history, expiresAt: Date.now() + publicProfileCacheTtlMs })
   return history
 }

@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
-  class CorporationEsiCooldownError extends Error {
+  class EsiQuotaError extends Error {
     constructor(readonly retryAfterSeconds: number) {
       super('ESI corporation data is temporarily rate limited')
     }
   }
 
   return {
-    CorporationEsiCooldownError,
+    EsiQuotaError,
     getCorporationAllianceHistory: vi.fn(),
     getCorporationPublic: vi.fn(),
     getNpcCorporations: vi.fn(),
@@ -16,11 +16,12 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('../src/corporation-service.js', () => ({
-  CorporationEsiCooldownError: mocks.CorporationEsiCooldownError,
   getCorporationAllianceHistory: mocks.getCorporationAllianceHistory,
   getCorporationPublic: mocks.getCorporationPublic,
   getNpcCorporations: mocks.getNpcCorporations,
 }))
+
+vi.mock('../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 
 import { corporationRoutes } from '../src/routes/corporations.js'
 
@@ -68,7 +69,7 @@ describe('corporation routes', () => {
   )
 
   test('returns a typed ESI cooldown before another public request is sent', async () => {
-    mocks.getCorporationPublic.mockRejectedValue(new mocks.CorporationEsiCooldownError(30))
+    mocks.getCorporationPublic.mockRejectedValue(new mocks.EsiQuotaError(30))
 
     const response = await request('/1')
 
@@ -126,7 +127,7 @@ describe('corporation routes', () => {
   })
 
   test('returns the cooldown response for NPC list requests', async () => {
-    mocks.getNpcCorporations.mockRejectedValue(new mocks.CorporationEsiCooldownError(15))
+    mocks.getNpcCorporations.mockRejectedValue(new mocks.EsiQuotaError(15))
 
     const response = await request('/npc')
 

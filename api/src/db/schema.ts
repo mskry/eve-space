@@ -130,6 +130,15 @@ export const characters = pgTable(
     name: text().notNull(),
     corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),
     allianceId: bigint('alliance_id', { mode: 'number' }),
+    affiliationCheckedAt: timestamp('affiliation_checked_at', { withTimezone: true, mode: 'date' }),
+    nextAffiliationCheck: timestamp('next_affiliation_check', {
+      withTimezone: true,
+      mode: 'date',
+    }),
+    affiliationResolutionState: text('affiliation_resolution_state')
+      .$type<'pending' | 'resolved' | 'unresolvable'>()
+      .default('pending')
+      .notNull(),
     isMain: boolean('is_main').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
@@ -138,6 +147,15 @@ export const characters = pgTable(
     uniqueIndex('one_main_character_per_user')
       .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
       .where(sql`is_main`),
+    index('characters_due_affiliation_check_idx')
+      .on(table.nextAffiliationCheck, table.characterId)
+      .where(
+        sql`next_affiliation_check is not null and affiliation_resolution_state <> 'unresolvable'`,
+      ),
+    check(
+      'characters_affiliation_resolution_state_check',
+      sql`affiliation_resolution_state in ('pending', 'resolved', 'unresolvable')`,
+    ),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [users.id],

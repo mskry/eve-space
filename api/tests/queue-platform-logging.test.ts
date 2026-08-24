@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('bullmq', () => ({
+  DelayedError: class DelayedError extends Error {},
   Queue: function Queue() {
     return mocks.queue
   },
@@ -102,6 +103,28 @@ describe('worker platform event logging', () => {
     expect(serializedLogs).not.toContain('Payload Pilot')
     expect(serializedLogs).not.toContain('refreshToken')
     expect(serializedLogs).not.toContain('private-host')
+
+    await platform.close()
+  })
+
+  test('defers affiliation work until the shared ESI cooldown expires without consuming an attempt', async () => {
+    const { AffiliationCooldownError } = await import('../src/affiliation-sync.js')
+    const { startWorkerPlatform } = await import('../src/queue/platform.js')
+    const platform = await startWorkerPlatform()
+    const moveToDelayed = vi.fn().mockResolvedValue(undefined)
+    mocks.process.mockRejectedValueOnce(new AffiliationCooldownError(30))
+
+    await expect(
+      mocks.processor?.({
+        name: 'affiliation',
+        data: { operationId: 'affiliation-1', characterIds: [1] },
+        moveToDelayed,
+        token: 'worker-token',
+      }),
+    ).rejects.toThrow('ESI cooldown deferred')
+    expect(moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'worker-token')
+    const delayedAt = moveToDelayed.mock.calls[0]?.[0] as number
+    expect(delayedAt).toBeGreaterThanOrEqual(Date.now() + 29_000)
 
     await platform.close()
   })

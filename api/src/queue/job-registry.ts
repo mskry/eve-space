@@ -1,5 +1,6 @@
 import { UnrecoverableError, type Queue } from 'bullmq'
 import { z } from 'zod'
+import { affiliationJobPayload, processAffiliationBatch } from '../affiliation-sync.js'
 import { sql } from '../db/client.js'
 import { DomainEventNotFoundError } from '../domain-event-handlers.js'
 import { DomainEventValidationError } from '../domain-events.js'
@@ -50,9 +51,15 @@ const plannerJob: JobDefinition<z.infer<typeof plannerPayload>> = {
   attempts: 3,
   operationIdentity: (payload) => payload.operationId,
   classifyError: () => 'retryable',
-  async process(_payload, signal) {
-    const { enqueueDiagnostic } = await import('./platform.js')
+  async process(_payload, signal, context) {
+    signal?.throwIfAborted()
+    if (!context) throw new Error('Planner queue context is unavailable')
+    const [{ enqueueDiagnostic }, { runAffiliationPlanner }] = await Promise.all([
+      import('./platform.js'),
+      import('./affiliation-planner.js'),
+    ])
     await enqueueDiagnostic('planner', signal)
+    await runAffiliationPlanner(context.queue, signal)
   },
 }
 
@@ -114,12 +121,26 @@ const eventRetentionJob: JobDefinition<z.infer<typeof eventRetentionPayload>> = 
   },
 }
 
+const affiliationJob: JobDefinition<z.infer<typeof affiliationJobPayload>> = {
+  name: 'affiliation',
+  queueName: operationsQueueName,
+  payload: affiliationJobPayload,
+  durability: 'derived',
+  attempts: 5,
+  operationIdentity: ({ operationId }) => operationId,
+  classifyError: () => 'retryable',
+  async process({ characterIds }) {
+    await processAffiliationBatch(characterIds)
+  },
+}
+
 const jobRegistry = [
   diagnosticJob,
   plannerJob,
   domainEventJob,
   outboxRelayJob,
   eventRetentionJob,
+  affiliationJob,
 ] as const
 
 export function listJobDefinitions(): readonly JobDefinition<unknown>[] {

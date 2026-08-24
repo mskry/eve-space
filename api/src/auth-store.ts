@@ -434,12 +434,16 @@ const authorizationCharacterSelection = {
 }
 
 function characterValues(input: CharacterAuthorizationInput, userId: string, isMain: boolean) {
+  const affiliationObservedAt = new Date()
   return {
     characterId: input.characterId,
     userId,
     name: input.characterName,
     corporationId: input.corporationId,
     allianceId: input.allianceId,
+    affiliationCheckedAt: affiliationObservedAt,
+    affiliationResolutionState: 'resolved' as const,
+    nextAffiliationCheck: nextActiveAffiliationCheck(affiliationObservedAt),
     isMain,
   }
 }
@@ -516,15 +520,23 @@ async function updateCharacterIdentity(
   transaction: DatabaseTransaction,
   input: CharacterAuthorizationInput,
 ) {
+  const affiliationObservedAt = new Date()
   await transaction
     .update(characters)
     .set({
       name: input.characterName,
       corporationId: input.corporationId,
       allianceId: input.allianceId,
+      affiliationCheckedAt: affiliationObservedAt,
+      affiliationResolutionState: 'resolved',
+      nextAffiliationCheck: nextActiveAffiliationCheck(affiliationObservedAt),
       updatedAt: new Date(),
     })
     .where(eq(characters.characterId, input.characterId))
+}
+
+function nextActiveAffiliationCheck(observedAt: Date) {
+  return new Date(observedAt.getTime() + env.AFFILIATION_ACTIVE_INTERVAL_SECONDS * 1_000)
 }
 
 async function upsertCharacterToken(

@@ -22,7 +22,7 @@ describe('worker readiness', () => {
 
     await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
       healthy: false,
-      reason: 'Missing migration 010_domain_event_relay_safety.sql',
+      reason: 'Missing migration 011_character_affiliation_sync.sql',
     })
   })
 
@@ -103,7 +103,7 @@ describe('worker readiness', () => {
     const connection = vi.fn().mockResolvedValueOnce([{ exists: false }])
 
     await expect(assertWorkerDependencies(connection as never, vi.fn())).rejects.toThrow(
-      'Worker dependency unavailable: Missing migration 010_domain_event_relay_safety.sql',
+      'Worker dependency unavailable: Missing migration 011_character_affiliation_sync.sql',
     )
   })
 
@@ -139,7 +139,7 @@ describe('worker readiness', () => {
     const queueProbe = vi.fn()
 
     await expect(assertWorkerStartupDependencies(connection as never, queueProbe)).rejects.toThrow(
-      'Worker dependency unavailable: Missing migration 010_domain_event_relay_safety.sql',
+      'Worker dependency unavailable: Missing migration 011_character_affiliation_sync.sql',
     )
     expect(queueProbe).not.toHaveBeenCalled()
   })
