@@ -6,7 +6,15 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'en' },
     },
   },
-  css: ['~/assets/css/main.css'],
+  css: [
+    '~/assets/css/foundation.css',
+    '~/assets/css/shell/public.css',
+    '~/assets/css/shared/public-content.css',
+    '~/assets/css/shared/async-state.css',
+    '~/assets/css/pages/dashboard-overview.css',
+    '~/assets/css/responsive.css',
+    '~/assets/css/responsive/reduced-motion.css',
+  ],
   devtools: {
     enabled: true,
 

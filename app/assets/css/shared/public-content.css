@@ -1,0 +1,108 @@
+.intro {
+  padding: 62px 0 35px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: clamp(42px, 6vw, 76px);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+.intro-copy {
+  max-width: 430px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.lookup {
+  margin-bottom: 28px;
+  padding: 16px 18px 13px;
+  display: grid;
+  grid-template-columns: 125px minmax(280px, 550px) 1fr;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ui-surface-solid) 72%, transparent);
+}
+
+.auth-feedback {
+  margin: 0 0 18px;
+  padding: 11px 14px;
+  border-left: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--ui-primary) 6%, transparent);
+  color: var(--accent);
+  font: 10px/1.4 monospace;
+  letter-spacing: 0.06em;
+}
+
+.auth-feedback.auth-error {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--ui-danger) 6%, transparent);
+  color: var(--danger);
+}
+
+.lookup label {
+  color: var(--muted);
+  font: 700 10px/1 monospace;
+  letter-spacing: 0.14em;
+}
+
+.lookup-controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+.lookup input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--ui-border-strong);
+  border-right: 0;
+  outline: none;
+  background: var(--ui-control);
+  color: var(--ink);
+  font: 14px/1 monospace;
+}
+
+.lookup input:focus {
+  border-color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.lookup button {
+  padding: 0 20px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--ui-on-primary);
+  font: 800 10px/1 monospace;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+}
+
+.lookup button:hover:not(:disabled) {
+  background: var(--ui-primary-hover);
+}
+
+.lookup button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.lookup > p {
+  margin: 0;
+  color: var(--ui-text-subtle);
+  font-size: 11px;
+}
+
+.lookup > p.invalid {
+  color: var(--danger);
+}

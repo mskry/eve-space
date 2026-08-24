@@ -31,7 +31,7 @@ const integrations = [
   <section class="settings-subsection" aria-labelledby="settings-integrations-heading">
     <header class="settings-subsection-heading">
       <div>
-        <p class="eyebrow">01 / SETTINGS</p>
+        <p class="ui-eyebrow">01 / SETTINGS</p>
         <h2 id="settings-integrations-heading">Integrations</h2>
       </div>
       <p>Connected services and their authorization boundaries.</p>
@@ -52,3 +52,8 @@ const integrations = [
     </div>
   </section>
 </template>
+
+<style>
+@import url('~/assets/css/pages/settings.css');
+@import url('~/assets/css/responsive/settings.css');
+</style>

@@ -132,10 +132,10 @@ watch(
   <section class="character-wallet-route">
     <div
       v-if="walletStatus === 'loading' && !wallet"
-      class="state-panel compact-state"
+      class="app-state-panel app-state-panel--compact"
       aria-live="polite"
     >
-      <div class="scanner" aria-hidden="true" />
+      <div class="app-scanner" aria-hidden="true" />
       <p>Decrypting authorized wallet record...</p>
     </div>
     <div v-else-if="walletStatus === 'scope-required'" class="skills-access-state" role="status">
@@ -144,17 +144,19 @@ watch(
         <h2>Wallet authorization required</h2>
         <p>{{ walletMessage }}</p>
       </div>
-      <a class="primary-action" :href="walletError?.authorizeUrl">AUTHORIZE THIS CHARACTER</a>
+      <a class="ui-action-primary" :href="walletError?.authorizeUrl">AUTHORIZE THIS CHARACTER</a>
     </div>
     <div
       v-else-if="walletStatus === 'error' || walletStatus === 'not-found'"
-      class="state-panel error-panel compact-state"
+      class="app-state-panel app-error-panel app-state-panel--compact"
       role="alert"
     >
-      <span class="error-code">{{ walletStatus === 'not-found' ? '404' : 'ERR / WALLET' }}</span>
+      <span class="app-error-code">{{
+        walletStatus === 'not-found' ? '404' : 'ERR / WALLET'
+      }}</span>
       <h2>Wallet unavailable</h2>
       <p>{{ walletMessage }}</p>
-      <button class="secondary-action" type="button" @click="walletQueryResult.refetch()">
+      <button class="ui-action-secondary" type="button" @click="walletQueryResult.refetch()">
         RETRY UPLINK
       </button>
     </div>
@@ -168,7 +170,7 @@ watch(
         <div class="wallet-summary-actions">
           <span class="private-badge">PRIVATE</span>
           <button
-            class="secondary-action"
+            class="ui-action-secondary"
             type="button"
             :disabled="walletQueryResult.asyncStatus.value === 'loading'"
             @click="refreshBalance"
@@ -190,7 +192,7 @@ watch(
           </div>
           <button
             v-if="!transactionsRequested"
-            class="secondary-action"
+            class="ui-action-secondary"
             type="button"
             @click="loadTransactions()"
           >
@@ -198,7 +200,7 @@ watch(
           </button>
           <button
             v-else-if="transactions"
-            class="secondary-action"
+            class="ui-action-secondary"
             type="button"
             @click="loadTransactions(true)"
           >
@@ -221,12 +223,12 @@ watch(
           <p>{{ transactionMessage }}</p>
           <a
             v-if="transactionError?.authorizeUrl"
-            class="primary-action"
+            class="ui-action-primary"
             :href="transactionError.authorizeUrl"
           >
             AUTHORIZE THIS CHARACTER
           </a>
-          <button v-else class="secondary-action" type="button" @click="loadTransactions(true)">
+          <button v-else class="ui-action-secondary" type="button" @click="loadTransactions(true)">
             RETRY UPLINK
           </button>
         </div>
@@ -260,3 +262,8 @@ watch(
     </template>
   </section>
 </template>
+
+<style>
+@import url('~/assets/css/features/skills.css');
+@import url('~/assets/css/responsive/skills.css');
+</style>

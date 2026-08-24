@@ -563,3 +563,47 @@
 .ui-scroll-area-corner {
   background: var(--ui-surface-raised);
 }
+
+.ui-eyebrow {
+  margin: 0 0 10px;
+  color: var(--ui-primary);
+  font: 700 10px/1.2 var(--ui-font-mono);
+  letter-spacing: 0.19em;
+}
+
+.ui-action-primary,
+.ui-action-secondary {
+  padding: 12px 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  font: 800 9px/1 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ui-action-secondary {
+  border-color: var(--ui-border);
+  background: transparent;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+}
+
+.ui-action-primary:focus-visible,
+.ui-action-secondary:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 3px;
+}
+
+.ui-inline-error {
+  margin: 0 0 18px;
+  padding: 11px 14px;
+  border-left: 2px solid var(--ui-danger);
+  background: color-mix(in srgb, var(--ui-danger) 6%, transparent);
+  color: var(--ui-danger);
+  font: 10px/1.5 var(--ui-font-mono);
+}

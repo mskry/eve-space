@@ -274,6 +274,11 @@ async function handleLogout() {
   </div>
 </template>
 
+<style>
+@import url('~/assets/css/shell/dashboard.css');
+@import url('~/assets/css/responsive/dashboard.css');
+</style>
+
 <style scoped>
 .character-mobile-nav {
   position: fixed;

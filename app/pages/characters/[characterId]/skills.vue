@@ -135,10 +135,10 @@ const skillGroupColumns = computed(() => {
   <section class="character-skills-route">
     <div
       v-if="skillsStatus === 'loading' && !skills"
-      class="state-panel compact-state"
+      class="app-state-panel app-state-panel--compact"
       aria-live="polite"
     >
-      <div class="scanner" aria-hidden="true" />
+      <div class="app-scanner" aria-hidden="true" />
       <p>Decrypting trained skill archive...</p>
     </div>
     <div v-else-if="skillsStatus === 'scope-required'" class="skills-access-state" role="status">
@@ -147,17 +147,19 @@ const skillGroupColumns = computed(() => {
         <h2>Skills authorization required</h2>
         <p>{{ skillsMessage }}</p>
       </div>
-      <a class="primary-action" :href="skillsAuthorizeUrl">AUTHORIZE THIS CHARACTER</a>
+      <a class="ui-action-primary" :href="skillsAuthorizeUrl">AUTHORIZE THIS CHARACTER</a>
     </div>
     <div
       v-else-if="skillsStatus === 'error' || skillsStatus === 'not-found'"
-      class="state-panel error-panel compact-state"
+      class="app-state-panel app-error-panel app-state-panel--compact"
       role="alert"
     >
-      <span class="error-code">{{ skillsStatus === 'not-found' ? '404' : 'ERR / SKILLS' }}</span>
+      <span class="app-error-code">{{
+        skillsStatus === 'not-found' ? '404' : 'ERR / SKILLS'
+      }}</span>
       <h2>Skill archive unavailable</h2>
       <p>{{ skillsMessage }}</p>
-      <button class="secondary-action" type="button" @click="loadCharacterSkills(true)">
+      <button class="ui-action-secondary" type="button" @click="loadCharacterSkills(true)">
         RETRY UPLINK
       </button>
     </div>
@@ -282,3 +284,8 @@ const skillGroupColumns = computed(() => {
     </template>
   </section>
 </template>
+
+<style>
+@import url('~/assets/css/features/skills.css');
+@import url('~/assets/css/responsive/skills.css');
+</style>

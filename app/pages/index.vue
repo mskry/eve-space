@@ -25,7 +25,7 @@ useHead({
   <div class="section-page overview-page">
     <header class="page-heading">
       <div>
-        <p class="eyebrow">OVERVIEW</p>
+        <p class="ui-eyebrow">OVERVIEW</p>
         <h1>Command overview</h1>
       </div>
       <p>
@@ -35,7 +35,7 @@ useHead({
 
     <section class="overview-hero">
       <div>
-        <span class="panel-index">SYSTEM / ONLINE</span>
+        <span class="overview-panel-index">SYSTEM / ONLINE</span>
         <h2>
           {{
             authSession.authenticated
@@ -51,11 +51,14 @@ useHead({
           requires it.
         </p>
       </div>
-      <NuxtLink v-if="!authLoading && !authSession.authenticated" class="primary-action" to="/auth"
+      <NuxtLink
+        v-if="!authLoading && !authSession.authenticated"
+        class="ui-action-primary"
+        to="/auth"
         >AUTHORIZE CHARACTER</NuxtLink
       >
-      <span v-else-if="authLoading" class="system-badge">VERIFYING SESSION</span>
-      <span v-else class="system-badge active">IDENTITY VERIFIED</span>
+      <span v-else-if="authLoading" class="overview-system-badge">VERIFYING SESSION</span>
+      <span v-else class="overview-system-badge active">IDENTITY VERIFIED</span>
     </section>
 
     <section class="section-grid" aria-label="Dashboard sections">

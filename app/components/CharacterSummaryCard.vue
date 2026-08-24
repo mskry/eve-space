@@ -5,7 +5,7 @@
         <slot name="icon" />
       </span>
       <div>
-        <p class="eyebrow"><slot name="eyebrow" /></p>
+        <p class="ui-eyebrow"><slot name="eyebrow" /></p>
         <h2>
           <slot name="value" />
           <span><slot name="label" /></span>
@@ -17,3 +17,8 @@
     </div>
   </header>
 </template>
+
+<style>
+@import url('~/assets/css/features/wallet.css');
+@import url('~/assets/css/responsive/wallet.css');
+</style>

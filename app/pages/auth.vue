@@ -22,7 +22,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
     <div class="auth-card-mark" aria-hidden="true">
       <AppIcon name="auth" />
     </div>
-    <p class="eyebrow">SIGN IN</p>
+    <p class="ui-eyebrow">SIGN IN</p>
     <h1>Authorize your capsuleer</h1>
     <p class="auth-intro">
       Continue to EVE Online to approve identity and wallet access. Your account credentials are
@@ -34,7 +34,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
     </p>
 
     <div v-if="authLoading" class="auth-progress">
-      <span class="scanner" aria-hidden="true" />
+      <span class="app-scanner" aria-hidden="true" />
       <strong>Checking authorization state</strong>
     </div>
 
@@ -52,8 +52,8 @@ useHead({ title: 'Authorize Character // EVE Space' })
         <span>MAIN CHARACTER {{ authSession.account.mainCharacter.characterId }}</span>
       </div>
       <div class="auth-actions">
-        <NuxtLink class="primary-action" to="/">ENTER DASHBOARD</NuxtLink>
-        <button type="button" class="secondary-action" @click="handleLogout">LOG OUT</button>
+        <NuxtLink class="ui-action-primary" to="/">ENTER DASHBOARD</NuxtLink>
+        <button type="button" class="ui-action-secondary" @click="handleLogout">LOG OUT</button>
       </div>
     </div>
 

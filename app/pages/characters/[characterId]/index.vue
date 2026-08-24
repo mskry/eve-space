@@ -93,19 +93,23 @@ const genderSymbol = computed(() => {
 
 <template>
   <div class="character-overview-route">
-    <div v-if="overviewStatus === 'loading' && !character" class="state-panel" aria-live="polite">
-      <div class="scanner" aria-hidden="true" />
+    <div
+      v-if="overviewStatus === 'loading' && !character"
+      class="app-state-panel"
+      aria-live="polite"
+    >
+      <div class="app-scanner" aria-hidden="true" />
       <p>Establishing character-specific ESI uplink...</p>
     </div>
     <div
       v-else-if="overviewStatus === 'error' || overviewStatus === 'not-found'"
-      class="state-panel error-panel"
+      class="app-state-panel app-error-panel"
       role="alert"
     >
-      <span class="error-code">{{ overviewStatus === 'not-found' ? '404' : 'ERR / ESI' }}</span>
+      <span class="app-error-code">{{ overviewStatus === 'not-found' ? '404' : 'ERR / ESI' }}</span>
       <h2>Record unavailable</h2>
       <p>{{ overviewMessage }}</p>
-      <button class="secondary-action" type="button" @click="loadCharacterOverview(true)">
+      <button class="ui-action-secondary" type="button" @click="loadCharacterOverview(true)">
         RETRY UPLINK
       </button>
     </div>
@@ -259,3 +263,8 @@ const genderSymbol = computed(() => {
     </article>
   </div>
 </template>
+
+<style>
+@import url('~/assets/css/features/record-dossier.css');
+@import url('~/assets/css/responsive/record.css');
+</style>

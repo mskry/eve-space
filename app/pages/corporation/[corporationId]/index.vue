@@ -70,21 +70,27 @@ useHead({
 
 <template>
   <div class="section-page character-shell">
-    <div v-if="detailStatus === 'loading'" class="state-panel" aria-live="polite">
-      <div class="scanner" aria-hidden="true" />
+    <div v-if="detailStatus === 'loading'" class="app-state-panel" aria-live="polite">
+      <div class="app-scanner" aria-hidden="true" />
       <p>Resolving corporation record...</p>
     </div>
-    <div v-else-if="detailStatus === 'not-found'" class="state-panel error-panel" role="alert">
-      <span class="error-code">404 / CORPORATION</span>
+    <div
+      v-else-if="detailStatus === 'not-found'"
+      class="app-state-panel app-error-panel"
+      role="alert"
+    >
+      <span class="app-error-code">404 / CORPORATION</span>
       <h2>Corporation not found</h2>
       <p>ESI has no public record for ID {{ corporationId ?? '—' }}.</p>
-      <button class="secondary-action" type="button" @click="$router.back()">GO BACK</button>
+      <button class="ui-action-secondary" type="button" @click="$router.back()">GO BACK</button>
     </div>
-    <div v-else-if="detailStatus === 'error'" class="state-panel error-panel" role="alert">
-      <span class="error-code">ERR / ESI</span>
+    <div v-else-if="detailStatus === 'error'" class="app-state-panel app-error-panel" role="alert">
+      <span class="app-error-code">ERR / ESI</span>
       <h2>Record unavailable</h2>
       <p>{{ detailMessage }}</p>
-      <button class="secondary-action" type="button" @click="detailQuery.refresh()">RETRY</button>
+      <button class="ui-action-secondary" type="button" @click="detailQuery.refresh()">
+        RETRY
+      </button>
     </div>
 
     <template v-else-if="corporation">
@@ -99,7 +105,7 @@ useHead({
             height="72"
           />
           <div>
-            <p class="eyebrow">CORPORATION / {{ corporation.ticker }}</p>
+            <p class="ui-eyebrow">CORPORATION / {{ corporation.ticker }}</p>
             <h1>
               <span>{{ corporation.name }}</span>
             </h1>
@@ -257,9 +263,9 @@ useHead({
         >
           Loading…
         </div>
-        <div v-else-if="historyQuery.status.value === 'error'" class="inline-error" role="alert">
+        <div v-else-if="historyQuery.status.value === 'error'" class="ui-inline-error" role="alert">
           Alliance history unavailable.
-          <button type="button" class="secondary-action" @click="historyQuery.refresh()">
+          <button type="button" class="ui-action-secondary" @click="historyQuery.refresh()">
             RETRY
           </button>
         </div>
@@ -268,6 +274,12 @@ useHead({
     </template>
   </div>
 </template>
+
+<style>
+@import url('~/assets/css/features/record-dossier.css');
+@import url('~/assets/css/features/character-record.css');
+@import url('~/assets/css/responsive/record.css');
+</style>
 
 <style scoped>
 .corporation-body {

@@ -89,12 +89,12 @@ useHead({ title: 'Administrator Login // EVE Space' })
     <div class="auth-card-mark" aria-hidden="true"><AppIcon name="admin" /></div>
 
     <div v-if="loading && !setup" class="auth-progress" aria-live="polite">
-      <span class="scanner" aria-hidden="true" />
+      <span class="app-scanner" aria-hidden="true" />
       <strong>Checking deployment state</strong>
     </div>
 
     <template v-else-if="setup?.required && !setup.available">
-      <p class="eyebrow">SETUP LOCKED</p>
+      <p class="ui-eyebrow">SETUP LOCKED</p>
       <h1>Bootstrap secret required</h1>
       <p class="auth-intro">
         Configure the server-only <code>ADMIN_SETUP_SECRET</code> before creating the deployment
@@ -106,7 +106,7 @@ useHead({ title: 'Administrator Login // EVE Space' })
       <div class="admin-panel-heading">
         <span>01</span>
         <div>
-          <p class="eyebrow">ONE-TIME SETUP</p>
+          <p class="ui-eyebrow">ONE-TIME SETUP</p>
           <h1>Create deployment owner</h1>
         </div>
       </div>
@@ -139,8 +139,8 @@ useHead({ title: 'Administrator Login // EVE Space' })
           inputmode="numeric"
           required
       /></label>
-      <p v-if="activeError" class="inline-error" role="alert">{{ activeError }}</p>
-      <button class="primary-action" type="submit" :disabled="submitting">
+      <p v-if="activeError" class="ui-inline-error" role="alert">{{ activeError }}</p>
+      <button class="ui-action-primary" type="submit" :disabled="submitting">
         {{ submitting ? 'VERIFYING...' : 'COMPLETE SETUP' }}
       </button>
     </form>
@@ -149,7 +149,7 @@ useHead({ title: 'Administrator Login // EVE Space' })
       <div class="admin-panel-heading">
         <span>OWNER</span>
         <div>
-          <p class="eyebrow">RESTRICTED ACCESS</p>
+          <p class="ui-eyebrow">RESTRICTED ACCESS</p>
           <h1>Administrator login</h1>
         </div>
       </div>
@@ -159,10 +159,15 @@ useHead({ title: 'Administrator Login // EVE Space' })
       <label
         >Password<input v-model="password" type="password" autocomplete="current-password" required
       /></label>
-      <p v-if="activeError" class="inline-error" role="alert">{{ activeError }}</p>
-      <button class="primary-action" type="submit" :disabled="submitting">
+      <p v-if="activeError" class="ui-inline-error" role="alert">{{ activeError }}</p>
+      <button class="ui-action-primary" type="submit" :disabled="submitting">
         {{ submitting ? 'AUTHENTICATING...' : 'SIGN IN' }}
       </button>
     </form>
   </section>
 </template>
+
+<style>
+@import url('~/assets/css/pages/admin.css');
+@import url('~/assets/css/responsive/admin.css');
+</style>

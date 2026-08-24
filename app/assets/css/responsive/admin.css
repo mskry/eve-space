@@ -1,0 +1,14 @@
+@media (max-width: 760px) {
+  .admin-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-panel-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .admin-panel-heading .ui-action-secondary {
+    grid-column: 2;
+    width: max-content;
+  }
+}

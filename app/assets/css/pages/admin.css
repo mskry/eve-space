@@ -1,0 +1,127 @@
+.admin-page {
+  max-width: 64rem;
+}
+
+.admin-panel {
+  margin-top: 1rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border: 0.0625rem solid var(--ui-border);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--ui-primary) 6%, transparent), transparent 55%),
+    var(--ui-surface);
+}
+
+.admin-panel > h2,
+.admin-panel-heading h2,
+.admin-organization-current h2 {
+  margin: 0.5rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.admin-panel > p:not(.ui-eyebrow) {
+  color: var(--ui-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.admin-panel code {
+  color: var(--ui-primary);
+  font-family: var(--ui-font-mono);
+}
+
+.admin-panel-heading {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.admin-panel-heading > span {
+  min-width: 3.25rem;
+  min-height: 3.25rem;
+  display: grid;
+  place-items: center;
+  border: 0.0625rem solid var(--ui-border-strong);
+  color: var(--ui-primary);
+  font: 700 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+}
+
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-form label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--ui-text-muted);
+  font: 700 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-form input,
+.admin-form select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.75rem;
+  border: 0.0625rem solid var(--ui-border-strong);
+  border-radius: 0;
+  background: var(--ui-control);
+  color: var(--ui-text);
+  font: 0.75rem/1 var(--ui-font-mono);
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+  border-color: var(--ui-primary);
+  outline: 0.125rem solid color-mix(in srgb, var(--ui-primary) 25%, transparent);
+  outline-offset: 0.125rem;
+}
+
+.admin-form .ui-inline-error,
+.admin-form > .ui-action-primary {
+  grid-column: 1 / -1;
+}
+
+.admin-form > .ui-action-primary {
+  width: max-content;
+}
+
+.admin-form button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.admin-login {
+  max-width: 42rem;
+}
+
+.admin-organization-current {
+  grid-column: 1 / -1;
+  padding-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 0.0625rem solid var(--ui-border);
+}
+
+.admin-organization-current img {
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border: 0.0625rem solid var(--ui-border);
+  background: var(--ui-logo-background);
+}
+
+.admin-organization-current span {
+  display: block;
+  margin-top: 0.625rem;
+  color: var(--ui-text-muted);
+  font: 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+}

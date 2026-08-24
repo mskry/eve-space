@@ -1,0 +1,368 @@
+/* Character roster and routed records */
+.roster-heading-copy {
+  max-width: 460px;
+  display: flex;
+  align-items: end;
+  gap: 20px;
+}
+
+.roster-heading-copy p {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.add-character-icon {
+  margin-right: 8px;
+  display: inline-block;
+  font-size: 15px;
+  line-height: 0;
+}
+
+/* Custom-spaced dashed edge: default `dashed` renders gaps too tight to read as "ghost". */
+.roster-card.roster-add-card {
+  --dash-color: var(--ui-border);
+  text-align: left;
+  border: 1px solid transparent;
+  background-color: transparent;
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size:
+    12px 1px,
+    12px 1px,
+    1px 12px,
+    1px 12px;
+  background-position:
+    left top,
+    left bottom,
+    left top,
+    right top;
+  background-origin: border-box;
+  background-image:
+    linear-gradient(90deg, var(--dash-color) 0 4px, transparent 4px 12px),
+    linear-gradient(90deg, var(--dash-color) 0 4px, transparent 4px 12px),
+    linear-gradient(0deg, var(--dash-color) 0 4px, transparent 4px 12px),
+    linear-gradient(0deg, var(--dash-color) 0 4px, transparent 4px 12px);
+  color: var(--ui-text-muted);
+  cursor: pointer;
+}
+
+.roster-ghost-top {
+  display: flex;
+  align-items: start;
+  gap: 14px;
+}
+
+.roster-ghost-portrait {
+  flex: 0 0 auto;
+  width: var(--roster-portrait-size);
+  height: var(--roster-portrait-size);
+  border: 1px solid var(--ui-border);
+  background-color: color-mix(in srgb, var(--ui-surface-raised) 55%, transparent);
+}
+
+.roster-ghost-identity {
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: var(--roster-portrait-size);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.roster-ghost-line {
+  height: 8px;
+  background: color-mix(in srgb, var(--ui-text-muted) 30%, transparent);
+}
+
+.roster-ghost-line--name {
+  width: 65%;
+  height: 12px;
+}
+
+.roster-ghost-org {
+  margin-top: auto;
+  display: flex;
+  gap: 12px;
+}
+
+.roster-ghost-badge {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--ui-border);
+  background-color: color-mix(in srgb, var(--ui-surface-raised) 40%, transparent);
+}
+
+.roster-ghost-stats {
+  width: 100%;
+  flex: 1 1 auto;
+  padding: 12px 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border) 45%, transparent);
+}
+
+.roster-ghost-line--stat {
+  width: 70%;
+}
+
+.roster-ghost-line--stat-short {
+  width: 10%;
+}
+
+.roster-ghost-line--stat-mid {
+  width: 30%;
+}
+
+.roster-ghost-value-stats {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roster-ghost-value-stats .roster-ghost-line {
+  width: 10%;
+}
+
+.roster-ghost-separator {
+  color: var(--ui-text-muted);
+  font: 10px/1 var(--ui-font-mono);
+}
+
+.roster-add-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ui-surface) 60%, transparent);
+  font: 800 9px/1 monospace;
+  letter-spacing: 0.1em;
+}
+
+/* Shared warp hover: a dim border flares to accent, reusing the sidebar warp glow. */
+.roster-add-card,
+.roster-card {
+  transition:
+    color var(--warp-duration) var(--warp-ease),
+    border-color var(--warp-duration) var(--warp-ease);
+}
+
+.roster-card:not(.roster-add-card):hover,
+.roster-card:not(.roster-add-card):focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  animation: warp-glow var(--warp-duration) ease-out;
+}
+
+.roster-add-card:hover,
+.roster-add-card:focus-visible {
+  --dash-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+}
+
+.roster-add-card:hover .add-character-icon {
+  animation: warp-jump-right var(--warp-duration) var(--warp-ease);
+}
+
+.roster-feedback,
+.character-callback-feedback {
+  margin-bottom: 24px;
+}
+
+.character-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.roster-card {
+  --warp-glow-rest: var(--ui-border);
+  --roster-portrait-size: 84px;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  min-height: 280px;
+  flex: 0 1 300px;
+  max-width: 330px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.roster-card[data-state='open'] {
+  border-color: color-mix(in srgb, var(--ui-primary) 55%, var(--ui-border));
+}
+
+/* Decorative race/faction watermark; sits under the stretched card link. */
+.roster-race-mark {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  object-fit: contain;
+  opacity: 0.12;
+}
+
+.roster-card-link {
+  min-width: 0;
+  display: flex;
+  align-items: start;
+  gap: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Stretch the card link across the whole card; interactive children opt back out below. */
+.roster-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.roster-portrait {
+  flex: 0 0 auto;
+  width: var(--roster-portrait-size);
+  height: var(--roster-portrait-size);
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-raised);
+}
+
+.roster-portrait img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: saturate(0.82) contrast(1.06);
+  transition: transform 180ms ease;
+}
+
+.roster-card-link:hover .roster-portrait img {
+  transform: scale(1.05);
+}
+
+.roster-identity {
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: var(--roster-portrait-size);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.roster-identity-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.roster-identity-name h2 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--ui-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster-stats {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 12px 4px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border) 45%, transparent);
+}
+
+.roster-value-stats {
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roster-value-stats .roster-stat {
+  width: auto;
+}
+
+.roster-value-separator {
+  color: var(--ui-text-muted);
+  font: 10px/1 var(--ui-font-mono);
+}
+
+.roster-stat {
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ui-text);
+  font: 10px/1.6 var(--ui-font-mono);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.roster-stat-key {
+  flex: 0 0 auto;
+  color: var(--ui-text-muted);
+  letter-spacing: 0.1em;
+}
+
+.roster-stat-value {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster-location-icon,
+.roster-location-icon .app-icon,
+.roster-ship-icon,
+.roster-ship-icon .app-icon {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+.roster-location-icon,
+.roster-ship-icon {
+  color: var(--ui-text-muted);
+}
+
+.roster-org {
+  min-width: 0;
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.roster-org img {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-logo-background);
+}

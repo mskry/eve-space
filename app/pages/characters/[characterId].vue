@@ -107,36 +107,36 @@ useHead({
 
 <template>
   <div class="section-page character-shell">
-    <div v-if="authLoading" class="state-panel compact-state" aria-live="polite">
-      <div class="scanner" aria-hidden="true" />
+    <div v-if="authLoading" class="app-state-panel app-state-panel--compact" aria-live="polite">
+      <div class="app-scanner" aria-hidden="true" />
       <p>Verifying account identity...</p>
     </div>
-    <section v-else-if="!authSession.authenticated" class="locked-panel">
-      <span class="locked-icon"><AppIcon name="auth" /></span>
+    <section v-else-if="!authSession.authenticated" class="access-locked-panel">
+      <span class="access-locked-icon"><AppIcon name="auth" /></span>
       <div>
-        <p class="eyebrow">AUTHORIZATION REQUIRED</p>
+        <p class="ui-eyebrow">AUTHORIZATION REQUIRED</p>
         <h2>Character archive locked</h2>
         <p>Open the identity gateway to access added character records.</p>
       </div>
-      <NuxtLink class="primary-action" to="/auth">OPEN IDENTITY GATEWAY</NuxtLink>
+      <NuxtLink class="ui-action-primary" to="/auth">OPEN IDENTITY GATEWAY</NuxtLink>
     </section>
     <div
       v-else-if="rosterStatus === 'loading' && characters.length === 0"
-      class="state-panel compact-state"
+      class="app-state-panel app-state-panel--compact"
       aria-live="polite"
     >
-      <div class="scanner" aria-hidden="true" />
+      <div class="app-scanner" aria-hidden="true" />
       <p>Resolving roster ownership...</p>
     </div>
     <div
       v-else-if="!characterId || (!selectedCharacter && rosterStatus !== 'loading')"
-      class="state-panel error-panel compact-state"
+      class="app-state-panel app-error-panel app-state-panel--compact"
       role="alert"
     >
-      <span class="error-code">404 / CHARACTER</span>
+      <span class="app-error-code">404 / CHARACTER</span>
       <h2>Character not found</h2>
       <p>{{ rosterMessage || 'This character has not been added to your account.' }}</p>
-      <NuxtLink class="secondary-action" to="/characters">RETURN TO ROSTER</NuxtLink>
+      <NuxtLink class="ui-action-secondary" to="/characters">RETURN TO ROSTER</NuxtLink>
     </div>
 
     <template v-else-if="selectedCharacter">
@@ -151,7 +151,7 @@ useHead({
             height="72"
           />
           <div>
-            <p class="eyebrow">{{ characterBreadcrumb }}</p>
+            <p class="ui-eyebrow">{{ characterBreadcrumb }}</p>
             <h1>
               <span>{{ selectedCharacter.name }}</span>
               <UiMainCharacterMark v-if="selectedCharacter.isMain" variant="badge" />
@@ -215,3 +215,10 @@ useHead({
     </template>
   </div>
 </template>
+
+<style>
+@import url('~/assets/css/features/character-record.css');
+@import url('~/assets/css/pages/settings.css');
+@import url('~/assets/css/responsive/record.css');
+@import url('~/assets/css/responsive/settings.css');
+</style>

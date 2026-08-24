@@ -24,3 +24,8 @@
     </footer>
   </div>
 </template>
+
+<style>
+@import url('~/assets/css/layouts/auth.css');
+@import url('~/assets/css/responsive/auth.css');
+</style>

@@ -1,0 +1,168 @@
+/* Auth surface */
+.auth-shell {
+  width: min(1180px, calc(100% - 48px));
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.auth-header,
+.auth-footer {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.auth-header .sidebar-brand {
+  padding: 0;
+  border: 0;
+}
+
+.auth-header-actions > a {
+  color: var(--muted);
+  font: 8px/1 monospace;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+}
+
+.auth-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.auth-stage {
+  display: grid;
+  place-items: center;
+  padding: 60px 0;
+}
+
+.auth-card {
+  width: min(650px, 100%);
+  padding: clamp(30px, 6vw, 68px);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(
+      circle at 100% 0,
+      color-mix(in srgb, var(--ui-primary) 8%, transparent),
+      transparent 260px
+    ),
+    var(--panel);
+  box-shadow: 0 35px 100px var(--ui-shadow);
+}
+
+.auth-card-mark {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-size: clamp(42px, 7vw, 72px);
+  font-weight: 300;
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+}
+
+.auth-intro {
+  margin: 24px 0 32px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.auth-progress {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  color: var(--muted);
+  font: 9px/1 monospace;
+  letter-spacing: 0.08em;
+}
+
+.auth-progress .app-scanner {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+
+.authorized-identity {
+  padding-top: 26px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.authorized-identity img {
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 40%, transparent);
+}
+
+.authorized-identity small,
+.authorized-identity strong,
+.authorized-identity span {
+  display: block;
+}
+.authorized-identity small,
+.authorized-identity span {
+  color: var(--muted);
+  font: 8px/1 monospace;
+  letter-spacing: 0.1em;
+}
+.authorized-identity strong {
+  margin: 8px 0;
+  font-size: 18px;
+}
+
+.auth-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+}
+
+.auth-connect {
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.auth-connect .eve-login img {
+  width: min(270px, 100%);
+  height: auto;
+}
+
+.scope-list {
+  margin-top: 28px;
+  display: grid;
+  gap: 12px;
+  color: var(--muted);
+  font: 8px/1 monospace;
+  letter-spacing: 0.08em;
+}
+
+.scope-list i {
+  width: 5px;
+  height: 5px;
+  display: inline-block;
+  margin-right: 9px;
+  background: var(--accent);
+}
+
+.auth-footer {
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+  color: var(--ui-text-faint);
+  font: 7px/1 monospace;
+  letter-spacing: 0.1em;
+}

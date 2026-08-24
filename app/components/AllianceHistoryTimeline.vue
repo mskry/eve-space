@@ -124,3 +124,8 @@ function formatEmploymentDate(value: string) {
     </UiScrollArea>
   </div>
 </template>
+
+<style>
+@import url('~/assets/css/features/history.css');
+@import url('~/assets/css/responsive/history.css');
+</style>
