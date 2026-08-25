@@ -14,15 +14,23 @@ export interface EsiRevalidation {
   ifModifiedSince?: string
 }
 
+export interface EsiCacheAuthorization {
+  kind: 'character'
+  principal: string
+  generation: number
+}
+
 export interface EsiCacheEnvelope<Data> {
-  version: 1
+  version: 2
+  representationVersion: string
   data: Data
   freshUntil: number
+  staleUntil: number
   retainUntil: number
   validatedAt: string
   etag?: string
   lastModified?: string
-  quota: EsiQuota
+  authorization?: EsiCacheAuthorization
   fence: number
 }
 

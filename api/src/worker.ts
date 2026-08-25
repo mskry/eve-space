@@ -1,9 +1,15 @@
 import { sql } from './db/client.js'
-import { env } from './env.js'
+import { env, isSsoConfigured } from './env.js'
+import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog.js'
 import { startWorkerPlatform } from './queue/platform.js'
 import { assertWorkerStartupDependencies } from './worker-readiness.js'
 
 export async function startWorker() {
+  assertEsiOperationCatalogConfiguration({
+    compatibilityDate: env.ESI_COMPATIBILITY_DATE,
+    ssoEnabled: isSsoConfigured(),
+    requestableScopes: env.EVE_SCOPES.split(/\s+/).filter(Boolean),
+  })
   let shutdownRequested = false
   const shutdown = new Promise<void>((resolve) => {
     const requestShutdown = () => {

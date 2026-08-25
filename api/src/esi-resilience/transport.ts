@@ -1,7 +1,9 @@
 import { env } from '../env.js'
 import { createProducerRedisConnection, type QueueRedisConnection } from '../queue/redis.js'
+import { getSharedCacheRedisConnection } from './cache-redis.js'
+import type { EsiOperation } from './catalog.js'
 import { acquireEsiRequestPermit, recordEsiResponse } from './cooldowns.js'
-import { getEsiOperationPolicy, type EsiOperation } from './policy.js'
+import { recordEsiRateMeasurement } from './rate-measurement.js'
 import { recordEsiUpstreamOutcome } from './telemetry.js'
 
 let coordinationConnection: QueueRedisConnection | undefined
@@ -18,7 +20,7 @@ export function createEsiTransport(
       connection: getCoordinationConnection(),
       operation,
       principal,
-      concurrency: getEsiOperationPolicy(operation).concurrency,
+      concurrency: env.ESI_OPERATION_CONCURRENCY,
     })
     const renewal = setInterval(() => {
       void permit.renew().catch(() => {})
@@ -26,18 +28,27 @@ export function createEsiTransport(
     renewal.unref()
     try {
       const response = await globalThis.fetch(input, { ...init, headers })
-      await Promise.all([
-        recordEsiResponse({
-          connection: getCoordinationConnection(),
+      const cache = getSharedCacheRedisConnection()
+      void Promise.all([
+        recordEsiRateMeasurement(cache, {
           operation,
           principal,
           status: response.status,
-          headers: response.headers,
         }),
-        ...(permit.coordinationAvailable
-          ? [recordEsiUpstreamOutcome(getCoordinationConnection(), operation, response.status)]
-          : []),
+        recordEsiUpstreamOutcome(
+          cache,
+          operation,
+          response.status,
+          response.headers.get('x-ratelimit-group'),
+        ),
       ]).catch(() => {})
+      await recordEsiResponse({
+        connection: getCoordinationConnection(),
+        operation,
+        principal,
+        status: response.status,
+        headers: response.headers,
+      }).catch(() => {})
       return response
     } finally {
       clearInterval(renewal)

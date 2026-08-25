@@ -128,9 +128,9 @@ async function probeEsi(): Promise<EsiStatus> {
   const checkedAt = new Date(startedAt).toISOString()
 
   try {
-    const response = await getEsiResilienceLayer().get({
+    const response = await getEsiResilienceLayer().getPublic({
       operation: 'status',
-      resource: 'tranquility-status',
+      inputs: {},
       load: (revalidation) =>
         createStatusClient({ fetch: createEsiTransport('status') })
           .withMetadata()

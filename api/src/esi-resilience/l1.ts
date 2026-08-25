@@ -24,4 +24,8 @@ export class BoundedEsiL1Cache {
   delete(key: string) {
     this.#entries.delete(key)
   }
+
+  clear() {
+    this.#entries.clear()
+  }
 }

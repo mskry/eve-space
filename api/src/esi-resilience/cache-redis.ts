@@ -6,6 +6,8 @@ const retryDelayMs = 100
 
 export type CacheRedisConnection = Redis
 
+let sharedCacheConnection: CacheRedisConnection | undefined
+
 export function createCacheRedisConnection(url = env.CACHE_REDIS_URL) {
   const connection = new Redis(url, {
     connectTimeout: 1_000,
@@ -18,6 +20,11 @@ export function createCacheRedisConnection(url = env.CACHE_REDIS_URL) {
   // Cache availability is represented by controlled outcomes, never by a connection URL in logs.
   connection.on('error', () => {})
   return connection
+}
+
+export function getSharedCacheRedisConnection() {
+  sharedCacheConnection ??= createCacheRedisConnection()
+  return sharedCacheConnection
 }
 
 export async function closeCacheRedisConnection(connection: CacheRedisConnection) {

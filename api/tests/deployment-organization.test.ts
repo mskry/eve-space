@@ -17,7 +17,7 @@ vi.mock('@evespace/esi-client/domains/corporation', () => ({
 }))
 
 vi.mock('../src/esi-resilience/resilience.js', () => ({
-  getEsiResilienceLayer: () => ({ get: mocks.get }),
+  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
 vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
 

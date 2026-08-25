@@ -25,7 +25,7 @@ vi.mock('@evespace/esi-client/domains/universe', () => ({
 }))
 
 vi.mock('../src/esi-resilience/resilience.js', () => ({
-  getEsiResilienceLayer: () => ({ get: mocks.get }),
+  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
 
 vi.mock('../src/esi-resilience/transport.js', () => ({
@@ -74,6 +74,37 @@ describe('corporation service', () => {
     const { getCorporationPublic } = await import('../src/corporation-service.js')
 
     await expect(getCorporationPublic(90_000_002)).rejects.toMatchObject({ status: 404 })
+  })
+
+  test('does not produce a cacheable corporation DTO when name resolution is transiently unavailable', async () => {
+    mocks.getPublicInfo.mockResolvedValueOnce(
+      response({ alliance_id: 99, member_count: 10, name: 'Test', ticker: 'TEST' }),
+    )
+    mocks.resolveNames.mockRejectedValueOnce(
+      Object.assign(new Error('Unavailable'), { status: 503 }),
+    )
+    const { getCorporationPublic } = await import('../src/corporation-service.js')
+
+    await expect(getCorporationPublic(90_000_002)).rejects.toMatchObject({ status: 503 })
+  })
+
+  test('caches a validated negative corporation lookup', async () => {
+    mocks.getPublicInfo.mockRejectedValueOnce(
+      Object.assign(new Error('Not found'), {
+        status: 404,
+        metadata: { status: 404, headers: {} },
+      }),
+    )
+    let cached: unknown
+    mocks.get.mockImplementation(async (resource) => {
+      if (cached === undefined) cached = (await resource.load({})).data
+      return { data: cached, cachedUntil: '', quota: {}, source: 'cache', stale: false }
+    })
+    const { getCorporationPublic } = await import('../src/corporation-service.js')
+
+    await expect(getCorporationPublic(90_000_004)).rejects.toMatchObject({ status: 404 })
+    await expect(getCorporationPublic(90_000_004)).rejects.toMatchObject({ status: 404 })
+    expect(mocks.getPublicInfo).toHaveBeenCalledOnce()
   })
 
   test('uses separate policies for alliance history and NPC corporations', async () => {

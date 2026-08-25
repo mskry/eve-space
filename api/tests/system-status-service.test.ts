@@ -17,7 +17,7 @@ vi.mock('@evespace/esi-client/domains/status', () => ({
 vi.mock('../src/db/client.js', () => ({ sql: mocks.sql }))
 
 vi.mock('../src/esi-resilience/resilience.js', () => ({
-  getEsiResilienceLayer: () => ({ get: mocks.get }),
+  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
 
 vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
@@ -78,7 +78,7 @@ describe('system status service', () => {
     })
     expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
       operation: 'status',
-      resource: 'tranquility-status',
+      inputs: {},
     })
   })
 

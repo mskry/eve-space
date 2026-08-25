@@ -1,15 +1,14 @@
 import type { Redis } from 'ioredis'
 import { esiCooldownFallbackSeconds, esiErrorBudgetFloor } from '../esi-policy.js'
 import { env } from '../env.js'
-import { esiOperationPolicies, type EsiOperation } from './policy.js'
+import { esiOperationCatalog, type EsiOperation } from './catalog.js'
 
-const keyPrefix = 'eve-space:v1:esi-resilience'
+const quotaCoordinationPrefix = 'eve-space:v1:esi-resilience'
 const concurrencyLeaseTtlMs = 30_000
 const permitPollMs = 50
 const maximumLocalCooldowns = 1_000
 const localOperationCooldowns = new Map<string, number>()
 const localGroupCooldowns = new Map<string, number>()
-const localRateGroups = new Map<EsiOperation, string>()
 const localInFlight = new Map<string, number>()
 let localGlobalCooldownUntil = 0
 
@@ -46,8 +45,8 @@ export async function acquireEsiRequestPermit(options: {
       const now = Date.now()
       // oxlint-disable-next-line no-await-in-loop
       const [globalCooldown, operationCooldown] = await Promise.all([
-        options.connection.get(`${keyPrefix}:cooldown:global`),
-        getOperationCooldown(options.connection, options.operation, identity, options.principal),
+        options.connection.get(`${quotaCoordinationPrefix}:cooldown:global`),
+        options.connection.get(cooldownKey(options.operation, identity, options.principal)),
       ])
       const retryAt = Math.max(Number(globalCooldown ?? 0), Number(operationCooldown ?? 0))
       if (retryAt > now) throw new EsiQuotaError(Math.max(1, Math.ceil((retryAt - now) / 1_000)))
@@ -79,30 +78,21 @@ export async function recordEsiResponse(options: {
   const errorRemaining = parseNumber(options.headers.get('x-esi-error-limit-remain'))
   const errorResetSeconds = parseNumber(options.headers.get('x-esi-error-limit-reset'))
   const retryAfterSeconds = parseNumber(options.headers.get('retry-after'))
-  const group = options.headers.get('x-ratelimit-group')
+  const declaredGroup = getDeclaredRateGroup(options.operation)
   const principal = normalizePrincipal(options.principal)
   const identity = `${options.operation}:${principal}`
   const now = Date.now()
   const cooldowns: Array<[string, number]> = []
   if (errorRemaining !== undefined && errorRemaining <= esiErrorBudgetFloor)
     cooldowns.push([
-      `${keyPrefix}:cooldown:global`,
+      `${quotaCoordinationPrefix}:cooldown:global`,
       now + (errorResetSeconds ?? esiCooldownFallbackSeconds) * 1_000,
     ])
   if (options.status === 429) {
     const retryAt = now + (retryAfterSeconds ?? esiCooldownFallbackSeconds) * 1_000
-    cooldowns.push([`${keyPrefix}:cooldown:operation:${identity}`, retryAt])
-    if (group) cooldowns.push([`${keyPrefix}:cooldown:group:${group}:${principal}`, retryAt])
+    cooldowns.push([cooldownKey(options.operation, identity, options.principal), retryAt])
   }
-  recordLocalCooldowns(options.operation, identity, principal, group, cooldowns)
-  if (options.status === 429 && group) {
-    await options.connection.set(
-      `${keyPrefix}:rate-group:${options.operation}`,
-      group,
-      'PX',
-      86_400_000,
-    )
-  }
+  recordLocalCooldowns(identity, principal, declaredGroup, cooldowns)
   try {
     await Promise.all(
       cooldowns.map(([key, value]) => setCooldownAtLeast(options.connection, key, value, now)),
@@ -117,19 +107,12 @@ export async function getSharedEsiCooldownStatus(connection: Redis): Promise<Esi
   const checkedAt = new Date().toISOString()
   try {
     const now = Date.now()
-    const operations = Object.keys(esiOperationPolicies) as EsiOperation[]
-    const [globalCooldown, ...groups] = await connection.mget([
-      `${keyPrefix}:cooldown:global`,
-      ...operations.map((operation) => `${keyPrefix}:rate-group:${operation}`),
-    ])
+    const operations = Object.keys(esiOperationCatalog) as EsiOperation[]
+    const globalCooldown = await connection.get(`${quotaCoordinationPrefix}:cooldown:global`)
     const operationCooldowns = await Promise.all(
-      operations.map((operation, index) => {
-        const group = groups[index]
-        const key = group
-          ? `${keyPrefix}:cooldown:group:${group}:public`
-          : `${keyPrefix}:cooldown:operation:${operation}:public`
-        return connection.get(key)
-      }),
+      operations.map((operation) =>
+        connection.get(cooldownKey(operation, `${operation}:public`, undefined)),
+      ),
     )
     const globalRetryAt = toFutureTimestamp(globalCooldown, now)
     const activeOperations = operations.flatMap((operation, index) => {
@@ -147,17 +130,6 @@ export async function getSharedEsiCooldownStatus(connection: Redis): Promise<Esi
   }
 }
 
-async function getOperationCooldown(
-  connection: Redis,
-  operation: EsiOperation,
-  identity: string,
-  principal: string | undefined,
-) {
-  const group = await connection.get(`${keyPrefix}:rate-group:${operation}`)
-  if (!group) return connection.get(`${keyPrefix}:cooldown:operation:${identity}`)
-  return connection.get(`${keyPrefix}:cooldown:group:${group}:${normalizePrincipal(principal)}`)
-}
-
 async function acquireLocalPermit(
   operation: EsiOperation,
   identity: string,
@@ -167,7 +139,7 @@ async function acquireLocalPermit(
   const limit = Math.max(1, Math.floor(sharedConcurrency / 2))
   while (Date.now() < deadline) {
     pruneLocalCooldowns(Date.now())
-    const group = localRateGroups.get(operation)
+    const group = getDeclaredRateGroup(operation)
     const principal = identity.slice(operation.length + 1)
     const cooldownUntil = Math.max(
       localGlobalCooldownUntil,
@@ -196,10 +168,9 @@ async function acquireLocalPermit(
 }
 
 function recordLocalCooldowns(
-  operation: EsiOperation,
   identity: string,
   principal: string,
-  group: string | null,
+  group: string | undefined,
   cooldowns: Array<[string, number]>,
 ) {
   const now = Date.now()
@@ -215,7 +186,6 @@ function recordLocalCooldowns(
       Math.max(localOperationCooldowns.get(identity) ?? 0, operationCooldown),
     )
   if (group) {
-    localRateGroups.set(operation, group)
     const groupCooldown = cooldowns.find(([key]) => key.includes(':cooldown:group:'))?.[1]
     if (groupCooldown !== undefined) {
       const key = `${group}:${principal}`
@@ -224,6 +194,18 @@ function recordLocalCooldowns(
   }
   boundLocalCooldowns(localOperationCooldowns)
   boundLocalCooldowns(localGroupCooldowns)
+}
+
+function cooldownKey(operation: EsiOperation, identity: string, principal: string | undefined) {
+  const group = getDeclaredRateGroup(operation)
+  return group
+    ? `${quotaCoordinationPrefix}:cooldown:group:${group}:${normalizePrincipal(principal)}`
+    : `${quotaCoordinationPrefix}:cooldown:operation:${identity}`
+}
+
+function getDeclaredRateGroup(operation: EsiOperation) {
+  const rateGroup = esiOperationCatalog[operation].rateGroup
+  return rateGroup.kind === 'declared' ? rateGroup.group : undefined
 }
 
 async function setCooldownAtLeast(connection: Redis, key: string, retryAt: number, now: number) {
@@ -241,7 +223,7 @@ async function tryAcquireDistributedPermit(
   operation: EsiOperation,
   concurrency: number,
 ): Promise<EsiRequestPermit | undefined> {
-  const key = `${keyPrefix}:concurrency:${operation}`
+  const key = `${quotaCoordinationPrefix}:concurrency:${operation}`
   const ownerToken = crypto.randomUUID()
   const now = Date.now()
   const acquired =

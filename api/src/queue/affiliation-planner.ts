@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Queue } from 'bullmq'
 import { acquireEsiRequestPermit, EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCoordinationConnection } from '../esi-resilience/transport.js'
-import { getEsiOperationPolicy } from '../esi-resilience/policy.js'
+import { env } from '../env.js'
 import {
   affiliationOperationIdentity,
   partitionAffiliationCharacterIds,
@@ -97,7 +97,7 @@ async function affiliationCooldownActive() {
     const permit = await acquireEsiRequestPermit({
       connection: getCoordinationConnection(),
       operation: 'bulk-affiliation',
-      concurrency: getEsiOperationPolicy('bulk-affiliation').concurrency,
+      concurrency: env.ESI_OPERATION_CONCURRENCY,
     })
     await permit.release()
     return false

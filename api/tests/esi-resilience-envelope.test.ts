@@ -1,15 +1,19 @@
 import { describe, expect, test } from 'vitest'
+import { env } from '../src/env.js'
 import {
   createCacheEnvelope,
+  getEsiQuota,
   isEnvelopeFresh,
   isEnvelopeRetained,
+  isEnvelopeStaleUsable,
   toRevalidation,
   updateNotModifiedEnvelope,
 } from '../src/esi-resilience/envelope.js'
 import { BoundedEsiL1Cache } from '../src/esi-resilience/l1.js'
-import { getEsiOperationPolicy } from '../src/esi-resilience/policy.js'
+import { getEsiOperationContract } from '../src/esi-resilience/catalog.js'
 
-const policy = getEsiOperationPolicy('public-character')
+const policy = getEsiOperationContract('public-character')
+const retentionMilliseconds = policy.cache.kind === 'none' ? 0 : policy.cache.retentionMilliseconds
 const now = Date.parse('2026-08-20T12:00:00.000Z')
 
 describe('ESI cache envelopes', () => {
@@ -18,6 +22,7 @@ describe('ESI cache envelopes', () => {
       data: { name: 'Bandera' },
       fence: 3,
       policy,
+      representationVersion: 'v1',
       now,
       metadata: {
         status: 200,
@@ -27,8 +32,11 @@ describe('ESI cache envelopes', () => {
     })
 
     expect(envelope).toMatchObject({
+      version: 2,
+      representationVersion: 'v1',
       freshUntil: now + 60_000,
-      retainUntil: now + 60_000 + policy.maximumStaleAgeMs,
+      staleUntil: now + 3_660_000,
+      retainUntil: now + 60_000 + retentionMilliseconds,
       etag: '"v1"',
       lastModified: 'yesterday',
       fence: 3,
@@ -39,31 +47,62 @@ describe('ESI cache envelopes', () => {
     expect(isEnvelopeRetained(envelope, envelope.retainUntil)).toBe(false)
   })
 
-  test('falls back to cache-control or a jittered policy TTL', () => {
+  test('falls back to cache-control relative to the upstream date or reviewed freshness', () => {
     const fromCacheControl = createCacheEnvelope({
       data: 1,
       fence: 1,
       policy,
+      representationVersion: 'v1',
       now,
-      metadata: { status: 200, headers: {}, cache: { cacheControl: 'private, max-age=42' } },
+      metadata: {
+        status: 200,
+        headers: { date: '2026-08-20T11:59:50.000Z' },
+        cache: { cacheControl: 'private, max-age=42' },
+      },
     })
     const fallback = createCacheEnvelope({
       data: 1,
       fence: 1,
       policy,
+      representationVersion: 'v1',
       now,
-      random: () => 0.5,
     })
 
-    expect(fromCacheControl.freshUntil).toBe(now + 42_000)
-    expect(fallback.freshUntil).toBe(now + policy.upstreamExpiryFallbackMs + 2_500)
+    expect(fromCacheControl.freshUntil).toBe(now + 32_000)
+    expect(fallback.freshUntil).toBe(now + 86_400_000)
   })
 
-  test('preserves validators and replaces quota metadata after a 304', () => {
+  test('applies the resolver freshness override and keeps runtime-only results immediately stale', () => {
+    const resolver = getEsiOperationContract('universe-resolve-names')
+    const resolved = createCacheEnvelope({
+      data: 1,
+      fence: 1,
+      policy: resolver,
+      representationVersion: 'v1',
+      now,
+    })
+    const runtimeOnly = createCacheEnvelope({
+      data: 1,
+      fence: 1,
+      policy: { ...resolver, freshness: { kind: 'runtime-only' } },
+      representationVersion: 'v1',
+      now,
+    })
+
+    expect(resolved.freshUntil).toBe(now + 3_600_000)
+    expect(isEnvelopeFresh(resolved, now + 3_599_999)).toBe(true)
+    expect(runtimeOnly.freshUntil).toBe(now)
+    expect(isEnvelopeFresh(runtimeOnly, now)).toBe(false)
+    expect(isEnvelopeRetained(runtimeOnly, now)).toBe(true)
+  })
+
+  test('preserves validators and authorization metadata after a 304', () => {
     const original = createCacheEnvelope({
       data: { name: 'Bandera' },
       fence: 4,
       policy,
+      representationVersion: 'v1',
+      authorization: { kind: 'character', principal: 'character-1', generation: 3 },
       now,
       metadata: {
         status: 200,
@@ -79,6 +118,8 @@ describe('ESI cache envelopes', () => {
         cache: { cacheControl: 'max-age=10' },
       },
       policy,
+      'v1',
+      { kind: 'character', principal: 'character-1', generation: 3 },
       now + 1_000,
     )
 
@@ -89,7 +130,11 @@ describe('ESI cache envelopes', () => {
       etag: '"old"',
       lastModified: 'old',
       freshUntil: now + 11_000,
-      quota: { remaining: 98 },
+      authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+    })
+    expect(refreshed).not.toHaveProperty('quota')
+    expect(getEsiQuota({ status: 304, headers: { 'x-ratelimit-remaining': '98' } })).toEqual({
+      remaining: 98,
     })
   })
 
@@ -97,7 +142,8 @@ describe('ESI cache envelopes', () => {
     const privateEnvelope = createCacheEnvelope({
       data: 5,
       fence: 1,
-      policy: getEsiOperationPolicy('wallet-balance'),
+      policy: getEsiOperationContract('wallet-balance'),
+      representationVersion: 'v1',
       now,
     })
     const cache = new BoundedEsiL1Cache(2)
@@ -107,8 +153,57 @@ describe('ESI cache envelopes', () => {
     cache.set('third', privateEnvelope)
 
     expect(privateEnvelope.retainUntil).toBeGreaterThan(privateEnvelope.freshUntil)
+    expect(privateEnvelope.staleUntil).toBe(privateEnvelope.freshUntil)
+    expect(isEnvelopeStaleUsable(privateEnvelope, privateEnvelope.freshUntil)).toBe(false)
     expect(cache.get('first')).toBeDefined()
     expect(cache.get('second')).toBeUndefined()
     expect(cache.get('third')).toBeDefined()
+    cache.clear()
+    expect(cache.get('first')).toBeUndefined()
+    expect(cache.get('third')).toBeUndefined()
+  })
+
+  test('uses the exact next reviewed daily UTC boundary', () => {
+    const dailyPolicy = getEsiOperationContract('universe-solar-system')
+    const beforeBoundary = Date.parse('2026-08-20T11:04:59.000Z')
+    const atBoundary = Date.parse('2026-08-20T11:05:00.000Z')
+
+    const before = createCacheEnvelope({
+      data: 1,
+      fence: 1,
+      policy: dailyPolicy,
+      representationVersion: 'v1',
+      now: beforeBoundary,
+    })
+    const at = createCacheEnvelope({
+      data: 1,
+      fence: 1,
+      policy: dailyPolicy,
+      representationVersion: 'v1',
+      now: atBoundary,
+    })
+
+    expect(before.freshUntil).toBe(atBoundary)
+    expect(at.freshUntil).toBe(Date.parse('2026-08-21T11:05:00.000Z'))
+  })
+
+  test('caps stale serving at the configured retention deadline', () => {
+    const originalMaximumRetention = env.ESI_CACHE_MAX_RETENTION_SECONDS
+    env.ESI_CACHE_MAX_RETENTION_SECONDS = 30
+    try {
+      const envelope = createCacheEnvelope({
+        data: 1,
+        fence: 1,
+        policy,
+        representationVersion: 'v1',
+        now,
+        metadata: { status: 200, headers: {}, cache: { cacheControl: 'max-age=60' } },
+      })
+
+      expect(envelope.retainUntil).toBe(envelope.freshUntil + 30_000)
+      expect(envelope.staleUntil).toBe(envelope.retainUntil)
+    } finally {
+      env.ESI_CACHE_MAX_RETENTION_SECONDS = originalMaximumRetention
+    }
   })
 })

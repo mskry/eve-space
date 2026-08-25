@@ -20,7 +20,7 @@ vi.mock('../src/token-service.js', () => ({
   getCharacterAuthorization: mocks.getCharacterAuthorization,
 }))
 vi.mock('../src/esi-resilience/resilience.js', () => ({
-  getEsiResilienceLayer: () => ({ get: mocks.get }),
+  getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
 }))
 vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
 
@@ -32,7 +32,10 @@ beforeEach(() => {
     tokenVersion: 1,
   })
   mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load({})
+    const loaded = await resource.load(
+      { accessToken: 'access-token', principal: `character-${characterId}` },
+      {},
+    )
     return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
   })
   mocks.createSkillsClient.mockReturnValue({ withMetadata: () => ({ getSkills: mocks.getSkills }) })
@@ -54,10 +57,10 @@ describe('detailed character skills', () => {
       unallocatedSp: 125,
       groups: [],
     })
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, characterSkillsScope)
+    expect(characterSkillsScope).toBe('esi-skills.read_skills.v1')
     expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
       operation: 'skills',
-      resource: `skills-character-${characterId}`,
+      inputs: { characterId },
     })
   })
 
@@ -84,6 +87,25 @@ describe('detailed character skills', () => {
     })
   })
 
+  test('does not repeat SDE enrichment for a cached application DTO', async () => {
+    mocks.get.mockResolvedValueOnce({
+      data: { totalSp: 19_000, unallocatedSp: 0, groups: [] },
+      cachedUntil: '',
+      quota: {},
+      source: 'cache',
+      stale: false,
+    })
+    const { getCharacterSkills } = await import('../src/character-skills-service.js')
+
+    await expect(getCharacterSkills(characterId)).resolves.toEqual({
+      totalSp: 19_000,
+      unallocatedSp: 0,
+      groups: [],
+    })
+    expect(mocks.getSkills).not.toHaveBeenCalled()
+    expect(mocks.select).not.toHaveBeenCalled()
+  })
+
   test('uses the same private resource for detailed and summary skill views', async () => {
     mocks.getSkills.mockResolvedValue(response({ total_sp: 2500, unallocated_sp: 125, skills: [] }))
     const { getCharacterSkills } = await import('../src/character-skills-service.js')
@@ -94,9 +116,9 @@ describe('detailed character skills', () => {
       totalSp: 2500,
       unallocatedSp: 125,
     })
-    expect(mocks.get.mock.calls.map(([resource]) => resource.resource)).toEqual([
-      `skills-character-${characterId}`,
-      `skills-character-${characterId}`,
+    expect(mocks.get.mock.calls.map(([resource]) => resource.inputs)).toEqual([
+      { characterId },
+      { characterId },
     ])
   })
 })
