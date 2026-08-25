@@ -258,21 +258,21 @@ useHead({ title: 'Character Roster // EVE Space' })
                 </span>
                 <span class="roster-value-stats">
                   <span class="roster-stat">
-                    <span class="roster-stat-key">SP</span>
                     {{
                       typeof character.totalSp === 'number'
                         ? formatCompactAmount(character.totalSp)
                         : '--'
                     }}
+                    <span class="roster-stat-key">SP</span>
                   </span>
                   <span class="roster-value-separator" aria-hidden="true">•</span>
                   <span class="roster-stat">
-                    <span class="roster-stat-key">ISK</span>
                     {{
                       typeof character.walletBalance === 'number'
                         ? formatCompactAmount(character.walletBalance)
                         : '--'
                     }}
+                    <span class="roster-stat-key">ISK</span>
                   </span>
                 </span>
               </div>

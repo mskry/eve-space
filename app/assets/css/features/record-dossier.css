@@ -109,6 +109,56 @@
   border-bottom: 1px solid var(--ui-border);
 }
 
+.character-record-grid {
+  position: relative;
+}
+
+@media (min-width: 981px) and (hover: hover) {
+  .overview-bio-card {
+    isolation: isolate;
+  }
+
+  .overview-bio-card::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 0;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--ui-border);
+    background: var(--panel);
+    opacity: 0;
+    transition:
+      height 240ms ease,
+      opacity 120ms ease;
+  }
+
+  .overview-bio-card--expandable:hover {
+    z-index: 1;
+  }
+
+  .overview-bio-card--expandable:hover::before {
+    height: var(--bio-expanded-height);
+    opacity: 1;
+  }
+
+  .overview-bio-copy {
+    position: relative;
+    transition: max-height 240ms ease;
+  }
+
+  .overview-bio-card--expandable .overview-bio-copy {
+    position: absolute;
+    inset: 49px 25px auto;
+    margin-top: 0;
+  }
+
+  .overview-bio-card--expandable:hover .overview-bio-copy {
+    max-height: calc(var(--bio-expanded-height) - 71px);
+  }
+}
+
 .character-detail-group {
   min-width: 0;
   padding: 26px 24px 28px;

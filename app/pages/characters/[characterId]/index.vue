@@ -27,6 +27,11 @@ const overviewQuery = useQuery(() => ({
   ),
 }))
 const overview = overviewQuery.data
+const bioCard = ref<HTMLElement>()
+const bioCopy = ref<HTMLElement>()
+const operationsGroup = ref<HTMLElement>()
+const bioExpandedHeight = ref(0)
+const bioIsOverflowing = ref(false)
 const overviewMessage = computed(() =>
   overviewQuery.error.value instanceof Error ? overviewQuery.error.value.message : '',
 )
@@ -89,6 +94,24 @@ const genderSymbol = computed(() => {
   if (gender === 'male') return '♂'
   return '—'
 })
+
+function measureBioExpansion() {
+  bioExpandedHeight.value =
+    (bioCard.value?.offsetHeight ?? 0) + (operationsGroup.value?.offsetHeight ?? 0)
+  bioIsOverflowing.value = (bioCopy.value?.scrollHeight ?? 0) > (bioCopy.value?.clientHeight ?? 0)
+}
+
+watch(character, async () => {
+  await nextTick()
+  measureBioExpansion()
+})
+
+onMounted(() => {
+  window.addEventListener('resize', measureBioExpansion)
+  measureBioExpansion()
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
 </script>
 
 <template>
@@ -116,134 +139,146 @@ const genderSymbol = computed(() => {
 
     <article v-else-if="character" class="dossier">
       <div class="identity-panel">
-        <section
-          class="overview-summary-grid"
-          :class="{ 'overview-summary-grid--single-affiliation': !character.alliance }"
-          aria-label="Character biography and affiliations"
+        <div
+          class="character-record-grid"
+          :style="{ '--bio-expanded-height': `${bioExpandedHeight}px` }"
         >
-          <div class="overview-bio-card">
-            <span class="card-index">01</span>
-            <p>BIO</p>
-            <div class="overview-bio-copy">
-              {{ character.bio || 'No biography recorded.' }}
+          <section
+            class="overview-summary-grid"
+            :class="{ 'overview-summary-grid--single-affiliation': !character.alliance }"
+            aria-label="Character biography and affiliations"
+          >
+            <div
+              ref="bioCard"
+              class="overview-bio-card"
+              :class="{ 'overview-bio-card--expandable': bioIsOverflowing }"
+            >
+              <span class="card-index">01</span>
+              <p>BIO</p>
+              <div ref="bioCopy" class="overview-bio-copy">
+                {{ character.bio || 'No biography recorded.' }}
+              </div>
             </div>
-          </div>
-          <section class="affiliation-card">
-            <span class="card-index">02</span>
-            <p>CORPORATION</p>
-            <h2>
-              <span class="affiliation-ticker">[{{ character.corporation.ticker }}]</span>
-              {{ character.corporation.name }}
-            </h2>
-            <div>
-              <span>{{ character.corporation.memberCount.toLocaleString('en-US') }} MEMBERS</span>
-            </div>
-          </section>
-          <section v-if="character.alliance" class="affiliation-card">
-            <span class="card-index">03</span>
-            <p>ALLIANCE</p>
-            <h2>
-              <span class="affiliation-ticker">[{{ character.alliance.ticker }}]</span>
-              {{ character.alliance.name }}
-            </h2>
-            <div>
-              <span>ACTIVE AFFILIATION</span>
-            </div>
-          </section>
-        </section>
-        <section class="character-detail-groups" aria-label="Character details">
-          <section class="character-detail-group character-detail-group--operations">
-            <h2>OPERATIONS</h2>
-            <dl>
+            <section class="affiliation-card">
+              <span class="card-index">02</span>
+              <p>CORPORATION</p>
+              <h2>
+                <span class="affiliation-ticker">[{{ character.corporation.ticker }}]</span>
+                {{ character.corporation.name }}
+              </h2>
               <div>
-                <dt>CURRENT SYSTEM</dt>
-                <dd>{{ systemLabel }}</dd>
+                <span>{{ character.corporation.memberCount.toLocaleString('en-US') }} MEMBERS</span>
               </div>
+            </section>
+            <section v-if="character.alliance" class="affiliation-card">
+              <span class="card-index">03</span>
+              <p>ALLIANCE</p>
+              <h2>
+                <span class="affiliation-ticker">[{{ character.alliance.ticker }}]</span>
+                {{ character.alliance.name }}
+              </h2>
               <div>
-                <dt>DOCKED AT</dt>
-                <dd :title="locationLabel">{{ locationLabel }}</dd>
+                <span>ACTIVE AFFILIATION</span>
               </div>
-              <div>
-                <dt>CURRENT SHIP</dt>
-                <dd class="character-ship-detail" :title="shipNameLabel">
-                  <img
-                    v-if="ship?.status === 'ok'"
-                    :src="typeImage(ship.data.typeId, 'icon', 64)"
-                    alt=""
-                    width="40"
-                    height="40"
-                  />
-                  <span>{{ shipLabel }}</span>
-                </dd>
-              </div>
-            </dl>
+            </section>
           </section>
-          <section class="character-detail-group character-detail-group--identity">
-            <h2>IDENTITY</h2>
-            <dl>
-              <div
-                :class="
-                  character.factionId
-                    ? 'character-detail-col-start'
-                    : 'character-detail-wide character-detail-col-start'
-                "
-              >
-                <dt>SECURITY STATUS</dt>
-                <dd><SecurityStatus :value="character.securityStatus" /></dd>
-              </div>
-              <div v-if="character.factionId" class="character-detail-col-end">
-                <dt>FACTION</dt>
-                <dd>
-                  <img
-                    class="militia-mark"
-                    :src="factionLogo(character.factionId, 64)"
-                    alt="Faction militia emblem"
-                    width="32"
-                    height="32"
-                  />
-                </dd>
-              </div>
-              <div class="character-detail-col-start">
-                <dt>RACE</dt>
-                <dd>{{ character.race }}</dd>
-              </div>
-              <div class="character-detail-col-end">
-                <dt>BLOODLINE</dt>
-                <dd>{{ character.bloodline }}</dd>
-              </div>
-              <div class="character-detail-col-start">
-                <dt>DATE OF BIRTH</dt>
-                <dd>{{ formattedBirthday }}</dd>
-              </div>
-              <div class="character-detail-col-end">
-                <dt>GENDER</dt>
-                <dd>
-                  <span class="gender-symbol" :title="character.gender" aria-hidden="true">
-                    {{ genderSymbol }}
-                  </span>
-                  <span class="sr-only">{{ character.gender }}</span>
-                </dd>
-              </div>
-              <div v-if="character.corporationTitle" class="character-detail-wide">
-                <dt>CORPORATION TITLE</dt>
-                <dd>{{ character.corporationTitle }}</dd>
-              </div>
-            </dl>
+          <section class="character-detail-groups" aria-label="Character details">
+            <section
+              ref="operationsGroup"
+              class="character-detail-group character-detail-group--operations"
+            >
+              <h2>OPERATIONS</h2>
+              <dl>
+                <div>
+                  <dt>CURRENT SYSTEM</dt>
+                  <dd>{{ systemLabel }}</dd>
+                </div>
+                <div>
+                  <dt>DOCKED AT</dt>
+                  <dd :title="locationLabel">{{ locationLabel }}</dd>
+                </div>
+                <div>
+                  <dt>CURRENT SHIP</dt>
+                  <dd class="character-ship-detail" :title="shipNameLabel">
+                    <img
+                      v-if="ship?.status === 'ok'"
+                      :src="typeImage(ship.data.typeId, 'icon', 64)"
+                      alt=""
+                      width="40"
+                      height="40"
+                    />
+                    <span>{{ shipLabel }}</span>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+            <section class="character-detail-group character-detail-group--identity">
+              <h2>IDENTITY</h2>
+              <dl>
+                <div
+                  :class="
+                    character.factionId
+                      ? 'character-detail-col-start'
+                      : 'character-detail-wide character-detail-col-start'
+                  "
+                >
+                  <dt>SECURITY STATUS</dt>
+                  <dd><SecurityStatus :value="character.securityStatus" /></dd>
+                </div>
+                <div v-if="character.factionId" class="character-detail-col-end">
+                  <dt>FACTION</dt>
+                  <dd>
+                    <img
+                      class="militia-mark"
+                      :src="factionLogo(character.factionId, 64)"
+                      alt="Faction militia emblem"
+                      width="32"
+                      height="32"
+                    />
+                  </dd>
+                </div>
+                <div class="character-detail-col-start">
+                  <dt>RACE</dt>
+                  <dd>{{ character.race }}</dd>
+                </div>
+                <div class="character-detail-col-end">
+                  <dt>BLOODLINE</dt>
+                  <dd>{{ character.bloodline }}</dd>
+                </div>
+                <div class="character-detail-col-start">
+                  <dt>DATE OF BIRTH</dt>
+                  <dd>{{ formattedBirthday }}</dd>
+                </div>
+                <div class="character-detail-col-end">
+                  <dt>GENDER</dt>
+                  <dd>
+                    <span class="gender-symbol" :title="character.gender" aria-hidden="true">
+                      {{ genderSymbol }}
+                    </span>
+                    <span class="sr-only">{{ character.gender }}</span>
+                  </dd>
+                </div>
+                <div v-if="character.corporationTitle" class="character-detail-wide">
+                  <dt>CORPORATION TITLE</dt>
+                  <dd>{{ character.corporationTitle }}</dd>
+                </div>
+              </dl>
+            </section>
+            <section class="character-detail-group character-detail-group--progression">
+              <h2>PROGRESSION</h2>
+              <dl>
+                <div class="character-detail-primary">
+                  <dt>TOTAL SKILL POINTS</dt>
+                  <dd>{{ skillPointsLabel }}</dd>
+                </div>
+                <div>
+                  <dt>ACHIEVEMENT SCORE</dt>
+                  <dd>{{ character.achievementScore }}</dd>
+                </div>
+              </dl>
+            </section>
           </section>
-          <section class="character-detail-group character-detail-group--progression">
-            <h2>PROGRESSION</h2>
-            <dl>
-              <div class="character-detail-primary">
-                <dt>TOTAL SKILL POINTS</dt>
-                <dd>{{ skillPointsLabel }}</dd>
-              </div>
-              <div>
-                <dt>ACHIEVEMENT SCORE</dt>
-                <dd>{{ character.achievementScore }}</dd>
-              </div>
-            </dl>
-          </section>
-        </section>
+        </div>
 
         <p v-if="pendingAuthorization" class="wallet-state wallet-authorize">
           <span>{{ pendingAuthorization.message }}</span>
