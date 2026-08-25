@@ -10,6 +10,7 @@
     "build": "tsc",
     "dev": "tsx watch src/server.ts",
     "migrate": "tsx src/db/migrate.ts",
+    "esi:rates": "tsx --env-file=../.env src/report-esi-call-rates.ts",
     "outbox:redrive": "tsx src/redrive-domain-events.ts",
     "db:studio": "drizzle-kit studio",
     "start": "node dist/server.js",

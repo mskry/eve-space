@@ -106,12 +106,11 @@ describe('ESI shared cooldowns', () => {
       headers: new Headers({ 'retry-after': '12', 'x-ratelimit-group': 'wallet' }),
     })
 
-    expect([...redis.values.keys()]).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('cooldown:operation:wallet-balance:character-90000001'),
-        expect.stringContaining('cooldown:group:wallet:character-90000001'),
-      ]),
-    )
+    expect([...redis.values.keys()]).toEqual([
+      expect.stringMatching(
+        /^eve-space:v1:esi-resilience:cooldown:group:char-wallet:character-90000001$/,
+      ),
+    ])
     await expect(
       recordEsiResponse({
         connection: redis as never,

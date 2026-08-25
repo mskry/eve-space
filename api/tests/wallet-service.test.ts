@@ -29,7 +29,7 @@ vi.mock('../src/token-service.js', () => ({
 vi.mock('../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 
 vi.mock('../src/esi-resilience/resilience.js', () => ({
-  getEsiResilienceLayer: () => ({ get: mocks.get }),
+  getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
 }))
 
 vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
@@ -54,7 +54,10 @@ beforeEach(() => {
     }),
   })
   mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load({})
+    const loaded = await resource.load(
+      { accessToken: 'access-token', principal: 'character-90000001' },
+      {},
+    )
     return {
       data: loaded.data,
       cachedUntil: '2026-08-20T12:01:00.000Z',
@@ -69,15 +72,14 @@ beforeEach(() => {
 })
 
 describe('wallet service', () => {
-  test('authorizes before the layer can inspect a private wallet resource', async () => {
+  test('passes the private wallet operation to the authorization-aware layer', async () => {
     const calls: string[] = []
-    mocks.getCharacterAuthorization.mockImplementation(async () => {
-      calls.push('authorization')
-      return { accessToken: 'access-token', tokenVersion: 4 }
-    })
     mocks.get.mockImplementation(async (resource) => {
       calls.push('cache-read')
-      const loaded = await resource.load({})
+      const loaded = await resource.load(
+        { accessToken: 'access-token', principal: 'character-90000001' },
+        {},
+      )
       return {
         data: loaded.data,
         cachedUntil: '2026-08-20T12:01:00.000Z',
@@ -94,19 +96,19 @@ describe('wallet service', () => {
       quota: {},
     })
 
-    expect(calls).toEqual(['authorization', 'cache-read'])
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(90_000_001, walletScope)
+    expect(calls).toEqual(['cache-read'])
+    expect(walletScope).toBe('esi-wallet.read_character_wallet.v1')
     expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
       operation: 'wallet-balance',
-      principal: 'character-90000001',
+      inputs: { characterId: 90_000_001 },
     })
   })
 
-  test('preserves cache provenance and the stored quota snapshot from any replica', async () => {
+  test('preserves cache provenance without reporting a historical quota snapshot', async () => {
     mocks.get.mockResolvedValueOnce({
       data: 500,
       cachedUntil: '2026-08-20T12:05:00.000Z',
-      quota: { remaining: 100, used: 50 },
+      quota: {},
       source: 'cache',
       stale: false,
     })
@@ -115,7 +117,7 @@ describe('wallet service', () => {
     await expect(getWalletBalance(90_000_002)).resolves.toEqual({
       balance: 500,
       cachedUntil: '2026-08-20T12:05:00.000Z',
-      quota: { remaining: 100, used: 50 },
+      quota: {},
       source: 'cache',
       stale: false,
     })
@@ -139,13 +141,13 @@ describe('wallet service', () => {
     })
   })
 
-  test('does not inspect a warm private resource when the current scope is revoked', async () => {
+  test('preserves an authorization rejection before invoking the SDK', async () => {
     const scopeError = new Error('Scope revoked')
-    mocks.getCharacterAuthorization.mockRejectedValueOnce(scopeError)
+    mocks.get.mockRejectedValueOnce(scopeError)
     const { getWalletBalance } = await import('../src/wallet-service.js')
 
     await expect(getWalletBalance(90_000_006)).rejects.toBe(scopeError)
-    expect(mocks.get).not.toHaveBeenCalled()
+    expect(mocks.getCharacterBalance).not.toHaveBeenCalled()
   })
 
   test('maps a shared global cooldown to the existing wallet quota error', async () => {

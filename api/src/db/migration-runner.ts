@@ -21,7 +21,7 @@ interface MigrationRunOptions {
 export async function loadMigrations(): Promise<Migration[]> {
   const files = (await readdir(migrationsDirectory))
     .filter((file) => file.endsWith('.sql'))
-    .toSorted()
+    .toSorted((left, right) => left.localeCompare(right))
 
   return Promise.all(
     files.map(async (name) => ({

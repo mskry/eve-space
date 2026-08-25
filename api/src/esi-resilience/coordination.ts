@@ -1,8 +1,10 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import type { Redis } from 'ioredis'
-import { cacheCoordinationSentinelKey, cacheNamespaceVersionKey } from './namespaces.js'
+import type { EsiRepresentationIdentity } from './identity.js'
+import { cacheCoordinationSentinelKey } from './namespaces.js'
 
-const keyPrefix = 'eve-space:v1:esi-resilience'
+const coordinationIdentityVersion = 'v2'
+const keyPrefix = `eve-space:${coordinationIdentityVersion}:esi-resilience`
 const esiRequestLeaseTtlMs = 15_000
 const fenceStateTtlMs = 86_400_000
 
@@ -13,35 +15,36 @@ export interface EsiRequestLease {
   ttlMs: number
 }
 
-function resourceHash(resource: string) {
-  return createHash('sha256').update(resource).digest('base64url')
+function identityKey(identity: EsiRepresentationIdentity) {
+  return `${identity.operation}:${identity.digest}`
 }
 
-export async function initializeCacheNamespace(cache: Redis, coordination: Redis) {
-  const existingVersion = await cache.get(cacheNamespaceVersionKey)
-  const sentinelWasWritten =
-    (await coordination.set(cacheCoordinationSentinelKey, '1', 'NX')) === 'OK'
-  if (existingVersion === null) {
-    const version = await cache.set(cacheNamespaceVersionKey, '1', 'NX')
-    return version === 'OK' ? 1 : parseNamespaceVersion(await cache.get(cacheNamespaceVersionKey))
-  }
-  if (sentinelWasWritten) return parseNamespaceVersion(await cache.incr(cacheNamespaceVersionKey))
-  return parseNamespaceVersion(existingVersion)
+export async function initializeCacheNamespace(coordination: Redis) {
+  const namespace = await coordination.eval(
+    "local current = redis.call('get', KEYS[1]); if current and current ~= ARGV[1] then return current end; redis.call('set', KEYS[1], ARGV[2]); return ARGV[2]",
+    1,
+    cacheCoordinationSentinelKey,
+    '1',
+    randomUUID(),
+  )
+  if (typeof namespace !== 'string' || !/^[0-9a-f-]{36}$/i.test(namespace))
+    throw new Error('Invalid cache namespace')
+  return namespace
 }
 
 export async function acquireEsiRequestLease(
   connection: Redis,
-  resource: string,
+  identity: EsiRepresentationIdentity,
   leaseTtlMs = esiRequestLeaseTtlMs,
 ): Promise<EsiRequestLease | undefined> {
-  const hash = resourceHash(resource)
-  const key = `${keyPrefix}:lease:${hash}`
+  const keyIdentity = identityKey(identity)
+  const key = `${keyPrefix}:lease:${keyIdentity}`
   const ownerToken = randomUUID()
   const result = (await connection.eval(
     "if redis.call('exists', KEYS[1]) == 1 then return nil end local fence = redis.call('incr', KEYS[2]); redis.call('pexpire', KEYS[2], ARGV[3]); redis.call('psetex', KEYS[1], ARGV[1], ARGV[2] .. ':' .. fence); return fence",
     2,
     key,
-    `${keyPrefix}:fence-counter:${hash}`,
+    `${keyPrefix}:fence-counter:${keyIdentity}`,
     leaseTtlMs,
     ownerToken,
     fenceStateTtlMs,
@@ -49,8 +52,11 @@ export async function acquireEsiRequestLease(
   return result === null ? undefined : { key, ownerToken, fence: Number(result), ttlMs: leaseTtlMs }
 }
 
-export async function getEsiRequestLeaseTtl(connection: Redis, resource: string) {
-  return Math.max(0, Number(await connection.pttl(`${keyPrefix}:lease:${resourceHash(resource)}`)))
+export async function getEsiRequestLeaseTtl(
+  connection: Redis,
+  identity: EsiRepresentationIdentity,
+) {
+  return Math.max(0, Number(await connection.pttl(`${keyPrefix}:lease:${identityKey(identity)}`)))
 }
 
 export async function renewEsiRequestLease(connection: Redis, lease: EsiRequestLease) {
@@ -80,9 +86,12 @@ export async function releaseEsiRequestLease(connection: Redis, lease: EsiReques
   )
 }
 
-export async function commitEsiFence(connection: Redis, resource: string, lease: EsiRequestLease) {
-  const hash = resourceHash(resource)
-  const committedKey = `${keyPrefix}:committed-fence:${hash}`
+export async function commitEsiFence(
+  connection: Redis,
+  identity: EsiRepresentationIdentity,
+  lease: EsiRequestLease,
+) {
+  const committedKey = `${keyPrefix}:committed-fence:${identityKey(identity)}`
   const leaseValue = `${lease.ownerToken}:${lease.fence}`
   return (
     Number(
@@ -99,14 +108,7 @@ export async function commitEsiFence(connection: Redis, resource: string, lease:
   )
 }
 
-export async function getCommittedEsiFence(connection: Redis, resource: string) {
-  const value = await connection.get(`${keyPrefix}:committed-fence:${resourceHash(resource)}`)
+export async function getCommittedEsiFence(connection: Redis, identity: EsiRepresentationIdentity) {
+  const value = await connection.get(`${keyPrefix}:committed-fence:${identityKey(identity)}`)
   return value === null ? undefined : Number(value)
-}
-
-function parseNamespaceVersion(value: string | number | null) {
-  const version = Number(value)
-  if (!Number.isSafeInteger(version) || version < 1)
-    throw new Error('Invalid cache namespace version')
-  return version
 }

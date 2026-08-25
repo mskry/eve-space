@@ -1,19 +1,13 @@
-export const cacheEnvelopeVersion = 'v1'
-const cachePrefix = `eve-space:esi-cache:${cacheEnvelopeVersion}`
+import type { EsiRepresentationIdentity } from './identity.js'
 
-export const cacheNamespaceVersionKey = 'eve-space:esi-cache:namespace-version'
+export const cacheEnvelopeVersion = 'v2'
+export const cacheIdentityVersion = 'v2'
+const cachePrefix = `eve-space:esi-cache:${cacheEnvelopeVersion}:${cacheIdentityVersion}`
+
 export const cacheCoordinationSentinelKey = 'eve-space:esi-cache:coordination-sentinel'
 
-export function cacheEnvelopeKey(namespaceVersion: number, operation: string, resource: string) {
-  assertCacheIdentity(operation, 'operation')
-  assertCacheIdentity(resource, 'resource')
-  return `${cachePrefix}:${namespaceVersion}:${operation}:${resource}`
-}
-
-/** Cache identities are public, normalized resource labels, never credentials or bearer material. */
-function assertCacheIdentity(value: string, field: 'operation' | 'resource') {
-  if (!value || /[\s:]/.test(value) || /token|bearer|credential|secret|session/i.test(value))
-    throw new Error(`Unsafe cache ${field} identity`)
+export function cacheEnvelopeKey(namespace: string, identity: EsiRepresentationIdentity) {
+  return `${cachePrefix}:${namespace}:${identity.operation}:${identity.digest}`
 }
 
 export function assertCacheValueSafe(value: unknown): void {

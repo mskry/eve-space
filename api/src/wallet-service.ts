@@ -3,12 +3,12 @@ import { inArray } from 'drizzle-orm'
 import { db } from './db/client.js'
 import { sdeTypes } from './db/schema.js'
 import { EsiQuotaError } from './esi-resilience/cooldowns.js'
+import { getCharacterEsiScope } from './esi-resilience/catalog.js'
 import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
 import { createEsiTransport } from './esi-resilience/transport.js'
 import type { EsiQuota } from './esi-resilience/types.js'
-import { getCharacterAuthorization } from './token-service.js'
 
-export const walletScope = 'esi-wallet.read_character_wallet.v1'
+export const walletScope = getCharacterEsiScope('wallet-balance')
 
 export interface WalletBalanceResult {
   balance: number
@@ -47,15 +47,13 @@ export class WalletQuotaError extends Error {
 }
 
 async function loadWalletBalance(characterId: number) {
-  const authorization = await getCharacterAuthorization(characterId, walletScope)
-  return getEsiResilienceLayer().get({
+  return getEsiResilienceLayer().getCharacter({
     operation: 'wallet-balance',
-    resource: `wallet-balance-character-${characterId}`,
-    principal: `character-${characterId}`,
-    load: (revalidation) =>
+    inputs: { characterId },
+    load: (authority, revalidation) =>
       createWalletClient({
-        fetch: createEsiTransport('wallet-balance', `character-${characterId}`),
-        token: authorization.accessToken,
+        fetch: createEsiTransport('wallet-balance', authority.principal),
+        token: authority.accessToken,
       })
         .withMetadata()
         .getCharacterBalance(characterId, revalidation),
@@ -63,15 +61,13 @@ async function loadWalletBalance(characterId: number) {
 }
 
 async function loadWalletTransactions(characterId: number) {
-  const authorization = await getCharacterAuthorization(characterId, walletScope)
-  return getEsiResilienceLayer().get<WalletTransactionsResult['transactions']>({
+  return getEsiResilienceLayer().getCharacter<WalletTransactionsResult['transactions']>({
     operation: 'wallet-transactions',
-    resource: `wallet-transactions-character-${characterId}`,
-    principal: `character-${characterId}`,
-    load: async (revalidation) => {
+    inputs: { characterId },
+    load: async (authority, revalidation) => {
       const response = await createWalletClient({
-        fetch: createEsiTransport('wallet-transactions', `character-${characterId}`),
-        token: authorization.accessToken,
+        fetch: createEsiTransport('wallet-transactions', authority.principal),
+        token: authority.accessToken,
       })
         .withMetadata()
         .listCharacterTransactions(characterId, revalidation)

@@ -1,11 +1,11 @@
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance'
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
-import { createCorporationClient } from '@evespace/esi-client/domains/corporation'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
+import { getCorporationPublic } from './corporation-service.js'
 import { eveDescriptionToPlainText } from './eve-description.js'
 import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
 import { createEsiTransport } from './esi-resilience/transport.js'
-import { getEsiOperationPolicy } from './esi-resilience/policy.js'
+import { getEsiOperationContract } from './esi-resilience/catalog.js'
 
 // Only the four empire races are playable. These are faction IDs, which the EVE image server
 // serves as empire emblems under its corporations category.
@@ -44,9 +44,9 @@ interface CharacterProfile {
 
 export async function getCharacterProfile(characterId: number) {
   const character = (
-    await getEsiResilienceLayer().get({
+    await getEsiResilienceLayer().getPublic({
       operation: 'public-character',
-      resource: `character-${characterId}`,
+      inputs: { characterId },
       load: (revalidation) =>
         createCharacterClient({ fetch: createEsiTransport('public-character') })
           .withMetadata()
@@ -54,37 +54,31 @@ export async function getCharacterProfile(characterId: number) {
     })
   ).data
   const [corporation, races, bloodlines, alliance] = await Promise.all([
-    getEsiResilienceLayer().get({
-      operation: 'public-corporation',
-      resource: `corporation-${character.corporation_id}`,
-      load: (revalidation) =>
-        createCorporationClient({ fetch: createEsiTransport('public-corporation') })
-          .withMetadata()
-          .getPublicInfo(character.corporation_id, revalidation),
-    }),
-    getEsiResilienceLayer().get({
+    getCorporationPublic(character.corporation_id),
+    getEsiResilienceLayer().getPublic({
       operation: 'universe-races',
-      resource: 'races',
+      inputs: {},
       load: (revalidation) =>
         createUniverseClient({ fetch: createEsiTransport('universe-races') })
           .withMetadata()
           .listRaces(revalidation),
     }),
-    getEsiResilienceLayer().get({
+    getEsiResilienceLayer().getPublic({
       operation: 'universe-bloodlines',
-      resource: 'bloodlines',
+      inputs: {},
       load: (revalidation) =>
         createUniverseClient({
           fetch: createEsiTransport('universe-bloodlines'),
-          validateResponses: getEsiOperationPolicy('universe-bloodlines').validateResponses,
+          validateResponses:
+            getEsiOperationContract('universe-bloodlines').responseValidation.kind === 'enabled',
         })
           .withMetadata()
           .listBloodlines(revalidation),
     }),
     character.alliance_id
-      ? getEsiResilienceLayer().get({
+      ? getEsiResilienceLayer().getPublic({
           operation: 'public-alliance',
-          resource: `alliance-${character.alliance_id}`,
+          inputs: { allianceId: character.alliance_id },
           load: (revalidation) =>
             createAllianceClient({ fetch: createEsiTransport('public-alliance') })
               .withMetadata()
@@ -113,9 +107,9 @@ export async function getCharacterProfile(characterId: number) {
     factionId: character.faction_id ?? null,
     corporation: {
       id: character.corporation_id,
-      name: corporation.data.name,
-      ticker: corporation.data.ticker,
-      memberCount: corporation.data.member_count,
+      name: corporation.name,
+      ticker: corporation.ticker,
+      memberCount: corporation.memberCount,
     },
     alliance:
       alliance && character.alliance_id
@@ -132,9 +126,9 @@ export async function getCharacterProfile(characterId: number) {
 
 export async function getCharacterAffiliation(characterId: number) {
   const character = (
-    await getEsiResilienceLayer().get({
+    await getEsiResilienceLayer().getPublic({
       operation: 'public-character',
-      resource: `character-${characterId}`,
+      inputs: { characterId },
       load: (revalidation) =>
         createCharacterClient({ fetch: createEsiTransport('public-character') })
           .withMetadata()

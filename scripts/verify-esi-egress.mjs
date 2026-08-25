@@ -4,6 +4,10 @@ import { relative } from 'node:path'
 const sourceRoot = new URL('../api/src/', import.meta.url)
 const files = await sourceFiles(sourceRoot)
 const sources = await Promise.all(files.map(async (file) => [file, await readFile(file, 'utf8')]))
+const catalog = await readFile(new URL('esi-resilience/catalog.ts', sourceRoot), 'utf8')
+const registeredOperations = new Set(
+  [...catalog.matchAll(/defineContract\('([^']+)'/g)].map((match) => match[1]),
+)
 const failures = []
 
 for (const [file, source] of sources) {
@@ -13,6 +17,19 @@ for (const [file, source] of sources) {
       if (!/fetch:\s*createEsiTransport\(/.test(client[1]))
         failures.push(`${path}: ESI client bypasses createEsiTransport`)
     }
+  }
+
+  const transportOperations = [...source.matchAll(/createEsiTransport\(\s*'([^']+)'/g)].map(
+    (match) => match[1],
+  )
+  const executorOperations = new Set(
+    [...source.matchAll(/operation:\s*'([^']+)'/g)].map((match) => match[1]),
+  )
+  for (const operation of transportOperations) {
+    if (!registeredOperations.has(operation))
+      failures.push(`${path}: unregistered ESI operation ${operation}`)
+    if (!executorOperations.has(operation))
+      failures.push(`${path}: ESI operation ${operation} bypasses the shared executor`)
   }
 
   if (

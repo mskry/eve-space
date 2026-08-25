@@ -1,27 +1,28 @@
 import { createSkillsClient } from '@evespace/esi-client/domains/skills'
+import type { GetCharactersCharacterIdSkillsOutput } from '@evespace/esi-client/schemas'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from './db/client.js'
 import { sdeGroups, sdeTypes } from './db/schema.js'
+import { getCharacterEsiScope } from './esi-resilience/catalog.js'
 import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
 import { createEsiTransport } from './esi-resilience/transport.js'
-import { getCharacterAuthorization } from './token-service.js'
 
-export const characterSkillsScope = 'esi-skills.read_skills.v1'
+export const characterSkillsScope = getCharacterEsiScope('skills')
 
-export async function getCharacterSkillsData(characterId: number) {
-  const authorization = await getCharacterAuthorization(characterId, characterSkillsScope)
+export async function getCharacterSkillsData(characterId: number): Promise<CharacterSkills> {
   return (
-    await getEsiResilienceLayer().get({
+    await getEsiResilienceLayer().getCharacter({
       operation: 'skills',
-      resource: `skills-character-${characterId}`,
-      principal: `character-${characterId}`,
-      load: (revalidation) =>
-        createSkillsClient({
-          fetch: createEsiTransport('skills', `character-${characterId}`),
-          token: authorization.accessToken,
+      inputs: { characterId },
+      load: async (authority, revalidation) => {
+        const response = await createSkillsClient({
+          fetch: createEsiTransport('skills', authority.principal),
+          token: authority.accessToken,
         })
           .withMetadata()
-          .getSkills(characterId, revalidation),
+          .getSkills(characterId, revalidation)
+        return { data: await mapCharacterSkills(response.data), meta: response.meta }
+      },
     })
   ).data
 }
@@ -44,8 +45,10 @@ export interface CharacterSkills {
 }
 
 export async function getCharacterSkills(characterId: number): Promise<CharacterSkills> {
-  const result = await getCharacterSkillsData(characterId)
+  return getCharacterSkillsData(characterId)
+}
 
+async function mapCharacterSkills(result: GetCharactersCharacterIdSkillsOutput) {
   if (result.skills.length === 0) {
     return {
       totalSp: result.total_sp,

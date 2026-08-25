@@ -26,7 +26,7 @@ vi.mock('@evespace/esi-client/domains/universe', () => ({
   }),
 }))
 vi.mock('../src/esi-resilience/resilience.js', () => ({
-  getEsiResilienceLayer: () => ({ get: mocks.get }),
+  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
 vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
 
@@ -79,6 +79,48 @@ describe('character profile', () => {
       'universe-bloodlines',
     ])
   })
+
+  test.each(['profile-first', 'deployment-first'] as const)(
+    'shares one mapped corporation representation across consumers with %s ordering',
+    async (ordering) => {
+      const cache = new Map<string, unknown>()
+      mocks.get.mockImplementation(async (resource) => {
+        const key = JSON.stringify([resource.operation, resource.inputs])
+        if (cache.has(key))
+          return { data: cache.get(key), cachedUntil: '', quota: {}, source: 'cache', stale: false }
+        const loaded = await resource.load({})
+        cache.set(key, loaded.data)
+        return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
+      })
+      const [{ getCharacterProfile }, { getCorporationPublic }, { resolveDeploymentOrganization }] =
+        await Promise.all([
+          import('../src/character-profile.js'),
+          import('../src/corporation-service.js'),
+          import('../src/deployment-organization.js'),
+        ])
+
+      const expectProfile = () =>
+        expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({
+          corporation: { name: 'Imperial Academy', memberCount: 1 },
+        })
+      const expectDeployment = () =>
+        expect(
+          resolveDeploymentOrganization('corporation', character.corporation_id),
+        ).resolves.toMatchObject({ name: 'Imperial Academy', ticker: 'IAC' })
+      if (ordering === 'profile-first') {
+        await expectProfile()
+        await expectDeployment()
+      } else {
+        await expectDeployment()
+        await expectProfile()
+      }
+      await expect(getCorporationPublic(character.corporation_id)).resolves.toMatchObject({
+        name: 'Imperial Academy',
+        memberCount: 1,
+      })
+      expect(mocks.getCorporation).toHaveBeenCalledOnce()
+    },
+  )
 })
 
 function response<Data>(data: Data) {

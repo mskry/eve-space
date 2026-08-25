@@ -1,5 +1,5 @@
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance'
-import { createCorporationClient } from '@evespace/esi-client/domains/corporation'
+import { getCorporationPublic } from './corporation-service.js'
 import type { DeploymentOrganizationType } from './db/schema.js'
 import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
 import { createEsiTransport } from './esi-resilience/transport.js'
@@ -17,9 +17,9 @@ export async function resolveDeploymentOrganization(
 ): Promise<DeploymentOrganization> {
   if (type === 'alliance') {
     const alliance = (
-      await getEsiResilienceLayer().get({
+      await getEsiResilienceLayer().getPublic({
         operation: 'public-alliance',
-        resource: `alliance-${id}`,
+        inputs: { allianceId: id },
         load: (revalidation) =>
           createAllianceClient({ fetch: createEsiTransport('public-alliance') })
             .withMetadata()
@@ -29,15 +29,6 @@ export async function resolveDeploymentOrganization(
     return { type, id, name: alliance.name, ticker: alliance.ticker }
   }
 
-  const corporation = (
-    await getEsiResilienceLayer().get({
-      operation: 'public-corporation',
-      resource: `corporation-${id}`,
-      load: (revalidation) =>
-        createCorporationClient({ fetch: createEsiTransport('public-corporation') })
-          .withMetadata()
-          .getPublicInfo(id, revalidation),
-    })
-  ).data
+  const corporation = await getCorporationPublic(id)
   return { type, id, name: corporation.name, ticker: corporation.ticker }
 }

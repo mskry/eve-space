@@ -1,7 +1,7 @@
 import type { Redis } from 'ioredis'
 import { createCacheRedisConnection, closeCacheRedisConnection } from './cache-redis.js'
+import { esiOperationCatalog, type EsiOperation, type EsiOperationContract } from './catalog.js'
 import { getSharedEsiCooldownStatus, type EsiCooldownStatus } from './cooldowns.js'
-import { esiOperationPolicies, type EsiOperation, type EsiOperationPolicy } from './policy.js'
 import { closeQueueRedisConnection, createProbeRedisConnection } from '../queue/redis.js'
 
 const upstreamTelemetryPrefix = 'eve-space:v1:esi-resilience:telemetry:upstream'
@@ -10,6 +10,9 @@ const unavailableAfterConsecutiveFailures = 3
 
 type UpstreamOutcome = 'success' | 'notModified' | 'rateLimited' | 'clientError' | 'serverError'
 type DependencyState = 'operational' | 'degraded' | 'unavailable'
+type CacheSource = 'esi' | 'cache' | 'not-modified'
+
+const cacheSourceCounts = new Map<EsiOperation, Record<CacheSource, number> & { stale: number }>()
 
 interface EsiDependencyTelemetry {
   status: DependencyState
@@ -18,15 +21,16 @@ interface EsiDependencyTelemetry {
 
 interface EsiUpstreamOperationTelemetry {
   operation: EsiOperation
-  policy: Pick<
-    EsiOperationPolicy,
-    | 'valueCache'
-    | 'collapse'
-    | 'revalidate'
-    | 'upstreamExpiryFallbackMs'
-    | 'maximumStaleAgeMs'
-    | 'allowStale'
-  >
+  policy: {
+    authorization: EsiOperationContract['authorization']['kind']
+    cache: EsiOperationContract['cache']['kind']
+    freshness: EsiOperationContract['freshness']['kind']
+    rateGroup: EsiOperationContract['rateGroup']['kind']
+    declaredRateGroup: string | null
+  }
+  observedRateGroup: string | null
+  rateGroupMismatches: number
+  cacheSources: Record<CacheSource, number> & { stale: number }
   outcomes: Record<UpstreamOutcome, number>
   checkedAt: string | null
 }
@@ -45,26 +49,43 @@ export interface EsiResilienceTelemetry {
 
 const failures = { cache: 0, coordination: 0 }
 
+export function recordEsiCacheSource(operation: EsiOperation, source: CacheSource, stale: boolean) {
+  const counts = cacheSourceCounts.get(operation) ?? {
+    esi: 0,
+    cache: 0,
+    'not-modified': 0,
+    stale: 0,
+  }
+  counts[source] += 1
+  if (stale) counts.stale += 1
+  cacheSourceCounts.set(operation, counts)
+}
+
 export async function recordEsiUpstreamOutcome(
   connection: Redis,
   operation: EsiOperation,
   status: number,
+  observedRateGroup?: string | null,
 ) {
   const outcome = classifyUpstreamOutcome(status)
   const key = `${upstreamTelemetryPrefix}:${operation}`
-  await connection
+  const declaredRateGroup = getDeclaredRateGroup(esiOperationCatalog[operation])
+  const transaction = connection
     .multi()
     .hincrby(key, outcome, 1)
     .hset(key, 'checkedAt', new Date().toISOString())
-    .pexpire(key, upstreamTelemetryTtlMs)
-    .exec()
+  if (observedRateGroup) transaction.hset(key, 'observedRateGroup', observedRateGroup)
+  if (declaredRateGroup && observedRateGroup && declaredRateGroup !== observedRateGroup)
+    transaction.hincrby(key, 'rateGroupMismatches', 1)
+  await transaction.pexpire(key, upstreamTelemetryTtlMs).exec()
 }
 
 export async function probeEsiResilienceTelemetry(
   dependencies: {
     probeCache?: () => Promise<boolean>
     probeCoordination?: () => Promise<boolean>
-    connection?: Redis
+    cacheConnection?: Redis
+    coordinationConnection?: Redis
   } = {},
 ): Promise<EsiResilienceTelemetry> {
   const checkedAt = new Date().toISOString()
@@ -72,42 +93,49 @@ export async function probeEsiResilienceTelemetry(
     (dependencies.probeCache ?? probeCache)(),
     (dependencies.probeCoordination ?? probeCoordination)(),
   ])
-  const cache = dependencyTelemetry('cache', cacheAvailable, checkedAt)
-  const coordination = dependencyTelemetry('coordination', coordinationAvailable, checkedAt)
-
-  if (!coordinationAvailable) {
-    return {
-      checkedAt,
-      cache,
-      coordination,
-      cooldown: { status: 'unavailable', checkedAt, globalRetryAt: null, activeOperations: [] },
-      upstream: { status: 'unavailable', checkedAt, operations: emptyUpstreamOperations() },
-    }
-  }
-
-  const connection = dependencies.connection ?? createProbeRedisConnection()
+  let cache = dependencyTelemetry('cache', cacheAvailable, checkedAt)
+  let coordination = dependencyTelemetry('coordination', coordinationAvailable, checkedAt)
+  const cacheConnection =
+    cacheAvailable && !dependencies.cacheConnection ? createCacheRedisConnection() : undefined
+  const coordinationConnection =
+    coordinationAvailable && !dependencies.coordinationConnection
+      ? createProbeRedisConnection()
+      : undefined
+  const cooldownPending = coordinationAvailable
+    ? getSharedEsiCooldownStatus(dependencies.coordinationConnection ?? coordinationConnection!)
+    : Promise.reject(new Error('Coordination unavailable'))
+  const upstreamPending = cacheAvailable
+    ? readUpstreamOperations(dependencies.cacheConnection ?? cacheConnection!)
+    : Promise.reject(new Error('Cache unavailable'))
   try {
-    const [cooldown, operations] = await Promise.all([
-      getSharedEsiCooldownStatus(connection),
-      readUpstreamOperations(connection),
+    const [cooldownResult, upstreamResult] = await Promise.allSettled([
+      cooldownPending,
+      upstreamPending,
     ])
+    if (coordinationAvailable && cooldownResult.status === 'rejected')
+      coordination = dependencyTelemetry('coordination', false, checkedAt)
+    if (cacheAvailable && upstreamResult.status === 'rejected')
+      cache = dependencyTelemetry('cache', false, checkedAt)
     return {
       checkedAt,
       cache,
       coordination,
-      cooldown,
-      upstream: { status: 'operational', checkedAt, operations },
-    }
-  } catch {
-    return {
-      checkedAt,
-      cache,
-      coordination: dependencyTelemetry('coordination', false, checkedAt),
-      cooldown: { status: 'unavailable', checkedAt, globalRetryAt: null, activeOperations: [] },
-      upstream: { status: 'unavailable', checkedAt, operations: emptyUpstreamOperations() },
+      cooldown:
+        cooldownResult.status === 'fulfilled'
+          ? cooldownResult.value
+          : { status: 'unavailable', checkedAt, globalRetryAt: null, activeOperations: [] },
+      upstream:
+        upstreamResult.status === 'fulfilled'
+          ? { status: 'operational', checkedAt, operations: upstreamResult.value }
+          : { status: 'unavailable', checkedAt, operations: emptyUpstreamOperations() },
     }
   } finally {
-    if (!dependencies.connection) await closeQueueRedisConnection(connection).catch(() => {})
+    await Promise.all([
+      cacheConnection ? closeCacheRedisConnection(cacheConnection).catch(() => {}) : undefined,
+      coordinationConnection
+        ? closeQueueRedisConnection(coordinationConnection).catch(() => {})
+        : undefined,
+    ])
   }
 }
 
@@ -136,7 +164,7 @@ async function probeCoordination() {
 }
 
 async function readUpstreamOperations(connection: Redis) {
-  const operations = Object.keys(esiOperationPolicies) as EsiOperation[]
+  const operations = Object.keys(esiOperationCatalog) as EsiOperation[]
   const values = await Promise.all(
     operations.map(
       async (operation) =>
@@ -145,7 +173,7 @@ async function readUpstreamOperations(connection: Redis) {
   )
   return values.map(([operation, value]) => ({
     operation,
-    policy: cachingPolicy(esiOperationPolicies[operation]),
+    policy: operationPolicy(esiOperationCatalog[operation]),
     outcomes: {
       success: asCount(value.success),
       notModified: asCount(value.notModified),
@@ -153,15 +181,21 @@ async function readUpstreamOperations(connection: Redis) {
       clientError: asCount(value.clientError),
       serverError: asCount(value.serverError),
     },
+    observedRateGroup: value.observedRateGroup || null,
+    rateGroupMismatches: asCount(value.rateGroupMismatches),
+    cacheSources: getCacheSourceCounts(operation),
     checkedAt: parseTimestamp(value.checkedAt),
   }))
 }
 
 function emptyUpstreamOperations() {
-  return (Object.keys(esiOperationPolicies) as EsiOperation[]).map((operation) => ({
+  return (Object.keys(esiOperationCatalog) as EsiOperation[]).map((operation) => ({
     operation,
-    policy: cachingPolicy(esiOperationPolicies[operation]),
+    policy: operationPolicy(esiOperationCatalog[operation]),
     outcomes: { success: 0, notModified: 0, rateLimited: 0, clientError: 0, serverError: 0 },
+    observedRateGroup: null,
+    rateGroupMismatches: 0,
+    cacheSources: getCacheSourceCounts(operation),
     checkedAt: null,
   }))
 }
@@ -183,14 +217,26 @@ function dependencyTelemetry(
   }
 }
 
-function cachingPolicy(policy: EsiOperationPolicy): EsiUpstreamOperationTelemetry['policy'] {
+function operationPolicy(policy: EsiOperationContract): EsiUpstreamOperationTelemetry['policy'] {
   return {
-    valueCache: policy.valueCache,
-    collapse: policy.collapse,
-    revalidate: policy.revalidate,
-    upstreamExpiryFallbackMs: policy.upstreamExpiryFallbackMs,
-    maximumStaleAgeMs: policy.maximumStaleAgeMs,
-    allowStale: policy.allowStale,
+    authorization: policy.authorization.kind,
+    cache: policy.cache.kind,
+    freshness: policy.freshness.kind,
+    rateGroup: policy.rateGroup.kind,
+    declaredRateGroup: getDeclaredRateGroup(policy),
+  }
+}
+
+function getDeclaredRateGroup(policy: EsiOperationContract) {
+  return policy.rateGroup.kind === 'declared' ? policy.rateGroup.group : null
+}
+
+function getCacheSourceCounts(operation: EsiOperation) {
+  return {
+    esi: cacheSourceCounts.get(operation)?.esi ?? 0,
+    cache: cacheSourceCounts.get(operation)?.cache ?? 0,
+    'not-modified': cacheSourceCounts.get(operation)?.['not-modified'] ?? 0,
+    stale: cacheSourceCounts.get(operation)?.stale ?? 0,
   }
 }
 

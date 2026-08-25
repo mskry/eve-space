@@ -1,12 +1,12 @@
 import { createLocationClient } from '@evespace/esi-client/domains/location'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
 import { characterSkillsScope, getCharacterSkillsData } from './character-skills-service.js'
+import { getCharacterEsiScope } from './esi-resilience/catalog.js'
 import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
 import { createEsiTransport } from './esi-resilience/transport.js'
-import { getCharacterAuthorization } from './token-service.js'
 
-export const locationScope = 'esi-location.read_location.v1'
-export const shipScope = 'esi-location.read_ship_type.v1'
+export const locationScope = getCharacterEsiScope('location')
+export const shipScope = getCharacterEsiScope('ship')
 export const skillsScope = characterSkillsScope
 
 export interface CharacterLocation {
@@ -29,16 +29,14 @@ export interface CharacterSkillsSummary {
 }
 
 export async function getCharacterLocation(characterId: number): Promise<CharacterLocation> {
-  const authorization = await getCharacterAuthorization(characterId, locationScope)
   const position = (
-    await getEsiResilienceLayer().get({
+    await getEsiResilienceLayer().getCharacter({
       operation: 'location',
-      resource: `location-${characterId}`,
-      principal: `character-${characterId}`,
-      load: (revalidation) =>
+      inputs: { characterId },
+      load: (authority, revalidation) =>
         createLocationClient({
-          fetch: createEsiTransport('location', `character-${characterId}`),
-          token: authorization.accessToken,
+          fetch: createEsiTransport('location', authority.principal),
+          token: authority.accessToken,
         })
           .withMetadata()
           .get(characterId, revalidation),
@@ -46,18 +44,18 @@ export async function getCharacterLocation(characterId: number): Promise<Charact
   ).data
 
   const [system, station] = await Promise.all([
-    getEsiResilienceLayer().get({
+    getEsiResilienceLayer().getPublic({
       operation: 'universe-solar-system',
-      resource: `solar-system-${position.solar_system_id}`,
+      inputs: { systemId: position.solar_system_id },
       load: (revalidation) =>
         createUniverseClient({ fetch: createEsiTransport('universe-solar-system') })
           .withMetadata()
           .getSolarSystem(position.solar_system_id, revalidation),
     }),
     position.station_id
-      ? getEsiResilienceLayer().get({
+      ? getEsiResilienceLayer().getPublic({
           operation: 'universe-station',
-          resource: `station-${position.station_id}`,
+          inputs: { stationId: position.station_id },
           load: (revalidation) =>
             createUniverseClient({ fetch: createEsiTransport('universe-station') })
               .withMetadata()
@@ -77,25 +75,23 @@ export async function getCharacterLocation(characterId: number): Promise<Charact
 }
 
 export async function getCharacterShip(characterId: number): Promise<CharacterShip> {
-  const authorization = await getCharacterAuthorization(characterId, shipScope)
   const ship = (
-    await getEsiResilienceLayer().get({
+    await getEsiResilienceLayer().getCharacter({
       operation: 'ship',
-      resource: `ship-${characterId}`,
-      principal: `character-${characterId}`,
-      load: (revalidation) =>
+      inputs: { characterId },
+      load: (authority, revalidation) =>
         createLocationClient({
-          fetch: createEsiTransport('ship', `character-${characterId}`),
-          token: authorization.accessToken,
+          fetch: createEsiTransport('ship', authority.principal),
+          token: authority.accessToken,
         })
           .withMetadata()
           .getCurrentShip(characterId, revalidation),
     })
   ).data
   const type = (
-    await getEsiResilienceLayer().get({
+    await getEsiResilienceLayer().getPublic({
       operation: 'universe-type',
-      resource: `type-${ship.ship_type_id}`,
+      inputs: { typeId: ship.ship_type_id },
       load: (revalidation) =>
         createUniverseClient({ fetch: createEsiTransport('universe-type') })
           .withMetadata()
@@ -114,5 +110,5 @@ export async function getCharacterSkillsSummary(
   characterId: number,
 ): Promise<CharacterSkillsSummary> {
   const skills = await getCharacterSkillsData(characterId)
-  return { totalSp: skills.total_sp, unallocatedSp: skills.unallocated_sp ?? 0 }
+  return { totalSp: skills.totalSp, unallocatedSp: skills.unallocatedSp }
 }

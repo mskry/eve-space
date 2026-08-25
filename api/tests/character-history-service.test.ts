@@ -15,7 +15,7 @@ vi.mock('@evespace/esi-client/domains/universe', () => ({
   createUniverseClient: () => ({ withMetadata: () => ({ resolveNames: mocks.resolveNames }) }),
 }))
 vi.mock('../src/esi-resilience/resilience.js', () => ({
-  getEsiResilienceLayer: () => ({ get: mocks.get }),
+  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
 vi.mock('../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
 
@@ -66,6 +66,15 @@ describe('character employment history service', () => {
       'employment-history',
       'universe-resolve-names',
     ])
+  })
+
+  test('does not produce cacheable unknown names after a transient resolution failure', async () => {
+    mocks.resolveNames.mockRejectedValueOnce(
+      Object.assign(new Error('Unavailable'), { status: 503 }),
+    )
+    const { getCharacterEmploymentHistory } = await import('../src/character-history-service.js')
+
+    await expect(getCharacterEmploymentHistory(90_000_101)).rejects.toMatchObject({ status: 503 })
   })
 })
 

@@ -5,9 +5,14 @@ import { db } from './db/client.js'
 import { characters } from './db/schema.js'
 import { env } from './env.js'
 import { EsiQuotaError } from './esi-resilience/cooldowns.js'
+import { getEsiOperationContract } from './esi-resilience/catalog.js'
+import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
 import { createEsiTransport } from './esi-resilience/transport.js'
 
-export const affiliationBatchLimit = 1_000
+const affiliationIdentity = getEsiOperationContract('bulk-affiliation').identity
+if (affiliationIdentity.kind !== 'set')
+  throw new Error('Bulk affiliation identity must be set-like')
+export const affiliationBatchLimit = affiliationIdentity.maximumItems
 
 export const affiliationJobPayload = z
   .object({
@@ -149,13 +154,27 @@ export async function persistAffiliationObservations(
 }
 
 async function lookupAffiliations(characterIds: readonly number[]) {
-  const client = createCharacterClient({ fetch: createEsiTransport('bulk-affiliation') })
-  const response = await client.lookupAffiliations({ body: [...characterIds] })
-  return response.map((affiliation) => ({
-    characterId: affiliation.character_id,
-    corporationId: affiliation.corporation_id,
-    allianceId: affiliation.alliance_id ?? null,
-  }))
+  return (
+    await getEsiResilienceLayer().executeNoValue<AffiliationObservation[]>({
+      operation: 'bulk-affiliation',
+      inputs: { characterIds },
+      load: async () => {
+        const response = await createCharacterClient({
+          fetch: createEsiTransport('bulk-affiliation'),
+        })
+          .withMetadata()
+          .lookupAffiliations({ body: [...characterIds] })
+        return {
+          data: response.data.map((affiliation) => ({
+            characterId: affiliation.character_id,
+            corporationId: affiliation.corporation_id,
+            allianceId: affiliation.alliance_id ?? null,
+          })),
+          meta: response.meta,
+        }
+      },
+    })
+  ).data
 }
 
 function nextAffiliationCheckSql(observedAt: string) {
