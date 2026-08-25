@@ -8,6 +8,16 @@ import { recordEsiUpstreamOutcome } from './telemetry.js'
 
 let coordinationConnection: QueueRedisConnection | undefined
 
+export class EsiTransportError extends Error {
+  constructor(
+    cause: unknown,
+    readonly status?: number,
+  ) {
+    super('ESI transport request failed', { cause })
+    this.name = 'EsiTransportError'
+  }
+}
+
 export function createEsiTransport(
   operation: EsiOperation,
   principal?: string,
@@ -27,7 +37,12 @@ export function createEsiTransport(
     }, 15_000)
     renewal.unref()
     try {
-      const response = await globalThis.fetch(input, { ...init, headers })
+      let response: Response
+      try {
+        response = await globalThis.fetch(input, { ...init, headers })
+      } catch (error) {
+        throw new EsiTransportError(error)
+      }
       const cache = getSharedCacheRedisConnection()
       void Promise.all([
         recordEsiRateMeasurement(cache, {
@@ -49,12 +64,52 @@ export function createEsiTransport(
         status: response.status,
         headers: response.headers,
       }).catch(() => {})
-      return response
+      return wrapEsiErrorResponseBody(response)
     } finally {
       clearInterval(renewal)
       await permit.release().catch(() => {})
     }
   }
+}
+
+function wrapEsiErrorResponseBody(response: Response) {
+  if (response.ok || !response.body) return response
+  return new Response(wrapStreamErrors(response.body, response.status), {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  })
+}
+
+function wrapStreamErrors(body: ReadableStream<Uint8Array>, status: number) {
+  const reader = body.getReader()
+  let released = false
+  const release = () => {
+    if (released) return
+    released = true
+    reader.releaseLock()
+  }
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const result = await reader.read()
+        if (result.done) {
+          release()
+          controller.close()
+        } else controller.enqueue(result.value)
+      } catch (error) {
+        release()
+        controller.error(new EsiTransportError(error, status))
+      }
+    },
+    async cancel(reason) {
+      try {
+        await reader.cancel(reason)
+      } finally {
+        release()
+      }
+    },
+  })
 }
 
 export function getCoordinationConnection() {

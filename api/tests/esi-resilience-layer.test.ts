@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { EsiHttpError } from '@evespace/esi-client'
 
 const mocks = vi.hoisted(() => ({
   acquire: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock('../src/esi-resilience/coordination.js', () => ({
 
 import { EsiQuotaError } from '../src/esi-resilience/cooldowns.js'
 import { EsiResilienceLayer } from '../src/esi-resilience/resilience.js'
+import { EsiTransportError } from '../src/esi-resilience/transport.js'
 
 const now = Date.parse('2026-08-20T12:00:00.000Z')
 const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
@@ -173,7 +175,7 @@ describe('ESI resilience layer', () => {
     )
     mocks.getCommitted.mockResolvedValue(7)
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
-    const load = vi.fn().mockRejectedValue(Object.assign(new Error('Unavailable'), { status: 503 }))
+    const load = vi.fn().mockRejectedValue(esiUnavailable())
 
     await expect(
       layer.getPublic({
@@ -197,7 +199,7 @@ describe('ESI resilience layer', () => {
     )
     mocks.getCommitted.mockResolvedValue(7)
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
-    const failure = Object.assign(new Error('Unavailable'), { status: 503 })
+    const failure = esiUnavailable()
     const load = vi.fn().mockRejectedValue(failure)
 
     const pending = layer.getPublic({
@@ -271,8 +273,8 @@ describe('ESI resilience layer', () => {
     const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2)
     const load = vi
       .fn()
-      .mockRejectedValueOnce(new Error('network unavailable'))
-      .mockRejectedValueOnce(Object.assign(new Error('upstream unavailable'), { status: 503 }))
+      .mockRejectedValueOnce(new EsiTransportError(new Error('network unavailable')))
+      .mockRejectedValueOnce(new EsiTransportError(new Error('response body terminated'), 503))
       .mockResolvedValueOnce(result({ name: 'recovered' }))
 
     const pending = layer.getPublic({
@@ -284,6 +286,50 @@ describe('ESI resilience layer', () => {
 
     await expect(pending).resolves.toMatchObject({ data: { name: 'recovered' }, source: 'esi' })
     expect(load).toHaveBeenCalledTimes(3)
+  })
+
+  test.each([
+    ['quota', () => new EsiQuotaError(12)],
+    ['application', () => new Error('database lookup failed')],
+    ['non-retryable response body', () => new EsiTransportError(new Error('terminated'), 404)],
+  ])('does not retry %s failures from a resource loader', async (_kind, createFailure) => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2)
+    const failure = createFailure()
+    const load = vi.fn().mockRejectedValue(failure)
+
+    await expect(
+      layer.getPublic({
+        operation: 'public-corporation',
+        inputs: { corporationId: 90_000_001 },
+        load,
+      }),
+    ).rejects.toBe(failure)
+    expect(load).toHaveBeenCalledOnce()
+  })
+
+  test('does not replay an outer loader after a nested operation exhausts its retries', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2)
+    const nestedLoad = vi.fn().mockRejectedValue(esiUnavailable())
+    const outerLoad = vi.fn(async () => {
+      await layer.getPublic({
+        operation: 'universe-resolve-names',
+        inputs: { ids: [90_000_001] },
+        load: nestedLoad,
+      })
+      return result({ name: 'unreachable' })
+    })
+
+    const pending = layer.getPublic({
+      operation: 'public-corporation',
+      inputs: { corporationId: 90_000_001 },
+      load: outerLoad,
+    })
+    const caught = pending.catch((error: unknown) => error)
+    await vi.runAllTimersAsync()
+
+    await expect(caught).resolves.toBeInstanceOf(EsiHttpError)
+    expect(nestedLoad).toHaveBeenCalledTimes(3)
+    expect(outerLoad).toHaveBeenCalledOnce()
   })
 
   test('retains a private entry for conditional revalidation without serving it stale', async () => {
@@ -331,6 +377,44 @@ describe('ESI resilience layer', () => {
     await vi.advanceTimersByTimeAsync(1_001)
     await layer.getPublic({ operation: 'public-corporation', inputs: { corporationId: 3 }, load })
     expect(mocks.initialize).toHaveBeenCalledTimes(2)
+  })
+
+  test('falls back immediately when lease acquisition fails during cached availability', async () => {
+    const cache = redis()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
+    const load = vi.fn().mockResolvedValue(result({ name: 'loaded' }))
+
+    await layer.getPublic({ operation: 'public-corporation', inputs: { corporationId: 1 }, load })
+    mocks.acquire.mockRejectedValueOnce(new Error('coordination unavailable'))
+    await expect(
+      layer.getPublic({ operation: 'public-corporation', inputs: { corporationId: 2 }, load }),
+    ).resolves.toMatchObject({ data: { name: 'loaded' }, source: 'esi' })
+
+    expect(mocks.getLeaseTtl).not.toHaveBeenCalled()
+    expect(cache.set).toHaveBeenCalledOnce()
+
+    await layer.getPublic({ operation: 'public-corporation', inputs: { corporationId: 3 }, load })
+    expect(mocks.initialize).toHaveBeenCalledTimes(2)
+    expect(cache.set).toHaveBeenCalledTimes(2)
+  })
+
+  test('falls back immediately when coordination fails while following a lease', async () => {
+    const cache = redis()
+    mocks.acquire.mockResolvedValueOnce(undefined)
+    mocks.getLeaseTtl.mockRejectedValueOnce(new Error('coordination unavailable'))
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2)
+    const load = vi.fn().mockResolvedValue(result({ name: 'loaded' }))
+
+    await expect(
+      layer.getPublic({
+        operation: 'public-corporation',
+        inputs: { corporationId: 90_000_001 },
+        load,
+      }),
+    ).resolves.toMatchObject({ data: { name: 'loaded' }, source: 'esi' })
+
+    expect(load).toHaveBeenCalledOnce()
+    expect(cache.set).not.toHaveBeenCalled()
   })
 
   test('drops warm L1 values when the coordination namespace changes', async () => {
@@ -514,4 +598,8 @@ function esiRateLimited(retryAfterSeconds: number) {
     status: 429,
     metadata: { status: 429, headers: { 'retry-after': String(retryAfterSeconds) } },
   })
+}
+
+function esiUnavailable() {
+  return new EsiHttpError({ operationId: 'GetCorporationsCorporationId', status: 503 })
 }

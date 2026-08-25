@@ -1,4 +1,5 @@
 import type { EsiResponseMetadata } from '@evespace/esi-client'
+import { randomInt } from 'node:crypto'
 import { env } from '../env.js'
 import { esiCooldownFallbackSeconds } from '../esi-policy.js'
 import { getCharacterAuthorization } from '../token-service.js'
@@ -28,7 +29,7 @@ import { createEsiRepresentationIdentity, type EsiRepresentationIdentity } from 
 import { cacheEnvelopeKey } from './namespaces.js'
 import { esiOperationMetadata } from './operation-metadata.js'
 import { recordEsiCacheSource } from './telemetry.js'
-import { getCoordinationConnection } from './transport.js'
+import { EsiTransportError, getCoordinationConnection } from './transport.js'
 import type {
   EsiCacheAuthorization,
   EsiCachedResult,
@@ -40,6 +41,7 @@ import type { QueueRedisConnection } from '../queue/redis.js'
 
 const followerWaitMs = 100
 const namespaceValidationIntervalMs = 1_000
+const completedEsiOperationErrors = new WeakSet<object>()
 
 class EsiRequestWaitTimeoutError extends Error {
   constructor() {
@@ -142,9 +144,14 @@ export class EsiResilienceLayer {
   }
 
   async #recordResult<Data>(operation: EsiOperation, pending: Promise<EsiCachedResult<Data>>) {
-    const result = await pending
-    recordEsiCacheSource(operation, result.source, result.stale)
-    return result
+    try {
+      const result = await pending
+      recordEsiCacheSource(operation, result.source, result.stale)
+      return result
+    } catch (error) {
+      if (typeof error === 'object' && error) completedEsiOperationErrors.add(error)
+      throw error
+    }
   }
 
   async #get<Data>(resource: InternalEsiResource<Data>): Promise<EsiCachedResult<Data>> {
@@ -201,7 +208,13 @@ export class EsiResilienceLayer {
     if (!dependencies.canCoordinate || policy.cache.kind !== 'shared' || !policy.cache.collapse)
       return this.#loadAndStore(resource, identity, key, stale, dependencies, undefined)
 
-    const lease = await acquireEsiRequestLease(this.coordination, identity).catch(() => undefined)
+    let lease: Awaited<ReturnType<typeof acquireEsiRequestLease>>
+    try {
+      lease = await acquireEsiRequestLease(this.coordination, identity)
+    } catch {
+      this.#namespaceValidatedAt = 0
+      return this.#loadAndStore(resource, identity, key, stale, { canWriteL2: false }, undefined)
+    }
     if (lease) return this.#loadAndStore(resource, identity, key, stale, dependencies, lease)
 
     try {
@@ -210,6 +223,8 @@ export class EsiResilienceLayer {
         identity,
         resource.authorization,
       )
+      if (follower.coordinationUnavailable)
+        return this.#loadAndStore(resource, identity, key, stale, { canWriteL2: false }, undefined)
       if (follower.published) return toCachedResult(follower.published, 'cache', false)
       return this.#loadAndStore(resource, identity, key, stale, dependencies, follower.lease)
     } catch (error) {
@@ -313,7 +328,7 @@ export class EsiResilienceLayer {
         )
           throw error
         // oxlint-disable-next-line no-await-in-loop
-        await wait(Math.floor(Math.random() * (delay + 1)))
+        await wait(randomInt(delay + 1))
         if (policy.retry.kind === 'idempotent')
           delay = Math.min(delay * 2, policy.retry.maximumDelayMilliseconds)
       }
@@ -394,11 +409,18 @@ export class EsiResilienceLayer {
   ): Promise<{
     lease: Awaited<ReturnType<typeof acquireEsiRequestLease>>
     published?: EsiCacheEnvelope<Data>
+    coordinationUnavailable?: true
   }> {
     const deadline = Date.now() + env.ESI_OPERATION_QUEUE_TIMEOUT_MS
     while (Date.now() < deadline) {
-      // oxlint-disable-next-line no-await-in-loop
-      const ttlMs = await getEsiRequestLeaseTtl(this.coordination, identity).catch(() => 0)
+      let ttlMs: number
+      try {
+        // oxlint-disable-next-line no-await-in-loop
+        ttlMs = await getEsiRequestLeaseTtl(this.coordination, identity)
+      } catch {
+        this.#namespaceValidatedAt = 0
+        return { lease: undefined, coordinationUnavailable: true }
+      }
       if (ttlMs > 0) {
         // oxlint-disable-next-line no-await-in-loop
         await wait(Math.min(followerWaitMs, ttlMs, Math.max(1, deadline - Date.now())))
@@ -409,8 +431,14 @@ export class EsiResilienceLayer {
           return { lease: undefined, published }
         }
       }
-      // oxlint-disable-next-line no-await-in-loop
-      const lease = await acquireEsiRequestLease(this.coordination, identity).catch(() => undefined)
+      let lease: Awaited<ReturnType<typeof acquireEsiRequestLease>>
+      try {
+        // oxlint-disable-next-line no-await-in-loop
+        lease = await acquireEsiRequestLease(this.coordination, identity)
+      } catch {
+        this.#namespaceValidatedAt = 0
+        return { lease: undefined, coordinationUnavailable: true }
+      }
       if (lease) return { lease }
     }
     throw new EsiRequestWaitTimeoutError()
@@ -431,6 +459,7 @@ export class EsiResilienceLayer {
       return this.#availableDependencies()
     } catch {
       // Coordination loss invalidates every distributed fence; only L1 may be used conservatively.
+      this.#namespaceValidatedAt = 0
       return {
         namespace: this.#namespace,
         canCoordinate: false,
@@ -537,7 +566,9 @@ function toCachedResult<Data>(
 }
 
 function getErrorStatus(error: unknown) {
-  return typeof error === 'object' && error && 'status' in error ? Number(error.status) : undefined
+  if (typeof error !== 'object' || !error || !('status' in error)) return undefined
+  const status = Number(error.status)
+  return Number.isFinite(status) ? status : undefined
 }
 
 function getErrorMetadata(error: unknown): EsiResponseMetadata | undefined {
@@ -556,8 +587,22 @@ function toEsiQuotaError(error: unknown) {
 }
 
 function isRetryableEsiError(error: unknown) {
+  if (typeof error === 'object' && error && completedEsiOperationErrors.has(error)) return false
   const status = getErrorStatus(error)
-  return status === undefined || (status >= 500 && status < 600)
+  return (
+    (error instanceof EsiTransportError &&
+      (status === undefined || (status >= 500 && status < 600))) ||
+    (isEsiHttpError(error) && status !== undefined && status >= 500 && status < 600)
+  )
+}
+
+function isEsiHttpError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ESI_HTTP_ERROR'
+  )
 }
 
 function parseEnvelope<Data>(serialized: string): EsiCacheEnvelope<Data> | undefined {

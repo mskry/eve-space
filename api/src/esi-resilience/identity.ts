@@ -43,10 +43,14 @@ function normalizeInputs(
   const suppliedFields = Object.keys(inputs)
   const unexpected = suppliedFields.filter((field) => !allowedFields.includes(field))
   if (unexpected.length > 0)
-    throw new Error(`Unexpected ESI identity inputs: ${unexpected.toSorted().join(', ')}`)
+    throw new Error(
+      `Unexpected ESI identity inputs: ${unexpected.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
+    )
   const missing = allowedFields.filter((field) => !(field in inputs))
   if (missing.length > 0)
-    throw new Error(`Missing ESI identity inputs: ${missing.toSorted().join(', ')}`)
+    throw new Error(
+      `Missing ESI identity inputs: ${missing.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
+    )
 
   if (identity.kind === 'ordered')
     return Object.fromEntries(

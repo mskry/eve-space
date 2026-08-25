@@ -57,4 +57,44 @@ describe('ESI transport telemetry roles', () => {
       expect.objectContaining({ connection: mocks.coordination, operation: 'status', status: 200 }),
     )
   })
+
+  test('marks fetch failures as transport errors and releases the permit', async () => {
+    const failure = new TypeError('network unavailable')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(failure))
+    const { createEsiTransport, EsiTransportError } =
+      await import('../src/esi-resilience/transport.js')
+
+    const caught = createEsiTransport('status')('https://esi.evetech.net/status').catch(
+      (error: unknown) => error,
+    )
+
+    await expect(caught).resolves.toMatchObject({
+      name: 'EsiTransportError',
+      cause: failure,
+    })
+    await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  test('marks error-response body stream failures as transport errors', async () => {
+    const failure = new TypeError('terminated')
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(failure)
+      },
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 503 })))
+    const { createEsiTransport, EsiTransportError } =
+      await import('../src/esi-resilience/transport.js')
+
+    const response = await createEsiTransport('status')('https://esi.evetech.net/status')
+    const caught = response.text().catch((error: unknown) => error)
+
+    await expect(caught).resolves.toMatchObject({
+      name: 'EsiTransportError',
+      cause: failure,
+      status: 503,
+    })
+    await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
+  })
 })

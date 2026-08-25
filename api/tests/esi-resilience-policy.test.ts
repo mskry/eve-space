@@ -73,8 +73,10 @@ describe('ESI operation policies', () => {
       requestedCompatibilityDate: '2026-08-23',
       resolvedCompatibilityDate: '2026-08-18',
     })
-    expect(Object.keys(esiOperationCatalog).toSorted()).toEqual(
-      Object.keys(esiOperationMetadata).toSorted(),
+    expect(
+      Object.keys(esiOperationCatalog).toSorted((left, right) => left.localeCompare(right)),
+    ).toEqual(
+      Object.keys(esiOperationMetadata).toSorted((left, right) => left.localeCompare(right)),
     )
   })
 

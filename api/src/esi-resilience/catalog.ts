@@ -210,7 +210,7 @@ export function assertEsiOperationCatalogConfiguration(options: {
   )
   if (incompatible.length > 0)
     throw new Error(
-      `ESI compatibility configuration is too old: ${incompatible.toSorted().join(', ')}`,
+      `ESI compatibility configuration is too old: ${incompatible.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
     )
 
   if (!options.ssoEnabled) return
@@ -225,7 +225,7 @@ export function assertEsiOperationCatalogConfiguration(options: {
   }
   if (missingScopes.size > 0)
     throw new Error(
-      `EVE_SCOPES is missing scopes required by active ESI operations: ${[...missingScopes].toSorted().join(' ')}`,
+      `EVE_SCOPES is missing scopes required by active ESI operations: ${[...missingScopes].toSorted((left, right) => left.localeCompare(right)).join(' ')}`,
     )
 }
 
