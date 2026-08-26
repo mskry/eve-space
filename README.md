@@ -135,7 +135,7 @@ Browser -> Nuxt :3000 -> Hono API :8788 -> PostgreSQL :5432
                              (disposable ESI values)
 ```
 
-Nuxt does not hold EVE credentials or call `@evespace/esi-client`. The API and worker share server-only ESI, OAuth, character ownership, token encryption, session, and persistence behavior. An EVE Space user can own multiple individually authorized characters, and each character route loads resources for its explicit owned character ID.
+Nuxt does not hold EVE credentials or call `@evespace/esi-client`. The API and worker share server-only ESI, OAuth, character ownership, token encryption, session, and persistence behavior. An EVE Space user can own multiple individually authorized characters, and protected character routes load resources for an explicit owned character ID.
 
 Nuxt constructs EVE Image Server URLs locally and lets browsers fetch those public assets directly. Image requests do not consume Hono or ESI API capacity.
 
@@ -147,6 +147,7 @@ The API exports its chained Hono `AppType`. Nuxt uses `hono/client` to build URL
 
 - `GET /health` checks API and PostgreSQL availability.
 - `GET /api/status` returns replica-local API, PostgreSQL, Tranquility, queue, and safe ESI resilience telemetry.
+- `GET /api/characters/:characterId` returns a public EVE character profile inside the authenticated application.
 - `GET /api/me/characters` returns the authenticated user's attached character roster.
 - `GET /api/me/characters/:characterId` returns an owned character's profile, location, ship, and skill-point summary.
 - `PATCH /api/me/characters/:characterId/main` atomically selects an owned character as the account main.

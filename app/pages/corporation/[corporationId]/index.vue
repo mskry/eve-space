@@ -6,8 +6,6 @@ definePageMeta({ title: 'Corporation', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { allianceLogo, corporationLogo, characterPortrait } = useEveImages()
-
 const activeTab = ref<'overview' | 'alliance-history'>('overview')
 
 const corporationId = computed(() => {
@@ -97,12 +95,11 @@ useHead({
       <header class="character-shell-header">
         <button class="character-shell-back" type="button" @click="$router.back()">← BACK</button>
         <div class="character-shell-identity">
-          <img
-            :src="corporationLogo(corporation.corporationId, 256)"
-            :srcset="`${corporationLogo(corporation.corporationId, 128)} 1x, ${corporationLogo(corporation.corporationId, 256)} 2x`"
+          <UiEveImage
+            kind="corporation"
+            :id="corporation.corporationId"
+            :dimension="72"
             :alt="`${corporation.name} corporation logo`"
-            width="72"
-            height="72"
           />
           <div>
             <p class="ui-eyebrow">CORPORATION / {{ corporation.ticker }}</p>
@@ -205,13 +202,18 @@ useHead({
                     <dt>CEO</dt>
                     <dd class="corporation-ceo">
                       <template v-if="corporation.ceoId !== null">
-                        <img
-                          :src="characterPortrait(corporation.ceoId, 64)"
-                          :alt="`${corporation.ceoName ?? `CEO ${corporation.ceoId}`} portrait`"
-                          width="32"
-                          height="32"
-                        />
-                        <span>{{ corporation.ceoName ?? `ID ${corporation.ceoId}` }}</span>
+                        <NuxtLink
+                          class="corporation-character-link"
+                          :to="`/character/${corporation.ceoId}`"
+                        >
+                          <UiEveImage
+                            kind="character"
+                            :id="corporation.ceoId"
+                            :dimension="32"
+                            :alt="`${corporation.ceoName ?? `CEO ${corporation.ceoId}`} portrait`"
+                          />
+                          <span>{{ corporation.ceoName ?? `ID ${corporation.ceoId}` }}</span>
+                        </NuxtLink>
                       </template>
                       <span v-else>—</span>
                     </dd>
@@ -219,23 +221,28 @@ useHead({
                   <div v-if="corporation.creatorId !== null" class="leadership-creator">
                     <dt>CREATOR</dt>
                     <dd class="corporation-ceo">
-                      <img
-                        :src="characterPortrait(corporation.creatorId, 64)"
-                        :alt="`${corporation.creatorName ?? `Creator ${corporation.creatorId}`} portrait`"
-                        width="32"
-                        height="32"
-                      />
-                      <span>{{ corporation.creatorName ?? `ID ${corporation.creatorId}` }}</span>
+                      <NuxtLink
+                        class="corporation-character-link"
+                        :to="`/character/${corporation.creatorId}`"
+                      >
+                        <UiEveImage
+                          kind="character"
+                          :id="corporation.creatorId"
+                          :dimension="32"
+                          :alt="`${corporation.creatorName ?? `Creator ${corporation.creatorId}`} portrait`"
+                        />
+                        <span>{{ corporation.creatorName ?? `ID ${corporation.creatorId}` }}</span>
+                      </NuxtLink>
                     </dd>
                   </div>
                   <div v-if="corporation.allianceId" class="leadership-alliance">
                     <dt>ALLIANCE</dt>
                     <dd class="corporation-alliance">
-                      <img
-                        :src="allianceLogo(corporation.allianceId, 64)"
+                      <UiEveImage
+                        kind="alliance"
+                        :id="corporation.allianceId"
+                        :dimension="32"
                         :alt="`${corporation.allianceName ?? `Alliance ${corporation.allianceId}`} logo`"
-                        width="32"
-                        height="32"
                       />
                       <span>{{ corporation.allianceName ?? `ID ${corporation.allianceId}` }}</span>
                     </dd>
@@ -374,10 +381,23 @@ useHead({
   align-items: center;
   gap: 8px;
 }
+.corporation-character-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.corporation-character-link:hover {
+  color: var(--ui-primary);
+}
+.corporation-character-link:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 3px;
+}
 .corporation-ceo img,
 .corporation-alliance img {
   border: 1px solid var(--line);
-  background: var(--ui-surface);
 }
 .corporation-war-list {
   list-style: none;

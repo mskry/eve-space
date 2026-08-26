@@ -111,11 +111,7 @@
 }
 
 .admin-organization-current img {
-  width: 4rem;
-  height: 4rem;
-  object-fit: cover;
   border: 0.0625rem solid var(--ui-border);
-  background: var(--ui-logo-background);
 }
 
 .admin-organization-current span {

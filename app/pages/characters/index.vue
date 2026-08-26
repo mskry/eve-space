@@ -9,7 +9,6 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
-const { allianceLogo, characterPortrait, corporationLogo, factionLogo } = useEveImages()
 const { authLoading, authSession, initializeAuth } = useAuthSession(apiClient)
 const {
   attachCharacter,
@@ -70,13 +69,6 @@ async function confirmCharacterDeletion() {
     return
   }
   deleteDialogError.value = rosterMessage.value || 'Character could not be deleted.'
-}
-
-function rosterLocationLabel(location: (typeof characters.value)[number]['location']) {
-  if (!location) return '--'
-  if (location.stationName) return location.stationName
-  if (location.structureId) return `${location.solarSystemName} // Private structure`
-  return `${location.solarSystemName} // In space`
 }
 
 watch(
@@ -174,109 +166,7 @@ useHead({ title: 'Character Roster // EVE Space' })
           description="CHARACTER ACTIONS"
         >
           <template #trigger>
-            <article class="roster-card">
-              <img
-                v-if="character.raceFactionId"
-                class="roster-race-mark"
-                :src="factionLogo(character.raceFactionId, 256)"
-                alt=""
-                aria-hidden="true"
-              />
-              <NuxtLink
-                class="roster-card-link"
-                :to="`/characters/${character.characterId}`"
-                :aria-label="
-                  character.isMain
-                    ? `View ${character.name}, main character`
-                    : `View ${character.name}`
-                "
-                @pointerenter="prefetchCharacterOverview(character.characterId)"
-                @focus="prefetchCharacterOverview(character.characterId)"
-              >
-                <span class="roster-portrait">
-                  <img
-                    :src="characterPortrait(character.characterId, 128)"
-                    :srcset="`${characterPortrait(character.characterId, 128)} 1x, ${characterPortrait(character.characterId, 256)} 2x`"
-                    :alt="`${character.name} character portrait`"
-                    width="84"
-                    height="84"
-                  />
-                </span>
-                <span class="roster-identity">
-                  <span class="roster-identity-name">
-                    <h2>{{ character.name }}</h2>
-                    <UiMainCharacterMark v-if="character.isMain" variant="icon" />
-                  </span>
-                  <span class="roster-org">
-                    <UiTooltip :content="character.corporation.name" :arrow="false">
-                      <img
-                        :src="corporationLogo(character.corporation.id, 128)"
-                        :alt="`${character.corporation.name} corporation logo`"
-                        width="34"
-                        height="34"
-                      />
-                    </UiTooltip>
-                    <UiTooltip
-                      v-if="character.alliance"
-                      :content="character.alliance.name"
-                      :arrow="false"
-                    >
-                      <img
-                        :src="allianceLogo(character.alliance.id, 128)"
-                        :alt="`${character.alliance.name} alliance logo`"
-                        width="34"
-                        height="34"
-                      />
-                    </UiTooltip>
-                  </span>
-                </span>
-              </NuxtLink>
-              <div class="roster-stats">
-                <span v-if="typeof character.securityStatus === 'number'" class="roster-stat">
-                  <SecurityStatus :value="character.securityStatus" />
-                </span>
-                <span class="roster-stat">
-                  <span class="sr-only">Location:</span>
-                  <span class="roster-location-icon" aria-hidden="true">
-                    <AppIcon name="location" />
-                  </span>
-                  <span class="roster-stat-value" :title="rosterLocationLabel(character.location)">
-                    {{ rosterLocationLabel(character.location) }}
-                  </span>
-                </span>
-                <span class="roster-stat">
-                  <span class="sr-only">Ship:</span>
-                  <span class="roster-ship-icon" aria-hidden="true">
-                    <AppIcon name="ship" />
-                  </span>
-                  <span
-                    class="roster-stat-value"
-                    :title="character.ship ? character.ship.name : undefined"
-                  >
-                    {{ character.ship?.typeName ?? '--' }}
-                  </span>
-                </span>
-                <span class="roster-value-stats">
-                  <span class="roster-stat">
-                    {{
-                      typeof character.totalSp === 'number'
-                        ? formatCompactAmount(character.totalSp)
-                        : '--'
-                    }}
-                    <span class="roster-stat-key">SP</span>
-                  </span>
-                  <span class="roster-value-separator" aria-hidden="true">•</span>
-                  <span class="roster-stat">
-                    {{
-                      typeof character.walletBalance === 'number'
-                        ? formatCompactAmount(character.walletBalance)
-                        : '--'
-                    }}
-                    <span class="roster-stat-key">ISK</span>
-                  </span>
-                </span>
-              </div>
-            </article>
+            <CharacterRosterCard :character="character" @prefetch="prefetchCharacterOverview" />
           </template>
 
           <UiContextMenuItem
@@ -303,31 +193,7 @@ useHead({ title: 'Character Roster // EVE Space' })
             <template v-else>Delete character</template>
           </UiContextMenuItem>
         </UiContextMenu>
-        <button class="roster-card roster-add-card" type="button" @click="attachCharacter">
-          <span class="roster-ghost-top" aria-hidden="true">
-            <span class="roster-ghost-portrait" />
-            <span class="roster-ghost-identity">
-              <span class="roster-ghost-line roster-ghost-line--name" />
-              <span class="roster-ghost-org">
-                <span class="roster-ghost-badge" />
-              </span>
-            </span>
-          </span>
-          <span class="roster-ghost-stats" aria-hidden="true">
-            <span class="roster-ghost-line roster-ghost-line--stat-short" />
-            <span class="roster-ghost-line roster-ghost-line--stat" />
-            <span class="roster-ghost-line roster-ghost-line--stat-mid" />
-            <span class="roster-ghost-value-stats">
-              <span class="roster-ghost-line" />
-              <span class="roster-ghost-separator">•</span>
-              <span class="roster-ghost-line" />
-            </span>
-          </span>
-          <span class="roster-add-overlay">
-            <span class="add-character-icon" aria-hidden="true">+</span>
-            ADD CHARACTER
-          </span>
-        </button>
+        <CharacterRosterPlaceholder @attach="attachCharacter" />
       </section>
       <UiConfirmDialog
         v-model:open="deleteDialogOpen"

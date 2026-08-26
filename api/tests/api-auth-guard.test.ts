@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { app } from '../src/index.js'
 
 describe('application API session boundary', () => {
-  test.each(['/api/corporations/1', '/api/admin/setup'])(
+  test.each(['/api/characters/90000001', '/api/corporations/1', '/api/admin/setup'])(
     'rejects anonymous application API access to %s',
     async (path) => {
       const response = await app.request(path)

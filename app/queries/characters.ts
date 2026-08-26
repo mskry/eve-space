@@ -2,10 +2,14 @@ import { defineQueryOptions } from '@pinia/colada'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
-import { PRIVATE_QUERY_KEYS } from './query-keys'
+import { PRIVATE_QUERY_KEYS, PUBLIC_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
 type CharacterRosterResponse = InferResponseType<ApiClient['api']['me']['characters']['$get'], 200>
+type PublicCharacterResponse = InferResponseType<
+  ApiClient['api']['characters'][':characterId']['$get'],
+  200
+>
 export type CharacterRosterEntry = CharacterRosterResponse['characters'][number]
 export type CharacterOverview = InferResponseType<
   ApiClient['api']['me']['characters'][':characterId']['$get'],
@@ -28,6 +32,24 @@ export const characterRosterQuery = defineQueryOptions((apiClient: ApiClient) =>
   },
   ...QUERY_POLICY.characterRoster,
 }))
+
+export const publicCharacterQuery = defineQueryOptions(
+  ({ apiClient, characterId }: CharacterQueryParameters) => ({
+    key: PUBLIC_QUERY_KEYS.character(characterId),
+    query: async ({ signal }) => {
+      const response = await apiClient.api.characters[':characterId'].$get(
+        { param: { characterId: String(characterId) } },
+        { init: { signal } },
+      )
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Character is unavailable.')
+      }
+      return response.json() as Promise<PublicCharacterResponse>
+    },
+    ...QUERY_POLICY.character,
+    ssrCatchError: true,
+  }),
+)
 
 export const characterOverviewQuery = defineQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({

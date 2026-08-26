@@ -17,7 +17,6 @@ definePageMeta({ title: 'Employment History', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { corporationLogo, typeImage } = useEveImages()
 const { authSession } = useAuthSession(apiClient)
 const characterId = computed(() => {
   const value = Array.isArray(route.params.characterId)
@@ -225,7 +224,9 @@ function formatDuration(milliseconds: number) {
     </div>
     <template v-else>
       <CharacterSummaryCard>
-        <template #icon><img :src="typeImage(29205, 'icon')" alt="" aria-hidden="true" /></template>
+        <template #icon>
+          <UiEveImage kind="type-icon" :id="29205" :dimension="42" alt="" aria-hidden="true" />
+        </template>
         <template #eyebrow>EMPLOYMENT HISTORY</template>
         <template #value>{{ currentCorporation?.name ?? 'NO RECORDS' }}</template>
         <template #label>CURRENT CORPORATION</template>
@@ -309,12 +310,12 @@ function formatDuration(milliseconds: number) {
                 :class="{ 'is-current': !entry.endDate }"
                 aria-hidden="true"
               />
-              <img
+              <UiEveImage
                 v-if="!entry.isDeleted"
-                :src="corporationLogo(entry.corporation.id, 128)"
+                kind="corporation"
+                :id="entry.corporation.id"
+                :dimension="48"
                 :alt="`${entry.corporation.name} corporation logo`"
-                width="48"
-                height="48"
               />
               <span v-else class="employment-deleted-mark" aria-hidden="true">X</span>
               <div>

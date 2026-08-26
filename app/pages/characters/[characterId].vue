@@ -10,7 +10,6 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
-const { characterPortrait } = useEveImages()
 const { authLoading, authSession, initializeAuth } = useAuthSession(apiClient)
 const { characters, loadCharacterRoster, rosterMessage, rosterStatus } =
   useCharacterRoster(apiClient)
@@ -143,13 +142,7 @@ useHead({
       <header class="character-shell-header">
         <NuxtLink class="character-shell-back" to="/characters">← ALL CHARACTERS</NuxtLink>
         <div class="character-shell-identity">
-          <img
-            :src="characterPortrait(selectedCharacter.characterId, 128)"
-            :srcset="`${characterPortrait(selectedCharacter.characterId, 128)} 1x, ${characterPortrait(selectedCharacter.characterId, 256)} 2x`"
-            alt=""
-            width="72"
-            height="72"
-          />
+          <UiEveImage kind="character" :id="selectedCharacter.characterId" :dimension="72" alt="" />
           <div>
             <p class="ui-eyebrow">{{ characterBreadcrumb }}</p>
             <h1>

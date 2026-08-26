@@ -227,15 +227,17 @@
 
 .employment-timeline img,
 .employment-deleted-mark {
-  width: 48px;
-  height: 48px;
   border: 1px solid var(--ui-border);
   background: var(--ui-surface-raised);
 }
 
 .employment-timeline img {
-  object-fit: cover;
   background: var(--ui-logo-background);
+}
+
+.employment-deleted-mark {
+  width: 48px;
+  height: 48px;
 }
 
 .employment-deleted-mark {
