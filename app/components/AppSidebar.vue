@@ -21,7 +21,6 @@ const emit = defineEmits<{
   toggle: []
 }>()
 
-const { characterPortrait } = useEveImages()
 const visibleSections = computed(() => visibleDashboardSections(props.adminAuthenticated))
 const warpDirection = ref<'expand' | 'collapse'>()
 const labelsVisible = computed(() => props.expanded || warpDirection.value === 'collapse')
@@ -156,13 +155,12 @@ onBeforeUnmount(() => {
               type="button"
               :aria-label="`Open account menu for ${characterName || 'authorized pilot'}`"
             >
-              <img
+              <UiEveImage
                 v-if="characterId"
-                :src="characterPortrait(characterId, 64)"
-                :srcset="`${characterPortrait(characterId, 64)} 1x, ${characterPortrait(characterId, 128)} 2x`"
+                kind="character"
+                :id="characterId"
+                :dimension="36"
                 alt=""
-                width="36"
-                height="36"
               />
               <span v-else class="sidebar-avatar-fallback" aria-hidden="true">
                 <AppIcon name="character" />

@@ -24,9 +24,6 @@
 }
 
 .character-shell-identity > img {
-  width: 4.5rem;
-  height: 4.5rem;
-  object-fit: cover;
   border: 0.0625rem solid color-mix(in srgb, var(--ui-primary) 40%, transparent);
 }
 

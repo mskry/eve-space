@@ -11,7 +11,6 @@ interface AllianceHistoryEntry {
 
 const props = defineProps<{ history: AllianceHistoryEntry[] }>()
 
-const { allianceLogo } = useEveImages()
 const { contains } = useFilter({ sensitivity: 'base' })
 const scroller = useTemplateRef('scroller')
 const search = ref('')
@@ -99,12 +98,12 @@ function formatEmploymentDate(value: string) {
             :class="{ 'is-current': !entry.endDate }"
             aria-hidden="true"
           />
-          <img
+          <UiEveImage
             v-if="!entry.isDeleted && entry.allianceId"
-            :src="allianceLogo(entry.allianceId, 128)"
+            kind="alliance"
+            :id="entry.allianceId"
+            :dimension="48"
             :alt="`${entry.displayName} alliance logo`"
-            width="48"
-            height="48"
           />
           <span v-else class="employment-deleted-mark" aria-hidden="true">X</span>
           <div>

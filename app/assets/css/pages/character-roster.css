@@ -204,10 +204,7 @@
   position: absolute;
   right: 14px;
   bottom: 14px;
-  width: 64px;
-  height: 64px;
   pointer-events: none;
-  object-fit: contain;
   opacity: 0.12;
 }
 
@@ -238,10 +235,6 @@
 }
 
 .roster-portrait img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
   filter: saturate(0.82) contrast(1.06);
   transition: transform 180ms ease;
 }
@@ -360,9 +353,5 @@
   position: relative;
   z-index: 1;
   flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  object-fit: cover;
   border: 1px solid var(--ui-border);
-  background: var(--ui-logo-background);
 }

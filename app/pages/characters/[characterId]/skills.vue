@@ -167,7 +167,7 @@ const skillGroupColumns = computed(() => {
     <template v-else-if="skills">
       <CharacterSummaryCard>
         <template #icon>
-          <img src="/images/eve-skillbook.png" alt="" />
+          <UiEveImage kind="type-icon" :id="3300" :dimension="42" alt="" aria-hidden="true" />
         </template>
         <template #eyebrow>CHARACTER SKILLS</template>
         <template #value>{{ totalSpLabel }} SP</template>

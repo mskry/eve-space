@@ -1,6 +1,8 @@
 export const PUBLIC_QUERY_KEYS = {
   root: ['public'] as const,
   systemStatus: () => [...PUBLIC_QUERY_KEYS.root, 'system-status'] as const,
+  characters: () => [...PUBLIC_QUERY_KEYS.root, 'characters'] as const,
+  character: (characterId: number) => [...PUBLIC_QUERY_KEYS.characters(), characterId] as const,
   corporations: () => [...PUBLIC_QUERY_KEYS.root, 'corporations'] as const,
   corporation: (corporationId: number) =>
     [...PUBLIC_QUERY_KEYS.corporations(), corporationId] as const,

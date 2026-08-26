@@ -9,7 +9,10 @@ definePageMeta({ layout: 'auth', title: 'Administrator Login' })
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
-const setupQuery = useQuery(adminSetupQuery(apiClient))
+const setupQuery = useQuery(() => ({
+  ...adminSetupQuery(apiClient),
+  enabled: import.meta.client,
+}))
 const sessionQuery = useQuery(() => ({
   ...adminSessionQuery(apiClient),
   enabled: import.meta.client,

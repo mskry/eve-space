@@ -4,6 +4,7 @@ export const QUERY_POLICY = {
   authConfig: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   authSession: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   systemStatus: { staleTime: 15_000, gcTime: QUERY_GC_TIME },
+  character: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   characterRoster: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   characterOverview: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   characterSkills: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },

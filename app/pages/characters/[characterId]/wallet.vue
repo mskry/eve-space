@@ -9,7 +9,6 @@ definePageMeta({ title: 'Character Wallet', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { typeImage } = useEveImages()
 const { authSession } = useAuthSession(apiClient)
 const transactionsRequested = ref(false)
 const characterId = computed(() => {
@@ -162,7 +161,9 @@ watch(
     </div>
     <template v-else-if="wallet">
       <CharacterSummaryCard>
-        <template #icon><img :src="typeImage(52996, 'icon')" alt="" aria-hidden="true" /></template>
+        <template #icon>
+          <UiEveImage kind="type-icon" :id="52996" :dimension="42" alt="" aria-hidden="true" />
+        </template>
         <template #eyebrow>CHARACTER WALLET</template>
         <template #value>{{ formattedWalletBalance }} ISK</template>
         <template #label>AUTHORIZED BALANCE</template>
@@ -237,7 +238,7 @@ watch(
         </p>
         <ol v-else-if="transactions" class="wallet-transaction-list">
           <li v-for="transaction in transactions.transactions" :key="transaction.transactionId">
-            <img :src="typeImage(transaction.typeId, 'icon', 64)" alt="" />
+            <UiEveImage kind="type-icon" :id="transaction.typeId" :dimension="44" alt="" />
             <div class="wallet-transaction-item">
               <h3>{{ transaction.typeName }}</h3>
               <p>

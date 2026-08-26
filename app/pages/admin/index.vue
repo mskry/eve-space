@@ -8,7 +8,6 @@ definePageMeta({ title: 'Administration' })
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { allianceLogo, corporationLogo } = useEveImages()
 const queryCache = useQueryCache()
 const sessionQuery = useQuery(() => ({
   ...adminSessionQuery(apiClient),
@@ -111,12 +110,10 @@ useHead({ title: 'Administration // EVE Space' })
 
       <form class="admin-panel admin-form" @submit.prevent="organizationMutation.mutate()">
         <div class="admin-organization-current">
-          <img
-            :src="
-              adminSession.account.organization.type === 'alliance'
-                ? allianceLogo(adminSession.account.organization.id, 128)
-                : corporationLogo(adminSession.account.organization.id, 128)
-            "
+          <UiEveImage
+            :kind="adminSession.account.organization.type"
+            :id="adminSession.account.organization.id"
+            :dimension="64"
             alt=""
           />
           <div>

@@ -7,7 +7,6 @@ import { ApiQueryError } from '../../../utils/query-error'
 definePageMeta({ title: 'Character Overview', layout: 'headerless' })
 
 const route = useRoute()
-const { factionLogo, typeImage } = useEveImages()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
@@ -162,13 +161,28 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
             <section class="affiliation-card">
               <span class="card-index">02</span>
               <p>CORPORATION</p>
-              <h2>
-                <span class="affiliation-ticker">[{{ character.corporation.ticker }}]</span>
-                {{ character.corporation.name }}
-              </h2>
-              <div>
-                <span>{{ character.corporation.memberCount.toLocaleString('en-US') }} MEMBERS</span>
-              </div>
+              <NuxtLink
+                class="affiliation-identity"
+                :to="`/corporation/${character.corporation.id}`"
+              >
+                <UiEveImage
+                  kind="corporation"
+                  :id="character.corporation.id"
+                  :dimension="48"
+                  :alt="`${character.corporation.name} corporation logo`"
+                />
+                <div class="affiliation-copy">
+                  <h2>
+                    <span class="affiliation-ticker">[{{ character.corporation.ticker }}]</span>
+                    {{ character.corporation.name }}
+                  </h2>
+                  <div class="affiliation-meta">
+                    <span
+                      >{{ character.corporation.memberCount.toLocaleString('en-US') }} MEMBERS</span
+                    >
+                  </div>
+                </div>
+              </NuxtLink>
             </section>
             <section v-if="character.alliance" class="affiliation-card">
               <span class="card-index">03</span>
@@ -177,7 +191,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                 <span class="affiliation-ticker">[{{ character.alliance.ticker }}]</span>
                 {{ character.alliance.name }}
               </h2>
-              <div>
+              <div class="affiliation-meta">
                 <span>ACTIVE AFFILIATION</span>
               </div>
             </section>
@@ -200,12 +214,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                 <div>
                   <dt>CURRENT SHIP</dt>
                   <dd class="character-ship-detail" :title="shipNameLabel">
-                    <img
+                    <UiEveImage
                       v-if="ship?.status === 'ok'"
-                      :src="typeImage(ship.data.typeId, 'icon', 64)"
+                      kind="type-icon"
+                      :id="ship.data.typeId"
+                      :dimension="40"
                       alt=""
-                      width="40"
-                      height="40"
                     />
                     <span>{{ shipLabel }}</span>
                   </dd>
@@ -228,12 +242,11 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                 <div v-if="character.factionId" class="character-detail-col-end">
                   <dt>FACTION</dt>
                   <dd>
-                    <img
-                      class="militia-mark"
-                      :src="factionLogo(character.factionId, 64)"
+                    <UiEveImage
+                      kind="faction"
+                      :id="character.factionId"
+                      :dimension="32"
                       alt="Faction militia emblem"
-                      width="32"
-                      height="32"
                     />
                   </dd>
                 </div>

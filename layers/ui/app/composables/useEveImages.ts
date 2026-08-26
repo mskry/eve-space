@@ -33,8 +33,7 @@ export function useEveImages() {
       imageUrl({ category: 'characters', id, variation: 'portrait' }, size),
     corporationLogo: (id: EveImageId, size: EveImageSize = 128) =>
       imageUrl({ category: 'corporations', id, variation: 'logo' }, size),
-    // EVE serves empire/faction emblems under the corporations category, keyed by faction ID.
-    // Passing the faction's corporation_id instead yields its navy crest, not the empire emblem.
+    // EVE serves empire emblems under corporations; faction corporation IDs are navy crests.
     factionLogo: (id: EveImageId, size: EveImageSize = 128) =>
       imageUrl({ category: 'corporations', id, variation: 'logo' }, size),
     typeImage: (

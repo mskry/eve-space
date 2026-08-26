@@ -6,7 +6,6 @@ definePageMeta({
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { characterPortrait } = useEveImages()
 const { authConfig, authFeedback, authFeedbackIsError, authLoading, authSession, logout } =
   useAuthSession(apiClient)
 
@@ -39,12 +38,11 @@ useHead({ title: 'Authorize Character // EVE Space' })
     </div>
 
     <div v-else-if="authSession.authenticated" class="authorized-identity">
-      <img
-        :src="characterPortrait(authSession.account.mainCharacter.characterId, 128)"
-        :srcset="`${characterPortrait(authSession.account.mainCharacter.characterId, 128)} 1x, ${characterPortrait(authSession.account.mainCharacter.characterId, 256)} 2x`"
+      <UiEveImage
+        kind="character"
+        :id="authSession.account.mainCharacter.characterId"
+        :dimension="72"
         alt=""
-        width="72"
-        height="72"
       />
       <div>
         <small>AUTHORIZED PILOT</small>
