@@ -17,7 +17,7 @@ const characterId = computed(() => {
 })
 const detailQuery = useQuery(() => ({
   ...publicCharacterQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled: characterId.value !== undefined,
+  enabled: import.meta.client && characterId.value !== undefined,
 }))
 const profile = computed(() => detailQuery.data.value?.profile)
 const detailStatus = computed(() => {
