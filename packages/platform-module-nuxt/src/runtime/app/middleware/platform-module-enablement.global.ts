@@ -10,7 +10,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   try {
     await ensureRuntimeState()
   } catch {
-    return
+    return abortNavigation(
+      createError({ statusCode: 503, statusMessage: 'Module state unavailable' }),
+    )
   }
   if (!enabledModuleIds.value.has(moduleId))
     return abortNavigation(createError({ statusCode: 404, statusMessage: 'Page not found' }))

@@ -11,7 +11,7 @@ export interface WorkerMigrationRequirement {
   readonly name: string
 }
 
-export const expectedWorkerMigration = '017_subject_lifecycles.sql'
+export const expectedWorkerMigration = '019_platform_resource_failure_eligibility.sql'
 const workerMigrationRequirements: readonly WorkerMigrationRequirement[] = [
   { module: 'core', name: expectedWorkerMigration },
   ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),
