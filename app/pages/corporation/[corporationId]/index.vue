@@ -18,12 +18,12 @@ const corporationId = computed(() => {
 
 const detailQuery = useQuery(() => ({
   ...corporationQuery({ apiClient, corporationId: corporationId.value ?? 0 }),
-  enabled: corporationId.value !== undefined,
+  enabled: import.meta.client && corporationId.value !== undefined,
 }))
 
 const historyQuery = useQuery(() => ({
   ...corporationAllianceHistoryQuery({ apiClient, corporationId: corporationId.value ?? 0 }),
-  enabled: corporationId.value !== undefined,
+  enabled: import.meta.client && corporationId.value !== undefined,
 }))
 
 const corporation = computed(() => detailQuery.data.value?.corporation)
