@@ -42,9 +42,10 @@ export interface EsiLoadResult<Data> {
 export interface EsiCachedResult<Data> {
   data: Data
   cachedUntil: string
-  checkedAt: string
+  validatedAt: string
   source: 'esi' | 'cache' | 'not-modified'
   stale: boolean
   retryAt?: string
+  refreshFailureClass?: 'esi-cooldown' | 'esi-unavailable' | 'response-invalid' | 'unknown'
   quota: EsiQuota
 }

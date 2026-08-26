@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
+  createPlatformCollectionStateEventHandlers,
   dispatchDomainEvent,
   DomainEventNotFoundError,
   verifyDomainEventHandlers,
@@ -50,6 +51,33 @@ describe('domain event handlers', () => {
       dispatchDomainEvent(eventId, [], vi.fn().mockResolvedValue(null)),
     ).rejects.toBeInstanceOf(DomainEventNotFoundError)
   })
+
+  test.each(['character.attached', 'character.detached', 'character.scopes-changed'] as const)(
+    'repairs current collection state for %s events',
+    async (eventType) => {
+      const repair = vi.fn().mockResolvedValue(undefined)
+      const handlers = createPlatformCollectionStateEventHandlers(repair)
+      const event = {
+        ...storedEvent(),
+        eventType,
+        payload:
+          eventType === 'character.scopes-changed'
+            ? {
+                userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+                characterId: 1404328063,
+                addedScopes: ['esi-wallet.read_character_wallet.v1'],
+                removedScopes: [],
+              }
+            : storedEvent().payload,
+      } as never
+
+      await expect(
+        dispatchDomainEvent(eventId, handlers, vi.fn().mockResolvedValue(event)),
+      ).resolves.toBe(event)
+      expect(repair).toHaveBeenCalledOnce()
+      expect(repair).toHaveBeenCalledWith({ characterId: 1404328063 })
+    },
+  )
 })
 
 function handler(idempotency: DomainEventHandler['idempotency']): DomainEventHandler {

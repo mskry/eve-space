@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { usePlatformNavigation } from '#imports'
+
 const props = withDefaults(
   defineProps<{
     authenticated: boolean
@@ -21,7 +23,18 @@ const emit = defineEmits<{
   toggle: []
 }>()
 
-const visibleSections = computed(() => visibleDashboardSections(props.adminAuthenticated))
+const { navigation: dashboardNavigation } = usePlatformNavigation('dashboard')
+const visibleSections = computed(() =>
+  dashboardNavigation.value
+    .filter((section) => section.audience !== 'admin' || props.adminAuthenticated)
+    .map((section) => ({
+      label: section.label,
+      description: section.description,
+      to: section.to,
+      icon: section.icon,
+      access: section.audience === 'authenticated' ? 'authorized' : section.audience,
+    })),
+)
 const warpDirection = ref<'expand' | 'collapse'>()
 const labelsVisible = computed(() => props.expanded || warpDirection.value === 'collapse')
 const accountActions = [{ value: 'logout', label: 'Log out', tone: 'danger' }] as const

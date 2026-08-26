@@ -7,13 +7,13 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsx watch src/server.ts",
+    "build": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsc",
+    "dev": "tsx src/db/migrate.ts && tsx watch src/server.ts",
     "migrate": "tsx src/db/migrate.ts",
     "esi:rates": "tsx --env-file=../.env src/report-esi-call-rates.ts",
     "outbox:redrive": "tsx src/redrive-domain-events.ts",
     "db:studio": "drizzle-kit studio",
-    "start": "node dist/server.js",
+    "start": "node dist/db/migrate.js && node dist/server.js",
     "start:container": "node dist/db/migrate.js && node dist/server.js",
     "start:worker": "node dist/worker.js",
     "worker:health": "node dist/worker-health.js",
@@ -22,9 +22,11 @@
     "test:coverage": "vitest run --coverage",
     "test:postgres": "vitest run --config vitest.postgres.config.ts",
     "test:redis": "vitest run --config vitest.redis.config.ts --coverage",
-    "typecheck": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit"
+    "typecheck": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsc --noEmit && tsc --project tsconfig.test.json --noEmit"
   },
   "dependencies": {
+    "@eve-space/platform-module-contract": "workspace:*",
+    "@eve-space/platform-module-server": "workspace:*",
     "@evespace/esi-client": "^2.0.0",
     "@hono/node-server": "^2.1.1",
     "@hono/zod-validator": "^0.9.0",

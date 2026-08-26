@@ -28,6 +28,9 @@ pre-commit:
     - name: test:frontend
       run: pnpm test:frontend
 
+    - name: test:registry
+      run: pnpm test:registry
+
     - name: test:api
       run: pnpm test:api
 
@@ -48,6 +51,9 @@ pre-push:
 
     - name: test:frontend
       run: pnpm test:frontend
+
+    - name: test:registry
+      run: pnpm test:registry
 
     - name: test:api
       run: pnpm test:api

@@ -10,10 +10,12 @@ const mocks = vi.hoisted(() => {
     decryptTokens: vi.fn(),
     encryptTokens: vi.fn(),
     findCharacterToken: vi.fn(),
+    findCharacterTokenForLifecycle: vi.fn(),
     refreshAccessToken: vi.fn(),
     updateCharacterToken: vi.fn(),
     verifyAccessToken: vi.fn(),
     withCharacterTokenRefreshLock: vi.fn(),
+    withCharacterTokenLifecycleLock: vi.fn(),
   }
 })
 
@@ -21,8 +23,10 @@ vi.mock('../src/auth-store.js', () => ({
   CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
   TokenRefreshLockUnavailableError: mocks.TokenRefreshLockUnavailableError,
   findCharacterToken: mocks.findCharacterToken,
+  findCharacterTokenForLifecycle: mocks.findCharacterTokenForLifecycle,
   updateCharacterToken: mocks.updateCharacterToken,
   withCharacterTokenRefreshLock: mocks.withCharacterTokenRefreshLock,
+  withCharacterTokenLifecycleLock: mocks.withCharacterTokenLifecycleLock,
 }))
 
 vi.mock('../src/domain-event-store.js', () => ({
@@ -41,6 +45,7 @@ vi.mock('../src/security.js', () => ({
 
 import {
   getCharacterAccessToken,
+  getCharacterAuthorizationForLifecycle,
   ScopeRequiredError,
   TokenRefreshUnavailableError,
 } from '../src/token-service.js'
@@ -64,6 +69,7 @@ beforeEach(() => {
   }))
   mocks.encryptTokens.mockReturnValue('refreshed')
   mocks.findCharacterToken.mockResolvedValue(expired)
+  mocks.findCharacterTokenForLifecycle.mockResolvedValue(expired)
   mocks.refreshAccessToken.mockResolvedValue({
     access_token: 'new-access',
     refresh_token: 'new-refresh',
@@ -74,6 +80,57 @@ beforeEach(() => {
 })
 
 describe('token refresh', () => {
+  test('binds fresh authorization to the requested ownership lifecycle', async () => {
+    const subjectLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
+    const fresh = { ...expired, accessTokenExpiresAt: new Date(Date.now() + 120_000) }
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _subjectLifecycleId, operation) => operation(fresh, {}),
+    )
+
+    await expect(
+      getCharacterAuthorizationForLifecycle(characterId, subjectLifecycleId, scope),
+    ).resolves.toEqual({ accessToken: 'original-access', tokenVersion: 1 })
+    expect(mocks.withCharacterTokenLifecycleLock).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      expect.any(Function),
+    )
+    expect(mocks.findCharacterToken).not.toHaveBeenCalled()
+  })
+
+  test('does not fall through to a replacement lifecycle token', async () => {
+    mocks.withCharacterTokenLifecycleLock.mockRejectedValue(new mocks.CharacterTokenNotFoundError())
+
+    await expect(
+      getCharacterAuthorizationForLifecycle(
+        characterId,
+        '35acd527-9539-44ad-aacf-9f8e45232267',
+        scope,
+      ),
+    ).rejects.toBeInstanceOf(mocks.CharacterTokenNotFoundError)
+    expect(mocks.decryptTokens).not.toHaveBeenCalled()
+  })
+
+  test('keeps refresh winner lookup bound to the requested lifecycle', async () => {
+    const subjectLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
+    const transaction = {}
+    mocks.withCharacterTokenLifecycleLock.mockImplementation(
+      async (_characterId, _subjectLifecycleId, operation) => operation(expired, transaction),
+    )
+    mocks.updateCharacterToken.mockResolvedValue(false)
+    mocks.findCharacterTokenForLifecycle.mockResolvedValue(null)
+
+    await expect(
+      getCharacterAuthorizationForLifecycle(characterId, subjectLifecycleId, scope),
+    ).rejects.toBeInstanceOf(mocks.CharacterTokenNotFoundError)
+    expect(mocks.findCharacterTokenForLifecycle).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      transaction,
+    )
+    expect(mocks.findCharacterToken).not.toHaveBeenCalled()
+  })
+
   test('returns a fresh stored access token without refreshing', async () => {
     mocks.findCharacterToken.mockResolvedValue({
       ...expired,

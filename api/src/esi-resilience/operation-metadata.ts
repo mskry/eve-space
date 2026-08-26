@@ -1,4 +1,4 @@
-export type DocumentedCacheBehavior =
+type DocumentedCacheBehavior =
   | { kind: 'relative'; seconds: number }
   | { kind: 'daily-utc'; hour: number; minute: number }
   | { kind: 'runtime-only' }

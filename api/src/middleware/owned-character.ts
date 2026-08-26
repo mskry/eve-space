@@ -1,7 +1,8 @@
 import { createMiddleware } from 'hono/factory'
 import { z } from 'zod'
-import type { CharacterSummary, SessionAccount } from '../auth-store.js'
+import type { OwnedCharacterSummary, SessionAccount } from '../auth-store.js'
 import { findOwnedCharacter } from '../auth-store.js'
+import { authRequiredBody } from '../http-contracts.js'
 
 export const characterIdParams = z.object({
   characterId: z
@@ -14,14 +15,14 @@ export const characterIdParams = z.object({
 export type OwnedCharacterEnv = {
   Variables: {
     session: SessionAccount | null
-    ownedCharacter: CharacterSummary
+    ownedCharacter: OwnedCharacterSummary
   }
 }
 
 export const loadOwnedCharacter = createMiddleware<OwnedCharacterEnv>(async (context, next) => {
   const session = context.var.session
   if (!session) {
-    return context.json({ code: 'AUTH_REQUIRED', message: 'Log in with EVE Online first.' }, 401)
+    return context.json(authRequiredBody, 401)
   }
 
   const character = await findOwnedCharacter(

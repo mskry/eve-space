@@ -34,7 +34,7 @@
       }
     },
     {
-      "files": ["api/**/*.ts", "*.ts"],
+      "files": ["api/**/*.ts", "packages/**/*.ts", "scripts/**/*.ts", "*.ts"],
       "env": {
         "node": true
       }

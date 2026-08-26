@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useQueryCache } from '@pinia/colada'
+import { usePlatformNavigation } from '#imports'
 import { characterHistoryQuery, characterSkillsQuery } from '../../queries/characters'
 import { prefetchProtectedQuery } from '../../queries/query-cache'
 import { walletQuery } from '../../queries/wallet'
@@ -14,6 +15,7 @@ const { authLoading, authSession, initializeAuth } = useAuthSession(apiClient)
 const { characters, loadCharacterRoster, rosterMessage, rosterStatus } =
   useCharacterRoster(apiClient)
 const callbackHandled = ref('')
+const { navigation: characterNavigation } = usePlatformNavigation('character')
 
 const characterId = computed(() => {
   const value = Array.isArray(route.params.characterId)
@@ -80,6 +82,16 @@ function prefetchCharacterHistory() {
     authSession.value.authenticated,
     characterId.value,
   )
+}
+
+function prefetchCharacterNavigation(navigationId: string) {
+  if (navigationId === 'core-character-skills') prefetchCharacterSkills()
+  else if (navigationId === 'core-character-wallet') prefetchCharacterWallet()
+  else if (navigationId === 'core-character-history') prefetchCharacterHistory()
+}
+
+function resolveCharacterNavigationPath(path: string) {
+  return path.replace(':characterId', String(characterId.value))
 }
 
 watch(
@@ -170,37 +182,15 @@ useHead({
 
       <nav class="character-tabs" aria-label="Character record sections">
         <NuxtLink
-          :to="`/characters/${selectedCharacter.characterId}`"
-          exact-active-class="is-current"
-        >
-          OVERVIEW
-        </NuxtLink>
-        <NuxtLink
-          :to="`/characters/${selectedCharacter.characterId}/skills`"
+          v-for="navigation in characterNavigation"
+          :key="navigation.navigationId"
+          :to="resolveCharacterNavigationPath(navigation.to)"
           exact-active-class="is-current"
           prefetch-on="interaction"
-          @pointerenter="prefetchCharacterSkills"
-          @focus="prefetchCharacterSkills"
+          @pointerenter="prefetchCharacterNavigation(navigation.navigationId)"
+          @focus="prefetchCharacterNavigation(navigation.navigationId)"
         >
-          SKILLS
-        </NuxtLink>
-        <NuxtLink
-          :to="`/characters/${selectedCharacter.characterId}/wallet`"
-          exact-active-class="is-current"
-          prefetch-on="interaction"
-          @pointerenter="prefetchCharacterWallet"
-          @focus="prefetchCharacterWallet"
-        >
-          WALLET
-        </NuxtLink>
-        <NuxtLink
-          :to="`/characters/${selectedCharacter.characterId}/history`"
-          exact-active-class="is-current"
-          prefetch-on="interaction"
-          @pointerenter="prefetchCharacterHistory"
-          @focus="prefetchCharacterHistory"
-        >
-          HISTORY
+          {{ navigation.label.toUpperCase() }}
         </NuxtLink>
       </nav>
 

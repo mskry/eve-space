@@ -16,6 +16,7 @@ describe('environment configuration', () => {
       QUEUE_FAILED_RETENTION_COUNT: 5_000,
       QUEUE_OPERATION_CONCURRENCY: 10,
       QUEUE_HIGH_WATER_MARK: 1_000,
+      QUEUE_RESOURCE_PLANNER_PAGE_SIZE: 100,
       QUEUE_PLANNER_SCHEDULE: '*/15 * * * *',
       QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: 60_000,
       QUEUE_LAG_DEGRADED_SECONDS: 300,
@@ -35,6 +36,7 @@ describe('environment configuration', () => {
       CACHE_REDIS_URL: 'redis://localhost:6380',
       ESI_CACHE_L1_MAX_ENTRIES: 250,
       ESI_CACHE_MAX_RETENTION_SECONDS: 86_400,
+      MODULE_RUNTIME_CACHE_TTL_MS: 5_000,
       ESI_OPERATION_CONCURRENCY: 6,
       AFFILIATION_ACTIVE_INTERVAL_SECONDS: 3_600,
       AFFILIATION_INACTIVE_INTERVAL_SECONDS: 86_400,
@@ -73,6 +75,16 @@ describe('environment configuration', () => {
       { QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: '0' },
       'Too small: expected number to be >0',
     ],
+    [
+      'resource planner page size',
+      { QUEUE_RESOURCE_PLANNER_PAGE_SIZE: '0' },
+      'Too small: expected number to be >0',
+    ],
+    [
+      'module runtime cache lifetime',
+      { MODULE_RUNTIME_CACHE_TTL_MS: '30001' },
+      'Too big: expected number to be <=30000',
+    ],
   ])('rejects an invalid %s', (_, values, message) => {
     expect(() => parseEnvironment({ ...databaseEnvironment, ...values })).toThrow(message)
   })
@@ -91,6 +103,11 @@ describe('environment configuration', () => {
     [
       'an outbox batch larger than queue admission capacity',
       { QUEUE_HIGH_WATER_MARK: '10', OUTBOX_RELAY_BATCH_SIZE: '11' },
+      'Expected no more than QUEUE_HIGH_WATER_MARK (10)',
+    ],
+    [
+      'a resource planner page larger than queue admission capacity',
+      { QUEUE_HIGH_WATER_MARK: '10', QUEUE_RESOURCE_PLANNER_PAGE_SIZE: '11' },
       'Expected no more than QUEUE_HIGH_WATER_MARK (10)',
     ],
     [
@@ -139,6 +156,13 @@ describe('environment configuration', () => {
         QUEUE_PLANNER_SCHEDULE: '0 */5 * * * *',
       }).QUEUE_PLANNER_SCHEDULE,
     ).toBe('0 */5 * * * *')
+  })
+
+  test('accepts a bounded module runtime cache lifetime', () => {
+    expect(
+      parseEnvironment({ ...databaseEnvironment, MODULE_RUNTIME_CACHE_TTL_MS: '10000' })
+        .MODULE_RUNTIME_CACHE_TTL_MS,
+    ).toBe(10_000)
   })
 
   test('accepts an explicit planner offset and treats an empty value as the persisted default', () => {

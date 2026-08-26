@@ -64,21 +64,32 @@ beforeEach(() => {
         recordedAt: '2026-08-20T12:00:00.000Z',
       }),
     )
-  mocks.queue.getJobCounts.mockResolvedValue({ waiting: 1, delayed: 2, active: 3, failed: 4 })
-  mocks.queue.getJobs.mockImplementation(async ([state]: string[]) =>
-    state === 'waiting'
-      ? [{ attemptsMade: 0, timestamp: Date.now() - 5_000 }]
-      : [{ attemptsMade: 0 }, { attemptsMade: 1 }],
-  )
+  mocks.queue.getJobCounts.mockResolvedValue({
+    waiting: 1,
+    delayed: 2,
+    prioritized: 2,
+    active: 3,
+    failed: 4,
+  })
+  mocks.queue.getJobs.mockImplementation(async ([state]: string[]) => {
+    if (state === 'waiting') return [{ attemptsMade: 0, timestamp: Date.now() - 5_000 }]
+    if (state === 'prioritized')
+      return [
+        { attemptsMade: 0, timestamp: Date.now() - 10_000 },
+        { attemptsMade: 0, timestamp: Date.now() - 2_000 },
+      ]
+    return [{ attemptsMade: 0 }, { attemptsMade: 1 }]
+  })
 })
 
 describe('queue telemetry probe', () => {
   test('reports safe aggregate queue telemetry', async () => {
     const { probeQueueStatus } = await import('../src/queue/status.js')
 
-    await expect(probeQueueStatus()).resolves.toMatchObject({
+    const status = await probeQueueStatus()
+    expect(status).toMatchObject({
       status: 'degraded',
-      depth: 3,
+      depth: 5,
       active: 3,
       retrying: 1,
       failed: 4,
@@ -96,7 +107,9 @@ describe('queue telemetry probe', () => {
         recordedAt: '2026-08-20T12:00:00.000Z',
       },
     })
+    expect(status.oldestWaitingAgeSeconds).toBeGreaterThanOrEqual(9)
     expect(mocks.queue.getJobs).toHaveBeenCalledWith(['waiting'], 0, 0, true)
+    expect(mocks.queue.getJobs).toHaveBeenCalledWith(['prioritized'], 0, 1_000, true)
     expect(mocks.queue.getJobs).toHaveBeenCalledWith(['delayed'], 0, 1_000, true)
   })
 

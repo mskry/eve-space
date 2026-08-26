@@ -11,16 +11,33 @@
         "layers/*/nuxt.config.ts",
         "layers/*/app/components/**/*.vue",
         "layers/*/app/{composables,plugins,utils}/**/*.ts",
+        "generated/platform/*.ts",
+        "scripts/module-registry/source-extensions.d.mts",
       ],
       // vue-tsc is invoked by Nuxt's `typescript.typeCheck`, not by an import.
-      "ignoreDependencies": ["vue-tsc"],
+      // Pinia's Nuxt modules are selected through generated module registries.
+      "ignoreDependencies": ["vue-tsc", "@pinia/colada-nuxt", "@pinia/nuxt"],
     },
     "api": {
       // Process roots. `AppType` in src/index.ts is consumed by the Nuxt workspace rather than by
       // the API itself; the worker pair is reached through package scripts that point at `dist`,
       // which knip cannot resolve back to source.
-      "entry": ["src/index.ts", "src/worker.ts", "src/worker-health.ts"],
+      "entry": [
+        "src/index.ts",
+        "src/worker.ts",
+        "src/worker-health.ts",
+        "src/generated/platform/*.ts",
+        "tests/fixtures/platform-module/*.ts",
+        "tests/*.types.ts",
+      ],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
+    },
+    "packages/platform-module-contract": {
+      "project": ["src/**/*.ts"],
+    },
+    "packages/platform-module-nuxt": {
+      "entry": ["src/runtime/app/{composables,middleware}/**/*.ts"],
+      "project": ["src/**/*.ts"],
     },
   },
 }

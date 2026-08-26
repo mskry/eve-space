@@ -8,7 +8,7 @@ import {
   processAffiliationBatch,
 } from '../src/affiliation-sync.js'
 import { EsiQuotaError } from '../src/esi-resilience/cooldowns.js'
-import { runAffiliationPlannerWithDependencies } from '../src/queue/affiliation-planner.js'
+import { runAffiliationPlanner } from '../src/queue/affiliation-planner.js'
 
 describe('character affiliation synchronization', () => {
   test('partitions deterministic batches at the SDK operation limit', () => {
@@ -55,8 +55,8 @@ describe('character affiliation synchronization', () => {
     }
 
     await expect(
-      runAffiliationPlannerWithDependencies(queue as never, undefined, {
-        cooldownActive: async () => true,
+      runAffiliationPlanner(queue as never, undefined, {
+        dependencies: { cooldownActive: async () => true },
       }),
     ).resolves.toEqual({ planned: 0, reason: 'cooldown' })
     expect(client.set).toHaveBeenCalledWith('eve-space:v1:planner:state', 'paused')
@@ -66,9 +66,11 @@ describe('character affiliation synchronization', () => {
     )
 
     await expect(
-      runAffiliationPlannerWithDependencies(queue as never, undefined, {
-        cooldownActive: async () => false,
-        selectDue: async () => [{ characterId: 3 }, { characterId: 1 }, { characterId: 2 }],
+      runAffiliationPlanner(queue as never, undefined, {
+        dependencies: {
+          cooldownActive: async () => false,
+          selectDue: async () => [{ characterId: 3 }, { characterId: 1 }, { characterId: 2 }],
+        },
       }),
     ).resolves.toEqual({ planned: 1, reason: 'scheduled' })
     const call = queue.add.mock.calls[0]
@@ -98,8 +100,8 @@ describe('character affiliation synchronization', () => {
       selectDue: async () => [{ characterId: 1 }],
     }
 
-    await runAffiliationPlannerWithDependencies(queue as never, undefined, dependencies)
-    await runAffiliationPlannerWithDependencies(queue as never, undefined, dependencies)
+    await runAffiliationPlanner(queue as never, undefined, { dependencies })
+    await runAffiliationPlanner(queue as never, undefined, { dependencies })
 
     const firstCall = queue.add.mock.calls[0]
     const secondCall = queue.add.mock.calls[1]

@@ -8,6 +8,7 @@ export { assertTransactionalMigration } from './migration-validation.js'
 
 const migrationsDirectory = fileURLToPath(new URL('../../migrations/', import.meta.url))
 const migrationLockTimeoutMs = 30_000
+const coreMigrationOwner = 'core'
 
 export interface Migration {
   name: string
@@ -49,7 +50,24 @@ export async function runMigrations(
       )
     `
 
-    const applied = await reservedConnection<{ name: string }[]>`select name from schema_migrations`
+    const readLedgerQualification = async () => {
+      const [result] = await reservedConnection<{ qualified: boolean }[]>`
+        select exists (
+          select 1
+          from information_schema.columns
+          where table_schema = 'public'
+            and table_name = 'schema_migrations'
+            and column_name = 'module'
+        ) as qualified
+      `
+      return result?.qualified ?? false
+    }
+    let ledgerIsQualified = await readLedgerQualification()
+    const applied = ledgerIsQualified
+      ? await reservedConnection<{ name: string }[]>`
+          select name from schema_migrations where module = ${coreMigrationOwner}
+        `
+      : await reservedConnection<{ name: string }[]>`select name from schema_migrations`
     const appliedNames = new Set(applied.map((migration) => migration.name))
 
     // Migrations are ordered and each must commit before the next begins.
@@ -61,7 +79,17 @@ export async function runMigrations(
       await reservedConnection`begin`
       try {
         await reservedConnection.unsafe(migration.sql).simple()
-        await reservedConnection`insert into schema_migrations (name) values (${migration.name})`
+        if (!ledgerIsQualified) {
+          ledgerIsQualified = await readLedgerQualification()
+        }
+        if (ledgerIsQualified) {
+          await reservedConnection`
+            insert into schema_migrations (module, name)
+            values (${coreMigrationOwner}, ${migration.name})
+          `
+        } else {
+          await reservedConnection`insert into schema_migrations (name) values (${migration.name})`
+        }
         await reservedConnection`commit`
       } catch (error) {
         await reservedConnection`rollback`

@@ -105,6 +105,14 @@ describe('protected character queries', () => {
         stale: false,
         quota: {},
       })
+      queryCache.ensure({
+        key: PRIVATE_QUERY_KEYS.characterModuleResource(characterId, 'member-audit', 'records'),
+        query: async () => ({ records: [] }),
+      })
+      queryCache.setQueryData(
+        PRIVATE_QUERY_KEYS.characterModuleResource(characterId, 'member-audit', 'records'),
+        { records: [] },
+      )
     }
 
     removeCharacterQueries(queryCache, 7)
@@ -112,9 +120,19 @@ describe('protected character queries', () => {
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterOverview(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterHistory(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.walletTransactions(7))).toBeUndefined()
+    expect(
+      queryCache.getQueryData(
+        PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records'),
+      ),
+    ).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterOverview(8))).toBeDefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterHistory(8))).toBeDefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.walletTransactions(8))).toBeDefined()
+    expect(
+      queryCache.getQueryData(
+        PRIVATE_QUERY_KEYS.characterModuleResource(8, 'member-audit', 'records'),
+      ),
+    ).toBeDefined()
     wrapper.unmount()
   })
 

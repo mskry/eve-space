@@ -1,3 +1,8 @@
+import {
+  isReservedPlatformModuleId,
+  platformModuleIdMaxLength,
+  platformModuleIdPattern,
+} from '@eve-space/platform-module-contract'
 import { Hono } from 'hono'
 import type { MiddlewareHandler } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
@@ -15,6 +20,14 @@ import {
 } from '../admin-store.js'
 import { resolveDeploymentOrganization } from '../deployment-organization.js'
 import { env } from '../env.js'
+import { platformNavigationDefaults } from '../generated/platform/installed-module-runtime.js'
+import {
+  isCompleteShellNavigationOrder,
+  listInstalledModuleSettings,
+  loadInstalledShellNavigationOrder,
+  saveInstalledShellNavigationOrder,
+  setInstalledModuleEnabled,
+} from '../platform/module-settings.js'
 import { createOpaqueToken, hashPassword, tokensMatch, verifyPassword } from '../security.js'
 import { zValidator } from '../validation.js'
 
@@ -35,6 +48,30 @@ const loginSchema = z.object({
   email: z.string().trim().email('Enter a valid administrator email address.'),
   password: z.string().min(1, 'Enter the administrator password.').max(256),
 })
+const moduleIdSchema = z
+  .string()
+  .regex(platformModuleIdPattern, 'Enter a valid installed module ID.')
+  .max(platformModuleIdMaxLength, 'Enter a valid installed module ID.')
+  .refine((moduleId) => !isReservedPlatformModuleId(moduleId), {
+    message: 'Enter a valid installed module ID.',
+  })
+const moduleParamsSchema = z.object({ moduleId: moduleIdSchema })
+const moduleEnablementSchema = z.object({ enabled: z.boolean() }).strict()
+const navigationIdentitySchema = z
+  .object({ ownerId: z.string(), navigationId: z.string() })
+  .strict()
+const shellNavigationOrderSchema = z
+  .object({
+    dashboard: z.array(navigationIdentitySchema),
+    character: z.array(navigationIdentitySchema),
+  })
+  .strict()
+  .refine((order) => isCompleteShellNavigationOrder(order, platformNavigationDefaults), {
+    message: 'Navigation order must include every current entry exactly once.',
+  })
+const shellNavigationOrderRequestSchema = z
+  .object({ shellNavigationOrder: shellNavigationOrderSchema })
+  .strict()
 
 const requireTrustedOrigin: MiddlewareHandler<AdminEnv> = async (context, next) => {
   if (context.req.method === 'GET' || context.req.method === 'HEAD') return next()
@@ -45,8 +82,18 @@ const requireTrustedOrigin: MiddlewareHandler<AdminEnv> = async (context, next) 
 }
 
 const loadAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
+  setPrivateHeaders(context)
   const token = getCookie(context, adminSessionCookie)
   context.set('adminSession', token ? await findAdminSession(token) : null)
+  return next()
+}
+
+const requireAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
+  if (!context.var.adminSession)
+    return context.json(
+      { code: 'ADMIN_AUTH_REQUIRED', message: 'Administrator login is required.' },
+      401,
+    )
   return next()
 }
 
@@ -139,16 +186,10 @@ export const adminRoutes = new Hono<AdminEnv>()
   .put(
     '/organization',
     loadAdminSession,
+    requireAdminSession,
     zValidator('json', organizationSchema),
     async (context) => {
       setPrivateHeaders(context)
-      if (!context.var.adminSession) {
-        return context.json(
-          { code: 'ADMIN_AUTH_REQUIRED', message: 'Administrator login is required.' },
-          401,
-        )
-      }
-
       const input = context.req.valid('json')
       try {
         const organization = await resolveDeploymentOrganization(
@@ -161,6 +202,45 @@ export const adminRoutes = new Hono<AdminEnv>()
         return organizationFailure(context, error)
       }
     },
+  )
+  .get('/modules', loadAdminSession, requireAdminSession, async (context) =>
+    context.json({ modules: await listInstalledModuleSettings() }, 200),
+  )
+  .put(
+    '/modules/:moduleId',
+    loadAdminSession,
+    requireAdminSession,
+    zValidator('param', moduleParamsSchema),
+    zValidator('json', moduleEnablementSchema),
+    async (context) => {
+      const { moduleId } = context.req.valid('param')
+      const { enabled } = context.req.valid('json')
+      const module = await setInstalledModuleEnabled(moduleId, enabled)
+      if (!module)
+        return context.json(
+          { code: 'MODULE_NOT_FOUND', message: 'Installed module not found.' },
+          404,
+        )
+      return context.json({ module }, 200)
+    },
+  )
+  .get('/shell-navigation-order', loadAdminSession, requireAdminSession, async (context) =>
+    context.json({ shellNavigationOrder: await loadInstalledShellNavigationOrder() }, 200),
+  )
+  .put(
+    '/shell-navigation-order',
+    loadAdminSession,
+    requireAdminSession,
+    zValidator('json', shellNavigationOrderRequestSchema),
+    async (context) =>
+      context.json(
+        {
+          shellNavigationOrder: await saveInstalledShellNavigationOrder(
+            context.req.valid('json').shellNavigationOrder,
+          ),
+        },
+        200,
+      ),
   )
 
 function sessionExpiry() {

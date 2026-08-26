@@ -121,6 +121,137 @@ describe('ESI shared cooldowns', () => {
       }),
     ).rejects.toThrow('Invalid ESI principal identity')
   })
+
+  test('inspects shared group cooldowns without acquiring a concurrency permit', async () => {
+    const redis = memoryRedis()
+    const { getEsiRequestCooldown, recordEsiResponse } =
+      await import('../src/esi-resilience/cooldowns.js')
+    await recordEsiResponse({
+      connection: redis as never,
+      operation: 'wallet-balance',
+      principal: 'character-90000001',
+      status: 429,
+      headers: new Headers({ 'retry-after': '12' }),
+    })
+
+    await expect(
+      getEsiRequestCooldown({
+        connection: redis,
+        operation: 'wallet-transactions',
+        principal: 'character-90000001',
+      }),
+    ).resolves.toMatchObject({
+      active: true,
+      retryAfterSeconds: 12,
+      coordinationAvailable: true,
+    })
+    await expect(
+      getEsiRequestCooldown({
+        connection: redis,
+        operation: 'wallet-transactions',
+        principal: 'character-90000002',
+      }),
+    ).resolves.toEqual({
+      active: false,
+      retryAfterSeconds: null,
+      coordinationAvailable: true,
+    })
+    expect(redis.sortedSets.size).toBe(0)
+  })
+
+  test('reads a bounded ordered cooldown batch through one Redis mget', async () => {
+    const redis = memoryRedis()
+    const mget = vi.spyOn(redis, 'mget')
+    const { getEsiRequestCooldowns, recordEsiResponse } =
+      await import('../src/esi-resilience/cooldowns.js')
+    await recordEsiResponse({
+      connection: redis as never,
+      operation: 'wallet-balance',
+      principal: 'character-90000001',
+      status: 429,
+      headers: new Headers({ 'retry-after': '12' }),
+    })
+
+    await expect(
+      getEsiRequestCooldowns({
+        connection: redis,
+        now: Date.now(),
+        requests: [
+          { operation: 'status' },
+          { operation: 'wallet-transactions', principal: 'character-90000001' },
+          { operation: 'status' },
+        ],
+      }),
+    ).resolves.toEqual([
+      { active: false, retryAfterSeconds: null, coordinationAvailable: true },
+      { active: true, retryAfterSeconds: 12, coordinationAvailable: true },
+      { active: false, retryAfterSeconds: null, coordinationAvailable: true },
+    ])
+    expect(mget).toHaveBeenCalledOnce()
+    expect(mget.mock.calls[0]?.[0]).toBe('eve-space:v1:esi-resilience:cooldown:global')
+  })
+
+  test('falls back to process-local cooldowns when a batched Redis read fails', async () => {
+    const unavailable = {
+      eval: vi.fn().mockRejectedValue(new Error('unavailable')),
+      mget: vi.fn().mockRejectedValue(new Error('unavailable')),
+    }
+    const { getEsiRequestCooldowns, recordEsiResponse } =
+      await import('../src/esi-resilience/cooldowns.js')
+    await recordEsiResponse({
+      connection: unavailable as never,
+      operation: 'wallet-balance',
+      principal: 'character-90000001',
+      status: 429,
+      headers: new Headers({ 'retry-after': '12' }),
+    })
+
+    await expect(
+      getEsiRequestCooldowns({
+        connection: unavailable,
+        requests: [{ operation: 'wallet-transactions', principal: 'character-90000001' }],
+      }),
+    ).resolves.toMatchObject([
+      { active: true, retryAfterSeconds: 12, coordinationAvailable: false },
+    ])
+  })
+
+  test('rejects cooldown batches larger than the planner selection bound', async () => {
+    const redis = memoryRedis()
+    const { getEsiRequestCooldowns } = await import('../src/esi-resilience/cooldowns.js')
+
+    await expect(
+      getEsiRequestCooldowns({
+        connection: redis,
+        requests: Array.from({ length: 101 }, () => ({ operation: 'status' as const })),
+      }),
+    ).rejects.toThrow('cooldown batch exceeds the resource planner page bound')
+  })
+
+  test('falls back to process-local cooldowns when read coordination is unavailable', async () => {
+    const unavailable = { get: vi.fn().mockRejectedValue(new Error('unavailable')), eval: vi.fn() }
+    const { getEsiRequestCooldown, recordEsiResponse } =
+      await import('../src/esi-resilience/cooldowns.js')
+    await recordEsiResponse({
+      connection: unavailable as never,
+      operation: 'wallet-balance',
+      principal: 'character-90000001',
+      status: 429,
+      headers: new Headers({ 'retry-after': '12' }),
+    })
+
+    await expect(
+      getEsiRequestCooldown({
+        connection: unavailable,
+        operation: 'wallet-transactions',
+        principal: 'character-90000001',
+      }),
+    ).resolves.toMatchObject({
+      active: true,
+      retryAfterSeconds: 12,
+      coordinationAvailable: false,
+    })
+  })
 })
 
 function memoryRedis() {
@@ -128,10 +259,11 @@ function memoryRedis() {
   const sortedSets = new Map<string, Map<string, number>>()
   return {
     values,
+    sortedSets,
     async get(key: string) {
       return values.get(key) ?? null
     },
-    async mget(keys: string[]) {
+    async mget(...keys: string[]) {
       return keys.map((key) => values.get(key) ?? null)
     },
     async incr(key: string) {

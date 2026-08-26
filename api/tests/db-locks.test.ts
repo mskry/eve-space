@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { characterLockKey } from '../src/db/locks.js'
+import {
+  assertDistinctModuleMigrationLockKeys,
+  characterLockKey,
+  characterLockNamespace,
+  moduleMigrationLockKey,
+  moduleMigrationLockNamespace,
+} from '../src/db/locks.js'
 
 const int32Min = -(2 ** 31)
 const int32Max = 2 ** 31 - 1
@@ -34,5 +40,23 @@ describe('character advisory lock key', () => {
       4_294_967_295,
     ]
     expect(new Set(samples.map(characterLockKey)).size).toBe(samples.length)
+  })
+})
+
+describe('module migration advisory lock key', () => {
+  test('uses a separate namespaced lock range with stable keys', () => {
+    expect(moduleMigrationLockNamespace).not.toBe(characterLockNamespace)
+    expect([
+      moduleMigrationLockKey('alpha'),
+      moduleMigrationLockKey('beta'),
+      moduleMigrationLockKey('member-audit'),
+    ]).toEqual([-335_810_923, 1_367_506_850, 1_771_844_603])
+  })
+
+  test('rejects collisions while allowing repeated migrations for one module', () => {
+    expect(() => assertDistinctModuleMigrationLockKeys(['alpha', 'alpha', 'beta'])).not.toThrow()
+    expect(() => assertDistinctModuleMigrationLockKeys(['alpha', 'beta'], () => 42)).toThrow(
+      'key 42 collides between alpha and beta',
+    )
   })
 })

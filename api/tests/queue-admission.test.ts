@@ -1,14 +1,19 @@
 import { describe, expect, test, vi } from 'vitest'
-import { QueueAdmissionError, admitQueueWork } from '../src/queue/admission.js'
+import {
+  QueueAdmissionError,
+  admitQueueWork,
+  getQueueAdmissionCapacity,
+} from '../src/queue/admission.js'
 
 function queue({
   waiting = 0,
   delayed = 0,
+  prioritized = 0,
   jobs = [] as Array<{ data: { operationId: string } }>,
 } = {}) {
   const client = { del: vi.fn(), set: vi.fn() }
   return {
-    getJobCounts: vi.fn().mockResolvedValue({ waiting, delayed }),
+    getJobCounts: vi.fn().mockResolvedValue({ waiting, delayed, prioritized }),
     getJobs: vi.fn().mockResolvedValue(jobs),
     getBackend: () => ({ client: Promise.resolve(client) }),
     client,
@@ -16,8 +21,8 @@ function queue({
 }
 
 describe('queue admission control', () => {
-  test('pauses planner production at the waiting plus delayed high-water mark', async () => {
-    const subject = queue({ waiting: 2, delayed: 1 })
+  test('pauses planner production at the waiting, delayed, and prioritized high-water mark', async () => {
+    const subject = queue({ waiting: 1, delayed: 1, prioritized: 1 })
 
     await expect(admitQueueWork(subject as never, 'diagnostic', 'planner', 3)).resolves.toEqual({
       admitted: false,
@@ -48,7 +53,7 @@ describe('queue admission control', () => {
     )
   })
 
-  test('coalesces planner work already active, waiting, or delayed', async () => {
+  test('coalesces planner work already active, waiting, delayed, or prioritized', async () => {
     const subject = queue({ jobs: [{ data: { operationId: 'diagnostic' } }] })
 
     await expect(admitQueueWork(subject as never, 'diagnostic', 'planner')).resolves.toEqual({
@@ -56,6 +61,7 @@ describe('queue admission control', () => {
       depth: 0,
       reason: 'coalesced',
     })
+    expect(subject.getJobs).toHaveBeenCalledWith(['active', 'waiting', 'delayed', 'prioritized'])
   })
 
   test('admits available work and clears a previous paused marker', async () => {
@@ -88,5 +94,28 @@ describe('queue admission control', () => {
     expect(subject.client.del).toHaveBeenCalledWith('eve-space:v1:outbox-relay:state')
     expect(subject.client.del).not.toHaveBeenCalledWith('eve-space:v1:planner:state')
     expect(subject.getJobs).not.toHaveBeenCalled()
+  })
+
+  test('reports remaining ready and delayed capacity without counting active work', async () => {
+    const subject = queue({ waiting: 2, delayed: 1, prioritized: 1 })
+
+    await expect(getQueueAdmissionCapacity(subject as never, 'planner', 5)).resolves.toEqual({
+      admitted: true,
+      depth: 4,
+      remainingCapacity: 1,
+    })
+    expect(subject.getJobCounts).toHaveBeenCalledWith('waiting', 'delayed', 'prioritized')
+    expect(subject.getJobs).not.toHaveBeenCalled()
+  })
+
+  test('can inspect recovered planner capacity without erasing an earlier pause', async () => {
+    const subject = queue()
+
+    await expect(
+      getQueueAdmissionCapacity(subject as never, 'planner', 5, {
+        preservePausedState: true,
+      }),
+    ).resolves.toMatchObject({ admitted: true, remainingCapacity: 5 })
+    expect(subject.client.del).not.toHaveBeenCalled()
   })
 })

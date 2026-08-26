@@ -4,7 +4,7 @@ import { env } from '../env.js'
 import { esiCooldownFallbackSeconds } from '../esi-policy.js'
 import { getCharacterAuthorization } from '../token-service.js'
 import { getSharedCacheRedisConnection, type CacheRedisConnection } from './cache-redis.js'
-import { getEsiOperationContract, type EsiOperation } from './catalog.js'
+import { esiOperationCatalog, getEsiOperationContract, type EsiOperation } from './catalog.js'
 import {
   acquireEsiRequestLease,
   commitEsiFence,
@@ -25,9 +25,12 @@ import {
   updateNotModifiedEnvelope,
 } from './envelope.js'
 import { BoundedEsiL1Cache } from './l1.js'
-import { createEsiRepresentationIdentity, type EsiRepresentationIdentity } from './identity.js'
+import {
+  characterEsiPrincipal,
+  createEsiRepresentationIdentity,
+  type EsiRepresentationIdentity,
+} from './identity.js'
 import { cacheEnvelopeKey } from './namespaces.js'
-import { esiOperationMetadata } from './operation-metadata.js'
 import { recordEsiCacheSource } from './telemetry.js'
 import { EsiTransportError, getCoordinationConnection } from './transport.js'
 import type {
@@ -50,25 +53,27 @@ class EsiRequestWaitTimeoutError extends Error {
   }
 }
 
-type PublicEsiOperation = {
-  [
-    Operation in EsiOperation
-  ]: (typeof esiOperationMetadata)[Operation]['requiredScope'] extends null
+export type PublicEsiOperation = {
+  [Operation in EsiOperation]: (typeof esiOperationCatalog)[Operation]['authorization'] extends {
+    kind: 'public'
+  }
     ? Operation extends NoValueEsiOperation
       ? never
       : Operation
     : never
 }[EsiOperation]
 
-type CharacterEsiOperation = {
-  [
-    Operation in EsiOperation
-  ]: (typeof esiOperationMetadata)[Operation]['requiredScope'] extends string ? Operation : never
+export type CharacterEsiOperation = {
+  [Operation in EsiOperation]: (typeof esiOperationCatalog)[Operation]['authorization'] extends {
+    kind: 'character'
+  }
+    ? Operation
+    : never
 }[EsiOperation]
 
 type NoValueEsiOperation = Extract<EsiOperation, 'bulk-affiliation'>
 
-interface ResilientEsiResource<Operation extends EsiOperation, Data> {
+export interface ResilientEsiResource<Operation extends EsiOperation, Data> {
   operation: Operation
   inputs: Readonly<Record<string, unknown>>
   load(revalidation: EsiRevalidation): Promise<EsiLoadResult<Data>>
@@ -120,21 +125,26 @@ export class EsiResilienceLayer {
       Number(characterId),
       policy.authorization.scope,
     )
-    const principal = `character-${characterId}`
-    return this.#recordResult(
-      resource.operation,
-      this.#get({
+    const principal = characterEsiPrincipal(Number(characterId))
+    return this.getCharacterWithAuthorization(
+      {
         operation: resource.operation,
         inputs: resource.inputs,
-        authorization: {
-          kind: 'character',
-          principal,
-          generation: authority.tokenVersion,
-        },
         load: (revalidation) =>
           resource.load({ accessToken: authority.accessToken, principal }, revalidation),
-      }),
+      },
+      { kind: 'character', principal, generation: authority.tokenVersion },
     )
+  }
+
+  getCharacterWithAuthorization<Data>(
+    resource: ResilientEsiResource<CharacterEsiOperation, Data>,
+    authorization: EsiCacheAuthorization,
+  ): Promise<EsiCachedResult<Data>> {
+    const policy = getEsiOperationContract(resource.operation)
+    if (policy.authorization.kind !== 'character')
+      throw new Error(`ESI operation ${resource.operation} is not character-authorized`)
+    return this.#recordResult(resource.operation, this.#get({ ...resource, authorization }))
   }
 
   executeNoValue<Data>(
@@ -234,8 +244,8 @@ export class EsiResilienceLayer {
 
   async #loadUncached<Data>(resource: InternalEsiResource<Data>): Promise<EsiCachedResult<Data>> {
     try {
-      const result = await resource.load({})
       const policy = getEsiOperationContract(resource.operation)
+      const result = await this.#loadWithRetry(resource, {}, undefined, policy)
       const envelope = createCacheEnvelope({
         data: result.data,
         metadata: result.meta,
@@ -370,8 +380,8 @@ export class EsiResilienceLayer {
     error: unknown,
   ): EsiCachedResult<Data> {
     if (!this.#canServeStale(stale, policy)) throw error
-    const retryAfterSeconds = error instanceof EsiQuotaError ? error.retryAfterSeconds : undefined
-    return toCachedResult(stale, 'cache', true, retryAfterSeconds)
+    const retryAt = error instanceof EsiQuotaError ? error.retryAt.toISOString() : undefined
+    return toCachedResult(stale, 'cache', true, retryAt, {}, classifyStaleRefreshFailure(error))
   }
 
   #canServeStale<Data>(
@@ -549,18 +559,18 @@ function toCachedResult<Data>(
   envelope: EsiCacheEnvelope<Data>,
   source: EsiCachedResult<Data>['source'],
   stale: boolean,
-  retryAfterSeconds?: number,
+  retryAt?: string,
   quota: EsiCachedResult<Data>['quota'] = {},
+  refreshFailureClass?: EsiCachedResult<Data>['refreshFailureClass'],
 ): EsiCachedResult<Data> {
   return {
     data: envelope.data,
     cachedUntil: new Date(envelope.freshUntil).toISOString(),
-    checkedAt: envelope.validatedAt,
+    validatedAt: envelope.validatedAt,
     source,
     stale,
-    ...(retryAfterSeconds
-      ? { retryAt: new Date(Date.now() + retryAfterSeconds * 1_000).toISOString() }
-      : {}),
+    ...(retryAt ? { retryAt } : {}),
+    ...(refreshFailureClass ? { refreshFailureClass } : {}),
     quota,
   }
 }
@@ -569,6 +579,22 @@ function getErrorStatus(error: unknown) {
   if (typeof error !== 'object' || !error || !('status' in error)) return undefined
   const status = Number(error.status)
   return Number.isFinite(status) ? status : undefined
+}
+
+function classifyStaleRefreshFailure(
+  error: unknown,
+): NonNullable<EsiCachedResult<unknown>['refreshFailureClass']> {
+  if (error instanceof EsiQuotaError) return 'esi-cooldown'
+  if (
+    typeof error === 'object' &&
+    error &&
+    'code' in error &&
+    (error.code === 'ESI_RESPONSE_PARSE_ERROR' || error.code === 'ESI_RESPONSE_VALIDATION_ERROR')
+  )
+    return 'response-invalid'
+  return isRetryableEsiError(error) || error instanceof EsiRequestWaitTimeoutError
+    ? 'esi-unavailable'
+    : 'unknown'
 }
 
 function getErrorMetadata(error: unknown): EsiResponseMetadata | undefined {

@@ -1,8 +1,10 @@
 import {
   CharacterTokenNotFoundError,
   findCharacterToken,
+  findCharacterTokenForLifecycle,
   TokenRefreshLockUnavailableError,
   updateCharacterToken,
+  withCharacterTokenLifecycleLock,
   withCharacterTokenRefreshLock,
 } from './auth-store.js'
 import type { StoredCharacterToken } from './auth-store.js'
@@ -12,7 +14,12 @@ import { env } from './env.js'
 import { refreshAccessToken, verifyAccessToken } from './eve-sso.js'
 import { decryptTokens, encryptTokens } from './security.js'
 
-const refreshes = new Map<number, Promise<string>>()
+interface CharacterAuthorization {
+  readonly accessToken: string
+  readonly tokenVersion: number
+}
+
+const refreshes = new Map<number, Promise<CharacterAuthorization>>()
 
 /** Treat a token as spent this far ahead of its expiry so a request cannot race the clock. */
 const tokenFreshnessSkewMs = 60_000
@@ -41,9 +48,8 @@ export async function getCharacterAuthorization(characterId: number, requiredSco
   if (!stored) throw new CharacterTokenNotFoundError()
   requireScope(stored.scopes, requiredScope)
 
-  const tokens = decryptTokens(stored.encryptedTokens)
   if (stored.accessTokenExpiresAt.getTime() > Date.now() + tokenFreshnessSkewMs)
-    return { accessToken: tokens.accessToken, tokenVersion: stored.tokenVersion }
+    return readStoredAuthorization(stored, requiredScope)
 
   let refresh = refreshes.get(characterId)
   if (!refresh) {
@@ -52,11 +58,37 @@ export async function getCharacterAuthorization(characterId: number, requiredSco
     ).finally(() => refreshes.delete(characterId))
     refreshes.set(characterId, refresh)
   }
-  const accessToken = await refresh
-  const refreshed = await findCharacterToken(characterId)
-  if (!refreshed) throw new CharacterTokenNotFoundError()
-  requireScope(refreshed.scopes, requiredScope)
-  return { accessToken, tokenVersion: refreshed.tokenVersion }
+  return refresh
+}
+
+export async function getCharacterAuthorizationForLifecycle(
+  characterId: number,
+  subjectLifecycleId: string,
+  requiredScope: string,
+) {
+  const fresh = await withLifecycleRefreshLock(characterId, subjectLifecycleId, async (stored) => {
+    requireScope(stored.scopes, requiredScope)
+    return stored.accessTokenExpiresAt.getTime() > Date.now() + tokenFreshnessSkewMs
+      ? readStoredAuthorization(stored, requiredScope)
+      : null
+  })
+  if (fresh) return fresh
+
+  return withRefreshCapacity(() =>
+    withLifecycleRefreshLock(characterId, subjectLifecycleId, async (stored, transaction) => {
+      requireScope(stored.scopes, requiredScope)
+      if (stored.accessTokenExpiresAt.getTime() > Date.now() + tokenFreshnessSkewMs)
+        return readStoredAuthorization(stored, requiredScope)
+      return refreshLockedCharacterToken(
+        characterId,
+        requiredScope,
+        stored,
+        stored,
+        transaction,
+        () => findCharacterTokenForLifecycle(characterId, subjectLifecycleId, transaction),
+      )
+    }),
+  )
 }
 
 /**
@@ -112,70 +144,103 @@ async function refreshCharacterToken(
   requiredScope: string,
   original: StoredCharacterToken,
 ) {
-  return withRefreshLock(characterId, async (stored, transaction) => {
-    if (stored.tokenVersion !== original.tokenVersion)
-      return readStoredAccessToken(stored, requiredScope)
-
-    const currentTokens = decryptTokens(stored.encryptedTokens)
-    const refreshed = await refreshAccessToken(currentTokens.refreshToken)
-    const identity = await verifyAccessToken(refreshed.access_token)
-    if (identity.characterId !== characterId)
-      throw new Error('Refreshed token belongs to a different character')
-    requireScope(identity.scopes, requiredScope)
-    const previousScopes = new Set(normalizeScopeSet(stored.scopes))
-    const nextScopes = normalizeScopeSet(identity.scopes)
-
-    // The advisory lock currently serializes writers. Keep the compare-and-set as a final guard
-    // against a future uncoordinated caller overwriting a rotated refresh token.
-    const updated = await updateCharacterToken(
-      {
-        characterId,
-        encryptedTokens: encryptTokens({
-          accessToken: refreshed.access_token,
-          refreshToken: refreshed.refresh_token ?? currentTokens.refreshToken,
-        }),
-        expiresAt: new Date(Date.now() + refreshed.expires_in * 1000),
-        scopes: nextScopes,
-        tokenVersion: stored.tokenVersion,
-      },
-      transaction,
-    )
-    if (updated) {
-      const nextScopeSet = new Set(nextScopes)
-      const addedScopes = nextScopes.filter((scope) => !previousScopes.has(scope))
-      const removedScopes = [...previousScopes].filter((scope) => !nextScopeSet.has(scope))
-      if (addedScopes.length > 0 || removedScopes.length > 0) {
-        await appendDomainEvent(transaction, {
-          type: 'character.scopes-changed',
-          payloadVersion: 1,
-          aggregateId: String(characterId),
-          payload: { userId: stored.userId, characterId, addedScopes, removedScopes },
-        })
-      }
-      return refreshed.access_token
-    }
-
-    const winner = await findCharacterToken(characterId, transaction)
-    if (!winner) throw new CharacterTokenNotFoundError()
-    return readStoredAccessToken(winner, requiredScope)
-  })
+  return withRefreshLock(characterId, (stored, transaction) =>
+    refreshLockedCharacterToken(characterId, requiredScope, original, stored, transaction, () =>
+      findCharacterToken(characterId, transaction),
+    ),
+  )
 }
 
-async function withRefreshLock<T>(
+async function refreshLockedCharacterToken(
   characterId: number,
-  operation: Parameters<typeof withCharacterTokenRefreshLock<T>>[1],
-) {
+  requiredScope: string,
+  original: StoredCharacterToken,
+  stored: StoredCharacterToken,
+  transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
+  findWinner: () => Promise<StoredCharacterToken | null>,
+): Promise<CharacterAuthorization> {
+  if (stored.tokenVersion !== original.tokenVersion)
+    return readStoredAuthorization(stored, requiredScope)
+
+  const currentTokens = decryptTokens(stored.encryptedTokens)
+  const refreshed = await refreshAccessToken(currentTokens.refreshToken)
+  const identity = await verifyAccessToken(refreshed.access_token)
+  if (identity.characterId !== characterId)
+    throw new Error('Refreshed token belongs to a different character')
+  requireScope(identity.scopes, requiredScope)
+  const previousScopes = new Set(normalizeScopeSet(stored.scopes))
+  const nextScopes = normalizeScopeSet(identity.scopes)
+
+  // The advisory lock currently serializes writers. Keep the compare-and-set as a final guard
+  // against a future uncoordinated caller overwriting a rotated refresh token.
+  const updated = await updateCharacterToken(
+    {
+      characterId,
+      encryptedTokens: encryptTokens({
+        accessToken: refreshed.access_token,
+        refreshToken: refreshed.refresh_token ?? currentTokens.refreshToken,
+      }),
+      expiresAt: new Date(Date.now() + refreshed.expires_in * 1000),
+      scopes: nextScopes,
+      tokenVersion: stored.tokenVersion,
+    },
+    transaction,
+  )
+  if (updated) {
+    const nextScopeSet = new Set(nextScopes)
+    const addedScopes = nextScopes.filter((scope) => !previousScopes.has(scope))
+    const removedScopes = [...previousScopes].filter((scope) => !nextScopeSet.has(scope))
+    if (addedScopes.length > 0 || removedScopes.length > 0) {
+      await appendDomainEvent(transaction, {
+        type: 'character.scopes-changed',
+        payloadVersion: 1,
+        aggregateId: String(characterId),
+        payload: { userId: stored.userId, characterId, addedScopes, removedScopes },
+      })
+    }
+    return { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 }
+  }
+
+  const winner = await findWinner()
+  if (!winner) throw new CharacterTokenNotFoundError()
+  return readStoredAuthorization(winner, requiredScope)
+}
+
+async function mapRefreshLockError<T>(locked: Promise<T>) {
   try {
-    return await withCharacterTokenRefreshLock(characterId, operation)
+    return await locked
   } catch (error) {
     if (error instanceof TokenRefreshLockUnavailableError) throw new TokenRefreshUnavailableError()
     throw error
   }
 }
 
-function readStoredAccessToken(stored: StoredCharacterToken, requiredScope: string) {
+async function withRefreshLock<T>(
+  characterId: number,
+  operation: Parameters<typeof withCharacterTokenRefreshLock<T>>[1],
+) {
+  return mapRefreshLockError(withCharacterTokenRefreshLock(characterId, operation))
+}
+
+async function withLifecycleRefreshLock<T>(
+  characterId: number,
+  subjectLifecycleId: string,
+  operation: Parameters<typeof withCharacterTokenLifecycleLock<T>>[2],
+) {
+  return mapRefreshLockError(
+    withCharacterTokenLifecycleLock(characterId, subjectLifecycleId, operation),
+  )
+}
+
+function readStoredAuthorization(
+  stored: StoredCharacterToken,
+  requiredScope: string,
+): CharacterAuthorization {
   requireScope(stored.scopes, requiredScope)
-  return decryptTokens(stored.encryptedTokens).accessToken
+  return {
+    accessToken: decryptTokens(stored.encryptedTokens).accessToken,
+    tokenVersion: stored.tokenVersion,
+  }
 }
 
 function requireScope(scopes: string[], requiredScope: string) {

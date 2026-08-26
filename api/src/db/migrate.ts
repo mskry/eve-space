@@ -1,7 +1,7 @@
 import { sql } from './client.js'
-import { runMigrations } from './migration-runner.js'
+import { runStartupMigrations } from './startup-migrations.js'
 
-runMigrations(sql)
+runStartupMigrations(sql)
   .then(() => sql.end())
   .catch(async (error) => {
     console.error('Database migration failed', error)

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { UnrecoverableError, type Queue } from 'bullmq'
 import { z } from 'zod'
 import { affiliationJobPayload, processAffiliationBatch } from '../affiliation-sync.js'
@@ -5,6 +6,11 @@ import { sql } from '../db/client.js'
 import { DomainEventNotFoundError } from '../domain-event-handlers.js'
 import { DomainEventValidationError } from '../domain-events.js'
 import { env } from '../env.js'
+import {
+  collectionStateIdentityJson,
+  platformCollectionStateIdentitySchema,
+  type PlatformCollectionStateIdentity,
+} from '../platform/collection-state.js'
 import { operationsQueueName } from './namespaces.js'
 
 type RetryClassification = 'retryable' | 'permanent'
@@ -54,12 +60,8 @@ const plannerJob: JobDefinition<z.infer<typeof plannerPayload>> = {
   async process(_payload, signal, context) {
     signal?.throwIfAborted()
     if (!context) throw new Error('Planner queue context is unavailable')
-    const [{ enqueueDiagnostic }, { runAffiliationPlanner }] = await Promise.all([
-      import('./platform.js'),
-      import('./affiliation-planner.js'),
-    ])
-    await enqueueDiagnostic('planner', signal)
-    await runAffiliationPlanner(context.queue, signal)
+    const { runQueuePlanner } = await import('./planner.js')
+    await runQueuePlanner(context.queue, signal)
   },
 }
 
@@ -134,6 +136,56 @@ const affiliationJob: JobDefinition<z.infer<typeof affiliationJobPayload>> = {
   },
 }
 
+const resourceRefreshJob: JobDefinition<PlatformCollectionStateIdentity> = {
+  name: 'resource-refresh',
+  queueName: operationsQueueName,
+  payload: platformCollectionStateIdentitySchema,
+  durability: 'derived',
+  attempts: 1,
+  operationIdentity: resourceRefreshJobId,
+  classifyError: () => 'permanent',
+  async process(identity) {
+    const { processInstalledResourceRefresh } = await import('../platform/resource-refresh.js')
+    await processInstalledResourceRefresh(identity)
+  },
+}
+
+export const platformResourceBatchJobPayloadSchema = z
+  .object({
+    moduleId: platformCollectionStateIdentitySchema.shape.moduleId,
+    resourceId: platformCollectionStateIdentitySchema.shape.resourceId,
+    subjectKind: z.literal('character'),
+    subjects: z
+      .array(
+        z
+          .object({
+            subjectLifecycleId: platformCollectionStateIdentitySchema.shape.subjectLifecycleId,
+            subjectId: platformCollectionStateIdentitySchema.shape.subjectId,
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE),
+  })
+  .strict()
+
+export type PlatformResourceBatchJobPayload = z.infer<typeof platformResourceBatchJobPayloadSchema>
+
+const resourceBatchJob: JobDefinition<PlatformResourceBatchJobPayload> = {
+  name: 'resource-batch',
+  queueName: operationsQueueName,
+  payload: platformResourceBatchJobPayloadSchema,
+  durability: 'derived',
+  attempts: 1,
+  operationIdentity: resourceBatchJobId,
+  classifyError: () => 'permanent',
+  async process(payload, _signal, context) {
+    if (!context) throw new Error('Resource batch queue context is unavailable')
+    const { processInstalledResourceBatch } = await import('../platform/resource-batch.js')
+    await processInstalledResourceBatch(payload, context.queue)
+  },
+}
+
 const jobRegistry = [
   diagnosticJob,
   plannerJob,
@@ -141,6 +193,8 @@ const jobRegistry = [
   outboxRelayJob,
   eventRetentionJob,
   affiliationJob,
+  resourceRefreshJob,
+  resourceBatchJob,
 ] as const
 
 export function listJobDefinitions(): readonly JobDefinition<unknown>[] {
@@ -171,6 +225,20 @@ export function validateJobPayload(job: JobDefinition<unknown>, payload: unknown
 
 export function domainEventJobId(eventId: string) {
   return `domain-event-${z.uuid().parse(eventId)}`
+}
+
+export function resourceRefreshJobId(identity: PlatformCollectionStateIdentity) {
+  const parsed = platformCollectionStateIdentitySchema.parse(identity)
+  const digest = createHash('sha256').update(collectionStateIdentityJson(parsed)).digest('hex')
+  return `resource-refresh-${digest}`
+}
+
+export function resourceBatchJobId(payload: PlatformResourceBatchJobPayload) {
+  const parsed = platformResourceBatchJobPayloadSchema.parse(payload)
+  const digest = createHash('sha256')
+    .update(JSON.stringify([parsed.moduleId, parsed.resourceId, parsed.subjectKind]))
+    .digest('hex')
+  return `resource-batch-${digest}`
 }
 
 export function jobOptions(definition: JobDefinition<unknown>, jobId?: string) {

@@ -75,6 +75,10 @@ describe('affiliation persistence', () => {
       affiliation_checked_at: null,
       due: true,
     })
+    await runMigrations(
+      connection,
+      migrations.filter(({ name }) => name > '011_character_affiliation_sync.sql'),
+    )
   })
 
   test('derives active sessions at persistence time and treats other scheduled characters as inactive', async () => {

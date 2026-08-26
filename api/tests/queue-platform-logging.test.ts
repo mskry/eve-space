@@ -128,4 +128,25 @@ describe('worker platform event logging', () => {
 
     await platform.close()
   })
+
+  test('defers typed ESI quota work to its absolute deadline', async () => {
+    const { EsiQuotaError } = await import('../src/esi-resilience/cooldowns.js')
+    const { startWorkerPlatform } = await import('../src/queue/platform.js')
+    const platform = await startWorkerPlatform()
+    const moveToDelayed = vi.fn().mockResolvedValue(undefined)
+    const retryAt = new Date('2026-08-26T12:00:30.000Z')
+    mocks.process.mockRejectedValueOnce(new EsiQuotaError(30, retryAt.getTime() - 30_000))
+
+    await expect(
+      mocks.processor?.({
+        name: 'resource-refresh',
+        data: {},
+        moveToDelayed,
+        token: 'worker-token',
+      }),
+    ).rejects.toThrow('ESI cooldown deferred')
+    expect(moveToDelayed).toHaveBeenCalledWith(retryAt.getTime(), 'worker-token')
+
+    await platform.close()
+  })
 })

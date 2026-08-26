@@ -12,6 +12,24 @@ export interface EsiRepresentationIdentity {
   representationVersion: string
 }
 
+/**
+ * Canonical ESI principal for a character.
+ *
+ * The planner records cooldowns against this string and the executor's transport reads them back,
+ * so both must derive it here rather than concatenating their own.
+ */
+export function characterEsiPrincipal(characterId: number | string) {
+  return `character-${characterId}`
+}
+
+/** Cache-authorization principal, which is additionally bound to the subject lifecycle. */
+export function characterLifecycleEsiPrincipal(
+  characterId: number | string,
+  subjectLifecycleId: string,
+) {
+  return `${characterEsiPrincipal(characterId)}-lifecycle-${subjectLifecycleId}`
+}
+
 export function createEsiRepresentationIdentity(options: {
   operation: EsiOperation
   inputs: Readonly<Record<string, unknown>>

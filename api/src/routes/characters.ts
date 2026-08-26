@@ -178,6 +178,7 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
       const result = await deleteCharacter(
         context.var.session!.userId,
         context.var.ownedCharacter.characterId,
+        context.var.ownedCharacter.subjectLifecycleId,
       )
       if (result === 'main-character') {
         return context.json(

@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Redis } from 'ioredis'
-import { esiOperations, type EsiOperation } from './catalog.js'
-import { esiOperationMetadata } from './operation-metadata.js'
+import { esiOperationCatalog, esiOperations, type EsiOperation } from './catalog.js'
 
 const keyPrefix = 'eve-space:v1:esi-resilience:telemetry:rate-window'
 export const esiRateMeasurementWindowMs = 15 * 60_000
@@ -45,9 +44,9 @@ export async function recordEsiRateMeasurement(
     now?: number
   },
 ) {
-  const metadata = esiOperationMetadata[options.operation]
-  if (metadata.rateLimit.kind !== 'declared') return
-  const scope = metadata.requiredScope ? 'character' : 'public'
+  const contract = esiOperationCatalog[options.operation]
+  if (contract.rateGroup.kind !== 'declared') return
+  const scope = contract.authorization.kind === 'character' ? 'character' : 'public'
   if (scope === 'character' && !options.principal) return
 
   const now = options.now ?? Date.now()
@@ -59,7 +58,7 @@ export async function recordEsiRateMeasurement(
       : undefined
   const weightedTokens = responseTokenCost(options.status)
   const operationKey = measurementKey('operation', options.operation, bucketStart)
-  const groupKey = measurementKey('group', metadata.rateLimit.group, bucketStart)
+  const groupKey = measurementKey('group', contract.rateGroup.group, bucketStart)
   const transaction = connection.multi()
 
   for (const key of [operationKey, groupKey]) {
@@ -86,13 +85,16 @@ export async function readEsiRateMeasurement(
 
   const bucketStart = toBucketStart(now) - windowOffset * esiRateMeasurementWindowMs
   const operationContracts = esiOperations.flatMap((operation) => {
-    const metadata = esiOperationMetadata[operation]
-    return metadata.rateLimit.kind === 'declared'
+    const contract = esiOperationCatalog[operation]
+    return contract.rateGroup.kind === 'declared'
       ? [
           {
             operation,
-            rateLimit: metadata.rateLimit,
-            scope: metadata.requiredScope ? ('character' as const) : ('public' as const),
+            rateLimit: contract.rateGroup,
+            scope:
+              contract.authorization.kind === 'character'
+                ? ('character' as const)
+                : ('public' as const),
           },
         ]
       : []

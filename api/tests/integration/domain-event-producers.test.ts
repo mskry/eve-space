@@ -252,11 +252,19 @@ describe('transactional domain event producers', () => {
     })
     await clearEvents()
 
-    await expect(authStore.deleteCharacter(userId, otherCharacterId)).resolves.toBe('not-found')
-    await expect(authStore.deleteCharacter(userId, mainCharacterId)).resolves.toBe('main-character')
+    const main = await authStore.findOwnedCharacter(userId, mainCharacterId)
+    const alt = await authStore.findOwnedCharacter(userId, altCharacterId)
+    await expect(authStore.deleteCharacter(userId, otherCharacterId, randomUUID())).resolves.toBe(
+      'not-found',
+    )
+    await expect(
+      authStore.deleteCharacter(userId, mainCharacterId, main!.subjectLifecycleId),
+    ).resolves.toBe('main-character')
     await expect(readEvents()).resolves.toEqual([])
 
-    await expect(authStore.deleteCharacter(userId, altCharacterId)).resolves.toBe('deleted')
+    await expect(
+      authStore.deleteCharacter(userId, altCharacterId, alt!.subjectLifecycleId),
+    ).resolves.toBe('deleted')
     expect(await readEvents()).toEqual([
       expect.objectContaining({
         event_type: 'character.detached',

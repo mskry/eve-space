@@ -1,35 +1,95 @@
 import { sql } from './db/client.js'
+import {
+  installedModuleIds,
+  installedModuleMigrations,
+} from './generated/platform/installed-module-migrations.js'
 import { workerHeartbeatStaleAfterMs } from './queue/policy.js'
 import { probeQueueStatus } from './queue/status.js'
 
-export const expectedWorkerMigration = '011_character_affiliation_sync.sql'
+export interface WorkerMigrationRequirement {
+  readonly module: string
+  readonly name: string
+}
+
+export const expectedWorkerMigration = '017_subject_lifecycles.sql'
+const workerMigrationRequirements: readonly WorkerMigrationRequirement[] = [
+  { module: 'core', name: expectedWorkerMigration },
+  ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),
+]
 
 export class WorkerSchemaNotReadyError extends Error {
-  constructor() {
-    super(`Worker requires migration ${expectedWorkerMigration}`)
+  constructor(
+    requirement: WorkerMigrationRequirement = workerMigrationRequirements[0]!,
+    reason?: string,
+  ) {
+    super(
+      reason
+        ? `Worker schema not ready: ${reason}`
+        : `Worker requires migration ${formatMigration(requirement)}`,
+    )
   }
 }
 
-export async function checkWorkerReadiness(connection = sql) {
+export async function checkWorkerReadiness(
+  connection = sql,
+  requirements: readonly WorkerMigrationRequirement[] = workerMigrationRequirements,
+  moduleIds: readonly string[] = installedModuleIds,
+) {
   try {
-    const [table] = await connection<{ exists: boolean }[]>`
-      select exists(
-        select 1 from information_schema.tables
-        where table_schema = current_schema() and table_name = 'schema_migrations'
-      ) as exists
+    const [ledger] = await connection<{ exists: boolean; qualified: boolean }[]>`
+      select
+        exists(
+          select 1 from information_schema.tables
+          where table_schema = 'public' and table_name = 'schema_migrations'
+        ) as exists,
+        exists(
+          select 1 from information_schema.columns
+          where table_schema = 'public'
+            and table_name = 'schema_migrations'
+            and column_name = 'module'
+        ) as qualified
     `
-    if (!table?.exists) {
-      return { healthy: false as const, reason: `Missing migration ${expectedWorkerMigration}` }
+    const firstRequirement = requirements[0]
+    if (!ledger?.exists || !ledger.qualified) {
+      return firstRequirement
+        ? {
+            healthy: false as const,
+            reason: `Missing migration ${formatMigration(firstRequirement)}`,
+            missing: firstRequirement,
+          }
+        : { healthy: true as const }
     }
 
-    const [result] = await connection<{ applied: boolean }[]>`
-      select exists(
-        select 1 from schema_migrations where name = ${expectedWorkerMigration}
-      ) as applied
+    const applied = await connection<{ module: string; name: string }[]>`
+      select module, name from public.schema_migrations
     `
+    const appliedIdentities = new Set(applied.map(formatMigration))
+    const missing = requirements.find(
+      (requirement) => !appliedIdentities.has(formatMigration(requirement)),
+    )
 
-    if (result?.applied) return { healthy: true as const }
-    return { healthy: false as const, reason: `Missing migration ${expectedWorkerMigration}` }
+    if (missing)
+      return {
+        healthy: false as const,
+        reason: `Missing migration ${formatMigration(missing)}`,
+        missing,
+      }
+
+    if (moduleIds.length > 0) {
+      const provisioned = await connection<{ module_id: string }[]>`
+        select module_id from public.module_schema_provisioning
+      `
+      const provisionedIds = new Set(provisioned.map(({ module_id }) => module_id))
+      const missingProvisioning = moduleIds.find((moduleId) => !provisionedIds.has(moduleId))
+      if (missingProvisioning)
+        return {
+          healthy: false as const,
+          reason: `Missing module provisioning ${missingProvisioning}`,
+          missingProvisioning,
+        }
+    }
+
+    return { healthy: true as const }
   } catch (error) {
     console.error('Worker database readiness check failed', error)
     return { healthy: false as const, reason: 'Database unavailable' }
@@ -38,7 +98,11 @@ export async function checkWorkerReadiness(connection = sql) {
 
 export async function assertWorkerReadiness(connection = sql) {
   const readiness = await checkWorkerReadiness(connection)
-  if (!readiness.healthy) throw new WorkerSchemaNotReadyError()
+  if (!readiness.healthy)
+    throw new WorkerSchemaNotReadyError(
+      'missing' in readiness ? readiness.missing : undefined,
+      readiness.reason,
+    )
 }
 
 async function checkSchemaAndQueueReachability(
@@ -94,4 +158,8 @@ export async function assertWorkerDependencies(
 ) {
   const readiness = await checkWorkerDependencies(connection, queueProbe)
   if (!readiness.healthy) throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
+}
+
+function formatMigration({ module, name }: WorkerMigrationRequirement) {
+  return `${module}/${name}`
 }
