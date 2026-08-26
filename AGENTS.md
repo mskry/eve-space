@@ -37,6 +37,17 @@ These instructions apply to the entire repository. Preserve the architecture and
 - Load authenticated sessions through `middleware/auth-session.ts`; do not duplicate cookie/database lookup or import one route module from another.
 - Character-ID-scoped routes must validate the path and load ownership through `middleware/owned-character.ts` before loading tokens or calling protected ESI operations.
 
+## Code Review Rules
+
+### Nuxt/API Execution Boundaries
+
+- Review every changed Nuxt request together with the final Hono route as mounted in `api/src/index.ts`. Do not infer access requirements from feature-router comments or from whether the underlying ESI data is public.
+- For each changed `useQuery`, `$fetch`, `useFetch`, `useAsyncData`, prefetch, mutation, or direct Hono client call, determine whether it can execute during SSR and whether the final route requires an application session, administrator session, owned character, or other credential.
+- Report an SSR-capable request to a protected route unless it explicitly forwards the incoming request cookie. `credentials: 'include'` does not forward browser cookies from a server-side fetch.
+- Valid safe paths are to disable the protected query during SSR with `import.meta.client` and apply the required client-side authentication or ownership gate, or to explicitly forward only the incoming `cookie` header when SSR is intentional. Genuinely public routes may use SSR normally.
+- Do not report public SSR requests such as health, status, or authorization configuration; browser-event mutations that cannot execute during SSR; protected queries with the applicable client/authentication/ownership gate; or SSR requests that explicitly forward the incoming cookie.
+- Findings must identify both the Nuxt call site and the Hono middleware or route mount that establishes the violated boundary.
+
 ## Schema Ownership
 
 - `@evespace/esi-client` schemas validate EVE wire responses inside the API.
