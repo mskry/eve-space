@@ -68,6 +68,16 @@ type BatchExecution =
       readonly classifications: readonly (BatchClassification & EligibleBatchSubject)[]
     }
 
+class PlatformResourceBatchExecutionError extends Error {
+  constructor(
+    readonly cause: unknown,
+    readonly attempted: readonly EligibleBatchSubject[],
+  ) {
+    super('Platform resource batch execution failed', { cause })
+    this.name = 'PlatformResourceBatchExecutionError'
+  }
+}
+
 interface BatchExecutionOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
@@ -138,20 +148,25 @@ async function executeInstalledResourceBatchOperation(
     )
     assertBatchInputs(inputs, contract.identity.field, subjects, contract.identity.maximumItems)
   } catch (error) {
-    throw new PlatformResourceMappingError(error)
+    throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }
-  const result = await (options.resilience ?? getEsiResilienceLayer()).getPublic({
-    operation: operation as PublicEsiOperation,
-    inputs,
-    load: (revalidation) =>
-      (options.dispatchOperation ?? dispatchModuleEsiOperation)(definition, {
-        inputs,
-        authorization: { kind: 'public' },
-        revalidation,
-        transport: (options.createTransport ?? createEsiTransport)(operation),
-      }),
-  })
-  assertPlatformResourceRefreshSucceeded(result)
+  let result: Awaited<ReturnType<ReturnType<typeof getEsiResilienceLayer>['getPublic']>>
+  try {
+    result = await (options.resilience ?? getEsiResilienceLayer()).getPublic({
+      operation: operation as PublicEsiOperation,
+      inputs,
+      load: (revalidation) =>
+        (options.dispatchOperation ?? dispatchModuleEsiOperation)(definition, {
+          inputs,
+          authorization: { kind: 'public' },
+          revalidation,
+          transport: (options.createTransport ?? createEsiTransport)(operation),
+        }),
+    })
+    assertPlatformResourceRefreshSucceeded(result)
+  } catch (error) {
+    throw new PlatformResourceBatchExecutionError(error, eligible)
+  }
   let classifications: readonly BatchClassification[]
   try {
     classifications = validatePlatformResourceBatchClassifications(
@@ -160,7 +175,7 @@ async function executeInstalledResourceBatchOperation(
       batch.classify({ subjects, data: result.data }),
     )
   } catch (error) {
-    throw new PlatformResourceMappingError(error)
+    throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }
   const eligibleBySubject = new Map(
     eligible.map((candidate) => [batchSubjectKey(candidate.subject), candidate]),
@@ -190,22 +205,16 @@ export async function processInstalledResourceBatch(
       options,
     )
   } catch (error) {
+    const failure = error instanceof PlatformResourceBatchExecutionError ? error.cause : error
+    const attempted = error instanceof PlatformResourceBatchExecutionError ? error.attempted : []
     await Promise.all(
-      payload.subjects.map((subject) =>
-        (options.recordFailure ?? recordInstalledResourceCollectionFailure)(
-          {
-            moduleId: payload.moduleId,
-            resourceId: payload.resourceId,
-            subjectKind: payload.subjectKind,
-            subjectLifecycleId: subject.subjectLifecycleId,
-            subjectId: subject.subjectId,
-          },
-          error,
-          { resources: options.resources },
-        ),
+      attempted.map(({ identity }) =>
+        (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure, {
+          resources: options.resources,
+        }),
       ),
     )
-    throw error
+    throw failure
   }
   if (execution.outcome === 'noop') return
 

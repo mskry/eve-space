@@ -2,6 +2,7 @@ import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-mo
 import { describe, expect, test, vi } from 'vitest'
 import { EsiQuotaError } from '../src/esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../src/esi-resilience/transport.js'
+import { TokenRefreshUnavailableError } from '../src/token-service.js'
 import {
   classifyPlatformResourceFailure,
   PlatformResourceMappingError,
@@ -48,6 +49,10 @@ describe('platform resource failure transitions', () => {
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
     })
     expect(classifyPlatformResourceFailure({ code: 'ESI_HTTP_ERROR', status: 503 }, now)).toEqual({
+      failureClass: 'esi-unavailable',
+      nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
+    })
+    expect(classifyPlatformResourceFailure(new TokenRefreshUnavailableError(), now)).toEqual({
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
     })

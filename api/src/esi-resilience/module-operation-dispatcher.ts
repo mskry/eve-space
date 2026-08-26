@@ -39,11 +39,11 @@ function withRevalidation(
   revalidation: PlatformEsiRevalidation,
 ) {
   if (!revalidation.ifNoneMatch && !revalidation.ifModifiedSince) return inputs
-  const headers = isRecord(inputs.headers) ? inputs.headers : {}
+  const header = isRecord(inputs.header) ? inputs.header : {}
   return {
     ...inputs,
-    headers: {
-      ...headers,
+    header: {
+      ...header,
       ...(revalidation.ifNoneMatch ? { 'If-None-Match': revalidation.ifNoneMatch } : {}),
       ...(revalidation.ifModifiedSince
         ? { 'If-Modified-Since': revalidation.ifModifiedSince }

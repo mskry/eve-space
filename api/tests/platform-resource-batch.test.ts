@@ -136,6 +136,36 @@ describe('platform resource batch processing', () => {
     expect(recordFailure).toHaveBeenCalledTimes(2)
   })
 
+  test('records a batch failure only for subjects included in the attempted request', async () => {
+    const payload = batchPayload(2)
+    const failure = new Error('ESI unavailable')
+    const recordFailure = vi.fn().mockResolvedValue(undefined)
+
+    await expect(
+      processInstalledResourceBatch(payload, batchQueue() as never, {
+        resources: [completeResource()],
+        resolveEligibility: vi
+          .fn()
+          .mockResolvedValueOnce({
+            status: 'eligible',
+            due: true,
+            authorizationGeneration: 4,
+            nextEligibleAt: null,
+          })
+          .mockResolvedValueOnce({ status: 'eligible', due: false }),
+        resilience: { getPublic: vi.fn().mockRejectedValue(failure) } as never,
+        definitions: { 'universe-resolve-names': batchDefinition() },
+        validateInputs: passthroughInputs,
+        recordFailure,
+      }),
+    ).rejects.toBe(failure)
+
+    expect(recordFailure).toHaveBeenCalledOnce()
+    expect(recordFailure).toHaveBeenCalledWith(identity(payload, 0), failure, {
+      resources: expect.any(Array),
+    })
+  })
+
   test('admits scalar refreshes only for changed hints and leaves the capacity suffix untouched', async () => {
     const resource = changeHintResource()
     const payload = batchPayload(3)

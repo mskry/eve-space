@@ -55,7 +55,7 @@ describe('module ESI operation dispatcher', () => {
     expect(mocks.callOperation).toHaveBeenCalledOnce()
     expect(mocks.callOperation).toHaveBeenCalledWith('GetCharactersCharacterIdWallet', {
       path: { character_id: 42 },
-      headers: {
+      header: {
         'If-None-Match': 'etag',
         'If-Modified-Since': 'yesterday',
       },

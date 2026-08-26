@@ -2,6 +2,7 @@ import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-mo
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
+import { TokenRefreshUnavailableError } from '../token-service.js'
 import type {
   PlatformCollectionFailureClass,
   PlatformCollectionStateIdentity,
@@ -91,6 +92,7 @@ export function classifyPlatformResourceFailure(error: unknown, now = new Date()
     return { failureClass: 'esi-cooldown', nextEligibleAt: error.retryAt } as const
   if (
     error instanceof EsiTransportError ||
+    error instanceof TokenRefreshUnavailableError ||
     (getErrorCode(error) === 'ESI_HTTP_ERROR' && getErrorStatus(error) >= 500)
   )
     return {
