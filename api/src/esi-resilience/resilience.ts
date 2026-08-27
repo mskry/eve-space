@@ -47,12 +47,21 @@ import type { QueueRedisConnection } from '../queue/redis.js'
 
 const followerWaitMs = 100
 const namespaceValidationIntervalMs = 1_000
+const resourceRevisionAdvanceAttempts = 3
+const resourceRevisionRetryDelayMs = 100
 const completedEsiOperationErrors = new WeakSet<object>()
 
 class EsiRequestWaitTimeoutError extends Error {
   constructor() {
     super('Timed out waiting for the current ESI request owner')
     this.name = 'EsiRequestWaitTimeoutError'
+  }
+}
+
+class EsiResourceRevisionUnavailableError extends Error {
+  constructor() {
+    super('ESI resource revision is temporarily unavailable')
+    this.name = 'EsiResourceRevisionUnavailableError'
   }
 }
 
@@ -326,7 +335,7 @@ export class EsiResilienceLayer {
     try {
       return await this.#loadAndPublish(resource, identity, key, dependencies, lease, stale, policy)
     } catch (error) {
-      return this.#recoverLoadFailure(
+      return await this.#recoverLoadFailure(
         resource,
         identity,
         key,
@@ -591,18 +600,27 @@ export class EsiResilienceLayer {
   ) {
     if (!policy.resourceRevision) return
     const unsafeKey = resourceRevisionUnsafeKey(policy.resourceRevision.namespace, principal)
-    try {
-      await incrementEsiResourceRevision(
-        this.coordination,
-        policy.resourceRevision.namespace,
-        principal,
-      )
-      this.#unsafeResourceRevisions.delete(unsafeKey)
-    } catch {
-      this.#l1.clear()
-      this.#unsafeResourceRevisions.add(unsafeKey)
-      recordEsiCoordinationFailure()
+    for (let attempt = 1; attempt <= resourceRevisionAdvanceAttempts; attempt += 1) {
+      try {
+        // oxlint-disable-next-line no-await-in-loop
+        await incrementEsiResourceRevision(
+          this.coordination,
+          policy.resourceRevision.namespace,
+          principal,
+        )
+        this.#unsafeResourceRevisions.delete(unsafeKey)
+        return
+      } catch {
+        if (attempt < resourceRevisionAdvanceAttempts) {
+          // oxlint-disable-next-line no-await-in-loop
+          await wait(resourceRevisionRetryDelayMs * attempt)
+        }
+      }
     }
+    this.#l1.clear()
+    this.#unsafeResourceRevisions.add(unsafeKey)
+    recordEsiCoordinationFailure()
+    throw new EsiResourceRevisionUnavailableError()
   }
 
   #readL1<Data>(

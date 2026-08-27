@@ -17,8 +17,9 @@ const installedOperationRegistry = new Set([
   ...[...catalog.matchAll(/defineContract\('([^']+)'/g)].map((match) => match[1]),
   ...generatedOperationIds(generatedCatalog),
 ])
+const coreCharacterExecutorPolicies = characterExecutorPolicies(catalog)
 const egressViolations = [
-  ...coreEgressViolations(apiSources, installedOperationRegistry),
+  ...coreEgressViolations(apiSources, installedOperationRegistry, coreCharacterExecutorPolicies),
   ...moduleEgressViolations(moduleSources, installedOperationRegistry),
 ].toSorted()
 
@@ -33,10 +34,11 @@ function resolveRoot(arguments_) {
   return resolve(value)
 }
 
-function coreEgressViolations(sources, operationIds) {
+function coreEgressViolations(sources, operationIds, executorPolicies) {
   const findings = []
   for (const { path, source } of sources) {
     findings.push(...sdkClientConstructionViolations(path, source, 'core'))
+    findings.push(...characterExecutorViolations(path, source, executorPolicies))
 
     const transportOperations = operationArguments(source, 'createEsiTransport')
     const executorOperations = operationProperties(source)
@@ -56,6 +58,108 @@ function coreEgressViolations(sources, operationIds) {
       )
   }
   return findings
+}
+
+function characterExecutorViolations(path, source, executorPolicies) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind(path),
+  )
+  const findings = []
+  visit(sourceFile, (node) => {
+    if (!ts.isCallExpression(node) || calledFunctionName(node.expression) !== 'createEsiTransport')
+      return
+    const operation = stringLiteralValue(node.arguments[0])
+    const expectedExecutor = operation && executorPolicies.get(operation)
+    if (!operation || !expectedExecutor) return
+
+    const association = enclosingCharacterExecutor(node)
+    if (association?.executor !== expectedExecutor || association.operation !== operation)
+      findings.push(
+        `${path}: ESI operation ${operation} bypasses ${expectedExecutor} executor/cache policy`,
+      )
+  })
+  return findings
+}
+
+function characterExecutorPolicies(source) {
+  const sourceFile = ts.createSourceFile(
+    'catalog.ts',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
+  const policies = new Map()
+  visit(sourceFile, (node) => {
+    if (!ts.isCallExpression(node) || calledFunctionName(node.expression) !== 'defineContract')
+      return
+    const operation = stringLiteralValue(node.arguments[0])
+    const contract = node.arguments[1] && unwrapExpression(node.arguments[1])
+    if (!operation || !contract || !ts.isObjectLiteralExpression(contract)) return
+    if (!objectProperty(contract, 'resourceRevision')) return
+
+    const cache = objectProperty(contract, 'cache')
+    const cacheValue =
+      cache && ts.isPropertyAssignment(cache) && unwrapExpression(cache.initializer)
+    const cacheKind =
+      cacheValue && ts.isObjectLiteralExpression(cacheValue)
+        ? stringLiteralValue(propertyInitializer(cacheValue, 'kind'))
+        : undefined
+    policies.set(operation, cacheKind === 'none' ? 'executeCharacterMutation' : 'getCharacter')
+  })
+  return policies
+}
+
+function enclosingCharacterExecutor(node) {
+  let current = node.parent
+  while (current) {
+    if (ts.isObjectLiteralExpression(current) && ts.isCallExpression(current.parent)) {
+      const call = current.parent
+      const executor = calledFunctionName(call.expression)
+      if (
+        (executor === 'getCharacter' || executor === 'executeCharacterMutation') &&
+        call.arguments.some((argument) => unwrapExpression(argument) === current)
+      )
+        return {
+          executor,
+          operation: stringLiteralValue(propertyInitializer(current, 'operation')),
+        }
+    }
+    current = current.parent
+  }
+  return undefined
+}
+
+function calledFunctionName(expression) {
+  const value = unwrapExpression(expression)
+  if (ts.isIdentifier(value)) return value.text
+  if (ts.isPropertyAccessExpression(value)) return value.name.text
+  return undefined
+}
+
+function objectProperty(object, name) {
+  return object.properties.find(
+    (property) =>
+      (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) &&
+      property.name.getText().replaceAll(/['"]/g, '') === name,
+  )
+}
+
+function propertyInitializer(object, name) {
+  const property = objectProperty(object, name)
+  return property && ts.isPropertyAssignment(property) ? property.initializer : undefined
+}
+
+function stringLiteralValue(node) {
+  if (!node) return undefined
+  const value = unwrapExpression(node)
+  return ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value)
+    ? value.text
+    : undefined
 }
 
 function moduleEgressViolations(sources, operationIds) {

@@ -368,6 +368,7 @@ export const oauthStates = pgTable(
     intent: text().$type<AuthorizationIntent>().default('login').notNull(),
     userId: uuid('user_id'),
     characterId: bigint('character_id', { mode: 'number' }),
+    returnPath: varchar('return_path', { length: 512 }),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
@@ -399,6 +400,10 @@ export const oauthStates = pgTable(
       sql`(intent = 'login' and user_id is null and character_id is null)
         or (intent = 'attach' and user_id is not null and character_id is null)
         or (intent = 'reauthorize' and user_id is not null and character_id is not null)`,
+    ),
+    check(
+      'oauth_states_return_path_context_check',
+      sql`return_path is null or intent = 'reauthorize'`,
     ),
   ],
 )

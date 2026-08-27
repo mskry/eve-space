@@ -607,7 +607,24 @@ describe('ESI resilience layer', () => {
     },
   )
 
-  test('bypasses caches until a failed mailbox revision advancement is repaired', async () => {
+  test('retries mailbox revision advancement before returning mutation success', async () => {
+    mocks.incrementRevision
+      .mockRejectedValueOnce(new Error('coordination unavailable'))
+      .mockResolvedValueOnce(1)
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const pending = layer.executeCharacterMutation({
+      operation: 'mail-create-label',
+      characterId: 1,
+      load: vi.fn().mockResolvedValue(result(12)),
+    })
+
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toMatchObject({ data: 12 })
+    expect(mocks.incrementRevision).toHaveBeenCalledTimes(2)
+  })
+
+  test('rejects mutations and bypasses caches until failed revision advancement is repaired', async () => {
     const cache = redis()
     mocks.incrementRevision.mockRejectedValue(new Error('coordination unavailable'))
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
@@ -622,13 +639,21 @@ describe('ESI resilience layer', () => {
     }
     await layer.getCharacter(resource)
 
-    await expect(
-      layer.executeCharacterMutation({
-        operation: 'mail-create-label',
-        characterId: 1,
-        load: vi.fn().mockResolvedValue(result(12)),
-      }),
-    ).resolves.toMatchObject({ data: 12 })
+    const mutation = layer.executeCharacterMutation({
+      operation: 'mail-create-label',
+      characterId: 1,
+      load: vi.fn().mockResolvedValue(result(12)),
+    })
+    let mutationError: unknown
+    const handledMutation = mutation.catch((error: unknown) => {
+      mutationError = error
+    })
+    await vi.runAllTimersAsync()
+    await handledMutation
+    expect(mutationError).toMatchObject({
+      name: 'EsiResourceRevisionUnavailableError',
+      message: 'ESI resource revision is temporarily unavailable',
+    })
     await vi.advanceTimersByTimeAsync(121_000)
     await layer.getCharacter(resource)
 

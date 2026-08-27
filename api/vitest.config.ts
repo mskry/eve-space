@@ -20,6 +20,8 @@ export default defineConfig({
         'src/middleware/module-enablement.ts',
         'src/middleware/module-authorization.ts',
         'src/middleware/owned-character.ts',
+        'src/mail/service.ts',
+        'src/mail/routes.ts',
         'src/routes/characters.ts',
         'src/routes/admin.ts',
         'src/routes/modules.ts',

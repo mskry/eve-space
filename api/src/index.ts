@@ -7,6 +7,7 @@ import { env } from './env.js'
 import { CharacterTokenNotFoundError } from './auth-store.js'
 import { installedModuleRoutes } from './generated/platform/installed-module-routes.js'
 import { routeNotFoundBody } from './http-contracts.js'
+import { mailRoutes } from './mail/routes.js'
 import { adminRoutes } from './routes/admin.js'
 import { characterRoutes } from './routes/characters.js'
 import { corporationRoutes } from './routes/corporations.js'
@@ -31,6 +32,7 @@ export const app = new Hono()
   .use('/api/corporations/*', loadSession, requireSession)
   .route('/api/admin', adminRoutes)
   .route('/api/me/characters', characterRoutes)
+  .route('/api/me/characters', mailRoutes)
   .route('/api/characters', publicCharacterRoutes)
   .route('/api/corporations', corporationRoutes)
   .route('/auth', ssoRoutes)

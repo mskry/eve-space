@@ -34,7 +34,7 @@ export interface SessionAccount {
 export type OAuthStateContext =
   | { intent: 'login' }
   | { intent: 'attach'; userId: string }
-  | { intent: 'reauthorize'; userId: string; characterId: number }
+  | { intent: 'reauthorize'; userId: string; characterId: number; returnPath?: string }
 
 export interface StoredCharacterToken {
   userId: string
@@ -100,6 +100,7 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
     intent: context.intent,
     userId: context.intent === 'login' ? null : context.userId,
     characterId: context.intent === 'reauthorize' ? context.characterId : null,
+    returnPath: context.intent === 'reauthorize' ? (context.returnPath ?? null) : null,
     expiresAt: new Date(Date.now() + oauthStateTtlMs),
   })
 }
@@ -112,6 +113,7 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
       intent: oauthStates.intent,
       userId: oauthStates.userId,
       characterId: oauthStates.characterId,
+      returnPath: oauthStates.returnPath,
     })
 
   if (!record) return null
@@ -119,7 +121,12 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
   if (record.intent === 'attach' && record.userId)
     return { intent: 'attach', userId: record.userId }
   if (record.intent === 'reauthorize' && record.userId && record.characterId)
-    return { intent: 'reauthorize', userId: record.userId, characterId: record.characterId }
+    return {
+      intent: 'reauthorize',
+      userId: record.userId,
+      characterId: record.characterId,
+      ...(record.returnPath ? { returnPath: record.returnPath } : {}),
+    }
   throw new Error('Stored OAuth state has invalid authorization context')
 }
 

@@ -11,6 +11,7 @@ describe('transactional migration validation', () => {
     '015_deployment_module_settings.sql',
     '016_platform_collection_state.sql',
     '017_subject_lifecycles.sql',
+    '020_oauth_state_return_path.sql',
   ])('keeps %s transactional', async (name) => {
     const migration = (await loadMigrations()).find((candidate) => candidate.name === name)
     expect(migration).toBeDefined()

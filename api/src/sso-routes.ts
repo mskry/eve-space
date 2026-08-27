@@ -31,6 +31,16 @@ const callbackQuery = z.object({
   error: z.string().min(1, 'EVE SSO returned an empty error code.').optional(),
   state: z.string().min(1, 'EVE SSO returned an empty state.').optional(),
 })
+const reauthorizationQuery = z.object({
+  returnTo: z
+    .string()
+    .min(1, 'Return destination must not be empty.')
+    .max(512, 'Return destination must not exceed 512 characters.')
+    .optional(),
+})
+const invalidReturnDestination = new HTTPException(400, {
+  message: 'Return destination must be a safe route for this character.',
+})
 
 export const ssoRoutes = new Hono<OwnedCharacterEnv>()
   .get('/config', (context) =>
@@ -51,14 +61,35 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
   .get(
     '/eve/reauthorize/:characterId',
     zValidator('param', characterIdParams),
+    async (context, next) => {
+      assertUniqueQueryParameters(context.req.url)
+      await next()
+    },
+    zValidator('query', reauthorizationQuery),
+    async (context, next) => {
+      const { returnTo } = context.req.valid('query')
+      if (returnTo) {
+        normalizeCharacterReturnPath(returnTo, context.req.valid('param').characterId)
+      }
+      await next()
+    },
     loadSession,
     loadOwnedCharacter,
     async (context) => {
       const session = context.var.session
+      const { returnTo } = context.req.valid('query')
       return startAuthorization(context, {
         intent: 'reauthorize',
         userId: session!.userId,
         characterId: context.var.ownedCharacter.characterId,
+        ...(returnTo
+          ? {
+              returnPath: normalizeCharacterReturnPath(
+                returnTo,
+                context.var.ownedCharacter.characterId,
+              ),
+            }
+          : {}),
       })
     },
   )
@@ -204,8 +235,14 @@ function redirectForIntent(
     return context.redirect(destination.toString())
   }
 
+  const stateDestination = new URL(
+    state.intent === 'attach'
+      ? '/characters'
+      : (state.returnPath ?? `/characters/${state.characterId}`),
+    env.WEB_ORIGIN,
+  )
   const destination = new URL(
-    state.intent === 'attach' ? '/characters' : `/characters/${state.characterId}`,
+    `${stateDestination.pathname}${stateDestination.search}`,
     env.WEB_ORIGIN,
   )
   destination.searchParams.set(state.intent === 'attach' ? 'attach' : 'reauthorize', status)
@@ -228,4 +265,75 @@ function sessionCookieOptions(maxAge: number) {
 function setPrivateHeaders(context: Context) {
   context.header('Cache-Control', 'private, no-store')
   context.header('Vary', 'Cookie')
+}
+
+function assertUniqueQueryParameters(url: string) {
+  const names = new Set<string>()
+  for (const name of new URL(url).searchParams.keys()) {
+    if (names.has(name)) throw invalidReturnDestination
+    names.add(name)
+  }
+}
+
+function normalizeCharacterReturnPath(value: string, characterId: number) {
+  if (!value.startsWith('/') || value.startsWith('//') || value.includes('+')) {
+    throw invalidReturnDestination
+  }
+
+  let decoded = value
+  for (let depth = 0; depth < 4; depth += 1) {
+    assertSafeReturnPathLayer(decoded)
+    if (!/%[\dA-Fa-f]{2}/.test(decoded)) break
+    try {
+      decoded = decodeURIComponent(decoded)
+    } catch {
+      throw invalidReturnDestination
+    }
+    if (depth === 3 && /%[\dA-Fa-f]{2}/.test(decoded)) throw invalidReturnDestination
+  }
+
+  let destination: URL
+  try {
+    destination = new URL(value, 'http://application.local')
+  } catch {
+    throw invalidReturnDestination
+  }
+
+  if (destination.origin !== 'http://application.local') throw invalidReturnDestination
+  const characterRoot = `/characters/${characterId}`
+  if (
+    destination.pathname !== characterRoot &&
+    !destination.pathname.startsWith(`${characterRoot}/`)
+  ) {
+    throw invalidReturnDestination
+  }
+
+  const queryNames = new Set<string>()
+  for (const name of destination.searchParams.keys()) {
+    if (queryNames.has(name)) throw invalidReturnDestination
+    queryNames.add(name)
+  }
+
+  const normalized = `${destination.pathname}${destination.search}`
+  if (normalized.length > 512) throw invalidReturnDestination
+  return normalized
+}
+
+function assertSafeReturnPathLayer(value: string) {
+  if (
+    [...value].some((character) => {
+      const codePoint = character.codePointAt(0)!
+      return /\s/u.test(character) || codePoint <= 31 || codePoint === 127
+    }) ||
+    /[\\#]/u.test(value) ||
+    /%(?:2f|5c|23)/i.test(value) ||
+    /%(?![\dA-Fa-f]{2})/.test(value)
+  ) {
+    throw invalidReturnDestination
+  }
+
+  const path = value.split('?', 1)[0]!
+  if (path.split('/').some((segment) => segment === '.' || segment === '..')) {
+    throw invalidReturnDestination
+  }
 }
