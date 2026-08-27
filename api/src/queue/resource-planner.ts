@@ -75,38 +75,7 @@ export async function runResourcePlanner(
     return { selected: 0, planned: 0, reason: 'idle' as const, admission }
 
   const connection = (await queue.getBackend().client) as unknown as QueueRedisConnection
-  const plannedBatchResources = new Set<string>()
-  const workItems = [] as Array<{
-    readonly descriptor: PlatformInstalledResourceDescriptor
-    readonly operation: Parameters<typeof getEsiRequestCooldowns>[0]['requests'][number]
-    readonly work: ReturnType<typeof createBatchWork> | ReturnType<typeof createScalarWork>
-  }>
-  for (const candidate of candidates) {
-    signal?.throwIfAborted()
-    const descriptor = findInstalledResource(candidate.identity, resources)
-    if (!descriptor)
-      throw new Error(
-        `Due resource ${candidate.identity.moduleId}/${candidate.identity.resourceId} is not installed`,
-      )
-    const batchKey = `${descriptor.moduleId}\0${descriptor.resourceId}\0${descriptor.subjectKind}`
-    if (descriptor.batch && plannedBatchResources.has(batchKey)) continue
-
-    const operationId = descriptor.batch?.operationId ?? candidate.operationId
-    assertRegisteredEsiOperation(operationId)
-    const authorization = getEsiOperationContract(operationId).authorization
-    const operation = {
-      operation: operationId,
-      ...(authorization.kind === 'character'
-        ? { principal: characterEsiPrincipal(candidate.identity.subjectId) }
-        : {}),
-    }
-    const work = descriptor.batch
-      ? createBatchWork(descriptor, descriptor.batch, candidates, batchKey)
-      : createScalarWork(candidate)
-    if (descriptor.batch) plannedBatchResources.add(batchKey)
-    workItems.push({ descriptor, operation, work })
-  }
-
+  const workItems = createResourceWorkItems(candidates, resources, signal)
   const capacityPrefix = workItems.slice(0, admission.remainingCapacity)
   const cooldowns = await dependencies.getCooldowns({
     connection,
@@ -162,6 +131,45 @@ export async function runResourcePlanner(
     reason: 'scheduled' as const,
     admission,
   }
+}
+
+function createResourceWorkItems(
+  candidates: readonly DueInstalledResource[],
+  resources: readonly PlatformInstalledResourceDescriptor[],
+  signal?: AbortSignal,
+) {
+  const plannedBatchResources = new Set<string>()
+  const workItems = [] as Array<{
+    readonly descriptor: PlatformInstalledResourceDescriptor
+    readonly operation: Parameters<typeof getEsiRequestCooldowns>[0]['requests'][number]
+    readonly work: ReturnType<typeof createBatchWork> | ReturnType<typeof createScalarWork>
+  }>
+  for (const candidate of candidates) {
+    signal?.throwIfAborted()
+    const descriptor = findInstalledResource(candidate.identity, resources)
+    if (!descriptor)
+      throw new Error(
+        `Due resource ${candidate.identity.moduleId}/${candidate.identity.resourceId} is not installed`,
+      )
+    const batchKey = `${descriptor.moduleId}\0${descriptor.resourceId}\0${descriptor.subjectKind}`
+    if (descriptor.batch && plannedBatchResources.has(batchKey)) continue
+
+    const operationId = descriptor.batch?.operationId ?? candidate.operationId
+    assertRegisteredEsiOperation(operationId)
+    const authorization = getEsiOperationContract(operationId).authorization
+    const operation = {
+      operation: operationId,
+      ...(authorization.kind === 'character'
+        ? { principal: characterEsiPrincipal(candidate.identity.subjectId) }
+        : {}),
+    }
+    const work = descriptor.batch
+      ? createBatchWork(descriptor, descriptor.batch, candidates, batchKey)
+      : createScalarWork(candidate)
+    if (descriptor.batch) plannedBatchResources.add(batchKey)
+    workItems.push({ descriptor, operation, work })
+  }
+  return workItems
 }
 
 function createScalarWork(candidate: DueInstalledResource) {

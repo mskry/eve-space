@@ -12,9 +12,13 @@ import {
 
 type ResourceExecutionNoopReason = 'already-current' | PlatformResourceIneligibleStatus
 type CharacterAuthorization = Awaited<ReturnType<typeof getCharacterAuthorizationForLifecycle>>
+type PlatformResourceExecutionNoop = {
+  readonly outcome: 'noop'
+  readonly reason: ResourceExecutionNoopReason
+}
 
 export type PlatformResourceExecutionGuard =
-  | { readonly outcome: 'noop'; readonly reason: ResourceExecutionNoopReason }
+  | PlatformResourceExecutionNoop
   | {
       readonly outcome: 'ready'
       readonly resource: PlatformInstalledResourceDescriptor
@@ -58,19 +62,24 @@ export async function guardInstalledResourceExecution(
       options.loadCharacterAuthorization ?? getCharacterAuthorizationForLifecycle
     )(characterId, identity.subjectLifecycleId, operation.authorization.scope)
   } catch (error) {
-    if (error instanceof ScopeRequiredError)
-      return { outcome: 'noop', reason: 'authorization-required' }
-    if (error instanceof CharacterTokenNotFoundError) return { outcome: 'noop', reason: 'obsolete' }
-    throw error
+    return mapCharacterAuthorizationError(error)
   }
 
-  if (authorization.tokenVersion !== eligibility.authorizationGeneration) {
-    eligibility = await resolveEligibility(identity, { resources })
-    if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
-    if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
-    if (authorization.tokenVersion !== eligibility.authorizationGeneration)
-      return { outcome: 'noop', reason: 'obsolete' }
-  }
+  const ready = { outcome: 'ready', resource, characterId, authorization } as const
+  if (authorization.tokenVersion === eligibility.authorizationGeneration) return ready
 
-  return { outcome: 'ready', resource, characterId, authorization }
+  eligibility = await resolveEligibility(identity, { resources })
+  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
+  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
+  if (authorization.tokenVersion !== eligibility.authorizationGeneration)
+    return { outcome: 'noop', reason: 'obsolete' }
+
+  return ready
+}
+
+function mapCharacterAuthorizationError(error: unknown): PlatformResourceExecutionNoop {
+  if (error instanceof ScopeRequiredError)
+    return { outcome: 'noop', reason: 'authorization-required' }
+  if (error instanceof CharacterTokenNotFoundError) return { outcome: 'noop', reason: 'obsolete' }
+  throw error
 }

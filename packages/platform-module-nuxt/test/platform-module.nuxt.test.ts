@@ -1,30 +1,27 @@
-import { $fetch, setup, useTestContext } from '@nuxt/test-utils/e2e'
-import { createServer } from 'node:http'
-import type { AddressInfo } from 'node:net'
+import { $fetch, createPage, setup, useTestContext } from '@nuxt/test-utils/e2e'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
+import { startCorsJsonApi } from '../../../tests/support/cors-json-api'
 
 let alphaEnabled = true
-const apiServer = createServer((_request, response) => {
-  response.writeHead(200, { 'Content-Type': 'application/json' })
-  response.end(
-    JSON.stringify({
-      enabledModuleIds: alphaEnabled ? ['alpha'] : [],
-      shellNavigationOrder: { dashboard: [], character: [] },
-    }),
-  )
-})
-await new Promise<void>((resolve) => apiServer.listen(0, '127.0.0.1', resolve))
-const apiAddress = apiServer.address() as AddressInfo
-process.env.NUXT_PUBLIC_API_BASE = `http://127.0.0.1:${apiAddress.port}`
+const apiServer = await startCorsJsonApi(() => ({
+  body: {
+    enabledModuleIds: alphaEnabled ? ['alpha'] : [],
+    shellNavigationOrder: {
+      dashboard: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }] : [],
+      character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
+    },
+  },
+}))
+process.env.NUXT_PUBLIC_API_BASE = apiServer.origin
 
-afterAll(() => new Promise<void>((resolve) => apiServer.close(() => resolve())))
+afterAll(apiServer.close)
 
 describe('platform Nuxt module fixture', async () => {
   const rootDir = fileURLToPath(new URL('./fixtures/basic', import.meta.url))
   await setup({
     rootDir,
-    browser: false,
+    browser: true,
     server: true,
     setupTimeout: 120_000,
   })
@@ -43,6 +40,20 @@ describe('platform Nuxt module fixture', async () => {
 
     alphaEnabled = true
     await expect($fetch('/characters/7/alpha')).resolves.toContain('Alpha nested page')
+  })
+
+  it('filters runtime navigation without rebuilding', async () => {
+    alphaEnabled = true
+    const page = await createPage('/')
+    await page.getByRole('link', { name: 'Alpha', exact: true }).waitFor({ state: 'visible' })
+
+    alphaEnabled = false
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.getByRole('link', { name: 'Alpha', exact: true }).waitFor({ state: 'hidden' })
+    const disabledPage = await page.goto(new URL('/characters/7/alpha', page.url()).href, {
+      waitUntil: 'networkidle',
+    })
+    expect(disabledPage?.status()).toBe(404)
   })
 
   it('emits typed metadata with module icon defaults and entry overrides', async () => {

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   createPersistence: vi.fn(),
   recordSuccess: vi.fn(),
   resolveEligibility: vi.fn(),
+  transaction: vi.fn(),
 }))
 
 vi.mock('../src/db/client.js', () => ({ sql: { begin: mocks.begin } }))
@@ -42,8 +43,8 @@ const identity = {
 describe('local resource observations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    const transaction = vi.fn().mockResolvedValue([])
-    mocks.begin.mockImplementation((operation) => operation(transaction))
+    mocks.transaction.mockResolvedValue([])
+    mocks.begin.mockImplementation((operation) => operation(mocks.transaction))
     mocks.resolveEligibility.mockResolvedValue({
       status: 'eligible',
       due: true,
@@ -51,7 +52,7 @@ describe('local resource observations', () => {
       nextEligibleAt: null,
     })
     mocks.recordSuccess.mockResolvedValue(undefined)
-    mocks.createPersistence.mockReturnValue({ transaction: vi.fn() })
+    mocks.createPersistence.mockReturnValue(scopedPersistence())
   })
 
   test('advances unchanged checked state without rewriting module data', async () => {
@@ -83,6 +84,7 @@ describe('local resource observations', () => {
     })
 
     expect(materialize).toHaveBeenCalledOnce()
+    expect(mocks.createPersistence).toHaveBeenCalledWith(mocks.transaction, identity.moduleId)
     expect(materialize).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { score: 10 },
@@ -91,6 +93,29 @@ describe('local resource observations', () => {
       }),
     )
     expect(mocks.recordSuccess).toHaveBeenCalledOnce()
+  })
+
+  test('refuses to record success when the module swallows its own persistence failure', async () => {
+    const failure = new Error('module write rejected')
+    const materialize = vi.fn(async ({ capabilities }) => {
+      await capabilities.persistence
+        .transaction(async () => {
+          throw failure
+        })
+        .catch(() => undefined)
+    })
+    mocks.createPersistence.mockReturnValue(scopedPersistence(failure))
+
+    await expect(
+      applyInstalledResourceObservation({
+        ...observation(materialize),
+        outcome: 'complete',
+        data: { score: 10 },
+      }),
+    ).rejects.toBe(failure)
+
+    expect(materialize).toHaveBeenCalledOnce()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
   })
 
   test('records execution failures without changing their queue classification', async () => {
@@ -162,5 +187,11 @@ function observation(materialize: PlatformResourceOperationImplementation['mater
     },
     authorizationGeneration: 4,
     validatedAt: '2026-08-26T14:58:00.000Z',
+  }
+}
+function scopedPersistence(failure?: unknown) {
+  return {
+    capability: { transaction: vi.fn(async (operation) => operation({ query: vi.fn() })) },
+    suppressedFailure: () => (failure === undefined ? undefined : { error: failure }),
   }
 }

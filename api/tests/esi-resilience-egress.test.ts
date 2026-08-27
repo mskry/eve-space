@@ -105,12 +105,23 @@ describe('ESI egress verification', () => {
         const localFactory = importedFactory
         export const resource = { operation: 'alpha-operation', load: () => localFactory() }
       `,
+      'features/alpha/server/src/transitive-alias.ts': `
+        import { createStatusClient as importedFactory } from '@evespace/esi-client/domains/status'
+        const firstAlias = importedFactory
+        const secondAlias = firstAlias
+        export const resource = { operation: 'alpha-operation', load: () => secondAlias() }
+      `,
       'features/alpha/server/src/namespaced.ts': `
         import * as statusSdk from '@evespace/esi-client/domains/status'
         export const resource = {
           operation: 'alpha-operation',
           load: () => statusSdk.createStatusClient(),
         }
+      `,
+      'features/alpha/server/src/destructured.ts': `
+        import * as statusSdk from '@evespace/esi-client/domains/status'
+        const { createStatusClient: localFactory } = statusSdk
+        export const resource = { operation: 'alpha-operation', load: () => localFactory() }
       `,
       'features/alpha/server/src/raw-capabilities.ts': `
         import { definePlatformResourceOperation } from '@eve-space/platform-module-contract'
@@ -143,7 +154,9 @@ describe('ESI egress verification', () => {
         'features/alpha/server/src/bypass.ts: feature server code constructs an ESI SDK client instead of platform dispatch',
         'features/alpha/server/src/no-options.ts: feature server code constructs an ESI SDK client instead of platform dispatch',
         'features/alpha/server/src/aliased.ts: feature server code constructs an ESI SDK client instead of platform dispatch',
+        'features/alpha/server/src/transitive-alias.ts: feature server code constructs an ESI SDK client instead of platform dispatch',
         'features/alpha/server/src/namespaced.ts: feature server code constructs an ESI SDK client instead of platform dispatch',
+        'features/alpha/server/src/destructured.ts: feature server code constructs an ESI SDK client instead of platform dispatch',
       ])
         expect(stderr).toContain(fragment)
     } finally {

@@ -17,66 +17,84 @@ interface RateGroupDefinition {
   window: string
 }
 
+interface EsiOperationContractValidationState {
+  readonly issues: string[]
+  readonly rateGroups: Map<string, RateGroupDefinition>
+  readonly sdkOperationOwners: Map<string, string>
+  readonly expectedSdkOperationIds: Readonly<Record<string, string>>
+}
+
 export function assertEsiOperationContracts(
   catalog: Readonly<Record<string, unknown>>,
   expectedSdkOperationIds: Readonly<Record<string, string>> = {},
 ): asserts catalog is Readonly<Record<string, EsiOperationContract>> {
-  const issues: string[] = []
-  const rateGroups = new Map<string, RateGroupDefinition>()
-  const sdkOperationOwners = new Map<string, string>()
-
-  for (const [operation, value] of Object.entries(catalog)) {
-    if (!platformContributionIdPattern.test(operation))
-      issues.push(`operation ${operation} must use a lowercase kebab-case identity`)
-    if (!isRecord(value)) {
-      issues.push(`operation ${operation} must export a contract object`)
-      continue
-    }
-
-    const audit = validateAudit(operation, value.audit, issues)
-    const expectedSdkOperationId = expectedSdkOperationIds[operation]
-    if (
-      expectedSdkOperationId &&
-      audit?.esiOperationId &&
-      audit.esiOperationId !== expectedSdkOperationId
-    )
-      issues.push(
-        `operation ${operation} contract declares ${audit.esiOperationId} instead of manifest SDK operation ${expectedSdkOperationId}`,
-      )
-    if (audit?.esiOperationId) {
-      const owner = sdkOperationOwners.get(audit.esiOperationId)
-      if (owner)
-        issues.push(
-          `operation ${operation} duplicates ESI SDK operation ${audit.esiOperationId} from operation ${owner}`,
-        )
-      else sdkOperationOwners.set(audit.esiOperationId, operation)
-    }
-    const minimumDate = validateCompatibility(operation, value.compatibility, issues)
-    if (audit?.reviewedDate && minimumDate && minimumDate > audit.reviewedDate)
-      issues.push(`operation ${operation} minimum compatibility date exceeds its review date`)
-    if (
-      typeof value.representationVersion !== 'string' ||
-      !representationVersionPattern.test(value.representationVersion)
-    )
-      issues.push(`operation ${operation} has an invalid representation version`)
-
-    const scope = validateAuthorization(operation, value.authorization, issues)
-    validateIdentity(operation, value.identity, issues)
-    validateResourceRevision(operation, value.resourceRevision, issues)
-    validateFreshness(operation, value.freshness, issues)
-    validateCache(operation, value.cache, issues)
-    validateRateGroup(operation, scope, value.rateGroup, rateGroups, issues)
-    validateRetry(operation, value.retry, issues)
-    validateResponseValidation(operation, value.responseValidation, issues)
+  const state: EsiOperationContractValidationState = {
+    issues: [],
+    rateGroups: new Map(),
+    sdkOperationOwners: new Map(),
+    expectedSdkOperationIds,
   }
 
-  if (issues.length > 0)
+  for (const [operation, value] of Object.entries(catalog))
+    validateEsiOperationContract(operation, value, state)
+
+  if (state.issues.length > 0)
     throw new Error(
-      `Invalid ESI operation catalog:\n${issues
+      `Invalid ESI operation catalog:\n${state.issues
         .toSorted((left, right) => left.localeCompare(right))
         .map((issue) => `- ${issue}`)
         .join('\n')}`,
     )
+}
+
+function validateEsiOperationContract(
+  operation: string,
+  value: unknown,
+  state: EsiOperationContractValidationState,
+) {
+  const { issues, expectedSdkOperationIds, rateGroups, sdkOperationOwners } = state
+  if (!platformContributionIdPattern.test(operation))
+    issues.push(`operation ${operation} must use a lowercase kebab-case identity`)
+  if (!isRecord(value)) {
+    issues.push(`operation ${operation} must export a contract object`)
+    return
+  }
+
+  const audit = validateAudit(operation, value.audit, issues)
+  const expectedSdkOperationId = expectedSdkOperationIds[operation]
+  if (
+    expectedSdkOperationId &&
+    audit?.esiOperationId &&
+    audit.esiOperationId !== expectedSdkOperationId
+  )
+    issues.push(
+      `operation ${operation} contract declares ${audit.esiOperationId} instead of manifest SDK operation ${expectedSdkOperationId}`,
+    )
+  if (audit?.esiOperationId) {
+    const owner = sdkOperationOwners.get(audit.esiOperationId)
+    if (owner)
+      issues.push(
+        `operation ${operation} duplicates ESI SDK operation ${audit.esiOperationId} from operation ${owner}`,
+      )
+    else sdkOperationOwners.set(audit.esiOperationId, operation)
+  }
+  const minimumDate = validateCompatibility(operation, value.compatibility, issues)
+  if (audit?.reviewedDate && minimumDate && minimumDate > audit.reviewedDate)
+    issues.push(`operation ${operation} minimum compatibility date exceeds its review date`)
+  if (
+    typeof value.representationVersion !== 'string' ||
+    !representationVersionPattern.test(value.representationVersion)
+  )
+    issues.push(`operation ${operation} has an invalid representation version`)
+
+  const scope = validateAuthorization(operation, value.authorization, issues)
+  validateIdentity(operation, value.identity, issues)
+  validateResourceRevision(operation, value.resourceRevision, issues)
+  validateFreshness(operation, value.freshness, issues)
+  validateCache(operation, value.cache, issues)
+  validateRateGroup(operation, scope, value.rateGroup, rateGroups, issues)
+  validateRetry(operation, value.retry, issues)
+  validateResponseValidation(operation, value.responseValidation, issues)
 }
 
 function validateAudit(operation: string, value: unknown, issues: string[]) {

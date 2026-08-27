@@ -101,14 +101,19 @@ module-removal procedure.
 
 ## Hono Typecheck Baseline
 
-Baseline recorded on 2026-08-25 with Node.js 24.19.0 on an arm64 Apple M4. The command was run five
-times after adding the empty generated module router:
+Measurements use Node.js 24.19.0 on an arm64 Apple M4 and five runs of:
 
 ```bash
 pnpm --filter @eve-space/api exec tsc --noEmit
 ```
 
-Wall times were 2.22 s, 1.98 s, 2.03 s, 2.03 s, and 1.98 s. The warm median is 2.03 s.
+| Stage                         | Date       | Wall times                             | Warm median |
+| ----------------------------- | ---------- | -------------------------------------- | ----------- |
+| Empty generated module router | 2026-08-25 | 2.22 s, 1.98 s, 2.03 s, 2.03 s, 1.98 s | 2.03 s      |
+| Post-foundation               | 2026-08-27 | 2.40 s, 2.44 s, 2.48 s, 2.51 s, 2.54 s | 2.48 s      |
+
+The post-foundation median is 22% above the baseline and remains below the 5-second investigation
+threshold.
 
 Investigate a declaration rollup or per-module client only when the same-machine five-run warm
 median exceeds 5 seconds or twice the recorded baseline, whichever is greater. Confirm with a

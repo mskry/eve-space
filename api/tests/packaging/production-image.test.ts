@@ -23,7 +23,7 @@ describe('API production image', () => {
   it('contains every server registry and migration without Nuxt dependencies', () => {
     const coreMigrations = readdirSync(resolve(root, 'api/migrations'))
       .filter((name) => name.endsWith('.sql'))
-      .toSorted()
+      .toSorted((left, right) => left.localeCompare(right))
     const verification = runDocker([
       'run',
       '--rm',

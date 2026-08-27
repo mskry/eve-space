@@ -21,7 +21,7 @@ const coreCharacterExecutorPolicies = characterExecutorPolicies(catalog)
 const egressViolations = [
   ...coreEgressViolations(apiSources, installedOperationRegistry, coreCharacterExecutorPolicies),
   ...moduleEgressViolations(moduleSources, installedOperationRegistry),
-].toSorted()
+].toSorted((left, right) => left.localeCompare(right))
 
 if (egressViolations.length > 0)
   throw new Error(`ESI egress verification failed:\n${egressViolations.join('\n')}`)
@@ -35,28 +35,31 @@ function resolveRoot(arguments_) {
 }
 
 function coreEgressViolations(sources, operationIds, executorPolicies) {
+  return sources.flatMap(({ path, source }) =>
+    coreSourceEgressViolations(path, source, operationIds, executorPolicies),
+  )
+}
+
+function coreSourceEgressViolations(path, source, operationIds, executorPolicies) {
   const findings = []
-  for (const { path, source } of sources) {
-    findings.push(...sdkClientConstructionViolations(path, source, 'core'))
-    findings.push(...characterExecutorViolations(path, source, executorPolicies))
+  findings.push(...sdkClientConstructionViolations(path, source, 'core'))
+  findings.push(...characterExecutorViolations(path, source, executorPolicies))
 
-    const transportOperations = operationArguments(source, 'createEsiTransport')
-    const executorOperations = operationProperties(source)
-    for (const operation of transportOperations) {
-      if (!operationIds.has(operation))
-        findings.push(`${path}: unregistered ESI operation ${operation}`)
-      if (!executorOperations.has(operation))
-        findings.push(`${path}: ESI operation ${operation} bypasses the shared executor`)
-    }
-
-    if (
-      !path.includes('/esi-resilience/') &&
-      /(?:esi.*(?:cache|cooldown)|(?:cache|cooldown).*esi)\w*\s*=\s*new Map/i.test(source)
-    )
-      findings.push(
-        `${path}: legacy ESI cache or cooldown state is retained outside esi-resilience`,
-      )
+  const transportOperations = operationArguments(source, 'createEsiTransport')
+  const executorOperations = operationProperties(source)
+  for (const operation of transportOperations) {
+    if (!operationIds.has(operation))
+      findings.push(`${path}: unregistered ESI operation ${operation}`)
+    if (!executorOperations.has(operation))
+      findings.push(`${path}: ESI operation ${operation} bypasses the shared executor`)
   }
+
+  if (
+    !path.includes('/esi-resilience/') &&
+    /(?:esi.*(?:cache|cooldown)|(?:cache|cooldown).*esi)\w*\s*=\s*new Map/i.test(source)
+  )
+    findings.push(`${path}: legacy ESI cache or cooldown state is retained outside esi-resilience`)
+
   return findings
 }
 
@@ -163,49 +166,53 @@ function stringLiteralValue(node) {
 }
 
 function moduleEgressViolations(sources, operationIds) {
-  const findings = []
-  for (const { path, source } of sources) {
-    const operations = operationProperties(source)
-    for (const operation of operations) {
-      if (!operationIds.has(operation))
-        findings.push(`${path}: unregistered ESI operation ${operation}`)
-    }
+  return sources.flatMap(({ path, source }) =>
+    moduleSourceEgressViolations(path, source, operationIds),
+  )
+}
 
-    if (hasRuntimeEsiSdkImport(source) && operations.size === 0)
-      findings.push(`${path}: ESI SDK usage is not associated with a registered operation`)
-    if (hasRuntimeEsiSdkImport(source))
-      findings.push(
-        `${path}: feature server code imports the ESI SDK at runtime instead of using platform dispatch`,
-      )
-    findings.push(...sdkClientConstructionViolations(path, source, 'module'))
-    if (/(?:^|[^\w$])(?:globalThis\.)?fetch\s*\(/m.test(source))
-      findings.push(
-        `${path}: feature server code performs direct fetch instead of shared ESI egress`,
-      )
-    if (
-      /\bcreateEsiTransport\b|(?:class|function)\s+\w*Esi\w*Transport\w*|(?:const|let|var)\s+\w*(?:esi\w*transport|transport\w*esi)\w*/i.test(
-        source,
-      ) ||
-      /(?:from\s*|import\s*\(?)['"](?:node-fetch|undici|axios|got)['"]/.test(source)
-    )
-      findings.push(`${path}: feature server code defines or imports a duplicate ESI transport`)
-    if (
-      /(?:class|function|const|let|var)\s+\w*(?:esi\w*(?:cache|cooldown)|(?:cache|cooldown)\w*esi)\w*/i.test(
-        source,
-      )
-    )
-      findings.push(`${path}: feature server code defines module-local ESI cache or cooldown state`)
-    if (
-      source.includes('definePlatformResourceOperation') &&
-      /\b(?:accessToken|revalidation|transport)\b/.test(source)
-    )
-      findings.push(`${path}: feature resource code accesses raw ESI authorization or transport`)
-    if (
-      source.includes('definePlatformResourceOperation') &&
-      /\b(?:identity|cacheKey|representationKey)\s*:/.test(source)
-    )
-      findings.push(`${path}: feature resource code defines an independent ESI identity`)
+function moduleSourceEgressViolations(path, source, operationIds) {
+  const findings = []
+  const operations = operationProperties(source)
+  const hasEsiSdkImport = hasRuntimeEsiSdkImport(path, source)
+  for (const operation of operations) {
+    if (!operationIds.has(operation))
+      findings.push(`${path}: unregistered ESI operation ${operation}`)
   }
+
+  if (hasEsiSdkImport && operations.size === 0)
+    findings.push(`${path}: ESI SDK usage is not associated with a registered operation`)
+  if (hasEsiSdkImport)
+    findings.push(
+      `${path}: feature server code imports the ESI SDK at runtime instead of using platform dispatch`,
+    )
+  findings.push(...sdkClientConstructionViolations(path, source, 'module'))
+  if (/(?:^|[^\w$])(?:globalThis\.)?fetch\s*\(/m.test(source))
+    findings.push(`${path}: feature server code performs direct fetch instead of shared ESI egress`)
+  if (
+    /\bcreateEsiTransport\b|(?:class|function)\s+\w*Esi\w*Transport\w*|(?:const|let|var)\s+\w*(?:esi\w*transport|transport\w*esi)\w*/i.test(
+      source,
+    ) ||
+    /(?:from\s*|import\s*\(?)['"](?:node-fetch|undici|axios|got)['"]/.test(source)
+  )
+    findings.push(`${path}: feature server code defines or imports a duplicate ESI transport`)
+  if (
+    /(?:class|function|const|let|var)\s+\w*(?:esi\w*(?:cache|cooldown)|(?:cache|cooldown)\w*esi)\w*/i.test(
+      source,
+    )
+  )
+    findings.push(`${path}: feature server code defines module-local ESI cache or cooldown state`)
+  if (
+    source.includes('definePlatformResourceOperation') &&
+    /\b(?:accessToken|revalidation|transport)\b/.test(source)
+  )
+    findings.push(`${path}: feature resource code accesses raw ESI authorization or transport`)
+  if (
+    source.includes('definePlatformResourceOperation') &&
+    /\b(?:identity|cacheKey|representationKey)\s*:/.test(source)
+  )
+    findings.push(`${path}: feature resource code defines an independent ESI identity`)
+
   return findings
 }
 
@@ -219,14 +226,41 @@ function operationProperties(source) {
   return new Set([...source.matchAll(/\boperation:\s*['"]([^'"]+)['"]/g)].map((match) => match[1]))
 }
 
-function hasRuntimeEsiSdkImport(source) {
-  return (
-    /(?:^|\n)\s*import\s+(?!type\b)(?:\{[^}]*\}|\*\s+as\s+\w+|[\w$]+(?:\s*,\s*\{[^}]*\})?)\s+from\s*['"]@evespace\/esi-client(?:\/[^'"]*)?['"]/.test(
-      source,
-    ) ||
-    /(?:^|\n)\s*import\s*['"]@evespace\/esi-client(?:\/[^'"]*)?['"]/.test(source) ||
-    /\bimport\(\s*['"]@evespace\/esi-client(?:\/[^'"]*)?['"]\s*\)/.test(source)
+function hasRuntimeEsiSdkImport(path, source) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind(path),
   )
+  let found = false
+
+  visit(sourceFile, (node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      hasRuntimeImportClause(node.importClause) &&
+      isEsiSdkSpecifier(node.moduleSpecifier)
+    )
+      found = true
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      ts.isStringLiteral(node.arguments[0]) &&
+      isEsiSdkSpecifier(node.arguments[0])
+    )
+      found = true
+  })
+
+  return found
+}
+
+function hasRuntimeImportClause(importClause) {
+  if (!importClause) return true
+  if (importClause.isTypeOnly || importClause.name) return !importClause.isTypeOnly
+  if (!importClause.namedBindings) return false
+  if (ts.isNamespaceImport(importClause.namedBindings)) return true
+  return importClause.namedBindings.elements.some((element) => !element.isTypeOnly)
 }
 
 function sdkClientConstructionViolations(path, source, owner) {
@@ -238,74 +272,109 @@ function sdkClientConstructionViolations(path, source, owner) {
     true,
     scriptKind(path),
   )
+  const { factories, namespaces, declarations } = collectSdkClientReferences(sourceFile)
+  resolveSdkClientFactoryAliases(sourceFile, declarations, factories, namespaces)
+  return findSdkClientConstructionViolations(sourceFile, path, owner, factories, namespaces)
+}
+
+function collectSdkClientReferences(sourceFile) {
   const factories = new Set()
   const namespaces = new Set()
   const declarations = []
 
-  visit(sourceFile, (node) => {
-    if (ts.isImportDeclaration(node) && isEsiSdkSpecifier(node.moduleSpecifier)) {
-      const clause = node.importClause
-      if (!clause || clause.isTypeOnly) return
-      if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
-        namespaces.add(clause.namedBindings.name.text)
-      if (clause.namedBindings && ts.isNamedImports(clause.namedBindings))
-        for (const element of clause.namedBindings.elements) {
-          const imported = element.propertyName?.text ?? element.name.text
-          if (!element.isTypeOnly && isSdkClientFactoryName(imported))
-            factories.add(element.name.text)
-        }
-    }
-    if (ts.isVariableDeclaration(node)) declarations.push(node)
-  })
+  visit(sourceFile, (node) => collectSdkClientReference(node, factories, namespaces, declarations))
+  return { factories, namespaces, declarations }
+}
 
+function collectSdkClientReference(node, factories, namespaces, declarations) {
+  if (ts.isVariableDeclaration(node)) declarations.push(node)
+  if (!ts.isImportDeclaration(node) || !isEsiSdkSpecifier(node.moduleSpecifier)) return
+
+  const clause = node.importClause
+  if (!clause || clause.isTypeOnly) return
+  if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
+    namespaces.add(clause.namedBindings.name.text)
+  if (!clause.namedBindings || !ts.isNamedImports(clause.namedBindings)) return
+
+  for (const element of clause.namedBindings.elements) {
+    const imported = element.propertyName?.text ?? element.name.text
+    if (!element.isTypeOnly && isSdkClientFactoryName(imported)) factories.add(element.name.text)
+  }
+}
+
+function resolveSdkClientFactoryAliases(sourceFile, declarations, factories, namespaces) {
   let changed = true
   while (changed) {
     changed = false
-    for (const declaration of declarations) {
-      if (
-        ts.isIdentifier(declaration.name) &&
-        declaration.initializer &&
-        isSdkClientFactoryExpression(declaration.initializer, factories, namespaces) &&
-        !factories.has(declaration.name.text)
-      ) {
-        factories.add(declaration.name.text)
-        changed = true
-      }
-      if (
-        ts.isObjectBindingPattern(declaration.name) &&
-        declaration.initializer &&
-        ts.isIdentifier(unwrapExpression(declaration.initializer)) &&
-        namespaces.has(unwrapExpression(declaration.initializer).text)
-      )
-        for (const element of declaration.name.elements) {
-          const imported =
-            element.propertyName?.getText(sourceFile) ?? element.name.getText(sourceFile)
-          if (
-            isSdkClientFactoryName(imported) &&
-            ts.isIdentifier(element.name) &&
-            !factories.has(element.name.text)
-          ) {
-            factories.add(element.name.text)
-            changed = true
-          }
-        }
+    for (const declaration of declarations)
+      changed =
+        registerSdkClientFactoryAlias(sourceFile, declaration, factories, namespaces) || changed
+  }
+}
+
+function registerSdkClientFactoryAlias(sourceFile, declaration, factories, namespaces) {
+  if (registerIdentifierFactoryAlias(declaration, factories, namespaces)) return true
+  return registerDestructuredFactoryAliases(sourceFile, declaration, factories, namespaces)
+}
+
+function registerIdentifierFactoryAlias(declaration, factories, namespaces) {
+  if (
+    !ts.isIdentifier(declaration.name) ||
+    !declaration.initializer ||
+    !isSdkClientFactoryExpression(declaration.initializer, factories, namespaces) ||
+    factories.has(declaration.name.text)
+  )
+    return false
+
+  factories.add(declaration.name.text)
+  return true
+}
+
+function registerDestructuredFactoryAliases(sourceFile, declaration, factories, namespaces) {
+  if (
+    !ts.isObjectBindingPattern(declaration.name) ||
+    !declaration.initializer ||
+    !ts.isIdentifier(unwrapExpression(declaration.initializer)) ||
+    !namespaces.has(unwrapExpression(declaration.initializer).text)
+  )
+    return false
+
+  let changed = false
+  for (const element of declaration.name.elements) {
+    const imported = element.propertyName?.getText(sourceFile) ?? element.name.getText(sourceFile)
+    if (
+      isSdkClientFactoryName(imported) &&
+      ts.isIdentifier(element.name) &&
+      !factories.has(element.name.text)
+    ) {
+      factories.add(element.name.text)
+      changed = true
     }
   }
+  return changed
+}
 
+function findSdkClientConstructionViolations(sourceFile, path, owner, factories, namespaces) {
   const findings = []
-  visit(sourceFile, (node) => {
-    if (
-      ts.isCallExpression(node) &&
-      isSdkClientFactoryExpression(node.expression, factories, namespaces) &&
-      (owner === 'module' || !usesRequiredTransport(node, owner))
-    )
-      findings.push(
-        owner === 'core'
-          ? `${path}: ESI client bypasses createEsiTransport`
-          : `${path}: feature server code constructs an ESI SDK client instead of platform dispatch`,
-      )
-  })
+  visit(sourceFile, (node) =>
+    collectSdkClientConstructionViolation(node, path, owner, factories, namespaces, findings),
+  )
   return findings
+}
+
+function collectSdkClientConstructionViolation(node, path, owner, factories, namespaces, findings) {
+  if (
+    !ts.isCallExpression(node) ||
+    !isSdkClientFactoryExpression(node.expression, factories, namespaces)
+  )
+    return
+  if (owner === 'core' && usesRequiredTransport(node, owner)) return
+
+  findings.push(
+    owner === 'core'
+      ? `${path}: ESI client bypasses createEsiTransport`
+      : `${path}: feature server code constructs an ESI SDK client instead of platform dispatch`,
+  )
 }
 
 function usesRequiredTransport(call, owner) {
@@ -390,10 +459,28 @@ function scriptKind(path) {
 }
 
 function generatedOperationIds(source) {
-  const entries = source.match(
-    /installedModuleEsiOperationCatalog\s*=\s*\{([\s\S]*?)\}\s*as const/,
-  )?.[1]
-  return entries ? [...entries.matchAll(/^\s*['"]([^'"]+)['"]:/gm)].map((match) => match[1]) : []
+  const sourceFile = ts.createSourceFile('installed-module-esi.ts', source, ts.ScriptTarget.Latest)
+  const operationIds = []
+
+  visit(sourceFile, (node) => {
+    if (
+      !ts.isVariableDeclaration(node) ||
+      !ts.isIdentifier(node.name) ||
+      node.name.text !== 'installedModuleEsiOperationCatalog' ||
+      !node.initializer
+    )
+      return
+
+    const entries = unwrapExpression(node.initializer)
+    if (!ts.isObjectLiteralExpression(entries)) return
+
+    for (const property of entries.properties) {
+      if (ts.isPropertyAssignment(property) && ts.isStringLiteral(property.name))
+        operationIds.push(property.name.text)
+    }
+  })
+
+  return operationIds
 }
 
 async function loadInstalledModuleSources(repositoryRoot) {

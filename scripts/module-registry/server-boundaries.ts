@@ -1,3 +1,5 @@
+import ts from 'typescript'
+
 export interface ModuleServerSource {
   readonly path: string
   readonly source: string
@@ -6,14 +8,7 @@ export interface ModuleServerSource {
 export function moduleServerImportViolations(sources: readonly ModuleServerSource[]) {
   const violations: string[] = []
   for (const { path, source } of sources) {
-    const specifiers = [
-      ...source.matchAll(
-        /(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g,
-      ),
-      ...source.matchAll(/import\(\s*['"]([^'"]+)['"]\s*\)/g),
-    ].map((match) => match[1]!)
-
-    for (const specifier of specifiers) {
+    for (const specifier of moduleSpecifiers(path, source)) {
       const normalized = specifier.replaceAll('\\', '/')
       if (
         normalized === '@eve-space/api' ||
@@ -24,4 +19,31 @@ export function moduleServerImportViolations(sources: readonly ModuleServerSourc
     }
   }
   return violations.toSorted((left, right) => left.localeCompare(right))
+}
+
+function moduleSpecifiers(path: string, source: string) {
+  const sourceFile = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true)
+  const specifiers: string[] = []
+
+  visit(sourceFile, (node) => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    )
+      specifiers.push(node.moduleSpecifier.text)
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      ts.isStringLiteral(node.arguments[0])
+    )
+      specifiers.push(node.arguments[0].text)
+  })
+
+  return specifiers
+}
+
+function visit(node: ts.Node, operation: (node: ts.Node) => void) {
+  operation(node)
+  ts.forEachChild(node, (child) => visit(child, operation))
 }

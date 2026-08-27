@@ -14,7 +14,7 @@ const installed = readJson<{ modules?: unknown }>(resolve(root, 'features/instal
 if (!Array.isArray(installed.modules) || installed.modules.some((id) => typeof id !== 'string'))
   throw new Error('features/installed-modules.json must contain a modules string array')
 
-const moduleIds = [...installed.modules].toSorted()
+const moduleIds = [...installed.modules].toSorted((left, right) => left.localeCompare(right))
 for (const moduleId of moduleIds) {
   const packageName = `@eve-space/${moduleId}-${environment}`
   const packagePath = resolve(root, 'features', moduleId, environment, 'package.json')

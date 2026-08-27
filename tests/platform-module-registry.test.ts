@@ -490,10 +490,12 @@ describe('feature server import boundaries', () => {
       await writeFile(join(sourceDirectory, 'ignored.json'), "import '@eve-space/api/db/client'")
 
       const sources = await loadFeatureServerSources(root)
-      expect(sources.map(({ path }) => path).toSorted()).toEqual(
+      expect(
+        sources.map(({ path }) => path).toSorted((left, right) => left.localeCompare(right)),
+      ).toEqual(
         extensions
           .map((extension) => `features/alpha/server/src/forbidden.${extension}`)
-          .toSorted(),
+          .toSorted((left, right) => left.localeCompare(right)),
       )
       expect(moduleServerImportViolations(sources)).toHaveLength(extensions.length)
     } finally {

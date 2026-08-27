@@ -99,20 +99,21 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
     )
       return
 
-    if (observation.outcome === 'complete')
+    if (observation.outcome === 'complete') {
+      const persistence = createTransactionScopedModulePersistenceCapability(
+        transaction,
+        observation.resource.moduleId,
+      )
       await implementation.materialize({
         subject: observation.subject,
         data: observation.data,
         validatedAt: observation.validatedAt,
         authorizationGeneration: observation.authorizationGeneration,
-        capabilities: {
-          persistence: createTransactionScopedModulePersistenceCapability(
-            transaction,
-            observation.resource.moduleId,
-          ),
-          sde: sdeCoreReads,
-        },
+        capabilities: { persistence: persistence.capability, sde: sdeCoreReads },
       })
+      const suppressed = persistence.suppressedFailure()
+      if (suppressed) throw suppressed.error
+    }
 
     await recordInstalledResourceCollectionSuccess(
       observation.identity,
