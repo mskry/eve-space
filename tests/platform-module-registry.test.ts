@@ -26,7 +26,8 @@ describe('platform module declarations', () => {
       {
         moduleId: 'alpha',
         path: 'features/alpha/nuxt/src/runtime/app/composables/useAlpha.ts',
-        source: "import { $fetch } from '#imports'\naddServerHandler({})",
+        source:
+          "import { $fetch } from '#imports'\nawait import('node:fs/promises')\nawait import('drizzle-orm/node-postgres')\naddServerHandler({})",
       },
     ])
 
@@ -34,6 +35,8 @@ describe('platform module declarations', () => {
       expect.arrayContaining([
         expect.stringContaining('must not call fetch'),
         expect.stringContaining('must not call addServerHandler'),
+        expect.stringContaining('node:fs/promises'),
+        expect.stringContaining('drizzle-orm/node-postgres'),
       ]),
     )
   })
@@ -112,6 +115,15 @@ describe('platform module declarations', () => {
     expect(() =>
       validatePlatformModuleManifests([declaration], coreModuleValidationAuthorities),
     ).not.toThrow()
+  })
+
+  it('rejects contribution page files that escape the feature runtime pages directory', () => {
+    const invalid = manifest('alpha')
+    invalid.nuxt.pages[0]!.file = 'src/runtime/app/pages/../../../../../app/pages/admin/index.vue'
+
+    expect(validationErrorMessage(invalid)).toContain(
+      'file must be a Vue file under src/runtime/app/pages',
+    )
   })
 
   it('rejects migration, icon, authorization, and exposed-import violations together', () => {

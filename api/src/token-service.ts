@@ -19,7 +19,12 @@ interface CharacterAuthorization {
   readonly tokenVersion: number
 }
 
-const refreshes = new Map<number, Promise<CharacterAuthorization>>()
+interface RefreshedCharacterAuthorization {
+  readonly authorization: CharacterAuthorization
+  readonly scopes: readonly string[]
+}
+
+const refreshes = new Map<number, Promise<RefreshedCharacterAuthorization>>()
 
 /** Treat a token as spent this far ahead of its expiry so a request cannot race the clock. */
 const tokenFreshnessSkewMs = 60_000
@@ -58,7 +63,9 @@ export async function getCharacterAuthorization(characterId: number, requiredSco
     ).finally(() => refreshes.delete(characterId))
     refreshes.set(characterId, refresh)
   }
-  return refresh
+  const refreshed = await refresh
+  requireScope(refreshed.scopes, requiredScope)
+  return refreshed.authorization
 }
 
 export async function getCharacterAuthorizationForLifecycle(
@@ -74,21 +81,26 @@ export async function getCharacterAuthorizationForLifecycle(
   })
   if (fresh) return fresh
 
-  return withRefreshCapacity(() =>
-    withLifecycleRefreshLock(characterId, subjectLifecycleId, async (stored, transaction) => {
-      requireScope(stored.scopes, requiredScope)
-      if (stored.accessTokenExpiresAt.getTime() > Date.now() + tokenFreshnessSkewMs)
-        return readStoredAuthorization(stored, requiredScope)
-      return refreshLockedCharacterToken(
-        characterId,
-        requiredScope,
-        stored,
-        stored,
-        transaction,
-        () => findCharacterTokenForLifecycle(characterId, subjectLifecycleId, transaction),
-      )
-    }),
-  )
+  return withRefreshCapacity(async () => {
+    const refreshed = await withLifecycleRefreshLock(
+      characterId,
+      subjectLifecycleId,
+      async (stored, transaction) => {
+        requireScope(stored.scopes, requiredScope)
+        if (stored.accessTokenExpiresAt.getTime() > Date.now() + tokenFreshnessSkewMs)
+          return toRefreshedCharacterAuthorization(stored, requiredScope)
+        return refreshLockedCharacterToken(
+          characterId,
+          requiredScope,
+          stored,
+          stored,
+          transaction,
+          () => findCharacterTokenForLifecycle(characterId, subjectLifecycleId, transaction),
+        )
+      },
+    )
+    return refreshed.authorization
+  })
 }
 
 /**
@@ -158,9 +170,9 @@ async function refreshLockedCharacterToken(
   stored: StoredCharacterToken,
   transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
   findWinner: () => Promise<StoredCharacterToken | null>,
-): Promise<CharacterAuthorization> {
+): Promise<RefreshedCharacterAuthorization> {
   if (stored.tokenVersion !== original.tokenVersion)
-    return readStoredAuthorization(stored, requiredScope)
+    return toRefreshedCharacterAuthorization(stored, requiredScope)
 
   const currentTokens = decryptTokens(stored.encryptedTokens)
   const refreshed = await refreshAccessToken(currentTokens.refreshToken)
@@ -198,12 +210,15 @@ async function refreshLockedCharacterToken(
         payload: { userId: stored.userId, characterId, addedScopes, removedScopes },
       })
     }
-    return { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 }
+    return {
+      authorization: { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 },
+      scopes: nextScopes,
+    }
   }
 
   const winner = await findWinner()
   if (!winner) throw new CharacterTokenNotFoundError()
-  return readStoredAuthorization(winner, requiredScope)
+  return toRefreshedCharacterAuthorization(winner, requiredScope)
 }
 
 async function mapRefreshLockError<T>(locked: Promise<T>) {
@@ -243,6 +258,13 @@ function readStoredAuthorization(
   }
 }
 
-function requireScope(scopes: string[], requiredScope: string) {
+function toRefreshedCharacterAuthorization(
+  stored: StoredCharacterToken,
+  requiredScope: string,
+): RefreshedCharacterAuthorization {
+  return { authorization: readStoredAuthorization(stored, requiredScope), scopes: stored.scopes }
+}
+
+function requireScope(scopes: readonly string[], requiredScope: string) {
   if (!scopes.includes(requiredScope)) throw new ScopeRequiredError(requiredScope)
 }

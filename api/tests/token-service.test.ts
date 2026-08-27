@@ -45,6 +45,7 @@ vi.mock('../src/security.js', () => ({
 
 import {
   getCharacterAccessToken,
+  getCharacterAuthorization,
   getCharacterAuthorizationForLifecycle,
   ScopeRequiredError,
   TokenRefreshUnavailableError,
@@ -164,6 +165,36 @@ describe('token refresh', () => {
 
     await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('new-access')
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+  })
+
+  test('rechecks each caller scope after sharing an in-flight refresh', async () => {
+    const secondaryScope = 'esi-skills.read_skills.v1'
+    let resolveRefresh: (() => void) | undefined
+    mocks.findCharacterToken.mockResolvedValue({ ...expired, scopes: [scope, secondaryScope] })
+    mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
+      operation({ ...expired, scopes: [scope, secondaryScope] }, {}),
+    )
+    mocks.refreshAccessToken.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRefresh = () =>
+            resolve({
+              access_token: 'new-access',
+              refresh_token: 'new-refresh',
+              expires_in: 1200,
+              token_type: 'Bearer',
+            })
+        }),
+    )
+
+    const first = getCharacterAuthorization(characterId, scope)
+    await vi.waitFor(() => expect(mocks.refreshAccessToken).toHaveBeenCalledOnce())
+    const second = getCharacterAuthorization(characterId, secondaryScope)
+    resolveRefresh?.()
+
+    await expect(first).resolves.toEqual({ accessToken: 'new-access', tokenVersion: 2 })
+    await expect(second).rejects.toBeInstanceOf(ScopeRequiredError)
+    expect(mocks.refreshAccessToken).toHaveBeenCalledOnce()
   })
 
   test('records normalized material scope changes only for the winning update', async () => {

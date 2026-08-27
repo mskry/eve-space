@@ -681,7 +681,11 @@ export function validatePlatformModuleManifests(
         issues.push(`page ${manifest.id}/${page.id} name must begin with eve-${manifest.id}-`)
       if (!isNormalizedPath(page.path))
         issues.push(`page ${manifest.id}/${page.id} has invalid path ${page.path}`)
-      if (!page.file.startsWith('src/runtime/app/pages/') || !page.file.endsWith('.vue'))
+      if (
+        !page.file.startsWith('src/runtime/app/pages/') ||
+        !page.file.endsWith('.vue') ||
+        page.file.split('/').some((segment) => segment === '.' || segment === '..')
+      )
         issues.push(
           `page ${manifest.id}/${page.id} file must be a Vue file under src/runtime/app/pages`,
         )

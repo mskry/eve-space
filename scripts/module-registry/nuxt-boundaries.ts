@@ -9,6 +9,8 @@ export interface ModuleNuxtSource {
 }
 
 const sourceExtensions = new Set(['.ts', '.tsx', '.vue'])
+const serverOnlyDependencyPattern =
+  /^(?:(?:node:)?(?:fs|child_process|net|tls|http|https)|postgres|drizzle-orm)(?:\/|$)/
 
 export async function loadFeatureNuxtSources(root: string): Promise<readonly ModuleNuxtSource[]> {
   const modules = await loadInstalledModuleIds(root)
@@ -86,13 +88,22 @@ function sourceViolations(source: ModuleNuxtSource) {
       violations.push(
         `${source.path}: Nuxt runtime imports may only use #imports or #components aliases`,
       )
-    if (/^(?:node:)?(?:fs|child_process|net|tls|http|https|postgres|drizzle-orm)$/.test(specifier))
+    if (serverOnlyDependencyPattern.test(specifier))
       violations.push(
         `${source.path}: Nuxt module imports deployment or server-only dependency ${specifier}`,
       )
   }
 
   visit(sourceFile, (node) => {
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      ts.isStringLiteral(node.arguments[0]) &&
+      serverOnlyDependencyPattern.test(node.arguments[0].text)
+    )
+      violations.push(
+        `${source.path}: Nuxt module imports deployment or server-only dependency ${node.arguments[0].text}`,
+      )
     if (!ts.isCallExpression(node) || !ts.isIdentifier(node.expression)) return
     if (
       node.expression.text === 'addServerHandler' ||

@@ -1,5 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   const isAuthorizationRoute = to.path === '/auth'
+  if (to.meta.platformAudience === 'public') return
   const runtimeConfig = useRuntimeConfig()
   const requestHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 

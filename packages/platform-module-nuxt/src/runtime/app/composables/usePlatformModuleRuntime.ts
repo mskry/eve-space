@@ -22,18 +22,18 @@ export function usePlatformModuleRuntime() {
     key: platformModuleRuntimeQueryKey,
     enabled: typeof window !== 'undefined',
     staleTime: 30_000,
-    query: ({ signal }) => loadRuntimeState(runtimeConfig.public.apiBase, signal),
+    query: ({ signal }) => loadPlatformModuleRuntimeState(runtimeConfig.public.apiBase, signal),
   })
   const enabledModuleIds = computed(() => new Set(runtimeQuery.data.value?.enabledModuleIds ?? []))
 
   async function ensureRuntimeState() {
-    if (!runtimeQuery.data.value) await runtimeQuery.refresh()
+    await runtimeQuery.refresh(true)
   }
 
   return { enabledModuleIds, ensureRuntimeState, runtimeQuery }
 }
 
-async function loadRuntimeState(apiBase: string, signal: AbortSignal) {
+export async function loadPlatformModuleRuntimeState(apiBase: string, signal?: AbortSignal) {
   const response = await fetch(`${apiBase}/api/modules`, {
     credentials: 'include',
     signal,

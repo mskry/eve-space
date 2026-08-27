@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
 import {
   addTemplate,
   addTypeTemplate,
@@ -236,7 +236,13 @@ async function resolveContributionPages(
   return Promise.all(
     contributions.flatMap((contribution) =>
       contribution.pages.map(async (page) => {
-        const file = resolve(await resolveNuxtPackageRoot(contribution.moduleId), page.file)
+        const packageRoot = await resolveNuxtPackageRoot(contribution.moduleId)
+        const pagesRoot = resolve(packageRoot, 'src/runtime/app/pages')
+        const file = resolve(packageRoot, page.file)
+        if (relative(pagesRoot, file).startsWith('..'))
+          throw new Error(
+            `Nuxt page ${contribution.moduleId}/${page.id} must remain under src/runtime/app/pages`,
+          )
         if (!existsSync(file))
           throw new Error(`Nuxt page ${contribution.moduleId}/${page.id} is missing ${page.file}`)
         return { moduleId: contribution.moduleId, page, file }
