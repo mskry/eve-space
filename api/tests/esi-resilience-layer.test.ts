@@ -51,11 +51,14 @@ describe('ESI resilience layer', () => {
       load,
     }
 
-    await expect(layer.getPublic(resource)).resolves.toMatchObject({ source: 'esi', stale: false })
-    await expect(layer.getPublic(resource)).resolves.toMatchObject({
+    const first = await layer.getPublic(resource)
+    const cached = await layer.getPublic(resource)
+    expect(first).toMatchObject({ source: 'esi', stale: false })
+    expect(cached).toMatchObject({
       data: { name: 'Bandera' },
       source: 'cache',
     })
+    expect(cached.validatedAt).toBe(first.validatedAt)
     expect(load).toHaveBeenCalledOnce()
     expect(cache.set).toHaveBeenCalledOnce()
     expect(cache.ping).not.toHaveBeenCalled()

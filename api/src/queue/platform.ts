@@ -204,7 +204,11 @@ async function processJob(
       console.info('Domain event job processed', domainEventJobLogContext(job))
   } catch (error) {
     if (error instanceof AffiliationCooldownError || error instanceof EsiQuotaError) {
-      await job.moveToDelayed(Date.now() + error.retryAfterSeconds * 1_000, job.token)
+      const retryAt =
+        error instanceof EsiQuotaError
+          ? error.retryAt.getTime()
+          : Date.now() + error.retryAfterSeconds * 1_000
+      await job.moveToDelayed(retryAt, job.token)
       throw new DelayedError('ESI cooldown deferred this job')
     }
     if (definition.classifyError(error) === 'permanent')

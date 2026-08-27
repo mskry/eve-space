@@ -1,16 +1,51 @@
 import { describe, expect, test } from 'vitest'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import {
   esiMetadataReview,
   esiOperationMetadata,
 } from '../src/esi-resilience/operation-metadata.js'
 import {
+  assertExecutableEsiOperationDefinitions,
   assertEsiOperationCatalogConfiguration,
   assertRegisteredEsiOperation,
+  coreEsiOperationCatalog,
   esiOperationCatalog,
   getEsiOperationContract,
 } from '../src/esi-resilience/catalog.js'
+import { assertEsiOperationContracts } from '../src/esi-resilience/catalog-validation.js'
+import { installedModuleEsiOperationCatalog } from '../src/generated/platform/installed-module-esi.js'
 
 describe('ESI operation policies', () => {
+  test('requires definitions to own a real matching SDK descriptor and catalog contract', () => {
+    const contract = {
+      ...validModuleOperation(),
+      audit: { esiOperationId: 'GetStatus', reviewedDate: '2026-08-18' },
+    } as const
+    const definition = {
+      sdkOperationId: 'GetStatus' as const,
+      descriptor: operationRegistry.GetStatus!,
+      contract,
+    }
+
+    expect(() =>
+      assertExecutableEsiOperationDefinitions(
+        { 'module-operation': contract },
+        { 'module-operation': definition },
+      ),
+    ).not.toThrow()
+    expect(() =>
+      assertExecutableEsiOperationDefinitions(
+        { 'module-operation': contract },
+        {
+          'module-operation': { ...definition, descriptor: operationRegistry.GetUniverseRaces! },
+        },
+      ),
+    ).toThrow('does not bind the registered SDK descriptor')
+    expect(() =>
+      assertExecutableEsiOperationDefinitions({ 'module-operation': contract }, {}),
+    ).toThrow('has no executable definition')
+  })
+
   test('declares every backend ESI operation with quota behavior', () => {
     expect(Object.keys(esiOperationCatalog)).toEqual(
       expect.arrayContaining([
@@ -66,7 +101,7 @@ describe('ESI operation policies', () => {
     )
   })
 
-  test('keeps the runtime registry complete against the reviewed metadata fixture', () => {
+  test('merges the reviewed core and generated installed-module catalogs', () => {
     expect(esiMetadataReview).toEqual({
       explorerUrl: 'https://developers.eveonline.com/api-explorer',
       reviewedAt: '2026-08-25',
@@ -74,10 +109,14 @@ describe('ESI operation policies', () => {
       resolvedCompatibilityDate: '2026-08-18',
     })
     expect(
-      Object.keys(esiOperationCatalog).toSorted((left, right) => left.localeCompare(right)),
+      Object.keys(coreEsiOperationCatalog).toSorted((left, right) => left.localeCompare(right)),
     ).toEqual(
       Object.keys(esiOperationMetadata).toSorted((left, right) => left.localeCompare(right)),
     )
+    expect(esiOperationCatalog).toEqual({
+      ...coreEsiOperationCatalog,
+      ...installedModuleEsiOperationCatalog,
+    })
   })
 
   test('resolves required authorization and rate-group metadata for every contract', () => {
@@ -104,7 +143,12 @@ describe('ESI operation policies', () => {
           : { kind: 'public' },
         rateGroup:
           metadata.rateLimit.kind === 'declared'
-            ? { kind: 'declared', group: metadata.rateLimit.group }
+            ? {
+                kind: 'declared',
+                group: metadata.rateLimit.group,
+                maximumTokens: metadata.rateLimit.maximumTokens,
+                window: metadata.rateLimit.window,
+              }
             : { kind: 'legacy-only' },
         validRepresentationVersion: true,
         revalidate: contract.cache.kind === 'shared' && metadata.supportsConditionalRequests,
@@ -198,7 +242,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by active ESI operations: esi-location.read_ship_type.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-location.read_ship_type.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -223,4 +267,195 @@ describe('ESI operation policies', () => {
       }),
     ).not.toThrow()
   })
+
+  test.each([
+    [
+      'compatibility date',
+      () => ({ ...validModuleOperation(), compatibility: { minimumDate: '2026-02-30' } }),
+      'invalid minimum compatibility date',
+    ],
+    [
+      'review date',
+      () => ({
+        ...validModuleOperation(),
+        audit: { ...validModuleOperation().audit, reviewedDate: 'soon' },
+      }),
+      'invalid review date',
+    ],
+    [
+      'authorization strategy',
+      () => ({ ...validModuleOperation(), authorization: { kind: 'module-token' } }),
+      'unsupported authorization strategy',
+    ],
+    [
+      'character scope',
+      () => ({ ...validModuleOperation(), authorization: { kind: 'character', scope: 'wallet' } }),
+      'invalid character scope',
+    ],
+    [
+      'ordered identity',
+      () => ({ ...validModuleOperation(), identity: { kind: 'ordered', fields: ['id', 'id'] } }),
+      'invalid or duplicate ordered identity fields',
+    ],
+    [
+      'set identity',
+      () => ({
+        ...validModuleOperation(),
+        identity: { kind: 'set', field: 'ids', maximumItems: 0 },
+      }),
+      'set identity maximum must be a positive safe integer',
+    ],
+    [
+      'freshness',
+      () => ({ ...validModuleOperation(), freshness: { kind: 'relative', seconds: 0 } }),
+      'relative freshness must use positive whole seconds',
+    ],
+    [
+      'cache behavior',
+      () => ({
+        ...validModuleOperation(),
+        cache: {
+          ...validModuleOperation().cache,
+          stale: { kind: 'bounded', milliseconds: 120_000 },
+          retentionMilliseconds: 60_000,
+        },
+      }),
+      'stale duration exceeds cache retention',
+    ],
+    [
+      'rate group',
+      () => ({
+        ...validModuleOperation(),
+        rateGroup: { kind: 'declared', group: 'Module Group', maximumTokens: 100, window: '15m' },
+      }),
+      'invalid declared rate-group metadata',
+    ],
+    [
+      'retry policy',
+      () => ({
+        ...validModuleOperation(),
+        retry: {
+          kind: 'idempotent',
+          attempts: 3,
+          initialDelayMilliseconds: 2_000,
+          maximumDelayMilliseconds: 1_000,
+        },
+      }),
+      'invalid idempotent retry metadata',
+    ],
+    [
+      'retry attempt budget',
+      () => ({
+        ...validModuleOperation(),
+        retry: {
+          kind: 'idempotent',
+          attempts: 4,
+          initialDelayMilliseconds: 500,
+          maximumDelayMilliseconds: 10_000,
+        },
+      }),
+      'invalid idempotent retry metadata',
+    ],
+    [
+      'response validation',
+      () => ({
+        ...validModuleOperation(),
+        responseValidation: { kind: 'disabled', reason: '  ' },
+      }),
+      'invalid response-validation exception',
+    ],
+  ])(
+    'rejects invalid contributed %s metadata before startup',
+    (_field, createContract, message) => {
+      expect(() => assertEsiOperationContracts({ 'module-operation': createContract() })).toThrow(
+        message,
+      )
+    },
+  )
+
+  test('rejects conflicting contributed rate-group definitions', () => {
+    const first = validModuleOperation()
+    const second = {
+      ...validModuleOperation(),
+      rateGroup: { ...validModuleOperation().rateGroup, maximumTokens: 200 },
+    }
+
+    expect(() =>
+      assertEsiOperationContracts({ 'first-operation': first, 'second-operation': second }),
+    ).toThrow('rate group module-group conflicts with operation first-operation')
+  })
+
+  test('rejects contributed SDK operation identity mismatches and duplicates', () => {
+    expect(() =>
+      assertEsiOperationContracts(
+        { 'module-operation': validModuleOperation() },
+        { 'module-operation': 'GetExpectedModuleOperation' },
+      ),
+    ).toThrow('instead of manifest SDK operation GetExpectedModuleOperation')
+    expect(() =>
+      assertEsiOperationContracts({
+        'first-operation': validModuleOperation(),
+        'second-operation': validModuleOperation(),
+      }),
+    ).toThrow('duplicates ESI SDK operation GetModuleOperation from operation first-operation')
+  })
+
+  test('validates contributed contracts even when SSO runtime eligibility is disabled', () => {
+    expect(() =>
+      assertEsiOperationCatalogConfiguration(
+        {
+          compatibilityDate: '2026-08-23',
+          ssoEnabled: false,
+          requestableScopes: [],
+        },
+        {
+          'module-operation': {
+            ...validModuleOperation(),
+            responseValidation: { kind: 'disabled', reason: '' },
+          },
+        },
+      ),
+    ).toThrow('invalid response-validation exception')
+    expect(() =>
+      assertEsiOperationCatalogConfiguration(
+        {
+          compatibilityDate: '2026-8-23',
+          ssoEnabled: false,
+          requestableScopes: [],
+        },
+        { 'module-operation': validModuleOperation() },
+      ),
+    ).toThrow('compatibility configuration date must use YYYY-MM-DD')
+  })
 })
+
+function validModuleOperation() {
+  return {
+    audit: { esiOperationId: 'GetModuleOperation', reviewedDate: '2026-08-18' },
+    representationVersion: 'v1',
+    authorization: { kind: 'public' },
+    identity: { kind: 'ordered', fields: ['subjectId'] },
+    freshness: { kind: 'relative', seconds: 60 },
+    cache: {
+      kind: 'shared',
+      collapse: true,
+      revalidate: true,
+      stale: { kind: 'bounded', milliseconds: 30_000 },
+      retentionMilliseconds: 60_000,
+    },
+    rateGroup: {
+      kind: 'declared',
+      group: 'module-group',
+      maximumTokens: 100,
+      window: '15m',
+    },
+    retry: {
+      kind: 'idempotent',
+      attempts: 3,
+      initialDelayMilliseconds: 100,
+      maximumDelayMilliseconds: 1_000,
+    },
+    compatibility: { minimumDate: '2026-01-01' },
+    responseValidation: { kind: 'enabled' },
+  } as const
+}

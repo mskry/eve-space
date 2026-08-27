@@ -1,0 +1,33 @@
+import { createServer, type IncomingMessage } from 'node:http'
+import type { AddressInfo } from 'node:net'
+
+interface JsonApiResponse {
+  readonly status?: number
+  readonly body: unknown
+}
+
+export async function startCorsJsonApi(handler: (request: IncomingMessage) => JsonApiResponse) {
+  const server = createServer((request, response) => {
+    const headers = {
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Origin': request.headers.origin ?? '*',
+      'Content-Type': 'application/json',
+    }
+    if (request.method === 'OPTIONS') {
+      response.writeHead(204, headers)
+      response.end()
+      return
+    }
+
+    const result = handler(request)
+    response.writeHead(result.status ?? 200, headers)
+    response.end(JSON.stringify(result.body))
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address() as AddressInfo
+
+  return {
+    origin: `http://127.0.0.1:${address.port}`,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  }
+}

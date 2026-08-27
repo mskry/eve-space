@@ -1,20 +1,25 @@
+import type {
+  PlatformEsiFreshnessContract,
+  PlatformEsiIdentityContract,
+  PlatformEsiOperationContract,
+  PlatformEsiResponseValidationContract,
+  PlatformEsiRetryContract,
+} from '@eve-space/platform-module-contract'
 import {
-  esiMetadataReview,
-  esiOperationMetadata,
-  type DocumentedCacheBehavior,
-} from './operation-metadata.js'
-
-type EsiAuthorizationContract = { kind: 'public' } | { kind: 'character'; scope: string }
-
-type EsiIdentityContract =
-  | { kind: 'ordered'; fields: readonly string[] }
-  | { kind: 'set'; field: string; maximumItems: number }
+  installedModuleEsiOperationCatalog,
+  installedModuleEsiOperationDefinitions,
+  installedModuleEsiSdkOperationIds,
+} from '../generated/platform/installed-module-esi.js'
+import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import { assertEsiOperationContracts, isIsoCalendarDate } from './catalog-validation.js'
+import { esiMetadataReview, esiOperationMetadata } from './operation-metadata.js'
 
 type EsiIdentityConfiguration =
   | { kind: 'ordered'; fields: readonly string[] }
   | { kind: 'set'; field: string }
 
-export type EsiFreshnessContract = DocumentedCacheBehavior | { kind: 'none' }
+export type EsiFreshnessContract = PlatformEsiFreshnessContract
 
 type EsiCacheContract =
   | {
@@ -30,37 +35,31 @@ type EsiCacheConfiguration =
   | Omit<Extract<EsiCacheContract, { kind: 'shared' }>, 'revalidate'>
   | { kind: 'none' }
 
-type EsiRateGroupContract = { kind: 'legacy-only' } | { kind: 'declared'; group: string }
+export type EsiRetryContract = PlatformEsiRetryContract
+export type EsiResponseValidationContract = PlatformEsiResponseValidationContract
+export type EsiOperationContract = PlatformEsiOperationContract
 
-export type EsiRetryContract =
-  | { kind: 'none' }
-  | {
-      kind: 'idempotent'
-      attempts: number
-      initialDelayMilliseconds: number
-      maximumDelayMilliseconds: number
-    }
-
-export type EsiResponseValidationContract =
-  | { kind: 'enabled' }
-  | { kind: 'disabled'; reason: string }
-
-export interface EsiOperationContract {
-  audit: {
-    esiOperationId: string
-    reviewedDate: string
+type ResolvedCoreEsiOperationContract<Operation extends keyof typeof esiOperationMetadata> = Omit<
+  EsiOperationContract,
+  'authorization' | 'rateGroup'
+> & {
+  readonly authorization: (typeof esiOperationMetadata)[Operation]['requiredScope'] extends infer Scope extends
+    string
+    ? { readonly kind: 'character'; readonly scope: Scope }
+    : { readonly kind: 'public' }
+  readonly rateGroup: (typeof esiOperationMetadata)[Operation]['rateLimit'] extends {
+    readonly kind: 'declared'
+    readonly group: infer Group extends string
+    readonly maximumTokens: infer MaximumTokens extends number
+    readonly window: infer Window extends string
   }
-  representationVersion: string
-  authorization: EsiAuthorizationContract
-  identity: EsiIdentityContract
-  freshness: EsiFreshnessContract
-  cache: EsiCacheContract
-  rateGroup: EsiRateGroupContract
-  retry: EsiRetryContract
-  compatibility: {
-    minimumDate: string
-  }
-  responseValidation: EsiResponseValidationContract
+    ? {
+        readonly kind: 'declared'
+        readonly group: Group
+        readonly maximumTokens: MaximumTokens
+        readonly window: Window
+      }
+    : { readonly kind: 'legacy-only' }
 }
 
 const minute = 60_000
@@ -72,7 +71,7 @@ const retry = {
   maximumDelayMilliseconds: 10_000,
 } as const satisfies EsiRetryContract
 
-export const esiOperationCatalog = {
+export const coreEsiOperationCatalog = {
   status: defineContract('status', {
     identity: { kind: 'ordered', fields: [] },
     cache: sharedPublicCache(),
@@ -179,6 +178,11 @@ export const esiOperationCatalog = {
   }),
 } as const satisfies Record<string, EsiOperationContract>
 
+export const esiOperationCatalog = {
+  ...coreEsiOperationCatalog,
+  ...installedModuleEsiOperationCatalog,
+} as const satisfies Record<string, EsiOperationContract>
+
 export type EsiOperation = keyof typeof esiOperationCatalog
 export const esiOperations = Object.keys(esiOperationCatalog) as EsiOperation[]
 
@@ -193,17 +197,49 @@ export function getCharacterEsiScope(operation: EsiOperation) {
   return authorization.scope
 }
 
+/** The character scope an operation requires, or null when it is a public operation. */
+export function getOptionalCharacterEsiScope(operation: EsiOperation) {
+  const authorization = getEsiOperationContract(operation).authorization
+  return authorization.kind === 'character' ? authorization.scope : null
+}
+
 export function assertRegisteredEsiOperation(operation: string): asserts operation is EsiOperation {
-  if (!(operation in esiOperationCatalog))
+  if (!Object.hasOwn(esiOperationCatalog, operation))
     throw new Error(`Unregistered ESI operation: ${operation}`)
 }
 
-export function assertEsiOperationCatalogConfiguration(options: {
-  compatibilityDate: string
-  ssoEnabled: boolean
-  requestableScopes: readonly string[]
-}) {
-  const incompatible = Object.entries(esiOperationCatalog).flatMap(([operation, contract]) =>
+export function getExecutableEsiOperationDefinition(
+  operation: string,
+  definitions: Readonly<
+    Record<string, PlatformExecutableEsiOperationDefinition>
+  > = installedModuleEsiOperationDefinitions,
+) {
+  const definition = definitions[operation]
+  if (!definition) throw new Error(`ESI operation ${operation} has no executable definition`)
+  return definition
+}
+
+export function assertEsiOperationCatalogConfiguration(
+  options: {
+    compatibilityDate: string
+    ssoEnabled: boolean
+    requestableScopes: readonly string[]
+  },
+  catalog: Readonly<Record<string, unknown>> = esiOperationCatalog,
+  expectedSdkOperationIds: Readonly<Record<string, string>> = catalog === esiOperationCatalog
+    ? installedModuleEsiSdkOperationIds
+    : {},
+) {
+  assertEsiOperationContracts(catalog, expectedSdkOperationIds)
+  if (catalog === esiOperationCatalog)
+    assertExecutableEsiOperationDefinitions(
+      installedModuleEsiOperationCatalog,
+      installedModuleEsiOperationDefinitions,
+    )
+  if (!isIsoCalendarDate(options.compatibilityDate))
+    throw new Error('ESI compatibility configuration date must use YYYY-MM-DD')
+
+  const incompatible = Object.entries(catalog).flatMap(([operation, contract]) =>
     contract.compatibility.minimumDate > options.compatibilityDate
       ? [`${operation} requires ${contract.compatibility.minimumDate}`]
       : [],
@@ -216,7 +252,7 @@ export function assertEsiOperationCatalogConfiguration(options: {
   if (!options.ssoEnabled) return
   const requestableScopes = new Set(options.requestableScopes)
   const missingScopes = new Set<string>()
-  for (const contract of Object.values(esiOperationCatalog)) {
+  for (const contract of Object.values(catalog)) {
     if (
       contract.authorization.kind === 'character' &&
       !requestableScopes.has(contract.authorization.scope)
@@ -225,7 +261,42 @@ export function assertEsiOperationCatalogConfiguration(options: {
   }
   if (missingScopes.size > 0)
     throw new Error(
-      `EVE_SCOPES is missing scopes required by active ESI operations: ${[...missingScopes].toSorted((left, right) => left.localeCompare(right)).join(' ')}`,
+      `EVE_SCOPES is missing scopes required by registered ESI operations: ${[...missingScopes].toSorted((left, right) => left.localeCompare(right)).join(' ')}`,
+    )
+}
+
+export function assertExecutableEsiOperationDefinitions(
+  catalog: Readonly<Record<string, PlatformEsiOperationContract>>,
+  definitions: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
+) {
+  const issues: string[] = []
+  const operationIds = new Set([...Object.keys(catalog), ...Object.keys(definitions)])
+  for (const operation of operationIds) {
+    const contract = catalog[operation]
+    const definition = definitions[operation]
+    if (!contract) {
+      issues.push(`definition ${operation} has no catalog contract`)
+      continue
+    }
+    if (!definition) {
+      issues.push(`catalog operation ${operation} has no executable definition`)
+      continue
+    }
+    if (definition.contract !== contract)
+      issues.push(`operation ${operation} definition does not own its catalog contract`)
+    if (definition.sdkOperationId !== contract.audit.esiOperationId)
+      issues.push(
+        `operation ${operation} definition binds ${definition.sdkOperationId} instead of ${contract.audit.esiOperationId}`,
+      )
+    if (operationRegistry[definition.sdkOperationId] !== definition.descriptor)
+      issues.push(`operation ${operation} does not bind the registered SDK descriptor`)
+  }
+  if (issues.length > 0)
+    throw new Error(
+      `Invalid executable ESI operation definitions:\n${issues
+        .toSorted((left, right) => left.localeCompare(right))
+        .map((issue) => `- ${issue}`)
+        .join('\n')}`,
     )
 }
 
@@ -239,9 +310,9 @@ function defineContract<Operation extends keyof typeof esiOperationMetadata>(
     retry: EsiRetryContract
     responseValidation?: EsiResponseValidationContract
   },
-): EsiOperationContract {
+): ResolvedCoreEsiOperationContract<Operation> {
   const metadata = esiOperationMetadata[operation]
-  return {
+  const contract: EsiOperationContract = {
     audit: {
       esiOperationId: metadata.esiOperationId,
       reviewedDate: esiMetadataReview.resolvedCompatibilityDate,
@@ -258,7 +329,12 @@ function defineContract<Operation extends keyof typeof esiOperationMetadata>(
         : options.cache,
     rateGroup:
       metadata.rateLimit.kind === 'declared'
-        ? { kind: 'declared', group: metadata.rateLimit.group }
+        ? {
+            kind: 'declared',
+            group: metadata.rateLimit.group,
+            maximumTokens: metadata.rateLimit.maximumTokens,
+            window: metadata.rateLimit.window,
+          }
         : { kind: 'legacy-only' },
     retry: options.retry,
     compatibility: {
@@ -266,6 +342,7 @@ function defineContract<Operation extends keyof typeof esiOperationMetadata>(
     },
     responseValidation: options.responseValidation ?? { kind: 'enabled' },
   }
+  return contract as ResolvedCoreEsiOperationContract<Operation>
 }
 
 function sharedPublicCache(): EsiCacheConfiguration {
@@ -289,7 +366,7 @@ function sharedPrivateCache(): EsiCacheConfiguration {
 function resolveIdentity(
   identity: EsiIdentityConfiguration,
   metadata: (typeof esiOperationMetadata)[keyof typeof esiOperationMetadata],
-): EsiIdentityContract {
+): PlatformEsiIdentityContract {
   if (identity.kind === 'ordered') return identity
   if (!('maximumBatchSize' in metadata))
     throw new Error('Set-like ESI operation is missing reviewed maximum batch metadata')

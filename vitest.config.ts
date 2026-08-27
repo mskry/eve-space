@@ -11,6 +11,12 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['app/queries/**/*.ts', 'app/utils/colada-options.ts', 'app/utils/query-error.ts'],
+      thresholds: {
+        branches: 60,
+        functions: 70,
+        lines: 70,
+        statements: 70,
+      },
     },
   },
 })

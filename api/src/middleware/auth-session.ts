@@ -2,6 +2,7 @@ import { getCookie } from 'hono/cookie'
 import { createMiddleware } from 'hono/factory'
 import type { SessionAccount } from '../auth-store.js'
 import { findSession } from '../auth-store.js'
+import { authRequiredBody } from '../http-contracts.js'
 
 export const sessionCookie = 'eve_space_session'
 
@@ -19,7 +20,7 @@ export const loadSession = createMiddleware<SessionEnv>(async (context, next) =>
 
 export const requireSession = createMiddleware<SessionEnv>(async (context, next) => {
   if (!context.var.session) {
-    return context.json({ code: 'AUTH_REQUIRED', message: 'Log in with EVE Online first.' }, 401)
+    return context.json(authRequiredBody, 401)
   }
   await next()
 })

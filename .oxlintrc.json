@@ -27,14 +27,29 @@
   },
   "overrides": [
     {
-      "files": ["app/**/*.ts", "app/**/*.vue", "layers/**/*.ts", "layers/**/*.vue"],
+      "files": [
+        "app/**/*.{ts,tsx,vue}",
+        "layers/**/*.{ts,tsx,vue}",
+        "packages/platform-module-nuxt/src/runtime/app/**/*.{ts,tsx,vue}",
+        "features/*/nuxt/src/runtime/app/**/*.{ts,tsx,vue}"
+      ],
       "env": {
         "browser": true,
         "vue": true
       }
     },
     {
-      "files": ["api/**/*.ts", "*.ts"],
+      "files": [
+        "api/**/*.{ts,mts}",
+        "packages/platform-module-contract/**/*.{ts,mts}",
+        "packages/platform-module-server/**/*.{ts,mts}",
+        "packages/platform-module-nuxt/src/*.{ts,mts}",
+        "features/*/server/**/*.{ts,mts}",
+        "features/*/nuxt/src/module.{ts,mts}",
+        "features/*/nuxt/test/fixtures/*/nuxt.config.{ts,mts}",
+        "scripts/**/*.{ts,mts}",
+        "*.{ts,mts}"
+      ],
       "env": {
         "node": true
       }

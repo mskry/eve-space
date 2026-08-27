@@ -1,5 +1,6 @@
 import { loadDomainEvent } from './domain-event-store.js'
 import type { DomainEventEnvelope, DomainEventType } from './domain-events.js'
+import { repairPlatformCollectionState } from './platform/collection-state-repair.js'
 
 const domainEventIdempotencyStrategies = ['event-id-persistence', 'convergent-state'] as const
 
@@ -18,7 +19,46 @@ export class DomainEventNotFoundError extends Error {
   }
 }
 
-const domainEventHandlers: readonly DomainEventHandler[] = []
+type CharacterCollectionStateRepair = (options: { characterId: number }) => Promise<unknown>
+
+const characterCollectionStateEventTypes = [
+  'character.attached',
+  'character.detached',
+  'character.scopes-changed',
+] as const
+
+type CharacterCollectionStateEvent = Extract<
+  DomainEventEnvelope,
+  { eventType: (typeof characterCollectionStateEventTypes)[number] }
+>
+
+/**
+ * `dispatchDomainEvent` only ever routes an event to a handler declaring its type, but `handle`
+ * receives the whole envelope union, so the narrowing has to be re-established here.
+ */
+function isCharacterCollectionStateEvent(
+  event: DomainEventEnvelope,
+): event is CharacterCollectionStateEvent {
+  return (characterCollectionStateEventTypes as readonly DomainEventType[]).includes(
+    event.eventType,
+  )
+}
+
+export function createPlatformCollectionStateEventHandlers(
+  repair: CharacterCollectionStateRepair = repairPlatformCollectionState,
+): readonly DomainEventHandler[] {
+  return characterCollectionStateEventTypes.map((eventType) => ({
+    eventType,
+    payloadVersion: 1,
+    idempotency: 'convergent-state',
+    async handle(event) {
+      if (!isCharacterCollectionStateEvent(event)) return
+      await repair({ characterId: event.payload.characterId })
+    },
+  }))
+}
+
+const domainEventHandlers = createPlatformCollectionStateEventHandlers()
 
 export function verifyDomainEventHandlers(
   handlers: readonly Partial<DomainEventHandler>[] = domainEventHandlers,

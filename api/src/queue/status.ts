@@ -60,6 +60,7 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
     const [
       counts,
       waiting,
+      prioritized,
       delayed,
       beats,
       plannerState,
@@ -68,8 +69,9 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       schedulerOutcome,
       affiliationPlannerOutcome,
     ] = await Promise.all([
-      queue.getJobCounts('waiting', 'delayed', 'active', 'failed'),
+      queue.getJobCounts('waiting', 'delayed', 'prioritized', 'active', 'failed'),
       queue.getJobs(['waiting'], 0, 0, true),
+      queue.getJobs(['prioritized'], 0, env.QUEUE_HIGH_WATER_MARK, true),
       // Admission bounds normal depth; cap inspection as a final safeguard if producers race.
       queue.getJobs(['delayed'], 0, env.QUEUE_HIGH_WATER_MARK, true),
       readWorkerHeartbeats(connection, scopedWorkerId),
@@ -80,8 +82,11 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       connection.get(affiliationPlannerOutcomeKey),
     ])
     const heartbeat = latestHeartbeat(beats)
-    const oldest = waiting[0]
-    const depth = (counts.waiting ?? 0) + (counts.delayed ?? 0)
+    const oldest = [...waiting, ...prioritized].reduce<(typeof waiting)[number] | undefined>(
+      (current, job) => (!current || job.timestamp < current.timestamp ? job : current),
+      undefined,
+    )
+    const depth = (counts.waiting ?? 0) + (counts.delayed ?? 0) + (counts.prioritized ?? 0)
     const oldestWaitingAgeSeconds = oldest
       ? Math.max(0, Math.floor((Date.now() - oldest.timestamp) / 1_000))
       : null

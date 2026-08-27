@@ -146,7 +146,7 @@ async function probeEsi(): Promise<EsiStatus> {
           ? 'degraded'
           : 'operational',
       latencyMs: Date.now() - startedAt,
-      checkedAt: response.checkedAt,
+      checkedAt: response.validatedAt,
       players: response.data.players,
       serverVersion: response.data.server_version,
       startedAt: response.data.start_time,

@@ -6,31 +6,35 @@ import {
   checkWorkerDependencies,
   checkWorkerReadiness,
   checkWorkerStartupDependencies,
+  expectedWorkerMigration,
   WorkerSchemaNotReadyError,
 } from '../src/worker-readiness.js'
+
+const expectedWorkerIdentity = `core/${expectedWorkerMigration}`
 
 function appliedMigrationConnection() {
   return vi
     .fn()
-    .mockResolvedValueOnce([{ exists: true }])
-    .mockResolvedValueOnce([{ applied: true }])
+    .mockResolvedValueOnce([{ exists: true, qualified: true }])
+    .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
 }
 
 describe('worker readiness', () => {
   test('names the expected migration when the migrations table is missing', async () => {
-    const connection = vi.fn().mockResolvedValueOnce([{ exists: false }])
+    const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
 
     await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
       healthy: false,
-      reason: 'Missing migration 011_character_affiliation_sync.sql',
+      reason: `Missing migration ${expectedWorkerIdentity}`,
+      missing: { module: 'core', name: expectedWorkerMigration },
     })
   })
 
   test('rejects startup when the expected migration is absent', async () => {
     const connection = vi
       .fn()
-      .mockResolvedValueOnce([{ exists: true }])
-      .mockResolvedValueOnce([{ applied: false }])
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([])
 
     await expect(assertWorkerReadiness(connection as never)).rejects.toBeInstanceOf(
       WorkerSchemaNotReadyError,
@@ -40,8 +44,8 @@ describe('worker readiness', () => {
   test('keeps worker health green while fresh-heartbeat backlog telemetry is degraded', async () => {
     const connection = vi
       .fn()
-      .mockResolvedValueOnce([{ exists: true }])
-      .mockResolvedValueOnce([{ applied: true }])
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
     const queueProbe = vi.fn().mockResolvedValue({
       status: 'degraded',
       workerHeartbeatAt: new Date().toISOString(),
@@ -68,8 +72,8 @@ describe('worker readiness', () => {
   test('accepts an applied migration and operational queue', async () => {
     const connection = vi
       .fn()
-      .mockResolvedValueOnce([{ exists: true }])
-      .mockResolvedValueOnce([{ applied: true }])
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
     const queueProbe = vi.fn().mockResolvedValue({
       status: 'operational',
       workerHeartbeatAt: new Date().toISOString(),
@@ -79,8 +83,8 @@ describe('worker readiness', () => {
 
     const secondConnection = vi
       .fn()
-      .mockResolvedValueOnce([{ exists: true }])
-      .mockResolvedValueOnce([{ applied: true }])
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
     await expect(
       assertWorkerDependencies(secondConnection as never, queueProbe),
     ).resolves.toBeUndefined()
@@ -89,8 +93,8 @@ describe('worker readiness', () => {
   test('distinguishes an unavailable queue from degraded worker health', async () => {
     const connection = vi
       .fn()
-      .mockResolvedValueOnce([{ exists: true }])
-      .mockResolvedValueOnce([{ applied: true }])
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
     const queueProbe = vi.fn().mockResolvedValue({ status: 'unavailable' })
 
     await expect(checkWorkerDependencies(connection as never, queueProbe)).resolves.toEqual({
@@ -100,10 +104,10 @@ describe('worker readiness', () => {
   })
 
   test('rejects dependency readiness failures', async () => {
-    const connection = vi.fn().mockResolvedValueOnce([{ exists: false }])
+    const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
 
     await expect(assertWorkerDependencies(connection as never, vi.fn())).rejects.toThrow(
-      'Worker dependency unavailable: Missing migration 011_character_affiliation_sync.sql',
+      `Worker dependency unavailable: Missing migration ${expectedWorkerIdentity}`,
     )
   })
 
@@ -135,11 +139,11 @@ describe('worker readiness', () => {
   })
 
   test('refuses to start before the required migration is applied', async () => {
-    const connection = vi.fn().mockResolvedValueOnce([{ exists: false }])
+    const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
     const queueProbe = vi.fn()
 
     await expect(assertWorkerStartupDependencies(connection as never, queueProbe)).rejects.toThrow(
-      'Worker dependency unavailable: Missing migration 011_character_affiliation_sync.sql',
+      `Worker dependency unavailable: Missing migration ${expectedWorkerIdentity}`,
     )
     expect(queueProbe).not.toHaveBeenCalled()
   })
@@ -153,5 +157,71 @@ describe('worker readiness', () => {
     await expect(
       checkWorkerDependencies(appliedMigrationConnection() as never, queueProbe),
     ).resolves.toEqual({ healthy: false, reason: 'Worker heartbeat stale' })
+  })
+
+  test('names a missing installed-module migration without running it', async () => {
+    const connection = vi
+      .fn()
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+    const requirements = [
+      { module: 'core', name: expectedWorkerMigration },
+      { module: 'alpha', name: 'alpha-001-initial.sql' },
+    ]
+
+    await expect(checkWorkerReadiness(connection as never, requirements)).resolves.toEqual({
+      healthy: false,
+      reason: 'Missing migration alpha/alpha-001-initial.sql',
+      missing: { module: 'alpha', name: 'alpha-001-initial.sql' },
+    })
+    expect(connection).toHaveBeenCalledTimes(2)
+  })
+
+  test('reports a qualified migration requirement for a legacy ledger', async () => {
+    const connection = vi.fn().mockResolvedValueOnce([{ exists: true, qualified: false }])
+
+    await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
+      healthy: false,
+      reason: `Missing migration ${expectedWorkerIdentity}`,
+      missing: { module: 'core', name: expectedWorkerMigration },
+    })
+    expect(connection).toHaveBeenCalledTimes(1)
+  })
+
+  test('requires provisioning for installed modules without migrations', async () => {
+    const connection = vi
+      .fn()
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce([])
+
+    await expect(
+      checkWorkerReadiness(
+        connection as never,
+        [{ module: 'core', name: expectedWorkerMigration }],
+        ['empty-module'],
+      ),
+    ).resolves.toEqual({
+      healthy: false,
+      reason: 'Missing module provisioning empty-module',
+      missingProvisioning: 'empty-module',
+    })
+    expect(connection).toHaveBeenCalledTimes(3)
+  })
+
+  test('accepts provisioned installed modules without migrations', async () => {
+    const connection = vi
+      .fn()
+      .mockResolvedValueOnce([{ exists: true, qualified: true }])
+      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce([{ module_id: 'empty-module' }])
+
+    await expect(
+      checkWorkerReadiness(
+        connection as never,
+        [{ module: 'core', name: expectedWorkerMigration }],
+        ['empty-module'],
+      ),
+    ).resolves.toEqual({ healthy: true })
   })
 })

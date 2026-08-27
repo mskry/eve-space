@@ -13,6 +13,7 @@ import {
 import {
   acquireEsiRequestPermit,
   EsiQuotaError,
+  getEsiRequestCooldowns,
   recordEsiResponse,
 } from '../../../src/esi-resilience/cooldowns.js'
 import { EsiResilienceLayer } from '../../../src/esi-resilience/resilience.js'
@@ -59,6 +60,54 @@ afterAll(async () => {
 })
 
 describe('ESI resilience Redis coordination', () => {
+  test('reads ordered operation cooldowns through one bounded mget', async () => {
+    const mget = vi.spyOn(coordination, 'mget')
+    await recordEsiResponse({
+      connection: coordination,
+      operation: 'wallet-balance',
+      principal: 'character-90000001',
+      status: 429,
+      headers: new Headers({ 'retry-after': '12' }),
+    })
+
+    await expect(
+      getEsiRequestCooldowns({
+        connection: coordination,
+        requests: [
+          { operation: 'status' },
+          { operation: 'wallet-transactions', principal: 'character-90000001' },
+          { operation: 'status' },
+        ],
+      }),
+    ).resolves.toMatchObject([
+      { active: false, coordinationAvailable: true },
+      { active: true, retryAfterSeconds: 12, coordinationAvailable: true },
+      { active: false, coordinationAvailable: true },
+    ])
+    expect(mget).toHaveBeenCalledOnce()
+  })
+
+  test('uses a local cooldown batch when Redis mget is unavailable', async () => {
+    const unavailable = {
+      eval: vi.fn().mockRejectedValue(new Error('unavailable')),
+      mget: vi.fn().mockRejectedValue(new Error('unavailable')),
+    }
+    await recordEsiResponse({
+      connection: unavailable as never,
+      operation: 'wallet-balance',
+      principal: 'character-90000002',
+      status: 429,
+      headers: new Headers({ 'retry-after': '12' }),
+    })
+
+    await expect(
+      getEsiRequestCooldowns({
+        connection: unavailable,
+        requests: [{ operation: 'wallet-transactions', principal: 'character-90000002' }],
+      }),
+    ).resolves.toMatchObject([{ active: true, coordinationAvailable: false }])
+  })
+
   test('owner-checked Lua release cannot delete another owner lease', async () => {
     const resource = identity('public-character', { characterId: 90_000_001 })
     const lease = await acquireEsiRequestLease(coordination, resource)
@@ -342,7 +391,7 @@ describe('ESI resilience Redis coordination', () => {
   })
 
   test('aggregates fixed-window call rates without retaining enumerable principals', async () => {
-    const now = Date.parse('2026-08-25T12:07:00.000Z')
+    const now = Date.now()
     await Promise.all([
       recordEsiRateMeasurement(cache, {
         operation: 'wallet-balance',

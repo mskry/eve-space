@@ -1,15 +1,14 @@
 import { describe, expect, test } from 'vitest'
-import { assertTransactionalMigration, loadMigrations } from '../src/db/migration-runner.js'
+import { loadMigrations } from '../src/db/migration-runner.js'
+import { assertTransactionalMigration } from '../src/db/migration-validation.js'
 
 describe('transactional migration validation', () => {
-  test.each(['009_domain_events.sql', '010_domain_event_relay_safety.sql'])(
-    'keeps %s transactional',
-    async (name) => {
-      const migration = (await loadMigrations()).find((candidate) => candidate.name === name)
-      expect(migration).toBeDefined()
-      expect(() => assertTransactionalMigration(migration!)).not.toThrow()
-    },
-  )
+  test('keeps every core migration transactional', async () => {
+    const migrations = await loadMigrations()
+    expect(migrations.length).toBeGreaterThan(0)
+    for (const migration of migrations)
+      expect(() => assertTransactionalMigration(migration)).not.toThrow()
+  })
 
   test('rejects concurrent unique indexes with an actionable statement name', () => {
     expect(() =>

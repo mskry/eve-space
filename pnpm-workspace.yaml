@@ -1,5 +1,8 @@
 packages:
   - 'api'
+  - 'packages/*'
+  - 'features/*/server'
+  - 'features/*/nuxt'
 
 injectWorkspacePackages: true
 

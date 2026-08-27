@@ -1,3 +1,7 @@
+import platformNuxtModule from '@eve-space/platform-module-nuxt'
+import { installedNuxtModules } from './generated/platform/installed-nuxt-modules'
+import { installedNuxtContributions } from './generated/platform/installed-nuxt-contributions'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -25,7 +29,10 @@ export default defineNuxtConfig({
       enabled: true,
     },
   },
-  modules: ['@pinia/nuxt', '@pinia/colada-nuxt'],
+  modules: [
+    [platformNuxtModule, { contributions: installedNuxtContributions }],
+    ...installedNuxtModules,
+  ],
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8788',

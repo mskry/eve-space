@@ -1,7 +1,14 @@
 import { and, asc, desc, eq, gt, lte, sql } from 'drizzle-orm'
 import { db } from './db/client.js'
 import { characterLockKey, characterLockNamespace } from './db/locks.js'
-import { characters, eveTokens, oauthStates, sessions, users } from './db/schema.js'
+import {
+  characters,
+  eveTokens,
+  oauthStates,
+  platformSubjectLifecycles,
+  sessions,
+  users,
+} from './db/schema.js'
 import { appendDomainEvent } from './domain-event-store.js'
 import { normalizeScopeSet } from './domain-events.js'
 import { env } from './env.js'
@@ -13,6 +20,10 @@ export interface CharacterSummary {
   corporationId: number
   allianceId: number | null
   isMain: boolean
+}
+
+export interface OwnedCharacterSummary extends CharacterSummary {
+  subjectLifecycleId: string
 }
 
 export interface SessionAccount {
@@ -135,6 +146,7 @@ export async function saveLogin(
       if (!user) throw new Error('Failed to create user')
       userId = user.id
       await transaction.insert(characters).values(characterValues(input, userId, true))
+      await createCharacterSubjectLifecycle(transaction, input.characterId)
     } else {
       await updateCharacterIdentity(transaction, input)
     }
@@ -180,7 +192,10 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
       throw new CharacterOwnershipConflictError()
 
     if (existingCharacter) await updateCharacterIdentity(transaction, input)
-    else await transaction.insert(characters).values(characterValues(input, input.userId, false))
+    else {
+      await transaction.insert(characters).values(characterValues(input, input.userId, false))
+      await createCharacterSubjectLifecycle(transaction, input.characterId)
+    }
 
     const scopes = normalizeScopeSet(input.scopes)
     await upsertCharacterToken(transaction, input.characterId, scopes, token)
@@ -245,10 +260,14 @@ export async function listUserCharacters(userId: string): Promise<CharacterSumma
 export async function findOwnedCharacter(
   userId: string,
   characterId: number,
-): Promise<CharacterSummary | null> {
+): Promise<OwnedCharacterSummary | null> {
   const [record] = await db
-    .select(characterSelection)
+    .select(ownedCharacterSelection)
     .from(characters)
+    .innerJoin(
+      platformSubjectLifecycles,
+      eq(platformSubjectLifecycles.characterId, characters.characterId),
+    )
     .where(ownedCharacterFilter(userId, characterId))
   return record ?? null
 }
@@ -293,15 +312,32 @@ export async function setMainCharacter(
   })
 }
 
-export async function deleteCharacter(userId: string, characterId: number) {
+export async function deleteCharacter(
+  userId: string,
+  characterId: number,
+  subjectLifecycleId: string,
+) {
   return db.transaction(async (transaction) => {
     if (!(await lockUserRow(transaction, userId))) return 'not-found' as const
+    await lockCharacterRow(transaction, characterId)
 
     const [target] = await transaction
-      .select(authorizationCharacterSelection)
+      .select({
+        ...authorizationCharacterSelection,
+        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      })
       .from(characters)
       .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
-      .where(ownedCharacterFilter(userId, characterId))
+      .innerJoin(
+        platformSubjectLifecycles,
+        eq(platformSubjectLifecycles.characterId, characters.characterId),
+      )
+      .where(
+        and(
+          ownedCharacterFilter(userId, characterId),
+          eq(platformSubjectLifecycles.subjectLifecycleId, subjectLifecycleId),
+        ),
+      )
     if (!target) return 'not-found' as const
     if (target.isMain) return 'main-character' as const
 
@@ -368,6 +404,34 @@ export async function findCharacterToken(
   return record ?? null
 }
 
+export async function findCharacterTokenForLifecycle(
+  characterId: number,
+  subjectLifecycleId: string,
+  connection: TokenReader = db,
+): Promise<StoredCharacterToken | null> {
+  const [record] = await connection
+    .select({
+      userId: characters.userId,
+      encryptedTokens: eveTokens.encryptedTokens,
+      accessTokenExpiresAt: eveTokens.accessTokenExpiresAt,
+      scopes: eveTokens.scopes,
+      tokenVersion: eveTokens.tokenVersion,
+    })
+    .from(eveTokens)
+    .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
+    .innerJoin(
+      platformSubjectLifecycles,
+      eq(platformSubjectLifecycles.characterId, characters.characterId),
+    )
+    .where(
+      and(
+        eq(eveTokens.characterId, characterId),
+        eq(platformSubjectLifecycles.subjectLifecycleId, subjectLifecycleId),
+      ),
+    )
+  return record ?? null
+}
+
 export async function updateCharacterToken(
   input: {
     characterId: number
@@ -397,8 +461,9 @@ export async function updateCharacterToken(
   return Boolean(updated)
 }
 
-export async function withCharacterTokenRefreshLock<T>(
+async function withCharacterTokenLock<T>(
   characterId: number,
+  findToken: (transaction: DatabaseTransaction) => Promise<StoredCharacterToken | null>,
   operation: (token: StoredCharacterToken, transaction: DatabaseTransaction) => Promise<T>,
 ) {
   try {
@@ -409,7 +474,7 @@ export async function withCharacterTokenRefreshLock<T>(
         sql.raw(`set local lock_timeout = '${env.TOKEN_REFRESH_LOCK_TIMEOUT_MS}ms'`),
       )
       await lockCharacterRow(transaction, characterId)
-      const token = await findCharacterToken(characterId, transaction)
+      const token = await findToken(transaction)
       if (!token) throw new CharacterTokenNotFoundError()
       return operation(token, transaction)
     })
@@ -419,12 +484,40 @@ export async function withCharacterTokenRefreshLock<T>(
   }
 }
 
+export async function withCharacterTokenRefreshLock<T>(
+  characterId: number,
+  operation: (token: StoredCharacterToken, transaction: DatabaseTransaction) => Promise<T>,
+) {
+  return withCharacterTokenLock(
+    characterId,
+    (transaction) => findCharacterToken(characterId, transaction),
+    operation,
+  )
+}
+
+export async function withCharacterTokenLifecycleLock<T>(
+  characterId: number,
+  subjectLifecycleId: string,
+  operation: (token: StoredCharacterToken, transaction: DatabaseTransaction) => Promise<T>,
+) {
+  return withCharacterTokenLock(
+    characterId,
+    (transaction) => findCharacterTokenForLifecycle(characterId, subjectLifecycleId, transaction),
+    operation,
+  )
+}
+
 const characterSelection = {
   characterId: characters.characterId,
   name: characters.name,
   corporationId: characters.corporationId,
   allianceId: characters.allianceId,
   isMain: characters.isMain,
+}
+
+const ownedCharacterSelection = {
+  ...characterSelection,
+  subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
 }
 
 const authorizationCharacterSelection = {
@@ -557,6 +650,22 @@ async function upsertCharacterToken(
         updatedAt: new Date(),
       },
     })
+}
+
+async function createCharacterSubjectLifecycle(
+  transaction: DatabaseTransaction,
+  characterId: number,
+) {
+  const [lifecycle] = await transaction
+    .insert(platformSubjectLifecycles)
+    .values({
+      subjectKind: 'character',
+      subjectId: String(characterId),
+      characterId,
+    })
+    .returning({ subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId })
+  if (!lifecycle) throw new Error('Failed to create character subject lifecycle')
+  return lifecycle.subjectLifecycleId
 }
 
 async function lockCharacterRow(transaction: DatabaseTransaction, characterId: number) {

@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto'
+import { collectionStateIdentityJson } from '../platform/collection-state.js'
+
 /**
  * PostgreSQL advisory lock identifiers.
  *
@@ -14,8 +17,10 @@
 export const migrationLockId = 410_024_413
 export const deploymentSetupLockId = 1_163_283_537
 
-/** Namespaced space: pg_advisory_xact_lock(int, int), keyed by EVE character ID. */
+/** Namespaced space: pg_advisory_lock(int, int) / pg_advisory_xact_lock(int, int). */
 export const characterLockNamespace = 1_163_277_105
+export const resourceRefreshLockNamespace = 1_163_277_106
+export const moduleMigrationLockNamespace = 410_024_414
 
 /**
  * Folds a character ID into the signed 32-bit second slot.
@@ -29,4 +34,42 @@ export function characterLockKey(characterId: number) {
   const high = Math.floor(characterId / 2 ** 32)
   const low = characterId % 2 ** 32
   return Math.trunc(low ^ high)
+}
+
+export function moduleMigrationLockKey(moduleId: string) {
+  return createHash('sha256')
+    .update('eve-space:module-migration-lock:v1\0', 'utf8')
+    .update(moduleId, 'utf8')
+    .digest()
+    .readInt32BE(0)
+}
+
+export function resourceRefreshLockKey(identity: {
+  readonly moduleId: string
+  readonly resourceId: string
+  readonly subjectKind: string
+  readonly subjectLifecycleId: string
+  readonly subjectId: string
+}) {
+  return createHash('sha256')
+    .update('eve-space:resource-refresh-lock:v1\0', 'utf8')
+    .update(collectionStateIdentityJson(identity), 'utf8')
+    .digest()
+    .readInt32BE(0)
+}
+
+export function assertDistinctModuleMigrationLockKeys(
+  moduleIds: readonly string[],
+  keyOf = moduleMigrationLockKey,
+) {
+  const owners = new Map<number, string>()
+  for (const moduleId of new Set(moduleIds)) {
+    const key = keyOf(moduleId)
+    const owner = owners.get(key)
+    if (owner)
+      throw new Error(
+        `Module migration advisory-lock key ${key} collides between ${owner} and ${moduleId}`,
+      )
+    owners.set(key, moduleId)
+  }
 }

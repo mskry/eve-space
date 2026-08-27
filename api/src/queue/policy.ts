@@ -13,3 +13,15 @@ export const workerHeartbeatTtlSeconds = Math.ceil(workerHeartbeatStaleAfterMs /
 
 export const schedulerLockTtlMs = 30_000
 export const schedulerLockRenewalMs = 10_000
+
+export const derivedResourcePriorityBand = {
+  highest: 1,
+  lowest: 2_097_151,
+} as const
+
+export function resourceRefreshPriority(materializationIntervalSeconds: number) {
+  if (!Number.isSafeInteger(materializationIntervalSeconds) || materializationIntervalSeconds <= 0)
+    throw new Error('Resource materialization interval must be a positive safe integer')
+
+  return Math.min(materializationIntervalSeconds, derivedResourcePriorityBand.lowest)
+}

@@ -5,10 +5,13 @@ import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 import { env } from './env.js'
 import { CharacterTokenNotFoundError } from './auth-store.js'
+import { installedModuleRoutes } from './generated/platform/installed-module-routes.js'
+import { routeNotFoundBody } from './http-contracts.js'
 import { adminRoutes } from './routes/admin.js'
 import { characterRoutes } from './routes/characters.js'
 import { corporationRoutes } from './routes/corporations.js'
 import { healthRoutes } from './routes/health.js'
+import { moduleRuntimeRoutes } from './routes/modules.js'
 import { publicCharacterRoutes } from './routes/public-characters.js'
 import { statusRoutes } from './routes/status.js'
 import { ssoRoutes } from './sso-routes.js'
@@ -21,6 +24,8 @@ export const app = new Hono()
   .use('/auth/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
   .route('/health', healthRoutes)
   .route('/api/status', statusRoutes)
+  .route('/api/modules', moduleRuntimeRoutes)
+  .route('/api/modules', installedModuleRoutes)
   .use('/api/admin/*', loadSession, requireSession)
   .use('/api/characters/*', loadSession, requireSession)
   .use('/api/corporations/*', loadSession, requireSession)
@@ -30,7 +35,7 @@ export const app = new Hono()
   .route('/api/corporations', corporationRoutes)
   .route('/auth', ssoRoutes)
 
-app.notFound((context) => context.json({ message: 'Route not found' }, 404))
+app.notFound((context) => context.json(routeNotFoundBody, 404))
 
 app.onError((error, context) => {
   if (error instanceof CharacterTokenNotFoundError) {

@@ -10,7 +10,11 @@ const mocks = vi.hoisted(() => {
     findAdminCredentials: vi.fn(),
     findAdminSession: vi.fn(),
     isDeploymentConfigured: vi.fn(),
+    listInstalledModuleSettings: vi.fn(),
+    loadInstalledShellNavigationOrder: vi.fn(),
     resolveOrganization: vi.fn(),
+    saveInstalledShellNavigationOrder: vi.fn(),
+    setInstalledModuleEnabled: vi.fn(),
     updateOrganization: vi.fn(),
   }
 })
@@ -38,6 +42,17 @@ vi.mock('../src/deployment-organization.js', () => ({
   resolveDeploymentOrganization: mocks.resolveOrganization,
 }))
 
+vi.mock('../src/platform/module-settings.js', () => ({
+  isCompleteShellNavigationOrder: (order: {
+    dashboard: readonly unknown[]
+    character: readonly unknown[]
+  }) => order.dashboard.length === 4 && order.character.length === 4,
+  listInstalledModuleSettings: mocks.listInstalledModuleSettings,
+  loadInstalledShellNavigationOrder: mocks.loadInstalledShellNavigationOrder,
+  saveInstalledShellNavigationOrder: mocks.saveInstalledShellNavigationOrder,
+  setInstalledModuleEnabled: mocks.setInstalledModuleEnabled,
+}))
+
 import { adminRoutes } from '../src/routes/admin.js'
 import { hashPassword } from '../src/security.js'
 
@@ -53,6 +68,26 @@ const account = {
   role: 'owner' as const,
   organization,
 }
+const moduleSetting = {
+  moduleId: 'alpha',
+  enabled: true,
+  defaultEnabled: false,
+  updatedAt: '2026-08-25T12:00:00.000Z',
+}
+const shellNavigationOrder = {
+  dashboard: [
+    { ownerId: 'core', navigationId: 'core-overview' },
+    { ownerId: 'core', navigationId: 'core-characters' },
+    { ownerId: 'core', navigationId: 'core-settings' },
+    { ownerId: 'core', navigationId: 'core-admin' },
+  ],
+  character: [
+    { ownerId: 'core', navigationId: 'core-character-overview' },
+    { ownerId: 'core', navigationId: 'core-character-skills' },
+    { ownerId: 'core', navigationId: 'core-character-wallet' },
+    { ownerId: 'core', navigationId: 'core-character-history' },
+  ],
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -60,6 +95,10 @@ beforeEach(() => {
   mocks.resolveOrganization.mockResolvedValue(organization)
   mocks.createDeployment.mockResolvedValue(account)
   mocks.findAdminSession.mockResolvedValue(account)
+  mocks.listInstalledModuleSettings.mockResolvedValue([])
+  mocks.loadInstalledShellNavigationOrder.mockResolvedValue(shellNavigationOrder)
+  mocks.saveInstalledShellNavigationOrder.mockResolvedValue(shellNavigationOrder)
+  mocks.setInstalledModuleEnabled.mockResolvedValue(moduleSetting)
 })
 
 describe('deployment administration routes', () => {
@@ -182,6 +221,102 @@ describe('deployment administration routes', () => {
     expect(await response.json()).toEqual({ organization })
     expect(mocks.updateOrganization).toHaveBeenCalledWith(organization)
   })
+
+  test('requires a local owner session before listing installed modules', async () => {
+    mocks.findAdminSession.mockResolvedValue(null)
+
+    const response = await adminRoutes.request('/modules', {
+      headers: { Cookie: 'eve_space_admin_session=expired-token' },
+    })
+
+    expect(response.status).toBe(401)
+    expect(mocks.listInstalledModuleSettings).not.toHaveBeenCalled()
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
+
+  test('lists current module settings for the local owner', async () => {
+    mocks.listInstalledModuleSettings.mockResolvedValue([moduleSetting])
+
+    const response = await adminRoutes.request('/modules', {
+      headers: { Cookie: 'eve_space_admin_session=session-token' },
+    })
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ modules: [moduleSetting] })
+  })
+
+  test('validates explicit module enablement before mutation', async () => {
+    const response = await moduleEnablementRequest('alpha', { enabled: 'false' })
+
+    expect(response.status).toBe(400)
+    expect(mocks.setInstalledModuleEnabled).not.toHaveBeenCalled()
+  })
+
+  test('returns not found rather than mutating an uninstalled module row', async () => {
+    mocks.setInstalledModuleEnabled.mockResolvedValue(null)
+
+    const response = await moduleEnablementRequest('removed-module', { enabled: true })
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toMatchObject({ code: 'MODULE_NOT_FOUND' })
+    expect(mocks.setInstalledModuleEnabled).toHaveBeenCalledWith('removed-module', true)
+  })
+
+  test('sets an installed module to the requested state idempotently', async () => {
+    const response = await moduleEnablementRequest('alpha', { enabled: true })
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ module: moduleSetting })
+    expect(mocks.setInstalledModuleEnabled).toHaveBeenCalledWith('alpha', true)
+  })
+
+  test('rejects module state changes from an untrusted origin', async () => {
+    const response = await moduleEnablementRequest(
+      'alpha',
+      { enabled: true },
+      'https://attacker.invalid',
+    )
+
+    expect(response.status).toBe(403)
+    expect(mocks.findAdminSession).not.toHaveBeenCalled()
+    expect(mocks.setInstalledModuleEnabled).not.toHaveBeenCalled()
+  })
+
+  test('loads and replaces the shared shell order without presentation metadata', async () => {
+    const headers = { Cookie: 'eve_space_admin_session=session-token' }
+    const loaded = await adminRoutes.request('/shell-navigation-order', { headers })
+    expect(await loaded.json()).toEqual({ shellNavigationOrder })
+
+    const saved = await adminRoutes.request('/shell-navigation-order', {
+      method: 'PUT',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+        Origin: 'http://localhost:3000',
+      },
+      body: JSON.stringify({ shellNavigationOrder }),
+    })
+    expect(saved.status).toBe(200)
+    await expect(saved.json()).resolves.toEqual({ shellNavigationOrder })
+    expect(mocks.saveInstalledShellNavigationOrder).toHaveBeenCalledWith(shellNavigationOrder)
+  })
+
+  test('rejects incomplete shell orders before persistence', async () => {
+    const response = await adminRoutes.request('/shell-navigation-order', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: 'eve_space_admin_session=session-token',
+        Origin: 'http://localhost:3000',
+      },
+      body: JSON.stringify({
+        shellNavigationOrder: { ...shellNavigationOrder, character: [] },
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(mocks.saveInstalledShellNavigationOrder).not.toHaveBeenCalled()
+  })
 })
 
 function setupRequest(overrides: { setupSecret?: string; origin?: string } = {}) {
@@ -210,5 +345,21 @@ function organizationRequest() {
       Origin: 'http://localhost:3000',
     },
     body: JSON.stringify({ organizationType: 'alliance', organizationId: organization.id }),
+  })
+}
+
+function moduleEnablementRequest(
+  moduleId: string,
+  body: unknown,
+  origin = 'http://localhost:3000',
+) {
+  return adminRoutes.request(`/modules/${moduleId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: 'eve_space_admin_session=session-token',
+      Origin: origin,
+    },
+    body: JSON.stringify(body),
   })
 }

@@ -142,6 +142,50 @@ describe('durable worker platform', () => {
     }
   })
 
+  test('moves resource cooldowns to delayed without consuming the delivery attempt', async () => {
+    const { startWorkerPlatform, createOperationsQueue, closeOperationsQueue } = await loadPlatform(
+      vi.fn(),
+    )
+    const { EsiQuotaError } = await import('../../../src/esi-resilience/cooldowns.js')
+    const { getJobDefinition, jobOptions } = await import('../../../src/queue/job-registry.js')
+    const definition = getJobDefinition('resource-refresh') as unknown as {
+      name: string
+      process(): Promise<void>
+    }
+    const originalProcess = definition.process
+    const retryAt = new Date(Date.now() + 30_000)
+    definition.process = async () => {
+      throw new EsiQuotaError(30, retryAt.getTime() - 30_000)
+    }
+    const platform = await startWorkerPlatform()
+    platforms.push(platform)
+    const queue = createOperationsQueue()
+    try {
+      await queue.add(
+        definition.name,
+        {
+          moduleId: 'member-audit',
+          resourceId: 'character-skills',
+          subjectKind: 'character',
+          subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+          subjectId: '1404328063',
+        },
+        jobOptions(definition as never),
+      )
+      await waitFor(async () =>
+        (await queue.getJobs(['delayed'])).some((job) => job.name === 'resource-refresh'),
+      )
+      const delayed = (await queue.getJobs(['delayed'])).find(
+        (job) => job.name === 'resource-refresh',
+      )
+      expect(delayed?.attemptsMade).toBe(0)
+      expect(delayed?.name).toBe('resource-refresh')
+    } finally {
+      definition.process = originalProcess
+      await closeOperationsQueue(queue)
+    }
+  })
+
   test('preserves the deployment offset when the worker schedules the next occurrence', async () => {
     const previousSchedule = process.env.QUEUE_PLANNER_SCHEDULE
     const previousOffset = process.env.QUEUE_PLANNER_SCHEDULE_OFFSET_MS
@@ -660,7 +704,10 @@ describe('durable worker platform', () => {
 })
 
 function migratedConnection() {
-  return vi.fn().mockResolvedValue([{ exists: true, applied: true }])
+  return vi
+    .fn()
+    .mockResolvedValueOnce([{ exists: true, qualified: true }])
+    .mockResolvedValueOnce([{ module: 'core', name: '001_initial.sql' }])
 }
 
 async function flushQueueRedis() {

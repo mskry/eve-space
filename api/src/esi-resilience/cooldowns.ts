@@ -13,8 +13,16 @@ const localInFlight = new Map<string, number>()
 let localGlobalCooldownUntil = 0
 
 export class EsiQuotaError extends Error {
-  constructor(readonly retryAfterSeconds: number) {
+  readonly retryAt: Date
+
+  constructor(
+    readonly retryAfterSeconds: number,
+    now = Date.now(),
+    retryAt?: Date,
+  ) {
     super('ESI quota is temporarily exhausted')
+    this.name = 'EsiQuotaError'
+    this.retryAt = retryAt ?? new Date(now + retryAfterSeconds * 1_000)
   }
 }
 
@@ -29,6 +37,95 @@ export interface EsiCooldownStatus {
   checkedAt: string
   globalRetryAt: string | null
   activeOperations: Array<{ operation: EsiOperation; retryAt: string }>
+}
+
+export interface EsiRequestCooldown {
+  active: boolean
+  retryAfterSeconds: number | null
+  coordinationAvailable: boolean
+}
+
+export interface EsiCooldownRequest {
+  readonly operation: EsiOperation
+  readonly principal?: string
+}
+
+interface EsiCooldownBatchConnection {
+  mget(...keys: string[]): Promise<(string | null)[]>
+}
+
+export async function getEsiRequestCooldowns(options: {
+  connection: EsiCooldownBatchConnection
+  requests: readonly EsiCooldownRequest[]
+  now?: number
+}): Promise<readonly EsiRequestCooldown[]> {
+  if (options.requests.length > env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE)
+    throw new Error('ESI cooldown batch exceeds the resource planner page bound')
+  if (options.requests.length === 0) return []
+  const now = options.now ?? Date.now()
+  const globalKey = `${quotaCoordinationPrefix}:cooldown:global`
+  const requestKeys = options.requests.map(({ operation, principal }) => {
+    const normalizedPrincipal = normalizePrincipal(principal)
+    return {
+      operation,
+      principal: normalizedPrincipal,
+      identity: `${operation}:${normalizedPrincipal}`,
+      key: cooldownKey(operation, `${operation}:${normalizedPrincipal}`, principal),
+    }
+  })
+  const keys = [globalKey, ...new Set(requestKeys.map(({ key }) => key))]
+  try {
+    const values = await options.connection.mget(...keys)
+    const retryAtByKey = new Map(keys.map((key, index) => [key, Number(values[index] ?? 0)]))
+    const globalRetryAt = retryAtByKey.get(globalKey) ?? 0
+    return requestKeys.map(({ key }) =>
+      toCooldown(Math.max(globalRetryAt, retryAtByKey.get(key) ?? 0), now, true),
+    )
+  } catch {
+    return requestKeys.map(({ operation, identity, principal }) =>
+      toCooldown(localCooldownUntil(operation, identity, principal, now), now, false),
+    )
+  }
+}
+
+export async function getEsiRequestCooldown(options: {
+  connection: Pick<Redis, 'get'>
+  operation: EsiOperation
+  principal?: string
+  now?: number
+}): Promise<EsiRequestCooldown> {
+  const principal = normalizePrincipal(options.principal)
+  const identity = `${options.operation}:${principal}`
+  const now = options.now ?? Date.now()
+  let retryAt: number
+  let coordinationAvailable = true
+  try {
+    const [globalCooldown, operationCooldown] = await Promise.all([
+      options.connection.get(`${quotaCoordinationPrefix}:cooldown:global`),
+      options.connection.get(cooldownKey(options.operation, identity, options.principal)),
+    ])
+    retryAt = Math.max(Number(globalCooldown ?? 0), Number(operationCooldown ?? 0))
+  } catch {
+    coordinationAvailable = false
+    retryAt = localCooldownUntil(options.operation, identity, principal, now)
+  }
+  return {
+    active: retryAt > now,
+    retryAfterSeconds: retryAt > now ? Math.max(1, Math.ceil((retryAt - now) / 1_000)) : null,
+    coordinationAvailable,
+  }
+}
+
+function toCooldown(
+  retryAt: number,
+  now: number,
+  coordinationAvailable: boolean,
+): EsiRequestCooldown {
+  return {
+    active: retryAt > now,
+    retryAfterSeconds: retryAt > now ? Math.max(1, Math.ceil((retryAt - now) / 1_000)) : null,
+    coordinationAvailable,
+  }
 }
 
 export async function acquireEsiRequestPermit(options: {
@@ -138,16 +235,11 @@ async function acquireLocalPermit(
 ): Promise<EsiRequestPermit> {
   const limit = Math.max(1, Math.floor(sharedConcurrency / 2))
   while (Date.now() < deadline) {
-    pruneLocalCooldowns(Date.now())
-    const group = getDeclaredRateGroup(operation)
+    const now = Date.now()
     const principal = identity.slice(operation.length + 1)
-    const cooldownUntil = Math.max(
-      localGlobalCooldownUntil,
-      localOperationCooldowns.get(identity) ?? 0,
-      group ? (localGroupCooldowns.get(`${group}:${principal}`) ?? 0) : 0,
-    )
-    if (cooldownUntil > Date.now())
-      throw new EsiQuotaError(Math.max(1, Math.ceil((cooldownUntil - Date.now()) / 1_000)))
+    const cooldownUntil = localCooldownUntil(operation, identity, principal, now)
+    if (cooldownUntil > now)
+      throw new EsiQuotaError(Math.max(1, Math.ceil((cooldownUntil - now) / 1_000)))
     const count = localInFlight.get(operation) ?? 0
     if (count < limit) {
       localInFlight.set(operation, count + 1)
@@ -165,6 +257,21 @@ async function acquireLocalPermit(
     await wait(Math.min(permitPollMs, Math.max(1, deadline - Date.now())))
   }
   throw new EsiQuotaError(1)
+}
+
+function localCooldownUntil(
+  operation: EsiOperation,
+  identity: string,
+  principal: string,
+  now: number,
+) {
+  pruneLocalCooldowns(now)
+  const group = getDeclaredRateGroup(operation)
+  return Math.max(
+    localGlobalCooldownUntil,
+    localOperationCooldowns.get(identity) ?? 0,
+    group ? (localGroupCooldowns.get(`${group}:${principal}`) ?? 0) : 0,
+  )
 }
 
 function recordLocalCooldowns(

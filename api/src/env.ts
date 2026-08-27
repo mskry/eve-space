@@ -45,6 +45,7 @@ const schema = z.object({
   CACHE_REDIS_URL: redisUrl.default('redis://localhost:6380'),
   ESI_CACHE_L1_MAX_ENTRIES: positiveInteger.default(250),
   ESI_CACHE_MAX_RETENTION_SECONDS: positiveInteger.default(86_400),
+  MODULE_RUNTIME_CACHE_TTL_MS: positiveInteger.max(30_000).default(5_000),
   ESI_OPERATION_CONCURRENCY: positiveInteger.default(6),
   ESI_OPERATION_QUEUE_TIMEOUT_MS: positiveInteger.default(30_000),
   AFFILIATION_ACTIVE_INTERVAL_SECONDS: positiveInteger.default(3_600),
@@ -64,6 +65,7 @@ const schema = z.object({
   QUEUE_FAILED_RETENTION_COUNT: positiveInteger.default(5_000),
   QUEUE_OPERATION_CONCURRENCY: positiveInteger.default(10),
   QUEUE_HIGH_WATER_MARK: positiveInteger.default(1_000),
+  QUEUE_RESOURCE_PLANNER_PAGE_SIZE: positiveInteger.default(100),
   QUEUE_PLANNER_SCHEDULE: cronSchedule.default('*/15 * * * *'),
   QUEUE_PLANNER_SCHEDULE_OFFSET_MS: optionalNonNegativeInteger,
   QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: positiveInteger.default(60_000),
@@ -112,6 +114,14 @@ const schemaWithInvariants = schema.superRefine((values, context) => {
     context.addIssue({
       code: 'custom',
       path: ['OUTBOX_RELAY_BATCH_SIZE'],
+      message: `Expected no more than QUEUE_HIGH_WATER_MARK (${values.QUEUE_HIGH_WATER_MARK})`,
+    })
+  }
+
+  if (values.QUEUE_RESOURCE_PLANNER_PAGE_SIZE > values.QUEUE_HIGH_WATER_MARK) {
+    context.addIssue({
+      code: 'custom',
+      path: ['QUEUE_RESOURCE_PLANNER_PAGE_SIZE'],
       message: `Expected no more than QUEUE_HIGH_WATER_MARK (${values.QUEUE_HIGH_WATER_MARK})`,
     })
   }

@@ -20,18 +20,19 @@ type AffiliationPlannerOutcome =
   | 'coalesced'
   | 'failed'
 
-export async function runAffiliationPlanner(queue: Queue, signal?: AbortSignal) {
-  return runAffiliationPlannerWithDependencies(queue, signal)
-}
-
-export async function runAffiliationPlannerWithDependencies(
-  queue: Queue,
-  signal?: AbortSignal,
-  dependencies: {
+interface AffiliationPlannerOptions {
+  readonly dependencies?: {
     cooldownActive?: () => Promise<boolean>
     selectDue?: typeof selectDueAffiliationCharacterIds
-  } = {},
+  }
+}
+
+export async function runAffiliationPlanner(
+  queue: Queue,
+  signal?: AbortSignal,
+  options: AffiliationPlannerOptions = {},
 ) {
+  const dependencies = options.dependencies ?? {}
   let planned = 0
   try {
     signal?.throwIfAborted()

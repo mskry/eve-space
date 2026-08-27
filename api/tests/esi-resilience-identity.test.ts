@@ -30,6 +30,15 @@ describe('ESI representation identity', () => {
     expect(first.digest).not.toBe(respelled.digest)
   })
 
+  test('projects identity fields from validated SDK request envelopes', () => {
+    const flat = identity('wallet-balance', { characterId: 42 })
+    const path = identity('wallet-balance', { path: { character_id: 42 } })
+    const batch = identity('universe-resolve-names', { body: { ids: [20, 10] } })
+
+    expect(path).toEqual(flat)
+    expect(batch).toEqual(identity('universe-resolve-names', { ids: [10, 20] }))
+  })
+
   test('separates operations, compatibility dates, and representation versions', () => {
     const races = identity('universe-races', {})
     const bloodlines = identity('universe-bloodlines', {})

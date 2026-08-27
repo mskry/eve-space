@@ -1,6 +1,7 @@
 import { sql } from './db/client.js'
 import { env, isSsoConfigured } from './env.js'
 import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog.js'
+import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
 import { startWorkerPlatform } from './queue/platform.js'
 import { assertWorkerStartupDependencies } from './worker-readiness.js'
 
@@ -10,6 +11,7 @@ export async function startWorker() {
     ssoEnabled: isSsoConfigured(),
     requestableScopes: env.EVE_SCOPES.split(/\s+/).filter(Boolean),
   })
+  assertInstalledResourceDeclarations()
   let shutdownRequested = false
   const shutdown = new Promise<void>((resolve) => {
     const requestShutdown = () => {

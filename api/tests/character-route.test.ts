@@ -94,6 +94,8 @@ const altCharacter = {
   allianceId: 99000001,
   isMain: false,
 }
+const altSubjectLifecycleId = 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011'
+const ownedAltCharacter = { ...altCharacter, subjectLifecycleId: altSubjectLifecycleId }
 const session = { userId, mainCharacter }
 const profile = {
   id: altCharacter.characterId,
@@ -112,7 +114,7 @@ const profile = {
 beforeEach(() => {
   mocks.deleteCharacter.mockResolvedValue('deleted')
   mocks.findSession.mockResolvedValue(session)
-  mocks.findOwnedCharacter.mockResolvedValue(altCharacter)
+  mocks.findOwnedCharacter.mockResolvedValue(ownedAltCharacter)
   mocks.listUserCharacters.mockResolvedValue([mainCharacter, altCharacter])
   mocks.setMainCharacter.mockResolvedValue({ ...altCharacter, isMain: true })
   mocks.getCharacterProfile.mockResolvedValue(profile)
@@ -529,7 +531,11 @@ describe('character deletion', () => {
 
     expect(response.status).toBe(204)
     expect(await response.text()).toBe('')
-    expect(mocks.deleteCharacter).toHaveBeenCalledWith(userId, altCharacter.characterId)
+    expect(mocks.deleteCharacter).toHaveBeenCalledWith(
+      userId,
+      altCharacter.characterId,
+      altSubjectLifecycleId,
+    )
   })
 
   test('rejects deletion of the current main character', async () => {

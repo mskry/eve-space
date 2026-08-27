@@ -1,4 +1,4 @@
-interface MigrationSource {
+export interface Migration {
   name: string
   sql: string
 }
@@ -22,7 +22,7 @@ const nonTransactionalStatements = [
   { name: 'VACUUM', pattern: /\bvacuum\b/i },
 ]
 
-export function assertTransactionalMigration(migration: MigrationSource) {
+export function assertTransactionalMigration(migration: Migration) {
   const statement = stripSqlLiteralsAndComments(migration.sql)
   const unsupported = nonTransactionalStatements.find(({ pattern }) => pattern.test(statement))
 

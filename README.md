@@ -147,6 +147,10 @@ The API exports its chained Hono `AppType`. Nuxt uses `hono/client` to build URL
 
 - `GET /health` checks API and PostgreSQL availability.
 - `GET /api/status` returns replica-local API, PostgreSQL, Tranquility, queue, and safe ESI resilience telemetry.
+- `GET /api/modules` returns enabled module identities and the resolved shared shell navigation order.
+- `GET /api/admin/modules` lists installed module settings for the deployment administrator.
+- `PUT /api/admin/modules/:moduleId` enables or disables an installed module at runtime.
+- `GET|PUT /api/admin/shell-navigation-order` reads or rearranges the deployment-wide shell order.
 - `GET /api/characters/:characterId` returns a public EVE character profile inside the authenticated application.
 - `GET /api/me/characters` returns the authenticated user's attached character roster.
 - `GET /api/me/characters/:characterId` returns an owned character's profile, location, ship, and skill-point summary.
@@ -161,6 +165,11 @@ The API exports its chained Hono `AppType`. Nuxt uses `hono/client` to build URL
 - `GET /auth/eve/callback` verifies intent-bound state, exchanges the code, and validates the JWT.
 - `GET /auth/session` returns the application user and nested current-main summary.
 - `POST /auth/logout` revokes the local session.
+
+Installed module server packages run inside the existing API and worker processes; they are package
+boundaries, not one service per module. Installation, runtime enablement, safe disablement, migration
+failure, retained data, telemetry, and explicit removal are documented in
+[`docs/platform-module-foundation.md`](docs/platform-module-foundation.md).
 
 ## Security Decisions
 
