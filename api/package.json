@@ -7,7 +7,8 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "build": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsc",
+    "build": "pnpm build:dependencies && tsc",
+    "build:dependencies": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsx ../scripts/run-installed-module-package-script.ts server build",
     "dev": "tsx src/db/migrate.ts && tsx watch src/server.ts",
     "migrate": "tsx src/db/migrate.ts",
     "esi:rates": "tsx --env-file=../.env src/report-esi-call-rates.ts",
@@ -20,9 +21,10 @@
     "worker:rollback:verify": "tsx src/verify-worker-rollback.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:packaging": "vitest run --config vitest.packaging.config.ts",
     "test:postgres": "vitest run --config vitest.postgres.config.ts",
     "test:redis": "vitest run --config vitest.redis.config.ts --coverage",
-    "typecheck": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsc --noEmit && tsc --project tsconfig.test.json --noEmit"
+    "typecheck": "pnpm build:dependencies && pnpm --filter @eve-space/platform-module-server typecheck && tsx ../scripts/run-installed-module-package-script.ts server typecheck && tsc --noEmit && tsc --project tsconfig.test.json --noEmit"
   },
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",

@@ -8,7 +8,7 @@ export default defineConfig({
       DATABASE_URL: 'postgres://localhost:5432/eve_space',
     },
     include: ['tests/**/*.test.ts'],
-    exclude: ['tests/integration/**/*.test.ts'],
+    exclude: ['tests/integration/**/*.test.ts', 'tests/packaging/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       include: [

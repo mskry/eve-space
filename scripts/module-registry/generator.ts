@@ -50,13 +50,20 @@ export async function loadInstalledModuleManifests(root: string) {
       if (manifest.id !== id)
         throw new Error(`Installed module ${id} descriptor declares mismatched ID ${manifest.id}`)
 
-      validatePackageManifest(featureDirectory, 'server', manifest.server.package)
+      validatePackageManifest(
+        featureDirectory,
+        'server',
+        manifest.server.package,
+        manifest.server.migrations.map(({ name }) => name),
+      )
       validatePackageManifest(featureDirectory, 'nuxt', manifest.nuxt.package)
       return manifest
     }),
   )
 
-  return validatePlatformModuleManifests(manifests, coreModuleValidationAuthorities)
+  const validated = validatePlatformModuleManifests(manifests, coreModuleValidationAuthorities)
+  validateDeploymentDependencies(root, validated)
+  return validated
 }
 
 export function generateRegistryFiles(manifests: readonly PlatformModuleManifest[]) {
@@ -77,6 +84,7 @@ function validatePackageManifest(
   featureDirectory: string,
   kind: 'server' | 'nuxt',
   expected: string,
+  migrations: readonly string[] = [],
 ) {
   const packagePath = join(featureDirectory, kind, 'package.json')
   if (!existsSync(packagePath)) throw new Error(`Module package is missing ${packagePath}`)
@@ -84,6 +92,71 @@ function validatePackageManifest(
   if (!isRecord(packageJson)) throw new Error(`${packagePath} must contain a JSON object`)
   if (packageJson.name !== expected)
     throw new Error(`${packagePath} must declare package name ${expected}`)
+  if (!Array.isArray(packageJson.files) || !packageJson.files.includes('dist'))
+    throw new Error(`${packagePath} files must include dist`)
+  if (!isRecord(packageJson.exports) || !('.' in packageJson.exports))
+    throw new Error(`${packagePath} must export its runtime`)
+  if (kind !== 'server') return
+
+  if (!packageJson.files.includes('migrations'))
+    throw new Error(`${packagePath} files must include migrations`)
+  if (!('./migrations/*' in packageJson.exports))
+    throw new Error(`${packagePath} must export ./migrations/*`)
+  for (const migration of migrations) {
+    const migrationPath = join(featureDirectory, 'server', 'migrations', migration)
+    if (!existsSync(migrationPath)) throw new Error(`Module migration is missing ${migrationPath}`)
+  }
+}
+
+function validateDeploymentDependencies(
+  root: string,
+  manifests: readonly PlatformModuleManifest[],
+) {
+  const rootPackage = readPackageJson(join(root, 'package.json'))
+  const apiPackage = readPackageJson(join(root, 'api/package.json'))
+  const expectedServer = new Set(manifests.map((manifest) => manifest.server.package))
+  const expectedNuxt = new Set(manifests.map((manifest) => manifest.nuxt.package))
+  const rootDependencies = dependencyNames(rootPackage)
+  const apiDependencies = dependencyNames(apiPackage)
+  const actualServer = new Set(
+    [...apiDependencies].filter(
+      (name) =>
+        name !== '@eve-space/platform-module-server' && /^@eve-space\/.+-server$/.test(name),
+    ),
+  )
+  const actualNuxt = new Set(
+    [...rootDependencies].filter(
+      (name) => name !== '@eve-space/platform-module-nuxt' && /^@eve-space\/.+-nuxt$/.test(name),
+    ),
+  )
+
+  assertExactDependencies('API feature server', actualServer, expectedServer)
+  assertExactDependencies('root feature Nuxt', actualNuxt, expectedNuxt)
+  for (const packageName of expectedNuxt)
+    if (apiDependencies.has(packageName))
+      throw new Error(`API dependencies must not include feature Nuxt package ${packageName}`)
+  for (const packageName of expectedServer)
+    if (rootDependencies.has(packageName))
+      throw new Error(`Root dependencies must not include feature server package ${packageName}`)
+}
+
+function readPackageJson(path: string) {
+  const value: unknown = JSON.parse(readFileSync(path, 'utf8'))
+  if (!isRecord(value)) throw new Error(`${path} must contain a JSON object`)
+  return value
+}
+
+function dependencyNames(packageJson: Record<string, unknown>) {
+  return new Set(isRecord(packageJson.dependencies) ? Object.keys(packageJson.dependencies) : [])
+}
+
+function assertExactDependencies(label: string, actual: Set<string>, expected: Set<string>) {
+  const missing = [...expected].filter((name) => !actual.has(name))
+  const extra = [...actual].filter((name) => !expected.has(name))
+  if (missing.length || extra.length)
+    throw new Error(
+      `${label} dependencies differ from installed modules (missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'})`,
+    )
 }
 
 function renderApiRoutes(manifests: readonly PlatformModuleManifest[]) {

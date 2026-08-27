@@ -6,6 +6,7 @@ node_modules
 coverage
 coverage-redis
 dist
+features/*/nuxt
 .env
 .env.*
 *.log

@@ -12,6 +12,9 @@
         "layers/*/app/components/**/*.vue",
         "layers/*/app/{composables,plugins,utils}/**/*.ts",
         "generated/platform/*.ts",
+        "features/*/server/{src,test}/**/*.ts",
+        "features/*/nuxt/src/**/*.{ts,tsx,vue}",
+        "features/*/nuxt/test/**/*.{ts,tsx,vue}",
         "scripts/module-registry/source-extensions.d.mts",
       ],
       // vue-tsc is invoked by Nuxt's `typescript.typeCheck`, not by an import.
@@ -35,9 +38,19 @@
     "packages/platform-module-contract": {
       "project": ["src/**/*.ts"],
     },
-    "packages/platform-module-nuxt": {
-      "entry": ["src/runtime/app/{composables,middleware}/**/*.ts"],
+    "packages/platform-module-server": {
       "project": ["src/**/*.ts"],
+    },
+    "packages/platform-module-nuxt": {
+      "entry": [
+        "src/runtime/app/{composables,middleware}/**/*.ts",
+        "test/**/*.test.ts",
+        "test/fixtures/*/app.vue",
+        "test/fixtures/*/app/**/*.{ts,vue}",
+        "test/fixtures/*/modules/*/src/**/*.{js,ts,vue}",
+        "test/fixtures/*/nuxt.config.ts",
+      ],
+      "project": ["src/**/*.ts", "test/**/*.{ts,js,vue}"],
     },
   },
 }

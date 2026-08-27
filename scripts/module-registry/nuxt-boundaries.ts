@@ -8,9 +8,9 @@ export interface ModuleNuxtSource {
   readonly source: string
 }
 
-const sourceExtensions = new Set(['.ts', '.tsx', '.vue'])
+const sourceExtensions = new Set(['.js', '.mjs', '.mts', '.ts', '.tsx', '.vue'])
 const serverOnlyDependencyPattern =
-  /^(?:(?:node:)?(?:fs|child_process|net|tls|http|https)|postgres|drizzle-orm)(?:\/|$)/
+  /^(?:@eve-space\/(?:api|platform-module-server|.+-server)|(?:node:)?(?:fs|child_process|net|tls|http|https)|postgres|drizzle-orm)(?:\/|$)/
 
 export async function loadFeatureNuxtSources(root: string): Promise<readonly ModuleNuxtSource[]> {
   const modules = await loadInstalledModuleIds(root)
@@ -67,8 +67,8 @@ async function sourceFiles(
 function sourceViolations(source: ModuleNuxtSource) {
   const violations: string[] = []
   const runtimePath = `/nuxt/src/runtime/app/`
-  const isModuleSetup = source.path.endsWith('/nuxt/src/module.ts')
-  if (!source.path.includes(runtimePath) && !source.path.endsWith('/nuxt/src/module.ts'))
+  const isModuleSetup = /\/nuxt\/src\/module\.(?:[cm]?[jt]s)$/.test(source.path)
+  if (!source.path.includes(runtimePath) && !isModuleSetup)
     violations.push(`${source.path}: Nuxt source must live under src/runtime/app`)
 
   const sourceFile = ts.createSourceFile(source.path, source.source, ts.ScriptTarget.Latest, true)

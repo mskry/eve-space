@@ -18,6 +18,9 @@
   ],
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:fixtures": "vitest run test/platform-module.nuxt.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,7 +30,11 @@
     "@pinia/colada": "^1.4.2"
   },
   "devDependencies": {
+    "@nuxt/test-utils": "^4.1.0",
     "@types/node": "^24.13.3",
-    "typescript": "~5.9.3"
+    "@vitest/coverage-v8": "^4.1.11",
+    "nuxt": "^4.5.2",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.11"
   }
 }

@@ -26,3 +26,19 @@ or any other path under `api/src`.
 
 Every descriptor declares a default platform icon. Navigation entries inherit it unless they
 declare an explicit icon override.
+
+## Install Or Remove A Feature
+
+Installation is static. Adding a directory is not enough:
+
+1. Add or remove the module ID in `installed-modules.json`.
+2. Add or remove the server package from `api/package.json` and the Nuxt package from the root `package.json`.
+3. Run `pnpm registry:generate` and `pnpm registry:check`.
+4. Run `pnpm test:packaging` to verify the API image and combined Nuxt build.
+5. Deploy rebuilt API/worker and Nuxt artifacts.
+
+Runtime enablement is a separate deployment-administrator setting. Disable a module and let replicas
+converge before uninstalling it. Uninstallation does not erase retained module data; destructive
+removal requires a reviewed forward operator migration. See
+[`docs/platform-module-foundation.md`](../docs/platform-module-foundation.md) for the complete
+lifecycle and failure procedure.
