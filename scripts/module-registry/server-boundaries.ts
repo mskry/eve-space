@@ -23,5 +23,5 @@ export function moduleServerImportViolations(sources: readonly ModuleServerSourc
         violations.push(`${path}: feature server code cannot import core API source ${specifier}`)
     }
   }
-  return violations.toSorted()
+  return violations.toSorted((left, right) => left.localeCompare(right))
 }

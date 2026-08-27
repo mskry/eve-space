@@ -23,8 +23,8 @@ export function createSyntheticOwnedCharacterRoutes(
 ) {
   return new Hono<PlatformOwnedCharacterRouteEnv>().get('/', async (context) => {
     const affiliation = await context.var.platform.coreReads.loadAffiliation()
-    const stored = await capabilities.persistence.transaction(async (transaction) =>
-      Promise.resolve(transaction.moduleScoped),
+    const stored = await capabilities.persistence.transaction(
+      async (transaction) => transaction.moduleScoped,
     )
     return context.json(
       { authorization: context.var.platform.authorization, affiliation, stored },

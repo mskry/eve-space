@@ -29,7 +29,9 @@ export async function loadFeatureNuxtSources(root: string): Promise<readonly Mod
 }
 
 export function moduleNuxtBoundaryViolations(sources: readonly ModuleNuxtSource[]) {
-  return sources.flatMap((source) => sourceViolations(source)).toSorted()
+  return sources
+    .flatMap((source) => sourceViolations(source))
+    .toSorted((left, right) => left.localeCompare(right))
 }
 
 async function loadInstalledModuleIds(root: string): Promise<readonly string[]> {

@@ -585,148 +585,257 @@ export function validatePlatformModuleManifests(
   const migrationIds = new Map<string, string>()
   const resourceIds = new Map<string, string>()
 
-  for (const manifest of sorted) {
-    for (const operation of manifest.server.esiOperations) {
-      claimValue(esiOperationIds, operation.id, manifest.id, 'ESI operation ID', issues)
-    }
+  claimEsiOperationIds(sorted, esiOperationIds, issues)
+
+  const context: PlatformManifestValidationContext = {
+    issues,
+    reservedModuleIds,
+    routeCoordinates,
+    navigationIds,
+    esiOperationIds,
+    migrationIds,
+    resourceIds,
   }
-
-  for (const manifest of sorted) {
-    validateManifestIdentity(manifest, reservedModuleIds, issues)
-    validatePackageNames(manifest, issues)
-    if (!platformIconTokens.includes(manifest.icon))
-      issues.push(`module ${manifest.id} uses invalid default icon ${String(manifest.icon)}`)
-
-    validateRouteNamespaceIntersections(manifest, issues)
-    for (const route of manifest.server.routes) {
-      validateContributionId(route.id, manifest.id, 'route', issues)
-      validateExportName(route.exportName, manifest.id, 'route', issues)
-      const moduleNamespace = `/${manifest.id}`
-      if (route.namespace !== moduleNamespace && !route.namespace.startsWith(`${moduleNamespace}/`))
-        issues.push(
-          `route ${manifest.id}/${route.id} namespace must be ${moduleNamespace} or begin with ${moduleNamespace}/`,
-        )
-      if (!isNormalizedPath(route.namespace))
-        issues.push(`route ${manifest.id}/${route.id} has invalid namespace ${route.namespace}`)
-      claimValue(
-        routeCoordinates,
-        canonicalizePath(resolvePlatformModuleRoutePath(route.namespace)),
-        manifest.id,
-        'module route coordinate',
-        issues,
-      )
-      if (!platformAuthorizationStrategies.includes(route.authorization))
-        issues.push(
-          `route ${manifest.id}/${route.id} uses unsupported authorization ${String(route.authorization)}`,
-        )
-      if (
-        route.authorization === 'owned-character' &&
-        !route.namespace.split('/').includes(':characterId')
-      )
-        issues.push(
-          `owned-character route ${manifest.id}/${route.id} must include :characterId in its namespace`,
-        )
-    }
-
-    for (const migration of manifest.server.migrations) {
-      const identity = `${manifest.id}/${migration.name}`
-      if (!migration.name.startsWith(`${manifest.id}-`) || !migration.name.endsWith('.sql'))
-        issues.push(`migration ${identity} must use ${manifest.id}-*.sql`)
-      if (!platformMigrationFilenamePattern.test(migration.name))
-        issues.push(`migration ${identity} must be a package-local filename`)
-      claimValue(migrationIds, identity, manifest.id, 'migration identity', issues)
-    }
-
-    for (const operation of manifest.server.esiOperations) {
-      validateContributionId(operation.id, manifest.id, 'ESI operation', issues)
-      validateExportName(operation.exportName, manifest.id, 'ESI operation', issues)
-    }
-
-    for (const resource of manifest.server.resources) {
-      validateContributionId(resource.id, manifest.id, 'resource', issues)
-      validateExportName(resource.exportName, manifest.id, 'resource', issues)
-      claimValue(resourceIds, resource.id, manifest.id, 'resource ID', issues)
-      if (resource.subjectKind !== 'character')
-        issues.push(
-          `resource ${manifest.id}/${resource.id} uses unsupported initial subject kind ${String(resource.subjectKind)}`,
-        )
-      if (
-        !Number.isSafeInteger(resource.materializationIntervalSeconds) ||
-        resource.materializationIntervalSeconds <= 0
-      )
-        issues.push(`resource ${manifest.id}/${resource.id} must use a positive whole interval`)
-      if (resource.eligibility?.kind !== 'current-owned-character')
-        issues.push(
-          `resource ${manifest.id}/${resource.id} uses unsupported eligibility ${String(resource.eligibility?.kind)}`,
-        )
-      if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
-        issues.push(
-          `resource ${manifest.id}/${resource.id} references unknown ESI operation ${resource.operationId}`,
-        )
-      if (resource.batch !== undefined) {
-        if (!platformResourceBatchModes.includes(resource.batch.mode))
-          issues.push(
-            `resource ${manifest.id}/${resource.id} uses unsupported batch mode ${String(resource.batch.mode)}`,
-          )
-        if (!esiOperationIds.has(normalizeIdentity(resource.batch.operationId)))
-          issues.push(
-            `resource ${manifest.id}/${resource.id} references unknown batch ESI operation ${resource.batch.operationId}`,
-          )
-      }
-    }
-
-    for (const page of manifest.nuxt.pages) {
-      validateContributionId(page.id, manifest.id, 'page', issues)
-      if (!page.name.startsWith(`eve-${manifest.id}-`))
-        issues.push(`page ${manifest.id}/${page.id} name must begin with eve-${manifest.id}-`)
-      if (!isNormalizedPath(page.path))
-        issues.push(`page ${manifest.id}/${page.id} has invalid path ${page.path}`)
-      if (
-        !page.file.startsWith('src/runtime/app/pages/') ||
-        !page.file.endsWith('.vue') ||
-        page.file.split('/').some((segment) => segment === '.' || segment === '..')
-      )
-        issues.push(
-          `page ${manifest.id}/${page.id} file must be a Vue file under src/runtime/app/pages`,
-        )
-      if (!platformPageExtensionPoints.includes(page.extensionPoint))
-        issues.push(
-          `page ${manifest.id}/${page.id} uses unsupported extension point ${String(page.extensionPoint)}`,
-        )
-      if (!platformNavigationAudiences.includes(page.audience))
-        issues.push(
-          `page ${manifest.id}/${page.id} uses unsupported audience ${String(page.audience)}`,
-        )
-    }
-
-    for (const navigation of manifest.nuxt.navigation) {
-      validateContributionId(navigation.id, manifest.id, 'navigation', issues)
-      if (navigation.icon !== undefined && !platformIconTokens.includes(navigation.icon))
-        issues.push(
-          `navigation ${manifest.id}/${navigation.id} uses invalid icon ${String(navigation.icon)}`,
-        )
-      if (!platformNavigationAudiences.includes(navigation.audience))
-        issues.push(
-          `navigation ${manifest.id}/${navigation.id} uses unsupported audience ${String(navigation.audience)}`,
-        )
-      if (!platformNavigationPlacements.includes(navigation.placement))
-        issues.push(
-          `navigation ${manifest.id}/${navigation.id} uses unsupported placement ${String(navigation.placement)}`,
-        )
-      if (!Number.isSafeInteger(navigation.order))
-        issues.push(`navigation ${manifest.id}/${navigation.id} order must be a safe integer`)
-      if (!manifest.nuxt.pages.some((page) => page.name === navigation.pageName))
-        issues.push(
-          `navigation ${manifest.id}/${navigation.id} references undeclared page ${navigation.pageName}`,
-        )
-      claimValue(navigationIds, navigation.id, manifest.id, 'navigation ID', issues)
-    }
-
-    validateExposedContributions(manifest, issues)
-  }
+  for (const manifest of sorted) validatePlatformModuleManifest(manifest, context)
 
   if (issues.length > 0) throw new PlatformModuleValidationError(issues)
   return sorted
+}
+
+interface PlatformManifestValidationContext {
+  issues: string[]
+  reservedModuleIds: ReadonlySet<string>
+  routeCoordinates: Map<string, string>
+  navigationIds: Map<string, string>
+  esiOperationIds: Map<string, string>
+  migrationIds: Map<string, string>
+  resourceIds: Map<string, string>
+}
+
+function claimEsiOperationIds(
+  manifests: readonly PlatformModuleManifest[],
+  esiOperationIds: Map<string, string>,
+  issues: string[],
+) {
+  for (const manifest of manifests) {
+    for (const operation of manifest.server.esiOperations)
+      claimValue(esiOperationIds, operation.id, manifest.id, 'ESI operation ID', issues)
+  }
+}
+
+function validatePlatformModuleManifest(
+  manifest: PlatformModuleManifest,
+  context: PlatformManifestValidationContext,
+) {
+  validateManifestIdentity(manifest, context.reservedModuleIds, context.issues)
+  validatePackageNames(manifest, context.issues)
+  validateManifestIcon(manifest, context.issues)
+  validateRouteNamespaceIntersections(manifest, context.issues)
+  validateRoutes(manifest, context.routeCoordinates, context.issues)
+  validateMigrations(manifest, context.migrationIds, context.issues)
+  validateEsiOperationContributions(manifest, context.issues)
+  validateResources(manifest, context.resourceIds, context.esiOperationIds, context.issues)
+  validatePages(manifest, context.issues)
+  validateNavigation(manifest, context.navigationIds, context.issues)
+  validateExposedContributions(manifest, context.issues)
+}
+
+function validateManifestIcon(manifest: PlatformModuleManifest, issues: string[]) {
+  if (!platformIconTokens.includes(manifest.icon))
+    issues.push(`module ${manifest.id} uses invalid default icon ${String(manifest.icon)}`)
+}
+
+function validateRoutes(
+  manifest: PlatformModuleManifest,
+  routeCoordinates: Map<string, string>,
+  issues: string[],
+) {
+  for (const route of manifest.server.routes)
+    validateRoute(manifest.id, route, routeCoordinates, issues)
+}
+
+function validateRoute(
+  moduleId: string,
+  route: PlatformRouteContribution,
+  routeCoordinates: Map<string, string>,
+  issues: string[],
+) {
+  validateContributionId(route.id, moduleId, 'route', issues)
+  validateExportName(route.exportName, moduleId, 'route', issues)
+  const moduleNamespace = `/${moduleId}`
+  if (route.namespace !== moduleNamespace && !route.namespace.startsWith(`${moduleNamespace}/`))
+    issues.push(
+      `route ${moduleId}/${route.id} namespace must be ${moduleNamespace} or begin with ${moduleNamespace}/`,
+    )
+  if (!isNormalizedPath(route.namespace))
+    issues.push(`route ${moduleId}/${route.id} has invalid namespace ${route.namespace}`)
+  claimValue(
+    routeCoordinates,
+    canonicalizePath(resolvePlatformModuleRoutePath(route.namespace)),
+    moduleId,
+    'module route coordinate',
+    issues,
+  )
+  if (!platformAuthorizationStrategies.includes(route.authorization))
+    issues.push(
+      `route ${moduleId}/${route.id} uses unsupported authorization ${String(route.authorization)}`,
+    )
+  if (
+    route.authorization === 'owned-character' &&
+    !route.namespace.split('/').includes(':characterId')
+  )
+    issues.push(
+      `owned-character route ${moduleId}/${route.id} must include :characterId in its namespace`,
+    )
+}
+
+function validateMigrations(
+  manifest: PlatformModuleManifest,
+  migrationIds: Map<string, string>,
+  issues: string[],
+) {
+  for (const migration of manifest.server.migrations)
+    validateMigration(manifest.id, migration, migrationIds, issues)
+}
+
+function validateMigration(
+  moduleId: string,
+  migration: PlatformMigrationContribution,
+  migrationIds: Map<string, string>,
+  issues: string[],
+) {
+  const identity = `${moduleId}/${migration.name}`
+  if (!migration.name.startsWith(`${moduleId}-`) || !migration.name.endsWith('.sql'))
+    issues.push(`migration ${identity} must use ${moduleId}-*.sql`)
+  if (!platformMigrationFilenamePattern.test(migration.name))
+    issues.push(`migration ${identity} must be a package-local filename`)
+  claimValue(migrationIds, identity, moduleId, 'migration identity', issues)
+}
+
+function validateEsiOperationContributions(manifest: PlatformModuleManifest, issues: string[]) {
+  for (const operation of manifest.server.esiOperations) {
+    validateContributionId(operation.id, manifest.id, 'ESI operation', issues)
+    validateExportName(operation.exportName, manifest.id, 'ESI operation', issues)
+  }
+}
+
+function validateResources(
+  manifest: PlatformModuleManifest,
+  resourceIds: Map<string, string>,
+  esiOperationIds: ReadonlyMap<string, string>,
+  issues: string[],
+) {
+  for (const resource of manifest.server.resources)
+    validateResource(manifest.id, resource, resourceIds, esiOperationIds, issues)
+}
+
+function validateResource(
+  moduleId: string,
+  resource: PlatformResourceContribution,
+  resourceIds: Map<string, string>,
+  esiOperationIds: ReadonlyMap<string, string>,
+  issues: string[],
+) {
+  validateContributionId(resource.id, moduleId, 'resource', issues)
+  validateExportName(resource.exportName, moduleId, 'resource', issues)
+  claimValue(resourceIds, resource.id, moduleId, 'resource ID', issues)
+  if (resource.subjectKind !== 'character')
+    issues.push(
+      `resource ${moduleId}/${resource.id} uses unsupported initial subject kind ${String(resource.subjectKind)}`,
+    )
+  if (
+    !Number.isSafeInteger(resource.materializationIntervalSeconds) ||
+    resource.materializationIntervalSeconds <= 0
+  )
+    issues.push(`resource ${moduleId}/${resource.id} must use a positive whole interval`)
+  if (resource.eligibility?.kind !== 'current-owned-character')
+    issues.push(
+      `resource ${moduleId}/${resource.id} uses unsupported eligibility ${String(resource.eligibility?.kind)}`,
+    )
+  if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
+    issues.push(
+      `resource ${moduleId}/${resource.id} references unknown ESI operation ${resource.operationId}`,
+    )
+  validateResourceBatch(moduleId, resource, esiOperationIds, issues)
+}
+
+function validateResourceBatch(
+  moduleId: string,
+  resource: PlatformResourceContribution,
+  esiOperationIds: ReadonlyMap<string, string>,
+  issues: string[],
+) {
+  const batch = resource.batch
+  if (batch === undefined) return
+  if (!platformResourceBatchModes.includes(batch.mode))
+    issues.push(
+      `resource ${moduleId}/${resource.id} uses unsupported batch mode ${String(batch.mode)}`,
+    )
+  if (!esiOperationIds.has(normalizeIdentity(batch.operationId)))
+    issues.push(
+      `resource ${moduleId}/${resource.id} references unknown batch ESI operation ${batch.operationId}`,
+    )
+}
+
+function validatePages(manifest: PlatformModuleManifest, issues: string[]) {
+  for (const page of manifest.nuxt.pages) validatePage(manifest.id, page, issues)
+}
+
+function validatePage(moduleId: string, page: PlatformPageContribution, issues: string[]) {
+  validateContributionId(page.id, moduleId, 'page', issues)
+  if (!page.name.startsWith(`eve-${moduleId}-`))
+    issues.push(`page ${moduleId}/${page.id} name must begin with eve-${moduleId}-`)
+  if (!isNormalizedPath(page.path))
+    issues.push(`page ${moduleId}/${page.id} has invalid path ${page.path}`)
+  if (
+    !page.file.startsWith('src/runtime/app/pages/') ||
+    !page.file.endsWith('.vue') ||
+    page.file.split('/').some((segment) => segment === '.' || segment === '..')
+  )
+    issues.push(`page ${moduleId}/${page.id} file must be a Vue file under src/runtime/app/pages`)
+  if (!platformPageExtensionPoints.includes(page.extensionPoint))
+    issues.push(
+      `page ${moduleId}/${page.id} uses unsupported extension point ${String(page.extensionPoint)}`,
+    )
+  if (!platformNavigationAudiences.includes(page.audience))
+    issues.push(`page ${moduleId}/${page.id} uses unsupported audience ${String(page.audience)}`)
+}
+
+function validateNavigation(
+  manifest: PlatformModuleManifest,
+  navigationIds: Map<string, string>,
+  issues: string[],
+) {
+  for (const navigation of manifest.nuxt.navigation)
+    validateNavigationEntry(manifest, navigation, navigationIds, issues)
+}
+
+function validateNavigationEntry(
+  manifest: PlatformModuleManifest,
+  navigation: PlatformNavigationContribution,
+  navigationIds: Map<string, string>,
+  issues: string[],
+) {
+  validateContributionId(navigation.id, manifest.id, 'navigation', issues)
+  if (navigation.icon !== undefined && !platformIconTokens.includes(navigation.icon))
+    issues.push(
+      `navigation ${manifest.id}/${navigation.id} uses invalid icon ${String(navigation.icon)}`,
+    )
+  if (!platformNavigationAudiences.includes(navigation.audience))
+    issues.push(
+      `navigation ${manifest.id}/${navigation.id} uses unsupported audience ${String(navigation.audience)}`,
+    )
+  if (!platformNavigationPlacements.includes(navigation.placement))
+    issues.push(
+      `navigation ${manifest.id}/${navigation.id} uses unsupported placement ${String(navigation.placement)}`,
+    )
+  if (!Number.isSafeInteger(navigation.order))
+    issues.push(`navigation ${manifest.id}/${navigation.id} order must be a safe integer`)
+  if (!manifest.nuxt.pages.some((page) => page.name === navigation.pageName))
+    issues.push(
+      `navigation ${manifest.id}/${navigation.id} references undeclared page ${navigation.pageName}`,
+    )
+  claimValue(navigationIds, navigation.id, manifest.id, 'navigation ID', issues)
 }
 
 function validateRouteNamespaceIntersections(manifest: PlatformModuleManifest, issues: string[]) {
