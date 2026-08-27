@@ -11,6 +11,7 @@ import {
 } from '@nuxt/kit'
 import type { NuxtModule, NuxtPage } from '@nuxt/schema'
 import {
+  compareStable,
   platformCoreNavigation,
   type PlatformNuxtContributionDescriptor,
 } from '@eve-space/platform-module-contract'
@@ -225,10 +226,6 @@ function compareNavigation(
     compareStable(left.ownerId, right.ownerId) ||
     compareStable(left.navigationId, right.navigationId)
   )
-}
-
-function compareStable(left: string, right: string) {
-  return left < right ? -1 : left > right ? 1 : 0
 }
 
 async function resolveContributionPages(

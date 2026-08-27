@@ -76,6 +76,18 @@ describe('platform resource batch processing', () => {
         { subject: subjects[1], outcome: 'unchanged' },
       ]),
     ).toThrow('Change-hint batch cannot classify complete')
+    expect(() =>
+      validatePlatformResourceBatchClassifications('complete-observation', subjects, [
+        { subject: subjects[0], outcome: 'changed' },
+        { subject: subjects[1], outcome: 'unchanged' },
+      ]),
+    ).toThrow('Complete-observation batch cannot classify changed')
+    expect(() =>
+      validatePlatformResourceBatchClassifications('complete-observation', subjects, [
+        { subject: subjects[0], outcome: 'complete' },
+        { subject: subjects[1], outcome: 'unchanged' },
+      ]),
+    ).toThrow('Complete resource batch classification must carry data')
   })
 
   test('materializes complete observations locally without scalar ESI loads', async () => {

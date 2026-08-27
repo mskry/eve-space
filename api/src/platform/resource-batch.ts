@@ -67,6 +67,7 @@ type BatchExecution =
       readonly validatedAt: string
       readonly classifications: readonly (BatchClassification & EligibleBatchSubject)[]
     }
+type LoadedBatchExecution = Extract<BatchExecution, { readonly outcome: 'loaded' }>
 
 class PlatformResourceBatchExecutionError extends Error {
   constructor(
@@ -218,6 +219,33 @@ export async function processInstalledResourceBatch(
   }
   if (execution.outcome === 'noop') return
 
+  const changed = await applyBatchClassifications(execution, options)
+
+  if (changed.length === 0) return
+  let admission: Awaited<ReturnType<typeof getQueueAdmissionCapacity>>
+  try {
+    admission = await (options.getCapacity ?? getQueueAdmissionCapacity)(queue, 'on-demand')
+  } catch (error) {
+    if (error instanceof QueueAdmissionError) return
+    throw error
+  }
+  const definition = getJobDefinition('resource-refresh') as JobDefinition<
+    EligibleBatchSubject['identity']
+  >
+  for (const subject of changed.slice(0, admission.remainingCapacity)) {
+    // oxlint-disable-next-line no-await-in-loop
+    await queue.add(definition.name, subject.identity, {
+      ...jobOptions(definition),
+      deduplication: { id: definition.operationIdentity(subject.identity) },
+      priority: resourceRefreshPriority(execution.resource.materializationIntervalSeconds),
+    })
+  }
+}
+
+async function applyBatchClassifications(
+  execution: LoadedBatchExecution,
+  options: BatchProcessingOptions,
+) {
   const changed = [] as EligibleBatchSubject[]
   for (const classification of execution.classifications) {
     if (classification.outcome === 'changed') {
@@ -247,26 +275,7 @@ export async function processInstalledResourceBatch(
       throw failure
     }
   }
-
-  if (changed.length === 0) return
-  let admission: Awaited<ReturnType<typeof getQueueAdmissionCapacity>>
-  try {
-    admission = await (options.getCapacity ?? getQueueAdmissionCapacity)(queue, 'on-demand')
-  } catch (error) {
-    if (error instanceof QueueAdmissionError) return
-    throw error
-  }
-  const definition = getJobDefinition('resource-refresh') as JobDefinition<
-    EligibleBatchSubject['identity']
-  >
-  for (const subject of changed.slice(0, admission.remainingCapacity)) {
-    // oxlint-disable-next-line no-await-in-loop
-    await queue.add(definition.name, subject.identity, {
-      ...jobOptions(definition),
-      deduplication: { id: definition.operationIdentity(subject.identity) },
-      priority: resourceRefreshPriority(execution.resource.materializationIntervalSeconds),
-    })
-  }
+  return changed
 }
 
 export function validatePlatformResourceBatchClassifications<Data>(
@@ -281,25 +290,52 @@ export function validatePlatformResourceBatchClassifications<Data>(
   const requested = new Map(subjects.map((subject) => [batchSubjectKey(subject), subject]))
   const classified = new Map<string, BatchClassification<Data>>()
   for (const value of classifications) {
-    if (!isRecord(value) || !isCharacterSubject(value.subject) || typeof value.outcome !== 'string')
-      throw new Error('Resource batch classification is invalid')
-    const key = batchSubjectKey(value.subject)
-    if (!requested.has(key))
-      throw new Error('Resource batch classification contains an unknown subject')
-    if (classified.has(key))
-      throw new Error('Resource batch classification contains a duplicate subject')
-    if (mode === 'complete-observation') {
-      if (value.outcome !== 'complete' && value.outcome !== 'unchanged')
-        throw new Error(`Complete-observation batch cannot classify ${value.outcome}`)
-      if (value.outcome === 'complete' && !Object.hasOwn(value, 'data'))
-        throw new Error('Complete resource batch classification must carry data')
-    } else if (value.outcome !== 'changed' && value.outcome !== 'unchanged')
-      throw new Error(`Change-hint batch cannot classify ${value.outcome}`)
-    classified.set(key, value as BatchClassification<Data>)
+    const [key, classification] = validateBatchClassification<Data>(
+      mode,
+      value,
+      requested,
+      classified,
+    )
+    classified.set(key, classification)
   }
   if (classified.size !== requested.size)
     throw new Error('Resource batch classification omitted a requested subject')
   return subjects.map((subject) => classified.get(batchSubjectKey(subject))!)
+}
+
+function validateBatchClassification<Data>(
+  mode: PlatformResourceBatchMode,
+  value: unknown,
+  requested: ReadonlyMap<string, PlatformCharacterResourceSubject>,
+  classified: ReadonlyMap<string, BatchClassification<Data>>,
+): readonly [string, BatchClassification<Data>] {
+  if (!isRecord(value) || !isCharacterSubject(value.subject) || typeof value.outcome !== 'string')
+    throw new Error('Resource batch classification is invalid')
+
+  const key = batchSubjectKey(value.subject)
+  if (!requested.has(key))
+    throw new Error('Resource batch classification contains an unknown subject')
+  if (classified.has(key))
+    throw new Error('Resource batch classification contains a duplicate subject')
+
+  assertBatchClassificationOutcome(mode, value, value.outcome)
+  return [key, value as BatchClassification<Data>]
+}
+
+function assertBatchClassificationOutcome(
+  mode: PlatformResourceBatchMode,
+  value: Record<string, unknown>,
+  outcome: string,
+) {
+  if (mode === 'change-hint') {
+    if (outcome !== 'changed' && outcome !== 'unchanged')
+      throw new Error(`Change-hint batch cannot classify ${outcome}`)
+    return
+  }
+  if (outcome !== 'complete' && outcome !== 'unchanged')
+    throw new Error(`Complete-observation batch cannot classify ${outcome}`)
+  if (outcome === 'complete' && !Object.hasOwn(value, 'data'))
+    throw new Error('Complete resource batch classification must carry data')
 }
 
 function toEligibleBatchSubject(

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   createPersistence: vi.fn(),
   recordSuccess: vi.fn(),
   resolveEligibility: vi.fn(),
+  transaction: vi.fn(),
 }))
 
 vi.mock('../src/db/client.js', () => ({ sql: { begin: mocks.begin } }))
@@ -42,8 +43,8 @@ const identity = {
 describe('local resource observations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    const transaction = vi.fn().mockResolvedValue([])
-    mocks.begin.mockImplementation((operation) => operation(transaction))
+    mocks.transaction.mockResolvedValue([])
+    mocks.begin.mockImplementation((operation) => operation(mocks.transaction))
     mocks.resolveEligibility.mockResolvedValue({
       status: 'eligible',
       due: true,
@@ -83,6 +84,7 @@ describe('local resource observations', () => {
     })
 
     expect(materialize).toHaveBeenCalledOnce()
+    expect(mocks.createPersistence).toHaveBeenCalledWith(mocks.transaction, identity.moduleId)
     expect(materialize).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { score: 10 },

@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import {
+  compareStable,
   isReservedPlatformModuleId,
   platformMigrationFilenamePattern,
   platformModuleIdMaxLength,
@@ -189,8 +190,4 @@ function validateModuleId(moduleId: string) {
     isReservedPlatformModuleId(moduleId)
   )
     throw new Error(`Invalid installed module migration owner ${moduleId}`)
-}
-
-function compareStable(left: string, right: string) {
-  return left < right ? -1 : left > right ? 1 : 0
 }

@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
+  compareStable,
   platformNavigationPlacements,
   validatePlatformModuleManifests,
   type PlatformInstalledModuleMigrationDescriptor,
@@ -363,10 +364,6 @@ function compareRuntimeNavigation(
 
 function quote(value: string) {
   return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "\\'").replaceAll('\n', '\\n')}'`
-}
-
-function compareStable(left: string, right: string) {
-  return left < right ? -1 : left > right ? 1 : 0
 }
 
 function parsePlatformModuleManifest(value: unknown, moduleId: string): PlatformModuleManifest {
