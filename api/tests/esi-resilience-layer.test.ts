@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   commit: vi.fn(),
   getCommitted: vi.fn(),
   getLeaseTtl: vi.fn(),
+  getRevision: vi.fn(),
+  incrementRevision: vi.fn(),
   initialize: vi.fn(),
   release: vi.fn(),
   renew: vi.fn(),
@@ -16,6 +18,8 @@ vi.mock('../src/esi-resilience/coordination.js', () => ({
   commitEsiFence: mocks.commit,
   getCommittedEsiFence: mocks.getCommitted,
   getEsiRequestLeaseTtl: mocks.getLeaseTtl,
+  getEsiResourceRevision: mocks.getRevision,
+  incrementEsiResourceRevision: mocks.incrementRevision,
   initializeCacheNamespace: mocks.initialize,
   releaseEsiRequestLease: mocks.release,
   renewEsiRequestLease: mocks.renew,
@@ -36,6 +40,8 @@ describe('ESI resilience layer', () => {
     mocks.commit.mockResolvedValue(true)
     mocks.getCommitted.mockResolvedValue(undefined)
     mocks.getLeaseTtl.mockResolvedValue(0)
+    mocks.getRevision.mockResolvedValue(0)
+    mocks.incrementRevision.mockResolvedValue(1)
     mocks.initialize.mockResolvedValue('namespace-one')
     mocks.release.mockResolvedValue(true)
     mocks.renew.mockResolvedValue(true)
@@ -483,6 +489,159 @@ describe('ESI resilience layer', () => {
     ).resolves.toMatchObject({ source: 'esi' })
     expect(cache.get).not.toHaveBeenCalled()
     expect(cache.set).not.toHaveBeenCalled()
+  })
+
+  test('binds private mail cache identities and envelopes to the mailbox revision', async () => {
+    const cache = redis()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue(result({ body: 'mail' }))
+    const resource = {
+      operation: 'mail-message' as const,
+      inputs: { characterId: 1, mailId: 2 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await layer.getCharacter(resource)
+    mocks.getRevision.mockResolvedValue(1)
+    await layer.getCharacter(resource)
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(cache.set).toHaveBeenCalledTimes(2)
+    expect(
+      cache.set.mock.calls.map((call) => JSON.parse(call[1] as string).resourceRevision),
+    ).toEqual([
+      { namespace: 'mailbox', value: 0 },
+      { namespace: 'mailbox', value: 1 },
+    ])
+  })
+
+  test('bypasses private mail caches when mailbox revision coordination is unavailable', async () => {
+    const cache = redis()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue({
+      data: { body: 'mail' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=86400' } },
+    })
+    const resource = {
+      operation: 'mail-message' as const,
+      inputs: { characterId: 1, mailId: 2 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    mocks.getRevision.mockRejectedValueOnce(new Error('coordination unavailable'))
+    await layer.getCharacter(resource)
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(cache.set).toHaveBeenCalledOnce()
+  })
+
+  test('executes non-idempotent character mutations once and invalidates after ambiguity', async () => {
+    const cache = redis()
+    const authorizeCharacter = authorize()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizeCharacter)
+    const load = vi.fn().mockRejectedValue(new EsiTransportError(new Error('delivery unknown')))
+
+    await expect(
+      layer.executeCharacterMutation({ operation: 'mail-send', characterId: 1, load }),
+    ).rejects.toBeInstanceOf(EsiTransportError)
+
+    expect(authorizeCharacter).toHaveBeenCalledWith(1, 'esi-mail.send_mail.v1')
+    expect(load).toHaveBeenCalledOnce()
+    expect(load).toHaveBeenCalledWith({ accessToken: 'token', principal: 'character-1' })
+    expect(cache.get).not.toHaveBeenCalled()
+    expect(cache.set).not.toHaveBeenCalled()
+    expect(mocks.acquire).not.toHaveBeenCalled()
+    expect(mocks.incrementRevision).toHaveBeenCalledWith(
+      expect.anything(),
+      'mailbox',
+      'character-1',
+    )
+  })
+
+  test('retries idempotent character mutations and advances mailbox revision after success', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const load = vi
+      .fn()
+      .mockRejectedValueOnce(new EsiTransportError(new Error('network unavailable')))
+      .mockResolvedValueOnce(result(undefined))
+
+    const pending = layer.executeCharacterMutation({
+      operation: 'mail-update',
+      characterId: 1,
+      load,
+    })
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toMatchObject({ data: undefined, meta: { status: 200 } })
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(mocks.incrementRevision).toHaveBeenCalledWith(
+      expect.anything(),
+      'mailbox',
+      'character-1',
+    )
+  })
+
+  test.each([
+    ['mail-delete', 'DeleteCharactersCharacterIdMailMailId'],
+    ['mail-delete-label', 'DeleteCharactersCharacterIdMailLabelsLabelId'],
+  ] as const)(
+    'advances mailbox revision for convergent %s absence',
+    async (operation, operationId) => {
+      const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+      const absence = new EsiHttpError({ operationId, status: 404 })
+
+      await expect(
+        layer.executeCharacterMutation({
+          operation,
+          characterId: 1,
+          load: vi.fn().mockRejectedValue(absence),
+        }),
+      ).rejects.toBe(absence)
+      expect(mocks.incrementRevision).toHaveBeenCalledWith(
+        expect.anything(),
+        'mailbox',
+        'character-1',
+      )
+    },
+  )
+
+  test('bypasses caches until a failed mailbox revision advancement is repaired', async () => {
+    const cache = redis()
+    mocks.incrementRevision.mockRejectedValue(new Error('coordination unavailable'))
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue({
+      data: { body: 'mail' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=86400' } },
+    })
+    const resource = {
+      operation: 'mail-message' as const,
+      inputs: { characterId: 1, mailId: 2 },
+      load,
+    }
+    await layer.getCharacter(resource)
+
+    await expect(
+      layer.executeCharacterMutation({
+        operation: 'mail-create-label',
+        characterId: 1,
+        load: vi.fn().mockResolvedValue(result(12)),
+      }),
+    ).resolves.toMatchObject({ data: 12 })
+    await vi.advanceTimersByTimeAsync(121_000)
+    await layer.getCharacter(resource)
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(cache.set).toHaveBeenCalledOnce()
+
+    mocks.incrementRevision.mockResolvedValue(1)
+    await layer.getCharacter(resource)
+    expect(load).toHaveBeenCalledTimes(3)
+    expect(cache.set).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(cache.set.mock.calls[1]?.[1] as string)).toMatchObject({
+      resourceRevision: { namespace: 'mailbox', value: 1 },
+    })
   })
 
   test('publishes private values to the shared cache after authorization binding', async () => {

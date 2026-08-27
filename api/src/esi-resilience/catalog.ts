@@ -1,6 +1,5 @@
 import type {
   PlatformEsiFreshnessContract,
-  PlatformEsiIdentityContract,
   PlatformEsiOperationContract,
   PlatformEsiResponseValidationContract,
   PlatformEsiRetryContract,
@@ -15,9 +14,25 @@ import { operationRegistry } from '@evespace/esi-client/operations'
 import { assertEsiOperationContracts, isIsoCalendarDate } from './catalog-validation.js'
 import { esiMetadataReview, esiOperationMetadata } from './operation-metadata.js'
 
-type EsiIdentityConfiguration =
+type EsiIdentityContract =
   | { kind: 'ordered'; fields: readonly string[] }
+  | { kind: 'set'; field: string; maximumItems: number }
+  | {
+      kind: 'mixed'
+      fields: readonly (
+        | { kind: 'scalar'; field: string; nullable?: boolean }
+        | { kind: 'set'; field: string; maximumItems: number; nullable?: boolean }
+      )[]
+    }
+
+type EsiIdentityConfiguration =
+  | Extract<EsiIdentityContract, { kind: 'ordered' | 'mixed' }>
   | { kind: 'set'; field: string }
+
+export interface EsiResourceRevisionContract {
+  readonly kind: 'character'
+  readonly namespace: string
+}
 
 export type EsiFreshnessContract = PlatformEsiFreshnessContract
 
@@ -37,12 +52,16 @@ type EsiCacheConfiguration =
 
 export type EsiRetryContract = PlatformEsiRetryContract
 export type EsiResponseValidationContract = PlatformEsiResponseValidationContract
-export type EsiOperationContract = PlatformEsiOperationContract
+export type EsiOperationContract = Omit<PlatformEsiOperationContract, 'identity'> & {
+  readonly identity: EsiIdentityContract
+  readonly resourceRevision?: EsiResourceRevisionContract
+}
 
-type ResolvedCoreEsiOperationContract<Operation extends keyof typeof esiOperationMetadata> = Omit<
-  EsiOperationContract,
-  'authorization' | 'rateGroup'
-> & {
+type ResolvedCoreEsiOperationContract<
+  Operation extends keyof typeof esiOperationMetadata,
+  Identity extends EsiIdentityContract = EsiIdentityContract,
+> = Omit<EsiOperationContract, 'authorization' | 'identity' | 'rateGroup'> & {
+  readonly identity: Identity
   readonly authorization: (typeof esiOperationMetadata)[Operation]['requiredScope'] extends infer Scope extends
     string
     ? { readonly kind: 'character'; readonly scope: Scope }
@@ -61,6 +80,13 @@ type ResolvedCoreEsiOperationContract<Operation extends keyof typeof esiOperatio
       }
     : { readonly kind: 'legacy-only' }
 }
+
+type ResolvedIdentity<Identity extends EsiIdentityConfiguration> = Identity extends {
+  kind: 'set'
+  field: infer Field extends string
+}
+  ? { kind: 'set'; field: Field; maximumItems: number }
+  : Identity
 
 const minute = 60_000
 const hour = 60 * minute
@@ -115,6 +141,67 @@ export const coreEsiOperationCatalog = {
   'wallet-transactions': defineContract('wallet-transactions', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
+    retry,
+  }),
+  'mail-headers': defineContract('mail-headers', {
+    identity: {
+      kind: 'mixed',
+      fields: [
+        { kind: 'scalar', field: 'characterId' },
+        { kind: 'set', field: 'labels', maximumItems: 25, nullable: true },
+        { kind: 'scalar', field: 'lastMailId', nullable: true },
+      ],
+    },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'mail-message': defineContract('mail-message', {
+    identity: { kind: 'ordered', fields: ['characterId', 'mailId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(0),
+    retry,
+  }),
+  'mail-labels': defineContract('mail-labels', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'mail-lists': defineContract('mail-lists', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'mail-send': defineContract('mail-send', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: { kind: 'none' },
+    retry: { kind: 'none' },
+  }),
+  'mail-create-label': defineContract('mail-create-label', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: { kind: 'none' },
+    retry: { kind: 'none' },
+  }),
+  'mail-update': defineContract('mail-update', {
+    identity: { kind: 'ordered', fields: ['characterId', 'mailId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: { kind: 'none' },
+    retry,
+  }),
+  'mail-delete': defineContract('mail-delete', {
+    identity: { kind: 'ordered', fields: ['characterId', 'mailId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: { kind: 'none' },
+    retry,
+  }),
+  'mail-delete-label': defineContract('mail-delete-label', {
+    identity: { kind: 'ordered', fields: ['characterId', 'labelId'] },
+    resourceRevision: { kind: 'character', namespace: 'mailbox' },
+    cache: { kind: 'none' },
     retry,
   }),
   skills: defineContract('skills', {
@@ -300,17 +387,21 @@ export function assertExecutableEsiOperationDefinitions(
     )
 }
 
-function defineContract<Operation extends keyof typeof esiOperationMetadata>(
-  operation: Operation,
-  options: {
+function defineContract<
+  Operation extends keyof typeof esiOperationMetadata,
+  const Options extends {
     representationVersion?: string
     identity: EsiIdentityConfiguration
     freshness?: EsiFreshnessContract
     cache: EsiCacheConfiguration
     retry: EsiRetryContract
     responseValidation?: EsiResponseValidationContract
+    resourceRevision?: EsiResourceRevisionContract
   },
-): ResolvedCoreEsiOperationContract<Operation> {
+>(
+  operation: Operation,
+  options: Options,
+): ResolvedCoreEsiOperationContract<Operation, ResolvedIdentity<Options['identity']>> {
   const metadata = esiOperationMetadata[operation]
   const contract: EsiOperationContract = {
     audit: {
@@ -341,8 +432,12 @@ function defineContract<Operation extends keyof typeof esiOperationMetadata>(
       minimumDate: metadata.minimumCompatibilityDate,
     },
     responseValidation: options.responseValidation ?? { kind: 'enabled' },
+    resourceRevision: options.resourceRevision,
   }
-  return contract as ResolvedCoreEsiOperationContract<Operation>
+  return contract as ResolvedCoreEsiOperationContract<
+    Operation,
+    ResolvedIdentity<Options['identity']>
+  >
 }
 
 function sharedPublicCache(): EsiCacheConfiguration {
@@ -354,20 +449,29 @@ function sharedPublicCache(): EsiCacheConfiguration {
   }
 }
 
-function sharedPrivateCache(): EsiCacheConfiguration {
+function sharedPrivateCache(retentionMilliseconds = hour): EsiCacheConfiguration {
   return {
     kind: 'shared',
     collapse: true,
     stale: { kind: 'none' },
-    retentionMilliseconds: hour,
+    retentionMilliseconds,
   }
 }
 
 function resolveIdentity(
   identity: EsiIdentityConfiguration,
   metadata: (typeof esiOperationMetadata)[keyof typeof esiOperationMetadata],
-): PlatformEsiIdentityContract {
+): EsiIdentityContract {
   if (identity.kind === 'ordered') return identity
+  if (identity.kind === 'mixed') {
+    const setFields = identity.fields.filter((field) => field.kind === 'set')
+    if (setFields.length === 0) return identity
+    if (!('maximumBatchSize' in metadata))
+      throw new Error('Mixed ESI identity is missing reviewed maximum batch metadata')
+    if (setFields.some((field) => field.maximumItems !== metadata.maximumBatchSize))
+      throw new Error('Mixed ESI identity maximum conflicts with reviewed batch metadata')
+    return identity
+  }
   if (!('maximumBatchSize' in metadata))
     throw new Error('Set-like ESI operation is missing reviewed maximum batch metadata')
   return { ...identity, maximumItems: metadata.maximumBatchSize }

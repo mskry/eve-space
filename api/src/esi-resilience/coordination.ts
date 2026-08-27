@@ -7,6 +7,8 @@ const coordinationIdentityVersion = 'v2'
 const keyPrefix = `eve-space:${coordinationIdentityVersion}:esi-resilience`
 const esiRequestLeaseTtlMs = 15_000
 const fenceStateTtlMs = 86_400_000
+const revisionNamespacePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
+const revisionPrincipalPattern = /^character-[1-9][0-9]*$/
 
 export interface EsiRequestLease {
   key: string
@@ -16,7 +18,7 @@ export interface EsiRequestLease {
 }
 
 function identityKey(identity: EsiRepresentationIdentity) {
-  return `${identity.operation}:${identity.digest}`
+  return `${identity.operation}:${identity.coordinationDigest}`
 }
 
 export async function initializeCacheNamespace(coordination: Redis) {
@@ -111,4 +113,40 @@ export async function commitEsiFence(
 export async function getCommittedEsiFence(connection: Redis, identity: EsiRepresentationIdentity) {
   const value = await connection.get(`${keyPrefix}:committed-fence:${identityKey(identity)}`)
   return value === null ? undefined : Number(value)
+}
+
+export async function getEsiResourceRevision(
+  connection: Redis,
+  namespace: string,
+  principal: string,
+) {
+  const value = await connection.get(resourceRevisionKey(namespace, principal))
+  if (value === null) return 0
+  const revision = Number(value)
+  if (!Number.isSafeInteger(revision) || revision < 0)
+    throw new Error('Invalid ESI resource revision')
+  return revision
+}
+
+export async function incrementEsiResourceRevision(
+  connection: Redis,
+  namespace: string,
+  principal: string,
+) {
+  const value = Number(
+    await connection.eval(
+      "local current = tonumber(redis.call('get', KEYS[1]) or '0'); if current >= tonumber(ARGV[1]) then return redis.error_reply('resource revision exhausted') end; return redis.call('incr', KEYS[1])",
+      1,
+      resourceRevisionKey(namespace, principal),
+      Number.MAX_SAFE_INTEGER,
+    ),
+  )
+  if (!Number.isSafeInteger(value) || value < 1) throw new Error('Invalid ESI resource revision')
+  return value
+}
+
+function resourceRevisionKey(namespace: string, principal: string) {
+  if (!revisionNamespacePattern.test(namespace) || !revisionPrincipalPattern.test(principal))
+    throw new Error('Invalid ESI resource revision identity')
+  return `${keyPrefix}:revision:${namespace}:${principal}`
 }

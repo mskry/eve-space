@@ -88,7 +88,7 @@ services:
       EVE_CLIENT_ID: ${EVE_CLIENT_ID:-}
       EVE_CLIENT_SECRET: ${EVE_CLIENT_SECRET:-}
       EVE_CALLBACK_URL: ${EVE_CALLBACK_URL:-http://localhost:8788/auth/eve/callback}
-      EVE_SCOPES: ${EVE_SCOPES:-esi-wallet.read_character_wallet.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1 esi-skills.read_skills.v1}
+      EVE_SCOPES: ${EVE_SCOPES:-esi-wallet.read_character_wallet.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1 esi-skills.read_skills.v1 esi-mail.read_mail.v1 esi-mail.organize_mail.v1 esi-mail.send_mail.v1}
       ESI_USER_AGENT: ${ESI_USER_AGENT:-EveSpace/0.1 @evespace/esi-client/2.0.0}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
       ADMIN_SETUP_SECRET: ${ADMIN_SETUP_SECRET:-}
@@ -132,7 +132,7 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       QUEUE_REDIS_URL: redis://queue-redis:6379
       CACHE_REDIS_URL: redis://cache-redis:6379
-      EVE_SCOPES: ${EVE_SCOPES:-esi-wallet.read_character_wallet.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1 esi-skills.read_skills.v1}
+      EVE_SCOPES: ${EVE_SCOPES:-esi-wallet.read_character_wallet.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1 esi-skills.read_skills.v1 esi-mail.read_mail.v1 esi-mail.organize_mail.v1 esi-mail.send_mail.v1}
       QUEUE_PLANNER_SCHEDULE: ${QUEUE_PLANNER_SCHEDULE:-*/15 * * * *}
       QUEUE_PLANNER_SCHEDULE_OFFSET_MS: ${QUEUE_PLANNER_SCHEDULE_OFFSET_MS:-}
       QUEUE_PLANNER_INITIAL_DELAY_MAX_MS: ${QUEUE_PLANNER_INITIAL_DELAY_MAX_MS:-60000}

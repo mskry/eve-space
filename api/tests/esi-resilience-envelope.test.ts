@@ -163,6 +163,25 @@ describe('ESI cache envelopes', () => {
     expect(cache.get('third')).toBeUndefined()
   })
 
+  test('retains message bodies only through freshness and stamps their mailbox revision', () => {
+    const envelope = createCacheEnvelope({
+      data: { body: 'untrusted' },
+      fence: 1,
+      policy: getEsiOperationContract('mail-message'),
+      representationVersion: 'v1',
+      resourceRevision: { namespace: 'mailbox', value: 4 },
+      now,
+      metadata: { status: 200, headers: {}, cache: { cacheControl: 'max-age=30' } },
+    })
+
+    expect(envelope).toMatchObject({
+      freshUntil: now + 30_000,
+      staleUntil: now + 30_000,
+      retainUntil: now + 30_000,
+      resourceRevision: { namespace: 'mailbox', value: 4 },
+    })
+  })
+
   test('uses the exact next reviewed daily UTC boundary', () => {
     const dailyPolicy = getEsiOperationContract('universe-solar-system')
     const beforeBoundary = Date.parse('2026-08-20T11:04:59.000Z')

@@ -2,7 +2,13 @@ import type { EsiResponseMetadata } from '@evespace/esi-client'
 import { env } from '../env.js'
 import type { EsiFreshnessContract, EsiOperationContract } from './catalog.js'
 import { assertCacheValueSafe } from './namespaces.js'
-import type { EsiCacheAuthorization, EsiCacheEnvelope, EsiQuota, EsiRevalidation } from './types.js'
+import type {
+  EsiCacheAuthorization,
+  EsiCacheEnvelope,
+  EsiCacheResourceRevision,
+  EsiQuota,
+  EsiRevalidation,
+} from './types.js'
 
 export function createCacheEnvelope<Data>(options: {
   data: Data
@@ -10,6 +16,7 @@ export function createCacheEnvelope<Data>(options: {
   policy: EsiOperationContract
   representationVersion: string
   authorization?: EsiCacheAuthorization
+  resourceRevision?: EsiCacheResourceRevision
   fence: number
   now?: number
 }): EsiCacheEnvelope<Data> {
@@ -39,6 +46,7 @@ export function createCacheEnvelope<Data>(options: {
     etag: options.metadata?.cache?.etag,
     lastModified: options.metadata?.cache?.lastModified,
     authorization: options.authorization,
+    resourceRevision: options.resourceRevision,
     fence: options.fence,
   }
 }
@@ -51,6 +59,7 @@ export function updateNotModifiedEnvelope<Data>(
   authorization: EsiCacheAuthorization | undefined,
   now = Date.now(),
   fence = envelope.fence,
+  resourceRevision = envelope.resourceRevision,
 ): EsiCacheEnvelope<Data> {
   const refreshed = createCacheEnvelope({
     data: envelope.data,
@@ -58,6 +67,7 @@ export function updateNotModifiedEnvelope<Data>(
     policy,
     representationVersion,
     authorization,
+    resourceRevision,
     fence,
     now,
   })

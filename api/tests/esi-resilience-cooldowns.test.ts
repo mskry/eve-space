@@ -75,7 +75,7 @@ describe('ESI shared cooldowns', () => {
 
   test('honors locally recorded cooldowns while coordination Redis is unavailable', async () => {
     const unavailable = { get: vi.fn().mockRejectedValue(new Error('unavailable')), eval: vi.fn() }
-    const { acquireEsiRequestPermit, EsiQuotaError, recordEsiResponse } =
+    const { acquireEsiRequestPermit, recordEsiResponse } =
       await import('../src/esi-resilience/cooldowns.js')
     await recordEsiResponse({
       connection: unavailable as never,
@@ -92,7 +92,7 @@ describe('ESI shared cooldowns', () => {
         principal: 'character-90000001',
         concurrency: 2,
       }),
-    ).rejects.toEqual(new EsiQuotaError(12))
+    ).rejects.toMatchObject({ name: 'EsiQuotaError', retryAfterSeconds: 12 })
   })
 
   test('records principal-scoped 429 windows without treating token material as an identity', async () => {

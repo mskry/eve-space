@@ -17,6 +17,7 @@ const cacheSourceCounts = new Map<EsiOperation, Record<CacheSource, number> & { 
 interface EsiDependencyTelemetry {
   status: DependencyState
   checkedAt: string
+  operationFailures?: number
 }
 
 interface EsiUpstreamOperationTelemetry {
@@ -48,6 +49,7 @@ export interface EsiResilienceTelemetry {
 }
 
 const failures = { cache: 0, coordination: 0 }
+let coordinationOperationFailures = 0
 
 export function recordEsiCacheSource(operation: EsiOperation, source: CacheSource, stale: boolean) {
   const counts = cacheSourceCounts.get(operation) ?? {
@@ -59,6 +61,10 @@ export function recordEsiCacheSource(operation: EsiOperation, source: CacheSourc
   counts[source] += 1
   if (stale) counts.stale += 1
   cacheSourceCounts.set(operation, counts)
+}
+
+export function recordEsiCoordinationFailure() {
+  coordinationOperationFailures += 1
 }
 
 export async function recordEsiUpstreamOutcome(
@@ -94,7 +100,7 @@ export async function probeEsiResilienceTelemetry(
     (dependencies.probeCoordination ?? probeCoordination)(),
   ])
   let cache = dependencyTelemetry('cache', cacheAvailable, checkedAt)
-  let coordination = dependencyTelemetry('coordination', coordinationAvailable, checkedAt)
+  let coordination = coordinationTelemetry(coordinationAvailable, checkedAt)
   const cacheConnection =
     cacheAvailable && !dependencies.cacheConnection ? createCacheRedisConnection() : undefined
   const coordinationConnection =
@@ -113,7 +119,7 @@ export async function probeEsiResilienceTelemetry(
       upstreamPending,
     ])
     if (coordinationAvailable && cooldownResult.status === 'rejected')
-      coordination = dependencyTelemetry('coordination', false, checkedAt)
+      coordination = coordinationTelemetry(false, checkedAt)
     if (cacheAvailable && upstreamResult.status === 'rejected')
       cache = dependencyTelemetry('cache', false, checkedAt)
     return {
@@ -214,6 +220,13 @@ function dependencyTelemetry(
         ? ('unavailable' as const)
         : ('degraded' as const),
     checkedAt,
+  }
+}
+
+function coordinationTelemetry(available: boolean, checkedAt: string) {
+  return {
+    ...dependencyTelemetry('coordination', available, checkedAt),
+    operationFailures: coordinationOperationFailures,
   }
 }
 
