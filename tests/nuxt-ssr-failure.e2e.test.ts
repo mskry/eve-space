@@ -1,54 +1,40 @@
 // @vitest-environment node
 
 import { $fetch, createPage, setup } from '@nuxt/test-utils/e2e'
-import { createServer } from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
+import { startCorsJsonApi } from './support/cors-json-api'
 
 let apiAvailable = false
-const apiServer = createServer((request, response) => {
+const apiServer = await startCorsJsonApi((request) => {
   if (apiAvailable) {
-    const headers = {
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Origin': request.headers.origin ?? '*',
-      'Content-Type': 'application/json',
-    }
-    if (request.method === 'OPTIONS') {
-      response.writeHead(204, headers)
-      response.end()
-      return
-    }
-    response.writeHead(200, headers)
     if (request.url === '/auth/session')
-      response.end(
-        JSON.stringify({
+      return {
+        body: {
           authenticated: true,
           account: { userId: 'test-user', mainCharacter: { characterId: 7, name: 'Test Pilot' } },
-        }),
-      )
+        },
+      }
     else if (request.url === '/auth/config')
-      response.end(JSON.stringify({ configured: false, loginUrl: '', attachUrl: '' }))
-    else if (request.url === '/api/admin/session')
-      response.end(JSON.stringify({ authenticated: false }))
+      return { body: { configured: false, loginUrl: '', attachUrl: '' } }
+    else if (request.url === '/api/admin/session') return { body: { authenticated: false } }
     else if (request.url === '/api/modules')
-      response.end(
-        JSON.stringify({
+      return {
+        body: {
           enabledModuleIds: [],
           shellNavigationOrder: { dashboard: [], character: [] },
-        }),
-      )
-    else response.end(JSON.stringify({ code: 'NOT_FOUND', message: 'Not found.' }))
-    return
+        },
+      }
+    return { body: { code: 'NOT_FOUND', message: 'Not found.' } }
   }
-  response.writeHead(403, { 'Content-Type': 'application/json' })
-  response.end(JSON.stringify({ code: 'TEST_FAILURE', message: 'API unavailable for SSR test.' }))
+  return {
+    status: 403,
+    body: { code: 'TEST_FAILURE', message: 'API unavailable for SSR test.' },
+  }
 })
-await new Promise<void>((resolve) => apiServer.listen(0, '127.0.0.1', resolve))
-const apiAddress = apiServer.address() as AddressInfo
-process.env.NUXT_PUBLIC_API_BASE = `http://127.0.0.1:${apiAddress.port}`
+process.env.NUXT_PUBLIC_API_BASE = apiServer.origin
 
-afterAll(() => new Promise<void>((resolve) => apiServer.close(() => resolve())))
+afterAll(apiServer.close)
 
 describe('Nuxt anonymous SSR boundary', async () => {
   await setup({

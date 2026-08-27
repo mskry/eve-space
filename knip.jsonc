@@ -45,8 +45,7 @@
       "entry": [
         "src/runtime/app/{composables,middleware}/**/*.ts",
         "test/**/*.test.ts",
-        "test/fixtures/*/app.vue",
-        "test/fixtures/*/app/**/*.{ts,vue}",
+        "test/fixtures/*/{app.vue,app/**/*.{ts,vue}}",
         "test/fixtures/*/modules/*/src/**/*.{js,ts,vue}",
         "test/fixtures/*/nuxt.config.ts",
       ],
