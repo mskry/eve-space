@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
-import { loadMigrations, runMigrations } from '../../src/db/migration-runner.js'
+import { runMigrations } from '../../src/db/migration-runner.js'
 import * as schema from '../../src/db/schema.js'
 import { findCharacterTokenForLifecycle } from '../../src/auth-store.js'
 import {
@@ -54,42 +54,6 @@ beforeEach(async () => {
 })
 
 describe('platform collection state PostgreSQL persistence', () => {
-  test('backfills one lifecycle for every character attached before the migration', async () => {
-    const connection = postgres(databaseUrl)
-    try {
-      await connection.unsafe('drop schema public cascade; create schema public;').simple()
-      const migrations = await loadMigrations()
-      const lifecycleIndex = migrations.findIndex(
-        ({ name }) => name === '017_subject_lifecycles.sql',
-      )
-      expect(lifecycleIndex).toBeGreaterThan(0)
-      await runMigrations(connection, migrations.slice(0, lifecycleIndex))
-      await connection`insert into users (id) values (${randomUUID()})`
-      const [user] = await connection<{ id: string }[]>`select id from users limit 1`
-      await connection`
-        insert into characters (character_id, user_id, name, corporation_id, is_main)
-        values (1404328063, ${user!.id}, 'Existing Character', 98000001, true)
-      `
-
-      await runMigrations(connection, [migrations[lifecycleIndex]!])
-      const rows = await connection<
-        { subject_kind: string; subject_id: string; character_id: string }[]
-      >`
-        select subject_kind, subject_id, character_id
-        from platform_subject_lifecycles
-      `
-      expect(rows).toEqual([
-        {
-          subject_kind: 'character',
-          subject_id: '1404328063',
-          character_id: '1404328063',
-        },
-      ])
-    } finally {
-      await connection.end()
-    }
-  })
-
   test('creates the constrained composite identity and deterministic due index', async () => {
     const connection = postgres(databaseUrl)
     try {

@@ -9,7 +9,10 @@ import {
 } from '../../src/db/locks.js'
 import { loadMigrations, runMigrations } from '../../src/db/migration-runner.js'
 import { runModuleMigrationSets } from '../../src/db/module-migration-runner.js'
-import { createModulePersistenceCapability } from '../../src/db/module-persistence.js'
+import {
+  createModulePersistenceCapability,
+  createTransactionScopedModulePersistenceCapability,
+} from '../../src/db/module-persistence.js'
 import { runStartupMigrations } from '../../src/db/startup-migrations.js'
 import {
   loadModuleRuntimeState,
@@ -148,156 +151,7 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('upgrades a legacy migration ledger without breaking name-only runners', async () => {
-    const connection = postgres(databaseUrl)
-    const transition = (await loadMigrations()).find(
-      ({ name }) => name === '012_module_qualified_schema_migrations.sql',
-    )
-    expect(transition).toBeDefined()
-
-    try {
-      await connection`
-        create table schema_migrations (
-          name text primary key,
-          applied_at timestamptz not null default now()
-        )
-      `
-      await connection`
-        insert into schema_migrations (name, applied_at)
-        values
-          ('010_domain_event_relay_safety.sql', '2026-01-01T00:00:00Z'),
-          ('011_character_affiliation_sync.sql', '2026-01-02T00:00:00Z')
-      `
-
-      const { checkWorkerReadiness, expectedWorkerMigration } =
-        await import('../../src/worker-readiness.js')
-      await expect(checkWorkerReadiness(connection)).resolves.toEqual({
-        healthy: false,
-        reason: `Missing migration core/${expectedWorkerMigration}`,
-        missing: { module: 'core', name: expectedWorkerMigration },
-      })
-
-      await runMigrations(connection, [transition!])
-      await connection`insert into schema_migrations (name) values ('legacy-runner.sql')`
-      await connection`
-        insert into schema_migrations (module, name)
-        values ('alpha', 'alpha-001-initial.sql'), ('beta', 'alpha-001-initial.sql')
-      `
-
-      const rows = await connection<{ module: string; name: string; applied_at: Date }[]>`
-        select module, name, applied_at
-        from schema_migrations
-        order by module, name
-      `
-      expect(rows.map(({ module, name }) => ({ module, name }))).toEqual([
-        { module: 'alpha', name: 'alpha-001-initial.sql' },
-        { module: 'beta', name: 'alpha-001-initial.sql' },
-        { module: 'core', name: '010_domain_event_relay_safety.sql' },
-        { module: 'core', name: '011_character_affiliation_sync.sql' },
-        { module: 'core', name: '012_module_qualified_schema_migrations.sql' },
-        { module: 'core', name: 'legacy-runner.sql' },
-      ])
-      expect(
-        rows.find(({ name }) => name === '010_domain_event_relay_safety.sql')?.applied_at,
-      ).toEqual(new Date('2026-01-01T00:00:00Z'))
-      expect(
-        rows.find(({ name }) => name === '011_character_affiliation_sync.sql')?.applied_at,
-      ).toEqual(new Date('2026-01-02T00:00:00Z'))
-
-      const [shape] = await connection<
-        { column_default: string; is_nullable: string; primary_key: string }[]
-      >`
-        select
-          column_default,
-          is_nullable,
-          (
-            select pg_get_constraintdef(oid)
-            from pg_constraint
-            where conrelid = 'schema_migrations'::regclass
-              and contype = 'p'
-          ) as primary_key
-        from information_schema.columns
-        where table_schema = 'public'
-          and table_name = 'schema_migrations'
-          and column_name = 'module'
-      `
-      expect(shape).toEqual({
-        column_default: "'core'::text",
-        is_nullable: 'NO',
-        primary_key: 'PRIMARY KEY (module, name)',
-      })
-      await expect(
-        connection`
-          insert into schema_migrations (module, name)
-          values ('alpha', 'alpha-001-initial.sql')
-        `,
-      ).rejects.toMatchObject({ code: '23505' })
-
-      await expect(checkWorkerReadiness(connection)).resolves.toEqual({
-        healthy: false,
-        reason: `Missing migration core/${expectedWorkerMigration}`,
-        missing: { module: 'core', name: expectedWorkerMigration },
-      })
-    } finally {
-      await connection.end()
-    }
-  })
-
-  test('rolls back the legacy ledger transition atomically', async () => {
-    const connection = postgres(databaseUrl)
-    const transition = (await loadMigrations()).find(
-      ({ name }) => name === '012_module_qualified_schema_migrations.sql',
-    )
-    expect(transition).toBeDefined()
-
-    try {
-      await connection`
-        create table schema_migrations (
-          name text primary key,
-          applied_at timestamptz not null default now()
-        )
-      `
-      await connection`insert into schema_migrations (name) values ('011_character_affiliation_sync.sql')`
-
-      await expect(
-        runMigrations(connection, [
-          {
-            ...transition!,
-            sql: `${transition!.sql}\nselect missing_ledger_transition_function();`,
-          },
-        ]),
-      ).rejects.toThrow('missing_ledger_transition_function')
-
-      const [state] = await connection<
-        { module_exists: boolean; primary_key: string; rows: number }[]
-      >`
-        select
-          exists (
-            select 1
-            from information_schema.columns
-            where table_schema = 'public'
-              and table_name = 'schema_migrations'
-              and column_name = 'module'
-          ) as module_exists,
-          (
-            select pg_get_constraintdef(oid)
-            from pg_constraint
-            where conrelid = 'schema_migrations'::regclass
-              and contype = 'p'
-          ) as primary_key,
-          (select count(*)::integer from schema_migrations) as rows
-      `
-      expect(state).toEqual({
-        module_exists: false,
-        primary_key: 'PRIMARY KEY (name)',
-        rows: 1,
-      })
-    } finally {
-      await connection.end()
-    }
-  })
-
-  test('qualifies core migration reads and writes after the ledger transition', async () => {
+  test('qualifies core migration reads and writes by owner', async () => {
     const connection = postgres(databaseUrl)
     const migration = {
       name: 'test_qualified_core.sql',
@@ -497,6 +351,56 @@ describe('multi-process safety', () => {
     }
   })
 
+  test('rejects a non-transactional module migration before applying any of the set', async () => {
+    const connection = postgres(databaseUrl)
+    const installed = [
+      { moduleId: 'alpha', name: 'alpha-001-initial.sql' },
+      { moduleId: 'alpha', name: 'alpha-002-concurrent.sql' },
+    ] as const
+    const sqlByName = new Map([
+      ['alpha-001-initial.sql', 'create table alpha_first (id integer);'],
+      ['alpha-002-concurrent.sql', 'create index concurrently alpha_idx on alpha_first (id);'],
+    ])
+
+    try {
+      await expect(
+        runStartupMigrations(connection, {
+          installed,
+          loadModuleSql: async ({ name }) => sqlByName.get(name)!,
+        }),
+      ).rejects.toThrow('cannot run in a transaction')
+
+      const [state] = await connection<{ first_exists: boolean; applied: number }[]>`
+        select
+          to_regclass('eve_module_alpha.alpha_first') is not null as first_exists,
+          (
+            select count(*)::integer from schema_migrations where module = 'alpha'
+          ) as applied
+      `
+      expect(state).toEqual({ first_exists: false, applied: 0 })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('restores the session lock timeout it overrode while migrating', async () => {
+    const connection = postgres(databaseUrl, { max: 1, connection: { lock_timeout: 7_000 } })
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-001-initial.sql' }],
+        loadModuleSql: async () => 'create table alpha_first (id integer);',
+      })
+
+      const [session] = await connection<{ lock_timeout: string }[]>`
+        select current_setting('lock_timeout') as lock_timeout
+      `
+      expect(session?.lock_timeout).toBe('7s')
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('provisions restricted runtime roles for every installed module', async () => {
     const connection = postgres(databaseUrl)
     const installed = [
@@ -668,6 +572,133 @@ describe('multi-process safety', () => {
         current_user: 'eve_space',
         rolled_back_rows: 0,
         session_user: 'eve_space',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('restores the platform role and search path after a module operation succeeds', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
+        loadModuleSql: loadIsolationMigrationSql,
+      })
+
+      const observed = await connection.begin(async (transaction) => {
+        const [before] = await transaction<{ role: string; search_path: string }[]>`
+          select current_user as role, current_setting('search_path') as search_path
+        `
+        const { capability } = createTransactionScopedModulePersistenceCapability(
+          transaction,
+          'alpha',
+        )
+        const moduleRole = await capability.transaction(async (scoped) => {
+          await scoped.query("insert into alpha_records (value) values ('kept')")
+          const rows = await scoped.query<{ role: string }>('select current_user as role')
+          return rows[0]?.role
+        })
+        const [after] = await transaction<{ role: string; search_path: string }[]>`
+          select current_user as role, current_setting('search_path') as search_path
+        `
+        return { before, moduleRole, after }
+      })
+
+      expect(observed.moduleRole).toBe('eve_module_alpha_runtime')
+      expect(observed.before?.role).toBe('eve_space')
+      expect(observed.after).toEqual(observed.before)
+
+      const [kept] = await connection<{ count: number }[]>`
+        select count(*)::integer as count
+        from eve_module_alpha.alpha_records
+        where value = 'kept'
+      `
+      expect(kept?.count).toBe(1)
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('restores the platform role and keeps writing when a module operation throws', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
+        loadModuleSql: loadIsolationMigrationSql,
+      })
+
+      const observed = await connection.begin(async (transaction) => {
+        const [before] = await transaction<{ role: string; search_path: string }[]>`
+          select current_user as role, current_setting('search_path') as search_path
+        `
+        const { capability } = createTransactionScopedModulePersistenceCapability(
+          transaction,
+          'alpha',
+        )
+        const failure = await capability
+          .transaction(async (scoped) => {
+            await scoped.query("insert into alpha_records (value) values ('rolled back')")
+            throw new Error('module materialize failed')
+          })
+          .catch((error: Error) => error.message)
+
+        const [after] = await transaction<{ role: string; search_path: string }[]>`
+          select current_user as role, current_setting('search_path') as search_path
+        `
+        // The platform must still own the transaction it lent to the module.
+        await transaction`insert into deployment_modules (module_id) values ('alpha')`
+        const [rolledBack] = await transaction<{ count: number }[]>`
+          select count(*)::integer as count
+          from eve_module_alpha.alpha_records
+          where value = 'rolled back'
+        `
+        return { before, failure, after, rolledBack }
+      })
+
+      expect(observed.failure).toBe('module materialize failed')
+      expect(observed.after).toEqual(observed.before)
+      expect(observed.rolledBack?.count).toBe(0)
+
+      const [modules] = await connection<{ count: number }[]>`
+        select count(*)::integer as count from deployment_modules where module_id = 'alpha'
+      `
+      expect(modules?.count).toBe(1)
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rejects nested and repeated module resource transactions', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
+        loadModuleSql: loadIsolationMigrationSql,
+      })
+
+      await connection.begin(async (transaction) => {
+        const nested = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
+        await expect(
+          nested.capability.transaction(async () =>
+            nested.capability.transaction(async () => undefined),
+          ),
+        ).rejects.toThrow('Nested module resource transactions are not supported')
+
+        const reused = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
+        await reused.capability.transaction(async () => undefined)
+        await expect(reused.capability.transaction(async () => undefined)).rejects.toThrow(
+          'Module resource transaction capability is single-use',
+        )
+
+        const expired = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
+        const escaped = await expired.capability.transaction(async (scoped) => scoped)
+        await expect(escaped.query('select 1')).rejects.toThrow(
+          'Module resource transaction is no longer active',
+        )
       })
     } finally {
       await connection.end()
@@ -969,7 +1000,7 @@ describe('multi-process safety', () => {
 
   test('rolls back every domain-event migration object when the migration fails', async () => {
     const connection = postgres(databaseUrl)
-    const migration = (await loadMigrations()).find(({ name }) => name === '009_domain_events.sql')
+    const migration = (await loadMigrations()).find(({ name }) => name === '001_initial.sql')
     expect(migration).toBeDefined()
 
     try {
@@ -990,7 +1021,7 @@ describe('multi-process safety', () => {
           to_regprocedure('prevent_domain_event_envelope_update()') is not null as function_exists,
           (
             select count(*)::integer from schema_migrations
-            where name = '009_domain_events.sql'
+            where name = '001_initial.sql'
           ) as migration_count
       `
       expect(objects).toEqual({

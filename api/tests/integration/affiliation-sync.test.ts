@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
-import { loadMigrations, runMigrations } from '../../src/db/migration-runner.js'
+import { runMigrations } from '../../src/db/migration-runner.js'
 
 let container: StartedTestContainer
 let databaseUrl: string
@@ -32,15 +32,13 @@ beforeAll(async () => {
     TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
   })
 
-  const migrations = await loadMigrations()
-  await runMigrations(
-    connection,
-    migrations.filter(({ name }) => name < '011_character_affiliation_sync.sql'),
-  )
+  await runMigrations(connection)
+  affiliation = await import('../../src/affiliation-sync.js')
+  authStore = await import('../../src/auth-store.js')
+  dbClient = await import('../../src/db/client.js')
 })
 
 beforeEach(async () => {
-  if (!affiliation) return
   await connection.unsafe(
     'truncate domain_events, oauth_states, sessions, eve_tokens, characters, users restart identity cascade',
   )
@@ -53,34 +51,6 @@ afterAll(async () => {
 })
 
 describe('affiliation persistence', () => {
-  test('backfills existing characters as immediately due pending observations', async () => {
-    await insertLegacyCharacter(1, 10)
-    const migrations = await loadMigrations()
-    await runMigrations(
-      connection,
-      migrations.filter(({ name }) => name === '011_character_affiliation_sync.sql'),
-    )
-    affiliation = await import('../../src/affiliation-sync.js')
-    authStore = await import('../../src/auth-store.js')
-    dbClient = await import('../../src/db/client.js')
-
-    const [record] = await connection<
-      { affiliation_resolution_state: string; affiliation_checked_at: Date | null; due: boolean }[]
-    >`
-      select affiliation_resolution_state, affiliation_checked_at, next_affiliation_check <= now() as due
-      from characters where character_id = 1
-    `
-    expect(record).toEqual({
-      affiliation_resolution_state: 'pending',
-      affiliation_checked_at: null,
-      due: true,
-    })
-    await runMigrations(
-      connection,
-      migrations.filter(({ name }) => name > '011_character_affiliation_sync.sql'),
-    )
-  })
-
   test('derives active sessions at persistence time and treats other scheduled characters as inactive', async () => {
     const observedAt = new Date('2026-08-24T12:00:00.000Z')
     await insertCharacter(1, 10)
@@ -228,15 +198,6 @@ async function insertCharacter(
       ${characterId}, ${id}, ${`Character ${characterId}`}, ${options.corporationId ?? 10},
       ${options.allianceId ?? null}, true, 'pending', ${options.nextCheck ?? new Date()}
     )
-  `
-}
-
-async function insertLegacyCharacter(characterId: number, user: number) {
-  const id = userId(user)
-  await connection`insert into users (id) values (${id})`
-  await connection`
-    insert into characters (character_id, user_id, name, corporation_id, is_main)
-    values (${characterId}, ${id}, ${`Character ${characterId}`}, 10, true)
   `
 }
 

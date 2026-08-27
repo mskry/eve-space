@@ -13,7 +13,8 @@ import {
   moduleMigrationLockKey,
   moduleMigrationLockNamespace,
 } from './locks.js'
-import { assertTransactionalMigration, type Migration } from './migration-runner.js'
+import type { MigrationRunOptions } from './migration-runner.js'
+import { assertTransactionalMigration, type Migration } from './migration-validation.js'
 import {
   modulePersistenceNames,
   provisionModulePersistence,
@@ -31,10 +32,6 @@ export interface ModuleMigrationSet {
 export type ModuleMigrationSqlLoader = (
   descriptor: InstalledModuleMigrationDescriptor,
 ) => Promise<string>
-
-interface ModuleMigrationRunOptions {
-  lockTimeoutMs?: number
-}
 
 export async function loadInstalledModuleMigrationSets(
   descriptors: readonly InstalledModuleMigrationDescriptor[],
@@ -69,7 +66,7 @@ export async function loadInstalledModuleMigrationSets(
 export async function runModuleMigrationSets(
   connection: postgres.Sql,
   migrationSets: readonly ModuleMigrationSet[],
-  { lockTimeoutMs = moduleMigrationLockTimeoutMs }: ModuleMigrationRunOptions = {},
+  { lockTimeoutMs = moduleMigrationLockTimeoutMs }: MigrationRunOptions = {},
 ) {
   const moduleIds = migrationSets.map(({ moduleId }) => moduleId)
   validateDescriptors(
@@ -80,83 +77,170 @@ export async function runModuleMigrationSets(
   )
   if (new Set(moduleIds).size !== moduleIds.length)
     throw new Error('Installed module migration sets contain duplicate module owners')
+  for (const { migrations } of migrationSets)
+    for (const migration of migrations) assertTransactionalMigration(migration)
 
-  // oxlint-disable no-await-in-loop
-  for (const { moduleId, migrations } of migrationSets) {
-    const reservedConnection = await connection.reserve()
-    let lockAcquired = false
-    try {
-      await reservedConnection`select set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, false)`
-      await reservedConnection`
-        select pg_advisory_lock(
-          ${moduleMigrationLockNamespace},
-          ${moduleMigrationLockKey(moduleId)}
-        )
-      `
-      lockAcquired = true
-
-      const applied = await reservedConnection<{ name: string }[]>`
-        select name from public.schema_migrations where module = ${moduleId}
-      `
-      const appliedNames = new Set(applied.map(({ name }) => name))
-      const { schemaName } = modulePersistenceNames(moduleId)
-      let persistenceProvisioned = false
-
-      for (const migration of migrations) {
-        if (appliedNames.has(migration.name)) continue
-        assertTransactionalMigration(migration)
-
-        await reservedConnection`begin`
-        try {
-          if (!persistenceProvisioned)
-            await provisionModulePersistence(reservedConnection, moduleId)
-          await reservedConnection`
-            select set_config('search_path', ${`${schemaName}, pg_catalog`}, true)
-          `
-          await reservedConnection.unsafe(migration.sql).simple()
-          await reservedConnection`
-            insert into public.schema_migrations (module, name)
-            values (${moduleId}, ${migration.name})
-          `
-          await reservedConnection`commit`
-        } catch (error) {
-          await reservedConnection`rollback`
-          throw error
-        }
-
-        persistenceProvisioned = true
-        console.log(`Applied migration ${moduleId}/${migration.name}`)
-      }
-
-      if (!persistenceProvisioned) {
-        await reservedConnection`begin`
-        try {
-          await provisionModulePersistence(reservedConnection, moduleId)
-          await reservedConnection`commit`
-        } catch (error) {
-          await reservedConnection`rollback`
-          throw error
-        }
-      }
-    } finally {
-      try {
-        if (lockAcquired)
-          await reservedConnection`
-            select pg_advisory_unlock(
-              ${moduleMigrationLockNamespace},
-              ${moduleMigrationLockKey(moduleId)}
-            )
-          `
-      } finally {
-        try {
-          await reservedConnection`select set_config('lock_timeout', '0', false)`
-        } finally {
-          reservedConnection.release()
-        }
-      }
-    }
+  for (const migrationSet of migrationSets) {
+    // oxlint-disable-next-line no-await-in-loop
+    await runModuleMigrationSet(connection, migrationSet, lockTimeoutMs)
   }
-  // oxlint-enable no-await-in-loop
+}
+
+async function runModuleMigrationSet(
+  connection: postgres.Sql,
+  { moduleId, migrations }: ModuleMigrationSet,
+  lockTimeoutMs: number,
+) {
+  const lease = await acquireModuleMigrationLease(connection, moduleId, lockTimeoutMs)
+  let failure: Failure | undefined
+  try {
+    await applyModuleMigrationSet(lease.connection, moduleId, migrations)
+  } catch (error) {
+    failure = { error }
+  }
+
+  const cleanupFailure = await lease.release()
+  if (failure) throw withCleanupFailure(failure.error, cleanupFailure)
+  if (cleanupFailure) throw cleanupFailure.error
+}
+
+async function applyModuleMigrationSet(
+  connection: postgres.ReservedSql,
+  moduleId: string,
+  migrations: readonly Migration[],
+) {
+  const applied = await connection<{ name: string }[]>`
+    select name from public.schema_migrations where module = ${moduleId}
+  `
+  const appliedNames = new Set(applied.map(({ name }) => name))
+  const pendingMigrations = migrations.filter(({ name }) => !appliedNames.has(name))
+  if (pendingMigrations.length === 0) {
+    await runInTransaction(connection, () => provisionModulePersistence(connection, moduleId))
+    return
+  }
+
+  const { schemaName } = modulePersistenceNames(moduleId)
+  for (const [index, migration] of pendingMigrations.entries()) {
+    // oxlint-disable-next-line no-await-in-loop
+    await runInTransaction(connection, async () => {
+      if (index === 0) await provisionModulePersistence(connection, moduleId)
+      await connection`select set_config('search_path', ${`${schemaName}, pg_catalog`}, true)`
+      await connection.unsafe(migration.sql).simple()
+      await connection`
+        insert into public.schema_migrations (module, name)
+        values (${moduleId}, ${migration.name})
+      `
+    })
+    console.log(`Applied migration ${moduleId}/${migration.name}`)
+  }
+}
+
+async function runInTransaction(connection: postgres.ReservedSql, body: () => Promise<unknown>) {
+  await connection`begin`
+  try {
+    await body()
+    await connection`commit`
+  } catch (error) {
+    throw withCleanupFailure(error, await attempt(() => connection`rollback`))
+  }
+}
+
+interface ModuleMigrationLease {
+  readonly connection: postgres.ReservedSql
+  release(): Promise<Failure | undefined>
+}
+
+async function acquireModuleMigrationLease(
+  connection: postgres.Sql,
+  moduleId: string,
+  lockTimeoutMs: number,
+): Promise<ModuleMigrationLease> {
+  const reservedConnection = await connection.reserve()
+  const lockKey = moduleMigrationLockKey(moduleId)
+  let restoreLockTimeout: string | undefined
+  let lockHeld = false
+
+  try {
+    const [session] = await reservedConnection<{ lock_timeout: string }[]>`
+      select current_setting('lock_timeout') as lock_timeout
+    `
+    restoreLockTimeout = session?.lock_timeout
+    await reservedConnection`select set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, false)`
+    await reservedConnection`
+      select pg_advisory_lock(${moduleMigrationLockNamespace}, ${lockKey})
+    `
+    lockHeld = true
+  } catch (error) {
+    throw withCleanupFailure(
+      error,
+      await releaseLease(reservedConnection, lockKey, lockHeld, restoreLockTimeout),
+    )
+  }
+
+  return {
+    connection: reservedConnection,
+    release: () => releaseLease(reservedConnection, lockKey, lockHeld, restoreLockTimeout),
+  }
+}
+
+/**
+ * Every step runs even when an earlier one fails, so a broken unlock cannot leave the session
+ * timeout overridden or the connection reserved.
+ */
+async function releaseLease(
+  connection: postgres.ReservedSql,
+  lockKey: number,
+  lockHeld: boolean,
+  restoreLockTimeout: string | undefined,
+) {
+  const failures: unknown[] = []
+  const record = (failure: Failure | undefined) => {
+    if (failure) failures.push(failure.error)
+  }
+
+  if (lockHeld)
+    record(
+      await attempt(
+        () => connection`select pg_advisory_unlock(${moduleMigrationLockNamespace}, ${lockKey})`,
+      ),
+    )
+  if (restoreLockTimeout !== undefined)
+    record(
+      await attempt(
+        () => connection`select set_config('lock_timeout', ${restoreLockTimeout}, false)`,
+      ),
+    )
+  record(await attempt(async () => connection.release()))
+
+  if (failures.length === 0) return undefined
+  return {
+    error:
+      failures.length === 1
+        ? failures[0]
+        : new AggregateError(failures, 'Module migration connection release failed'),
+  }
+}
+
+interface Failure {
+  readonly error: unknown
+}
+
+async function attempt(action: () => Promise<unknown>): Promise<Failure | undefined> {
+  try {
+    await action()
+    return undefined
+  } catch (error) {
+    return { error }
+  }
+}
+
+/** Keeps the originating failure first; cleanup failures never replace it. */
+function withCleanupFailure(error: unknown, cleanupFailure: Failure | undefined) {
+  if (!cleanupFailure) return error
+  return new AggregateError(
+    [error, cleanupFailure.error],
+    'Module migration failed and could not be cleaned up',
+  )
 }
 
 async function loadModuleMigrationSql({ moduleId, name }: InstalledModuleMigrationDescriptor) {
