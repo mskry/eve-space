@@ -24,7 +24,10 @@ import { auditTimestamps, moduleIdCheck } from './shared.js'
 // module settings and the navigation order owned by 'core' or by a module.
 
 const subjectKindCheck = (name: string) =>
-  check(name, sql`subject_kind in ('deployment', 'character', 'corporation', 'alliance')`)
+  check(
+    name,
+    sql`subject_kind in ('deployment', 'corporation', 'alliance') or is_character_subject_kind(subject_kind)`,
+  )
 
 const subjectIdCheck = (name: string) =>
   check(name, sql`subject_id <> '' and subject_id = trim(subject_id)`)
@@ -54,11 +57,11 @@ export const deploymentShellNavigationOrder = pgTable(
     }),
     check(
       'deployment_shell_navigation_order_owner_id_check',
-      sql`owner_id = 'core' or (owner_id ~ '^[a-z][a-z0-9]*(-[a-z0-9]+)*$' and length(owner_id) <= 44 and owner_id <> 'platform')`,
+      sql`owner_id = 'core' or (is_valid_platform_identifier(owner_id) and length(owner_id) <= 44 and owner_id <> 'platform')`,
     ),
     check(
       'deployment_shell_navigation_order_navigation_id_check',
-      sql`navigation_id ~ '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'`,
+      sql`is_valid_platform_identifier(navigation_id)`,
     ),
     check('deployment_shell_navigation_order_position_check', sql`position >= 0`),
   ],
@@ -95,7 +98,7 @@ export const platformSubjectLifecycles = pgTable(
     subjectIdCheck('platform_subject_lifecycles_subject_id_check'),
     check(
       'platform_subject_lifecycles_character_binding_check',
-      sql`(subject_kind = 'character' and character_id is not null and subject_id = character_id::text) or (subject_kind <> 'character' and character_id is null)`,
+      sql`(is_character_subject_kind(subject_kind) and character_id is not null and subject_id = character_id::text) or (not is_character_subject_kind(subject_kind) and character_id is null)`,
     ),
   ],
 )
@@ -159,7 +162,7 @@ export const platformCollectionState = pgTable(
     moduleIdCheck('platform_collection_state_module_id_check'),
     check(
       'platform_collection_state_resource_id_check',
-      sql`resource_id ~ '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'`,
+      sql`is_valid_platform_identifier(resource_id)`,
     ),
     subjectKindCheck('platform_collection_state_subject_kind_check'),
     subjectIdCheck('platform_collection_state_subject_id_check'),

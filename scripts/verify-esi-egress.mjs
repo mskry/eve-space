@@ -70,14 +70,15 @@ function moduleEgressViolations(sources, operationIds) {
 function moduleSourceEgressViolations(path, source, operationIds) {
   const findings = []
   const operations = operationProperties(source)
+  const hasEsiSdkImport = hasRuntimeEsiSdkImport(path, source)
   for (const operation of operations) {
     if (!operationIds.has(operation))
       findings.push(`${path}: unregistered ESI operation ${operation}`)
   }
 
-  if (hasRuntimeEsiSdkImport(source) && operations.size === 0)
+  if (hasEsiSdkImport && operations.size === 0)
     findings.push(`${path}: ESI SDK usage is not associated with a registered operation`)
-  if (hasRuntimeEsiSdkImport(source))
+  if (hasEsiSdkImport)
     findings.push(
       `${path}: feature server code imports the ESI SDK at runtime instead of using platform dispatch`,
     )
@@ -121,14 +122,41 @@ function operationProperties(source) {
   return new Set([...source.matchAll(/\boperation:\s*['"]([^'"]+)['"]/g)].map((match) => match[1]))
 }
 
-function hasRuntimeEsiSdkImport(source) {
-  return (
-    /(?:^|\n)\s*import\s+(?!type\b)(?:\{[^}]*\}|\*\s+as\s+\w+|[\w$]+(?:\s*,\s*\{[^}]*\})?)\s+from\s*['"]@evespace\/esi-client(?:\/[^'"]*)?['"]/.test(
-      source,
-    ) ||
-    /(?:^|\n)\s*import\s*['"]@evespace\/esi-client(?:\/[^'"]*)?['"]/.test(source) ||
-    /\bimport\(\s*['"]@evespace\/esi-client(?:\/[^'"]*)?['"]\s*\)/.test(source)
+function hasRuntimeEsiSdkImport(path, source) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind(path),
   )
+  let found = false
+
+  visit(sourceFile, (node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      hasRuntimeImportClause(node.importClause) &&
+      isEsiSdkSpecifier(node.moduleSpecifier)
+    )
+      found = true
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      ts.isStringLiteral(node.arguments[0]) &&
+      isEsiSdkSpecifier(node.arguments[0])
+    )
+      found = true
+  })
+
+  return found
+}
+
+function hasRuntimeImportClause(importClause) {
+  if (!importClause) return true
+  if (importClause.isTypeOnly || importClause.name) return !importClause.isTypeOnly
+  if (!importClause.namedBindings) return false
+  if (ts.isNamespaceImport(importClause.namedBindings)) return true
+  return importClause.namedBindings.elements.some((element) => !element.isTypeOnly)
 }
 
 function sdkClientConstructionViolations(path, source, owner) {
@@ -327,10 +355,28 @@ function scriptKind(path) {
 }
 
 function generatedOperationIds(source) {
-  const entries = source.match(
-    /installedModuleEsiOperationCatalog\s*=\s*\{([\s\S]*?)\}\s*as const/,
-  )?.[1]
-  return entries ? [...entries.matchAll(/^\s*['"]([^'"]+)['"]:/gm)].map((match) => match[1]) : []
+  const sourceFile = ts.createSourceFile('installed-module-esi.ts', source, ts.ScriptTarget.Latest)
+  const operationIds = []
+
+  visit(sourceFile, (node) => {
+    if (
+      !ts.isVariableDeclaration(node) ||
+      !ts.isIdentifier(node.name) ||
+      node.name.text !== 'installedModuleEsiOperationCatalog' ||
+      !node.initializer
+    )
+      return
+
+    const entries = unwrapExpression(node.initializer)
+    if (!ts.isObjectLiteralExpression(entries)) return
+
+    for (const property of entries.properties) {
+      if (ts.isPropertyAssignment(property) && ts.isStringLiteral(property.name))
+        operationIds.push(property.name.text)
+    }
+  })
+
+  return operationIds
 }
 
 async function loadInstalledModuleSources(repositoryRoot) {

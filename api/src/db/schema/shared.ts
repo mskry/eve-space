@@ -10,8 +10,5 @@ export function auditTimestamps() {
 }
 
 export function moduleIdCheck(name: string) {
-  return check(
-    name,
-    sql`module_id ~ '^[a-z][a-z0-9]*(-[a-z0-9]+)*$' and length(module_id) <= 44 and module_id not in ('core', 'platform')`,
-  )
+  return check(name, sql`is_valid_module_id(module_id)`)
 }

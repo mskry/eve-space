@@ -151,6 +151,44 @@ describe('multi-process safety', () => {
     }
   })
 
+  test('upgrades an initial-schema database with platform validation functions', async () => {
+    const connection = postgres(databaseUrl)
+    const migrations = await loadMigrations()
+    const initialMigration = migrations.find(({ name }) => name === '001_initial.sql')
+
+    expect(initialMigration).toBeDefined()
+
+    try {
+      await runMigrations(connection, [initialMigration!])
+      await runMigrations(connection)
+
+      const [result] = await connection<
+        { functionExists: boolean; usesValidationFunction: boolean; appliedMigrations: string[] }[]
+      >`
+        select
+          to_regprocedure('is_valid_module_id(text)') is not null as "functionExists",
+          (
+            select pg_get_constraintdef(oid) like '%is_valid_module_id%'
+            from pg_constraint
+            where conname = 'deployment_modules_module_id_check'
+          ) as "usesValidationFunction",
+          (
+            select array_agg(name order by name)
+            from schema_migrations
+            where module = 'core'
+          ) as "appliedMigrations"
+      `
+
+      expect(result).toEqual({
+        functionExists: true,
+        usesValidationFunction: true,
+        appliedMigrations: ['001_initial.sql', '002_extract_platform_validation_functions.sql'],
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('qualifies core migration reads and writes by owner', async () => {
     const connection = postgres(databaseUrl)
     const migration = {
