@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import { useMailMutations } from '../../app/composables/useMailMutations'
+import { useMailOrganizationMutations } from '../../app/composables/useMailOrganizationMutations'
 import {
   mailDetailQuery,
   mailHeadersQuery,
@@ -339,10 +339,10 @@ describe('mail mutations', () => {
 })
 
 function mountMutations() {
-  let mutations!: ReturnType<typeof useMailMutations>
+  let mutations!: ReturnType<typeof useMailOrganizationMutations>
   const Root = defineComponent({
     setup() {
-      mutations = useMailMutations(apiClient)
+      mutations = useMailOrganizationMutations(apiClient)
       return () => h('div')
     },
   })

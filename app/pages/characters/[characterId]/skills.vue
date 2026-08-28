@@ -141,14 +141,12 @@ const skillGroupColumns = computed(() => {
       <div class="app-scanner" aria-hidden="true" />
       <p>Decrypting trained skill archive...</p>
     </div>
-    <div v-else-if="skillsStatus === 'scope-required'" class="skills-access-state" role="status">
-      <span class="private-badge">SCOPE REQUIRED</span>
-      <div>
-        <h2>Skills authorization required</h2>
-        <p>{{ skillsMessage }}</p>
-      </div>
-      <a class="ui-action-primary" :href="skillsAuthorizeUrl">AUTHORIZE THIS CHARACTER</a>
-    </div>
+    <CharacterAuthorizationRequired
+      v-else-if="skillsStatus === 'scope-required'"
+      title="Skills authorization required"
+      :message="skillsMessage"
+      :authorize-url="skillsAuthorizeUrl"
+    />
     <div
       v-else-if="skillsStatus === 'error' || skillsStatus === 'not-found'"
       class="app-state-panel app-error-panel app-state-panel--compact"

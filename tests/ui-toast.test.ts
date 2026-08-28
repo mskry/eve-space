@@ -30,9 +30,33 @@ describe('UiToast', () => {
 
     expect(provider).toContain('ToastProvider')
     expect(provider).toContain('<ToastProvider>')
+    expect(provider).toContain('const { toast, toastOpen } = useToast()')
+    expect(provider).toContain('<UiToast')
     expect(provider).toContain('<ToastViewport class="ui-toast-viewport" />')
     expect(provider.indexOf('<ToastProvider>')).toBeLessThan(provider.indexOf('<slot />'))
     expect(provider.indexOf('<slot />')).toBeLessThan(provider.indexOf('</ToastProvider>'))
+  })
+
+  it('exposes one shared toast state for application consumers', () => {
+    const composable = readWorkspaceFile('layers/ui/app/composables/useToast.ts')
+
+    expect(composable).toContain("useState<UiToastState>('ui-toast'")
+    expect(composable).toContain('function showToast(options: UiToastOptions)')
+    expect(composable).toContain('const key = toast.value.key + 1')
+    expect(composable).toContain('duration: options.duration ?? defaultDuration')
+    expect(composable).toContain('function dismissToast(key?: number)')
+  })
+
+  it('hosts shared confirmation dialogs and scopes controller ownership', () => {
+    const provider = readWorkspaceFile('layers/ui/app/components/ui/UiProvider.vue')
+    const composable = readWorkspaceFile('layers/ui/app/composables/useConfirmDialog.ts')
+
+    expect(provider).toContain('const confirmDialog = provideConfirmDialog()')
+    expect(provider).toContain('<UiConfirmDialog')
+    expect(provider).toContain('@confirm="confirmDialog.confirmDialog"')
+    expect(composable).toContain('function openConfirmDialog(options: UiConfirmDialogOptions)')
+    expect(composable).toContain('const ownedDialogs = new Set<number>()')
+    expect(composable).toContain('onScopeDispose(() => {')
   })
 
   it('styles toast elements only with semantic UI variables', () => {
