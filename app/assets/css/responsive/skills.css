@@ -6,13 +6,8 @@
 }
 
 @media (max-width: 760px) {
-  .skills-access-state,
   .skill-row {
     grid-template-columns: 1fr;
-  }
-
-  .skills-access-state .ui-action-primary {
-    width: max-content;
   }
 
   .skill-levels {

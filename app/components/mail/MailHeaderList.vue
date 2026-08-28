@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import type { MailHeader, MailLabel } from '../../queries/mail'
 
-defineProps<{
-  canLoadOlder: boolean
-  emptyMessage: string
-  filtersActive: boolean
-  filteredHeaders: readonly MailHeader[]
-  labels: readonly MailLabel[]
-  loadedCount: number
-  loadingOlder: boolean
-  olderError: string
-  search: string
-  selectedMailId: number | null
-  unreadOnly: boolean
-}>()
+withDefaults(
+  defineProps<{
+    canLoadOlder: boolean
+    emptyMessage: string
+    filtersActive: boolean
+    filteredHeaders: readonly MailHeader[]
+    labels: readonly MailLabel[]
+    loadedCount: number
+    loading?: boolean
+    loadingOlder: boolean
+    olderError: string
+    search: string
+    selectedMailId: number | null
+    unreadOnly: boolean
+  }>(),
+  { loading: false },
+)
 
 defineEmits<{
   loadOlder: []
@@ -38,11 +42,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="mail-pane mail-header-list" aria-labelledby="mail-headers-title">
+  <section
+    class="mail-pane mail-header-list"
+    aria-labelledby="mail-headers-title"
+    :aria-busy="loading"
+  >
     <header class="mail-pane-heading">
       <h2 id="mail-headers-title">Messages</h2>
     </header>
-    <div class="mail-filter-controls">
+    <p v-if="loading" class="sr-only" role="status">Loading messages...</p>
+    <div v-if="loading" class="mail-filter-controls mail-skeleton-filter" aria-hidden="true">
+      <span class="mail-skeleton-block mail-skeleton-search" />
+      <span class="mail-skeleton-block mail-skeleton-toggle" />
+      <span class="mail-skeleton-block mail-skeleton-count" />
+    </div>
+    <div v-else class="mail-filter-controls">
       <input
         :value="search"
         type="search"
@@ -68,7 +82,22 @@ onBeforeUnmount(() => {
       </p>
     </div>
     <UiScrollArea class="mail-pane-scroll mail-header-scroll">
-      <p v-if="filteredHeaders.length === 0" class="mail-pane-empty">{{ emptyMessage }}</p>
+      <div v-if="loading" class="mail-header-skeletons" aria-hidden="true">
+        <div v-for="index in 6" :key="index" class="mail-header-skeleton">
+          <span class="mail-skeleton-block mail-skeleton-avatar" />
+          <span class="mail-header-skeleton-copy">
+            <span class="mail-header-skeleton-meta">
+              <span class="mail-skeleton-block mail-skeleton-sender" />
+              <span class="mail-skeleton-block mail-skeleton-time" />
+            </span>
+            <span class="mail-skeleton-block mail-skeleton-subject" />
+            <span class="mail-skeleton-block mail-skeleton-label" />
+          </span>
+        </div>
+      </div>
+      <p v-else-if="filteredHeaders.length === 0" class="mail-pane-empty">
+        {{ emptyMessage }}
+      </p>
       <div v-else class="mail-header-rows">
         <MailHeaderRow
           v-for="header in filteredHeaders"
@@ -81,7 +110,10 @@ onBeforeUnmount(() => {
         />
       </div>
     </UiScrollArea>
-    <footer class="mail-list-footer">
+    <footer v-if="loading" class="mail-list-footer mail-list-footer--skeleton" aria-hidden="true">
+      <span class="mail-skeleton-block" />
+    </footer>
+    <footer v-else class="mail-list-footer">
       <span v-if="olderError" role="alert">{{ olderError }}</span>
       <button
         class="ui-action-secondary"

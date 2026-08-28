@@ -1,38 +1,10 @@
 <script setup lang="ts">
-import { useQuery } from '@pinia/colada'
-import {
-  mailDetailQuery,
-  mailHeadersQuery,
-  mailingListsQuery,
-  mailLabelsQuery,
-  type MailHeader,
-} from '../../../queries/mail'
-import { canRunProtectedQuery } from '../../../queries/query-cache'
-import {
-  appendUniqueMailHeaders,
-  deriveMailboxStatus,
-  filterLoadedMailHeaders,
-  mergeLatestMailHeaders,
-} from '../../../utils/mail-view'
-import { ApiQueryError } from '../../../utils/query-error'
-
 definePageMeta({ title: 'Character Mail', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
-
-const selectedMailId = ref<number | null>(null)
-const activeLabelId = ref<number | null>(null)
-const search = ref('')
-const unreadOnly = ref(false)
-const selectedMailingListId = ref<number | null>(null)
-const loadedHeaders = ref<MailHeader[]>([])
-const nextLastMailId = ref<number | null>(null)
-const requestedCursor = ref<number | null>(null)
-const hasPaginated = ref(false)
-
 const characterId = computed(() => {
   const value = Array.isArray(route.params.characterId)
     ? route.params.characterId[0]
@@ -40,189 +12,49 @@ const characterId = computed(() => {
   const parsed = Number(value)
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
 })
-const selectedLabels = computed(() => (activeLabelId.value === null ? [] : [activeLabelId.value]))
-
-const headersQuery = useQuery(() => ({
-  ...mailHeadersQuery({
-    apiClient,
-    characterId: characterId.value ?? 0,
-    labels: selectedLabels.value,
-  }),
-  enabled: canRunProtectedQuery(
-    import.meta.client,
-    authSession.value.authenticated,
-    characterId.value,
-  ),
-}))
-const labelsQuery = useQuery(() => ({
-  ...mailLabelsQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled: canRunProtectedQuery(
-    import.meta.client,
-    authSession.value.authenticated,
-    characterId.value,
-  ),
-}))
-const listsQuery = useQuery(() => ({
-  ...mailingListsQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled: canRunProtectedQuery(
-    import.meta.client,
-    authSession.value.authenticated,
-    characterId.value,
-  ),
-}))
-const cursorQuery = useQuery(() => ({
-  ...mailHeadersQuery({
-    apiClient,
-    characterId: characterId.value ?? 0,
-    labels: selectedLabels.value,
-    lastMailId: requestedCursor.value,
-  }),
-  enabled:
-    requestedCursor.value !== null &&
-    nextLastMailId.value === requestedCursor.value &&
-    canRunProtectedQuery(import.meta.client, authSession.value.authenticated, characterId.value),
-}))
-const detailQuery = useQuery(() => ({
-  ...mailDetailQuery({
-    apiClient,
-    characterId: characterId.value ?? 0,
-    mailId: selectedMailId.value ?? 0,
-  }),
-  enabled:
-    selectedMailId.value !== null &&
-    canRunProtectedQuery(import.meta.client, authSession.value.authenticated, characterId.value),
-}))
-
-const labels = computed(() => labelsQuery.data.value?.labels ?? [])
-const mailingLists = computed(() => listsQuery.data.value?.mailingLists ?? [])
-const filteredHeaders = computed(() =>
-  filterLoadedMailHeaders(loadedHeaders.value, {
-    mailingListId: selectedMailingListId.value,
-    search: search.value,
-    unreadOnly: unreadOnly.value,
-  }),
-)
-const initialErrors = computed(() => [
-  headersQuery.error.value,
-  labelsQuery.error.value,
-  listsQuery.error.value,
-])
-const mailboxStatus = computed(() =>
-  deriveMailboxStatus({
-    errors: initialErrors.value,
-    hasInitialData: Boolean(
-      headersQuery.data.value && labelsQuery.data.value && listsQuery.data.value,
-    ),
-    loading: [headersQuery, labelsQuery, listsQuery].some(
-      (query) => query.asyncStatus.value === 'loading',
-    ),
-  }),
-)
-const mailboxError = computed(() =>
-  initialErrors.value.find((error): error is ApiQueryError => error instanceof ApiQueryError),
-)
-const mailboxMessage = computed(
-  () =>
-    mailboxError.value?.message ||
-    initialErrors.value.find((error): error is Error => error instanceof Error)?.message ||
-    'Mail is temporarily unavailable.',
-)
-const authorizeUrl = computed(
-  () =>
-    initialErrors.value.find(
-      (error): error is ApiQueryError =>
-        error instanceof ApiQueryError && Boolean(error.authorizeUrl),
-    )?.authorizeUrl,
-)
-const retryAfterSeconds = computed(
-  () =>
-    initialErrors.value.find(
-      (error): error is ApiQueryError =>
-        error instanceof ApiQueryError && error.retryAfterSeconds !== undefined,
-    )?.retryAfterSeconds,
-)
-const detailError = computed(() =>
-  detailQuery.error.value instanceof ApiQueryError ? detailQuery.error.value : undefined,
-)
-const cursorError = computed(() =>
-  cursorQuery.error.value instanceof Error ? cursorQuery.error.value.message : '',
-)
-const mailboxEmpty = computed(
-  () =>
-    Boolean(headersQuery.data.value) &&
-    activeLabelId.value === null &&
-    loadedHeaders.value.length === 0,
-)
-const selectedLabelEmpty = computed(
-  () => activeLabelId.value !== null && loadedHeaders.value.length === 0,
-)
-const localFiltersActive = computed(
-  () => Boolean(search.value.trim()) || unreadOnly.value || selectedMailingListId.value !== null,
-)
-const headerEmptyMessage = computed(() => {
-  if (selectedLabelEmpty.value) return 'There are no messages in this folder.'
-  if (localFiltersActive.value)
-    return 'No matches in loaded messages. Load older messages to search further.'
-  return 'No messages are loaded.'
+const authenticated = computed(() => authSession.value.authenticated)
+const mutations = useMailOrganizationMutations(apiClient)
+const mailbox = useCharacterMailbox({
+  apiClient,
+  authenticated,
+  characterId,
+  deletedMailIds: mutations.deletedMailIds,
+  deletePendingIds: mutations.deletePendingIds,
+  readStateOverrides: mutations.readStateOverrides,
+  reconcileReadState: mutations.reconcileReadState,
 })
-
-function selectLabel(labelId: number | null) {
-  if (activeLabelId.value === labelId) return
-  resetMailboxView()
-  activeLabelId.value = labelId
-}
-
-function resetMailboxView() {
-  loadedHeaders.value = []
-  nextLastMailId.value = null
-  requestedCursor.value = null
-  hasPaginated.value = false
-  selectedMailId.value = null
-}
-
-function selectMail(mailId: number) {
-  selectedMailId.value = mailId
-}
-
-function loadOlder() {
-  if (nextLastMailId.value === null) return
-  if (requestedCursor.value === nextLastMailId.value) {
-    void cursorQuery.refetch()
-    return
-  }
-  requestedCursor.value = nextLastMailId.value
-}
-
-function retryMailbox() {
-  void Promise.all([headersQuery.refetch(), labelsQuery.refetch(), listsQuery.refetch()])
-}
-
-watch(characterId, resetMailboxView, { flush: 'sync' })
-
-watch(
-  () => headersQuery.data.value,
-  (page) => {
-    if (!page) return
-    loadedHeaders.value = mergeLatestMailHeaders(
-      loadedHeaders.value,
-      page.messages,
-      hasPaginated.value,
-    )
-    if (!hasPaginated.value) nextLastMailId.value = page.nextLastMailId
-  },
-  { immediate: true },
-)
-
-watch(
-  () => cursorQuery.data.value,
-  (page) => {
-    if (!page || requestedCursor.value === null) return
-    loadedHeaders.value = appendUniqueMailHeaders(loadedHeaders.value, page.messages)
-    hasPaginated.value = true
-    nextLastMailId.value = page.nextLastMailId
-    requestedCursor.value = null
-  },
-)
+const organization = useMailOrganization({ characterId, mailbox, mutations })
+const {
+  activeLabelId,
+  authorizeUrl,
+  cursorError,
+  cursorQuery,
+  detailError,
+  detailQuery,
+  displayedCounts,
+  displayedHeaders,
+  filteredHeaders,
+  headerEmptyMessage,
+  labels,
+  loadOlder,
+  localFiltersActive,
+  mailboxEmpty,
+  mailboxMessage,
+  mailboxStatus,
+  mailingLists,
+  nextLastMailId,
+  retryAfterSeconds,
+  retryMailbox,
+  search,
+  selectedMailId,
+  selectedMailingListId,
+  selectedReadState,
+  selectLabel,
+  selectMail,
+  showMailboxSkeleton,
+  unreadOnly,
+} = mailbox
+const { changeOpenMessageRead, mutationPending, requestMailDeletion } = organization
 
 watch(
   [characterId, () => route.query.reauthorize],
@@ -235,60 +67,50 @@ watch(
 
 <template>
   <section class="character-mail-route">
-    <div
-      v-if="mailboxStatus === 'loading'"
-      class="app-state-panel app-state-panel--compact"
-      aria-live="polite"
-    >
-      <div class="app-scanner" aria-hidden="true" />
-      <p>Loading mail...</p>
-    </div>
-    <div v-else-if="mailboxStatus === 'scope-required'" class="mail-access-state" role="status">
-      <span class="private-badge">SCOPE REQUIRED</span>
-      <div>
-        <h2>Mail authorization required</h2>
-        <p>{{ mailboxMessage }}</p>
-      </div>
-      <a v-if="authorizeUrl" class="ui-action-primary" :href="authorizeUrl">
-        AUTHORIZE THIS CHARACTER
-      </a>
-    </div>
-    <div
+    <CharacterAuthorizationRequired
+      v-if="mailboxStatus === 'scope-required'"
+      title="Mail authorization required"
+      :message="mailboxMessage"
+      :authorize-url="authorizeUrl"
+    />
+    <UiStatePanel
       v-else-if="mailboxStatus === 'cooldown'"
-      class="app-state-panel app-error-panel app-state-panel--compact"
+      code="ESI / COOLDOWN"
+      title="Mail uplink rate limited"
+      compact
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">ESI / COOLDOWN</span>
-      <h2>Mail uplink rate limited</h2>
       <p>
         {{ mailboxMessage }}
         <template v-if="retryAfterSeconds !== undefined">
           Wait {{ retryAfterSeconds }} seconds before trying again.
         </template>
       </p>
-    </div>
-    <div
+    </UiStatePanel>
+    <UiStatePanel
       v-else-if="mailboxStatus === 'error'"
-      class="app-state-panel app-error-panel app-state-panel--compact"
+      code="ERR / MAIL"
+      title="Mail temporarily unavailable"
+      compact
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">ERR / MAIL</span>
-      <h2>Mail temporarily unavailable</h2>
       <p>{{ mailboxMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="retryMailbox">TRY AGAIN</button>
-    </div>
-    <div v-else-if="mailboxEmpty" class="app-state-panel app-state-panel--compact">
-      <span class="app-error-code">NO MAIL</span>
-      <h2>Mailbox empty</h2>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="retryMailbox">TRY AGAIN</button>
+      </template>
+    </UiStatePanel>
+    <UiStatePanel v-else-if="mailboxEmpty" code="NO MAIL" title="Mailbox empty" compact>
       <p>No messages were returned for this character.</p>
-    </div>
-    <div v-else class="mail-workspace">
+    </UiStatePanel>
+    <div v-else class="mail-workspace" :aria-busy="showMailboxSkeleton">
       <MailLabelSidebar
         :active-label-id="activeLabelId"
         :labels="labels"
         :mailing-lists="mailingLists"
         :selected-mailing-list-id="selectedMailingListId"
-        :total-unread-count="labelsQuery.data.value?.totalUnreadCount ?? null"
+        :total-unread-count="displayedCounts.totalUnreadCount"
         @select-label="selectLabel"
         @select-mailing-list="selectedMailingListId = $event"
       />
@@ -300,7 +122,8 @@ watch(
         :filters-active="localFiltersActive"
         :filtered-headers="filteredHeaders"
         :labels="labels"
-        :loaded-count="loadedHeaders.length"
+        :loaded-count="displayedHeaders.length"
+        :loading="showMailboxSkeleton"
         :loading-older="cursorQuery.asyncStatus.value === 'loading'"
         :older-error="cursorError"
         :selected-mail-id="selectedMailId"
@@ -314,8 +137,12 @@ watch(
           detailQuery.error.value instanceof Error ? detailQuery.error.value.message : ''
         "
         :labels="labels"
-        :loading="detailQuery.asyncStatus.value === 'loading'"
-        :selected="selectedMailId !== null"
+        :loading="showMailboxSkeleton || detailQuery.asyncStatus.value === 'loading'"
+        :mutation-pending="mutationPending"
+        :read-state="selectedReadState"
+        :selected="showMailboxSkeleton || selectedMailId !== null"
+        @change-read="changeOpenMessageRead"
+        @delete="requestMailDeletion"
         @retry="detailQuery.refetch()"
       />
     </div>

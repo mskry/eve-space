@@ -21,10 +21,8 @@ const {
   removeCharacter,
   selectMainCharacter,
 } = useCharacterRoster(apiClient)
+const { openConfirmDialog } = useConfirmDialog()
 const callbackHandled = ref('')
-const deleteCandidate = ref<CharacterRosterEntry>()
-const deleteDialogOpen = ref(false)
-const deleteDialogError = ref('')
 
 const attachStatus = computed(() =>
   typeof route.query.attach === 'string' ? route.query.attach : '',
@@ -54,21 +52,34 @@ function prefetchCharacterOverview(characterId: number) {
 }
 
 function requestCharacterDeletion(character: CharacterRosterEntry) {
-  deleteCandidate.value = character
-  deleteDialogError.value = ''
   globalThis.setTimeout(() => {
-    deleteDialogOpen.value = true
+    openConfirmDialog({
+      confirmLabel: 'Delete character',
+      description:
+        'This removes the character and its authorization from this EVE Space account. This action cannot be undone.',
+      onClose: () => restoreCharacterDeletionFocus(character.characterId),
+      onConfirm: () => confirmCharacterDeletion(character),
+      pending: () => deleteCharacterPending.value === character.characterId,
+      pendingLabel: 'Deleting...',
+      title: `Delete ${character.name}?`,
+      tone: 'danger',
+    })
   })
 }
 
-async function confirmCharacterDeletion() {
-  if (!deleteCandidate.value) return
-  const deleted = await removeCharacter(deleteCandidate.value.characterId)
-  if (deleted) {
-    deleteDialogOpen.value = false
-    return
-  }
-  deleteDialogError.value = rosterMessage.value || 'Character could not be deleted.'
+async function confirmCharacterDeletion(character: CharacterRosterEntry) {
+  const deleted = await removeCharacter(character.characterId)
+  if (!deleted) throw new Error(rosterMessage.value || 'Character could not be deleted.')
+  return true
+}
+
+async function restoreCharacterDeletionFocus(characterId: number) {
+  await nextTick()
+  const characterLink = document.querySelector<HTMLAnchorElement>(
+    `a[href="/characters/${characterId}"]`,
+  )
+  const focusTarget = characterLink ?? document.querySelector<HTMLButtonElement>('.roster-add-card')
+  focusTarget?.focus()
 }
 
 watch(
@@ -87,16 +98,6 @@ watch(
   },
   { immediate: true },
 )
-
-watch(deleteDialogOpen, async (open) => {
-  if (open || !deleteCandidate.value) return
-  await nextTick()
-  const characterLink = document.querySelector<HTMLAnchorElement>(
-    `a[href="/characters/${deleteCandidate.value.characterId}"]`,
-  )
-  const focusTarget = characterLink ?? document.querySelector<HTMLButtonElement>('.roster-add-card')
-  focusTarget?.focus()
-})
 
 useHead({ title: 'Character Roster // EVE Space' })
 </script>
@@ -195,17 +196,6 @@ useHead({ title: 'Character Roster // EVE Space' })
         </UiContextMenu>
         <CharacterRosterPlaceholder @attach="attachCharacter" />
       </section>
-      <UiConfirmDialog
-        v-model:open="deleteDialogOpen"
-        :title="`Delete ${deleteCandidate?.name ?? 'character'}?`"
-        description="This removes the character and its authorization from this EVE Space account. This action cannot be undone."
-        confirm-label="Delete character"
-        pending-label="Deleting..."
-        :pending="deleteCharacterPending === deleteCandidate?.characterId"
-        :error="deleteDialogError"
-        tone="danger"
-        @confirm="confirmCharacterDeletion"
-      />
     </template>
   </div>
 </template>

@@ -137,14 +137,12 @@ watch(
       <div class="app-scanner" aria-hidden="true" />
       <p>Decrypting authorized wallet record...</p>
     </div>
-    <div v-else-if="walletStatus === 'scope-required'" class="skills-access-state" role="status">
-      <span class="private-badge">SCOPE REQUIRED</span>
-      <div>
-        <h2>Wallet authorization required</h2>
-        <p>{{ walletMessage }}</p>
-      </div>
-      <a class="ui-action-primary" :href="walletError?.authorizeUrl">AUTHORIZE THIS CHARACTER</a>
-    </div>
+    <CharacterAuthorizationRequired
+      v-else-if="walletStatus === 'scope-required'"
+      title="Wallet authorization required"
+      :message="walletMessage"
+      :authorize-url="walletError?.authorizeUrl"
+    />
     <div
       v-else-if="walletStatus === 'error' || walletStatus === 'not-found'"
       class="app-state-panel app-error-panel app-state-panel--compact"

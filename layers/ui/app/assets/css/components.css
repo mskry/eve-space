@@ -1,3 +1,39 @@
+.ui-state-panel {
+  min-height: 30rem;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  border: 0.0625rem solid var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-text-muted);
+  font: 0.6875rem/1 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+}
+
+.ui-state-panel--compact {
+  min-height: 17.5rem;
+}
+
+.ui-state-panel--error {
+  text-align: center;
+}
+
+.ui-state-panel--error h2 {
+  margin: 0.875rem 0 0.25rem;
+  color: var(--ui-text);
+  font: 300 2.25rem/1 var(--ui-font-body);
+  letter-spacing: -0.03em;
+}
+
+.ui-state-panel--error p {
+  max-width: 26.875rem;
+  line-height: 1.5;
+}
+
+.ui-state-panel-code {
+  color: var(--ui-danger);
+}
+
 .ui-theme-trigger {
   min-height: 30px;
   padding: 7px 9px;
@@ -665,6 +701,20 @@
   color: var(--ui-text-muted);
   font-size: 11px;
   line-height: 1.55;
+}
+
+.ui-toast-action {
+  margin-top: 10px;
+  display: inline-flex;
+  color: var(--ui-primary);
+  font: 700 9px/1.2 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ui-toast-action:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 3px;
 }
 
 .ui-toast-close {
