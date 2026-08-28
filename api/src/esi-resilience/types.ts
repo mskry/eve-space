@@ -20,6 +20,11 @@ export interface EsiCacheAuthorization {
   generation: number
 }
 
+export interface EsiCacheResourceRevision {
+  namespace: string
+  value: number
+}
+
 export interface EsiCacheEnvelope<Data> {
   version: 2
   representationVersion: string
@@ -31,6 +36,7 @@ export interface EsiCacheEnvelope<Data> {
   etag?: string
   lastModified?: string
   authorization?: EsiCacheAuthorization
+  resourceRevision?: EsiCacheResourceRevision
   fence: number
 }
 

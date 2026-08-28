@@ -7,10 +7,11 @@ interface JsonApiResponse {
 }
 
 export async function startCorsJsonApi(handler: (request: IncomingMessage) => JsonApiResponse) {
+  let allowedOrigin = 'http://127.0.0.1'
   const server = createServer((request, response) => {
     const headers = {
       'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Origin': request.headers.origin ?? '*',
+      'Access-Control-Allow-Origin': allowedOrigin,
       'Content-Type': 'application/json',
     }
     if (request.method === 'OPTIONS') {
@@ -28,6 +29,9 @@ export async function startCorsJsonApi(handler: (request: IncomingMessage) => Js
 
   return {
     origin: `http://127.0.0.1:${address.port}`,
+    setAllowedOrigin(origin: string) {
+      allowedOrigin = new URL(origin).origin
+    },
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   }
 }

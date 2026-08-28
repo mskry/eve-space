@@ -10,6 +10,8 @@ import {
   commitEsiFence,
   getCommittedEsiFence,
   getEsiRequestLeaseTtl,
+  getEsiResourceRevision,
+  incrementEsiResourceRevision,
   initializeCacheNamespace,
   renewEsiRequestLease,
   releaseEsiRequestLease,
@@ -29,9 +31,10 @@ import {
   characterEsiPrincipal,
   createEsiRepresentationIdentity,
   type EsiRepresentationIdentity,
+  type EsiResourceRevision,
 } from './identity.js'
-import { cacheEnvelopeKey } from './namespaces.js'
-import { recordEsiCacheSource } from './telemetry.js'
+import { cacheEnvelopeKey, cacheResourceRevisionRepairKey } from './namespaces.js'
+import { recordEsiCacheSource, recordEsiCoordinationFailure } from './telemetry.js'
 import { EsiTransportError, getCoordinationConnection } from './transport.js'
 import type {
   EsiCacheAuthorization,
@@ -44,12 +47,21 @@ import type { QueueRedisConnection } from '../queue/redis.js'
 
 const followerWaitMs = 100
 const namespaceValidationIntervalMs = 1_000
+const resourceRevisionAdvanceAttempts = 3
+const resourceRevisionRetryDelayMs = 100
 const completedEsiOperationErrors = new WeakSet<object>()
 
 class EsiRequestWaitTimeoutError extends Error {
   constructor() {
     super('Timed out waiting for the current ESI request owner')
     this.name = 'EsiRequestWaitTimeoutError'
+  }
+}
+
+class EsiResourceRevisionUnavailableError extends Error {
+  constructor() {
+    super('ESI resource revision is temporarily unavailable')
+    this.name = 'EsiResourceRevisionUnavailableError'
   }
 }
 
@@ -67,9 +79,16 @@ export type CharacterEsiOperation = {
   [Operation in EsiOperation]: (typeof esiOperationCatalog)[Operation]['authorization'] extends {
     kind: 'character'
   }
-    ? Operation
+    ? (typeof esiOperationCatalog)[Operation]['cache'] extends { kind: 'none' }
+      ? never
+      : Operation
     : never
 }[EsiOperation]
+
+type CharacterMutationEsiOperation = Extract<
+  EsiOperation,
+  'mail-send' | 'mail-create-label' | 'mail-update' | 'mail-delete' | 'mail-delete-label'
+>
 
 type NoValueEsiOperation = Extract<EsiOperation, 'bulk-affiliation'>
 
@@ -88,6 +107,12 @@ interface CharacterEsiResource<Data> {
   ): Promise<EsiLoadResult<Data>>
 }
 
+export interface CharacterEsiMutation<Data> {
+  operation: CharacterMutationEsiOperation
+  characterId: number
+  load(authority: { accessToken: string; principal: string }): Promise<EsiLoadResult<Data>>
+}
+
 type InternalEsiResource<Data> = ResilientEsiResource<EsiOperation, Data> & {
   authorization?: EsiCacheAuthorization
 }
@@ -98,6 +123,7 @@ export class EsiResilienceLayer {
   #namespace = 'unavailable'
   #namespaceValidatedAt = 0
   #namespaceInitialization: Promise<string> | undefined
+  readonly #unsafeResourceRevisions = new Set<string>()
 
   constructor(
     private readonly cache: CacheRedisConnection,
@@ -153,6 +179,39 @@ export class EsiResilienceLayer {
     return this.#recordResult(resource.operation, this.#get(resource))
   }
 
+  async executeCharacterMutation<Data>(
+    mutation: CharacterEsiMutation<Data>,
+  ): Promise<EsiLoadResult<Data>> {
+    if (!Number.isSafeInteger(mutation.characterId) || mutation.characterId <= 0)
+      throw new Error('Character ESI identity is invalid')
+    const policy = getEsiOperationContract(mutation.operation)
+    if (policy.authorization.kind !== 'character' || policy.cache.kind !== 'none')
+      throw new Error(`ESI operation ${mutation.operation} is not a character mutation`)
+    const authority = await this.#authorizeCharacter(
+      mutation.characterId,
+      policy.authorization.scope,
+    )
+    const principal = characterEsiPrincipal(mutation.characterId)
+    try {
+      const result = await this.#loadWithRetry(
+        {
+          operation: mutation.operation,
+          inputs: { characterId: mutation.characterId },
+          load: () => mutation.load({ accessToken: authority.accessToken, principal }),
+        },
+        {},
+        undefined,
+        policy,
+      )
+      await this.#advanceResourceRevision(policy, principal)
+      return result
+    } catch (error) {
+      if (shouldAdvanceRevisionAfterMutationError(mutation.operation, error))
+        await this.#advanceResourceRevision(policy, principal)
+      throw toEsiQuotaError(error)
+    }
+  }
+
   async #recordResult<Data>(operation: EsiOperation, pending: Promise<EsiCachedResult<Data>>) {
     try {
       const result = await pending
@@ -166,11 +225,14 @@ export class EsiResilienceLayer {
 
   async #get<Data>(resource: InternalEsiResource<Data>): Promise<EsiCachedResult<Data>> {
     const policy = getEsiOperationContract(resource.operation)
+    const resourceRevision = await this.#resolveResourceRevision(policy, resource.authorization)
+    if (resourceRevision === null) return this.#loadUncached(resource)
     const identity = createEsiRepresentationIdentity({
       operation: resource.operation,
       inputs: resource.inputs,
       compatibilityDate: env.ESI_COMPATIBILITY_DATE,
       representationVersion: policy.representationVersion,
+      resourceRevision,
     })
     if (policy.cache.kind === 'none') return this.#loadUncached(resource)
 
@@ -273,7 +335,7 @@ export class EsiResilienceLayer {
     try {
       return await this.#loadAndPublish(resource, identity, key, dependencies, lease, stale, policy)
     } catch (error) {
-      return this.#recoverLoadFailure(
+      return await this.#recoverLoadFailure(
         resource,
         identity,
         key,
@@ -310,6 +372,7 @@ export class EsiResilienceLayer {
       policy,
       representationVersion: identity.representationVersion,
       authorization: resource.authorization,
+      resourceRevision: identity.resourceRevision,
       fence: lease?.fence ?? 0,
     })
     const published = await this.#publish(key, identity, envelope, dependencies, lease)
@@ -366,6 +429,7 @@ export class EsiResilienceLayer {
         resource.authorization,
         Date.now(),
         lease?.fence,
+        identity.resourceRevision,
       )
       const published = await this.#publish(key, identity, envelope, dependencies, lease)
       if (published) this.#l1.set(key, envelope)
@@ -488,6 +552,99 @@ export class EsiResilienceLayer {
       canReadL2: true,
       canWriteL2: true,
     }
+  }
+
+  async #resolveResourceRevision(
+    policy: ReturnType<typeof getEsiOperationContract>,
+    authorization: EsiCacheAuthorization | undefined,
+  ): Promise<EsiResourceRevision | undefined | null> {
+    if (!policy.resourceRevision) return undefined
+    if (!authorization || authorization.kind !== 'character')
+      throw new Error('Revision-sensitive ESI operation is missing character authorization')
+    const unsafeKey = resourceRevisionUnsafeKey(
+      policy.resourceRevision.namespace,
+      authorization.principal,
+    )
+    const repairKey = cacheResourceRevisionRepairKey(
+      policy.resourceRevision.namespace,
+      authorization.principal,
+    )
+    const needsRepair = await this.#needsResourceRevisionRepair(unsafeKey, repairKey)
+    if (needsRepair === undefined) return null
+    if (needsRepair) {
+      try {
+        const value = await incrementEsiResourceRevision(
+          this.coordination,
+          policy.resourceRevision.namespace,
+          authorization.principal,
+        )
+        await this.#clearResourceRevisionRepair(unsafeKey, repairKey)
+        return { namespace: policy.resourceRevision.namespace, value }
+      } catch {
+        recordEsiCoordinationFailure()
+        return null
+      }
+    }
+    try {
+      return {
+        namespace: policy.resourceRevision.namespace,
+        value: await getEsiResourceRevision(
+          this.coordination,
+          policy.resourceRevision.namespace,
+          authorization.principal,
+        ),
+      }
+    } catch {
+      recordEsiCoordinationFailure()
+      return null
+    }
+  }
+
+  async #advanceResourceRevision(
+    policy: ReturnType<typeof getEsiOperationContract>,
+    principal: string,
+  ) {
+    if (!policy.resourceRevision) return
+    const unsafeKey = resourceRevisionUnsafeKey(policy.resourceRevision.namespace, principal)
+    const repairKey = cacheResourceRevisionRepairKey(policy.resourceRevision.namespace, principal)
+    for (let attempt = 1; attempt <= resourceRevisionAdvanceAttempts; attempt += 1) {
+      try {
+        // oxlint-disable-next-line no-await-in-loop
+        await incrementEsiResourceRevision(
+          this.coordination,
+          policy.resourceRevision.namespace,
+          principal,
+        )
+        // oxlint-disable-next-line no-await-in-loop
+        await this.#clearResourceRevisionRepair(unsafeKey, repairKey)
+        return
+      } catch {
+        if (attempt < resourceRevisionAdvanceAttempts) {
+          // oxlint-disable-next-line no-await-in-loop
+          await wait(resourceRevisionRetryDelayMs * attempt)
+        }
+      }
+    }
+    this.#l1.clear()
+    this.#unsafeResourceRevisions.add(unsafeKey)
+    await this.cache.set(repairKey, '1').catch(() => {})
+    recordEsiCoordinationFailure()
+    throw new EsiResourceRevisionUnavailableError()
+  }
+
+  async #needsResourceRevisionRepair(unsafeKey: string, repairKey: string) {
+    if (this.#unsafeResourceRevisions.has(unsafeKey)) return true
+    try {
+      return (await this.cache.get(repairKey)) !== null
+    } catch {
+      recordEsiCoordinationFailure()
+      return undefined
+    }
+  }
+
+  async #clearResourceRevisionRepair(unsafeKey: string, repairKey: string) {
+    this.#unsafeResourceRevisions.delete(unsafeKey)
+    await this.cache.del(repairKey).catch(() => {})
   }
 
   #readL1<Data>(
@@ -631,6 +788,31 @@ function isEsiHttpError(error: unknown) {
   )
 }
 
+function shouldAdvanceRevisionAfterMutationError(
+  operation: CharacterMutationEsiOperation,
+  error: unknown,
+) {
+  return (
+    error instanceof EsiTransportError ||
+    isEsiResponseContractError(error) ||
+    ((operation === 'mail-delete' || operation === 'mail-delete-label') &&
+      getErrorStatus(error) === 404)
+  )
+}
+
+function isEsiResponseContractError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error.code === 'ESI_RESPONSE_PARSE_ERROR' || error.code === 'ESI_RESPONSE_VALIDATION_ERROR')
+  )
+}
+
+function resourceRevisionUnsafeKey(namespace: string, principal: string) {
+  return `${namespace}:${principal}`
+}
+
 function parseEnvelope<Data>(serialized: string): EsiCacheEnvelope<Data> | undefined {
   try {
     const value: unknown = JSON.parse(serialized)
@@ -658,7 +840,8 @@ function parseEnvelope<Data>(serialized: string): EsiCacheEnvelope<Data> | undef
       Number(value.staleUntil) > Number(value.retainUntil) ||
       !isOptionalString(value, 'etag') ||
       !isOptionalString(value, 'lastModified') ||
-      !isParsedAuthorization(value)
+      !isParsedAuthorization(value) ||
+      !isParsedResourceRevision(value)
     )
       return undefined
     return value as EsiCacheEnvelope<Data>
@@ -673,6 +856,13 @@ function isCompatibleEnvelope(
   authorization: EsiCacheAuthorization | undefined,
 ) {
   if (envelope.representationVersion !== identity.representationVersion) return false
+  if (!identity.resourceRevision) {
+    if (envelope.resourceRevision !== undefined) return false
+  } else if (
+    envelope.resourceRevision?.namespace !== identity.resourceRevision.namespace ||
+    envelope.resourceRevision.value !== identity.resourceRevision.value
+  )
+    return false
   if (!authorization) return envelope.authorization === undefined
   return (
     envelope.authorization?.kind === 'character' &&
@@ -691,6 +881,18 @@ function isParsedAuthorization(value: object) {
     authorization.principal.length > 0 &&
     Number.isSafeInteger(authorization.generation) &&
     Number(authorization.generation) >= 0
+  )
+}
+
+function isParsedResourceRevision(value: object) {
+  if (!('resourceRevision' in value) || value.resourceRevision === undefined) return true
+  if (!value.resourceRevision || typeof value.resourceRevision !== 'object') return false
+  const revision = value.resourceRevision as Record<string, unknown>
+  return (
+    typeof revision.namespace === 'string' &&
+    revision.namespace.length > 0 &&
+    Number.isSafeInteger(revision.value) &&
+    Number(revision.value) >= 0
   )
 }
 

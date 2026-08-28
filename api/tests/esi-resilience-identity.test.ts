@@ -65,6 +65,67 @@ describe('ESI representation identity', () => {
     ).toHaveLength(4)
   })
 
+  test('canonicalizes mixed mailbox identity fields and explicit absence', () => {
+    const first = identity('mail-headers', {
+      characterId: 1,
+      labels: [30, 10, 20, 10],
+      lastMailId: null,
+    })
+    const reordered = identity('mail-headers', {
+      characterId: 1,
+      labels: [20, 30, 10],
+      lastMailId: null,
+    })
+    const unfiltered = identity('mail-headers', {
+      characterId: 1,
+      labels: null,
+      lastMailId: null,
+    })
+    const omitted = identity('mail-headers', {
+      path: { character_id: 1 },
+      query: { labels: undefined, last_mail_id: undefined },
+    })
+    const empty = identity('mail-headers', {
+      characterId: 1,
+      labels: [],
+      lastMailId: undefined,
+    })
+
+    expect(first).toEqual(reordered)
+    expect(first.digest).not.toBe(unfiltered.digest)
+    expect(omitted).toEqual(unfiltered)
+    expect(empty).toEqual(unfiltered)
+    expect(() =>
+      identity('mail-headers', {
+        characterId: 1,
+        labels: Array.from({ length: 26 }, (_, index) => index + 1),
+        lastMailId: null,
+      }),
+    ).toThrow('between 1 and 25 items')
+  })
+
+  test('separates mailbox identities by resource revision', () => {
+    const base = {
+      operation: 'mail-message' as const,
+      inputs: { characterId: 1, mailId: 2 },
+      compatibilityDate,
+      representationVersion,
+    }
+
+    const first = createEsiRepresentationIdentity({
+      ...base,
+      resourceRevision: { namespace: 'mailbox', value: 1 },
+    })
+    const second = createEsiRepresentationIdentity({
+      ...base,
+      resourceRevision: { namespace: 'mailbox', value: 2 },
+    })
+
+    expect(first.digest).not.toBe(second.digest)
+    expect(first.coordinationDigest).toBe(second.coordinationDigest)
+    expect(first.resourceRevision).toEqual({ namespace: 'mailbox', value: 1 })
+  })
+
   test('rejects oversized batches and scalar values before hashing', () => {
     expect(() =>
       identity('universe-resolve-names', {

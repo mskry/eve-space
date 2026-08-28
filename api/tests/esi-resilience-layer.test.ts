@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   commit: vi.fn(),
   getCommitted: vi.fn(),
   getLeaseTtl: vi.fn(),
+  getRevision: vi.fn(),
+  incrementRevision: vi.fn(),
   initialize: vi.fn(),
   release: vi.fn(),
   renew: vi.fn(),
@@ -16,12 +18,15 @@ vi.mock('../src/esi-resilience/coordination.js', () => ({
   commitEsiFence: mocks.commit,
   getCommittedEsiFence: mocks.getCommitted,
   getEsiRequestLeaseTtl: mocks.getLeaseTtl,
+  getEsiResourceRevision: mocks.getRevision,
+  incrementEsiResourceRevision: mocks.incrementRevision,
   initializeCacheNamespace: mocks.initialize,
   releaseEsiRequestLease: mocks.release,
   renewEsiRequestLease: mocks.renew,
 }))
 
 import { EsiQuotaError } from '../src/esi-resilience/cooldowns.js'
+import { cacheResourceRevisionRepairKey } from '../src/esi-resilience/namespaces.js'
 import { EsiResilienceLayer } from '../src/esi-resilience/resilience.js'
 import { EsiTransportError } from '../src/esi-resilience/transport.js'
 
@@ -36,6 +41,8 @@ describe('ESI resilience layer', () => {
     mocks.commit.mockResolvedValue(true)
     mocks.getCommitted.mockResolvedValue(undefined)
     mocks.getLeaseTtl.mockResolvedValue(0)
+    mocks.getRevision.mockResolvedValue(0)
+    mocks.incrementRevision.mockResolvedValue(1)
     mocks.initialize.mockResolvedValue('namespace-one')
     mocks.release.mockResolvedValue(true)
     mocks.renew.mockResolvedValue(true)
@@ -485,6 +492,251 @@ describe('ESI resilience layer', () => {
     expect(cache.set).not.toHaveBeenCalled()
   })
 
+  test('binds private mail cache identities and envelopes to the mailbox revision', async () => {
+    const cache = redis()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue(result({ body: 'mail' }))
+    const resource = {
+      operation: 'mail-message' as const,
+      inputs: { characterId: 1, mailId: 2 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await layer.getCharacter(resource)
+    mocks.getRevision.mockResolvedValue(1)
+    await layer.getCharacter(resource)
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(cache.set).toHaveBeenCalledTimes(2)
+    expect(
+      cache.set.mock.calls.map((call) => JSON.parse(call[1] as string).resourceRevision),
+    ).toEqual([
+      { namespace: 'mailbox', value: 0 },
+      { namespace: 'mailbox', value: 1 },
+    ])
+  })
+
+  test('bypasses private mail caches when mailbox revision coordination is unavailable', async () => {
+    const cache = redis()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue({
+      data: { body: 'mail' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=86400' } },
+    })
+    const resource = {
+      operation: 'mail-message' as const,
+      inputs: { characterId: 1, mailId: 2 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    mocks.getRevision.mockRejectedValueOnce(new Error('coordination unavailable'))
+    await layer.getCharacter(resource)
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(cache.set).toHaveBeenCalledOnce()
+  })
+
+  test('executes non-idempotent character mutations once and invalidates after ambiguity', async () => {
+    const cache = redis()
+    const authorizeCharacter = authorize()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizeCharacter)
+    const load = vi.fn().mockRejectedValue(new EsiTransportError(new Error('delivery unknown')))
+
+    await expect(
+      layer.executeCharacterMutation({ operation: 'mail-send', characterId: 1, load }),
+    ).rejects.toBeInstanceOf(EsiTransportError)
+
+    expect(authorizeCharacter).toHaveBeenCalledWith(1, 'esi-mail.send_mail.v1')
+    expect(load).toHaveBeenCalledOnce()
+    expect(load).toHaveBeenCalledWith({ accessToken: 'token', principal: 'character-1' })
+    expect(cache.get).not.toHaveBeenCalled()
+    expect(cache.set).not.toHaveBeenCalled()
+    expect(mocks.acquire).not.toHaveBeenCalled()
+    expect(mocks.incrementRevision).toHaveBeenCalledWith(
+      expect.anything(),
+      'mailbox',
+      'character-1',
+    )
+  })
+
+  test.each([
+    ['mail-send', 'ESI_RESPONSE_PARSE_ERROR'],
+    ['mail-send', 'ESI_RESPONSE_VALIDATION_ERROR'],
+    ['mail-create-label', 'ESI_RESPONSE_PARSE_ERROR'],
+    ['mail-create-label', 'ESI_RESPONSE_VALIDATION_ERROR'],
+  ] as const)(
+    'invalidates mailbox caches after ambiguous %s response errors',
+    async (operation, code) => {
+      const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+      const failure = { code }
+
+      await expect(
+        layer.executeCharacterMutation({
+          operation,
+          characterId: 1,
+          load: vi.fn().mockRejectedValue(failure),
+        }),
+      ).rejects.toBe(failure)
+
+      expect(mocks.incrementRevision).toHaveBeenCalledWith(
+        expect.anything(),
+        'mailbox',
+        'character-1',
+      )
+    },
+  )
+
+  test('retries idempotent character mutations and advances mailbox revision after success', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const load = vi
+      .fn()
+      .mockRejectedValueOnce(new EsiTransportError(new Error('network unavailable')))
+      .mockResolvedValueOnce(result(undefined))
+
+    const pending = layer.executeCharacterMutation({
+      operation: 'mail-update',
+      characterId: 1,
+      load,
+    })
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toMatchObject({ data: undefined, meta: { status: 200 } })
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(mocks.incrementRevision).toHaveBeenCalledWith(
+      expect.anything(),
+      'mailbox',
+      'character-1',
+    )
+  })
+
+  test.each([
+    ['mail-delete', 'DeleteCharactersCharacterIdMailMailId'],
+    ['mail-delete-label', 'DeleteCharactersCharacterIdMailLabelsLabelId'],
+  ] as const)(
+    'advances mailbox revision for convergent %s absence',
+    async (operation, operationId) => {
+      const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+      const absence = new EsiHttpError({ operationId, status: 404 })
+
+      await expect(
+        layer.executeCharacterMutation({
+          operation,
+          characterId: 1,
+          load: vi.fn().mockRejectedValue(absence),
+        }),
+      ).rejects.toBe(absence)
+      expect(mocks.incrementRevision).toHaveBeenCalledWith(
+        expect.anything(),
+        'mailbox',
+        'character-1',
+      )
+    },
+  )
+
+  test('retries mailbox revision advancement before returning mutation success', async () => {
+    mocks.incrementRevision
+      .mockRejectedValueOnce(new Error('coordination unavailable'))
+      .mockResolvedValueOnce(1)
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const pending = layer.executeCharacterMutation({
+      operation: 'mail-create-label',
+      characterId: 1,
+      load: vi.fn().mockResolvedValue(result(12)),
+    })
+
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toMatchObject({ data: 12 })
+    expect(mocks.incrementRevision).toHaveBeenCalledTimes(2)
+  })
+
+  test('rejects mutations and bypasses caches until failed revision advancement is repaired', async () => {
+    const cache = redis()
+    mocks.incrementRevision.mockRejectedValue(new Error('coordination unavailable'))
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue({
+      data: { body: 'mail' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=86400' } },
+    })
+    const resource = {
+      operation: 'mail-message' as const,
+      inputs: { characterId: 1, mailId: 2 },
+      load,
+    }
+    await layer.getCharacter(resource)
+
+    const mutation = layer.executeCharacterMutation({
+      operation: 'mail-create-label',
+      characterId: 1,
+      load: vi.fn().mockResolvedValue(result(12)),
+    })
+    let mutationError: unknown
+    const handledMutation = mutation.catch((error: unknown) => {
+      mutationError = error
+    })
+    await vi.runAllTimersAsync()
+    await handledMutation
+    expect(mutationError).toMatchObject({
+      name: 'EsiResourceRevisionUnavailableError',
+      message: 'ESI resource revision is temporarily unavailable',
+    })
+    await vi.advanceTimersByTimeAsync(121_000)
+    await layer.getCharacter(resource)
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(cache.set).toHaveBeenCalledTimes(2)
+
+    mocks.incrementRevision.mockResolvedValue(1)
+    await layer.getCharacter(resource)
+    expect(load).toHaveBeenCalledTimes(3)
+    expect(cache.set).toHaveBeenCalledTimes(3)
+    expect(JSON.parse(cache.set.mock.calls[2]?.[1] as string)).toMatchObject({
+      resourceRevision: { namespace: 'mailbox', value: 1 },
+    })
+  })
+
+  test('repairs a failed mailbox invalidation recorded by another process before cache reads', async () => {
+    const cache = redis()
+    const repairKey = cacheResourceRevisionRepairKey('mailbox', 'character-1')
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    mocks.incrementRevision.mockRejectedValue(new Error('coordination unavailable'))
+    const mutation = layer.executeCharacterMutation({
+      operation: 'mail-create-label',
+      characterId: 1,
+      load: vi.fn().mockResolvedValue(result(12)),
+    })
+    const failedMutation = mutation.catch((error: unknown) => error)
+
+    await vi.runAllTimersAsync()
+    await expect(failedMutation).resolves.toMatchObject({
+      name: 'EsiResourceRevisionUnavailableError',
+    })
+    expect(cache.set).toHaveBeenCalledWith(repairKey, '1')
+
+    mocks.incrementRevision.mockResolvedValue(1)
+    cache.get.mockImplementation((key: string) => Promise.resolve(key === repairKey ? '1' : null))
+    const restartedLayer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue(result({ body: 'replacement' }))
+
+    await expect(
+      restartedLayer.getCharacter({
+        operation: 'mail-message',
+        inputs: { characterId: 1, mailId: 2 },
+        load,
+      }),
+    ).resolves.toMatchObject({ data: { body: 'replacement' }, source: 'esi' })
+
+    expect(mocks.incrementRevision).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'mailbox',
+      'character-1',
+    )
+    expect(cache.del).toHaveBeenCalledWith(repairKey)
+    expect(load).toHaveBeenCalledOnce()
+  })
+
   test('publishes private values to the shared cache after authorization binding', async () => {
     const cache = redis()
     const coordination = redis()
@@ -566,6 +818,7 @@ describe('ESI resilience layer', () => {
 
 function redis() {
   return {
+    del: vi.fn().mockResolvedValue(1),
     get: vi.fn().mockResolvedValue(null),
     ping: vi.fn().mockResolvedValue('PONG'),
     set: vi.fn().mockResolvedValue('OK'),

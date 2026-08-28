@@ -16,6 +16,74 @@ describe('ESI egress verification', () => {
     ).resolves.toEqual(expect.objectContaining({ stderr: '' }))
   })
 
+  test('rejects registered character operations that bypass their read or mutation executor', async () => {
+    const fixture = await createEgressFixture({
+      'api/src/esi-resilience/catalog.ts': characterExecutorCatalog(),
+      'api/src/mail/bypass.ts': `
+        import { createMailClient } from '@evespace/esi-client/domains/mail'
+        import { createEsiTransport } from '../esi-resilience/transport.js'
+
+        export const read = (layer, authority) => layer.executeCharacterMutation({
+          operation: 'mail-headers',
+          characterId: 1,
+          load: () => createMailClient({
+            fetch: createEsiTransport('mail-headers', authority.principal),
+          }).withMetadata().listHeaders(1),
+        })
+        export const mutate = (layer, authority) => layer.getCharacter({
+          operation: 'mail-send',
+          inputs: { characterId: 1 },
+          load: () => createMailClient({
+            fetch: createEsiTransport('mail-send', authority.principal),
+          }).withMetadata().send(1, { body: {} }),
+        })
+      `,
+    })
+
+    try {
+      const stderr = await verifierFailure(fixture)
+      expect(stderr).toContain(
+        'api/src/mail/bypass.ts: ESI operation mail-headers bypasses getCharacter executor/cache policy',
+      )
+      expect(stderr).toContain(
+        'api/src/mail/bypass.ts: ESI operation mail-send bypasses executeCharacterMutation executor/cache policy',
+      )
+    } finally {
+      await rm(fixture, { recursive: true, force: true })
+    }
+  })
+
+  test('accepts registered character operations nested in their required executors', async () => {
+    const fixture = await createEgressFixture({
+      'api/src/esi-resilience/catalog.ts': characterExecutorCatalog(),
+      'api/src/mail/valid.ts': `
+        import { createMailClient } from '@evespace/esi-client/domains/mail'
+        import { createEsiTransport } from '../esi-resilience/transport.js'
+
+        export const read = (layer) => layer.getCharacter({
+          operation: 'mail-headers',
+          inputs: { characterId: 1 },
+          load: (authority) => createMailClient({
+            fetch: createEsiTransport('mail-headers', authority.principal),
+          }).withMetadata().listHeaders(1),
+        })
+        export const mutate = (layer) => layer.executeCharacterMutation({
+          operation: 'mail-send',
+          characterId: 1,
+          load: (authority) => createMailClient({
+            fetch: createEsiTransport('mail-send', authority.principal),
+          }).withMetadata().send(1, { body: {} }),
+        })
+      `,
+    })
+
+    try {
+      await expect(runVerifier(fixture)).resolves.toEqual(expect.objectContaining({ stderr: '' }))
+    } finally {
+      await rm(fixture, { recursive: true, force: true })
+    }
+  })
+
   test('checks every installed feature server source against shared ESI egress policy', async () => {
     const fixture = await createEgressFixture({
       'features/alpha/server/src/unregistered.ts':
@@ -153,6 +221,19 @@ function runVerifier(root: string) {
   return execFileAsync('node', ['scripts/verify-esi-egress.mjs', '--root', root], {
     cwd: repositoryRoot,
   })
+}
+
+function characterExecutorCatalog() {
+  return `
+    defineContract('mail-headers', {
+      resourceRevision: { kind: 'character', namespace: 'mailbox' },
+      cache: sharedPrivateCache(),
+    })
+    defineContract('mail-send', {
+      resourceRevision: { kind: 'character', namespace: 'mailbox' },
+      cache: { kind: 'none' },
+    })
+  `
 }
 
 async function verifierFailure(root: string) {

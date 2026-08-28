@@ -1,8 +1,8 @@
 import {
   platformContributionIdPattern,
   platformExportNamePattern,
-  type PlatformEsiOperationContract,
 } from '@eve-space/platform-module-contract'
+import type { EsiOperationContract } from './catalog.js'
 
 const scopePattern = /^esi-[a-z0-9_-]+\.[a-z0-9_]+\.v[1-9][0-9]*$/
 const identityFieldPattern = /^[A-Za-z][A-Za-z0-9]*$/
@@ -27,7 +27,7 @@ interface EsiOperationContractValidationState {
 export function assertEsiOperationContracts(
   catalog: Readonly<Record<string, unknown>>,
   expectedSdkOperationIds: Readonly<Record<string, string>> = {},
-): asserts catalog is Readonly<Record<string, PlatformEsiOperationContract>> {
+): asserts catalog is Readonly<Record<string, EsiOperationContract>> {
   const state: EsiOperationContractValidationState = {
     issues: [],
     rateGroups: new Map(),
@@ -89,6 +89,7 @@ function validateEsiOperationContract(
 
   const scope = validateAuthorization(operation, value.authorization, issues)
   validateIdentity(operation, value.identity, issues)
+  validateResourceRevision(operation, value.resourceRevision, issues)
   validateFreshness(operation, value.freshness, issues)
   validateCache(operation, value.cache, issues)
   validateRateGroup(operation, scope, value.rateGroup, rateGroups, issues)
@@ -143,25 +144,66 @@ function validateIdentity(operation: string, value: unknown, issues: string[]) {
     issues.push(`operation ${operation} has invalid identity metadata`)
     return
   }
-  if (value.kind === 'ordered') {
+  switch (value.kind) {
+    case 'ordered':
+      if (
+        !Array.isArray(value.fields) ||
+        !value.fields.every(
+          (field): field is string => typeof field === 'string' && identityFieldPattern.test(field),
+        ) ||
+        new Set(value.fields).size !== value.fields.length
+      )
+        issues.push(`operation ${operation} has invalid or duplicate ordered identity fields`)
+      return
+    case 'set':
+      if (typeof value.field !== 'string' || !identityFieldPattern.test(value.field))
+        issues.push(`operation ${operation} has an invalid set identity field`)
+      if (!isPositiveSafeInteger(value.maximumItems))
+        issues.push(`operation ${operation} set identity maximum must be a positive safe integer`)
+      return
+    case 'mixed':
+      validateMixedIdentity(operation, value.fields, issues)
+      return
+    default:
+      issues.push(`operation ${operation} uses an unsupported identity strategy`)
+  }
+}
+
+function validateMixedIdentity(operation: string, value: unknown, issues: string[]) {
+  if (!Array.isArray(value) || value.length === 0) {
+    issues.push(`operation ${operation} has invalid mixed identity fields`)
+    return
+  }
+  const names = new Set<string>()
+  for (const field of value) {
     if (
-      !Array.isArray(value.fields) ||
-      !value.fields.every(
-        (field): field is string => typeof field === 'string' && identityFieldPattern.test(field),
-      ) ||
-      new Set(value.fields).size !== value.fields.length
-    )
-      issues.push(`operation ${operation} has invalid or duplicate ordered identity fields`)
-    return
+      !isRecord(field) ||
+      typeof field.field !== 'string' ||
+      !identityFieldPattern.test(field.field)
+    ) {
+      issues.push(`operation ${operation} has an invalid mixed identity field`)
+      continue
+    }
+    if (names.has(field.field))
+      issues.push(`operation ${operation} has duplicate mixed identity fields`)
+    names.add(field.field)
+    if ('nullable' in field && typeof field.nullable !== 'boolean')
+      issues.push(`operation ${operation} mixed identity nullable flag must be boolean`)
+    if (field.kind === 'scalar') continue
+    if (field.kind !== 'set' || !isPositiveSafeInteger(field.maximumItems))
+      issues.push(`operation ${operation} has an invalid mixed set identity field`)
   }
-  if (value.kind === 'set') {
-    if (typeof value.field !== 'string' || !identityFieldPattern.test(value.field))
-      issues.push(`operation ${operation} has an invalid set identity field`)
-    if (!isPositiveSafeInteger(value.maximumItems))
-      issues.push(`operation ${operation} set identity maximum must be a positive safe integer`)
-    return
-  }
-  issues.push(`operation ${operation} uses an unsupported identity strategy`)
+}
+
+function validateResourceRevision(operation: string, value: unknown, issues: string[]) {
+  if (value === undefined) return
+  if (
+    !isRecord(value) ||
+    value.kind !== 'character' ||
+    typeof value.namespace !== 'string' ||
+    !platformContributionIdPattern.test(value.namespace)
+  )
+    issues.push(`operation ${operation} has invalid resource-revision metadata`)
 }
 
 function validateFreshness(operation: string, value: unknown, issues: string[]) {
@@ -195,8 +237,8 @@ function validateCache(operation: string, value: unknown, issues: string[]) {
   }
   if (typeof value.collapse !== 'boolean' || typeof value.revalidate !== 'boolean')
     issues.push(`operation ${operation} shared cache flags must be boolean`)
-  if (!isPositiveSafeInteger(value.retentionMilliseconds))
-    issues.push(`operation ${operation} cache retention must be a positive whole duration`)
+  if (!isNonNegativeSafeInteger(value.retentionMilliseconds))
+    issues.push(`operation ${operation} cache retention must be a non-negative whole duration`)
   if (!isRecord(value.stale)) {
     issues.push(`operation ${operation} has invalid stale cache metadata`)
     return
@@ -207,7 +249,7 @@ function validateCache(operation: string, value: unknown, issues: string[]) {
     return
   }
   if (
-    isPositiveSafeInteger(value.retentionMilliseconds) &&
+    isNonNegativeSafeInteger(value.retentionMilliseconds) &&
     value.stale.milliseconds > value.retentionMilliseconds
   )
     issues.push(`operation ${operation} stale duration exceeds cache retention`)

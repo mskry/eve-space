@@ -198,6 +198,93 @@ describe('EVE SSO start routes', () => {
       characterId: mainCharacter.characterId,
     })
   })
+
+  test('persists a normalized same-character mailbox return with a safe query', async () => {
+    const returnTo = `/characters/${mainCharacter.characterId}/mail?label=7&unread=true`
+    const response = await reauthorizationRequest(returnTo)
+    const state = mocks.storeOAuthState.mock.calls[0]?.[0] as string
+
+    expect(response.status).toBe(302)
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, {
+      intent: 'reauthorize',
+      userId,
+      characterId: mainCharacter.characterId,
+      returnPath: returnTo,
+    })
+  })
+
+  test('accepts a return destination at the exact 512-character bound', async () => {
+    const prefix = `/characters/${mainCharacter.characterId}/`
+    const returnTo = `${prefix}${'a'.repeat(512 - prefix.length)}`
+
+    const response = await reauthorizationRequest(returnTo)
+
+    expect(response.status).toBe(302)
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ returnPath: returnTo }),
+    )
+  })
+
+  test.each([
+    ['empty', ''],
+    ['over 512 characters', `/characters/${mainCharacter.characterId}/${'a'.repeat(500)}`],
+    ['external URL', 'https://example.com/characters/1404328063/mail'],
+    ['protocol-relative URL', '//example.com/characters/1404328063/mail'],
+    ['missing leading slash', `characters/${mainCharacter.characterId}/mail`],
+    ['backslash', `/characters/${mainCharacter.characterId}\\mail`],
+    ['ASCII control', `/characters/${mainCharacter.characterId}/mail\u0000`],
+    ['whitespace', `/characters/${mainCharacter.characterId}/mail box`],
+    ['ambiguous plus', `/characters/${mainCharacter.characterId}/mail?search=a+b`],
+    ['malformed percent encoding', `/characters/${mainCharacter.characterId}/mail%ZZ`],
+    ['fragment', `/characters/${mainCharacter.characterId}/mail#message`],
+    ['encoded fragment', `/characters/${mainCharacter.characterId}/mail%23message`],
+    ['foreign character', '/characters/2112625428/mail'],
+    ['similar character ID', `/characters/${mainCharacter.characterId}0/mail`],
+    ['raw traversal', `/characters/${mainCharacter.characterId}/mail/../settings`],
+    ['encoded traversal', `/characters/${mainCharacter.characterId}/mail/%2e%2e/settings`],
+    [
+      'double-encoded traversal',
+      `/characters/${mainCharacter.characterId}/mail/%252e%252e/settings`,
+    ],
+    ['encoded separator', `/characters/${mainCharacter.characterId}/mail%2Fsettings`],
+    ['double-encoded separator', `/characters/${mainCharacter.characterId}/mail%252Fsettings`],
+    ['encoded backslash', `/characters/${mainCharacter.characterId}/mail%5Csettings`],
+    [
+      'duplicate destination query',
+      `/characters/${mainCharacter.characterId}/mail?label=1&label=2`,
+    ],
+    [
+      'normalization over 512 characters',
+      `/characters/${mainCharacter.characterId}/${'é'.repeat(100)}`,
+    ],
+  ])(
+    'rejects an invalid %s return before session, ownership, state, or EVE URL work',
+    async (_name, returnTo) => {
+      const response = await reauthorizationRequest(returnTo)
+
+      expect(response.status).toBe(400)
+      expect(mocks.findSession).not.toHaveBeenCalled()
+      expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
+      expect(mocks.storeOAuthState).not.toHaveBeenCalled()
+      expect(mocks.createAuthorizationUrl).not.toHaveBeenCalled()
+    },
+  )
+
+  test('rejects duplicate returnTo parameters before session or authorization work', async () => {
+    const first = encodeURIComponent(`/characters/${mainCharacter.characterId}/mail`)
+    const second = encodeURIComponent(`/characters/${mainCharacter.characterId}`)
+    const response = await app.request(
+      `/auth/eve/reauthorize/${mainCharacter.characterId}?returnTo=${first}&returnTo=${second}`,
+      { headers: sessionHeader() },
+    )
+
+    expect(response.status).toBe(400)
+    expect(mocks.findSession).not.toHaveBeenCalled()
+    expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
+    expect(mocks.storeOAuthState).not.toHaveBeenCalled()
+    expect(mocks.createAuthorizationUrl).not.toHaveBeenCalled()
+  })
 })
 
 describe('EVE SSO callback intents', () => {
@@ -299,6 +386,7 @@ describe('EVE SSO callback intents', () => {
       intent: 'reauthorize',
       userId,
       characterId: mainCharacter.characterId,
+      returnPath: `/characters/${mainCharacter.characterId}/mail?label=7`,
     })
     mocks.verifyAccessToken.mockResolvedValue({
       characterId: 2112625428,
@@ -309,7 +397,7 @@ describe('EVE SSO callback intents', () => {
     const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
 
     expect(response.headers.get('location')).toBe(
-      `http://localhost:3000/characters/${mainCharacter.characterId}?reauthorize=error`,
+      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?label=7&reauthorize=error`,
     )
     expect(mocks.getCharacterAffiliation).not.toHaveBeenCalled()
     expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
@@ -320,9 +408,15 @@ describe('EVE SSO callback intents', () => {
       intent: 'reauthorize',
       userId,
       characterId: mainCharacter.characterId,
+      returnPath: `/characters/${mainCharacter.characterId}/mail?reauthorize=stale&label=7`,
     })
 
-    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+    const response = await callbackRequest(
+      'valid-state',
+      'valid-state',
+      'code=eve-code&returnTo=https%3A%2F%2Fexample.com',
+      true,
+    )
 
     expect(mocks.reauthorizeCharacter).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -333,8 +427,90 @@ describe('EVE SSO callback intents', () => {
     )
     expect(response.headers.get('set-cookie')).not.toContain('eve_space_session=')
     expect(response.headers.get('location')).toBe(
-      `http://localhost:3000/characters/${mainCharacter.characterId}?reauthorize=success`,
+      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?reauthorize=success&label=7`,
     )
+    expect(new URL(response.headers.get('location')!).searchParams.getAll('reauthorize')).toEqual([
+      'success',
+    ])
+  })
+
+  test('uses the state-bound mailbox for cancellation and a missing code', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'reauthorize',
+      userId,
+      characterId: mainCharacter.characterId,
+      returnPath: `/characters/${mainCharacter.characterId}/mail?label=7`,
+    })
+
+    const cancelled = await callbackRequest(
+      'valid-state',
+      'valid-state',
+      'error=access_denied',
+      true,
+    )
+    const missingCode = await callbackRequest('valid-state', 'valid-state', '', true)
+
+    expect(cancelled.headers.get('location')).toBe(
+      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?label=7&reauthorize=cancelled`,
+    )
+    expect(missingCode.headers.get('location')).toBe(
+      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?label=7&reauthorize=error`,
+    )
+    expect(mocks.exchangeAuthorizationCode).not.toHaveBeenCalled()
+  })
+
+  test('uses the state-bound mailbox when the callback session no longer matches', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'reauthorize',
+      userId,
+      characterId: mainCharacter.characterId,
+      returnPath: `/characters/${mainCharacter.characterId}/mail`,
+    })
+    mocks.findSession.mockResolvedValue({ ...account, userId: 'different-user' })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?reauthorize=error`,
+    )
+    expect(mocks.exchangeAuthorizationCode).not.toHaveBeenCalled()
+  })
+
+  test('uses the state-bound mailbox for upstream reauthorization failure', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'reauthorize',
+      userId,
+      characterId: mainCharacter.characterId,
+      returnPath: `/characters/${mainCharacter.characterId}/mail`,
+    })
+    mocks.exchangeAuthorizationCode.mockRejectedValue(new Error('secret upstream detail'))
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?reauthorize=error`,
+    )
+    expect(response.headers.get('location')).not.toContain('secret')
+  })
+
+  test('falls back safely when a consumed state is replayed', async () => {
+    mocks.consumeOAuthState
+      .mockResolvedValueOnce({
+        intent: 'reauthorize',
+        userId,
+        characterId: mainCharacter.characterId,
+        returnPath: `/characters/${mainCharacter.characterId}/mail`,
+      })
+      .mockResolvedValueOnce(null)
+
+    const first = await callbackRequest('valid-state', 'valid-state', 'error=access_denied', true)
+    const replay = await callbackRequest('valid-state', 'valid-state', 'error=access_denied', true)
+
+    expect(first.headers.get('location')).toBe(
+      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?reauthorize=cancelled`,
+    )
+    expect(replay.headers.get('location')).toBe('http://localhost:3000/auth?auth=error')
   })
 
   test('redirects upstream callback failures without exposing details', async () => {
@@ -390,4 +566,11 @@ function callbackRequest(state: string, cookieState: string, query = '', withSes
 
 function sessionHeader() {
   return { Cookie: 'eve_space_session=active-session' }
+}
+
+function reauthorizationRequest(returnTo: string) {
+  const query = new URLSearchParams({ returnTo })
+  return app.request(`/auth/eve/reauthorize/${mainCharacter.characterId}?${query}`, {
+    headers: sessionHeader(),
+  })
 }

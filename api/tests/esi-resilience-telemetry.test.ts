@@ -3,6 +3,7 @@ import { esiOperationCatalog } from '../src/esi-resilience/catalog.js'
 import {
   probeEsiResilienceTelemetry,
   recordEsiCacheSource,
+  recordEsiCoordinationFailure,
   recordEsiUpstreamOutcome,
 } from '../src/esi-resilience/telemetry.js'
 
@@ -129,5 +130,20 @@ describe('ESI resilience telemetry', () => {
 
     expect(telemetry.cooldown.status).toBe('unavailable')
     expect(telemetry.upstream.status).toBe('operational')
+  })
+
+  test('reports request-path coordination failures without corrupting probe streaks', async () => {
+    recordEsiCoordinationFailure()
+    const telemetry = await probeEsiResilienceTelemetry({
+      probeCache: async () => true,
+      probeCoordination: async () => true,
+      cacheConnection: { hgetall: async () => ({}) } as never,
+      coordinationConnection: { mget: async () => [], get: async () => null } as never,
+    })
+
+    expect(telemetry.coordination).toMatchObject({
+      status: 'operational',
+      operationFailures: 1,
+    })
   })
 })

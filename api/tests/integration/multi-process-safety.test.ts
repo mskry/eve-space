@@ -182,7 +182,7 @@ describe('multi-process safety', () => {
       expect(result).toEqual({
         functionExists: true,
         usesValidationFunction: true,
-        appliedMigrations: ['001_initial.sql', '002_extract_platform_validation_functions.sql'],
+        appliedMigrations: migrations.map(({ name }) => name),
       })
     } finally {
       await connection.end()

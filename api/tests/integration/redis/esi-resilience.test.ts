@@ -6,6 +6,8 @@ import {
   commitEsiFence,
   getCommittedEsiFence,
   getEsiRequestLeaseTtl,
+  getEsiResourceRevision,
+  incrementEsiResourceRevision,
   initializeCacheNamespace,
   releaseEsiRequestLease,
   renewEsiRequestLease,
@@ -163,7 +165,11 @@ describe('ESI resilience Redis coordination', () => {
   })
 
   test('rejects a late owner publication after a newer fence commits', async () => {
-    const resource = identity('public-character', { characterId: 90_000_001 })
+    const resource = identity(
+      'mail-message',
+      { characterId: 90_000_001, mailId: 7 },
+      { namespace: 'mailbox', value: 0 },
+    )
     const first = await acquireEsiRequestLease(coordination, resource, 40)
     if (!first) throw new Error('first owner was not acquired')
     await wait(60)
@@ -173,6 +179,45 @@ describe('ESI resilience Redis coordination', () => {
     await expect(commitEsiFence(coordination, resource, second)).resolves.toBe(true)
     await expect(commitEsiFence(coordination, resource, first)).resolves.toBe(false)
     await expect(getCommittedEsiFence(coordination, resource)).resolves.toBe(second.fence)
+  })
+
+  test('stores bounded mailbox revisions by stable character principal', async () => {
+    await expect(
+      getEsiResourceRevision(coordination, 'mailbox', 'character-90000001'),
+    ).resolves.toBe(0)
+    await expect(
+      incrementEsiResourceRevision(coordination, 'mailbox', 'character-90000001'),
+    ).resolves.toBe(1)
+    await expect(
+      incrementEsiResourceRevision(coordination, 'mailbox', 'character-90000001'),
+    ).resolves.toBe(2)
+    await expect(
+      getEsiResourceRevision(coordination, 'mailbox', 'character-90000002'),
+    ).resolves.toBe(0)
+    await expect(
+      getEsiResourceRevision(coordination, 'mailbox', 'invalid-principal'),
+    ).rejects.toThrow('Invalid ESI resource revision identity')
+  })
+
+  test('reuses lease and fence keys across mailbox revisions', async () => {
+    const firstIdentity = identity(
+      'mail-message',
+      { characterId: 90_000_001, mailId: 7 },
+      { namespace: 'mailbox', value: 0 },
+    )
+    const secondIdentity = identity(
+      'mail-message',
+      { characterId: 90_000_001, mailId: 7 },
+      { namespace: 'mailbox', value: 1 },
+    )
+    const first = await acquireEsiRequestLease(coordination, firstIdentity)
+    if (!first) throw new Error('first owner was not acquired')
+    await releaseEsiRequestLease(coordination, first)
+    const second = await acquireEsiRequestLease(coordination, secondIdentity)
+    if (!second) throw new Error('second owner was not acquired')
+
+    expect(first.key).toBe(second.key)
+    expect(second.fence).toBeGreaterThan(first.fence)
   })
 
   test('recovers when an owner commits a fence then dies before publishing an envelope', async () => {
@@ -335,6 +380,94 @@ describe('ESI resilience Redis coordination', () => {
         privateResource(90_000_002, otherCharacterLoad),
       ),
     ).resolves.toMatchObject({ data: 30, source: 'esi' })
+  })
+
+  test('collapses revision-sensitive mail reads across replicas', async () => {
+    let releaseLoad: ((value: EsiLoadResult<{ body: string }>) => void) | undefined
+    const ownerLoad = vi.fn(
+      () =>
+        new Promise<EsiLoadResult<{ body: string }>>((resolve) => {
+          releaseLoad = resolve
+        }),
+    )
+    const followerLoad = vi.fn().mockResolvedValue({
+      data: { body: 'duplicate' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=30' } },
+    })
+    const owner = new EsiResilienceLayer(cache, coordination, 2, authorize(1)).getCharacter(
+      mailResource(90_000_001, 7, ownerLoad),
+    )
+    await wait(20)
+    const follower = new EsiResilienceLayer(cache, coordination, 2, authorize(1)).getCharacter(
+      mailResource(90_000_001, 7, followerLoad),
+    )
+    await wait(20)
+    releaseLoad?.({
+      data: { body: 'owner' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=30' } },
+    })
+
+    await expect(Promise.all([owner, follower])).resolves.toEqual([
+      expect.objectContaining({ data: { body: 'owner' }, source: 'esi' }),
+      expect.objectContaining({ data: { body: 'owner' }, source: 'cache' }),
+    ])
+    expect(ownerLoad).toHaveBeenCalledOnce()
+    expect(followerLoad).not.toHaveBeenCalled()
+  })
+
+  test('rejects prior authorization generations and mailbox revisions for private mail', async () => {
+    const firstLoad = vi.fn().mockResolvedValue({
+      data: { body: 'first' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=30' } },
+    })
+    await new EsiResilienceLayer(cache, coordination, 2, authorize(1)).getCharacter(
+      mailResource(90_000_001, 7, firstLoad),
+    )
+
+    const generationLoad = vi.fn().mockResolvedValue({
+      data: { body: 'reauthorized' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=30' } },
+    })
+    await new EsiResilienceLayer(cache, coordination, 2, authorize(2)).getCharacter(
+      mailResource(90_000_001, 7, generationLoad),
+    )
+    await incrementEsiResourceRevision(coordination, 'mailbox', 'character-90000001')
+    const revisionLoad = vi.fn().mockResolvedValue({
+      data: { body: 'organized' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=30' } },
+    })
+    await new EsiResilienceLayer(cache, coordination, 2, authorize(2)).getCharacter(
+      mailResource(90_000_001, 7, revisionLoad),
+    )
+
+    expect(firstLoad).toHaveBeenCalledOnce()
+    expect(generationLoad).toHaveBeenCalledOnce()
+    expect(revisionLoad).toHaveBeenCalledOnce()
+  })
+
+  test('expires message-body envelopes at their freshness deadline', async () => {
+    const firstLoad = vi.fn().mockResolvedValue({
+      data: { body: 'short-lived' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=1' } },
+    })
+    await new EsiResilienceLayer(cache, coordination, 2, authorize(1)).getCharacter(
+      mailResource(90_000_001, 7, firstLoad),
+    )
+    await wait(1_100)
+    const replacementLoad = vi.fn().mockResolvedValue({
+      data: { body: 'replacement' },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=1' } },
+    })
+
+    await expect(
+      new EsiResilienceLayer(cache, coordination, 2, authorize(1)).getCharacter(
+        mailResource(90_000_001, 7, replacementLoad),
+      ),
+    ).resolves.toMatchObject({ data: { body: 'replacement' }, source: 'esi' })
+    expect(replacementLoad).toHaveBeenCalledWith(
+      { accessToken: 'token', principal: 'character-90000001' },
+      {},
+    )
   })
 
   test('advances cache namespace after coordination state is flushed', async () => {
@@ -554,6 +687,17 @@ function privateResource(
   return { operation: 'wallet-balance' as const, inputs: { characterId }, load }
 }
 
+function mailResource<Data>(
+  characterId: number,
+  mailId: number,
+  load: (
+    authority: { accessToken: string; principal: string },
+    revalidation: EsiRevalidation,
+  ) => Promise<EsiLoadResult<Data>>,
+) {
+  return { operation: 'mail-message' as const, inputs: { characterId, mailId }, load }
+}
+
 async function loadValidated() {
   return { data: { name: 'validated' }, meta: { headers: {}, status: 200 } }
 }
@@ -561,11 +705,13 @@ async function loadValidated() {
 function identity(
   operation: Parameters<typeof createEsiRepresentationIdentity>[0]['operation'],
   inputs: Readonly<Record<string, unknown>>,
+  resourceRevision?: Parameters<typeof createEsiRepresentationIdentity>[0]['resourceRevision'],
 ) {
   return createEsiRepresentationIdentity({
     operation,
     inputs,
     compatibilityDate: '2026-08-23',
     representationVersion: getEsiOperationContract(operation).representationVersion,
+    resourceRevision,
   })
 }

@@ -2,19 +2,20 @@ type DocumentedCacheBehavior =
   | { kind: 'relative'; seconds: number }
   | { kind: 'daily-utc'; hour: number; minute: number }
   | { kind: 'runtime-only' }
+  | { kind: 'none' }
 
 type DocumentedRateLimit =
   | { kind: 'legacy-only' }
   | { kind: 'declared'; group: string; maximumTokens: number; window: string }
 
 interface EsiOperationMetadata {
-  method: 'GET' | 'POST'
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   path: string
   esiOperationId: string
   minimumCompatibilityDate: string
   requiredScope: string | null
   cache: DocumentedCacheBehavior
-  supportsConditionalRequests: true
+  supportsConditionalRequests: boolean
   rateLimit: DocumentedRateLimit
   maximumBatchSize?: number
 }
@@ -116,6 +117,97 @@ export const esiOperationMetadata = {
       maximumTokens: 150,
       window: '15m',
     },
+  },
+  'mail-headers': {
+    method: 'GET',
+    path: '/characters/{character_id}/mail',
+    esiOperationId: 'GetCharactersCharacterIdMail',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.read_mail.v1',
+    cache: { kind: 'relative', seconds: 30 },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+    maximumBatchSize: 25,
+  },
+  'mail-message': {
+    method: 'GET',
+    path: '/characters/{character_id}/mail/{mail_id}',
+    esiOperationId: 'GetCharactersCharacterIdMailMailId',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.read_mail.v1',
+    cache: { kind: 'relative', seconds: 30 },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+  },
+  'mail-labels': {
+    method: 'GET',
+    path: '/characters/{character_id}/mail/labels',
+    esiOperationId: 'GetCharactersCharacterIdMailLabels',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.read_mail.v1',
+    cache: { kind: 'relative', seconds: 30 },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+  },
+  'mail-lists': {
+    method: 'GET',
+    path: '/characters/{character_id}/mail/lists',
+    esiOperationId: 'GetCharactersCharacterIdMailLists',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.read_mail.v1',
+    cache: { kind: 'relative', seconds: 120 },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+  },
+  'mail-send': {
+    method: 'POST',
+    path: '/characters/{character_id}/mail',
+    esiOperationId: 'PostCharactersCharacterIdMail',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.send_mail.v1',
+    cache: { kind: 'none' },
+    supportsConditionalRequests: false,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+  },
+  'mail-create-label': {
+    method: 'POST',
+    path: '/characters/{character_id}/mail/labels',
+    esiOperationId: 'PostCharactersCharacterIdMailLabels',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.organize_mail.v1',
+    cache: { kind: 'none' },
+    supportsConditionalRequests: false,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+  },
+  'mail-update': {
+    method: 'PUT',
+    path: '/characters/{character_id}/mail/{mail_id}',
+    esiOperationId: 'PutCharactersCharacterIdMailMailId',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.organize_mail.v1',
+    cache: { kind: 'none' },
+    supportsConditionalRequests: false,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+  },
+  'mail-delete': {
+    method: 'DELETE',
+    path: '/characters/{character_id}/mail/{mail_id}',
+    esiOperationId: 'DeleteCharactersCharacterIdMailMailId',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.organize_mail.v1',
+    cache: { kind: 'none' },
+    supportsConditionalRequests: false,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
+  },
+  'mail-delete-label': {
+    method: 'DELETE',
+    path: '/characters/{character_id}/mail/labels/{label_id}',
+    esiOperationId: 'DeleteCharactersCharacterIdMailLabelsLabelId',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-mail.organize_mail.v1',
+    cache: { kind: 'none' },
+    supportsConditionalRequests: false,
+    rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
   },
   skills: {
     method: 'GET',

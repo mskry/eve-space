@@ -44,6 +44,7 @@ describe('platform Nuxt module fixture', async () => {
 
   it('filters runtime navigation without rebuilding', async () => {
     alphaEnabled = true
+    apiServer.setAllowedOrigin(useTestContext().url)
     const page = await createPage('/')
     await page.getByRole('link', { name: 'Alpha', exact: true }).waitFor({ state: 'visible' })
 

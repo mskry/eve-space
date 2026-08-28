@@ -57,6 +57,15 @@ describe('ESI operation policies', () => {
         'universe-bloodlines',
         'wallet-balance',
         'wallet-transactions',
+        'mail-headers',
+        'mail-message',
+        'mail-labels',
+        'mail-lists',
+        'mail-send',
+        'mail-create-label',
+        'mail-update',
+        'mail-delete',
+        'mail-delete-label',
         'skills',
         'location',
         'ship',
@@ -227,6 +236,74 @@ describe('ESI operation policies', () => {
     ])
   })
 
+  test('records all reviewed mail methods, scopes, cache behavior, and retry policies', () => {
+    const mailPolicies = [
+      ['mail-headers', 'GET', 'esi-mail.read_mail.v1', true, 'idempotent'],
+      ['mail-message', 'GET', 'esi-mail.read_mail.v1', true, 'idempotent'],
+      ['mail-labels', 'GET', 'esi-mail.read_mail.v1', true, 'idempotent'],
+      ['mail-lists', 'GET', 'esi-mail.read_mail.v1', true, 'idempotent'],
+      ['mail-send', 'POST', 'esi-mail.send_mail.v1', false, 'none'],
+      ['mail-create-label', 'POST', 'esi-mail.organize_mail.v1', false, 'none'],
+      ['mail-update', 'PUT', 'esi-mail.organize_mail.v1', false, 'idempotent'],
+      ['mail-delete', 'DELETE', 'esi-mail.organize_mail.v1', false, 'idempotent'],
+      ['mail-delete-label', 'DELETE', 'esi-mail.organize_mail.v1', false, 'idempotent'],
+    ] as const
+
+    for (const [operation, method, scope, revalidate, retryKind] of mailPolicies) {
+      const metadata = esiOperationMetadata[operation]
+      const contract = getEsiOperationContract(operation)
+      expect(metadata).toMatchObject({
+        method,
+        minimumCompatibilityDate: '2020-01-01',
+        requiredScope: scope,
+        supportsConditionalRequests: revalidate,
+        rateLimit: {
+          kind: 'declared',
+          group: 'char-social',
+          maximumTokens: 600,
+          window: '15m',
+        },
+      })
+      expect(contract).toMatchObject({
+        audit: { reviewedDate: '2026-08-18' },
+        authorization: { kind: 'character', scope },
+        rateGroup: {
+          kind: 'declared',
+          group: 'char-social',
+          maximumTokens: 600,
+          window: '15m',
+        },
+        retry: { kind: retryKind },
+      })
+      expect(contract.cache.kind === 'shared' ? contract.cache.revalidate : false).toBe(revalidate)
+    }
+
+    expect(esiOperationMetadata['mail-headers'].maximumBatchSize).toBe(25)
+    const mailHeaderIdentity = getEsiOperationContract('mail-headers').identity
+    const mailHeaderIdentityFields =
+      mailHeaderIdentity.kind === 'mixed' ? mailHeaderIdentity.fields : []
+    expect(mailHeaderIdentity).toMatchObject({ kind: 'mixed' })
+    expect(mailHeaderIdentityFields).toContainEqual(
+      expect.objectContaining({ kind: 'set', field: 'labels', maximumItems: 25 }),
+    )
+
+    expect(getEsiOperationContract('mail-message')).toMatchObject({
+      freshness: { kind: 'relative', seconds: 30 },
+      cache: { kind: 'shared', retentionMilliseconds: 0, stale: { kind: 'none' } },
+    })
+    expect(getEsiOperationContract('mail-lists')).toMatchObject({
+      freshness: { kind: 'relative', seconds: 120 },
+    })
+    for (const operation of [
+      'mail-send',
+      'mail-create-label',
+      'mail-update',
+      'mail-delete',
+      'mail-delete-label',
+    ] as const)
+      expect(getEsiOperationContract(operation).cache).toEqual({ kind: 'none' })
+  })
+
   test('rejects incompatible dates and missing requestable private scopes at startup', () => {
     expect(() =>
       assertEsiOperationCatalogConfiguration({
@@ -242,7 +319,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-location.read_ship_type.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -254,6 +331,9 @@ describe('ESI operation policies', () => {
         requestableScopes: [
           'esi-location.read_location.v1',
           'esi-location.read_ship_type.v1',
+          'esi-mail.organize_mail.v1',
+          'esi-mail.read_mail.v1',
+          'esi-mail.send_mail.v1',
           'esi-skills.read_skills.v1',
           'esi-wallet.read_character_wallet.v1',
         ],

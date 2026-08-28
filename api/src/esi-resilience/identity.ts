@@ -9,7 +9,14 @@ export interface EsiRepresentationIdentity {
   operation: EsiOperation
   digest: string
   value: string
+  coordinationDigest: string
   representationVersion: string
+  resourceRevision?: EsiResourceRevision
+}
+
+export interface EsiResourceRevision {
+  namespace: string
+  value: number
 }
 
 /**
@@ -35,21 +42,31 @@ export function createEsiRepresentationIdentity(options: {
   inputs: Readonly<Record<string, unknown>>
   compatibilityDate: string
   representationVersion: string
+  resourceRevision?: EsiResourceRevision
 }): EsiRepresentationIdentity {
   const contract = getEsiOperationContract(options.operation)
   const normalizedInputs = normalizeInputs(contract.identity, options.inputs)
-  const canonical = JSON.stringify({
+  const canonicalBase = {
     operation: options.operation,
     inputs: normalizedInputs,
     compatibilityDate: options.compatibilityDate,
     representationVersion: options.representationVersion,
+  }
+  const canonical = JSON.stringify({
+    ...canonicalBase,
+    resourceRevision: options.resourceRevision,
   })
   const digest = createHash('sha256').update(canonical).digest('hex')
+  const coordinationDigest = createHash('sha256')
+    .update(JSON.stringify(canonicalBase))
+    .digest('hex')
   return {
     operation: options.operation,
     digest,
     value: `${options.operation}:${digest}`,
+    coordinationDigest,
     representationVersion: options.representationVersion,
+    resourceRevision: options.resourceRevision,
   }
 }
 
@@ -57,31 +74,72 @@ function normalizeInputs(
   identity: ReturnType<typeof getEsiOperationContract>['identity'],
   inputs: Readonly<Record<string, unknown>>,
 ) {
-  const allowedFields = identity.kind === 'ordered' ? identity.fields : [identity.field]
+  const allowedFields =
+    identity.kind === 'ordered'
+      ? identity.fields
+      : identity.kind === 'set'
+        ? [identity.field]
+        : identity.fields.map(({ field }) => field)
   const identityInputs = isSdkRequestEnvelope(inputs)
     ? projectSdkRequestIdentity(inputs, allowedFields)
     : inputs
-  assertIdentityInputFields(identityInputs, allowedFields)
+  const nullableFields =
+    identity.kind === 'mixed'
+      ? identity.fields
+          .filter((definition) => 'nullable' in definition && definition.nullable)
+          .map(({ field }) => field)
+      : []
+  assertIdentityInputFields(identityInputs, allowedFields, nullableFields)
 
   if (identity.kind === 'ordered')
     return Object.fromEntries(
       identity.fields.map((field) => [field, normalizeScalar(identityInputs[field], field)]),
     )
 
-  const values = identityInputs[identity.field]
-  if (!Array.isArray(values))
-    throw new Error(`ESI identity input ${identity.field} must be an array`)
-  if (values.length === 0 || values.length > identity.maximumItems)
-    throw new Error(
-      `ESI identity input ${identity.field} must contain between 1 and ${identity.maximumItems} items`,
+  if (identity.kind === 'mixed')
+    return Object.fromEntries(
+      identity.fields.map((definition) => {
+        const value = identityInputs[definition.field]
+        if (
+          (value === undefined || value === null) &&
+          'nullable' in definition &&
+          definition.nullable
+        )
+          return [definition.field, null]
+        if (definition.kind === 'scalar')
+          return [definition.field, normalizeScalar(value, definition.field)]
+        if (
+          Array.isArray(value) &&
+          value.length === 0 &&
+          'nullable' in definition &&
+          definition.nullable
+        )
+          return [definition.field, null]
+        return [definition.field, normalizeSet(value, definition.field, definition.maximumItems)]
+      }),
     )
-  const normalized = values.map((value) => normalizeScalar(value, identity.field))
-  const unique = new Map(normalized.map((value) => [JSON.stringify(value), value]))
+
   return {
-    [identity.field]: [...unique.entries()]
-      .toSorted(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-      .map(([, value]) => value),
+    [identity.field]: normalizeSet(
+      identityInputs[identity.field],
+      identity.field,
+      identity.maximumItems,
+    ),
   }
+}
+
+function normalizeSet(value: unknown, field: string, maximumItems: number) {
+  const values = value
+  if (!Array.isArray(values)) throw new Error(`ESI identity input ${field} must be an array`)
+  if (values.length === 0 || values.length > maximumItems)
+    throw new Error(`ESI identity input ${field} must contain between 1 and ${maximumItems} items`)
+  const normalized = values.map((item) => normalizeScalar(item, field))
+  const unique = new Map(
+    normalized.map((normalizedValue) => [JSON.stringify(normalizedValue), normalizedValue]),
+  )
+  return [...unique.entries()]
+    .toSorted(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(([, item]) => item)
 }
 
 function isSdkRequestEnvelope(inputs: Readonly<Record<string, unknown>>) {
@@ -135,6 +193,7 @@ function findValues(
 function assertIdentityInputFields(
   inputs: Readonly<Record<string, unknown>>,
   allowedFields: readonly string[],
+  optionalFields: readonly string[] = [],
 ) {
   const suppliedFields = Object.keys(inputs)
   const unexpected = suppliedFields.filter((field) => !allowedFields.includes(field))
@@ -142,7 +201,9 @@ function assertIdentityInputFields(
     throw new Error(
       `Unexpected ESI identity inputs: ${unexpected.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
     )
-  const missing = allowedFields.filter((field) => !(field in inputs))
+  const missing = allowedFields.filter(
+    (field) => !(field in inputs) && !optionalFields.includes(field),
+  )
   if (missing.length > 0)
     throw new Error(
       `Missing ESI identity inputs: ${missing.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
