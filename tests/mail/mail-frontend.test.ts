@@ -1,16 +1,17 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import type { MailHeader } from '../app/queries/mail'
+import type { MailHeader } from '../../app/queries/mail'
 import {
   appendUniqueMailHeaders,
   deriveMailboxStatus,
   filterLoadedMailHeaders,
   isMailUnread,
   mailPartyName,
+  mergeLatestMailHeaders,
   splitMailBodyParagraphs,
-} from '../app/utils/mail-view'
-import { ApiQueryError } from '../app/utils/query-error'
+} from '../../app/utils/mail-view'
+import { ApiQueryError } from '../../app/utils/query-error'
 
 const readWorkspaceFile = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 
@@ -64,6 +65,18 @@ describe('mail frontend behavior', () => {
 
     expect(result.map((header) => header.mailId)).toEqual([1, 2, 3])
     expect(result[1]).toBe(retained)
+  })
+
+  it('preserves older pages when the latest page refreshes', () => {
+    const oldLatest = mailHeader(2, { subject: 'Old latest copy' })
+    const older = mailHeader(1, { subject: 'Older page' })
+    const refreshed = mailHeader(2, { subject: 'Refreshed latest copy' })
+    const newest = mailHeader(3, { subject: 'New arrival' })
+
+    const result = mergeLatestMailHeaders([oldLatest, older], [newest, refreshed], true)
+
+    expect(result.map((header) => header.mailId)).toEqual([3, 2, 1])
+    expect(result[1]).toBe(refreshed)
   })
 
   it('keeps hostile body text inert while splitting only on blank lines', () => {

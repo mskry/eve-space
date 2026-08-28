@@ -50,6 +50,14 @@ export function appendUniqueMailHeaders(
   return [...current, ...older.filter((header) => !retainedIds.has(header.mailId))]
 }
 
+export function mergeLatestMailHeaders(
+  current: readonly MailHeader[],
+  latest: readonly MailHeader[],
+  hasPaginated: boolean,
+) {
+  return hasPaginated ? appendUniqueMailHeaders(latest, current) : [...latest]
+}
+
 export function splitMailBodyParagraphs(body: string | null) {
   if (!body) return []
   return body

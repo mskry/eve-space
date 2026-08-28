@@ -10,15 +10,15 @@ import {
   mailHeadersQuery,
   mailingListsQuery,
   mailLabelsQuery,
-} from '../app/queries/mail'
-import { canRunProtectedQuery } from '../app/queries/query-cache'
-import { PRIVATE_QUERY_KEYS } from '../app/queries/query-keys'
-import { QUERY_POLICY } from '../app/queries/query-policy'
-import { createApiClient } from '../app/utils/api-client'
-import { coladaOptions } from '../app/utils/colada-options'
-import { ApiQueryError } from '../app/utils/query-error'
-import { mountWithQueryPlugins } from './support/mount-with-query-plugins'
-import { queryServer } from './support/query-server'
+} from '../../app/queries/mail'
+import { canRunProtectedQuery } from '../../app/queries/query-cache'
+import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import { QUERY_POLICY } from '../../app/queries/query-policy'
+import { createApiClient } from '../../app/utils/api-client'
+import { coladaOptions } from '../../app/utils/colada-options'
+import { ApiQueryError } from '../../app/utils/query-error'
+import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
+import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
 const characterId = 7

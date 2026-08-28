@@ -12,6 +12,7 @@ import {
   appendUniqueMailHeaders,
   deriveMailboxStatus,
   filterLoadedMailHeaders,
+  mergeLatestMailHeaders,
 } from '../../../utils/mail-view'
 import { ApiQueryError } from '../../../utils/query-error'
 
@@ -30,6 +31,7 @@ const selectedMailingListId = ref<number | null>(null)
 const loadedHeaders = ref<MailHeader[]>([])
 const nextLastMailId = ref<number | null>(null)
 const requestedCursor = ref<number | null>(null)
+const hasPaginated = ref(false)
 
 const characterId = computed(() => {
   const value = Array.isArray(route.params.characterId)
@@ -166,7 +168,16 @@ const headerEmptyMessage = computed(() => {
 
 function selectLabel(labelId: number | null) {
   if (activeLabelId.value === labelId) return
+  resetMailboxView()
   activeLabelId.value = labelId
+}
+
+function resetMailboxView() {
+  loadedHeaders.value = []
+  nextLastMailId.value = null
+  requestedCursor.value = null
+  hasPaginated.value = false
+  selectedMailId.value = null
 }
 
 function selectMail(mailId: number) {
@@ -186,19 +197,18 @@ function retryMailbox() {
   void Promise.all([headersQuery.refetch(), labelsQuery.refetch(), listsQuery.refetch()])
 }
 
-watch([characterId, activeLabelId], () => {
-  loadedHeaders.value = []
-  nextLastMailId.value = null
-  requestedCursor.value = null
-  selectedMailId.value = null
-})
+watch(characterId, resetMailboxView, { flush: 'sync' })
 
 watch(
   () => headersQuery.data.value,
   (page) => {
     if (!page) return
-    loadedHeaders.value = [...page.messages]
-    nextLastMailId.value = page.nextLastMailId
+    loadedHeaders.value = mergeLatestMailHeaders(
+      loadedHeaders.value,
+      page.messages,
+      hasPaginated.value,
+    )
+    if (!hasPaginated.value) nextLastMailId.value = page.nextLastMailId
   },
   { immediate: true },
 )
@@ -208,6 +218,7 @@ watch(
   (page) => {
     if (!page || requestedCursor.value === null) return
     loadedHeaders.value = appendUniqueMailHeaders(loadedHeaders.value, page.messages)
+    hasPaginated.value = true
     nextLastMailId.value = page.nextLastMailId
     requestedCursor.value = null
   },

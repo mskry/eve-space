@@ -112,6 +112,46 @@ These instructions apply to the entire repository. Preserve the architecture and
 - pnpm is the only package manager for this repository. The root `pnpm-lock.yaml` is authoritative; do not add npm or Yarn lockfiles.
 - Use Corepack rather than a separately versioned global pnpm installation.
 - Install with `corepack enable` then `pnpm install --frozen-lockfile`.
+- Organize root frontend tests by feature or cross-cutting concern. Use this target structure for a later behavior-free test-location refactor:
+
+```text
+tests/
+  character/
+    clone-state.test.ts
+  dashboard/
+    dashboard-sections.test.ts
+  e2e/
+    nuxt-ssr-failure.e2e.test.ts
+  mail/
+    character-mail-reading.e2e.test.ts
+    mail-frontend.test.ts
+    mail-queries.test.ts
+  platform/
+    platform-module-registry.test.ts
+  queries/
+    protected-queries.test.ts
+    query-infrastructure.test.ts
+    query-prefetch-hooks.test.ts
+    query-ssr-auth.test.ts
+  support/
+  ui/
+    ui-toast.test.ts
+  setup.ts
+```
+
+- Co-locate feature-specific unit and E2E tests in the feature directory; reserve `tests/e2e/` for cross-feature shell and application journeys. Keep shared fixtures in `tests/support/`, preserve the `.e2e.test.ts` suffix for production-server browser tests, and update exact-path Vitest configs when files move. Perform the remaining test-location migration separately from behavioral changes.
+- Keep integration suites with the runtime boundary that owns them instead of creating one repository-wide integration directory. Use these target locations as those suites grow:
+
+```text
+api/tests/integration/
+  postgres/
+  redis/
+features/<module>/server/test/integration/
+features/<module>/nuxt/test/integration/
+packages/<package>/test/integration/
+```
+
+- PostgreSQL, Redis, server-module, Nuxt-module, and package integration suites have different dependencies and runners. Keep their package scripts and Vitest configs authoritative, and update include/exclude patterns when migrating existing files into these paths.
 - Run relevant checks after changes. For API or shared-contract changes, run all of these:
 
 ```bash
