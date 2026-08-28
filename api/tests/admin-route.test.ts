@@ -46,7 +46,7 @@ vi.mock('../src/platform/module-settings.js', () => ({
   isCompleteShellNavigationOrder: (order: {
     dashboard: readonly unknown[]
     character: readonly unknown[]
-  }) => order.dashboard.length === 4 && order.character.length === 4,
+  }) => order.dashboard.length === 4 && order.character.length === 5,
   listInstalledModuleSettings: mocks.listInstalledModuleSettings,
   loadInstalledShellNavigationOrder: mocks.loadInstalledShellNavigationOrder,
   saveInstalledShellNavigationOrder: mocks.saveInstalledShellNavigationOrder,
@@ -86,6 +86,7 @@ const shellNavigationOrder = {
     { ownerId: 'core', navigationId: 'core-character-skills' },
     { ownerId: 'core', navigationId: 'core-character-wallet' },
     { ownerId: 'core', navigationId: 'core-character-history' },
+    { ownerId: 'core', navigationId: 'core-character-mail' },
   ],
 }
 

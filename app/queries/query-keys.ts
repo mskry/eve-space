@@ -37,6 +37,23 @@ export const PRIVATE_QUERY_KEYS = {
     [...PRIVATE_QUERY_KEYS.character(characterId), 'wallet'] as const,
   walletTransactions: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.wallet(characterId), 'transactions'] as const,
+  mail: (characterId: number) => [...PRIVATE_QUERY_KEYS.character(characterId), 'mail'] as const,
+  mailHeaders: (
+    characterId: number,
+    labels: readonly number[] = [],
+    lastMailId: number | null = null,
+  ) =>
+    [
+      ...PRIVATE_QUERY_KEYS.mail(characterId),
+      'headers',
+      [...new Set(labels)].toSorted((left, right) => left - right),
+      lastMailId,
+    ] as const,
+  mailDetail: (characterId: number, mailId: number) =>
+    [...PRIVATE_QUERY_KEYS.mail(characterId), 'detail', mailId] as const,
+  mailLabels: (characterId: number) => [...PRIVATE_QUERY_KEYS.mail(characterId), 'labels'] as const,
+  mailingLists: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.mail(characterId), 'mailing-lists'] as const,
 }
 
 export const ADMIN_QUERY_KEYS = {

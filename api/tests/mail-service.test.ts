@@ -244,10 +244,10 @@ describe('mail reads', () => {
     expect(mocks.listHeaders).toHaveBeenLastCalledWith(characterId, revalidation)
   })
 
-  test('maps detail optional fields and preserves outer cache metadata', async () => {
+  test('normalizes detail bodies and preserves outer cache metadata', async () => {
     mocks.getMail.mockResolvedValue(
       response({
-        body: '<p>untrusted</p>',
+        body: String.raw`u'<p>First &amp; second<br><br>Fly \uace0</p>'`,
         from: 100,
         labels: [4],
         read: true,
@@ -272,14 +272,14 @@ describe('mail reads', () => {
       sentAt: '2026-08-27T11:00:00Z',
       labelIds: [4],
       isRead: true,
-      body: '<p>untrusted</p>',
+      body: 'First & second\n\nFly 고',
       ...outerMetadata,
     })
     expect(mocks.getMail).toHaveBeenCalledWith(characterId, 44, revalidation)
   })
 
-  test('maps every absent optional detail field without inventing message state', async () => {
-    mocks.getMail.mockResolvedValue(response({}))
+  test('maps null and absent optional detail fields without inventing message state', async () => {
+    mocks.getMail.mockResolvedValue(response({ body: null }))
 
     await expect(getMailDetail(characterId, 45)).resolves.toMatchObject({
       characterId,

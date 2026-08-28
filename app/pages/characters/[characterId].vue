@@ -37,7 +37,9 @@ const characterBreadcrumb = computed(() => {
       ? 'WALLET'
       : route.path.endsWith('/history')
         ? 'HISTORY'
-        : ''
+        : route.path.endsWith('/mail')
+          ? 'MAIL'
+          : ''
   return ['CHARACTERS', name, section].filter(Boolean).join(' / ')
 })
 const reauthorizeStatus = computed(() =>

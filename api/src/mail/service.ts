@@ -1,4 +1,5 @@
 import { createMailClient } from '@evespace/esi-client/domains/mail'
+import { eveDescriptionToPlainText } from '../eve-description.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport, EsiTransportError } from '../esi-resilience/transport.js'
@@ -268,7 +269,7 @@ export async function getMailDetail(characterId: number, mailId: number): Promis
             sentAt: response.data.timestamp ?? null,
             labelIds: response.data.labels ?? [],
             isRead: response.data.read ?? null,
-            body: response.data.body ?? null,
+            body: eveDescriptionToPlainText(response.data.body) ?? null,
           },
           meta: response.meta,
         }
