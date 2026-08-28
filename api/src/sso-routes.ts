@@ -280,6 +280,17 @@ function normalizeCharacterReturnPath(value: string, characterId: number) {
     throw invalidReturnDestination
   }
 
+  assertSafelyDecodedReturnPath(value)
+  const destination = parseLocalReturnDestination(value)
+  assertCharacterReturnDestination(destination, characterId)
+  assertUniqueQueryParameters(destination.toString())
+
+  const normalized = `${destination.pathname}${destination.search}`
+  if (normalized.length > 512) throw invalidReturnDestination
+  return normalized
+}
+
+function assertSafelyDecodedReturnPath(value: string) {
   let decoded = value
   for (let depth = 0; depth < 4; depth += 1) {
     assertSafeReturnPathLayer(decoded)
@@ -291,7 +302,9 @@ function normalizeCharacterReturnPath(value: string, characterId: number) {
     }
     if (depth === 3 && /%[\dA-Fa-f]{2}/.test(decoded)) throw invalidReturnDestination
   }
+}
 
+function parseLocalReturnDestination(value: string) {
   let destination: URL
   try {
     destination = new URL(value, 'http://application.local')
@@ -300,6 +313,10 @@ function normalizeCharacterReturnPath(value: string, characterId: number) {
   }
 
   if (destination.origin !== 'http://application.local') throw invalidReturnDestination
+  return destination
+}
+
+function assertCharacterReturnDestination(destination: URL, characterId: number) {
   const characterRoot = `/characters/${characterId}`
   if (
     destination.pathname !== characterRoot &&
@@ -307,16 +324,6 @@ function normalizeCharacterReturnPath(value: string, characterId: number) {
   ) {
     throw invalidReturnDestination
   }
-
-  const queryNames = new Set<string>()
-  for (const name of destination.searchParams.keys()) {
-    if (queryNames.has(name)) throw invalidReturnDestination
-    queryNames.add(name)
-  }
-
-  const normalized = `${destination.pathname}${destination.search}`
-  if (normalized.length > 512) throw invalidReturnDestination
-  return normalized
 }
 
 function assertSafeReturnPathLayer(value: string) {

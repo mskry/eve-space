@@ -144,51 +144,55 @@ function validateIdentity(operation: string, value: unknown, issues: string[]) {
     issues.push(`operation ${operation} has invalid identity metadata`)
     return
   }
-  if (value.kind === 'ordered') {
-    if (
-      !Array.isArray(value.fields) ||
-      !value.fields.every(
-        (field): field is string => typeof field === 'string' && identityFieldPattern.test(field),
-      ) ||
-      new Set(value.fields).size !== value.fields.length
-    )
-      issues.push(`operation ${operation} has invalid or duplicate ordered identity fields`)
-    return
-  }
-  if (value.kind === 'set') {
-    if (typeof value.field !== 'string' || !identityFieldPattern.test(value.field))
-      issues.push(`operation ${operation} has an invalid set identity field`)
-    if (!isPositiveSafeInteger(value.maximumItems))
-      issues.push(`operation ${operation} set identity maximum must be a positive safe integer`)
-    return
-  }
-  if (value.kind === 'mixed') {
-    if (!Array.isArray(value.fields) || value.fields.length === 0) {
-      issues.push(`operation ${operation} has invalid mixed identity fields`)
-      return
-    }
-    const names = new Set<string>()
-    for (const field of value.fields) {
+  switch (value.kind) {
+    case 'ordered':
       if (
-        !isRecord(field) ||
-        typeof field.field !== 'string' ||
-        !identityFieldPattern.test(field.field)
-      ) {
-        issues.push(`operation ${operation} has an invalid mixed identity field`)
-        continue
-      }
-      if (names.has(field.field))
-        issues.push(`operation ${operation} has duplicate mixed identity fields`)
-      names.add(field.field)
-      if ('nullable' in field && typeof field.nullable !== 'boolean')
-        issues.push(`operation ${operation} mixed identity nullable flag must be boolean`)
-      if (field.kind === 'scalar') continue
-      if (field.kind !== 'set' || !isPositiveSafeInteger(field.maximumItems))
-        issues.push(`operation ${operation} has an invalid mixed set identity field`)
-    }
+        !Array.isArray(value.fields) ||
+        !value.fields.every(
+          (field): field is string => typeof field === 'string' && identityFieldPattern.test(field),
+        ) ||
+        new Set(value.fields).size !== value.fields.length
+      )
+        issues.push(`operation ${operation} has invalid or duplicate ordered identity fields`)
+      return
+    case 'set':
+      if (typeof value.field !== 'string' || !identityFieldPattern.test(value.field))
+        issues.push(`operation ${operation} has an invalid set identity field`)
+      if (!isPositiveSafeInteger(value.maximumItems))
+        issues.push(`operation ${operation} set identity maximum must be a positive safe integer`)
+      return
+    case 'mixed':
+      validateMixedIdentity(operation, value.fields, issues)
+      return
+    default:
+      issues.push(`operation ${operation} uses an unsupported identity strategy`)
+  }
+}
+
+function validateMixedIdentity(operation: string, value: unknown, issues: string[]) {
+  if (!Array.isArray(value) || value.length === 0) {
+    issues.push(`operation ${operation} has invalid mixed identity fields`)
     return
   }
-  issues.push(`operation ${operation} uses an unsupported identity strategy`)
+  const names = new Set<string>()
+  for (const field of value) {
+    if (
+      !isRecord(field) ||
+      typeof field.field !== 'string' ||
+      !identityFieldPattern.test(field.field)
+    ) {
+      issues.push(`operation ${operation} has an invalid mixed identity field`)
+      continue
+    }
+    if (names.has(field.field))
+      issues.push(`operation ${operation} has duplicate mixed identity fields`)
+    names.add(field.field)
+    if ('nullable' in field && typeof field.nullable !== 'boolean')
+      issues.push(`operation ${operation} mixed identity nullable flag must be boolean`)
+    if (field.kind === 'scalar') continue
+    if (field.kind !== 'set' || !isPositiveSafeInteger(field.maximumItems))
+      issues.push(`operation ${operation} has an invalid mixed set identity field`)
+  }
 }
 
 function validateResourceRevision(operation: string, value: unknown, issues: string[]) {
