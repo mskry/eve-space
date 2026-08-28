@@ -26,6 +26,7 @@ vi.mock('../src/esi-resilience/coordination.js', () => ({
 }))
 
 import { EsiQuotaError } from '../src/esi-resilience/cooldowns.js'
+import { cacheResourceRevisionRepairKey } from '../src/esi-resilience/namespaces.js'
 import { EsiResilienceLayer } from '../src/esi-resilience/resilience.js'
 import { EsiTransportError } from '../src/esi-resilience/transport.js'
 
@@ -560,6 +561,33 @@ describe('ESI resilience layer', () => {
     )
   })
 
+  test.each([
+    ['mail-send', 'ESI_RESPONSE_PARSE_ERROR'],
+    ['mail-send', 'ESI_RESPONSE_VALIDATION_ERROR'],
+    ['mail-create-label', 'ESI_RESPONSE_PARSE_ERROR'],
+    ['mail-create-label', 'ESI_RESPONSE_VALIDATION_ERROR'],
+  ] as const)(
+    'invalidates mailbox caches after ambiguous %s response errors',
+    async (operation, code) => {
+      const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+      const failure = { code }
+
+      await expect(
+        layer.executeCharacterMutation({
+          operation,
+          characterId: 1,
+          load: vi.fn().mockRejectedValue(failure),
+        }),
+      ).rejects.toBe(failure)
+
+      expect(mocks.incrementRevision).toHaveBeenCalledWith(
+        expect.anything(),
+        'mailbox',
+        'character-1',
+      )
+    },
+  )
+
   test('retries idempotent character mutations and advances mailbox revision after success', async () => {
     const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
     const load = vi
@@ -658,15 +686,55 @@ describe('ESI resilience layer', () => {
     await layer.getCharacter(resource)
 
     expect(load).toHaveBeenCalledTimes(2)
-    expect(cache.set).toHaveBeenCalledOnce()
+    expect(cache.set).toHaveBeenCalledTimes(2)
 
     mocks.incrementRevision.mockResolvedValue(1)
     await layer.getCharacter(resource)
     expect(load).toHaveBeenCalledTimes(3)
-    expect(cache.set).toHaveBeenCalledTimes(2)
-    expect(JSON.parse(cache.set.mock.calls[1]?.[1] as string)).toMatchObject({
+    expect(cache.set).toHaveBeenCalledTimes(3)
+    expect(JSON.parse(cache.set.mock.calls[2]?.[1] as string)).toMatchObject({
       resourceRevision: { namespace: 'mailbox', value: 1 },
     })
+  })
+
+  test('repairs a failed mailbox invalidation recorded by another process before cache reads', async () => {
+    const cache = redis()
+    const repairKey = cacheResourceRevisionRepairKey('mailbox', 'character-1')
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    mocks.incrementRevision.mockRejectedValue(new Error('coordination unavailable'))
+    const mutation = layer.executeCharacterMutation({
+      operation: 'mail-create-label',
+      characterId: 1,
+      load: vi.fn().mockResolvedValue(result(12)),
+    })
+    const failedMutation = mutation.catch((error: unknown) => error)
+
+    await vi.runAllTimersAsync()
+    await expect(failedMutation).resolves.toMatchObject({
+      name: 'EsiResourceRevisionUnavailableError',
+    })
+    expect(cache.set).toHaveBeenCalledWith(repairKey, '1')
+
+    mocks.incrementRevision.mockResolvedValue(1)
+    cache.get.mockImplementation((key: string) => Promise.resolve(key === repairKey ? '1' : null))
+    const restartedLayer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue(result({ body: 'replacement' }))
+
+    await expect(
+      restartedLayer.getCharacter({
+        operation: 'mail-message',
+        inputs: { characterId: 1, mailId: 2 },
+        load,
+      }),
+    ).resolves.toMatchObject({ data: { body: 'replacement' }, source: 'esi' })
+
+    expect(mocks.incrementRevision).toHaveBeenLastCalledWith(
+      expect.anything(),
+      'mailbox',
+      'character-1',
+    )
+    expect(cache.del).toHaveBeenCalledWith(repairKey)
+    expect(load).toHaveBeenCalledOnce()
   })
 
   test('publishes private values to the shared cache after authorization binding', async () => {
@@ -750,6 +818,7 @@ describe('ESI resilience layer', () => {
 
 function redis() {
   return {
+    del: vi.fn().mockResolvedValue(1),
     get: vi.fn().mockResolvedValue(null),
     ping: vi.fn().mockResolvedValue('PONG'),
     set: vi.fn().mockResolvedValue('OK'),

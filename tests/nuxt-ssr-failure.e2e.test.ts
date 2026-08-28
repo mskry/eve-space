@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { $fetch, createPage, setup } from '@nuxt/test-utils/e2e'
+import { $fetch, createPage, setup, useTestContext } from '@nuxt/test-utils/e2e'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { startCorsJsonApi } from './support/cors-json-api'
@@ -64,6 +64,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
 
   it('keeps dashboard navigation keyboard accessible on mobile', async () => {
     apiAvailable = true
+    apiServer.setAllowedOrigin(useTestContext().url)
     const page = await createPage('/')
     await page.setViewportSize({ width: 390, height: 844 })
 
@@ -88,6 +89,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
   })
 
   it('uses persistent navigation on the supported desktop layout', async () => {
+    apiServer.setAllowedOrigin(useTestContext().url)
     const page = await createPage('/')
     await page.setViewportSize({ width: 1280, height: 800 })
 

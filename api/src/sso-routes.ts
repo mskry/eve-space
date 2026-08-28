@@ -307,12 +307,12 @@ function assertSafelyDecodedReturnPath(value: string) {
 function parseLocalReturnDestination(value: string) {
   let destination: URL
   try {
-    destination = new URL(value, 'http://application.local')
+    destination = new URL(value, 'https://application.local')
   } catch {
     throw invalidReturnDestination
   }
 
-  if (destination.origin !== 'http://application.local') throw invalidReturnDestination
+  if (destination.origin !== 'https://application.local') throw invalidReturnDestination
   return destination
 }
 

@@ -33,7 +33,7 @@ import {
   type EsiRepresentationIdentity,
   type EsiResourceRevision,
 } from './identity.js'
-import { cacheEnvelopeKey } from './namespaces.js'
+import { cacheEnvelopeKey, cacheResourceRevisionRepairKey } from './namespaces.js'
 import { recordEsiCacheSource, recordEsiCoordinationFailure } from './telemetry.js'
 import { EsiTransportError, getCoordinationConnection } from './transport.js'
 import type {
@@ -565,14 +565,20 @@ export class EsiResilienceLayer {
       policy.resourceRevision.namespace,
       authorization.principal,
     )
-    if (this.#unsafeResourceRevisions.has(unsafeKey)) {
+    const repairKey = cacheResourceRevisionRepairKey(
+      policy.resourceRevision.namespace,
+      authorization.principal,
+    )
+    const needsRepair = await this.#needsResourceRevisionRepair(unsafeKey, repairKey)
+    if (needsRepair === undefined) return null
+    if (needsRepair) {
       try {
         const value = await incrementEsiResourceRevision(
           this.coordination,
           policy.resourceRevision.namespace,
           authorization.principal,
         )
-        this.#unsafeResourceRevisions.delete(unsafeKey)
+        await this.#clearResourceRevisionRepair(unsafeKey, repairKey)
         return { namespace: policy.resourceRevision.namespace, value }
       } catch {
         recordEsiCoordinationFailure()
@@ -600,6 +606,7 @@ export class EsiResilienceLayer {
   ) {
     if (!policy.resourceRevision) return
     const unsafeKey = resourceRevisionUnsafeKey(policy.resourceRevision.namespace, principal)
+    const repairKey = cacheResourceRevisionRepairKey(policy.resourceRevision.namespace, principal)
     for (let attempt = 1; attempt <= resourceRevisionAdvanceAttempts; attempt += 1) {
       try {
         // oxlint-disable-next-line no-await-in-loop
@@ -608,7 +615,8 @@ export class EsiResilienceLayer {
           policy.resourceRevision.namespace,
           principal,
         )
-        this.#unsafeResourceRevisions.delete(unsafeKey)
+        // oxlint-disable-next-line no-await-in-loop
+        await this.#clearResourceRevisionRepair(unsafeKey, repairKey)
         return
       } catch {
         if (attempt < resourceRevisionAdvanceAttempts) {
@@ -619,8 +627,24 @@ export class EsiResilienceLayer {
     }
     this.#l1.clear()
     this.#unsafeResourceRevisions.add(unsafeKey)
+    await this.cache.set(repairKey, '1').catch(() => {})
     recordEsiCoordinationFailure()
     throw new EsiResourceRevisionUnavailableError()
+  }
+
+  async #needsResourceRevisionRepair(unsafeKey: string, repairKey: string) {
+    if (this.#unsafeResourceRevisions.has(unsafeKey)) return true
+    try {
+      return (await this.cache.get(repairKey)) !== null
+    } catch {
+      recordEsiCoordinationFailure()
+      return undefined
+    }
+  }
+
+  async #clearResourceRevisionRepair(unsafeKey: string, repairKey: string) {
+    this.#unsafeResourceRevisions.delete(unsafeKey)
+    await this.cache.del(repairKey).catch(() => {})
   }
 
   #readL1<Data>(
@@ -770,8 +794,18 @@ function shouldAdvanceRevisionAfterMutationError(
 ) {
   return (
     error instanceof EsiTransportError ||
+    isEsiResponseContractError(error) ||
     ((operation === 'mail-delete' || operation === 'mail-delete-label') &&
       getErrorStatus(error) === 404)
+  )
+}
+
+function isEsiResponseContractError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error.code === 'ESI_RESPONSE_PARSE_ERROR' || error.code === 'ESI_RESPONSE_VALIDATION_ERROR')
   )
 }
 
