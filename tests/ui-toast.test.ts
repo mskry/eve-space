@@ -12,11 +12,16 @@ describe('UiToast', () => {
       "import { ToastClose, ToastDescription, ToastRoot, ToastTitle } from 'reka-ui'",
     )
     expect(component).toContain('description?: string')
+    expect(component).toContain('duration?: number')
+    expect(component).toContain('actionHref?: string')
+    expect(component).toContain('actionLabel?: string')
     expect(component).toContain('title: string')
     expect(component).toContain("defineModel<boolean>('open', { default: false })")
     expect(component).toContain('<ToastRoot v-model:open="open"')
+    expect(component).toContain(':duration="duration"')
     expect(component).toContain('<ToastTitle')
     expect(component).toContain('<ToastDescription v-if="description"')
+    expect(component).toContain('<a v-if="actionHref" class="ui-toast-action"')
     expect(component).toContain('<ToastClose')
   })
 

@@ -7,9 +7,11 @@ import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import {
   mailDetailQuery,
+  mailDeleteMutation,
   mailHeadersQuery,
   mailingListsQuery,
   mailLabelsQuery,
+  mailReadMutation,
 } from '../../app/queries/mail'
 import { canRunProtectedQuery } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
@@ -155,6 +157,72 @@ describe('mail queries', () => {
     expect(requestedLabels).toEqual(['3', '9'])
     expect(requestedCursor).toBe('800')
     expect(results).toEqual([headersResponse, detailResponse, labelsResponse, listsResponse])
+  })
+
+  it('sends read state alone and does not request labels as a result', async () => {
+    let requestBody: unknown
+    const labelRequests = vi.fn()
+    queryServer.use(
+      http.put('http://localhost/api/me/characters/7/mail/7001', async ({ request }) => {
+        requestBody = await request.json()
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.get('http://localhost/api/me/characters/7/mail/labels', labelRequests),
+    )
+
+    await mailReadMutation({ apiClient, characterId, mailId, read: true })
+
+    expect(requestBody).toEqual({ read: true })
+    expect(requestBody).not.toHaveProperty('labels')
+    expect(labelRequests).not.toHaveBeenCalled()
+  })
+
+  it('treats an application-level no-content delete as success', async () => {
+    const requests = vi.fn()
+    queryServer.use(
+      http.delete('http://localhost/api/me/characters/7/mail/7001', () => {
+        requests()
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    await expect(mailDeleteMutation({ apiClient, characterId, mailId })).resolves.toBeUndefined()
+    expect(requests).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    [
+      403,
+      {
+        code: 'EVE_SCOPE_REQUIRED',
+        message: 'Authorize mail organization.',
+        requiredScope: 'esi-mail.organize_mail.v1',
+        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
+      },
+    ],
+    [
+      403,
+      {
+        code: 'EVE_REAUTH_REQUIRED',
+        message: 'Mail organization authorization expired.',
+        requiredScope: 'esi-mail.organize_mail.v1',
+        authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
+      },
+    ],
+    [409, { code: 'MAIL_MUTATION_REJECTED', message: 'EVE rejected the mail change.' }],
+  ])('preserves mutation error details for status %i', async (status, body) => {
+    queryServer.use(
+      http.put('http://localhost/api/me/characters/7/mail/7001', () =>
+        HttpResponse.json(body, { status }),
+      ),
+    )
+
+    const error = await mailReadMutation({ apiClient, characterId, mailId, read: true }).catch(
+      (mutationError: unknown) => mutationError,
+    )
+
+    expect(error).toBeInstanceOf(ApiQueryError)
+    expect(error).toMatchObject({ status, ...body })
   })
 
   it('requests a low-traffic label at the source instead of filtering the general page', async () => {

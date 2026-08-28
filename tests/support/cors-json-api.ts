@@ -6,11 +6,15 @@ interface JsonApiResponse {
   readonly body: unknown
 }
 
-export async function startCorsJsonApi(handler: (request: IncomingMessage) => JsonApiResponse) {
+export async function startCorsJsonApi(
+  handler: (request: IncomingMessage) => JsonApiResponse | Promise<JsonApiResponse>,
+) {
   let allowedOrigin = 'http://127.0.0.1'
-  const server = createServer((request, response) => {
+  const server = createServer(async (request, response) => {
     const headers = {
       'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Origin': allowedOrigin,
       'Content-Type': 'application/json',
     }
@@ -20,7 +24,7 @@ export async function startCorsJsonApi(handler: (request: IncomingMessage) => Js
       return
     }
 
-    const result = handler(request)
+    const result = await handler(request)
     response.writeHead(result.status ?? 200, headers)
     response.end(JSON.stringify(result.body))
   })

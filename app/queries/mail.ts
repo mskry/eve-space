@@ -7,9 +7,9 @@ import { QUERY_POLICY } from './query-policy'
 
 type MailClient = ApiClient['api']['me']['characters'][':characterId']['mail']
 
-type MailHeaders = InferResponseType<MailClient['$get'], 200>
+export type MailHeaders = InferResponseType<MailClient['$get'], 200>
 export type MailDetail = InferResponseType<MailClient[':mailId']['$get'], 200>
-type MailLabels = InferResponseType<MailClient['labels']['$get'], 200>
+export type MailLabels = InferResponseType<MailClient['labels']['$get'], 200>
 type MailingLists = InferResponseType<MailClient['lists']['$get'], 200>
 export type MailHeader = MailHeaders['messages'][number]
 export type MailParty = NonNullable<MailHeader['sender']>
@@ -29,6 +29,12 @@ interface MailHeadersQueryParameters extends MailQueryParameters {
 interface MailDetailQueryParameters extends MailQueryParameters {
   mailId: number
 }
+
+export interface MailReadMutationParameters extends MailDetailQueryParameters {
+  read: boolean
+}
+
+export type MailDeleteMutationParameters = MailDetailQueryParameters
 
 const mailIdentityMismatch = () =>
   new ApiQueryError('Mail response did not match the requested identity.', {
@@ -122,3 +128,31 @@ export const mailingListsQuery = defineQueryOptions(
     ...QUERY_POLICY.mailingLists,
   }),
 )
+
+export async function mailReadMutation({
+  apiClient,
+  characterId,
+  mailId,
+  read,
+}: MailReadMutationParameters) {
+  const response = await apiClient.api.me.characters[':characterId'].mail[':mailId'].$put({
+    param: { characterId: String(characterId), mailId: String(mailId) },
+    json: { read },
+  })
+  if (response.status !== 204) {
+    throw await toApiQueryError(response, 'Mail read state could not be changed.')
+  }
+}
+
+export async function mailDeleteMutation({
+  apiClient,
+  characterId,
+  mailId,
+}: MailDeleteMutationParameters) {
+  const response = await apiClient.api.me.characters[':characterId'].mail[':mailId'].$delete({
+    param: { characterId: String(characterId), mailId: String(mailId) },
+  })
+  if (response.status !== 204) {
+    throw await toApiQueryError(response, 'Mail could not be deleted.')
+  }
+}
