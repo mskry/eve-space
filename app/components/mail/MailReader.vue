@@ -33,28 +33,36 @@ const formattedDate = computed(() => {
     timeZone: 'UTC',
   }).format(new Date(props.detail.sentAt))
 })
+const readerTitleId = computed(() => {
+  if (!props.selected) return 'mail-reader-empty-title'
+  if (props.loading && !props.detail) return 'mail-reader-loading-title'
+  if (props.errorCode === 'MAIL_NOT_FOUND') return 'mail-reader-not-found-title'
+  if (props.errorMessage) return 'mail-reader-error-title'
+  if (props.detail) return 'mail-reader-message-title'
+  return undefined
+})
 </script>
 
 <template>
-  <article class="mail-pane mail-reader" aria-labelledby="mail-reader-title">
+  <article class="mail-pane mail-reader" :aria-labelledby="readerTitleId">
     <UiScrollArea class="mail-pane-scroll mail-reader-scroll">
       <div v-if="!selected" class="mail-reader-state">
         <span>NO MESSAGE SELECTED</span>
-        <h2 id="mail-reader-title">Select a message to read it</h2>
+        <h2 id="mail-reader-empty-title">Select a message to read it</h2>
         <p>Choose a message from the list.</p>
       </div>
       <div v-else-if="loading && !detail" class="mail-reader-state" aria-live="polite">
         <span>LOADING MESSAGE</span>
-        <h2 id="mail-reader-title">Opening message...</h2>
+        <h2 id="mail-reader-loading-title">Opening message...</h2>
       </div>
       <div v-else-if="errorCode === 'MAIL_NOT_FOUND'" class="mail-reader-state" role="alert">
         <span>MAIL NOT FOUND</span>
-        <h2 id="mail-reader-title">This message is no longer available</h2>
+        <h2 id="mail-reader-not-found-title">This message is no longer available</h2>
         <p>The mailbox remains available. Select another header to continue.</p>
       </div>
       <div v-else-if="errorMessage" class="mail-reader-state" role="alert">
         <span>MESSAGE UNAVAILABLE</span>
-        <h2 id="mail-reader-title">Contents could not be retrieved</h2>
+        <h2 id="mail-reader-error-title">Contents could not be retrieved</h2>
         <p>{{ errorMessage }}</p>
         <button class="ui-action-secondary" type="button" @click="$emit('retry')">
           RETRY MESSAGE
@@ -101,7 +109,7 @@ const formattedDate = computed(() => {
             <time v-if="detail.sentAt" :datetime="detail.sentAt">{{ formattedDate }} UTC</time>
             <span v-else>{{ formattedDate }}</span>
           </p>
-          <h2 id="mail-reader-title">{{ detail.subject?.trim() || '(No subject)' }}</h2>
+          <h2 id="mail-reader-message-title">{{ detail.subject?.trim() || '(No subject)' }}</h2>
           <div v-if="labelChips.length > 0" class="mail-label-chips">
             <span v-for="label in labelChips" :key="label.labelId">{{ label.name }}</span>
           </div>

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { MailHeader } from '../../app/queries/mail'
+import { formatRelativeTime } from '../../app/utils/format'
 import {
   appendUniqueMailHeaders,
   deriveMailboxStatus,
@@ -56,6 +57,14 @@ describe('mail frontend behavior', () => {
     expect(isMailUnread(true)).toBe(false)
     expect(isMailUnread(false)).toBe(true)
     expect(isMailUnread(null)).toBe(true)
+  })
+
+  it('formats relative mail times against an explicit clock', () => {
+    const now = Date.parse('2026-08-28T12:00:00.000Z')
+
+    expect(formatRelativeTime('2026-08-28T11:55:00.000Z', now)).toBe('5 minutes ago')
+    expect(formatRelativeTime('2026-08-28T11:54:00.000Z', now)).toBe('6 minutes ago')
+    expect(formatRelativeTime(null, now)).toBe('Time unknown')
   })
 
   it('appends older pages, removes duplicate IDs, and retains the existing record', () => {

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { MailHeader, MailLabel } from '../../queries/mail'
+import { formatRelativeTime } from '../../utils/format'
 import { isMailUnread, mailPartyName } from '../../utils/mail-view'
 
 const props = defineProps<{
   header: MailHeader
   labels: readonly MailLabel[]
+  now: number
   selected: boolean
 }>()
 
@@ -23,19 +25,7 @@ const visibleLabels = computed(() => {
     name: byId.get(labelId)?.name?.trim() || `Label #${labelId}`,
   }))
 })
-const relativeTime = computed(() => formatRelativeTime(props.header.sentAt))
-
-function formatRelativeTime(value: string | null) {
-  if (!value) return 'Time unknown'
-  const difference = Date.parse(value) - Date.now()
-  if (!Number.isFinite(difference)) return 'Time unknown'
-  const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
-  const absolute = Math.abs(difference)
-  if (absolute < 60_000) return formatter.format(Math.round(difference / 1_000), 'second')
-  if (absolute < 3_600_000) return formatter.format(Math.round(difference / 60_000), 'minute')
-  if (absolute < 86_400_000) return formatter.format(Math.round(difference / 3_600_000), 'hour')
-  return formatter.format(Math.round(difference / 86_400_000), 'day')
-}
+const relativeTime = computed(() => formatRelativeTime(props.header.sentAt, props.now))
 </script>
 
 <template>

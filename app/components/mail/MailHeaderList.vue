@@ -21,6 +21,20 @@ defineEmits<{
   'update:search': [search: string]
   'update:unreadOnly': [unreadOnly: boolean]
 }>()
+
+const currentTime = ref(Date.now())
+let clock: ReturnType<typeof setInterval> | undefined
+
+onMounted(() => {
+  currentTime.value = Date.now()
+  clock = window.setInterval(() => {
+    currentTime.value = Date.now()
+  }, 30_000)
+})
+
+onBeforeUnmount(() => {
+  if (clock) window.clearInterval(clock)
+})
 </script>
 
 <template>
@@ -61,6 +75,7 @@ defineEmits<{
           :key="header.mailId"
           :header="header"
           :labels="labels"
+          :now="currentTime"
           :selected="selectedMailId === header.mailId"
           @select="$emit('select', $event)"
         />
