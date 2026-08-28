@@ -107,7 +107,8 @@
 
 .character-skills-route,
 .character-wallet-route,
-.character-history-route {
+.character-history-route,
+.character-mail-route {
   min-width: 0;
 }
 

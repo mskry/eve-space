@@ -151,6 +151,17 @@ export const platformCoreNavigation = [
     icon: 'corporation',
     audience: 'owned-character',
   },
+  {
+    ownerId: 'core',
+    navigationId: 'core-character-mail',
+    placement: 'character',
+    order: 50,
+    label: 'Mail',
+    description: 'Character mail',
+    path: '/characters/:characterId/mail',
+    icon: 'character',
+    audience: 'owned-character',
+  },
 ] as const satisfies readonly PlatformCoreNavigationEntry[]
 
 export const platformModuleRouteMount = '/api/modules'
