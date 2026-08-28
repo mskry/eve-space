@@ -23,17 +23,17 @@ defineEmits<{
 }>()
 
 const currentTime = ref(Date.now())
-let clock: ReturnType<typeof setInterval> | undefined
+let clock: ReturnType<typeof globalThis.setInterval> | undefined
 
 onMounted(() => {
   currentTime.value = Date.now()
-  clock = window.setInterval(() => {
+  clock = globalThis.setInterval(() => {
     currentTime.value = Date.now()
   }, 30_000)
 })
 
 onBeforeUnmount(() => {
-  if (clock) window.clearInterval(clock)
+  if (clock) globalThis.clearInterval(clock)
 })
 </script>
 
