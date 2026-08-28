@@ -107,7 +107,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       confirmLabel: 'Delete message',
       description:
         'This permanently deletes the message. EVE provides no archive or trash, and this action cannot be undone.',
-      onConfirm: () => confirmMailDeletion(header),
+      onConfirm: () => confirmMailDeletion(header.mailId),
       pending: () =>
         options.mutations.readPendingIds.value.has(header.mailId) ||
         options.mutations.deletePendingIds.value.has(header.mailId),
@@ -120,11 +120,15 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     })
   }
 
-  async function confirmMailDeletion(candidate: MailHeader) {
+  async function confirmMailDeletion(mailId: number) {
+    const candidate = options.mailbox.displayedHeaders.value.find(
+      (header) => header.mailId === mailId,
+    )
+    if (!candidate) return true
     if (
       !options.characterId.value ||
-      options.mutations.readPendingIds.value.has(candidate.mailId) ||
-      options.mutations.deletePendingIds.value.has(candidate.mailId)
+      options.mutations.readPendingIds.value.has(mailId) ||
+      options.mutations.deletePendingIds.value.has(mailId)
     )
       return false
     const mutationCharacterId = options.characterId.value
@@ -137,7 +141,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     const outcome = await request
     if (!scopeActive || options.characterId.value !== mutationCharacterId) return true
     if (outcome.success) {
-      options.mailbox.removeLoadedHeader(candidate.mailId)
+      options.mailbox.removeLoadedHeader(mailId)
       showOrganizationToast({
         description: 'The message was permanently removed. There is no archive or trash.',
         title: 'Message deleted',

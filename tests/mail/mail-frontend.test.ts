@@ -326,7 +326,8 @@ describe('mail frontend behavior', () => {
     expect(organization).toContain('openConfirmDialog({')
     expect(organization).not.toContain('deleteDialogOpen')
     expect(organization).not.toContain('deleteCandidate')
-    expect(organization).toContain('readPendingIds.value.has(candidate.mailId)')
+    expect(organization).toContain('options.mailbox.displayedHeaders.value.find(')
+    expect(organization).toContain('readPendingIds.value.has(mailId)')
     expect(mailbox).toContain('loadedHeaders.value.length === 0')
   })
 

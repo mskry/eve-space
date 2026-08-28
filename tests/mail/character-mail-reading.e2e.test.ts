@@ -440,6 +440,14 @@ describe('character mail reading', async () => {
     heldMutation?.release()
     heldMutation = undefined
     await expect.poll(() => confirm.isEnabled()).toBe(true)
+    const allMailUnreadCount = page.getByRole('button', { name: /All mail/ }).locator('strong')
+    const inboxUnreadCount = page.getByRole('button', { name: /Inbox/ }).locator('strong')
+    await expect
+      .poll(async () => [
+        await allMailUnreadCount.textContent(),
+        await inboxUnreadCount.textContent(),
+      ])
+      .toEqual(['3', '3'])
     const deleteResponse = page.waitForResponse(
       (response) =>
         response.request().method() === 'DELETE' &&
@@ -448,6 +456,12 @@ describe('character mail reading', async () => {
     await confirm.click()
     await deleteResponse
     expect(mailMutationRequests('DELETE')).toHaveLength(1)
+    await expect
+      .poll(async () => [
+        await allMailUnreadCount.textContent(),
+        await inboxUnreadCount.textContent(),
+      ])
+      .toEqual(['3', '3'])
   })
 
   it('keeps the workspace during deletion and retains deletion across client navigation', async () => {
