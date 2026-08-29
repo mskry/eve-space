@@ -33,9 +33,9 @@ export function useMailOrganization(options: MailOrganizationOptions) {
         options.mutations.labelPendingIds.value.has(options.mailbox.selectedMailId.value)),
   )
   const assignedLabelIds = computed(() => {
-    const detail = options.mailbox.detailQuery.data.value
+    const detail = options.mailbox.displayedDetail.value
     if (!detail || detail.mailId !== options.mailbox.selectedMailId.value) return new Set<number>()
-    return new Set(options.mutations.labelOverrides.value.get(detail.mailId) ?? detail.labelIds)
+    return new Set(detail.labelIds)
   })
   function resetOrganizationView() {
     cancelReadDwell?.()
@@ -134,9 +134,11 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       onConfirm: () => confirmMailDeletion(header.mailId),
       pending: () =>
         options.mutations.readPendingIds.value.has(header.mailId) ||
+        options.mutations.labelPendingIds.value.has(header.mailId) ||
         options.mutations.deletePendingIds.value.has(header.mailId),
       pendingLabel: () =>
-        options.mutations.readPendingIds.value.has(header.mailId)
+        options.mutations.readPendingIds.value.has(header.mailId) ||
+        options.mutations.labelPendingIds.value.has(header.mailId)
           ? 'Waiting for mail update...'
           : 'Deleting...',
       title: `Delete ${subject}?`,
@@ -145,13 +147,16 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   }
 
   async function confirmMailDeletion(mailId: number) {
-    const candidate = options.mailbox.displayedHeaders.value.find(
-      (header) => header.mailId === mailId,
-    )
+    const selectedHeader = options.mailbox.selectedHeader.value
+    const candidate =
+      selectedHeader?.mailId === mailId
+        ? selectedHeader
+        : options.mailbox.displayedHeaders.value.find((header) => header.mailId === mailId)
     if (!candidate) return true
     if (
       !options.characterId.value ||
       options.mutations.readPendingIds.value.has(mailId) ||
+      options.mutations.labelPendingIds.value.has(mailId) ||
       options.mutations.deletePendingIds.value.has(mailId)
     )
       return false
@@ -191,7 +196,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   }
 
   function openLabelAssignment() {
-    const detail = options.mailbox.detailQuery.data.value
+    const detail = options.mailbox.displayedDetail.value
     if (!detail || detail.mailId !== options.mailbox.selectedMailId.value) return
     assignmentFeedback.value = ''
     labelAssignmentOpen.value = true
@@ -257,6 +262,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     const outcome = await options.mutations.deleteMailLabel({ characterId, labelId })
     if (!scopeActive || options.characterId.value !== characterId) return true
     if (outcome.success) {
+      options.mailbox.removeLoadedLabel(labelId)
       if (options.mailbox.activeLabelId.value === labelId) options.mailbox.selectLabel(null)
       showOrganizationToast({
         description: `${name} was removed from the character and its messages.`,
@@ -278,12 +284,12 @@ export function useMailOrganization(options: MailOrganizationOptions) {
 
   async function changeOpenMessageLabel(labelId: number, assigned: boolean) {
     const characterId = options.characterId.value
-    const detail = options.mailbox.detailQuery.data.value
+    const detail = options.mailbox.displayedDetail.value
     if (!characterId || !detail || detail.mailId !== options.mailbox.selectedMailId.value) {
       assignmentFeedback.value = 'Wait for the complete message before changing its labels.'
       return
     }
-    const current = options.mutations.labelOverrides.value.get(detail.mailId) ?? detail.labelIds
+    const current = detail.labelIds
     if (new Set(current).size !== current.length) {
       assignmentFeedback.value = 'A mail can carry at most 25 unique labels.'
       return

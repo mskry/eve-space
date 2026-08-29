@@ -142,6 +142,7 @@ describe('mail label management', () => {
     await lastConfirmation(harness.openConfirmDialog).onConfirm()
 
     expect(harness.mailbox.selectLabel).toHaveBeenCalledWith(null)
+    expect(harness.mailbox.removeLoadedLabel).toHaveBeenCalledWith(2)
     harness.unmount()
   })
 
@@ -160,6 +161,57 @@ describe('mail label management', () => {
 
     expect(requestBodies).toEqual([{ labels: [1, 2, 3] }, { labels: [1, 3] }])
     expect(requestBodies.every((body) => !Object.hasOwn(body as object, 'read'))).toBe(true)
+    harness.unmount()
+  })
+
+  it('excludes deleted labels from a stale detail when assigning another label', async () => {
+    const requestBodies: unknown[] = []
+    queryServer.use(
+      http.put('http://localhost/api/me/characters/7/mail/1', async ({ request }) => {
+        requestBodies.push(await request.json())
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const harness = mountOrganization([1, 2])
+    harness.mutations.deletedLabelIds.value = new Set([2])
+
+    await harness.organization.changeOpenMessageLabel(3, true)
+
+    expect(requestBodies).toEqual([{ labels: [1, 3] }])
+    expect(harness.organization.assignedLabelIds.value).toEqual(new Set([1, 3]))
+    harness.unmount()
+  })
+
+  it('keeps a selected message deletable after it leaves the active folder', async () => {
+    queryServer.use(
+      http.delete(
+        'http://localhost/api/me/characters/7/mail/1',
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    )
+    const harness = mountOrganization([1, 2])
+    harness.mailbox.displayedHeaders.value = []
+
+    harness.organization.requestMailDeletion()
+    await lastConfirmation(harness.openConfirmDialog).onConfirm()
+
+    expect(harness.mailbox.removeLoadedHeader).toHaveBeenCalledWith(1)
+    expect(harness.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Message deleted' }),
+    )
+    harness.unmount()
+  })
+
+  it('keeps message deletion pending while its label assignment is in flight', async () => {
+    const harness = mountOrganization()
+    harness.organization.requestMailDeletion()
+    const confirmation = lastConfirmation(harness.openConfirmDialog)
+    harness.mutations.labelPendingIds.value = new Set([1])
+
+    expect(confirmation.pending()).toBe(true)
+    expect(confirmation.pendingLabel()).toBe('Waiting for mail update...')
+    await expect(confirmation.onConfirm()).resolves.toBe(false)
+    expect(harness.mutations.deletePendingIds.value.size).toBe(0)
     harness.unmount()
   })
 
@@ -221,16 +273,29 @@ function mountOrganization(labelIds: number[] = [1]) {
   const selectedMailId = ref<number | null>(1)
   const detail = ref<MailDetail | undefined>(mailDetail(labelIds))
   const headers = ref<MailHeader[]>([mailHeader(labelIds)])
+  const selectedHeader = ref<MailHeader>(mailHeader(labelIds))
   const selectLabel = vi.fn((labelId: number | null) => {
     activeLabelId.value = labelId
   })
   const mailbox = {
     activeLabelId,
     detailQuery: { data: detail, error: ref<unknown>() },
+    displayedDetail: computed(() => {
+      const value = detail.value
+      if (!value) return undefined
+      const overridden = mutations?.labelOverrides.value.get(value.mailId) ?? value.labelIds
+      return {
+        ...value,
+        labelIds: overridden.filter((labelId) => !mutations?.deletedLabelIds.value.has(labelId)),
+      }
+    }),
     displayedHeaders: headers,
     removeLoadedHeader: vi.fn(),
+    removeLoadedLabel: vi.fn(),
     selectLabel,
-    selectedHeader: computed(() => headers.value.find((header) => header.mailId === 1)),
+    selectedHeader: computed(() =>
+      selectedMailId.value === selectedHeader.value.mailId ? selectedHeader.value : undefined,
+    ),
     selectedMailId,
   } as unknown as ReturnType<typeof useCharacterMailbox>
   let mutations!: ReturnType<typeof useMailOrganizationMutations>
@@ -264,6 +329,8 @@ function lastConfirmation(openConfirmDialog: ReturnType<typeof vi.fn>) {
   const value = openConfirmDialog.mock.calls.at(-1)?.[0] as {
     description: string
     onConfirm: () => Promise<boolean>
+    pending: () => boolean
+    pendingLabel: () => string
   }
   expect(value).toBeDefined()
   return value

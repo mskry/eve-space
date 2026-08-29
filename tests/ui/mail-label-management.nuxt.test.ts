@@ -117,5 +117,6 @@ describe('mail label dialogs', () => {
     await settle()
 
     expect(change).toHaveBeenCalledWith(2, true)
+    expect(checkboxes[1]?.checked).toBe(false)
   })
 })

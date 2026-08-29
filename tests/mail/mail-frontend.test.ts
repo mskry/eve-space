@@ -15,6 +15,7 @@ import {
   mergePaginatedMailHeaders,
   reconcileMailLabelOverrides,
   reconcileMailReadOverrides,
+  removeMailLabelIds,
   scheduleMailReadDwell,
   splitMailBodyParagraphs,
 } from '../../app/utils/mail-view'
@@ -128,6 +129,15 @@ describe('mail frontend behavior', () => {
         ({ mailId }) => mailId,
       ),
     ).toEqual([2])
+  })
+
+  it('removes deleted labels from stale mail without replacing unchanged records', () => {
+    const staleHeader = mailHeader(1, { labelIds: [1, 2] })
+    const unchangedHeader = mailHeader(2, { labelIds: [1] })
+    const deletedLabelIds = new Set([2])
+
+    expect(removeMailLabelIds(staleHeader, deletedLabelIds).labelIds).toEqual([1])
+    expect(removeMailLabelIds(unchangedHeader, deletedLabelIds)).toBe(unchangedHeader)
   })
 
   it('adjusts every message label and the total for read changes in both directions', () => {

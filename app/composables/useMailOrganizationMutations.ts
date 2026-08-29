@@ -21,7 +21,11 @@ import {
   type MailReadTarget,
 } from '../queries/mail-cache'
 import type { ApiClient } from '../utils/api-client'
-import { reconcileMailLabelOverrides, reconcileMailReadOverrides } from '../utils/mail-view'
+import {
+  reconcileMailLabelOverrides,
+  reconcileMailReadOverrides,
+  sameMailLabelIds,
+} from '../utils/mail-view'
 
 export interface MailMutationOutcome {
   error?: unknown
@@ -46,6 +50,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
   const queryCache = useQueryCache()
   const readStateOverrides = shallowRef(new Map<number, boolean>())
   const deletedMailIds = shallowRef(new Set<number>())
+  const deletedLabelIds = shallowRef(new Set<number>())
   const readPendingIds = shallowRef(new Set<number>())
   const deletePendingIds = shallowRef(new Set<number>())
   const labelOverrides = shallowRef(new Map<number, readonly number[]>())
@@ -245,6 +250,11 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
       if (!createdLabels.value.some((candidate) => candidate.labelId === labelId)) {
         createdLabels.value = [...createdLabels.value, label]
       }
+      if (deletedLabelIds.value.has(labelId)) {
+        const retainedDeletedIds = new Set(deletedLabelIds.value)
+        retainedDeletedIds.delete(labelId)
+        deletedLabelIds.value = retainedDeletedIds
+      }
       localCreatedLabelIds.add(labelId)
       commitCreatedMailLabel(queryCache, target.characterId, label)
       queueMicrotask(() => localCreatedLabelIds.delete(labelId))
@@ -270,6 +280,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     try {
       await deleteLabelMutation.mutateAsync(target)
       if (generation !== operationGeneration) return { success: false }
+      deletedLabelIds.value = new Set([...deletedLabelIds.value, target.labelId])
       commitMailLabelDeletion(queryCache, target.characterId, target.labelId)
       createdLabels.value = createdLabels.value.filter((label) => label.labelId !== target.labelId)
       labelOverrides.value = new Map(
@@ -299,7 +310,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
   function reconcileLabelState(headers: readonly Pick<MailHeader, 'labelIds' | 'mailId'>[]) {
     const retrievedHeaders = headers.filter((header) => {
       const localCommit = localLabelCommits.get(header.mailId)
-      return !localCommit || !sameMailLabelSets(localCommit, header.labelIds)
+      return !localCommit || !sameMailLabelIds(localCommit, header.labelIds)
     })
     const reconciled = reconcileMailLabelOverrides(retrievedHeaders, labelOverrides.value)
     if (reconciled !== labelOverrides.value) {
@@ -327,6 +338,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     generation += 1
     readStateOverrides.value = new Map()
     deletedMailIds.value = new Set()
+    deletedLabelIds.value = new Set()
     readPendingIds.value = new Set()
     deletePendingIds.value = new Set()
     labelOverrides.value = new Map()
@@ -347,6 +359,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     deleteMailLabel,
     deleteLabelPendingIds,
     deleteMail,
+    deletedLabelIds,
     deletedMailIds,
     deletePendingIds,
     labelOverrides,
@@ -361,10 +374,4 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     setMailRead,
     undeletableLabelIds,
   }
-}
-
-function sameMailLabelSets(left: readonly number[], right: readonly number[]) {
-  if (left.length !== right.length) return false
-  const rightIds = new Set(right)
-  return rightIds.size === right.length && left.every((labelId) => rightIds.has(labelId))
 }

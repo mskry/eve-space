@@ -17,6 +17,7 @@ import {
   deriveMailboxStatus,
   filterDisplayedMailHeaders,
   mergePaginatedMailHeaders,
+  removeMailLabelIds,
   replaceLatestMailHeaders,
 } from '../utils/mail-view'
 import { ApiQueryError } from '../utils/query-error'
@@ -25,6 +26,7 @@ interface CharacterMailboxOptions {
   apiClient: ApiClient
   authenticated: ComputedRef<boolean>
   characterId: ComputedRef<number | undefined>
+  deletedLabelIds: Ref<ReadonlySet<number>>
   deletedMailIds: Ref<Set<number>>
   deletePendingIds: Ref<Set<number>>
   createdLabels: Ref<readonly MailLabel[]>
@@ -93,13 +95,16 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     enabled: selectedMailId.value !== null && queryEnabled(),
   }))
 
-  const displayedHeaders = computed(() => {
-    const headers = applyMailOverlays(
+  const overlaidHeaders = computed(() =>
+    applyMailOverlays(
       loadedHeaders.value,
       options.readStateOverrides.value,
       options.deletedMailIds.value,
       options.labelOverrides.value,
-    )
+    ).map((header) => removeMailLabelIds(header, options.deletedLabelIds.value)),
+  )
+  const displayedHeaders = computed(() => {
+    const headers = overlaidHeaders.value
     return activeLabelId.value === null
       ? headers
       : headers.filter((header) => header.labelIds.includes(activeLabelId.value!))
@@ -110,7 +115,7 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     return [
       ...retrievedLabels.value,
       ...options.createdLabels.value.filter((label) => !retrievedIds.has(label.labelId)),
-    ]
+    ].filter((label) => label.labelId === null || !options.deletedLabelIds.value.has(label.labelId))
   })
   const displayedCounts = computed(() =>
     deriveDisplayedMailCounts({
@@ -127,7 +132,10 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     const detail = detailQuery.data.value
     if (!detail) return undefined
     const labelIds = options.labelOverrides.value.get(detail.mailId)
-    return labelIds === undefined ? detail : { ...detail, labelIds: [...labelIds] }
+    return removeMailLabelIds(
+      labelIds === undefined ? detail : { ...detail, labelIds: [...labelIds] },
+      options.deletedLabelIds.value,
+    )
   })
   const mailingLists = computed(() => listsQuery.data.value?.mailingLists ?? [])
   const filteredHeaders = computed(() =>
@@ -142,7 +150,7 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     ),
   )
   const selectedHeader = computed(() =>
-    displayedHeaders.value.find((header) => header.mailId === selectedMailId.value),
+    overlaidHeaders.value.find((header) => header.mailId === selectedMailId.value),
   )
   const selectedReadState = computed(() =>
     selectedHeader.value ? selectedHeader.value.isRead : (detailQuery.data.value?.isRead ?? null),
@@ -252,6 +260,13 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     loadedHeaders.value = loadedHeaders.value.filter((header) => header.mailId !== mailId)
   }
 
+  function removeLoadedLabel(labelId: number) {
+    const deletedLabelIds = new Set([labelId])
+    loadedHeaders.value = loadedHeaders.value.map((header) =>
+      removeMailLabelIds(header, deletedLabelIds),
+    )
+  }
+
   watch(options.characterId, resetMailboxView, { flush: 'sync' })
 
   watch(
@@ -317,6 +332,7 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     mailingLists,
     nextLastMailId,
     removeLoadedHeader,
+    removeLoadedLabel,
     resetMailboxView,
     retryAfterSeconds,
     retryMailbox,

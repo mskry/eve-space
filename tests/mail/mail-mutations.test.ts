@@ -435,6 +435,95 @@ describe('mail mutations', () => {
         ?.labels.map(({ labelId }) => labelId),
     ).toEqual([1])
     expect(mutations.labelOverrides.value.get(1)).toEqual([1])
+    expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
+    unmount()
+  })
+
+  it('retires a deletion tombstone when EVE reuses the label id', async () => {
+    queryServer.use(
+      http.delete(
+        'http://localhost/api/me/characters/7/mail/labels/2',
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+      http.post('http://localhost/api/me/characters/7/mail/labels', () =>
+        HttpResponse.json({ characterId, labelId: 2 }, { status: 201 }),
+      ),
+    )
+    const { mutations, queryCache, unmount } = mountMutations()
+    const labelsKey = mailLabelsQuery({ apiClient, characterId }).key
+
+    await mutations.deleteMailLabel({ characterId, labelId: 2 })
+    expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
+    queryCache.setQueryData(labelsKey, {
+      ...mailLabels(1),
+      labels: [
+        ...mailLabels(1).labels,
+        { color: '#999999', labelId: 2, name: 'Deleted label', unreadCount: 0 },
+      ],
+    })
+
+    await mutations.createMailLabel({ characterId, color: '#fe0000', name: 'Replacement' })
+    expect(mutations.deletedLabelIds.value.has(2)).toBe(false)
+    expect(mutations.createdLabels.value).toContainEqual({
+      color: '#fe0000',
+      labelId: 2,
+      name: 'Replacement',
+      unreadCount: 0,
+    })
+    expect(
+      queryCache
+        .getQueryData<ReturnType<typeof mailLabels>>(labelsKey)
+        ?.labels.find((label) => label.labelId === 2),
+    ).toEqual({ color: '#fe0000', labelId: 2, name: 'Replacement', unreadCount: 0 })
+    unmount()
+  })
+
+  it('does not cancel in-flight detail or pagination reads when deleting a label', async () => {
+    let finishDetail!: () => void
+    let finishOlder!: () => void
+    let markDetailStarted!: () => void
+    let markOlderStarted!: () => void
+    const detailCanFinish = new Promise<void>((resolve) => (finishDetail = resolve))
+    const olderCanFinish = new Promise<void>((resolve) => (finishOlder = resolve))
+    const detailStarted = new Promise<void>((resolve) => (markDetailStarted = resolve))
+    const olderStarted = new Promise<void>((resolve) => (markOlderStarted = resolve))
+    queryServer.use(
+      http.get('http://localhost/api/me/characters/7/mail/1', async () => {
+        markDetailStarted()
+        await detailCanFinish
+        return HttpResponse.json({ ...mailDetail(false), labelIds: [1, 2] })
+      }),
+      http.get('http://localhost/api/me/characters/7/mail', async ({ request }) => {
+        if (new URL(request.url).searchParams.get('lastMailId') !== '50') {
+          return HttpResponse.json(mailHeaders([]))
+        }
+        markOlderStarted()
+        await olderCanFinish
+        return HttpResponse.json(mailHeaders([mailHeader(49, false, [1, 2])]))
+      }),
+      http.delete(
+        'http://localhost/api/me/characters/7/mail/labels/2',
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    )
+    const { mutations, queryCache, unmount } = mountMutations()
+    const detailOptions = mailDetailQuery({ apiClient, characterId, mailId: 1 })
+    const olderOptions = mailHeadersQuery({ apiClient, characterId, lastMailId: 50 })
+    const detailRequest = queryCache.fetch(queryCache.ensure(detailOptions))
+    const olderRequest = queryCache.fetch(queryCache.ensure(olderOptions))
+    await Promise.all([detailStarted, olderStarted])
+
+    await expect(mutations.deleteMailLabel({ characterId, labelId: 2 })).resolves.toEqual({
+      success: true,
+    })
+    finishDetail()
+    finishOlder()
+
+    await expect(detailRequest).resolves.toMatchObject({ status: 'success' })
+    await expect(olderRequest).resolves.toMatchObject({ status: 'success' })
+    expect(queryCache.getQueryData(detailOptions.key)?.labelIds).toEqual([1, 2])
+    expect(queryCache.getQueryData(olderOptions.key)?.messages[0]?.labelIds).toEqual([1, 2])
+    expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
     unmount()
   })
 
@@ -610,12 +699,14 @@ describe('mail mutations', () => {
       { color: '#fe0000', labelId: 2, name: 'Priority', unreadCount: 0 },
     ]
     mutations.undeletableLabelIds.value = new Set([1])
+    mutations.deletedLabelIds.value = new Set([2])
     mutations.resetMailMutations()
     expect(mutations.readStateOverrides.value.size).toBe(0)
     expect(mutations.readPendingIds.value.size).toBe(0)
     expect(mutations.labelOverrides.value.size).toBe(0)
     expect(mutations.createdLabels.value).toHaveLength(0)
     expect(mutations.undeletableLabelIds.value.size).toBe(0)
+    expect(mutations.deletedLabelIds.value.size).toBe(0)
 
     finishRequest()
     await request

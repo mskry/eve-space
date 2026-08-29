@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import type { MailLabel } from '../../queries/mail'
 
-defineProps<{
+const props = defineProps<{
   assignedLabelIds: ReadonlySet<number>
   feedback: string
   labels: readonly MailLabel[]
@@ -18,6 +19,14 @@ function labelName(label: MailLabel) {
   return (
     label.name?.trim() || (label.labelId === null ? 'Unnamed label' : `Label #${label.labelId}`)
   )
+}
+
+function changeLabel(labelId: number, event: Event) {
+  const input = event.currentTarget as HTMLInputElement
+  emit('change', labelId, input.checked)
+  void nextTick(() => {
+    input.checked = props.assignedLabelIds.has(labelId)
+  })
 }
 </script>
 
@@ -40,10 +49,7 @@ function labelName(label: MailLabel) {
           type="checkbox"
           :checked="label.labelId !== null && assignedLabelIds.has(label.labelId)"
           :disabled="pending || label.labelId === null"
-          @change="
-            label.labelId !== null &&
-            emit('change', label.labelId, ($event.target as HTMLInputElement).checked)
-          "
+          @change="label.labelId !== null && changeLabel(label.labelId, $event)"
         />
         <span class="mail-label-assignment-check" aria-hidden="true" />
         <span

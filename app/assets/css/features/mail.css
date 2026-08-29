@@ -927,12 +927,21 @@
   letter-spacing: 0.08em;
 }
 
+.ui-dialog-content.mail-compose-dialog {
+  width: min(49rem, calc(100vw - 2rem));
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.mail-compose-dialog .ui-dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .mail-compose {
-  width: min(46rem, calc(100vw - 3rem));
-  max-height: min(44rem, calc(100vh - 3rem));
+  width: 100%;
   display: grid;
   gap: 1rem;
-  overflow-y: auto;
 }
 
 .mail-compose-status-line,
@@ -1183,11 +1192,6 @@
 
   .mail-reader-actions {
     justify-content: flex-start;
-  }
-
-  .mail-compose {
-    width: calc(100vw - 2rem);
-    max-height: calc(100vh - 2rem);
   }
 
   .mail-recipient-entry {

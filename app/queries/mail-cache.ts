@@ -204,8 +204,14 @@ export function commitCreatedMailLabel(
     if (entry.pending) queryCache.cancel(entry, new Error('Mail cache updated by mutation.'))
   }
   const labels = queryCache.getQueryData<MailLabels>(key)
-  if (!labels || labels.labels.some((candidate) => candidate.labelId === label.labelId)) return
-  queryCache.setQueryData<MailLabels>(key, { ...labels, labels: [...labels.labels, label] })
+  if (!labels) return
+  const replacesExisting = labels.labels.some((candidate) => candidate.labelId === label.labelId)
+  queryCache.setQueryData<MailLabels>(key, {
+    ...labels,
+    labels: replacesExisting
+      ? labels.labels.map((candidate) => (candidate.labelId === label.labelId ? label : candidate))
+      : [...labels.labels, label],
+  })
 }
 
 export function commitMailLabelDeletion(
@@ -214,10 +220,6 @@ export function commitMailLabelDeletion(
   labelId: number,
 ) {
   const mailKey = PRIVATE_QUERY_KEYS.mail(characterId)
-  for (const entry of queryCache.getEntries({ key: mailKey })) {
-    if (entry.pending) queryCache.cancel(entry, new Error('Mail cache updated by mutation.'))
-  }
-
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'headers'] })) {
     const page = queryCache.getQueryData<MailHeaders>(entry.key)
     if (!page) continue

@@ -769,6 +769,20 @@
   white-space: nowrap;
 }
 
+.ui-action-primary {
+  cursor: pointer;
+}
+
+.ui-action-primary:not(:disabled):hover {
+  border-color: var(--ui-primary-hover);
+  background: var(--ui-primary-hover);
+}
+
+.ui-action-primary:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
 .ui-action-secondary {
   border-color: var(--ui-border);
   background: transparent;

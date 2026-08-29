@@ -19,6 +19,7 @@ const mailbox = useCharacterMailbox({
   authenticated,
   characterId,
   createdLabels: mutations.createdLabels,
+  deletedLabelIds: mutations.deletedLabelIds,
   deletedMailIds: mutations.deletedMailIds,
   deletePendingIds: mutations.deletePendingIds,
   labelOverrides: mutations.labelOverrides,

@@ -86,6 +86,14 @@ export function applyMailOverlays(
   })
 }
 
+export function removeMailLabelIds<T extends Pick<MailHeader, 'labelIds'>>(
+  mail: T,
+  deletedLabelIds: ReadonlySet<number>,
+): T {
+  const labelIds = mail.labelIds.filter((labelId) => !deletedLabelIds.has(labelId))
+  return labelIds.length === mail.labelIds.length ? mail : { ...mail, labelIds }
+}
+
 export function sameMailLabelIds(left: readonly number[], right: readonly number[]) {
   if (left.length !== right.length) return false
   const rightIds = new Set(right)

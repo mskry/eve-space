@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { $fetch, createPage, setup, useTestContext } from '@nuxt/test-utils/e2e'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startCorsJsonApi } from '../support/cors-json-api'
@@ -685,6 +685,44 @@ describe('character mail reading', async () => {
     await expect.poll(() => page.getByRole('dialog').count()).toBe(0)
   })
 
+  it('contains the compose form and actions within the dialog on desktop and mobile', async () => {
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.setViewportSize({ width: 860, height: 740 })
+    await page.locator('.mail-workspace').waitFor()
+    const composeButton = page.getByRole('button', { name: 'COMPOSE', exact: true })
+    const restingBackground = await composeButton.evaluate(
+      (element) => getComputedStyle(element).backgroundColor,
+    )
+    expect(await composeButton.evaluate((element) => getComputedStyle(element).cursor)).toBe(
+      'pointer',
+    )
+    await composeButton.hover()
+    expect(
+      await composeButton.evaluate((element) => getComputedStyle(element).backgroundColor),
+    ).not.toBe(restingBackground)
+    await composeButton.click()
+    const dialog = page.getByRole('dialog')
+    await dialog.waitFor()
+
+    expect(await measureComposeDialog(dialog)).toMatchObject({
+      bodyOverflowY: 'auto',
+      composeOverflows: false,
+      dialogOverflows: false,
+      fitsViewport: true,
+      formFitsDialog: true,
+    })
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await dialog.getByRole('button', { name: 'SEND MAIL' }).scrollIntoViewIfNeeded()
+    expect(await measureComposeDialog(dialog)).toMatchObject({
+      bodyOverflowY: 'auto',
+      composeOverflows: false,
+      dialogOverflows: false,
+      fitsViewport: true,
+      formFitsDialog: true,
+    })
+  })
+
   it('keeps local and exact addressing available when remote search needs authorization', async () => {
     apiMode = 'search-scope-required'
     const page = await openPage(`/characters/${characterId}/mail`)
@@ -978,6 +1016,31 @@ describe('character mail reading', async () => {
     await page.close()
   }
 })
+
+async function measureComposeDialog(dialog: Locator) {
+  return dialog.evaluate((element) => {
+    const body = element.querySelector<HTMLElement>('.ui-dialog-body')
+    const compose = element.querySelector<HTMLElement>('.mail-compose')
+    if (!body || !compose) throw new Error('Compose dialog layout was not rendered.')
+    const dialogRect = element.getBoundingClientRect()
+    const composeRect = compose.getBoundingClientRect()
+    const tolerance = 1
+
+    return {
+      bodyOverflowY: getComputedStyle(body).overflowY,
+      composeOverflows: compose.scrollWidth > compose.clientWidth,
+      dialogOverflows: element.scrollWidth > element.clientWidth,
+      fitsViewport:
+        dialogRect.left >= -tolerance &&
+        dialogRect.top >= -tolerance &&
+        dialogRect.right <= window.innerWidth + tolerance &&
+        dialogRect.bottom <= window.innerHeight + tolerance,
+      formFitsDialog:
+        composeRect.left >= dialogRect.left - tolerance &&
+        composeRect.right <= dialogRect.right + tolerance,
+    }
+  })
+}
 
 function mailRequests() {
   return recordedRequests.filter(({ url }) =>
