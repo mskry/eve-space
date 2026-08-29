@@ -10,6 +10,7 @@ defineProps<{
 }>()
 
 defineEmits<{
+  compose: []
   selectLabel: [labelId: number | null]
   selectMailingList: [mailingListId: number | null]
 }>()
@@ -72,8 +73,8 @@ function labelName(label: MailLabel, index: number) {
       </section>
     </UiScrollArea>
     <footer class="mail-sidebar-footer">
-      <button class="ui-action-primary" type="button" disabled>COMPOSE</button>
-      <span>Sending is not available yet.</span>
+      <button class="ui-action-primary" type="button" @click="$emit('compose')">COMPOSE</button>
+      <span>Start a new message as this character.</span>
     </footer>
   </aside>
 </template>

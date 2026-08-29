@@ -14,7 +14,7 @@ export async function startCorsJsonApi(
     const headers = {
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Methods': 'GET, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Origin': allowedOrigin,
       'Content-Type': 'application/json',
     }

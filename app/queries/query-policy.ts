@@ -15,6 +15,8 @@ export const QUERY_POLICY = {
   mailDetail: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   mailLabels: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   mailingLists: { staleTime: 120_000, gcTime: QUERY_GC_TIME },
+  mailRecipientResolution: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
+  mailRecipientSearch: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
   corporation: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   corporationAllianceHistory: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
 } as const

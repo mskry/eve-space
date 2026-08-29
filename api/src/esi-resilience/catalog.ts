@@ -204,6 +204,16 @@ export const coreEsiOperationCatalog = {
     cache: { kind: 'none' },
     retry,
   }),
+  'character-search': defineContract('character-search', {
+    identity: { kind: 'ordered', fields: ['characterId', 'search'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'character-cspa-charge': defineContract('character-cspa-charge', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: { kind: 'none' },
+    retry,
+  }),
   skills: defineContract('skills', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
@@ -228,6 +238,12 @@ export const coreEsiOperationCatalog = {
     identity: { kind: 'set', field: 'ids' },
     // ESI documents no cache lifetime for this route, but resolved names are only ever embedded in
     // hour- and day-lived DTOs, so a shorter fallback would cost requests without reducing staleness.
+    freshness: { kind: 'relative', seconds: 3_600 },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  'universe-resolve-ids': defineContract('universe-resolve-ids', {
+    identity: { kind: 'set', field: 'names' },
     freshness: { kind: 'relative', seconds: 3_600 },
     cache: sharedPublicCache(),
     retry,

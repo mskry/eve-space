@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getPublic: vi.fn(),
+  resolveIds: vi.fn(),
   resolveNames: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client/domains/universe', () => ({
-  createUniverseClient: () => ({ withMetadata: () => ({ resolveNames: mocks.resolveNames }) }),
+  createUniverseClient: () => ({
+    withMetadata: () => ({ resolveIds: mocks.resolveIds, resolveNames: mocks.resolveNames }),
+  }),
 }))
 vi.mock('../../src/esi-resilience/resilience.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.getPublic }),
@@ -71,6 +74,56 @@ describe('universe name resolver', () => {
     await expect(
       resolveUniverseNames(Array.from({ length: 66 }, (_, index) => index + 1)),
     ).rejects.toMatchObject({ name: 'UniverseNameResolutionLimitError', status: 424 })
+  })
+})
+
+describe('universe ID resolver', () => {
+  test('deduplicates names, passes validators, and maps every returned category', async () => {
+    mocks.resolveIds.mockResolvedValue(
+      response({
+        agents: [{ id: 1, name: 'Agent' }],
+        alliances: [{ id: 2, name: 'Alliance' }],
+        characters: [{ id: 3, name: 'Character' }],
+        corporations: [{ id: 4, name: 'Corporation' }],
+        factions: [{ id: 5, name: 'Faction' }],
+        inventory_types: [{ id: 6, name: 'Type' }],
+        systems: [{ id: 7, name: 'System' }],
+        regions: [{ id: undefined, name: 'Incomplete' }],
+      }),
+    )
+    const { resolveUniverseIds } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseIds(['Character', 'Alliance', 'Character'])).resolves.toEqual([
+      { id: 1, name: 'Agent', category: 'agent' },
+      { id: 2, name: 'Alliance', category: 'alliance' },
+      { id: 3, name: 'Character', category: 'character' },
+      { id: 4, name: 'Corporation', category: 'corporation' },
+      { id: 5, name: 'Faction', category: 'faction' },
+      { id: 6, name: 'Type', category: 'inventory_type' },
+      { id: 7, name: 'System', category: 'solar_system' },
+    ])
+    expect(mocks.getPublic.mock.calls.at(-1)?.[0]).toMatchObject({
+      operation: 'universe-resolve-ids',
+      inputs: { names: ['Character', 'Alliance'] },
+    })
+    expect(mocks.resolveIds).toHaveBeenCalledWith({
+      body: ['Character', 'Alliance'],
+      ifNoneMatch: '"names"',
+    })
+  })
+
+  test('treats an unmatched name as empty and preserves matches from mixed 404 batches', async () => {
+    mocks.resolveIds.mockImplementation(async ({ body }: { body: string[] }) => {
+      if (body.length > 1) throw Object.assign(new Error('Unknown name'), { status: 404 })
+      if (body[0] === 'Unknown') throw Object.assign(new Error('Unknown name'), { status: 404 })
+      return response({ characters: [{ id: 9, name: body[0] }] })
+    })
+    const { resolveUniverseIds } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseIds(['Known', 'Unknown'])).resolves.toEqual([
+      { id: 9, name: 'Known', category: 'character' },
+    ])
+    await expect(resolveUniverseIds(['Unknown'])).resolves.toEqual([])
   })
 })
 

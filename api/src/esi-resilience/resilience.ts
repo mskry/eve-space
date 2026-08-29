@@ -87,7 +87,12 @@ export type CharacterEsiOperation = {
 
 type CharacterMutationEsiOperation = Extract<
   EsiOperation,
-  'mail-send' | 'mail-create-label' | 'mail-update' | 'mail-delete' | 'mail-delete-label'
+  | 'mail-send'
+  | 'mail-create-label'
+  | 'mail-update'
+  | 'mail-delete'
+  | 'mail-delete-label'
+  | 'character-cspa-charge'
 >
 
 type NoValueEsiOperation = Extract<EsiOperation, 'bulk-affiliation'>

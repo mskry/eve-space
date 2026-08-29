@@ -611,6 +611,27 @@ describe('ESI resilience layer', () => {
     )
   })
 
+  test('retries an uncached CSPA read without advancing mailbox revision', async () => {
+    const authorizeCharacter = authorize()
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizeCharacter)
+    const load = vi
+      .fn()
+      .mockRejectedValueOnce(new EsiTransportError(new Error('network unavailable')))
+      .mockResolvedValueOnce(result(12.5))
+
+    const pending = layer.executeCharacterMutation({
+      operation: 'character-cspa-charge',
+      characterId: 1,
+      load,
+    })
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toMatchObject({ data: 12.5 })
+    expect(authorizeCharacter).toHaveBeenCalledWith(1, 'esi-characters.read_contacts.v1')
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(mocks.incrementRevision).not.toHaveBeenCalled()
+  })
+
   test.each([
     ['mail-delete', 'DeleteCharactersCharacterIdMailMailId'],
     ['mail-delete-label', 'DeleteCharactersCharacterIdMailLabelsLabelId'],

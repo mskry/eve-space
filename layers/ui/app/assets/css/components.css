@@ -309,6 +309,104 @@
   color: var(--ui-primary);
 }
 
+.ui-dialog-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  background: color-mix(in srgb, var(--ui-canvas) 74%, transparent);
+  backdrop-filter: blur(5px);
+}
+
+.ui-dialog-overlay[data-state='open'] {
+  animation: ui-overlay-in 160ms ease-out;
+}
+
+.ui-dialog-overlay[data-state='closed'] {
+  animation: ui-overlay-out 120ms ease-in;
+}
+
+.ui-dialog-content {
+  position: fixed;
+  z-index: 110;
+  top: 50%;
+  left: 50%;
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  display: grid;
+  overflow: auto;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-panel);
+  outline: none;
+  background: var(--ui-surface-solid);
+  color: var(--ui-text);
+  box-shadow: 0 24px 80px var(--ui-shadow);
+  transform: translate(-50%, -50%);
+}
+
+.ui-dialog-content[data-state='open'] {
+  animation: ui-dialog-in 160ms ease-out;
+}
+
+.ui-dialog-content[data-state='closed'] {
+  animation: ui-dialog-out 120ms ease-in;
+}
+
+.ui-dialog-header {
+  position: relative;
+  padding: 24px 64px 18px 24px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.ui-dialog-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.ui-dialog-description {
+  margin: 8px 0 0;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.ui-dialog-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-muted);
+  font: 700 9px/1 var(--ui-font-mono);
+  cursor: pointer;
+}
+
+.ui-dialog-close:hover,
+.ui-dialog-close:focus-visible {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+
+.ui-dialog-body {
+  min-width: 0;
+  padding: 24px;
+}
+
+.ui-dialog-footer {
+  padding: 16px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--ui-border);
+}
+
 .ui-confirm-dialog-overlay {
   position: fixed;
   z-index: 110;
@@ -448,6 +546,8 @@
   .ui-tooltip-content,
   .ui-drawer-overlay,
   .ui-drawer-content,
+  .ui-dialog-overlay,
+  .ui-dialog-content,
   .ui-confirm-dialog-overlay,
   .ui-confirm-dialog-content {
     animation: none;

@@ -4,12 +4,14 @@ import { createMiddleware } from 'hono/factory'
 import { z } from 'zod'
 import { env } from '../env.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { esiOperationMetadata } from '../esi-resilience/operation-metadata.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { zValidator } from '../http/validation.js'
 import {
+  calculateMailCspaCharge,
   createMailLabel,
   deleteMail,
   deleteMailLabel,
@@ -19,10 +21,13 @@ import {
   listMailHeaders,
   mailLabelColors,
   MailAuthorizationError,
+  MailCspaRejectedError,
   MailDeliveryUnknownError,
   MailMutationRejectedError,
   MailNotFoundError,
   MailRejectedError,
+  resolveMailRecipients,
+  searchMailRecipients,
   sendMail,
   updateMail,
 } from './mailbox.js'
@@ -30,6 +35,8 @@ import {
 const readMailScope = 'esi-mail.read_mail.v1'
 const sendMailScope = 'esi-mail.send_mail.v1'
 const organizeMailScope = 'esi-mail.organize_mail.v1'
+const searchCharactersScope = 'esi-search.search_structures.v1'
+const readContactsScope = 'esi-characters.read_contacts.v1'
 
 const positiveIntegerString = (name: string) =>
   z
@@ -99,6 +106,22 @@ const updateMailBody = z
   .refine((value) => value.read !== undefined || value.labels !== undefined, {
     message: 'At least one of read or labels is required.',
   })
+const resolveRecipientsBody = z
+  .object({ names: z.array(z.string().trim().min(1).max(100)).min(1).max(500) })
+  .strict()
+const searchRecipientsQuery = z.object({ search: z.string().trim().min(3).max(256) }).strict()
+const cspaChargeBody = z
+  .object({
+    characterIds: z
+      .array(positiveSafeInteger)
+      .min(1)
+      .max(esiOperationMetadata['character-cspa-charge'].maximumBatchSize)
+      .superRefine((characterIds, context) => {
+        if (new Set(characterIds).size !== characterIds.length)
+          context.addIssue({ code: 'custom', message: 'Character IDs must be unique.' })
+      }),
+  })
+  .strict()
 
 const privateNoStore = createMiddleware(async (context, next) => {
   context.header('Cache-Control', 'private, no-store')
@@ -143,6 +166,59 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
         return context.json(await sendMail(characterId, context.req.valid('json')), 201)
       } catch (error) {
         return mailError(context, error, characterId, sendMailScope)
+      }
+    },
+  )
+  .post(
+    '/:characterId/mail/recipients/resolve',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    zValidator('json', resolveRecipientsBody),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      try {
+        return context.json(await resolveMailRecipients(context.req.valid('json').names), 200)
+      } catch (error) {
+        return mailError(context, error, context.var.ownedCharacter.characterId, null)
+      }
+    },
+  )
+  .get(
+    '/:characterId/mail/recipients/search',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    zValidator('query', searchRecipientsQuery),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
+        return context.json(
+          await searchMailRecipients(characterId, context.req.valid('query').search),
+          200,
+        )
+      } catch (error) {
+        return mailError(context, error, characterId, searchCharactersScope)
+      }
+    },
+  )
+  .post(
+    '/:characterId/mail/cspa',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    zValidator('json', cspaChargeBody),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
+        return context.json(
+          await calculateMailCspaCharge(characterId, context.req.valid('json').characterIds),
+          200,
+        )
+      } catch (error) {
+        return mailError(context, error, characterId, readContactsScope)
       }
     },
   )
@@ -264,10 +340,10 @@ function mailError(
   context: Context,
   error: unknown,
   characterId: number,
-  requiredScope: string,
+  requiredScope: string | null,
   allowNotFound = false,
 ) {
-  if (error instanceof ScopeRequiredError) {
+  if (requiredScope && error instanceof ScopeRequiredError) {
     return context.json(
       {
         code: 'EVE_SCOPE_REQUIRED',
@@ -278,7 +354,7 @@ function mailError(
       403,
     )
   }
-  if (error instanceof MailAuthorizationError) {
+  if (requiredScope && error instanceof MailAuthorizationError) {
     return context.json(
       {
         code: 'EVE_REAUTH_REQUIRED',
@@ -315,6 +391,12 @@ function mailError(
   if (error instanceof MailRejectedError) {
     return context.json({ code: 'MAIL_REJECTED', message: 'EVE rejected the mail.' }, 422)
   }
+  if (error instanceof MailCspaRejectedError) {
+    return context.json(
+      { code: 'MAIL_CSPA_REJECTED', message: 'EVE rejected the recipient charge check.' },
+      422,
+    )
+  }
   if (error instanceof MailDeliveryUnknownError) {
     return context.json(
       {
@@ -339,6 +421,8 @@ function mailError(
 function scopeMessage(scope: string) {
   if (scope === sendMailScope) return 'Authorize sending mail for this character.'
   if (scope === organizeMailScope) return 'Authorize mail organization for this character.'
+  if (scope === searchCharactersScope) return 'Authorize recipient search for this character.'
+  if (scope === readContactsScope) return 'Authorize mail charge checks for this character.'
   return 'Authorize mail access for this character.'
 }
 

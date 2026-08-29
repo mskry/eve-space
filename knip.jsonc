@@ -12,9 +12,6 @@
         "layers/*/app/components/**/*.vue",
         "layers/*/app/{composables,plugins,utils}/**/*.ts",
         "generated/platform/*.ts",
-        "features/*/server/{src,test}/**/*.ts",
-        "features/*/nuxt/src/**/*.{ts,tsx,vue}",
-        "features/*/nuxt/test/**/*.{ts,tsx,vue}",
         "scripts/module-registry/source-extensions.d.mts",
       ],
       // vue-tsc is invoked by Nuxt's `typescript.typeCheck`, not by an import.

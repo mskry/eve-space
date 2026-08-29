@@ -66,11 +66,14 @@ describe('ESI operation policies', () => {
         'mail-update',
         'mail-delete',
         'mail-delete-label',
+        'character-search',
+        'character-cspa-charge',
         'skills',
         'location',
         'ship',
         'employment-history',
         'bulk-affiliation',
+        'universe-resolve-ids',
       ]),
     )
     expect(getEsiOperationContract('bulk-affiliation')).toMatchObject({
@@ -113,7 +116,7 @@ describe('ESI operation policies', () => {
   test('merges the reviewed core and generated installed-module catalogs', () => {
     expect(esiMetadataReview).toEqual({
       explorerUrl: 'https://developers.eveonline.com/api-explorer',
-      reviewedAt: '2026-08-25',
+      reviewedAt: '2026-08-29',
       requestedCompatibilityDate: '2026-08-23',
       resolvedCompatibilityDate: '2026-08-18',
     })
@@ -236,6 +239,71 @@ describe('ESI operation policies', () => {
     ])
   })
 
+  test('records composition lookup and charge policies', () => {
+    expect(esiOperationMetadata['universe-resolve-ids']).toMatchObject({
+      method: 'POST',
+      path: '/universe/ids',
+      esiOperationId: 'PostUniverseIds',
+      requiredScope: null,
+      cache: { kind: 'runtime-only' },
+      supportsConditionalRequests: true,
+      rateLimit: { kind: 'legacy-only' },
+      maximumBatchSize: 500,
+    })
+    expect(getEsiOperationContract('universe-resolve-ids')).toMatchObject({
+      authorization: { kind: 'public' },
+      identity: { kind: 'set', field: 'names', maximumItems: 500 },
+      freshness: { kind: 'relative', seconds: 3_600 },
+      cache: { kind: 'shared', revalidate: true },
+      retry: { kind: 'idempotent' },
+    })
+
+    expect(esiOperationMetadata['character-search']).toMatchObject({
+      method: 'GET',
+      path: '/characters/{character_id}/search',
+      esiOperationId: 'GetCharactersCharacterIdSearch',
+      requiredScope: 'esi-search.search_structures.v1',
+      cache: { kind: 'relative', seconds: 3_600 },
+      supportsConditionalRequests: true,
+      rateLimit: { kind: 'legacy-only' },
+    })
+    expect(getEsiOperationContract('character-search')).toMatchObject({
+      authorization: { kind: 'character', scope: 'esi-search.search_structures.v1' },
+      identity: { kind: 'ordered', fields: ['characterId', 'search'] },
+      cache: { kind: 'shared', revalidate: true, stale: { kind: 'none' } },
+      retry: { kind: 'idempotent' },
+    })
+
+    expect(esiOperationMetadata['character-cspa-charge']).toMatchObject({
+      method: 'POST',
+      path: '/characters/{character_id}/cspa',
+      esiOperationId: 'PostCharactersCharacterIdCspa',
+      requiredScope: 'esi-characters.read_contacts.v1',
+      cache: { kind: 'none' },
+      supportsConditionalRequests: false,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      maximumBatchSize: 100,
+    })
+    const cspa = getEsiOperationContract('character-cspa-charge')
+    expect(cspa).toMatchObject({
+      authorization: { kind: 'character', scope: 'esi-characters.read_contacts.v1' },
+      cache: { kind: 'none' },
+      rateGroup: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      retry: { kind: 'idempotent' },
+    })
+    expect(cspa.resourceRevision).toBeUndefined()
+  })
+
   test('records all reviewed mail methods, scopes, cache behavior, and retry policies', () => {
     const mailPolicies = [
       ['mail-headers', 'GET', 'esi-mail.read_mail.v1', true, 'idempotent'],
@@ -319,7 +387,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-search.search_structures.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -329,11 +397,13 @@ describe('ESI operation policies', () => {
         compatibilityDate: '2026-08-23',
         ssoEnabled: true,
         requestableScopes: [
+          'esi-characters.read_contacts.v1',
           'esi-location.read_location.v1',
           'esi-location.read_ship_type.v1',
           'esi-mail.organize_mail.v1',
           'esi-mail.read_mail.v1',
           'esi-mail.send_mail.v1',
+          'esi-search.search_structures.v1',
           'esi-skills.read_skills.v1',
           'esi-wallet.read_character_wallet.v1',
         ],

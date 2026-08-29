@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => {
   class CharacterOwnershipConflictError extends Error {}
   class CharacterTokenNotFoundError extends Error {}
   class MailAuthorizationError extends Error {}
+  class MailCspaRejectedError extends Error {}
   class MailDeliveryUnknownError extends Error {}
   class MailMutationRejectedError extends Error {}
   class MailNotFoundError extends Error {}
@@ -14,12 +15,14 @@ const mocks = vi.hoisted(() => {
     CharacterOwnershipConflictError,
     CharacterTokenNotFoundError,
     MailAuthorizationError,
+    MailCspaRejectedError,
     MailDeliveryUnknownError,
     MailMutationRejectedError,
     MailNotFoundError,
     MailRejectedError,
     attachCharacter: vi.fn(),
     consumeOAuthState: vi.fn(),
+    calculateMailCspaCharge: vi.fn(),
     createMailLabel: vi.fn(),
     deleteCharacter: vi.fn(),
     deleteMail: vi.fn(),
@@ -34,7 +37,9 @@ const mocks = vi.hoisted(() => {
     listMailHeaders: vi.fn(),
     listUserCharacters: vi.fn(),
     reauthorizeCharacter: vi.fn(),
+    resolveMailRecipients: vi.fn(),
     saveLogin: vi.fn(),
+    searchMailRecipients: vi.fn(),
     sendMail: vi.fn(),
     setMainCharacter: vi.fn(),
     storeOAuthState: vi.fn(),
@@ -103,10 +108,12 @@ vi.mock('../../src/mail/mailbox.js', () => ({
     '#ffffff',
   ],
   MailAuthorizationError: mocks.MailAuthorizationError,
+  MailCspaRejectedError: mocks.MailCspaRejectedError,
   MailDeliveryUnknownError: mocks.MailDeliveryUnknownError,
   MailMutationRejectedError: mocks.MailMutationRejectedError,
   MailNotFoundError: mocks.MailNotFoundError,
   MailRejectedError: mocks.MailRejectedError,
+  calculateMailCspaCharge: mocks.calculateMailCspaCharge,
   createMailLabel: mocks.createMailLabel,
   deleteMail: mocks.deleteMail,
   deleteMailLabel: mocks.deleteMailLabel,
@@ -114,6 +121,8 @@ vi.mock('../../src/mail/mailbox.js', () => ({
   getMailingLists: mocks.getMailingLists,
   getMailLabels: mocks.getMailLabels,
   listMailHeaders: mocks.listMailHeaders,
+  resolveMailRecipients: mocks.resolveMailRecipients,
+  searchMailRecipients: mocks.searchMailRecipients,
   sendMail: mocks.sendMail,
   updateMail: mocks.updateMail,
 }))
@@ -123,6 +132,7 @@ import { app } from '../../src/index.js'
 import { mailRoutes } from '../../src/mail/routes.js'
 import {
   MailAuthorizationError,
+  MailCspaRejectedError,
   MailDeliveryUnknownError,
   MailMutationRejectedError,
   MailNotFoundError,
@@ -228,6 +238,17 @@ const sendInput = {
   subject: 'Subject',
   body: 'Body',
 }
+const resolvedRecipientsDto = {
+  recipients: [
+    { id: 91, type: 'character' as const, name: 'Sender Pilot' },
+    { id: 92, type: 'corporation' as const, name: 'Recipient Corp' },
+  ],
+}
+const searchedRecipientsDto = {
+  characterId,
+  recipients: [{ id: 93, type: 'alliance' as const, name: 'Search Alliance' }],
+  ...metadata,
+}
 
 beforeEach(() => {
   mocks.findSession.mockResolvedValue(session)
@@ -237,6 +258,9 @@ beforeEach(() => {
   mocks.getMailingLists.mockResolvedValue(listsDto)
   mocks.getMailDetail.mockResolvedValue(detailDto)
   mocks.sendMail.mockResolvedValue({ characterId, mailId: 7002 })
+  mocks.resolveMailRecipients.mockResolvedValue(resolvedRecipientsDto)
+  mocks.searchMailRecipients.mockResolvedValue(searchedRecipientsDto)
+  mocks.calculateMailCspaCharge.mockResolvedValue({ characterId, cost: 25 })
   mocks.createMailLabel.mockResolvedValue({ characterId, labelId })
   mocks.updateMail.mockResolvedValue({ characterId, mailId })
   mocks.deleteMail.mockResolvedValue({ characterId, mailId })
@@ -244,7 +268,7 @@ beforeEach(() => {
 })
 
 describe('typed mail route successes', () => {
-  test('returns exact DTOs, statuses, service arguments, and private headers for all nine routes', async () => {
+  test('returns exact DTOs, statuses, service arguments, and private headers for all routes', async () => {
     const headers = await routerClient[':characterId'].mail.$get(
       {
         param: { characterId: String(characterId) },
@@ -269,6 +293,33 @@ describe('typed mail route successes', () => {
       ...sendInput,
       approvedCost: 0,
     })
+
+    const resolved = await routerClient[':characterId'].mail.recipients.resolve.$post(
+      {
+        param: { characterId: String(characterId) },
+        json: { names: ['Sender Pilot', 'Recipient Corp'] },
+      },
+      { headers: sessionHeaders },
+    )
+    expect(resolved.status).toBe(200)
+    await expect(resolved.json()).resolves.toEqual(resolvedRecipientsDto)
+    expect(mocks.resolveMailRecipients).toHaveBeenCalledWith(['Sender Pilot', 'Recipient Corp'])
+
+    const searched = await routerClient[':characterId'].mail.recipients.search.$get(
+      { param: { characterId: String(characterId) }, query: { search: 'pil' } },
+      { headers: sessionHeaders },
+    )
+    expect(searched.status).toBe(200)
+    await expect(searched.json()).resolves.toEqual(searchedRecipientsDto)
+    expect(mocks.searchMailRecipients).toHaveBeenCalledWith(characterId, 'pil')
+
+    const cspa = await routerClient[':characterId'].mail.cspa.$post(
+      { param: { characterId: String(characterId) }, json: { characterIds: [91, 92] } },
+      { headers: sessionHeaders },
+    )
+    expect(cspa.status).toBe(200)
+    await expect(cspa.json()).resolves.toEqual({ characterId, cost: 25 })
+    expect(mocks.calculateMailCspaCharge).toHaveBeenCalledWith(characterId, [91, 92])
 
     const labels = await routerClient[':characterId'].mail.labels.$get(
       { param: { characterId: String(characterId) } },
@@ -341,6 +392,9 @@ describe('typed mail route successes', () => {
     for (const response of [
       headers,
       sent,
+      resolved,
+      searched,
+      cspa,
       labels,
       createdLabel,
       deletedLabel,
@@ -363,6 +417,18 @@ describe('typed mail route successes', () => {
       labels: [7],
       lastMailId: undefined,
     })
+  })
+
+  test('returns an unmatched exact name as a normal empty result', async () => {
+    mocks.resolveMailRecipients.mockResolvedValueOnce({ recipients: [] })
+
+    const response = await routerClient[':characterId'].mail.recipients.resolve.$post(
+      { param: { characterId: String(characterId) }, json: { names: ['Nobody Here'] } },
+      { headers: sessionHeaders },
+    )
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ recipients: [] })
   })
 })
 
@@ -464,6 +530,49 @@ describe('mail route validation ordering', () => {
   ])('rejects send body with %s before protected work', async (_name, body) => {
     expect.hasAssertions()
     await expectRejectedBeforeProtection(routerJsonRequest(`/${characterId}/mail`, 'POST', body))
+  })
+
+  test.each([
+    ['missing names', {}],
+    ['empty names', { names: [] }],
+    ['below-minimum name', { names: [''] }],
+    ['name over 100 characters', { names: ['n'.repeat(101)] }],
+    ['more than 500 names', { names: Array.from({ length: 501 }, () => 'Pilot') }],
+    ['extra property', { names: ['Pilot'], extra: true }],
+  ])('rejects recipient resolution with %s before protected work', async (_name, body) => {
+    expect.hasAssertions()
+    await expectRejectedBeforeProtection(
+      routerJsonRequest(`/${characterId}/mail/recipients/resolve`, 'POST', body),
+    )
+  })
+
+  test.each([
+    ['missing search', `/${characterId}/mail/recipients/search`],
+    ['search shorter than three characters', `/${characterId}/mail/recipients/search?search=ab`],
+    [
+      'search longer than 256 characters',
+      `/${characterId}/mail/recipients/search?search=${'a'.repeat(257)}`,
+    ],
+    ['unknown query field', `/${characterId}/mail/recipients/search?search=pilot&other=1`],
+  ])('rejects recipient search with %s before protected work', async (_name, path) => {
+    expect.hasAssertions()
+    await expectRejectedBeforeProtection(routerRequest(path))
+  })
+
+  test.each([
+    ['missing character IDs', {}],
+    ['empty character IDs', { characterIds: [] }],
+    ['more than 100 character IDs', { characterIds: Array.from({ length: 101 }, (_, i) => i + 1) }],
+    ['duplicate character IDs', { characterIds: [1, 1] }],
+    ['zero character ID', { characterIds: [0] }],
+    ['fractional character ID', { characterIds: [1.5] }],
+    ['unsafe character ID', { characterIds: [Number.MAX_SAFE_INTEGER + 1] }],
+    ['extra property', { characterIds: [1], extra: true }],
+  ])('rejects CSPA charge with %s before protected work', async (_name, body) => {
+    expect.hasAssertions()
+    await expectRejectedBeforeProtection(
+      routerJsonRequest(`/${characterId}/mail/cspa`, 'POST', body),
+    )
   })
 
   test.each([
@@ -570,6 +679,36 @@ describe('mail route authentication and ownership', () => {
     expect(missingBody).toEqual({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' })
     expect(foreignBody).toEqual(missingBody)
     expectSanitizedText(JSON.stringify([missingBody, foreignBody]))
+    expectMailServicesUntouched()
+  })
+
+  test.each([
+    [
+      'exact resolution',
+      `/${characterId}/mail/recipients/resolve`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names: ['Pilot'] }),
+      },
+    ],
+    ['recipient search', `/${characterId}/mail/recipients/search?search=pilot`, {}],
+    [
+      'CSPA charge',
+      `/${characterId}/mail/cspa`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ characterIds: [1] }),
+      },
+    ],
+  ])('enforces authentication and ownership for %s', async (_name, path, init) => {
+    const anonymous = await mailRoutes.request(path, init)
+    expect(anonymous.status).toBe(401)
+
+    mocks.findOwnedCharacter.mockResolvedValueOnce(null)
+    const foreign = await routerRequest(path, init)
+    expect(foreign.status).toBe(404)
     expectMailServicesUntouched()
   })
 
@@ -722,6 +861,14 @@ describe('mail route safe failures', () => {
       409,
       { code: 'MAIL_MUTATION_REJECTED', message: 'EVE rejected the mail change.' },
     ],
+    [
+      'CSPA rejection',
+      mocks.calculateMailCspaCharge,
+      () => routerJsonRequest(`/${characterId}/mail/cspa`, 'POST', { characterIds: [1] }),
+      new MailCspaRejectedError(),
+      422,
+      { code: 'MAIL_CSPA_REJECTED', message: 'EVE rejected the recipient charge check.' },
+    ],
   ] as const)(
     'returns a sanitized %s outcome',
     async (_name, service, request, error, status, expectedBody) => {
@@ -760,6 +907,33 @@ describe('mounted mail routes', () => {
     expect(mocks.updateMail).toHaveBeenCalledWith(characterId, mailId, { read: true })
     expectMountedSecurity(read)
     expectMountedSecurity(mutation)
+  })
+
+  test('serves every composition endpoint through the final owned-character mount', async () => {
+    const resolved = await mountedClient.api.me.characters[
+      ':characterId'
+    ].mail.recipients.resolve.$post(
+      { param: { characterId: String(characterId) }, json: { names: ['Pilot'] } },
+      { headers: corsSessionHeaders },
+    )
+    const searched = await mountedClient.api.me.characters[
+      ':characterId'
+    ].mail.recipients.search.$get(
+      { param: { characterId: String(characterId) }, query: { search: 'pilot' } },
+      { headers: corsSessionHeaders },
+    )
+    const cspa = await mountedClient.api.me.characters[':characterId'].mail.cspa.$post(
+      { param: { characterId: String(characterId) }, json: { characterIds: [91] } },
+      { headers: corsSessionHeaders },
+    )
+
+    expect(resolved.status).toBe(200)
+    expect(searched.status).toBe(200)
+    expect(cspa.status).toBe(200)
+    expect(mocks.resolveMailRecipients).toHaveBeenCalledWith(['Pilot'])
+    expect(mocks.searchMailRecipients).toHaveBeenCalledWith(characterId, 'pilot')
+    expect(mocks.calculateMailCspaCharge).toHaveBeenCalledWith(characterId, [91])
+    for (const response of [resolved, searched, cspa]) expectMountedSecurity(response)
   })
 
   test('uses global JSON validation handling before mounted authentication', async () => {
@@ -856,6 +1030,20 @@ function getScopeCases() {
       request: () => routerJsonRequest(`/${characterId}/mail`, 'POST', validSendBody()),
       requiredScope: 'esi-mail.send_mail.v1',
       message: 'Authorize sending mail for this character.',
+    },
+    {
+      name: 'recipient search',
+      service: mocks.searchMailRecipients,
+      request: () => routerRequest(`/${characterId}/mail/recipients/search?search=pilot`),
+      requiredScope: 'esi-search.search_structures.v1',
+      message: 'Authorize recipient search for this character.',
+    },
+    {
+      name: 'CSPA charge',
+      service: mocks.calculateMailCspaCharge,
+      request: () => routerJsonRequest(`/${characterId}/mail/cspa`, 'POST', { characterIds: [1] }),
+      requiredScope: 'esi-characters.read_contacts.v1',
+      message: 'Authorize mail charge checks for this character.',
     },
     {
       name: 'label creation',
@@ -967,6 +1155,9 @@ function mailServiceMocks() {
     mocks.getMailDetail,
     mocks.getMailLabels,
     mocks.getMailingLists,
+    mocks.resolveMailRecipients,
+    mocks.searchMailRecipients,
+    mocks.calculateMailCspaCharge,
     mocks.sendMail,
     mocks.createMailLabel,
     mocks.updateMail,

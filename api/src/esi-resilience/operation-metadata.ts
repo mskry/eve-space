@@ -22,7 +22,7 @@ interface EsiOperationMetadata {
 
 export const esiMetadataReview = {
   explorerUrl: 'https://developers.eveonline.com/api-explorer',
-  reviewedAt: '2026-08-25',
+  reviewedAt: '2026-08-29',
   requestedCompatibilityDate: '2026-08-23',
   resolvedCompatibilityDate: '2026-08-18',
 } as const
@@ -209,6 +209,32 @@ export const esiOperationMetadata = {
     supportsConditionalRequests: false,
     rateLimit: { kind: 'declared', group: 'char-social', maximumTokens: 600, window: '15m' },
   },
+  'character-search': {
+    method: 'GET',
+    path: '/characters/{character_id}/search',
+    esiOperationId: 'GetCharactersCharacterIdSearch',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-search.search_structures.v1',
+    cache: { kind: 'relative', seconds: 3_600 },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'legacy-only' },
+  },
+  'character-cspa-charge': {
+    method: 'POST',
+    path: '/characters/{character_id}/cspa',
+    esiOperationId: 'PostCharactersCharacterIdCspa',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-characters.read_contacts.v1',
+    cache: { kind: 'none' },
+    supportsConditionalRequests: false,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-detail',
+      maximumTokens: 600,
+      window: '15m',
+    },
+    maximumBatchSize: 100,
+  },
   skills: {
     method: 'GET',
     path: '/characters/{character_id}/skills',
@@ -274,6 +300,17 @@ export const esiOperationMetadata = {
     supportsConditionalRequests: true,
     rateLimit: { kind: 'legacy-only' },
     maximumBatchSize: 1_000,
+  },
+  'universe-resolve-ids': {
+    method: 'POST',
+    path: '/universe/ids',
+    esiOperationId: 'PostUniverseIds',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: null,
+    cache: { kind: 'runtime-only' },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'legacy-only' },
+    maximumBatchSize: 500,
   },
   'corporation-alliance-history': {
     method: 'GET',
