@@ -73,6 +73,23 @@ describe('mail label management', () => {
     harness.unmount()
   })
 
+  it('resets mail state before retiring a reused label tombstone', async () => {
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail/labels', () =>
+        HttpResponse.json({ characterId, labelId: 2 }, { status: 201 }),
+      ),
+    )
+    const harness = mountOrganization()
+    harness.mutations.deletedLabelIds.value = new Set([2])
+    harness.organization.labelName.value = 'Replacement'
+
+    await harness.organization.createLabel()
+
+    expect(harness.mailbox.resetMailboxView).toHaveBeenCalledOnce()
+    expect(harness.mutations.deletedLabelIds.value.has(2)).toBe(false)
+    harness.unmount()
+  })
+
   it('offers reauthorization for a label write without hiding mailbox state', async () => {
     queryServer.use(
       http.post('http://localhost/api/me/characters/7/mail/labels', () =>
@@ -292,6 +309,7 @@ function mountOrganization(labelIds: number[] = [1]) {
     displayedHeaders: headers,
     removeLoadedHeader: vi.fn(),
     removeLoadedLabel: vi.fn(),
+    resetMailboxView: vi.fn(),
     selectLabel,
     selectedHeader: computed(() =>
       selectedMailId.value === selectedHeader.value.mailId ? selectedHeader.value : undefined,

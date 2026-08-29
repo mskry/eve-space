@@ -440,7 +440,25 @@ describe('mail mutations', () => {
   })
 
   it('retires a deletion tombstone when EVE reuses the label id', async () => {
+    let finishDetail!: () => void
+    let finishHeaders!: () => void
+    let markDetailStarted!: () => void
+    let markHeadersStarted!: () => void
+    const detailCanFinish = new Promise<void>((resolve) => (finishDetail = resolve))
+    const headersCanFinish = new Promise<void>((resolve) => (finishHeaders = resolve))
+    const detailStarted = new Promise<void>((resolve) => (markDetailStarted = resolve))
+    const headersStarted = new Promise<void>((resolve) => (markHeadersStarted = resolve))
     queryServer.use(
+      http.get('http://localhost/api/me/characters/7/mail', async () => {
+        markHeadersStarted()
+        await headersCanFinish
+        return HttpResponse.json(mailHeaders([mailHeader(1, false, [1, 2])]))
+      }),
+      http.get('http://localhost/api/me/characters/7/mail/1', async () => {
+        markDetailStarted()
+        await detailCanFinish
+        return HttpResponse.json({ ...mailDetail(false), labelIds: [1, 2] })
+      }),
       http.delete(
         'http://localhost/api/me/characters/7/mail/labels/2',
         () => new HttpResponse(null, { status: 204 }),
@@ -451,6 +469,10 @@ describe('mail mutations', () => {
     )
     const { mutations, queryCache, unmount } = mountMutations()
     const labelsKey = mailLabelsQuery({ apiClient, characterId }).key
+    const headersOptions = mailHeadersQuery({ apiClient, characterId })
+    const detailOptions = mailDetailQuery({ apiClient, characterId, mailId: 1 })
+    queryCache.ensure(headersOptions)
+    queryCache.ensure(detailOptions)
 
     await mutations.deleteMailLabel({ characterId, labelId: 2 })
     expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
@@ -461,9 +483,20 @@ describe('mail mutations', () => {
         { color: '#999999', labelId: 2, name: 'Deleted label', unreadCount: 0 },
       ],
     })
+    queryCache.setQueryData(headersOptions.key, mailHeaders([mailHeader(1, false, [1, 2])]))
+    queryCache.setQueryData(detailOptions.key, { ...mailDetail(false), labelIds: [1, 2] })
+    const staleHeadersRequest = queryCache
+      .fetch(queryCache.ensure(headersOptions))
+      .catch(() => undefined)
+    const staleDetailRequest = queryCache
+      .fetch(queryCache.ensure(detailOptions))
+      .catch(() => undefined)
+    await Promise.all([headersStarted, detailStarted])
 
-    await mutations.createMailLabel({ characterId, color: '#fe0000', name: 'Replacement' })
-    expect(mutations.deletedLabelIds.value.has(2)).toBe(false)
+    await expect(
+      mutations.createMailLabel({ characterId, color: '#fe0000', name: 'Replacement' }),
+    ).resolves.toEqual({ reusedDeletedLabelId: 2, success: true })
+    expect(mutations.deletedLabelIds.value.has(2)).toBe(true)
     expect(mutations.createdLabels.value).toContainEqual({
       color: '#fe0000',
       labelId: 2,
@@ -475,6 +508,19 @@ describe('mail mutations', () => {
         .getQueryData<ReturnType<typeof mailLabels>>(labelsKey)
         ?.labels.find((label) => label.labelId === 2),
     ).toEqual({ color: '#fe0000', labelId: 2, name: 'Replacement', unreadCount: 0 })
+
+    mutations.retireReusedDeletedLabel(characterId, 2)
+    finishHeaders()
+    finishDetail()
+    await Promise.all([staleHeadersRequest, staleDetailRequest])
+    expect(mutations.deletedLabelIds.value.has(2)).toBe(false)
+    expect(
+      queryCache.getQueryData<ReturnType<typeof mailHeaders>>(headersOptions.key)?.messages[0]
+        ?.labelIds,
+    ).toEqual([1])
+    expect(
+      queryCache.getQueryData<ReturnType<typeof mailDetail>>(detailOptions.key)?.labelIds,
+    ).toEqual([1])
     unmount()
   })
 

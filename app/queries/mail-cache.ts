@@ -214,12 +214,52 @@ export function commitCreatedMailLabel(
   })
 }
 
+export function prepareMailForReusedLabel(
+  queryCache: QueryCache,
+  characterId: number,
+  labelId: number,
+) {
+  const mailKey = PRIVATE_QUERY_KEYS.mail(characterId)
+  const entries = [
+    ...queryCache.getEntries({ key: [...mailKey, 'headers'] }),
+    ...queryCache.getEntries({ key: [...mailKey, 'detail'] }),
+  ]
+  for (const entry of entries) {
+    if (entry.pending) queryCache.cancel(entry, new Error('Mail label identity was reused.'))
+  }
+  removeMailLabelFromPayloadCaches(queryCache, mailKey, labelId)
+  for (const entry of entries) {
+    if (entry.active) {
+      void queryCache.invalidateQueries({ exact: true, key: entry.key })
+    } else {
+      entry.when = 0
+    }
+  }
+}
+
 export function commitMailLabelDeletion(
   queryCache: QueryCache,
   characterId: number,
   labelId: number,
 ) {
   const mailKey = PRIVATE_QUERY_KEYS.mail(characterId)
+  removeMailLabelFromPayloadCaches(queryCache, mailKey, labelId)
+
+  const labelsKey = PRIVATE_QUERY_KEYS.mailLabels(characterId)
+  const labels = queryCache.getQueryData<MailLabels>(labelsKey)
+  if (labels) {
+    queryCache.setQueryData<MailLabels>(labelsKey, {
+      ...labels,
+      labels: labels.labels.filter((label) => label.labelId !== labelId),
+    })
+  }
+}
+
+function removeMailLabelFromPayloadCaches(
+  queryCache: QueryCache,
+  mailKey: EntryKey,
+  labelId: number,
+) {
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'headers'] })) {
     const page = queryCache.getQueryData<MailHeaders>(entry.key)
     if (!page) continue
@@ -241,15 +281,6 @@ export function commitMailLabelDeletion(
     queryCache.setQueryData<MailDetail>(entry.key, {
       ...detail,
       labelIds: detail.labelIds.filter((candidate) => candidate !== labelId),
-    })
-  }
-
-  const labelsKey = PRIVATE_QUERY_KEYS.mailLabels(characterId)
-  const labels = queryCache.getQueryData<MailLabels>(labelsKey)
-  if (labels) {
-    queryCache.setQueryData<MailLabels>(labelsKey, {
-      ...labels,
-      labels: labels.labels.filter((label) => label.labelId !== labelId),
     })
   }
 }

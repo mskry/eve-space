@@ -214,6 +214,10 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     })
     if (!scopeActive || options.characterId.value !== characterId) return
     if (outcome.success) {
+      if (outcome.reusedDeletedLabelId !== undefined) {
+        options.mailbox.resetMailboxView()
+        options.mutations.retireReusedDeletedLabel(characterId, outcome.reusedDeletedLabelId)
+      }
       labelName.value = ''
       labelColor.value = undefined
       showOrganizationToast({

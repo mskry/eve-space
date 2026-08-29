@@ -16,6 +16,7 @@ import {
   commitMailLabelDeletion,
   commitMailLabels,
   commitMailReadState,
+  prepareMailForReusedLabel,
   type MailLabelAssignmentTarget,
   type MailMutationTarget,
   type MailReadTarget,
@@ -29,6 +30,7 @@ import {
 
 export interface MailMutationOutcome {
   error?: unknown
+  reusedDeletedLabelId?: number
   success: boolean
 }
 
@@ -250,15 +252,13 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
       if (!createdLabels.value.some((candidate) => candidate.labelId === labelId)) {
         createdLabels.value = [...createdLabels.value, label]
       }
-      if (deletedLabelIds.value.has(labelId)) {
-        const retainedDeletedIds = new Set(deletedLabelIds.value)
-        retainedDeletedIds.delete(labelId)
-        deletedLabelIds.value = retainedDeletedIds
-      }
       localCreatedLabelIds.add(labelId)
       commitCreatedMailLabel(queryCache, target.characterId, label)
       queueMicrotask(() => localCreatedLabelIds.delete(labelId))
-      return { success: true }
+      return {
+        ...(deletedLabelIds.value.has(labelId) ? { reusedDeletedLabelId: labelId } : {}),
+        success: true,
+      }
     } catch (error) {
       if (generation !== operationGeneration || createLabelVersion !== version) {
         return { success: false }
@@ -334,6 +334,14 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     undeletableLabelIds.value = new Set([...undeletableLabelIds.value, labelId])
   }
 
+  function retireReusedDeletedLabel(characterId: number, labelId: number) {
+    if (!deletedLabelIds.value.has(labelId)) return
+    prepareMailForReusedLabel(queryCache, characterId, labelId)
+    const retainedDeletedIds = new Set(deletedLabelIds.value)
+    retainedDeletedIds.delete(labelId)
+    deletedLabelIds.value = retainedDeletedIds
+  }
+
   function resetMailMutations() {
     generation += 1
     readStateOverrides.value = new Map()
@@ -370,6 +378,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     reconcileCreatedLabels,
     reconcileLabelState,
     reconcileReadState,
+    retireReusedDeletedLabel,
     resetMailMutations,
     setMailRead,
     undeletableLabelIds,
