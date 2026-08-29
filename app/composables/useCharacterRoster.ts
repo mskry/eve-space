@@ -64,7 +64,10 @@ export function useCharacterRoster(apiClient: ApiClient) {
   }
 
   function refetchCharacterRoster() {
-    return rosterQuery.refetch()
+    return queryCache.invalidateQueries({
+      exact: true,
+      key: characterRosterQuery(apiClient).key,
+    })
   }
 
   async function selectMainCharacter(characterId: number) {

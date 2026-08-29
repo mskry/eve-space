@@ -1,23 +1,5 @@
-@media (max-width: 760px) {
-  .history-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
+@media (max-width: 47.5rem) {
   .history-npc-toggle {
     grid-column: 1 / -1;
-  }
-
-  .history-summary-transition {
-    max-width: none;
-    text-align: left;
-  }
-
-  .employment-timeline li {
-    grid-template-columns: 48px minmax(0, 1fr);
-  }
-
-  .employment-period {
-    grid-column: 2;
-    justify-self: start;
   }
 }

@@ -1,75 +1,3 @@
-.character-summary-card {
-  position: relative;
-  min-width: 0;
-  padding: clamp(1.625rem, 4vw, 2.75rem);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.875rem;
-  border: 0.0625rem solid var(--ui-border);
-  background:
-    linear-gradient(110deg, color-mix(in srgb, var(--ui-primary) 8%, transparent), transparent 60%),
-    var(--ui-surface);
-}
-
-.character-summary-heading {
-  min-width: 0;
-  display: flex;
-  align-items: start;
-  gap: 1.125rem;
-}
-
-.character-summary-heading .ui-eyebrow {
-  margin: 0 0 0.75rem;
-}
-
-.character-summary-card h2,
-.character-summary-card h3 {
-  margin: 0;
-  font: var(--ui-font-display-weight) var(--ui-font-display-size) / 0.95 var(--ui-font-mono);
-  letter-spacing: -0.07em;
-  overflow-wrap: anywhere;
-}
-
-.character-summary-card h2 span,
-.character-summary-card h3 span {
-  display: block;
-  margin-top: 0.75rem;
-  color: var(--ui-primary);
-  font-size: 0.5625rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.character-summary-icon {
-  width: 2.625rem;
-  height: 2.625rem;
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 0.0625rem solid color-mix(in srgb, var(--ui-primary) 45%, var(--ui-border));
-  background: var(--ui-surface-raised);
-  color: var(--ui-primary);
-}
-
-.character-summary-icon > img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-
-.character-summary-icon > .app-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.character-summary-details {
-  display: grid;
-  justify-items: end;
-  gap: 1.125rem;
-}
-
 .wallet-summary-actions {
   display: grid;
   justify-items: end;
@@ -109,17 +37,12 @@
   text-transform: uppercase;
 }
 
-.wallet-transactions-gate,
-.wallet-transactions-panel > .wallet-state {
+.wallet-transactions-gate {
   margin: 0;
   padding: 1.875rem 1.25rem;
   color: var(--muted);
   font: 0.625rem/1.7 monospace;
   letter-spacing: 0.04em;
-}
-
-.wallet-transactions-panel > .wallet-error {
-  min-height: 8.125rem;
 }
 
 .wallet-transaction-list {

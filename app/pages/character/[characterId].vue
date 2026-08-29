@@ -2,19 +2,14 @@
 import { useQuery } from '@pinia/colada'
 import { publicCharacterQuery } from '../../queries/characters'
 import { ApiQueryError } from '../../utils/query-error'
+import { parseRouteId } from '../../utils/route-id'
 
 definePageMeta({ title: 'Character', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const characterId = computed(() => {
-  const value = Array.isArray(route.params.characterId)
-    ? route.params.characterId[0]
-    : route.params.characterId
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
-})
+const characterId = computed(() => parseRouteId(route.params.characterId))
 const detailQuery = useQuery(() => ({
   ...publicCharacterQuery({ apiClient, characterId: characterId.value ?? 0 }),
   enabled: import.meta.client && characterId.value !== undefined,
@@ -52,28 +47,36 @@ useHead({
 
 <template>
   <div class="section-page character-shell">
-    <div v-if="detailStatus === 'loading'" class="app-state-panel" aria-live="polite">
-      <div class="app-scanner" aria-hidden="true" />
+    <UiStatePanel v-if="detailStatus === 'loading'" role="status">
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Resolving public character record...</p>
-    </div>
-    <div
+    </UiStatePanel>
+    <UiStatePanel
       v-else-if="detailStatus === 'not-found'"
-      class="app-state-panel app-error-panel"
+      code="404 / CHARACTER"
+      title="Character not found"
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">404 / CHARACTER</span>
-      <h2>Character not found</h2>
       <p>ESI has no public record for ID {{ characterId ?? '—' }}.</p>
-      <button class="ui-action-secondary" type="button" @click="$router.back()">GO BACK</button>
-    </div>
-    <div v-else-if="detailStatus === 'error'" class="app-state-panel app-error-panel" role="alert">
-      <span class="app-error-code">ERR / ESI</span>
-      <h2>Record unavailable</h2>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="$router.back()">GO BACK</button>
+      </template>
+    </UiStatePanel>
+    <UiStatePanel
+      v-else-if="detailStatus === 'error'"
+      code="ERR / ESI"
+      title="Record unavailable"
+      role="alert"
+      tone="error"
+    >
       <p>{{ detailMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="detailQuery.refresh()">
-        RETRY
-      </button>
-    </div>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="detailQuery.refresh()">
+          RETRY
+        </button>
+      </template>
+    </UiStatePanel>
 
     <template v-else-if="profile">
       <header class="character-shell-header">

@@ -5,7 +5,7 @@ import { toApiQueryError } from '../utils/query-error'
 import { PUBLIC_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
-type CorporationResponse = InferResponseType<
+export type CorporationResponse = InferResponseType<
   ApiClient['api']['corporations'][':corporationId']['$get'],
   200
 >

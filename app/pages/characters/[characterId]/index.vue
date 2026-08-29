@@ -3,6 +3,7 @@ import { useQuery } from '@pinia/colada'
 import { characterOverviewQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
+import { parseRouteId } from '../../../utils/route-id'
 
 definePageMeta({ title: 'Character Overview', layout: 'headerless' })
 
@@ -10,13 +11,7 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
-const characterId = computed(() => {
-  const value = Array.isArray(route.params.characterId)
-    ? route.params.characterId[0]
-    : route.params.characterId
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
-})
+const characterId = computed(() => parseRouteId(route.params.characterId))
 const overviewQuery = useQuery(() => ({
   ...characterOverviewQuery({ apiClient, characterId: characterId.value ?? 0 }),
   enabled: canRunProtectedQuery(
@@ -51,13 +46,7 @@ function loadCharacterOverview(force = false) {
   return force ? overviewQuery.refetch() : overviewQuery.refresh()
 }
 
-watch(
-  [characterId, () => route.query.reauthorize],
-  ([id, reauthorize]) => {
-    if (id && reauthorize === 'success') void overviewQuery.refetch()
-  },
-  { immediate: true },
-)
+useCharacterReauthorization(characterId, () => void overviewQuery.refetch())
 
 const character = computed(() => overview.value?.profile)
 const location = computed(() => overview.value?.location)
@@ -115,26 +104,24 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
 
 <template>
   <div class="character-overview-route">
-    <div
-      v-if="overviewStatus === 'loading' && !character"
-      class="app-state-panel"
-      aria-live="polite"
-    >
-      <div class="app-scanner" aria-hidden="true" />
+    <UiStatePanel v-if="overviewStatus === 'loading' && !character" role="status">
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Establishing character-specific ESI uplink...</p>
-    </div>
-    <div
+    </UiStatePanel>
+    <UiStatePanel
       v-else-if="overviewStatus === 'error' || overviewStatus === 'not-found'"
-      class="app-state-panel app-error-panel"
+      :code="overviewStatus === 'not-found' ? '404' : 'ERR / ESI'"
+      title="Record unavailable"
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">{{ overviewStatus === 'not-found' ? '404' : 'ERR / ESI' }}</span>
-      <h2>Record unavailable</h2>
       <p>{{ overviewMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="loadCharacterOverview(true)">
-        RETRY UPLINK
-      </button>
-    </div>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="loadCharacterOverview(true)">
+          RETRY UPLINK
+        </button>
+      </template>
+    </UiStatePanel>
 
     <article v-else-if="character" class="dossier">
       <div class="identity-panel">
@@ -314,5 +301,4 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
 
 <style>
 @import url('~/assets/css/features/record-dossier.css');
-@import url('~/assets/css/responsive/record.css');
 </style>

@@ -15,6 +15,7 @@ type ApiMode =
   | 'mail-rejected'
   | 'label-delete-refused'
   | 'organize-scope-required'
+  | 'roster-error'
   | 'search-scope-required'
   | 'send-delivery-unknown'
   | 'send-scope-required'
@@ -108,6 +109,9 @@ const apiServer = await startCorsJsonApi(async (request) => {
     }
   }
   if (url.pathname === '/api/me/characters') {
+    if (apiMode === 'roster-error') {
+      return { status: 503, body: { code: 'ROSTER_UNAVAILABLE', message: 'Roster unavailable.' } }
+    }
     return { body: { characters: apiMode === 'unowned' ? [] : [ownedCharacter()] } }
   }
   if (url.pathname.startsWith(`/api/me/characters/${characterId}/mail`)) {
@@ -471,6 +475,80 @@ describe('character mail reading', async () => {
       `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
     )
     expect(mailRequests().length).toBeGreaterThan(0)
+  })
+
+  it('processes a mounted reauthorization callback once without resetting mailbox state', async () => {
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    const search = page.getByRole('searchbox', {
+      name: 'Search loaded messages by subject or sender',
+    })
+    await search.fill('Priority')
+
+    const sessionRequestsBefore = requestsFor('/auth/session').length
+    const rosterRequestsBefore = requestsFor('/api/me/characters').length
+    const mailRequestsBefore = mailRequests().length
+
+    await page.evaluate(() => {
+      history.pushState({}, '', `${location.pathname}?reauthorize=success`)
+      dispatchEvent(new PopStateEvent('popstate', { state: history.state }))
+    })
+
+    await page.getByText('Character authorization refreshed.', { exact: true }).waitFor()
+    await expect.poll(() => new URL(page.url()).searchParams.has('reauthorize')).toBe(false)
+    await expect
+      .poll(() => requestsFor('/auth/session').length)
+      .toBeGreaterThan(sessionRequestsBefore)
+    await expect
+      .poll(() => requestsFor('/api/me/characters').length)
+      .toBeGreaterThan(rosterRequestsBefore)
+    await expect.poll(() => mailRequests().length).toBeGreaterThan(mailRequestsBefore)
+    expect(await search.inputValue()).toBe('Priority')
+
+    const rosterRequestsAfterCallback = requestsFor('/api/me/characters').length
+    const mailRequestsAfterCallback = mailRequests().length
+    await page.goBack()
+    await page.goForward()
+    await page.waitForTimeout(100)
+
+    expect(requestsFor('/api/me/characters')).toHaveLength(rosterRequestsAfterCallback)
+    expect(mailRequests()).toHaveLength(mailRequestsAfterCallback)
+    expect(await search.inputValue()).toBe('Priority')
+  })
+
+  it('cleans up callback state when an account-level refresh fails', async () => {
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    const search = page.getByRole('searchbox', {
+      name: 'Search loaded messages by subject or sender',
+    })
+    await search.fill('Priority')
+    apiMode = 'roster-error'
+
+    await page.evaluate(() => {
+      history.pushState({}, '', `${location.pathname}?reauthorize=success`)
+      dispatchEvent(new PopStateEvent('popstate', { state: history.state }))
+    })
+
+    await page.getByText('Character authorization refreshed.', { exact: true }).waitFor()
+    await expect.poll(() => new URL(page.url()).searchParams.has('reauthorize')).toBe(false)
+    expect(await search.inputValue()).toBe('Priority')
+  })
+
+  it('processes direct-entry callback feedback before replacing the query', async () => {
+    const page = await openPage(`/characters/${characterId}/mail?reauthorize=success`)
+    await page.getByText('Character authorization refreshed.', { exact: true }).waitFor()
+    await expect.poll(() => new URL(page.url()).searchParams.has('reauthorize')).toBe(false)
+
+    await expect
+      .poll(
+        () =>
+          mailRequests().filter(
+            ({ method, url }) =>
+              method === 'GET' && url.pathname === `/api/me/characters/${characterId}/mail`,
+          ).length,
+      )
+      .toBe(1)
   })
 
   it('creates a label locally from the fixed palette without refetching labels', async () => {
@@ -984,16 +1062,32 @@ describe('character mail reading', async () => {
 
   it('stacks mailbox panes without horizontal overflow on mobile', async () => {
     const page = await openPage(`/characters/${characterId}/mail`)
-    await page.setViewportSize({ width: 390, height: 844 })
     const workspace = page.locator('.mail-workspace')
     await workspace.waitFor()
+    const recordNavigation = page.getByRole('navigation', { name: 'Character record sections' })
+    const desktopMetrics = await recordNavigation.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }))
+    expect(desktopMetrics.scrollWidth).toBeLessThanOrEqual(desktopMetrics.clientWidth)
+
+    await page.setViewportSize({ width: 390, height: 844 })
 
     const layout = await workspace.evaluate((element) => getComputedStyle(element).display)
     const sidebarBox = await page.locator('.mail-sidebar').boundingBox()
     const headersBox = await page.locator('.mail-header-list').boundingBox()
     const readerBox = await page.locator('.mail-reader').boundingBox()
+    const navigationMetrics = await recordNavigation.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }))
     const hasHorizontalOverflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    )
+    const mailNavigationLink = recordNavigation.getByRole('link', { name: 'MAIL', exact: true })
+    await mailNavigationLink.focus()
+    const focusOutline = await mailNavigationLink.evaluate(
+      (element) => getComputedStyle(element).outlineWidth,
     )
 
     expect(layout).toBe('block')
@@ -1002,6 +1096,9 @@ describe('character mail reading', async () => {
     expect(readerBox).not.toBeNull()
     expect(headersBox!.y).toBeGreaterThan(sidebarBox!.y)
     expect(readerBox!.y).toBeGreaterThan(headersBox!.y)
+    expect(await recordNavigation.getByRole('link').count()).toBe(5)
+    expect(navigationMetrics.scrollWidth).toBeGreaterThan(navigationMetrics.clientWidth)
+    expect(focusOutline).not.toBe('0px')
     expect(hasHorizontalOverflow).toBe(false)
   })
 
@@ -1046,6 +1143,10 @@ function mailRequests() {
   return recordedRequests.filter(({ url }) =>
     url.pathname.startsWith(`/api/me/characters/${characterId}/mail`),
   )
+}
+
+function requestsFor(path: string) {
+  return recordedRequests.filter(({ url }) => url.pathname === path)
 }
 
 function mailMutationRequests(method: 'DELETE' | 'PUT') {

@@ -1,14 +1,4 @@
 @media (max-width: 760px) {
-  .character-summary-card {
-    align-items: start;
-    flex-direction: column;
-  }
-
-  .character-summary-details {
-    width: 100%;
-    justify-items: start;
-  }
-
   .wallet-summary-actions {
     width: 100%;
     grid-template-columns: auto 1fr;

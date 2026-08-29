@@ -1,17 +1,13 @@
 <script setup lang="ts">
+import { parseRouteId } from '../../../utils/route-id'
+
 definePageMeta({ title: 'Character Mail', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
-const characterId = computed(() => {
-  const value = Array.isArray(route.params.characterId)
-    ? route.params.characterId[0]
-    : route.params.characterId
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
-})
+const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
 const mutations = useMailOrganizationMutations(apiClient)
 const mailbox = useCharacterMailbox({
@@ -118,13 +114,7 @@ const {
   subjectRemaining,
 } = composition
 
-watch(
-  [characterId, () => route.query.reauthorize],
-  ([id, reauthorize]) => {
-    if (id && reauthorize === 'success') retryMailbox()
-  },
-  { immediate: true },
-)
+useCharacterReauthorization(characterId, retryMailbox)
 </script>
 
 <template>

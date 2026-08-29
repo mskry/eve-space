@@ -30,4 +30,41 @@ describe('state panels', () => {
       expect(page).not.toMatch(/mail-access-state|skills-access-state/)
     }
   })
+
+  it('uses semantic state panels throughout migrated record pages', () => {
+    const pages = [
+      'app/pages/characters/[characterId].vue',
+      'app/pages/characters/index.vue',
+      'app/pages/character/[characterId].vue',
+      'app/pages/corporation/[corporationId].vue',
+      'app/pages/corporation/[corporationId]/alliance-history.vue',
+      'app/pages/characters/[characterId]/index.vue',
+      'app/pages/characters/[characterId]/skills.vue',
+      'app/pages/characters/[characterId]/history.vue',
+      'app/pages/characters/[characterId]/wallet.vue',
+    ].map(readWorkspaceFile)
+
+    for (const page of pages) {
+      expect(page).toContain('<UiStatePanel')
+      expect(page).not.toMatch(/class="[^"]*app-state-panel/)
+    }
+    expect(pages.some((page) => page.includes('role="status"'))).toBe(true)
+    expect(pages.every((page) => !page.includes('app-error-panel'))).toBe(true)
+  })
+
+  it('retains failure semantics and feature-owned actions', () => {
+    const roster = readWorkspaceFile('app/pages/characters/index.vue')
+    const overview = readWorkspaceFile('app/pages/characters/[characterId]/index.vue')
+    const skills = readWorkspaceFile('app/pages/characters/[characterId]/skills.vue')
+    const history = readWorkspaceFile('app/pages/characters/[characterId]/history.vue')
+    const wallet = readWorkspaceFile('app/pages/characters/[characterId]/wallet.vue')
+
+    for (const page of [roster, overview, skills, history, wallet]) {
+      expect(page).toContain('role="alert"')
+      expect(page).toContain('tone="error"')
+      expect(page).toContain('<template #action>')
+    }
+    expect(wallet).toContain('transactionError?.authorizeUrl')
+    expect(wallet).toContain('if (transactionsRequested.value)')
+  })
 })

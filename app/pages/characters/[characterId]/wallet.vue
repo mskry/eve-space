@@ -3,6 +3,7 @@ import { useQuery } from '@pinia/colada'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { walletQuery, walletTransactionsQuery } from '../../../queries/wallet'
 import { ApiQueryError } from '../../../utils/query-error'
+import { parseRouteId } from '../../../utils/route-id'
 
 definePageMeta({ title: 'Character Wallet', layout: 'headerless' })
 
@@ -11,13 +12,7 @@ const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
 const transactionsRequested = ref(false)
-const characterId = computed(() => {
-  const value = Array.isArray(route.params.characterId)
-    ? route.params.characterId[0]
-    : route.params.characterId
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
-})
+const characterId = computed(() => parseRouteId(route.params.characterId))
 const walletQueryResult = useQuery(() => ({
   ...walletQuery({ apiClient, characterId: characterId.value ?? 0 }),
   enabled: canRunProtectedQuery(
@@ -115,48 +110,39 @@ function formatIsk(value: number) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value)
 }
 
-watch(
-  [characterId, () => route.query.reauthorize],
-  ([id, reauthorize]) => {
-    if (id && reauthorize === 'success') {
-      void walletQueryResult.refetch()
-      if (transactionsRequested.value) void transactionQuery.refetch()
-    }
-  },
-  { immediate: true },
-)
+useCharacterReauthorization(characterId, () => {
+  void walletQueryResult.refetch()
+  if (transactionsRequested.value) void transactionQuery.refetch()
+})
 </script>
 
 <template>
   <section class="character-wallet-route">
-    <div
-      v-if="walletStatus === 'loading' && !wallet"
-      class="app-state-panel app-state-panel--compact"
-      aria-live="polite"
-    >
-      <div class="app-scanner" aria-hidden="true" />
+    <UiStatePanel v-if="walletStatus === 'loading' && !wallet" compact role="status">
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Decrypting authorized wallet record...</p>
-    </div>
+    </UiStatePanel>
     <CharacterAuthorizationRequired
       v-else-if="walletStatus === 'scope-required'"
       title="Wallet authorization required"
       :message="walletMessage"
       :authorize-url="walletError?.authorizeUrl"
     />
-    <div
+    <UiStatePanel
       v-else-if="walletStatus === 'error' || walletStatus === 'not-found'"
-      class="app-state-panel app-error-panel app-state-panel--compact"
+      :code="walletStatus === 'not-found' ? '404' : 'ERR / WALLET'"
+      title="Wallet unavailable"
+      compact
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">{{
-        walletStatus === 'not-found' ? '404' : 'ERR / WALLET'
-      }}</span>
-      <h2>Wallet unavailable</h2>
       <p>{{ walletMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="walletQueryResult.refetch()">
-        RETRY UPLINK
-      </button>
-    </div>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="walletQueryResult.refetch()">
+          RETRY UPLINK
+        </button>
+      </template>
+    </UiStatePanel>
     <template v-else-if="wallet">
       <CharacterSummaryCard>
         <template #icon>
@@ -211,29 +197,48 @@ watch(
           Transaction history is not loaded automatically. Request the latest ESI market activity
           when needed.
         </p>
-        <p v-else-if="transactionStatus === 'loading' && !transactions" class="wallet-state">
-          Loading market transaction history...
-        </p>
-        <div
+        <UiStatePanel
+          v-else-if="transactionStatus === 'loading' && !transactions"
+          compact
+          role="status"
+        >
+          <p>Loading market transaction history...</p>
+        </UiStatePanel>
+        <UiStatePanel
           v-else-if="transactionStatus === 'error'"
-          class="wallet-state wallet-error"
+          code="ERR / TRANSACTIONS"
+          title="Wallet transactions unavailable"
+          compact
           role="alert"
+          tone="error"
         >
           <p>{{ transactionMessage }}</p>
-          <a
-            v-if="transactionError?.authorizeUrl"
-            class="ui-action-primary"
-            :href="transactionError.authorizeUrl"
-          >
-            AUTHORIZE THIS CHARACTER
-          </a>
-          <button v-else class="ui-action-secondary" type="button" @click="loadTransactions(true)">
-            RETRY UPLINK
-          </button>
-        </div>
-        <p v-else-if="transactions?.transactions.length === 0" class="wallet-state">
-          No recent market activity. This character hasn't bought or sold anything lately.
-        </p>
+          <template #action>
+            <a
+              v-if="transactionError?.authorizeUrl"
+              class="ui-action-primary"
+              :href="transactionError.authorizeUrl"
+            >
+              AUTHORIZE THIS CHARACTER
+            </a>
+            <button
+              v-else
+              class="ui-action-secondary"
+              type="button"
+              @click="loadTransactions(true)"
+            >
+              RETRY UPLINK
+            </button>
+          </template>
+        </UiStatePanel>
+        <UiStatePanel
+          v-else-if="transactions?.transactions.length === 0"
+          code="NO ACTIVITY"
+          title="No recent market activity"
+          compact
+        >
+          <p>This character hasn't bought or sold anything lately.</p>
+        </UiStatePanel>
         <ol v-else-if="transactions" class="wallet-transaction-list">
           <li v-for="transaction in transactions.transactions" :key="transaction.transactionId">
             <UiEveImage kind="type-icon" :id="transaction.typeId" :dimension="44" alt="" />
@@ -263,6 +268,6 @@ watch(
 </template>
 
 <style>
-@import url('~/assets/css/features/skills.css');
-@import url('~/assets/css/responsive/skills.css');
+@import url('~/assets/css/features/wallet.css');
+@import url('~/assets/css/responsive/wallet.css');
 </style>

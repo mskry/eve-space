@@ -1,0 +1,14 @@
+@media (max-width: 760px) {
+  .history-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .employment-timeline li {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .employment-period {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

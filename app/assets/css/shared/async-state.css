@@ -64,23 +64,3 @@
     --tidi-fill: 0deg;
   }
 }
-
-.app-error-panel {
-  text-align: center;
-}
-
-.app-error-panel h2 {
-  margin: 14px 0 4px;
-  color: var(--ink);
-  font: 300 36px/1 sans-serif;
-  letter-spacing: -0.03em;
-}
-
-.app-error-panel p {
-  max-width: 430px;
-  line-height: 1.5;
-}
-
-.app-error-code {
-  color: var(--danger);
-}
