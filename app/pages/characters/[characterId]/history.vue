@@ -4,6 +4,7 @@ import { characterHistoryQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { buildHistoryTimeline } from '../../../utils/history-timeline'
 import { ApiQueryError } from '../../../utils/query-error'
+import { parseRouteId } from '../../../utils/route-id'
 
 interface EmploymentSummary {
   name: string
@@ -18,13 +19,7 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
-const characterId = computed(() => {
-  const value = Array.isArray(route.params.characterId)
-    ? route.params.characterId[0]
-    : route.params.characterId
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
-})
+const characterId = computed(() => parseRouteId(route.params.characterId))
 const historyQuery = useQuery(() => ({
   ...characterHistoryQuery({ apiClient, characterId: characterId.value ?? 0 }),
   enabled: canRunProtectedQuery(
@@ -169,33 +164,33 @@ function formatDuration(milliseconds: number) {
 
 <template>
   <section class="character-history-route">
-    <div
-      v-if="historyStatus === 'loading' && !history"
-      class="app-state-panel app-state-panel--compact"
-      aria-live="polite"
-    >
-      <div class="app-scanner" aria-hidden="true" />
+    <UiStatePanel v-if="historyStatus === 'loading' && !history" compact role="status">
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Resolving corporation archive...</p>
-    </div>
-    <div
+    </UiStatePanel>
+    <UiStatePanel
       v-else-if="historyStatus === 'error' || historyStatus === 'not-found'"
-      class="app-state-panel app-error-panel app-state-panel--compact"
+      :code="historyStatus === 'not-found' ? '404' : 'ERR / HISTORY'"
+      title="Employment history unavailable"
+      compact
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">{{
-        historyStatus === 'not-found' ? '404' : 'ERR / HISTORY'
-      }}</span>
-      <h2>Employment history unavailable</h2>
       <p>{{ historyMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="historyQuery.refetch()">
-        RETRY UPLINK
-      </button>
-    </div>
-    <div v-else-if="timeline.length === 0" class="app-state-panel app-state-panel--compact">
-      <span class="app-error-code">NO RECORDS</span>
-      <h2>No employment history</h2>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="historyQuery.refetch()">
+          RETRY UPLINK
+        </button>
+      </template>
+    </UiStatePanel>
+    <UiStatePanel
+      v-else-if="timeline.length === 0"
+      code="NO RECORDS"
+      title="No employment history"
+      compact
+    >
       <p>ESI returned no corporation history records for this character.</p>
-    </div>
+    </UiStatePanel>
     <template v-else>
       <CharacterSummaryCard>
         <template #icon>

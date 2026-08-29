@@ -4,6 +4,7 @@ import { useQuery } from '@pinia/colada'
 import { characterSkillsQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
+import { parseRouteId } from '../../../utils/route-id'
 
 definePageMeta({ title: 'Character Skills', layout: 'headerless' })
 
@@ -11,13 +12,7 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
-const characterId = computed(() => {
-  const value = Array.isArray(route.params.characterId)
-    ? route.params.characterId[0]
-    : route.params.characterId
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
-})
+const characterId = computed(() => parseRouteId(route.params.characterId))
 const skillsQuery = useQuery(() => ({
   ...characterSkillsQuery({ apiClient, characterId: characterId.value ?? 0 }),
   enabled: canRunProtectedQuery(
@@ -54,13 +49,7 @@ function loadCharacterSkills(force = false) {
   return force ? skillsQuery.refetch() : skillsQuery.refresh()
 }
 
-watch(
-  [characterId, () => route.query.reauthorize],
-  ([id, reauthorize]) => {
-    if (id && reauthorize === 'success') void skillsQuery.refetch()
-  },
-  { immediate: true },
-)
+useCharacterReauthorization(characterId, () => void skillsQuery.refetch())
 
 const totalSpLabel = computed(() => skills.value?.totalSp.toLocaleString('en-US') ?? '0')
 const unallocatedSpLabel = computed(
@@ -133,34 +122,31 @@ const skillGroupColumns = computed(() => {
 
 <template>
   <section class="character-skills-route">
-    <div
-      v-if="skillsStatus === 'loading' && !skills"
-      class="app-state-panel app-state-panel--compact"
-      aria-live="polite"
-    >
-      <div class="app-scanner" aria-hidden="true" />
+    <UiStatePanel v-if="skillsStatus === 'loading' && !skills" compact role="status">
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Decrypting trained skill archive...</p>
-    </div>
+    </UiStatePanel>
     <CharacterAuthorizationRequired
       v-else-if="skillsStatus === 'scope-required'"
       title="Skills authorization required"
       :message="skillsMessage"
       :authorize-url="skillsAuthorizeUrl"
     />
-    <div
+    <UiStatePanel
       v-else-if="skillsStatus === 'error' || skillsStatus === 'not-found'"
-      class="app-state-panel app-error-panel app-state-panel--compact"
+      :code="skillsStatus === 'not-found' ? '404' : 'ERR / SKILLS'"
+      title="Skill archive unavailable"
+      compact
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">{{
-        skillsStatus === 'not-found' ? '404' : 'ERR / SKILLS'
-      }}</span>
-      <h2>Skill archive unavailable</h2>
       <p>{{ skillsMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="loadCharacterSkills(true)">
-        RETRY UPLINK
-      </button>
-    </div>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="loadCharacterSkills(true)">
+          RETRY UPLINK
+        </button>
+      </template>
+    </UiStatePanel>
 
     <template v-else-if="skills">
       <CharacterSummaryCard>
@@ -210,17 +196,23 @@ const skillGroupColumns = computed(() => {
         </UiToolbar>
       </div>
 
-      <div v-if="skills.groups.length === 0" class="skills-empty">
-        <span>00 / NO RECORDS</span>
-        <h2>No trained skills returned</h2>
+      <UiStatePanel
+        v-if="skills.groups.length === 0"
+        code="00 / NO RECORDS"
+        title="No trained skills returned"
+        compact
+      >
         <p>This character's authorized ESI skill archive is currently empty.</p>
-      </div>
+      </UiStatePanel>
 
-      <div v-else-if="filteredGroups.length === 0" class="skills-empty skills-empty--search">
-        <span>00 / NO MATCHES</span>
-        <h2>No matching skills</h2>
+      <UiStatePanel
+        v-else-if="filteredGroups.length === 0"
+        code="00 / NO MATCHES"
+        title="No matching skills"
+        compact
+      >
         <p>No groups or skills match "{{ searchTerm }}".</p>
-      </div>
+      </UiStatePanel>
 
       <div v-else class="skill-groups">
         <div

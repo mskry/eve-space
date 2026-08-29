@@ -45,6 +45,14 @@ export function useAuthSession(apiClient: ApiClient) {
     return sessionState.data?.authenticated ?? false
   }
 
+  async function refreshAuthContext() {
+    await Promise.all([
+      queryCache.invalidateQueries({ exact: true, key: authConfigQuery(apiClient).key }),
+      queryCache.invalidateQueries({ exact: true, key: authSessionQuery(apiClient).key }),
+    ])
+    return authSession.value.authenticated
+  }
+
   async function logout() {
     await logoutMutation.mutateAsync()
     clearAuthenticatedQueries(queryCache, unauthenticatedSession)
@@ -58,5 +66,6 @@ export function useAuthSession(apiClient: ApiClient) {
     authSession,
     initializeAuth,
     logout,
+    refreshAuthContext,
   }
 }

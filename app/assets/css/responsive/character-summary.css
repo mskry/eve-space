@@ -1,0 +1,11 @@
+@media (max-width: 47.5rem) {
+  .character-summary-card {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .character-summary-details {
+    width: 100%;
+    justify-items: start;
+  }
+}

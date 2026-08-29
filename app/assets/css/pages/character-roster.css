@@ -156,6 +156,11 @@
   animation: warp-glow var(--warp-duration) ease-out;
 }
 
+.roster-card-link:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 3px;
+}
+
 .roster-add-card:hover,
 .roster-add-card:focus-visible {
   --dash-color: color-mix(in srgb, var(--accent) 55%, transparent);

@@ -129,6 +129,6 @@ function formatHistoryDate(value: string) {
 </template>
 
 <style>
-@import url('~/assets/css/features/history.css');
-@import url('~/assets/css/responsive/history.css');
+@import url('~/assets/css/features/history-timeline.css');
+@import url('~/assets/css/responsive/history-timeline.css');
 </style>

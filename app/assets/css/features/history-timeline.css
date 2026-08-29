@@ -1,0 +1,179 @@
+.history-content {
+  width: 100%;
+  max-width: 720px;
+  margin: 22px auto 0;
+}
+
+.history-toolbar {
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.history-toolbar input[type='search'] {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--ui-border-strong);
+  outline: none;
+  background: var(--ui-control);
+  color: var(--ui-text);
+  font: 11px/1 var(--ui-font-mono);
+  letter-spacing: 0.06em;
+}
+
+.history-toolbar input[type='search']::placeholder {
+  color: var(--ui-text-faint);
+}
+
+.history-toolbar input[type='search']:focus {
+  border-color: var(--ui-primary);
+  box-shadow: inset 2px 0 0 var(--ui-primary);
+}
+
+.employment-scroller {
+  position: relative;
+  isolation: isolate;
+  margin-top: 10px;
+  max-height: min(58vh, 520px);
+  border: 1px solid var(--ui-border);
+  border-top: 0;
+  background: var(--ui-surface);
+}
+
+.employment-scroller::before,
+.employment-scroller::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  right: 10px;
+  left: 0;
+  height: 24px;
+  pointer-events: none;
+}
+
+.employment-scroller::before {
+  top: 0;
+  background: linear-gradient(to bottom, var(--ui-surface), transparent);
+}
+
+.employment-scroller::after {
+  bottom: 0;
+  background: linear-gradient(to top, var(--ui-surface), transparent);
+}
+
+.history-empty-results {
+  margin: 0;
+  padding: 36px 22px;
+  color: var(--ui-text-muted);
+  font: 10px/1.6 var(--ui-font-mono);
+  letter-spacing: 0.06em;
+}
+
+.employment-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.employment-timeline li {
+  position: relative;
+  min-height: 88px;
+  padding: 18px 22px 18px 38px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.employment-timeline li:last-child {
+  border-bottom: 0;
+}
+
+.employment-timeline li.is-muted {
+  opacity: 0.4;
+}
+
+.employment-timeline li.is-match {
+  background: color-mix(in srgb, var(--ui-primary) 8%, transparent);
+  box-shadow: inset 2px 0 0 var(--ui-primary);
+}
+
+.employment-timeline li::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 17px;
+  width: 1px;
+  background: var(--ui-border);
+}
+
+.employment-marker {
+  position: absolute;
+  z-index: 1;
+  left: 13px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-solid);
+}
+
+.employment-marker.is-current {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ui-primary) 45%, transparent);
+}
+
+.employment-timeline img,
+.employment-deleted-mark {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-raised);
+}
+
+.employment-timeline img {
+  background: var(--ui-logo-background);
+}
+
+.employment-deleted-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  color: var(--ui-text-faint);
+  font: 700 10px/1 var(--ui-font-mono);
+}
+
+.employment-timeline h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.employment-timeline div > p,
+.employment-period {
+  color: var(--ui-text-muted);
+  font: 8px/1.5 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+}
+
+.employment-timeline div > p {
+  margin: 7px 0 0;
+}
+
+.employment-period {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.employment-period strong {
+  color: var(--ui-primary);
+  font: inherit;
+}

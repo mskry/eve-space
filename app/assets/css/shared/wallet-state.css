@@ -19,10 +19,6 @@
   gap: 1.125rem;
 }
 
-.wallet-authorize p {
-  margin: 0;
-}
-
 .wallet-authorize a {
   padding: 0.625rem 0.75rem;
   border: 0.0625rem solid var(--orange);
@@ -31,8 +27,4 @@
   letter-spacing: 0.08em;
   text-decoration: none;
   white-space: nowrap;
-}
-
-.wallet-error {
-  color: var(--danger);
 }

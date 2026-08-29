@@ -124,10 +124,10 @@ useHead({ title: 'Character Roster // EVE Space' })
       {{ attachFeedback }}
     </p>
 
-    <div v-if="authLoading" class="app-state-panel app-state-panel--compact" aria-live="polite">
-      <div class="app-scanner" aria-hidden="true" />
+    <UiStatePanel v-if="authLoading" compact role="status">
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Verifying account identity...</p>
-    </div>
+    </UiStatePanel>
     <section v-else-if="!authSession.authenticated" class="access-locked-panel">
       <span class="access-locked-icon"><AppIcon name="auth" /></span>
       <div>
@@ -137,26 +137,29 @@ useHead({ title: 'Character Roster // EVE Space' })
       </div>
       <NuxtLink class="ui-action-primary" to="/auth">OPEN IDENTITY GATEWAY</NuxtLink>
     </section>
-    <div
+    <UiStatePanel
       v-else-if="rosterStatus === 'loading' && characters.length === 0"
-      class="app-state-panel app-state-panel--compact"
-      aria-live="polite"
+      compact
+      role="status"
     >
-      <div class="app-scanner" aria-hidden="true" />
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
       <p>Loading characters...</p>
-    </div>
-    <div
+    </UiStatePanel>
+    <UiStatePanel
       v-else-if="rosterStatus === 'error' && characters.length === 0"
-      class="app-state-panel app-error-panel app-state-panel--compact"
+      code="ERR / ROSTER"
+      title="Roster unavailable"
+      compact
       role="alert"
+      tone="error"
     >
-      <span class="app-error-code">ERR / ROSTER</span>
-      <h2>Roster unavailable</h2>
       <p>{{ rosterMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="refetchCharacterRoster()">
-        RETRY UPLINK
-      </button>
-    </div>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="refetchCharacterRoster()">
+          RETRY UPLINK
+        </button>
+      </template>
+    </UiStatePanel>
 
     <template v-else-if="authSession.authenticated">
       <p v-if="rosterMessage" class="ui-inline-error" role="alert">{{ rosterMessage }}</p>
@@ -203,7 +206,6 @@ useHead({ title: 'Character Roster // EVE Space' })
 
 <style>
 @import url('~/assets/css/pages/character-roster.css');
-@import url('~/assets/css/pages/settings.css');
+@import url('~/assets/css/features/character-access.css');
 @import url('~/assets/css/responsive/roster.css');
-@import url('~/assets/css/responsive/settings.css');
 </style>

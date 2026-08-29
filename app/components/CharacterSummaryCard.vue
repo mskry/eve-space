@@ -19,6 +19,6 @@
 </template>
 
 <style>
-@import url('~/assets/css/features/wallet.css');
-@import url('~/assets/css/responsive/wallet.css');
+@import url('~/assets/css/features/character-summary.css');
+@import url('~/assets/css/responsive/character-summary.css');
 </style>

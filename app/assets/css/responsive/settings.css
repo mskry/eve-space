@@ -16,12 +16,4 @@
     grid-column: 2;
     width: max-content;
   }
-
-  .access-locked-panel {
-    grid-template-columns: 1fr;
-  }
-
-  .access-locked-panel .ui-action-primary {
-    width: max-content;
-  }
 }
