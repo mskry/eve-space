@@ -34,7 +34,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   )
   const assignedLabelIds = computed(() => {
     const detail = options.mailbox.displayedDetail.value
-    if (!detail || detail.mailId !== options.mailbox.selectedMailId.value) return new Set<number>()
+    if (detail?.mailId !== options.mailbox.selectedMailId.value) return new Set<number>()
     return new Set(detail.labelIds)
   })
   function resetOrganizationView() {
@@ -197,7 +197,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
 
   function openLabelAssignment() {
     const detail = options.mailbox.displayedDetail.value
-    if (!detail || detail.mailId !== options.mailbox.selectedMailId.value) return
+    if (detail?.mailId !== options.mailbox.selectedMailId.value) return
     assignmentFeedback.value = ''
     labelAssignmentOpen.value = true
   }
@@ -289,7 +289,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   async function changeOpenMessageLabel(labelId: number, assigned: boolean) {
     const characterId = options.characterId.value
     const detail = options.mailbox.displayedDetail.value
-    if (!characterId || !detail || detail.mailId !== options.mailbox.selectedMailId.value) {
+    if (!characterId || detail?.mailId !== options.mailbox.selectedMailId.value) {
       assignmentFeedback.value = 'Wait for the complete message before changing its labels.'
       return
     }

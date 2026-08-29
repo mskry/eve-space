@@ -49,6 +49,7 @@ function isCurrent(entry: RecordSectionNavigationEntry) {
   margin-bottom: 1.375rem;
   display: flex;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-inline: contain;
   border: 0.0625rem solid var(--ui-border);
   background: var(--ui-surface);

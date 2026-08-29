@@ -4,8 +4,10 @@ import { http, HttpResponse } from 'msw'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  characterAttributesQuery,
   characterHistoryQuery,
   characterOverviewQuery,
+  characterSkillQueueQuery,
   characterSkillsQuery,
   type CharacterOverview,
 } from '../app/queries/characters'
@@ -86,6 +88,12 @@ describe('protected character queries', () => {
         options.key,
         characterOverviewResponse(characterId, String(characterId)),
       )
+      const attributeOptions = characterAttributesQuery({
+        apiClient: createApiClient('http://localhost'),
+        characterId,
+      })
+      queryCache.ensure(attributeOptions)
+      queryCache.setQueryData(attributeOptions.key, characterAttributesResponse())
       const historyOptions = characterHistoryQuery({
         apiClient: createApiClient('http://localhost'),
         characterId,
@@ -118,6 +126,7 @@ describe('protected character queries', () => {
     removeCharacterQueries(queryCache, 7)
 
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterOverview(7))).toBeUndefined()
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAttributes(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterHistory(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.walletTransactions(7))).toBeUndefined()
     expect(
@@ -126,6 +135,7 @@ describe('protected character queries', () => {
       ),
     ).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterOverview(8))).toBeDefined()
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAttributes(8))).toBeDefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterHistory(8))).toBeDefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.walletTransactions(8))).toBeDefined()
     expect(
@@ -286,6 +296,66 @@ describe('protected character queries', () => {
     wrapper.unmount()
   })
 
+  it('loads character attributes for the selected character', async () => {
+    queryServer.use(
+      http.get('http://localhost/api/me/characters/7/attributes', () =>
+        HttpResponse.json(characterAttributesResponse()),
+      ),
+    )
+    const apiClient = createApiClient('http://localhost')
+    const Root = defineComponent({
+      setup() {
+        const result = useQuery(characterAttributesQuery({ apiClient, characterId: 7 }))
+        return () => h('span', result.data.value?.intelligence ?? 'loading')
+      },
+    })
+
+    const { wrapper } = mountWithQueryPlugins(Root)
+    await flushPromises()
+
+    expect(wrapper.text()).toBe('27')
+    wrapper.unmount()
+  })
+
+  it('loads the skill queue for the selected character', async () => {
+    queryServer.use(
+      http.get('http://localhost/api/me/characters/7/skill-queue', () =>
+        HttpResponse.json({
+          entries: [
+            {
+              queuePosition: 0,
+              typeId: 3300,
+              name: 'Gunnery',
+              groupId: 255,
+              groupName: 'Gunnery',
+              finishedLevel: 5,
+              levelStartSp: 256000,
+              levelEndSp: 512000,
+              trainingStartSp: 260000,
+              startDate: '2026-08-29T12:00:00Z',
+              finishDate: '2026-08-30T12:00:00Z',
+              primaryAttribute: 'perception',
+              secondaryAttribute: 'willpower',
+            },
+          ],
+        }),
+      ),
+    )
+    const apiClient = createApiClient('http://localhost')
+    const Root = defineComponent({
+      setup() {
+        const result = useQuery(characterSkillQueueQuery({ apiClient, characterId: 7 }))
+        return () => h('span', result.data.value?.entries[0]?.name ?? 'loading')
+      },
+    })
+
+    const { wrapper } = mountWithQueryPlugins(Root)
+    await flushPromises()
+
+    expect(wrapper.text()).toBe('Gunnery')
+    wrapper.unmount()
+  })
+
   it('preserves scope and reauthorization fields for feature UI', async () => {
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/skills', () =>
@@ -373,5 +443,18 @@ function characterOverviewResponse(characterId: number, name: string): Character
     location: { status: 'unavailable', message: 'Unavailable' },
     ship: { status: 'unavailable', message: 'Unavailable' },
     skills: { status: 'unavailable', message: 'Unavailable' },
+  }
+}
+
+function characterAttributesResponse() {
+  return {
+    charisma: 19,
+    intelligence: 27,
+    memory: 23,
+    perception: 24,
+    willpower: 21,
+    bonusRemaps: 2,
+    accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
+    lastRemapDate: '2025-10-01T12:00:00Z',
   }
 }

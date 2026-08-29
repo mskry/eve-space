@@ -214,6 +214,16 @@ export const coreEsiOperationCatalog = {
     cache: { kind: 'none' },
     retry,
   }),
+  attributes: defineContract('attributes', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'skill-queue': defineContract('skill-queue', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
   skills: defineContract('skills', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),

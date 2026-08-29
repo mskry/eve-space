@@ -29,6 +29,10 @@ export const PRIVATE_QUERY_KEYS = {
     [...PRIVATE_QUERY_KEYS.characterModule(characterId, moduleId), resourceId] as const,
   characterOverview: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'overview'] as const,
+  characterAttributes: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.character(characterId), 'attributes'] as const,
+  characterSkillQueue: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.character(characterId), 'skill-queue'] as const,
   characterSkills: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'skills'] as const,
   characterHistory: (characterId: number) =>

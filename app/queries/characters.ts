@@ -15,6 +15,18 @@ export type CharacterOverview = InferResponseType<
   ApiClient['api']['me']['characters'][':characterId']['$get'],
   200
 >
+export type CharacterAttributes = InferResponseType<
+  ApiClient['api']['me']['characters'][':characterId']['attributes']['$get'],
+  200
+>
+export type CharacterSkillQueue = InferResponseType<
+  ApiClient['api']['me']['characters'][':characterId']['skill-queue']['$get'],
+  200
+>
+export type CharacterSkills = InferResponseType<
+  ApiClient['api']['me']['characters'][':characterId']['skills']['$get'],
+  200
+>
 
 interface CharacterQueryParameters {
   apiClient: ApiClient
@@ -68,6 +80,23 @@ export const characterOverviewQuery = defineQueryOptions(
   }),
 )
 
+export const characterAttributesQuery = defineQueryOptions(
+  ({ apiClient, characterId }: CharacterQueryParameters) => ({
+    key: PRIVATE_QUERY_KEYS.characterAttributes(characterId),
+    query: async ({ signal }) => {
+      const response = await apiClient.api.me.characters[':characterId'].attributes.$get(
+        { param: { characterId: String(characterId) } },
+        { init: { signal } },
+      )
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Character attributes are unavailable.')
+      }
+      return response.json()
+    },
+    ...QUERY_POLICY.characterAttributes,
+  }),
+)
+
 export const characterSkillsQuery = defineQueryOptions(
   ({ apiClient, characterId }: CharacterQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterSkills(characterId),
@@ -82,6 +111,23 @@ export const characterSkillsQuery = defineQueryOptions(
       return response.json()
     },
     ...QUERY_POLICY.characterSkills,
+  }),
+)
+
+export const characterSkillQueueQuery = defineQueryOptions(
+  ({ apiClient, characterId }: CharacterQueryParameters) => ({
+    key: PRIVATE_QUERY_KEYS.characterSkillQueue(characterId),
+    query: async ({ signal }) => {
+      const response = await apiClient.api.me.characters[':characterId']['skill-queue'].$get(
+        { param: { characterId: String(characterId) } },
+        { init: { signal } },
+      )
+      if (response.status !== 200) {
+        throw await toApiQueryError(response, 'Character skill queue is unavailable.')
+      }
+      return response.json()
+    },
+    ...QUERY_POLICY.characterSkillQueue,
   }),
 )
 

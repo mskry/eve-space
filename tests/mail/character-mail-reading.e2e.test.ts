@@ -509,7 +509,7 @@ describe('character mail reading', async () => {
     const mailRequestsAfterCallback = mailRequests().length
     await page.goBack()
     await page.goForward()
-    await page.waitForTimeout(100)
+    await page.waitForLoadState('networkidle')
 
     expect(requestsFor('/api/me/characters')).toHaveLength(rosterRequestsAfterCallback)
     expect(mailRequests()).toHaveLength(mailRequestsAfterCallback)
