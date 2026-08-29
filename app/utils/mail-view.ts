@@ -106,11 +106,9 @@ export function deriveDisplayedMailCounts(options: {
     visited.add(header.mailId)
     const wasUnread = isMailUnread(header.isRead)
     const override = options.readStateOverrides.get(header.mailId)
-    const isUnread = options.deletedMailIds.has(header.mailId)
-      ? false
-      : override === undefined
-        ? wasUnread
-        : !override
+    let isUnread = wasUnread
+    if (options.deletedMailIds.has(header.mailId)) isUnread = false
+    else if (override !== undefined) isUnread = !override
     if (wasUnread === isUnread) continue
 
     const delta = isUnread ? 1 : -1
@@ -144,12 +142,15 @@ export function appendUniqueMailHeaders(
   return [...current, ...older.filter((header) => !retainedIds.has(header.mailId))]
 }
 
-export function mergeLatestMailHeaders(
+export function mergePaginatedMailHeaders(
   current: readonly MailHeader[],
   latest: readonly MailHeader[],
-  hasPaginated: boolean,
 ) {
-  return hasPaginated ? appendUniqueMailHeaders(latest, current) : [...latest]
+  return appendUniqueMailHeaders(latest, current)
+}
+
+export function replaceLatestMailHeaders(latest: readonly MailHeader[]) {
+  return [...latest]
 }
 
 export function splitMailBodyParagraphs(body: string | null) {

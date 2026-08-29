@@ -37,8 +37,9 @@ export async function runMigrations(
     select current_setting('lock_timeout') as lock_timeout
   `
   const restoreLockTimeout = session?.lock_timeout ?? '0'
+  const lockTimeout = `${lockTimeoutMs}ms`
   try {
-    await reservedConnection`select set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, false)`
+    await reservedConnection`select set_config('lock_timeout', ${lockTimeout}, false)`
     await reservedConnection`select pg_advisory_lock(${migrationLockId})`
     await reservedConnection`
       create table if not exists schema_migrations (

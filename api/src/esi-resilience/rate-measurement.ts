@@ -146,7 +146,7 @@ export async function readEsiRateMeasurement(
     groupContracts.set(rateLimit.group, { ...rateLimit, scope })
   }
   const groups = await Promise.all(
-    [...groupContracts].map(async ([group, contract]) => {
+    Array.from(groupContracts, async ([group, contract]) => {
       const counts = await readCounts(
         connection,
         measurementKey('group', group, bucketStart),
@@ -217,7 +217,8 @@ function asCount(value: string | undefined) {
 }
 
 function characterAverage(value: number, count: number | null) {
-  return count === null ? null : count > 0 ? round(value / count) : 0
+  if (count === null) return null
+  return count > 0 ? round(value / count) : 0
 }
 
 function percentage(value: number, maximum: number) {

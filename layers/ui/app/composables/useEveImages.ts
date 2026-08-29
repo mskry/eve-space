@@ -12,7 +12,7 @@ const imageSizes = new Set<EveImageSize>([32, 64, 128, 256, 512, 1024])
 
 export function useEveImages() {
   const runtimeConfig = useRuntimeConfig()
-  const baseUrl = String(runtimeConfig.public.eveImageBase).replace(/\/+$/, '')
+  const baseUrl = trimTrailingSlashes(String(runtimeConfig.public.eveImageBase))
 
   function imageUrl(
     request: EveImageRequest,
@@ -44,6 +44,12 @@ export function useEveImages() {
   }
 }
 
+function trimTrailingSlashes(value: string) {
+  let end = value.length
+  while (end > 0 && value.codePointAt(end - 1) === 47) end -= 1
+  return value.slice(0, end)
+}
+
 function normalizeImageId(value: EveImageId) {
   const id = String(value)
   if (!isPositiveInteger(id)) throw new TypeError(`Invalid EVE image ID: ${id}`)
@@ -51,10 +57,10 @@ function normalizeImageId(value: EveImageId) {
 }
 
 function isPositiveInteger(value: string) {
-  if (value.length === 0 || value.charCodeAt(0) < 49 || value.charCodeAt(0) > 57) return false
+  if (value.length === 0 || value.codePointAt(0)! < 49 || value.codePointAt(0)! > 57) return false
 
   for (let index = 1; index < value.length; index += 1) {
-    const code = value.charCodeAt(index)
+    const code = value.codePointAt(index)!
     if (code < 48 || code > 57) return false
   }
   return true

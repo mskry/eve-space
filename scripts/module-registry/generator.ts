@@ -206,10 +206,12 @@ function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
     ({ manifest, resource, binding }) =>
       `import { ${resource.exportName} as ${binding} } from ${quote(manifest.server.package)}\n`,
   )
-  const descriptors = resources.map(
-    ({ manifest, resource, binding }) =>
-      `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${resource.batch ? ` batch: { mode: ${quote(resource.batch.mode)}, operationId: ${quote(resource.batch.operationId)} },` : ''} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, implementation: ${binding} }`,
-  )
+  const descriptors = resources.map(({ manifest, resource, binding }) => {
+    const batch = resource.batch
+      ? ` batch: { mode: ${quote(resource.batch.mode)}, operationId: ${quote(resource.batch.operationId)} },`
+      : ''
+    return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, implementation: ${binding} }`
+  })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
   return `${generatedHeader}import type {\n  PlatformInstalledResourceDescriptor,\n  PlatformResourceOperationImplementation,\n} from '@eve-space/platform-module-contract'\n${imports.join('')}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>[]\n`
 }
@@ -307,7 +309,8 @@ function renderNuxtModules(manifests: readonly PlatformModuleManifest[]) {
   const imports = manifests.map(
     (manifest, index) => `import module${index} from ${quote(manifest.nuxt.package)}\n`,
   )
-  return `${generatedHeader}${imports.join('')}export const installedNuxtModules = [${manifests.map((_manifest, index) => `module${index}`).join(', ')}] as const\n`
+  const moduleBindings = manifests.map((_manifest, index) => `module${index}`).join(', ')
+  return `${generatedHeader}${imports.join('')}export const installedNuxtModules = [${moduleBindings}] as const\n`
 }
 
 function renderNuxtContributions(manifests: readonly PlatformModuleManifest[]) {

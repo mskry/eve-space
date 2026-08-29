@@ -238,9 +238,6 @@
 .employment-deleted-mark {
   width: 48px;
   height: 48px;
-}
-
-.employment-deleted-mark {
   display: grid;
   place-items: center;
   color: var(--ui-text-faint);

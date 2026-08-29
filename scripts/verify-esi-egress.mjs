@@ -190,9 +190,10 @@ function moduleSourceEgressViolations(path, source, operationIds) {
   if (/(?:^|[^\w$])(?:globalThis\.)?fetch\s*\(/m.test(source))
     findings.push(`${path}: feature server code performs direct fetch instead of shared ESI egress`)
   if (
-    /\bcreateEsiTransport\b|(?:class|function)\s+\w*Esi\w*Transport\w*|(?:const|let|var)\s+\w*(?:esi\w*transport|transport\w*esi)\w*/i.test(
-      source,
-    ) ||
+    source.includes('createEsiTransport') ||
+    /(?:class|function)\s+\w*Esi\w*Transport\w*/i.test(source) ||
+    /(?:const|let|var)\s+\w*esi\w*transport\w*/i.test(source) ||
+    /(?:const|let|var)\s+\w*transport\w*esi\w*/i.test(source) ||
     /(?:from\s*|import\s*\(?)['"](?:node-fetch|undici|axios|got)['"]/.test(source)
   )
     findings.push(`${path}: feature server code defines or imports a duplicate ESI transport`)

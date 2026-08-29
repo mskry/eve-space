@@ -19,6 +19,7 @@ const {
   rosterMessage,
   rosterStatus,
   removeCharacter,
+  refetchCharacterRoster,
   selectMainCharacter,
 } = useCharacterRoster(apiClient)
 const { openConfirmDialog } = useConfirmDialog()
@@ -89,7 +90,7 @@ watch(
 
     if (callbackStatus === 'success' && callbackHandled.value !== route.fullPath) {
       callbackHandled.value = route.fullPath
-      await Promise.all([initializeAuth(true), loadCharacterRoster(true)])
+      await Promise.all([initializeAuth(true), refetchCharacterRoster()])
       return
     }
     if (rosterStatus.value === 'idle' && characters.value.length === 0) {
@@ -152,7 +153,7 @@ useHead({ title: 'Character Roster // EVE Space' })
       <span class="app-error-code">ERR / ROSTER</span>
       <h2>Roster unavailable</h2>
       <p>{{ rosterMessage }}</p>
-      <button class="ui-action-secondary" type="button" @click="loadCharacterRoster(true)">
+      <button class="ui-action-secondary" type="button" @click="refetchCharacterRoster()">
         RETRY UPLINK
       </button>
     </div>

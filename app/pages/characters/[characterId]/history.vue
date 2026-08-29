@@ -54,13 +54,13 @@ const historyStatus = computed(() => {
   if (historyQuery.asyncStatus.value === 'loading') return 'loading'
   return 'idle'
 })
-const timeline = computed(() =>
-  employment.value.map((entry, index) =>
-    Object.assign({}, entry, {
-      endDate: index === 0 ? undefined : employment.value[index - 1]?.startDate,
-    }),
-  ),
-)
+const timeline = computed(() => {
+  const toTimelineEntry = (entry: (typeof employment.value)[number], index: number) => ({
+    ...entry,
+    endDate: index === 0 ? undefined : employment.value[index - 1]?.startDate,
+  })
+  return employment.value.map(toTimelineEntry)
+})
 
 const playerEmploymentSummary = computed(() => {
   const corporations = new Map<number, EmploymentSummary>()
@@ -187,7 +187,10 @@ function formatDuration(milliseconds: number) {
   const years = Math.floor(days / 365)
   const months = Math.floor((days % 365) / 30)
 
-  if (years > 0) return `${years}Y${months > 0 ? ` ${months}M` : ''}`
+  if (years > 0) {
+    const monthDuration = months > 0 ? ` ${months}M` : ''
+    return `${years}Y${monthDuration}`
+  }
   if (months > 0) return `${months}M ${days % 30}D`
   return `${days}D`
 }

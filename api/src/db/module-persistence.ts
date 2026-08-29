@@ -60,13 +60,14 @@ export function createTransactionScopedModulePersistenceCapability(
       select current_user as role, current_setting('search_path') as search_path
     `
     if (!session) throw new Error('Unable to capture platform transaction settings')
+    const searchPath = `pg_catalog, ${schemaName}`
 
     const result = await operationScope.run(true, () =>
       // The savepoint keeps a module failure from poisoning the platform transaction, and
       // rolling back to it reverts the module role and search_path along with the writes.
       transaction.savepoint(async (scope) => {
         await scope`set local role ${scope(runtimeRoleName)}`
-        await scope`select set_config('search_path', ${`pg_catalog, ${schemaName}`}, true)`
+        await scope`select set_config('search_path', ${searchPath}, true)`
         let active = true
         const scopedTransaction: PlatformModuleResourceTransaction = {
           async query<Row extends object>(statement: string, parameters: readonly unknown[] = []) {

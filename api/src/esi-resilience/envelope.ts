@@ -51,30 +51,31 @@ export function createCacheEnvelope<Data>(options: {
   }
 }
 
-export function updateNotModifiedEnvelope<Data>(
-  envelope: EsiCacheEnvelope<Data>,
-  metadata: EsiResponseMetadata | undefined,
-  policy: EsiOperationContract,
-  representationVersion: string,
-  authorization: EsiCacheAuthorization | undefined,
-  now = Date.now(),
-  fence = envelope.fence,
-  resourceRevision = envelope.resourceRevision,
-): EsiCacheEnvelope<Data> {
+export function updateNotModifiedEnvelope<Data>(options: {
+  envelope: EsiCacheEnvelope<Data>
+  metadata?: EsiResponseMetadata
+  policy: EsiOperationContract
+  representationVersion: string
+  authorization?: EsiCacheAuthorization
+  now?: number
+  fence?: number
+  resourceRevision?: EsiCacheResourceRevision
+}): EsiCacheEnvelope<Data> {
+  const now = options.now ?? Date.now()
   const refreshed = createCacheEnvelope({
-    data: envelope.data,
-    metadata,
-    policy,
-    representationVersion,
-    authorization,
-    resourceRevision,
-    fence,
+    data: options.envelope.data,
+    metadata: options.metadata,
+    policy: options.policy,
+    representationVersion: options.representationVersion,
+    authorization: options.authorization,
+    resourceRevision: options.resourceRevision ?? options.envelope.resourceRevision,
+    fence: options.fence ?? options.envelope.fence,
     now,
   })
   return {
     ...refreshed,
-    etag: metadata?.cache?.etag ?? envelope.etag,
-    lastModified: metadata?.cache?.lastModified ?? envelope.lastModified,
+    etag: options.metadata?.cache?.etag ?? options.envelope.etag,
+    lastModified: options.metadata?.cache?.lastModified ?? options.envelope.lastModified,
   }
 }
 

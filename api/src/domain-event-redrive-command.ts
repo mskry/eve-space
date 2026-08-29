@@ -116,10 +116,11 @@ function parseTimestamp(value: string, argument: string) {
   if (!match) throw new Error(`${argument} must be an ISO-8601 timestamp with a timezone`)
   const timestamp = new Date(value)
   if (Number.isNaN(timestamp.getTime())) throw new Error(`${argument} must be a valid timestamp`)
-  const offsetMinutes =
-    match[8] === 'Z'
-      ? 0
-      : (match[9] === '+' ? 1 : -1) * (Number(match[10]) * 60 + Number(match[11]))
+  let offsetMinutes = 0
+  if (match[8] !== 'Z') {
+    const direction = match[9] === '+' ? 1 : -1
+    offsetMinutes = direction * (Number(match[10]) * 60 + Number(match[11]))
+  }
   const localTimestamp = new Date(timestamp.getTime() + offsetMinutes * 60_000)
   const expected = [
     Number(match[1]),

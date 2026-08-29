@@ -7,7 +7,7 @@ import type { EsiOperationContract } from './catalog.js'
 const scopePattern = /^esi-[a-z0-9_-]+\.[a-z0-9_]+\.v[1-9][0-9]*$/
 const identityFieldPattern = /^[A-Za-z][A-Za-z0-9]*$/
 const representationVersionPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
-const rateWindowPattern = /^[1-9][0-9]*(?:s|m|h|d)$/
+const rateWindowPattern = /^[1-9][0-9]*[smhd]$/
 const maximumEsiRequestAttempts = 3
 
 interface RateGroupDefinition {

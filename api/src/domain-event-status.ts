@@ -28,13 +28,11 @@ export async function probeDomainEventStatus(
       relayFacts.latestOutboxRelayOutcome?.outcome === 'failed' ||
       relayFacts.latestOutboxRelayOutcome?.outcome === 'partial-failure'
 
+    let status: DomainEventStatus['status'] = 'operational'
+    if (relayFacts.status === 'unavailable') status = 'unavailable'
+    else if (lagged || relayFacts.outboxRelayPaused || failedOutcome) status = 'degraded'
     return {
-      status:
-        relayFacts.status === 'unavailable'
-          ? 'unavailable'
-          : lagged || relayFacts.outboxRelayPaused || failedOutcome
-            ? 'degraded'
-            : 'operational',
+      status,
       pendingCount: aggregate.pendingCount,
       oldestPendingAgeSeconds,
       relayPaused: relayFacts.outboxRelayPaused,

@@ -74,12 +74,10 @@ function normalizeInputs(
   identity: ReturnType<typeof getEsiOperationContract>['identity'],
   inputs: Readonly<Record<string, unknown>>,
 ) {
-  const allowedFields =
-    identity.kind === 'ordered'
-      ? identity.fields
-      : identity.kind === 'set'
-        ? [identity.field]
-        : identity.fields.map(({ field }) => field)
+  let allowedFields: readonly string[]
+  if (identity.kind === 'ordered') allowedFields = identity.fields
+  else if (identity.kind === 'set') allowedFields = [identity.field]
+  else allowedFields = identity.fields.map(({ field }) => field)
   const identityInputs = isSdkRequestEnvelope(inputs)
     ? projectSdkRequestIdentity(inputs, allowedFields)
     : inputs
@@ -137,8 +135,12 @@ function normalizeSet(value: unknown, field: string, maximumItems: number) {
   const unique = new Map(
     normalized.map((normalizedValue) => [JSON.stringify(normalizedValue), normalizedValue]),
   )
-  return [...unique.entries()]
-    .toSorted(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+  return Array.from(unique.entries())
+    .toSorted(([left], [right]) => {
+      if (left < right) return -1
+      if (left > right) return 1
+      return 0
+    })
     .map(([, item]) => item)
 }
 

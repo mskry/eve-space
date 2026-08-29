@@ -24,10 +24,10 @@ export function createPlannerRepeatStrategy(
         (options.immediately ? 0 : options.every)
       )
     }
-    const next = await defaultRepeatStrategy(millis, options)
+    const next = defaultRepeatStrategy(millis, options)
     if (name !== 'planner' || next === undefined) return next
 
-    const following = await defaultRepeatStrategy(next, options)
+    const following = defaultRepeatStrategy(next, options)
     if (following !== undefined && next + deploymentOffsetMs + initialDelayMaximumMs >= following) {
       throw new Error(
         'Planner schedule offset and initial delay must fit before its next occurrence',
@@ -44,7 +44,7 @@ export async function plannerInitialDelay(
   sample: (maximumInclusive: number) => number = (maximumInclusive) =>
     randomInt(1, maximumInclusive + 1),
 ) {
-  const next = await defaultRepeatStrategy(now, options ?? { pattern: env.QUEUE_PLANNER_SCHEDULE })
+  const next = defaultRepeatStrategy(now, options ?? { pattern: env.QUEUE_PLANNER_SCHEDULE })
   if (next === undefined) return 0
 
   const boundedMaximum = Math.min(maximumMs, Math.max(0, next - now - 1))
@@ -165,7 +165,11 @@ export async function runWithSchedulerOverlapPolicy<T>(
   try {
     const result = await Promise.race([operation(lease.signal), rejectWhenLeaseLost(lease.signal)])
     // A new owner may have run this concurrently, so it is not this replica's completed run.
-    if (!held) throw lease.signal.reason as Error
+    if (!held) {
+      const reason = lease.signal.reason
+      if (reason instanceof Error) throw reason
+      throw new SchedulerLeaseLostError(schedulerId)
+    }
     return { executed: true as const, result }
   } finally {
     clearInterval(renewal)

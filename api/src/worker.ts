@@ -40,8 +40,10 @@ export async function startWorker() {
   if (reason === 'run-loop-stopped') process.exitCode = 1
 }
 
-startWorker().catch(async (error) => {
+try {
+  await startWorker()
+} catch (error) {
   console.error('Worker startup failed', error instanceof Error ? error.message : 'unknown error')
   await sql.end({ timeout: 1 })
   process.exitCode = 1
-})
+}

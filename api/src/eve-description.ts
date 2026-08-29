@@ -14,10 +14,7 @@ const escapedCharacters: Readonly<Record<string, string>> = {
 
 export function eveDescriptionToPlainText(html: string | undefined | null): string | undefined {
   if (!html) return undefined
-  const text = html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
+  const text = stripMarkup(html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n'))
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
@@ -28,6 +25,20 @@ export function eveDescriptionToPlainText(html: string | undefined | null): stri
     .trim()
   const normalized = decodeLegacyUnicodeLiteral(text).trim()
   return normalized || undefined
+}
+
+function stripMarkup(value: string) {
+  let plainText = ''
+  let cursor = 0
+  while (cursor < value.length) {
+    const start = value.indexOf('<', cursor)
+    if (start === -1) return plainText + value.slice(cursor)
+    const end = value.indexOf('>', start + 1)
+    if (end === -1) return plainText + value.slice(cursor)
+    plainText += value.slice(cursor, start)
+    cursor = end + 1
+  }
+  return plainText
 }
 
 function decodeLegacyUnicodeLiteral(value: string) {

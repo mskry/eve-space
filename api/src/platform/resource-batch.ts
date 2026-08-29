@@ -181,16 +181,17 @@ async function executeInstalledResourceBatchOperation(
   const eligibleBySubject = new Map(
     eligible.map((candidate) => [batchSubjectKey(candidate.subject), candidate]),
   )
+  const enrichClassification = (classification: (typeof classifications)[number]) => {
+    const eligibleSubject = eligibleBySubject.get(batchSubjectKey(classification.subject))
+    if (!eligibleSubject) throw new Error('Resource batch classification is not eligible')
+    return { ...eligibleSubject, ...classification }
+  }
 
   return {
     outcome: 'loaded',
     resource,
     validatedAt: result.validatedAt,
-    classifications: classifications.map((classification) => {
-      const eligibleSubject = eligibleBySubject.get(batchSubjectKey(classification.subject))
-      if (!eligibleSubject) throw new Error('Resource batch classification is not eligible')
-      return Object.assign({}, eligibleSubject, classification)
-    }),
+    classifications: classifications.map(enrichClassification),
   }
 }
 

@@ -213,12 +213,11 @@ function dependencyTelemetry(
 ) {
   if (available) failures[dependency] = 0
   else failures[dependency] += 1
+  let status: 'operational' | 'unavailable' | 'degraded' = 'degraded'
+  if (available) status = 'operational'
+  else if (failures[dependency] >= unavailableAfterConsecutiveFailures) status = 'unavailable'
   return {
-    status: available
-      ? ('operational' as const)
-      : failures[dependency] >= unavailableAfterConsecutiveFailures
-        ? ('unavailable' as const)
-        : ('degraded' as const),
+    status,
     checkedAt,
   }
 }

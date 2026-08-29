@@ -110,18 +110,18 @@ describe('ESI cache envelopes', () => {
         cache: { etag: '"old"', lastModified: 'old' },
       },
     })
-    const refreshed = updateNotModifiedEnvelope(
-      original,
-      {
+    const refreshed = updateNotModifiedEnvelope({
+      envelope: original,
+      metadata: {
         status: 304,
         headers: { 'x-ratelimit-remaining': '98' },
         cache: { cacheControl: 'max-age=10' },
       },
       policy,
-      'v1',
-      { kind: 'character', principal: 'character-1', generation: 3 },
-      now + 1_000,
-    )
+      representationVersion: 'v1',
+      authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+      now: now + 1_000,
+    })
 
     expect(toRevalidation(original)).toEqual({ ifNoneMatch: '"old"', ifModifiedSince: 'old' })
     expect(toRevalidation(original, false)).toEqual({})

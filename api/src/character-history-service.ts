@@ -43,20 +43,22 @@ export async function getCharacterEmploymentHistory(
         ]
         const names = await resolveUniverseNames(corporationIds)
         return {
-          data: response.data.map((record) => ({
-            recordId: record.record_id,
-            startDate: record.start_date,
-            isDeleted: record.is_deleted ?? false,
-            corporation: {
-              id: record.corporation_id,
-              name: record.is_deleted
-                ? 'Deleted corporation'
-                : names.get(record.corporation_id)?.category === 'corporation'
-                  ? names.get(record.corporation_id)!.name
-                  : 'Unknown corporation',
-              isNpc: isNpcCorporation(record.corporation_id),
-            },
-          })),
+          data: response.data.map((record) => {
+            const resolved = names.get(record.corporation_id)
+            let name = 'Unknown corporation'
+            if (record.is_deleted) name = 'Deleted corporation'
+            else if (resolved?.category === 'corporation') name = resolved.name
+            return {
+              recordId: record.record_id,
+              startDate: record.start_date,
+              isDeleted: record.is_deleted ?? false,
+              corporation: {
+                id: record.corporation_id,
+                name,
+                isNpc: isNpcCorporation(record.corporation_id),
+              },
+            }
+          }),
           meta: response.meta,
         }
       },

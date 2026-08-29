@@ -120,11 +120,12 @@ async function applyModuleMigrationSet(
   }
 
   const { schemaName } = modulePersistenceNames(moduleId)
+  const searchPath = `${schemaName}, pg_catalog`
   for (const [index, migration] of pendingMigrations.entries()) {
     // oxlint-disable-next-line no-await-in-loop
     await runInTransaction(connection, async () => {
       if (index === 0) await provisionModulePersistence(connection, moduleId)
-      await connection`select set_config('search_path', ${`${schemaName}, pg_catalog`}, true)`
+      await connection`select set_config('search_path', ${searchPath}, true)`
       await connection.unsafe(migration.sql).simple()
       await connection`
         insert into public.schema_migrations (module, name)
@@ -165,7 +166,8 @@ async function acquireModuleMigrationLease(
       select current_setting('lock_timeout') as lock_timeout
     `
     restoreLockTimeout = session?.lock_timeout
-    await reservedConnection`select set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, false)`
+    const lockTimeout = `${lockTimeoutMs}ms`
+    await reservedConnection`select set_config('lock_timeout', ${lockTimeout}, false)`
     await reservedConnection`
       select pg_advisory_lock(${moduleMigrationLockNamespace}, ${lockKey})
     `
