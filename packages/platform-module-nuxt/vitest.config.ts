@@ -9,5 +9,10 @@ export default defineConfig({
     fileParallelism: false,
     hookTimeout: 120_000,
     testTimeout: 60_000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html', 'lcov'],
+      reportsDirectory: 'coverage',
+    },
   },
 })

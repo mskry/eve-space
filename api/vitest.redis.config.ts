@@ -19,7 +19,7 @@ export default defineConfig({
         'src/esi-resilience/cooldowns.ts',
         'src/esi-resilience/resilience.ts',
       ],
-      reporter: ['text', 'json-summary'],
+      reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage-redis',
       thresholds: {
         branches: 45,

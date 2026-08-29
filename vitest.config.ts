@@ -9,7 +9,7 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       include: ['app/queries/**/*.ts', 'app/utils/colada-options.ts', 'app/utils/query-error.ts'],
       thresholds: {
         branches: 60,

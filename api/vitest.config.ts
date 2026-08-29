@@ -71,7 +71,7 @@ export default defineConfig({
         'src/queue/failures.ts',
         'src/queue/worker-lifecycle.ts',
       ],
-      reporter: ['text', 'json-summary'],
+      reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage',
       thresholds: {
         branches: 75,
