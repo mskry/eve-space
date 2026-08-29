@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { corporationAllianceHistoryQuery, corporationQuery } from '../../../queries/corporations'
+import { buildHistoryTimeline } from '../../../utils/history-timeline'
 
 definePageMeta({ title: 'Corporation', layout: 'headerless' })
 
@@ -28,6 +29,17 @@ const historyQuery = useQuery(() => ({
 
 const corporation = computed(() => detailQuery.data.value?.corporation)
 const history = computed(() => historyQuery.data.value?.history ?? [])
+const searchableHistory = computed(() =>
+  buildHistoryTimeline(history.value).map((entry) => ({
+    recordId: entry.recordId,
+    startDate: entry.startDate,
+    endDate: entry.endDate,
+    isDeleted: entry.isDeleted,
+    entityId: entry.allianceId,
+    entityName:
+      entry.allianceName ?? (entry.allianceId ? `Alliance ${entry.allianceId}` : 'No alliance'),
+  })),
+)
 const canShowAllianceHistory = computed(() => {
   // Keep the tab available until the response is known so failures remain actionable.
   if (historyQuery.status.value === 'error') return true
@@ -276,7 +288,13 @@ useHead({
             RETRY
           </button>
         </div>
-        <AllianceHistoryTimeline v-else :history="history" />
+        <SearchableHistoryTimeline
+          v-else
+          :entries="searchableHistory"
+          deleted-suffix=" (closed)"
+          entity-kind="alliance"
+          entity-label="alliance"
+        />
       </template>
     </template>
   </div>

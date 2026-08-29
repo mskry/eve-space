@@ -1,60 +1,58 @@
 <script setup lang="ts">
 import { useFilter } from 'reka-ui'
 
-interface AllianceHistoryEntry {
+interface SearchableHistoryEntry {
   recordId: number
   startDate: string
+  endDate: string | undefined
   isDeleted: boolean
-  allianceId: number | null
-  allianceName: string | null
+  entityId: number | null
+  entityName: string
 }
 
-const props = defineProps<{ history: AllianceHistoryEntry[] }>()
+const props = defineProps<{
+  entries: SearchableHistoryEntry[]
+  entityKind: 'alliance' | 'corporation'
+  entityLabel: string
+  deletedSuffix?: string
+}>()
+
+defineSlots<{
+  controls(): unknown
+  empty(): unknown
+  'entry-name'(props: { entry: SearchableHistoryEntry }): unknown
+}>()
 
 const { contains } = useFilter({ sensitivity: 'base' })
 const scroller = useTemplateRef('scroller')
 const search = ref('')
 const searchTerm = computed(() => search.value.trim())
-
-const sorted = computed(() =>
-  [...props.history].toSorted((a, b) => Date.parse(b.startDate) - Date.parse(a.startDate)),
-)
-
-const timeline = computed(() => {
-  const toTimelineEntry = (entry: AllianceHistoryEntry, index: number) => ({
-    ...entry,
-    endDate: index === 0 ? undefined : sorted.value[index - 1]?.startDate,
-    displayName:
-      entry.allianceName ?? (entry.allianceId ? `Alliance ${entry.allianceId}` : 'No alliance'),
-  })
-  return sorted.value.map(toTimelineEntry)
-})
-
 const matches = computed(() => {
   if (!searchTerm.value) return new Set<number>()
   return new Set(
-    timeline.value
+    props.entries
       .filter(
-        (e) =>
-          contains(e.displayName, searchTerm.value) ||
-          (e.allianceId !== null && contains(String(e.allianceId), searchTerm.value)),
+        (entry) =>
+          contains(entry.entityName, searchTerm.value) ||
+          (entry.entityId !== null && contains(String(entry.entityId), searchTerm.value)),
       )
-      .map((e) => e.recordId),
+      .map((entry) => entry.recordId),
   )
 })
-
 const firstMatch = computed(
-  () => timeline.value.find((e) => matches.value.has(e.recordId))?.recordId,
+  () => props.entries.find((entry) => matches.value.has(entry.recordId))?.recordId,
 )
 
-watch(firstMatch, async (id) => {
-  if (id === undefined) return
+watch(firstMatch, async (recordId) => {
+  if (recordId === undefined) return
   await nextTick()
-  const target = scroller.value?.viewport?.querySelector<HTMLElement>(`[data-record-id="${id}"]`)
+  const target = scroller.value?.viewport?.querySelector<HTMLElement>(
+    `[data-record-id="${recordId}"]`,
+  )
   if (target) scroller.value?.scrollToElement(target, 12)
 })
 
-function formatEmploymentDate(value: string) {
+function formatHistoryDate(value: string) {
   return new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: 'short',
@@ -66,26 +64,29 @@ function formatEmploymentDate(value: string) {
 
 <template>
   <div class="history-content">
-    <UiToolbar class="history-toolbar" label="Alliance history controls">
+    <UiToolbar class="history-toolbar" :label="`${entityLabel} history controls`">
       <input
         v-model="search"
         type="search"
         autocomplete="off"
-        placeholder="Search alliance name or ID"
-        aria-label="Search alliance history by name or ID"
+        :placeholder="`Search ${entityLabel} name or ID`"
+        :aria-label="`Search ${entityLabel} history by name or ID`"
       />
       <span class="app-search-status" aria-live="polite">
         <template v-if="!searchTerm">&nbsp;</template>
         <template v-else-if="matches.size === 0">NO MATCHES</template>
-        <template v-else>{{ matches.size }} / {{ timeline.length }} MATCHED</template>
+        <template v-else>{{ matches.size }} / {{ entries.length }} MATCHED</template>
       </span>
+      <slot name="controls" />
     </UiToolbar>
 
     <UiScrollArea ref="scroller" class="employment-scroller">
-      <p v-if="timeline.length === 0" class="history-empty-results">No alliance history</p>
+      <p v-if="entries.length === 0" class="history-empty-results">
+        <slot name="empty">No {{ entityLabel }} history</slot>
+      </p>
       <ol v-else class="employment-timeline">
         <li
-          v-for="entry in timeline"
+          v-for="entry in entries"
           :key="entry.recordId"
           :data-record-id="entry.recordId"
           :class="{
@@ -99,23 +100,26 @@ function formatEmploymentDate(value: string) {
             aria-hidden="true"
           />
           <UiEveImage
-            v-if="!entry.isDeleted && entry.allianceId"
-            kind="alliance"
-            :id="entry.allianceId"
+            v-if="!entry.isDeleted && entry.entityId"
+            :kind="entityKind"
+            :id="entry.entityId"
             :dimension="48"
-            :alt="`${entry.displayName} alliance logo`"
+            :alt="`${entry.entityName} ${entityLabel} logo`"
           />
           <span v-else class="employment-deleted-mark" aria-hidden="true">X</span>
           <div>
-            <h3>{{ entry.displayName }}<template v-if="entry.isDeleted"> (closed)</template></h3>
-            <p>{{ entry.allianceId ?? '—' }}</p>
+            <h3>
+              <slot name="entry-name" :entry="entry">{{ entry.entityName }}</slot
+              ><template v-if="entry.isDeleted">{{ deletedSuffix }}</template>
+            </h3>
+            <p>{{ entry.entityId ?? '—' }}</p>
           </div>
           <p class="employment-period">
-            <time :datetime="entry.startDate">{{ formatEmploymentDate(entry.startDate) }}</time>
+            <time :datetime="entry.startDate">{{ formatHistoryDate(entry.startDate) }}</time>
             <span aria-hidden="true">→</span>
-            <time v-if="entry.endDate" :datetime="entry.endDate">{{
-              formatEmploymentDate(entry.endDate)
-            }}</time>
+            <time v-if="entry.endDate" :datetime="entry.endDate">
+              {{ formatHistoryDate(entry.endDate) }}
+            </time>
             <strong v-else>CURRENT</strong>
           </p>
         </li>

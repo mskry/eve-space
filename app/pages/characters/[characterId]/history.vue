@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useQuery } from '@pinia/colada'
-import { useFilter } from 'reka-ui'
 import { characterHistoryQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
+import { buildHistoryTimeline } from '../../../utils/history-timeline'
 import { ApiQueryError } from '../../../utils/query-error'
 
 interface EmploymentSummary {
@@ -34,11 +34,6 @@ const historyQuery = useQuery(() => ({
   ),
 }))
 const history = historyQuery.data
-const employment = computed(() =>
-  (history.value?.history ?? []).toSorted(
-    (left, right) => Date.parse(right.startDate) - Date.parse(left.startDate),
-  ),
-)
 const historyMessage = computed(() =>
   historyQuery.error.value instanceof Error ? historyQuery.error.value.message : '',
 )
@@ -54,13 +49,7 @@ const historyStatus = computed(() => {
   if (historyQuery.asyncStatus.value === 'loading') return 'loading'
   return 'idle'
 })
-const timeline = computed(() => {
-  const toTimelineEntry = (entry: (typeof employment.value)[number], index: number) => ({
-    ...entry,
-    endDate: index === 0 ? undefined : employment.value[index - 1]?.startDate,
-  })
-  return employment.value.map(toTimelineEntry)
-})
+const timeline = computed(() => buildHistoryTimeline(history.value?.history ?? []))
 
 const playerEmploymentSummary = computed(() => {
   const corporations = new Map<number, EmploymentSummary>()
@@ -138,40 +127,22 @@ const longestNpcInterlude = computed(() => {
 
 const currentCorporation = computed(() => timeline.value[0]?.corporation ?? undefined)
 
-const { contains } = useFilter({ sensitivity: 'base' })
-const scroller = useTemplateRef('scroller')
-const search = ref('')
 const includeNpcCorporations = ref(true)
-const searchTerm = computed(() => search.value.trim())
 const visibleTimeline = computed(() =>
   includeNpcCorporations.value
     ? timeline.value
     : timeline.value.filter((entry) => !entry.corporation.isNpc),
 )
-const matches = computed(() => {
-  if (!searchTerm.value) return new Set<number>()
-  return new Set(
-    visibleTimeline.value
-      .filter(
-        (entry) =>
-          contains(entry.corporation.name, searchTerm.value) ||
-          contains(String(entry.corporation.id), searchTerm.value),
-      )
-      .map((entry) => entry.recordId),
-  )
-})
-const firstMatch = computed(
-  () => visibleTimeline.value.find((entry) => matches.value.has(entry.recordId))?.recordId,
+const searchableTimeline = computed(() =>
+  visibleTimeline.value.map((entry) => ({
+    recordId: entry.recordId,
+    startDate: entry.startDate,
+    endDate: entry.endDate,
+    isDeleted: entry.isDeleted,
+    entityId: entry.corporation.id,
+    entityName: entry.corporation.name,
+  })),
 )
-
-watch(firstMatch, async (recordId) => {
-  if (recordId === undefined) return
-  await nextTick()
-  const target = scroller.value?.viewport?.querySelector<HTMLElement>(
-    `[data-record-id="${recordId}"]`,
-  )
-  if (target) scroller.value?.scrollToElement(target, 12)
-})
 
 function formatEmploymentDate(value: string) {
   return new Intl.DateTimeFormat('en-GB', {
@@ -274,78 +245,32 @@ function formatDuration(milliseconds: number) {
           </UiTooltip>
         </dl>
       </CharacterSummaryCard>
-      <div class="history-content">
-        <UiToolbar class="history-toolbar" label="Employment history controls">
-          <input
-            v-model="search"
-            type="search"
-            autocomplete="off"
-            placeholder="Search corporation name or ID"
-            aria-label="Search corporation history by name or ID"
-          />
-          <span class="app-search-status" aria-live="polite">
-            <template v-if="!searchTerm">&nbsp;</template>
-            <template v-else-if="matches.size === 0">NO MATCHES</template>
-            <template v-else>{{ matches.size }} / {{ visibleTimeline.length }} MATCHED</template>
-          </span>
+      <SearchableHistoryTimeline
+        :entries="searchableTimeline"
+        entity-kind="corporation"
+        entity-label="corporation"
+      >
+        <template #controls>
           <label class="history-npc-toggle">
             <input v-model="includeNpcCorporations" type="checkbox" />
             <span aria-hidden="true" />
             INCLUDE NPC CORPS
           </label>
-        </UiToolbar>
-        <UiScrollArea ref="scroller" class="employment-scroller">
-          <p v-if="visibleTimeline.length === 0" class="history-empty-results">
-            NPC corporations are hidden. Tick 'Include NPC corps' to view this history.
-          </p>
-          <ol v-else class="employment-timeline">
-            <li
-              v-for="entry in visibleTimeline"
-              :key="entry.recordId"
-              :data-record-id="entry.recordId"
-              :class="{
-                'is-match': matches.has(entry.recordId),
-                'is-muted': Boolean(searchTerm) && !matches.has(entry.recordId),
-              }"
-            >
-              <span
-                class="employment-marker"
-                :class="{ 'is-current': !entry.endDate }"
-                aria-hidden="true"
-              />
-              <UiEveImage
-                v-if="!entry.isDeleted"
-                kind="corporation"
-                :id="entry.corporation.id"
-                :dimension="48"
-                :alt="`${entry.corporation.name} corporation logo`"
-              />
-              <span v-else class="employment-deleted-mark" aria-hidden="true">X</span>
-              <div>
-                <h3>
-                  <NuxtLink
-                    v-if="!entry.isDeleted"
-                    :to="`/corporation/${entry.corporation.id}`"
-                    class="employment-name-link"
-                  >
-                    {{ entry.corporation.name }}
-                  </NuxtLink>
-                  <template v-else>{{ entry.corporation.name }}</template>
-                </h3>
-                <p>{{ entry.corporation.id }}</p>
-              </div>
-              <p class="employment-period">
-                <time :datetime="entry.startDate">{{ formatEmploymentDate(entry.startDate) }}</time>
-                <span aria-hidden="true">→</span>
-                <time v-if="entry.endDate" :datetime="entry.endDate">
-                  {{ formatEmploymentDate(entry.endDate) }}
-                </time>
-                <strong v-else>CURRENT</strong>
-              </p>
-            </li>
-          </ol>
-        </UiScrollArea>
-      </div>
+        </template>
+        <template #empty>
+          NPC corporations are hidden. Tick 'Include NPC corps' to view this history.
+        </template>
+        <template #entry-name="{ entry }">
+          <NuxtLink
+            v-if="!entry.isDeleted && entry.entityId"
+            :to="`/corporation/${entry.entityId}`"
+            class="employment-name-link"
+          >
+            {{ entry.entityName }}
+          </NuxtLink>
+          <template v-else>{{ entry.entityName }}</template>
+        </template>
+      </SearchableHistoryTimeline>
     </template>
   </section>
 </template>
