@@ -54,6 +54,10 @@ export const PRIVATE_QUERY_KEYS = {
   mailLabels: (characterId: number) => [...PRIVATE_QUERY_KEYS.mail(characterId), 'labels'] as const,
   mailingLists: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.mail(characterId), 'mailing-lists'] as const,
+  mailRecipientResolution: (characterId: number, name: string) =>
+    [...PRIVATE_QUERY_KEYS.mail(characterId), 'recipient-resolution', name] as const,
+  mailRecipientSearch: (characterId: number, query: string) =>
+    [...PRIVATE_QUERY_KEYS.mail(characterId), 'recipient-search', query] as const,
 }
 
 export const ADMIN_QUERY_KEYS = {

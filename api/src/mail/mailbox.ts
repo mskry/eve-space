@@ -1,19 +1,28 @@
 import { createMailClient } from '@evespace/esi-client/domains/mail'
+import { createCharacterClient } from '@evespace/esi-client/domains/character'
+import { createSearchClient } from '@evespace/esi-client/domains/search'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport, EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
-import { resolveUniverseNames, type UniverseName } from '../universe/names.js'
+import { resolveUniverseIds, resolveUniverseNames, type UniverseName } from '../universe/names.js'
 
 type MailRecipientType = 'alliance' | 'character' | 'corporation' | 'mailing_list'
 type MailPartyType = MailRecipientType | 'unknown'
+const maximumMailRecipientSearchResults = 50
 
 interface MailParty {
   id: number
   type: MailPartyType
   name: string | null
+}
+
+interface MailRecipient {
+  id: number
+  type: Exclude<MailRecipientType, 'mailing_list'>
+  name: string
 }
 
 interface SendMailRecipient {
@@ -137,6 +146,20 @@ export interface DeletedMailLabelResult {
   labelId: number
 }
 
+export interface MailRecipientResolutionResult {
+  recipients: MailRecipient[]
+}
+
+export type MailRecipientSearchResult = MailReadMetadata & {
+  characterId: number
+  recipients: MailRecipient[]
+}
+
+export interface MailCspaChargeResult {
+  characterId: number
+  cost: number
+}
+
 type MailReadMetadata = Omit<EsiCachedResult<unknown>, 'data'>
 
 interface EsiMailRecipient {
@@ -169,6 +192,13 @@ export class MailDeliveryUnknownError extends Error {
   constructor() {
     super('EVE mail delivery could not be confirmed')
     this.name = 'MailDeliveryUnknownError'
+  }
+}
+
+export class MailCspaRejectedError extends Error {
+  constructor() {
+    super('EVE rejected the recipient charge check')
+    this.name = 'MailCspaRejectedError'
   }
 }
 
@@ -322,6 +352,99 @@ export async function getMailingLists(characterId: number): Promise<MailingLists
     return { characterId, mailingLists: data, ...metadata }
   } catch (error) {
     throwMailReadError(error)
+  }
+}
+
+export async function resolveMailRecipients(
+  names: readonly string[],
+): Promise<MailRecipientResolutionResult> {
+  const resolved = await resolveUniverseIds(names)
+  return {
+    recipients: resolved.flatMap((entry) =>
+      isUniversePartyType(entry.category)
+        ? [{ id: entry.id, type: entry.category, name: entry.name }]
+        : [],
+    ),
+  }
+}
+
+export async function searchMailRecipients(
+  characterId: number,
+  search: string,
+): Promise<MailRecipientSearchResult> {
+  try {
+    const { data, ...metadata } = await getEsiResilienceLayer().getCharacter<MailRecipient[]>({
+      operation: 'character-search',
+      inputs: { characterId, search },
+      load: async (authority, revalidation) => {
+        const response = await createSearchClient({
+          fetch: createEsiTransport('character-search', authority.principal),
+          token: authority.accessToken,
+          language: 'en',
+        })
+          .withMetadata()
+          .search(characterId, {
+            categories: ['alliance', 'character', 'corporation'],
+            search,
+            ...revalidation,
+          })
+        const matchGroups = [
+          { ids: response.data.alliance ?? [], type: 'alliance' as const },
+          { ids: response.data.character ?? [], type: 'character' as const },
+          { ids: response.data.corporation ?? [], type: 'corporation' as const },
+        ]
+        const matches: Array<Pick<MailRecipient, 'id' | 'type'>> = []
+        const seen = new Set<string>()
+        const maximumGroupLength = Math.max(...matchGroups.map((group) => group.ids.length))
+        for (let index = 0; index < maximumGroupLength; index += 1) {
+          for (const group of matchGroups) {
+            const id = group.ids[index]
+            if (id === undefined) continue
+            const key = `${group.type}:${id}`
+            if (seen.has(key)) continue
+            seen.add(key)
+            matches.push({ id, type: group.type })
+            if (matches.length === maximumMailRecipientSearchResults) break
+          }
+          if (matches.length === maximumMailRecipientSearchResults) break
+        }
+        const names = await resolveUniverseNames(matches.map((match) => match.id))
+        return {
+          data: matches.flatMap((match) => {
+            const resolved = names.get(match.id)
+            return resolved?.category === match.type
+              ? [{ id: match.id, type: match.type, name: resolved.name }]
+              : []
+          }),
+          meta: response.meta,
+        }
+      },
+    })
+    return { characterId, recipients: data, ...metadata }
+  } catch (error) {
+    throwMailReadError(error)
+  }
+}
+
+export async function calculateMailCspaCharge(
+  characterId: number,
+  characterIds: readonly number[],
+): Promise<MailCspaChargeResult> {
+  try {
+    const response = await getEsiResilienceLayer().executeCharacterMutation({
+      operation: 'character-cspa-charge',
+      characterId,
+      load: (authority) =>
+        createCharacterClient({
+          fetch: createEsiTransport('character-cspa-charge', authority.principal),
+          token: authority.accessToken,
+        })
+          .withMetadata()
+          .calculateCspaCharge(characterId, { body: [...characterIds] }),
+    })
+    return { characterId, cost: response.data }
+  } catch (error) {
+    throwMailMutationError(error, 'cspa')
   }
 }
 
@@ -550,13 +673,14 @@ function throwMailReadError(error: unknown, detail = false): never {
   throw new MailUnavailableError()
 }
 
-function throwMailMutationError(error: unknown, kind: 'send' | 'organize'): never {
+function throwMailMutationError(error: unknown, kind: 'cspa' | 'send' | 'organize'): never {
   preserveSharedError(error)
   const status = errorStatus(error)
   if (status === 401 || status === 403) throw new MailAuthorizationError(status)
   if (kind === 'send' && isAmbiguousSendFailure(error)) throw new MailDeliveryUnknownError()
   if (status !== undefined && status >= 400 && status < 500) {
     if (kind === 'send') throw new MailRejectedError()
+    if (kind === 'cspa') throw new MailCspaRejectedError()
     throw new MailMutationRejectedError()
   }
   throw new MailUnavailableError()

@@ -12,6 +12,10 @@ import {
   mailingListsQuery,
   mailLabelsQuery,
   mailReadMutation,
+  calculateMailCspaMutation,
+  resolveMailRecipientsQuery,
+  searchMailRecipientsQuery,
+  sendMailMutation,
 } from '../../app/queries/mail'
 import { canRunProtectedQuery } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
@@ -188,6 +192,116 @@ describe('mail queries', () => {
 
     await expect(mailDeleteMutation({ apiClient, characterId, mailId })).resolves.toBeUndefined()
     expect(requests).toHaveBeenCalledOnce()
+  })
+
+  it('sends mail once, returns the new mail ID, and forwards the approved cost', async () => {
+    const requests = vi.fn()
+    let requestBody: unknown
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail', async ({ request }) => {
+        requests()
+        requestBody = await request.json()
+        return HttpResponse.json({ characterId, mailId: 9001 }, { status: 201 })
+      }),
+    )
+
+    await expect(
+      sendMailMutation({
+        apiClient,
+        approvedCost: 25,
+        body: 'Message body',
+        characterId,
+        recipients: [{ id: 91, type: 'corporation' }],
+        subject: 'Message subject',
+      }),
+    ).resolves.toBe(9001)
+    expect(requests).toHaveBeenCalledOnce()
+    expect(requestBody).toEqual({
+      approvedCost: 25,
+      body: 'Message body',
+      recipients: [{ id: 91, type: 'corporation' }],
+      subject: 'Message subject',
+    })
+  })
+
+  it.each([
+    [422, 'MAIL_REJECTED'],
+    [502, 'MAIL_DELIVERY_UNKNOWN'],
+    [403, 'EVE_SCOPE_REQUIRED'],
+    [403, 'EVE_REAUTH_REQUIRED'],
+  ])('preserves send outcome %s/%s without retrying', async (status, code) => {
+    const requests = vi.fn()
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail', () => {
+        requests()
+        return HttpResponse.json(
+          {
+            authorizeUrl: code.startsWith('EVE_')
+              ? 'http://localhost/auth/eve/reauthorize/7'
+              : undefined,
+            code,
+            message: `Outcome ${code}`,
+          },
+          { status },
+        )
+      }),
+    )
+
+    await expect(
+      sendMailMutation({
+        apiClient,
+        approvedCost: 0,
+        body: 'Body',
+        characterId,
+        recipients: [{ id: 91, type: 'corporation' }],
+        subject: 'Subject',
+      }),
+    ).rejects.toMatchObject({ code, status })
+    expect(requests).toHaveBeenCalledOnce()
+  })
+
+  it('resolves exact names and searches recipients with isolated private keys', async () => {
+    const resolved = [{ id: 91, name: 'Operations Control', type: 'corporation' as const }]
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail/recipients/resolve', () =>
+        HttpResponse.json({ recipients: resolved }),
+      ),
+      http.get('http://localhost/api/me/characters/7/mail/recipients/search', ({ request }) => {
+        expect(new URL(request.url).searchParams.get('search')).toBe('Operations')
+        return HttpResponse.json({ characterId, recipients: resolved, ...metadata })
+      }),
+    )
+
+    await expect(
+      runQuery(
+        resolveMailRecipientsQuery({
+          apiClient,
+          characterId,
+          names: [' Operations Control '],
+        }),
+      ),
+    ).resolves.toEqual({ recipients: resolved })
+    await expect(
+      runQuery(searchMailRecipientsQuery({ apiClient, characterId, query: ' Operations ' })),
+    ).resolves.toMatchObject({ characterId, recipients: resolved })
+    expect(PRIVATE_QUERY_KEYS.mailRecipientResolution(7, 'operations control')).not.toEqual(
+      PRIVATE_QUERY_KEYS.mailRecipientResolution(8, 'operations control'),
+    )
+  })
+
+  it('returns the CSPA cost for character recipients', async () => {
+    let requestBody: unknown
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail/cspa', async ({ request }) => {
+        requestBody = await request.json()
+        return HttpResponse.json({ characterId, cost: 125 })
+      }),
+    )
+
+    await expect(
+      calculateMailCspaMutation({ apiClient, characterId, recipientIds: [44, 44, 45] }),
+    ).resolves.toBe(125)
+    expect(requestBody).toEqual({ characterIds: [44, 45] })
   })
 
   it.each([
@@ -384,6 +498,8 @@ describe('mail queries', () => {
       mailDetailQuery({ apiClient, characterId, mailId }),
       mailLabelsQuery({ apiClient, characterId }),
       mailingListsQuery({ apiClient, characterId }),
+      resolveMailRecipientsQuery({ apiClient, characterId, names: ['Pilot'] }),
+      searchMailRecipientsQuery({ apiClient, characterId, query: 'Pilot' }),
     ]
     for (const option of options) expect(option).not.toHaveProperty('enabled')
 

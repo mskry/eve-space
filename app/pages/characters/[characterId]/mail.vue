@@ -24,6 +24,12 @@ const mailbox = useCharacterMailbox({
   reconcileReadState: mutations.reconcileReadState,
 })
 const organization = useMailOrganization({ characterId, mailbox, mutations })
+const composition = useMailComposition({
+  apiClient,
+  authenticated,
+  characterId,
+  mailbox,
+})
 const {
   activeLabelId,
   authorizeUrl,
@@ -55,6 +61,40 @@ const {
   unreadOnly,
 } = mailbox
 const { changeOpenMessageRead, mutationPending, requestMailDeletion } = organization
+const {
+  addRecipient,
+  body,
+  bodyRemaining,
+  canReply,
+  chargeRecoveryAvailable,
+  feedback,
+  mode,
+  omitted,
+  open: composeOpen,
+  openForward,
+  openNew,
+  openReply,
+  openReplyAll,
+  recipientInput,
+  recipientSuggestions,
+  recipients,
+  recoverCharge,
+  removeRecipient,
+  replyUnavailableReason,
+  requestClose: requestCompositionClose,
+  resolveRecipient,
+  resolving,
+  searchAuthorization,
+  searchFeedback,
+  searching,
+  send: sendComposition,
+  sendDisabledReason,
+  sendAuthorizationMessage,
+  sendAuthorizationUrl,
+  sending,
+  subject,
+  subjectRemaining,
+} = composition
 
 watch(
   [characterId, () => route.query.reauthorize],
@@ -103,6 +143,9 @@ watch(
     </UiStatePanel>
     <UiStatePanel v-else-if="mailboxEmpty" code="NO MAIL" title="Mailbox empty" compact>
       <p>No messages were returned for this character.</p>
+      <template #action>
+        <button class="ui-action-primary" type="button" @click="openNew">COMPOSE MAIL</button>
+      </template>
     </UiStatePanel>
     <div v-else class="mail-workspace" :aria-busy="showMailboxSkeleton">
       <MailLabelSidebar
@@ -111,6 +154,7 @@ watch(
         :mailing-lists="mailingLists"
         :selected-mailing-list-id="selectedMailingListId"
         :total-unread-count="displayedCounts.totalUnreadCount"
+        @compose="openNew"
         @select-label="selectLabel"
         @select-mailing-list="selectedMailingListId = $event"
       />
@@ -139,13 +183,46 @@ watch(
         :labels="labels"
         :loading="showMailboxSkeleton || detailQuery.asyncStatus.value === 'loading'"
         :mutation-pending="mutationPending"
+        :can-reply="canReply"
+        :reply-unavailable-reason="replyUnavailableReason"
         :read-state="selectedReadState"
         :selected="showMailboxSkeleton || selectedMailId !== null"
         @change-read="changeOpenMessageRead"
         @delete="requestMailDeletion"
+        @forward="openForward"
+        @reply="openReply"
+        @reply-all="openReplyAll"
         @retry="detailQuery.refetch()"
       />
     </div>
+    <MailComposeDialog
+      v-model:body="body"
+      v-model:recipient-input="recipientInput"
+      v-model:subject="subject"
+      :body-remaining="bodyRemaining"
+      :charge-recovery-available="chargeRecoveryAvailable"
+      :feedback="feedback"
+      :mode="mode"
+      :omitted="omitted"
+      :open="composeOpen"
+      :recipients="recipients"
+      :resolving="resolving"
+      :search-authorization-message="searchAuthorization?.message || searchFeedback"
+      :search-authorization-url="searchAuthorization?.authorizeUrl"
+      :searching="searching"
+      :send-authorization-message="sendAuthorizationMessage"
+      :send-authorization-url="sendAuthorizationUrl"
+      :send-disabled-reason="sendDisabledReason"
+      :sending="sending"
+      :subject-remaining="subjectRemaining"
+      :suggestions="recipientSuggestions"
+      @add-recipient="addRecipient"
+      @close="requestCompositionClose"
+      @recover-charge="recoverCharge"
+      @remove-recipient="removeRecipient"
+      @resolve-recipient="resolveRecipient"
+      @send="sendComposition"
+    />
   </section>
 </template>
 

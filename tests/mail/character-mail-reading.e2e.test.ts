@@ -8,15 +8,23 @@ import { startCorsJsonApi } from '../support/cors-json-api'
 
 type ApiMode =
   | 'anonymous'
+  | 'cspa-charge'
+  | 'cspa-error'
   | 'detail-error'
   | 'mailbox'
+  | 'mail-rejected'
   | 'organize-scope-required'
+  | 'search-scope-required'
+  | 'send-delivery-unknown'
+  | 'send-scope-required'
   | 'scope-required'
+  | 'unknown-sender'
   | 'unowned'
 
 interface RecordedRequest {
   readonly method: string
   readonly origin: string | null
+  readonly body?: unknown
   readonly url: URL
 }
 
@@ -48,7 +56,9 @@ let heldMutation: HeldMutation | undefined
 
 const apiServer = await startCorsJsonApi(async (request) => {
   const url = new URL(request.url ?? '/', 'http://mock-api.invalid')
+  const requestBody = request.method === 'POST' ? await readJsonRequest(request) : undefined
   recordedRequests.push({
+    body: requestBody,
     method: request.method ?? 'GET',
     origin: request.headers.origin ?? null,
     url,
@@ -107,6 +117,94 @@ const apiServer = await startCorsJsonApi(async (request) => {
           authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
         },
       }
+    }
+    if (
+      url.pathname === `/api/me/characters/${characterId}/mail/recipients/resolve` &&
+      request.method === 'POST'
+    ) {
+      const names =
+        requestBody &&
+        typeof requestBody === 'object' &&
+        Array.isArray(Reflect.get(requestBody, 'names'))
+          ? (Reflect.get(requestBody, 'names') as string[])
+          : []
+      return {
+        body: {
+          recipients: names.includes('Alliance Logistics')
+            ? []
+            : names.includes('Wingmate')
+              ? [{ id: 44, type: 'character', name: 'Wingmate' }]
+              : [{ id: 91, type: 'corporation', name: 'Operations Control' }],
+        },
+      }
+    }
+    if (
+      url.pathname === `/api/me/characters/${characterId}/mail/recipients/search` &&
+      request.method === 'GET'
+    ) {
+      if (apiMode === 'search-scope-required') {
+        return {
+          status: 403,
+          body: {
+            code: 'EVE_SCOPE_REQUIRED',
+            message: 'Authorize recipient search for this character.',
+            requiredScope: 'esi-search.search_structures.v1',
+            authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
+          },
+        }
+      }
+      return {
+        body: {
+          characterId,
+          recipients: [{ id: 91, type: 'corporation', name: 'Operations Control' }],
+          ...metadata,
+        },
+      }
+    }
+    if (
+      url.pathname === `/api/me/characters/${characterId}/mail/cspa` &&
+      request.method === 'POST'
+    ) {
+      if (apiMode === 'cspa-error') {
+        return {
+          status: 502,
+          body: { code: 'ESI_UNAVAILABLE', message: 'Recipient charge unavailable.' },
+        }
+      }
+      return { body: { characterId, cost: apiMode === 'cspa-charge' ? 125 : 0 } }
+    }
+    if (url.pathname === `/api/me/characters/${characterId}/mail` && request.method === 'POST') {
+      if (apiMode === 'send-delivery-unknown') {
+        return {
+          status: 502,
+          body: {
+            code: 'MAIL_DELIVERY_UNKNOWN',
+            message:
+              'Mail delivery could not be confirmed. Inspect sent mail before sending again.',
+          },
+        }
+      }
+      if (apiMode === 'send-scope-required') {
+        return {
+          status: 403,
+          body: {
+            code: 'EVE_SCOPE_REQUIRED',
+            message: 'Authorize sending mail for this character.',
+            requiredScope: 'esi-mail.send_mail.v1',
+            authorizeUrl: `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
+          },
+        }
+      }
+      if (apiMode === 'mail-rejected') {
+        return {
+          status: 422,
+          body: {
+            code: 'MAIL_REJECTED',
+            message: 'Recipient CSPA charge was not approved.',
+          },
+        }
+      }
+      return { status: 201, body: { characterId, mailId: 9001 } }
     }
     const detailMatch = url.pathname.match(/\/mail\/(\d+)$/)
     if (detailMatch && request.method === 'PUT') {
@@ -173,7 +271,10 @@ const apiServer = await startCorsJsonApi(async (request) => {
         body: {
           characterId,
           mailId,
-          sender: { id: 91, type: 'corporation', name: 'Operations Control' },
+          sender:
+            apiMode === 'unknown-sender'
+              ? { id: 91, type: 'unknown', name: null }
+              : { id: 91, type: 'corporation', name: 'Operations Control' },
           recipients: [{ id: characterId, type: 'character', name: 'Reading Pilot' }],
           subject: mailId === 120 ? 'Priority operations update' : `Mail ${mailId}`,
           sentAt: '2026-08-28T11:55:00.000Z',
@@ -184,7 +285,7 @@ const apiServer = await startCorsJsonApi(async (request) => {
         },
       }
     }
-    if (url.pathname === `/api/me/characters/${characterId}/mail`) {
+    if (url.pathname === `/api/me/characters/${characterId}/mail` && request.method === 'GET') {
       const labels = url.searchParams.getAll('labels')
       const lastMailId = url.searchParams.get('lastMailId')
       return {
@@ -347,6 +448,201 @@ describe('character mail reading', async () => {
       `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
     )
     expect(mailRequests().length).toBeGreaterThan(0)
+  })
+
+  it('seeds a reply from the open plain-text message', async () => {
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-header-row').first().waitFor()
+    await page.getByRole('button', { name: /Priority operations update/ }).click()
+    await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
+    await page.getByRole('button', { name: 'REPLY', exact: true }).click()
+
+    const dialog = page.getByRole('dialog')
+    await dialog.waitFor()
+    expect(await dialog.getByText('Operations Control', { exact: true }).isVisible()).toBe(true)
+    expect(await dialog.getByLabel('Subject').inputValue()).toBe('Re: Priority operations update')
+    expect(await dialog.getByLabel('Message').inputValue()).toContain(
+      '--- Original message from Operations Control ---',
+    )
+    expect(await dialog.getByLabel('Message').inputValue()).toContain(hostileBody)
+  })
+
+  it('makes reply unavailable when the sender type is unresolved', async () => {
+    apiMode = 'unknown-sender'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-header-row').first().waitFor()
+    await page.getByRole('button', { name: /Priority operations update/ }).click()
+    await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
+
+    const reply = page.getByRole('button', { name: 'REPLY', exact: true })
+    expect(await reply.isDisabled()).toBe(true)
+    expect(await reply.getAttribute('title')).toContain('sender type could not be resolved')
+  })
+
+  it('preserves an unconfirmed draft and never offers an immediate resend', async () => {
+    apiMode = 'send-delivery-unknown'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-header-row').first().waitFor()
+    await page.getByRole('button', { name: /Priority operations update/ }).click()
+    await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
+    await page.getByRole('button', { name: 'REPLY', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.waitFor()
+
+    const sendResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === `/api/me/characters/${characterId}/mail`,
+    )
+    await dialog.getByRole('button', { name: 'SEND MAIL' }).click()
+    await sendResponse
+    await page.getByText('Mail delivery unconfirmed', { exact: true }).waitFor()
+
+    expect(await dialog.getByLabel('Subject').inputValue()).toBe('Re: Priority operations update')
+    expect(await dialog.getByRole('button', { name: 'SEND MAIL' }).isDisabled()).toBe(true)
+    expect(mailSendRequests()).toHaveLength(1)
+  })
+
+  it('keeps reading and the draft available when sending needs authorization', async () => {
+    apiMode = 'send-scope-required'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-header-row').first().waitFor()
+    await page.getByRole('button', { name: /Priority operations update/ }).click()
+    await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
+    await page.getByRole('button', { name: 'REPLY', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('button', { name: 'SEND MAIL' }).click()
+
+    await page.getByText('Mail sending authorization required', { exact: true }).waitFor()
+    expect(
+      await page
+        .locator('.mail-reader')
+        .getByText('Priority operations update', { exact: true })
+        .count(),
+    ).toBe(1)
+    expect(await dialog.getByLabel('Subject').inputValue()).toBe('Re: Priority operations update')
+    expect(await page.getByRole('link', { name: 'Authorize character' }).getAttribute('href')).toBe(
+      `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
+    )
+  })
+
+  it('confirms before discarding content but closes an empty draft immediately', async () => {
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    let dialog = page.getByRole('dialog')
+    await dialog.waitFor()
+    await dialog.getByRole('button', { name: 'CANCEL' }).click()
+    await expect.poll(() => page.getByRole('dialog').count()).toBe(0)
+    expect(await page.getByRole('alertdialog').count()).toBe(0)
+
+    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    dialog = page.getByRole('dialog')
+    await dialog.getByLabel('Subject').fill('Unsaved draft')
+    await dialog.getByRole('button', { name: 'CANCEL' }).click()
+    const confirmation = page.getByRole('alertdialog')
+    await confirmation.waitFor()
+    expect(await dialog.isVisible()).toBe(false)
+    await confirmation.getByRole('button', { name: 'Cancel' }).click()
+    await dialog.waitFor()
+    await dialog.getByRole('button', { name: 'CANCEL' }).click()
+    await confirmation.waitFor()
+    await confirmation.getByRole('button', { name: 'Discard draft' }).click()
+    await expect.poll(() => page.getByRole('dialog').count()).toBe(0)
+  })
+
+  it('keeps local and exact addressing available when remote search needs authorization', async () => {
+    apiMode = 'search-scope-required'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    const recipientInput = dialog.getByRole('searchbox', { name: 'Recipients' })
+    await recipientInput.fill('Operations')
+    await expect
+      .poll(
+        () =>
+          mailRequests().filter(({ url }) => url.pathname.endsWith('/mail/recipients/search'))
+            .length,
+      )
+      .toBe(1)
+    await expect
+      .poll(() => dialog.textContent())
+      .toContain('Authorize recipient search for this character.')
+    expect(await dialog.getByRole('link', { name: 'Authorize search' }).isVisible()).toBe(true)
+
+    await dialog.getByRole('button', { name: 'ADD EXACT NAME' }).click()
+    await dialog.getByText('Operations Control', { exact: true }).waitFor()
+    await recipientInput.fill('Alliance Logistics')
+    await dialog.getByRole('button', { name: /Alliance Logistics/ }).click()
+    expect(await dialog.getByText('Alliance Logistics', { exact: true }).isVisible()).toBe(true)
+  })
+
+  it('submits only character recipients to CSPA and requires approval for a charge', async () => {
+    apiMode = 'cspa-charge'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('searchbox', { name: 'Recipients' }).fill('Wingmate')
+    await dialog.getByRole('button', { name: 'ADD EXACT NAME' }).click()
+    await dialog.getByText('Wingmate', { exact: true }).waitFor()
+    await dialog.getByLabel('Subject').fill('Charged message')
+    await dialog.getByLabel('Message').fill('Message body')
+    await dialog.getByRole('button', { name: 'SEND MAIL' }).click()
+
+    const confirmation = page.getByRole('alertdialog')
+    await confirmation.waitFor()
+    expect(await confirmation.textContent()).toContain('125 ISK')
+    expect(mailSendRequests()).toHaveLength(0)
+    const cspaRequest = mailRequests().find(({ url }) => url.pathname.endsWith('/mail/cspa'))
+    expect(cspaRequest?.body).toEqual({ characterIds: [44] })
+    await confirmation.getByRole('button', { name: 'Approve cost and send' }).click()
+    await page.getByText('Mail sent', { exact: true }).waitFor()
+    expect(mailSendRequests()[0]?.body).toMatchObject({ approvedCost: 125 })
+  })
+
+  it('allows an explicit zero-cost send after CSPA fails and offers charge recovery on refusal', async () => {
+    apiMode = 'cspa-error'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByRole('searchbox', { name: 'Recipients' }).fill('Wingmate')
+    await dialog.getByRole('button', { name: 'ADD EXACT NAME' }).click()
+    await dialog.getByText('Wingmate', { exact: true }).waitFor()
+    await dialog.getByLabel('Subject').fill('Unknown charge')
+    await dialog.getByLabel('Message').fill('Message body')
+    await dialog.getByRole('button', { name: 'SEND MAIL' }).click()
+
+    const unknownConfirmation = page.getByRole('alertdialog')
+    await unknownConfirmation.waitFor()
+    expect(await unknownConfirmation.textContent()).toContain('recipient charge is unknown')
+    await unknownConfirmation.getByRole('button', { name: 'Send without approval' }).click()
+    await page.getByText('Mail sent', { exact: true }).waitFor()
+    expect(mailSendRequests()[0]?.body).toMatchObject({ approvedCost: 0 })
+
+    apiMode = 'mail-rejected'
+    await page.getByRole('button', { name: 'COMPOSE', exact: true }).click()
+    const rejectedDialog = page.getByRole('dialog')
+    await rejectedDialog.getByRole('searchbox', { name: 'Recipients' }).fill('Wingmate')
+    await rejectedDialog.getByRole('button', { name: 'ADD EXACT NAME' }).click()
+    await rejectedDialog.getByText('Wingmate', { exact: true }).waitFor()
+    await rejectedDialog.getByLabel('Subject').fill('Rejected message')
+    await rejectedDialog.getByLabel('Message').fill('Message body')
+    await rejectedDialog.getByRole('button', { name: 'SEND MAIL' }).click()
+    await rejectedDialog.getByText(/message was refused/i).waitFor()
+    expect(
+      await rejectedDialog.getByRole('button', { name: 'CHECK RECIPIENT CHARGE' }).isVisible(),
+    ).toBe(true)
+    const sendCountBeforeRecovery = mailSendRequests().length
+    const chargeResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith('/mail/cspa'),
+    )
+    await rejectedDialog.getByRole('button', { name: 'CHECK RECIPIENT CHARGE' }).click()
+    await chargeResponse
+    await rejectedDialog.getByText(/No recipient charge applies/i).waitFor()
+    expect(mailSendRequests()).toHaveLength(sendCountBeforeRecovery)
   })
 
   it('marks unread mail after dwelling and pins the open message under the unread filter', async () => {
@@ -559,6 +855,13 @@ function mailMutationRequests(method: 'DELETE' | 'PUT') {
   return mailRequests().filter((request) => request.method === method)
 }
 
+function mailSendRequests() {
+  return mailRequests().filter(
+    ({ method, url }) =>
+      method === 'POST' && url.pathname === `/api/me/characters/${characterId}/mail`,
+  )
+}
+
 function holdMutation(method: HeldMutation['method'], mailId: number) {
   let release!: () => void
   const promise = new Promise<void>((resolve) => (release = resolve))
@@ -600,4 +903,12 @@ function ownedCharacter() {
     corporation: { id: 98_000_001, name: 'Reading Corporation' },
     alliance: null,
   }
+}
+
+async function readJsonRequest(request: import('node:http').IncomingMessage) {
+  const chunks: Buffer[] = []
+  for await (const chunk of request)
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+  if (chunks.length === 0) return undefined
+  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
 }

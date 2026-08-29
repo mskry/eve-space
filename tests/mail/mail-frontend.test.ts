@@ -280,7 +280,7 @@ describe('mail frontend behavior', () => {
     expect(page).toContain('title="Mailbox empty"')
   })
 
-  it('uses a scroll area in every pane and exposes only organization actions', () => {
+  it('uses a scroll area in every pane and exposes composition and organization actions', () => {
     const sidebar = readWorkspaceFile('app/components/mail/MailLabelSidebar.vue')
     const headers = readWorkspaceFile('app/components/mail/MailHeaderList.vue')
     const reader = readWorkspaceFile('app/components/mail/MailReader.vue')
@@ -290,9 +290,10 @@ describe('mail frontend behavior', () => {
     for (const component of [sidebar, headers, reader]) {
       expect(component).toContain('<UiScrollArea')
     }
-    expect(sidebar).toContain('<button class="ui-action-primary" type="button" disabled>COMPOSE')
-    expect(reader).toContain('<button type="button" disabled>REPLY</button>')
-    expect(reader).toContain('<button type="button" disabled>FORWARD</button>')
+    expect(sidebar).toContain('@click="$emit(\'compose\')"')
+    expect(reader).toContain('@click="emit(\'reply\')"')
+    expect(reader).toContain('@click="emit(\'replyAll\')"')
+    expect(reader).toContain('@click="emit(\'forward\')"')
     expect(reader).toContain("emit('changeRead', isMailUnread(readState))")
     expect(reader).toContain('@click="emit(\'delete\')"')
     expect(page).not.toContain('<UiConfirmDialog')

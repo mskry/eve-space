@@ -13,10 +13,14 @@ const mocks = vi.hoisted(() => {
 
   return {
     EsiTransportError,
+    calculateCspaCharge: vi.fn(),
+    createCharacterClient: vi.fn(),
     createMailClient: vi.fn(),
+    createSearchClient: vi.fn(),
     createEsiTransport: vi.fn(),
     getCharacter: vi.fn(),
     executeCharacterMutation: vi.fn(),
+    resolveUniverseIds: vi.fn(),
     resolveUniverseNames: vi.fn(),
     listHeaders: vi.fn(),
     getMail: vi.fn(),
@@ -27,11 +31,20 @@ const mocks = vi.hoisted(() => {
     update: vi.fn(),
     deleteMail: vi.fn(),
     deleteLabel: vi.fn(),
+    search: vi.fn(),
   }
 })
 
+vi.mock('@evespace/esi-client/domains/character', () => ({
+  createCharacterClient: mocks.createCharacterClient,
+}))
+
 vi.mock('@evespace/esi-client/domains/mail', () => ({
   createMailClient: mocks.createMailClient,
+}))
+
+vi.mock('@evespace/esi-client/domains/search', () => ({
+  createSearchClient: mocks.createSearchClient,
 }))
 
 vi.mock('../../src/esi-resilience/resilience.js', () => ({
@@ -47,11 +60,13 @@ vi.mock('../../src/esi-resilience/transport.js', () => ({
 }))
 
 vi.mock('../../src/universe/names.js', () => ({
+  resolveUniverseIds: mocks.resolveUniverseIds,
   resolveUniverseNames: mocks.resolveUniverseNames,
 }))
 
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 import {
+  calculateMailCspaCharge,
   createMailLabel,
   deleteMail,
   deleteMailLabel,
@@ -60,11 +75,14 @@ import {
   getMailingLists,
   listMailHeaders,
   MailAuthorizationError,
+  MailCspaRejectedError,
   MailDeliveryUnknownError,
   MailMutationRejectedError,
   MailNotFoundError,
   MailRejectedError,
   MailUnavailableError,
+  resolveMailRecipients,
+  searchMailRecipients,
   sendMail,
   updateMail,
 } from '../../src/mail/mailbox.js'
@@ -100,12 +118,19 @@ beforeEach(() => {
       deleteLabel: mocks.deleteLabel,
     }),
   })
+  mocks.createCharacterClient.mockReturnValue({
+    withMetadata: () => ({ calculateCspaCharge: mocks.calculateCspaCharge }),
+  })
+  mocks.createSearchClient.mockReturnValue({
+    withMetadata: () => ({ search: mocks.search }),
+  })
   mocks.getCharacter.mockImplementation(async (resource) => {
     const loaded = await resource.load(authority, revalidation)
     return { data: loaded.data, ...outerMetadata }
   })
   mocks.executeCharacterMutation.mockImplementation(async (mutation) => mutation.load(authority))
   mocks.resolveUniverseNames.mockResolvedValue(new Map())
+  mocks.resolveUniverseIds.mockResolvedValue([])
   mocks.listHeaders.mockResolvedValue(response([]))
   mocks.getMail.mockResolvedValue(response({}))
   mocks.listLabels.mockResolvedValue(response({}))
@@ -115,6 +140,8 @@ beforeEach(() => {
   mocks.update.mockResolvedValue(response(undefined, 204))
   mocks.deleteMail.mockResolvedValue(response(undefined, 204))
   mocks.deleteLabel.mockResolvedValue(response(undefined, 204))
+  mocks.search.mockResolvedValue(response({}))
+  mocks.calculateCspaCharge.mockResolvedValue(response(0, 201))
 })
 
 describe('mail reads', () => {
@@ -551,6 +578,115 @@ describe('mail mutations', () => {
   })
 })
 
+describe('mail recipient composition services', () => {
+  test('keeps only addressable universe ID categories', async () => {
+    mocks.resolveUniverseIds.mockResolvedValue([
+      { id: 1, category: 'alliance', name: 'Alliance' },
+      { id: 2, category: 'character', name: 'Character' },
+      { id: 3, category: 'corporation', name: 'Corporation' },
+      { id: 4, category: 'faction', name: 'Faction' },
+    ])
+
+    await expect(resolveMailRecipients(['Alliance', 'Character'])).resolves.toEqual({
+      recipients: [
+        { id: 1, type: 'alliance', name: 'Alliance' },
+        { id: 2, type: 'character', name: 'Character' },
+        { id: 3, type: 'corporation', name: 'Corporation' },
+      ],
+    })
+    expect(mocks.resolveUniverseIds).toHaveBeenCalledWith(['Alliance', 'Character'])
+  })
+
+  test('searches fixed addressable categories in English and resolves returned IDs', async () => {
+    mocks.search.mockResolvedValue(
+      response({ alliance: [10], character: [20, 21], corporation: [30] }),
+    )
+    mocks.resolveUniverseNames.mockResolvedValue(
+      new Map([
+        [10, { id: 10, category: 'alliance', name: 'Alliance' }],
+        [20, { id: 20, category: 'character', name: 'Character' }],
+        [21, { id: 21, category: 'corporation', name: 'Mismatched' }],
+        [30, { id: 30, category: 'corporation', name: 'Corporation' }],
+      ]),
+    )
+
+    await expect(searchMailRecipients(characterId, 'pil')).resolves.toEqual({
+      characterId,
+      recipients: [
+        { id: 10, type: 'alliance', name: 'Alliance' },
+        { id: 20, type: 'character', name: 'Character' },
+        { id: 30, type: 'corporation', name: 'Corporation' },
+      ],
+      ...outerMetadata,
+    })
+    expect(mocks.getCharacter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'character-search',
+        inputs: { characterId, search: 'pil' },
+      }),
+    )
+    expect(mocks.createSearchClient).toHaveBeenCalledWith({
+      fetch: `character-search:${authority.principal}`,
+      token: authority.accessToken,
+      language: 'en',
+    })
+    expect(mocks.search).toHaveBeenCalledWith(characterId, {
+      categories: ['alliance', 'character', 'corporation'],
+      search: 'pil',
+      ...revalidation,
+    })
+    expect(mocks.resolveUniverseNames).toHaveBeenCalledWith([10, 20, 30, 21])
+  })
+
+  test('deduplicates and caps search matches before resolving names', async () => {
+    mocks.search.mockResolvedValue(
+      response({ character: [1, 1, ...Array.from({ length: 60 }, (_, index) => index + 2)] }),
+    )
+
+    await searchMailRecipients(characterId, 'pil')
+
+    expect(mocks.resolveUniverseNames).toHaveBeenCalledWith(
+      Array.from({ length: 50 }, (_, index) => index + 1),
+    )
+  })
+
+  test('round-robins search categories before applying the result cap', async () => {
+    mocks.search.mockResolvedValue(
+      response({
+        alliance: Array.from({ length: 50 }, (_, index) => index + 1),
+        character: [101],
+        corporation: [201],
+      }),
+    )
+
+    await searchMailRecipients(characterId, 'pil')
+
+    expect(mocks.resolveUniverseNames).toHaveBeenCalledWith([
+      1,
+      101,
+      201,
+      ...Array.from({ length: 47 }, (_, index) => index + 2),
+    ])
+  })
+
+  test('calculates CSPA through the uncached character executor', async () => {
+    mocks.calculateCspaCharge.mockResolvedValue(response(12.5, 201))
+
+    await expect(calculateMailCspaCharge(characterId, [20, 30])).resolves.toEqual({
+      characterId,
+      cost: 12.5,
+    })
+    expect(mocks.executeCharacterMutation).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'character-cspa-charge', characterId }),
+    )
+    expect(mocks.createCharacterClient).toHaveBeenCalledWith({
+      fetch: `character-cspa-charge:${authority.principal}`,
+      token: authority.accessToken,
+    })
+    expect(mocks.calculateCspaCharge).toHaveBeenCalledWith(characterId, { body: [20, 30] })
+  })
+})
+
 describe('safe mail errors', () => {
   test.each([
     new ScopeRequiredError('esi-mail.read_mail.v1'),
@@ -647,6 +783,16 @@ describe('safe mail errors', () => {
 
     mocks.getCharacter.mockRejectedValueOnce(new Error('internal sensitive details'))
     await expect(getMailLabels(characterId)).rejects.toEqual(new MailUnavailableError())
+  })
+
+  test('maps a definitive CSPA 4xx to a sanitized charge rejection', async () => {
+    mocks.executeCharacterMutation.mockRejectedValueOnce(providerError(400, 'raw recipient error'))
+
+    const error = await caught(calculateMailCspaCharge(characterId, [20]))
+
+    expect(error).toEqual(new MailCspaRejectedError())
+    expect(error).not.toHaveProperty('body')
+    expect(error).not.toHaveProperty('cause')
   })
 })
 

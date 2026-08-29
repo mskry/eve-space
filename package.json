@@ -22,8 +22,8 @@
     "knip": "DATABASE_URL=postgres://localhost:5432/eve_space knip",
     "stack:up": "docker compose up --build -d",
     "stack:down": "docker compose down",
-    "test:frontend": "vitest run --config vitest.config.ts",
-    "test:frontend:coverage": "vitest run --config vitest.config.ts --coverage",
+    "test:frontend": "vitest run --config vitest.config.ts && vitest run --config vitest.ui.config.ts",
+    "test:frontend:coverage": "node -e \"require('node:fs').rmSync('coverage', { recursive: true, force: true })\" && vitest run --config vitest.config.ts --coverage && vitest run --config vitest.ui.config.ts --coverage",
     "test:modules": "pnpm --filter @eve-space/platform-module-nuxt test && tsx scripts/run-installed-module-package-script.ts server test && tsx scripts/run-installed-module-package-script.ts nuxt test",
     "test:modules:coverage": "pnpm --filter @eve-space/platform-module-nuxt test:coverage && tsx scripts/run-installed-module-package-script.ts server test:coverage && tsx scripts/run-installed-module-package-script.ts nuxt test:coverage",
     "test:nuxt:fixtures": "pnpm --filter @eve-space/platform-module-nuxt test:fixtures && tsx scripts/run-installed-module-package-script.ts nuxt test:fixtures",
@@ -72,6 +72,7 @@
     "tsx": "^4.23.12",
     "typescript": "~5.9.3",
     "vitest": "^4.1.11",
+    "vitest-environment-nuxt": "2.0.0",
     "vue-tsc": "^3.3.10"
   }
 }

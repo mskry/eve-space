@@ -9,6 +9,8 @@ const props = defineProps<{
   labels: readonly MailLabel[]
   loading: boolean
   mutationPending: boolean
+  canReply: boolean
+  replyUnavailableReason?: string
   readState: MailHeader['isRead']
   selected: boolean
 }>()
@@ -16,6 +18,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   changeRead: [read: boolean]
   delete: []
+  forward: []
+  reply: []
+  replyAll: []
   retry: []
 }>()
 
@@ -70,7 +75,7 @@ const readerTitleId = computed(() => {
               </span>
             </div>
             <div class="mail-reader-skeleton-actions">
-              <span v-for="index in 4" :key="index" class="mail-skeleton-block" />
+              <span v-for="index in 5" :key="index" class="mail-skeleton-block" />
             </div>
           </header>
           <section class="mail-reader-content mail-reader-skeleton-content">
@@ -132,8 +137,16 @@ const readerTitleId = computed(() => {
             </div>
           </div>
           <div class="mail-reader-actions" aria-label="Message actions">
-            <button type="button" disabled>REPLY</button>
-            <button type="button" disabled>FORWARD</button>
+            <button
+              type="button"
+              :disabled="!canReply"
+              :title="replyUnavailableReason"
+              @click="emit('reply')"
+            >
+              REPLY
+            </button>
+            <button type="button" @click="emit('replyAll')">REPLY ALL</button>
+            <button type="button" @click="emit('forward')">FORWARD</button>
             <button
               type="button"
               :disabled="mutationPending"

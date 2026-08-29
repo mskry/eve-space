@@ -118,7 +118,7 @@ describe('ESI resilience telemetry', () => {
     ).toMatchObject({
       cacheSources: { esi: 0, cache: 1, 'not-modified': 0, stale: 1 },
     })
-    expect(JSON.stringify(telemetry)).not.toContain('character-')
+    expect(JSON.stringify(telemetry)).not.toMatch(/character-\d/)
   })
 
   test('reports cache telemetry independently when coordination is unavailable', async () => {
