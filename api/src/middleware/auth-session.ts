@@ -1,8 +1,8 @@
 import { getCookie } from 'hono/cookie'
 import { createMiddleware } from 'hono/factory'
-import type { SessionAccount } from '../auth-store.js'
-import { findSession } from '../auth-store.js'
-import { authRequiredBody } from '../http-contracts.js'
+import type { SessionAccount } from '../auth/store.js'
+import { findSession } from '../auth/store.js'
+import { authRequiredBody } from '../http/contracts.js'
 
 export const sessionCookie = 'eve_space_session'
 

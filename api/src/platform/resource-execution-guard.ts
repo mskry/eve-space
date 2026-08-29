@@ -1,9 +1,9 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
-import { CharacterTokenNotFoundError } from '../auth-store.js'
+import { CharacterTokenNotFoundError } from '../auth/store.js'
 import { getEsiOperationContract, type EsiOperation } from '../esi-resilience/catalog.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { findInstalledResource } from './resource-declarations.js'
-import { getCharacterAuthorizationForLifecycle, ScopeRequiredError } from '../token-service.js'
+import { getCharacterAuthorizationForLifecycle, ScopeRequiredError } from '../auth/tokens.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   resolveInstalledResourceEligibility,

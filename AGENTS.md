@@ -30,7 +30,7 @@ These instructions apply to the entire repository. Preserve the architecture and
 - Theme-dependent values belong in `layers/ui/app/assets/css/tokens.css`. Product styles must consume semantic `--ui-*` tokens or their documented compatibility aliases.
 - Runtime themes use the `data-theme` HTML attribute. Nuxt layer priority is a build-time override mechanism, not a runtime theme selector.
 - Keep the same resolved Hono version in the root and API packages. Version mismatches can break RPC inference.
-- Validate untrusted path, query, form, or JSON inputs before handlers run. Use the wrapper in `validation.ts` so validation failures retain the API's JSON error contract.
+- Validate untrusted path, query, form, or JSON inputs before handlers run. Use the wrapper in `api/src/http/validation.ts` so validation failures retain the API's JSON error contract.
 - Return JSON with explicit status codes when a route has multiple outcomes. Do not use `context.notFound()` for typed route outcomes.
 - Hono RPC provides compile-time client typing, not runtime response validation in the browser.
 - Keep handlers inline unless logic is reusable or belongs to a service boundary.

@@ -28,10 +28,10 @@
       "entry": [
         "src/index.ts",
         "src/worker.ts",
-        "src/worker-health.ts",
+        "src/worker/health.ts",
         "src/generated/platform/*.ts",
         "tests/fixtures/platform-module/*.ts",
-        "tests/*.types.ts",
+        "tests/**/*.types.ts",
       ],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
     },

@@ -22,8 +22,8 @@ afterEach(async () => {
   await Promise.all(platforms.map((platform) => platform.close()))
   platforms = []
   vi.doUnmock('../../../src/db/client.js')
-  vi.doUnmock('../../../src/domain-event-store.js')
-  vi.doUnmock('../../../src/deployment-installation-settings.js')
+  vi.doUnmock('../../../src/domain-events/store.js')
+  vi.doUnmock('../../../src/deployment/installation-settings.js')
   vi.doUnmock('../../../src/queue/scheduler.js')
   vi.doUnmock('../../../src/queue/worker-lifecycle.js')
   vi.doUnmock('../../../src/queue/redis.js')
@@ -255,7 +255,7 @@ describe('durable worker platform', () => {
 
   test('cleans up BullMQ connections when scheduler registration fails', async () => {
     process.env.QUEUE_REDIS_URL = redisUrl
-    vi.doMock('../../../src/deployment-installation-settings.js', () => ({
+    vi.doMock('../../../src/deployment/installation-settings.js', () => ({
       loadPlannerScheduleOffset: vi.fn().mockResolvedValue(30_000),
     }))
     vi.doMock('../../../src/queue/scheduler.js', async (importOriginal) => ({
@@ -331,7 +331,7 @@ describe('durable worker platform', () => {
   test('deduplicates concurrent event relay and retries enqueue-success acknowledgement failure', async () => {
     const { runOutboxRelayBatch } = await import('../../../src/queue/outbox-relay.js')
     const { assertSelectedDomainEventJobsAbsent } =
-      await import('../../../src/domain-event-redrive-queue.js')
+      await import('../../../src/domain-events/redrive-queue.js')
     const { createProducerRedisConnection, closeQueueRedisConnection } =
       await import('../../../src/queue/redis.js')
     const { operationsQueueName, queuePrefix } = await import('../../../src/queue/namespaces.js')
@@ -500,7 +500,7 @@ describe('durable worker platform', () => {
     const { startWorkerPlatform } = await loadPlatform(vi.fn().mockResolvedValue([{ ok: 1 }]))
     const { probeQueueStatus } = await import('../../../src/queue/status.js')
     const { assertWorkerDependencies, assertWorkerStartupDependencies } =
-      await import('../../../src/worker-readiness.js')
+      await import('../../../src/worker/readiness.js')
 
     await expect(probeQueueStatus()).resolves.toMatchObject({
       status: 'degraded',
@@ -724,7 +724,7 @@ async function flushQueueRedis() {
 async function loadPlatform(sql: ReturnType<typeof vi.fn>) {
   process.env.QUEUE_REDIS_URL = redisUrl
   vi.doMock('../../../src/db/client.js', () => ({ sql }))
-  vi.doMock('../../../src/domain-event-store.js', () => ({
+  vi.doMock('../../../src/domain-events/store.js', () => ({
     claimPendingDomainEvents: vi.fn().mockResolvedValue([]),
     deletePublishedDomainEvents: vi.fn().mockResolvedValue(0),
     getPendingDomainEventAggregates: vi
@@ -734,7 +734,7 @@ async function loadPlatform(sql: ReturnType<typeof vi.fn>) {
     markDomainEventPublished: vi.fn().mockResolvedValue(true),
     recordDomainEventPublishFailure: vi.fn().mockResolvedValue(true),
   }))
-  vi.doMock('../../../src/deployment-installation-settings.js', () => ({
+  vi.doMock('../../../src/deployment/installation-settings.js', () => ({
     loadPlannerScheduleOffset: vi
       .fn()
       .mockResolvedValue(Number(process.env.QUEUE_PLANNER_SCHEDULE_OFFSET_MS || 30_000)),

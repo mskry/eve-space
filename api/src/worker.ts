@@ -3,7 +3,7 @@ import { env, isSsoConfigured } from './env.js'
 import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog.js'
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
 import { startWorkerPlatform } from './queue/platform.js'
-import { assertWorkerStartupDependencies } from './worker-readiness.js'
+import { assertWorkerStartupDependencies } from './worker/readiness.js'
 
 export async function startWorker() {
   assertEsiOperationCatalogConfiguration({

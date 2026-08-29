@@ -458,12 +458,12 @@ describe('feature server import boundaries', () => {
   it.each([
     ["import { sql } from '../../../../api/src/db/client.js'", '../../../../api/src/db/client.js'],
     [
-      "export { findOwnedCharacter } from '../../../../api/src/auth-store.js'",
-      '../../../../api/src/auth-store.js',
+      "export { findOwnedCharacter } from '../../../../api/src/auth/store.js'",
+      '../../../../api/src/auth/store.js',
     ],
     [
-      "const token = import('../../../../api/src/token-service.js')",
-      '../../../../api/src/token-service.js',
+      "const token = import('../../../../api/src/auth/tokens.js')",
+      '../../../../api/src/auth/tokens.js',
     ],
     ["import routes from '@eve-space/api/routes/admin'", '@eve-space/api/routes/admin'],
   ])('rejects core API imports: %s', (source, specifier) => {

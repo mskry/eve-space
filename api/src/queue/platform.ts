@@ -6,9 +6,9 @@ import {
   type Job,
   type RepeatStrategy,
 } from 'bullmq'
-import { AffiliationCooldownError } from '../affiliation-sync.js'
-import { loadPlannerScheduleOffset } from '../deployment-installation-settings.js'
-import { verifyDomainEventHandlers } from '../domain-event-handlers.js'
+import { AffiliationCooldownError } from '../characters/affiliation-sync.js'
+import { loadPlannerScheduleOffset } from '../deployment/installation-settings.js'
+import { verifyDomainEventHandlers } from '../domain-events/handlers.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { env } from '../env.js'
 import { admitQueueWork } from './admission.js'

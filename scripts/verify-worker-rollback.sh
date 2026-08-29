@@ -31,16 +31,16 @@ docker compose stop api worker
 docker compose -f compose.yml -f "$override" up -d --no-build api
 until curl --fail --silent --show-error http://localhost:8788/health >/dev/null; do sleep 1; done
 
-recovery_snapshot=$(node api/dist/verify-worker-rollback.js)
+recovery_snapshot=$(node api/dist/commands/verify-worker-rollback.js)
 docker compose exec -T queue-redis redis-cli FLUSHDB >/dev/null
-node api/dist/verify-worker-rollback.js --expected-snapshot "$recovery_snapshot" >/dev/null
+node api/dist/commands/verify-worker-rollback.js --expected-snapshot "$recovery_snapshot" >/dev/null
 
 published_count=$(node -e 'const snapshot = JSON.parse(process.argv[1]); process.stdout.write(String(snapshot.publishedCount))' "$recovery_snapshot")
 if [[ "$published_count" -gt 0 ]]; then
   redrive_from=$(node -e 'const snapshot = JSON.parse(process.argv[1]); process.stdout.write(new Date(Date.parse(snapshot.earliestPublishedAt) - 1).toISOString())' "$recovery_snapshot")
   redrive_to=$(node -e 'const snapshot = JSON.parse(process.argv[1]); process.stdout.write(new Date(Date.parse(snapshot.latestPublishedAt) + 1).toISOString())' "$recovery_snapshot")
 
-  node api/dist/redrive-domain-events.js \
+  node api/dist/commands/redrive-domain-events.js \
     --from "$redrive_from" \
     --to "$redrive_to" \
     --time-field publication \
@@ -48,7 +48,7 @@ if [[ "$published_count" -gt 0 ]]; then
     --dry-run >/dev/null
 
   while true; do
-    redrive_result=$(node api/dist/redrive-domain-events.js \
+    redrive_result=$(node api/dist/commands/redrive-domain-events.js \
       --from "$redrive_from" \
       --to "$redrive_to" \
       --time-field publication \
@@ -61,9 +61,9 @@ fi
 
 docker compose -f compose.yml -f "$override" stop api
 docker compose up -d --no-build api worker
-until docker compose exec -T worker node dist/worker-health.js; do sleep 1; done
+until docker compose exec -T worker node dist/worker/health.js; do sleep 1; done
 while true; do
-  recovery_snapshot=$(node api/dist/verify-worker-rollback.js)
+  recovery_snapshot=$(node api/dist/commands/verify-worker-rollback.js)
   unpublished_count=$(node -e 'const snapshot = JSON.parse(process.argv[1]); process.stdout.write(String(snapshot.unpublishedCount))' "$recovery_snapshot")
   [[ "$unpublished_count" -eq 0 ]] && break
   sleep 1

@@ -3,8 +3,8 @@ import {
   claimPendingDomainEvents,
   markDomainEventPublished,
   recordDomainEventPublishFailure,
-} from '../domain-event-store.js'
-import { categorizeRelayFailure, RelayPublicationError } from '../domain-events.js'
+} from '../domain-events/store.js'
+import { categorizeRelayFailure, RelayPublicationError } from '../domain-events/definitions.js'
 import { env } from '../env.js'
 import { admitQueueWork } from './admission.js'
 import {

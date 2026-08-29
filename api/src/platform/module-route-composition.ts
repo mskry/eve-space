@@ -3,7 +3,7 @@ import type {
   PlatformOwnedCharacterRouteEnv,
 } from '@eve-space/platform-module-contract'
 import { Hono, type Schema } from 'hono'
-import { zValidator } from '../validation.js'
+import { zValidator } from '../http/validation.js'
 import { loadSession, requireSession } from '../middleware/auth-session.js'
 import {
   exposeAuthenticatedSessionModuleContext,

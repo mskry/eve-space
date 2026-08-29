@@ -16,7 +16,7 @@ import type {
   DomainEventPayload,
   DomainEventType,
   RelayFailureCategory,
-} from '../../domain-events.js'
+} from '../../domain-events/definitions.js'
 
 export const domainEvents = pgTable(
   'domain_events',
