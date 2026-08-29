@@ -4,10 +4,10 @@ import {
 } from '@eve-space/platform-module-contract'
 import type { EsiOperationContract } from './catalog.js'
 
-const scopePattern = /^esi-[a-z0-9_-]+\.[a-z0-9_]+\.v[1-9][0-9]*$/
+const scopePattern = /^esi-[a-z0-9_-]+\.[a-z0-9_]+\.v[1-9]\d*$/
 const identityFieldPattern = /^[A-Za-z][A-Za-z0-9]*$/
 const representationVersionPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
-const rateWindowPattern = /^[1-9][0-9]*[smhd]$/
+const rateWindowPattern = /^[1-9]\d*[smhd]$/
 const maximumEsiRequestAttempts = 3
 
 interface RateGroupDefinition {
@@ -334,7 +334,7 @@ function validateDate(operation: string, field: string, value: unknown, issues: 
 }
 
 export function isIsoCalendarDate(value: string) {
-  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)) return false
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const parsed = new Date(`${value}T00:00:00.000Z`)
   return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value
 }

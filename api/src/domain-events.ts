@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const positiveIdentifier = z.number().int().positive().safe()
+const positiveIdentifier = z.number().int().positive()
 const scope = z.string().trim().min(1)
 const scopeSet = z.array(scope).transform(normalizeScopeSet)
 

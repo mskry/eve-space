@@ -564,7 +564,7 @@ export class EsiResilienceLayer {
     authorization: EsiCacheAuthorization | undefined,
   ): Promise<EsiResourceRevision | undefined | null> {
     if (!policy.resourceRevision) return undefined
-    if (!authorization || authorization.kind !== 'character')
+    if (authorization?.kind !== 'character')
       throw new Error('Revision-sensitive ESI operation is missing character authorization')
     const unsafeKey = resourceRevisionUnsafeKey(
       policy.resourceRevision.namespace,

@@ -14,14 +14,14 @@ const escapedCharacters: Readonly<Record<string, string>> = {
 
 export function eveDescriptionToPlainText(html: string | undefined | null): string | undefined {
   if (!html) return undefined
-  const text = stripMarkup(html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n'))
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\n{3,}/g, '\n\n')
+  const text = stripMarkup(html.replaceAll(/<br\s*\/?>/gi, '\n').replaceAll(/<\/p>/gi, '\n'))
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&nbsp;', ' ')
+    .replaceAll('&amp;', '&')
+    .replaceAll(/\n{3,}/g, '\n\n')
     .trim()
   const normalized = decodeLegacyUnicodeLiteral(text).trim()
   return normalized || undefined

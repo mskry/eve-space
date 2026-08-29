@@ -9,7 +9,7 @@ export const characterIdParams = z.object({
     .string()
     .regex(/^[1-9]\d*$/, 'Character ID must be a positive integer.')
     .transform(Number)
-    .pipe(z.number().int().positive().safe('Character ID must be a positive integer.')),
+    .pipe(z.number().int().positive('Character ID must be a positive integer.')),
 })
 
 export type OwnedCharacterEnv = {

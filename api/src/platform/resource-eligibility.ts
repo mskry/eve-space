@@ -71,11 +71,13 @@ interface ClassificationRow {
   readonly expectedAuthorizationGeneration: number | null
   readonly requiredScope: string | null
   readonly dueReason: string | null
-  readonly schedulingKey: Date | string | null
-  readonly nextEligibleAt: Date | string | null
-  readonly validatedAt: Date | string | null
+  readonly schedulingKey: DatabaseTimestamp
+  readonly nextEligibleAt: DatabaseTimestamp
+  readonly validatedAt: DatabaseTimestamp
   readonly lastFailureClass: string | null
 }
+
+type DatabaseTimestamp = Date | string | null
 
 interface EligibilityOptions {
   readonly connection?: postgres.Sql | postgres.TransactionSql
@@ -101,8 +103,7 @@ export async function resolveInstalledResourceEligibility(
   const resource = resources.find(
     ({ moduleId, resourceId }) => moduleId === parsed.moduleId && resourceId === parsed.resourceId,
   )
-  if (!resource || resource.subjectKind !== parsed.subjectKind)
-    return { status: 'resource-unavailable' }
+  if (resource?.subjectKind !== parsed.subjectKind) return { status: 'resource-unavailable' }
 
   const connection = options.connection ?? sql
   const [row] = await connection<ClassificationRow[]>`

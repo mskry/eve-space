@@ -369,7 +369,7 @@ function normalizeIdentity(value: string) {
 }
 
 function canonicalizePath(path: string) {
-  return path.replace(/:[A-Za-z0-9_]+/g, ':parameter').replace(/\/$/, '') || '/'
+  return path.replace(/:\w+/g, ':parameter').replace(/\/$/, '') || '/'
 }
 
 function isNormalizedPath(path: string) {

@@ -35,17 +35,21 @@ type AdminEnv = { Variables: { adminSession: AdminSessionAccount | null } }
 
 const adminSessionCookie = 'eve_space_admin_session'
 const adminSessionDurationSeconds = 12 * 60 * 60
+const adminEmailSchema = z
+  .string()
+  .trim()
+  .pipe(z.email('Enter a valid administrator email address.'))
 const organizationSchema = z.object({
   organizationType: z.enum(['corporation', 'alliance']),
   organizationId: z.coerce.number().int().positive('Enter a valid EVE organization ID.'),
 })
 const setupSchema = organizationSchema.extend({
   setupSecret: z.string().min(1, 'Enter the deployment setup secret.'),
-  email: z.string().trim().email('Enter a valid administrator email address.'),
+  email: adminEmailSchema,
   password: z.string().min(12, 'Administrator password must be at least 12 characters.').max(256),
 })
 const loginSchema = z.object({
-  email: z.string().trim().email('Enter a valid administrator email address.'),
+  email: adminEmailSchema,
   password: z.string().min(1, 'Enter the administrator password.').max(256),
 })
 const moduleIdSchema = z
@@ -149,9 +153,9 @@ export const adminRoutes = new Hono<AdminEnv>()
     setPrivateHeaders(context)
     const input = context.req.valid('json')
     const credentials = await findAdminCredentials(input.email.toLowerCase())
-    const valid = credentials
-      ? await verifyPassword(input.password, credentials.passwordHash)
-      : (await hashPassword(input.password)) && false
+    let valid = false
+    if (credentials) valid = await verifyPassword(input.password, credentials.passwordHash)
+    else await hashPassword(input.password)
     if (!credentials || !valid) {
       return context.json(
         { code: 'ADMIN_AUTH_FAILED', message: 'Email or password is incorrect.' },

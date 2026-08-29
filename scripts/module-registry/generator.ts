@@ -366,7 +366,14 @@ function compareRuntimeNavigation(
 }
 
 function quote(value: string) {
-  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "\\'").replaceAll('\n', '\\n')}'`
+  const backslash = String.fromCodePoint(92)
+  const escapedSingleQuote = String.raw`\'`
+  const escapedNewline = String.raw`\n`
+  const escaped = value
+    .replaceAll(backslash, backslash.repeat(2))
+    .replaceAll("'", escapedSingleQuote)
+    .replaceAll('\n', escapedNewline)
+  return "'" + escaped + "'"
 }
 
 function parsePlatformModuleManifest(value: unknown, moduleId: string): PlatformModuleManifest {

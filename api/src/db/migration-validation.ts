@@ -21,6 +21,7 @@ const nonTransactionalStatements = [
   },
   { name: 'VACUUM', pattern: /\bvacuum\b/i },
 ]
+const dollarQuoteDelimiterPattern = /^\$[A-Za-z_]\w*\$|^\$\$/
 
 export function assertTransactionalMigration(migration: Migration) {
   const statement = stripSqlLiteralsAndComments(migration.sql)
@@ -93,7 +94,7 @@ function skipQuotedLiteral(sql: string, index: number) {
 function skipDollarQuotedLiteral(sql: string, index: number) {
   if (sql[index] !== '$') return undefined
 
-  const delimiter = sql.slice(index).match(/^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/)?.[0]
+  const delimiter = dollarQuoteDelimiterPattern.exec(sql.slice(index))?.[0]
   if (!delimiter) return undefined
 
   const end = sql.indexOf(delimiter, index + delimiter.length)

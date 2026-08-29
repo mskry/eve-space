@@ -36,9 +36,9 @@ const positiveIntegerString = (name: string) =>
     .string()
     .regex(/^[1-9]\d*$/, `${name} must be a positive integer.`)
     .transform(Number)
-    .pipe(z.number().int().positive().safe(`${name} must be a positive integer.`))
+    .pipe(z.number().int().positive(`${name} must be a positive integer.`))
 
-const positiveSafeInteger = z.number().int().positive().safe()
+const positiveSafeInteger = z.number().int().positive()
 const uniqueLabelIds = z
   .array(positiveSafeInteger)
   .max(25)
@@ -81,7 +81,7 @@ const sendMailBody = z
       .max(50),
     subject: z.string().max(1_000),
     body: z.string().max(10_000),
-    approvedCost: z.number().int().nonnegative().safe().default(0),
+    approvedCost: z.number().int().nonnegative().default(0),
   })
   .strict()
 const createLabelBody = z
