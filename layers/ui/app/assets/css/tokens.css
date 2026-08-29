@@ -23,8 +23,9 @@
   --ui-image-text: rgba(255, 255, 255, 0.72);
   --ui-image-scrim: rgba(3, 7, 9, 0.8);
   --ui-logo-background: #222;
-  --ui-font-body: 'Arial Narrow', 'Roboto Condensed', 'Helvetica Neue', sans-serif;
-  --ui-font-mono: monospace;
+  --ui-font-body: 'Shentox', 'Arial Narrow', 'Roboto Condensed', 'Helvetica Neue', sans-serif;
+  --ui-font-sans: var(--ui-font-body);
+  --ui-font-mono: 'Shentox', 'Arial Narrow', 'Roboto Condensed', monospace;
   --ui-font-display-size: clamp(1.75rem, 3vw, 2.5rem);
   --ui-font-display-weight: 300;
   --ui-font-h3-size: 1.17em;
