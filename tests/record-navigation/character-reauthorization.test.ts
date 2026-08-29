@@ -10,13 +10,13 @@ function source(path: string) {
 describe('character reauthorization transitions', () => {
   const shell = source('app/pages/characters/[characterId].vue')
 
-  it('keeps the nested page mounted and replaces the processed callback URL', () => {
-    expect(shell).toContain('<NuxtPage />')
-    expect(shell).not.toContain('route.fullPath')
+  it('keys the nested page by route without remounting for the callback parameter', () => {
+    expect(shell).toContain('<NuxtPage :key="characterPageKey" />')
+    expect(shell).toContain('router.resolve(routeLocationWithoutReauthorization()).fullPath')
     expect(shell).toContain('authLoading && !callbackProcessing')
     expect(shell).toContain('reauthorizeFeedbackStatus.value = callbackStatus')
     expect(shell).toContain('delete query.reauthorize')
-    expect(shell).toContain('router.replace({ path: route.path, query, hash: route.hash })')
+    expect(shell).toContain('router.replace(routeLocationWithoutReauthorization())')
   })
 
   it('refreshes account context once while callback processing is active', () => {

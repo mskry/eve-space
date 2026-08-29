@@ -48,6 +48,15 @@ const reauthorizeFeedback = computed(() => {
 const reauthorizeFeedbackIsError = computed(
   () => reauthorizeFeedbackStatus.value !== '' && reauthorizeFeedbackStatus.value !== 'success',
 )
+const characterPageKey = computed(
+  () => router.resolve(routeLocationWithoutReauthorization()).fullPath,
+)
+
+function routeLocationWithoutReauthorization() {
+  const query = { ...route.query }
+  delete query.reauthorize
+  return { path: route.path, query, hash: route.hash }
+}
 
 watch(characterId, (id, previousId) => {
   if (id !== previousId) reauthorizeFeedbackStatus.value = ''
@@ -63,10 +72,8 @@ watch(
     reauthorizationCycle.begin(callbackStatus)
     await Promise.allSettled([refreshAuthContext(), refetchCharacterRoster()])
 
-    const query = { ...route.query }
-    delete query.reauthorize
     try {
-      await router.replace({ path: route.path, query, hash: route.hash })
+      await router.replace(routeLocationWithoutReauthorization())
     } finally {
       reauthorizationCycle.finish()
       callbackProcessing.value = false
@@ -160,7 +167,7 @@ useHead({
         @intent="prefetchCharacterNavigation"
       />
 
-      <NuxtPage />
+      <NuxtPage :key="characterPageKey" />
     </template>
   </div>
 </template>
