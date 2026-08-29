@@ -2,9 +2,12 @@ export function buildHistoryTimeline<T extends { startDate: string }>(entries: r
   const sorted = [...entries].toSorted(
     (left, right) => Date.parse(right.startDate) - Date.parse(left.startDate),
   )
-  return sorted.map((entry, index) =>
-    Object.assign({}, entry, {
+  const timeline: Array<T & { endDate: string | undefined }> = []
+  for (const [index, entry] of sorted.entries()) {
+    timeline.push({
+      ...entry,
       endDate: index === 0 ? undefined : sorted[index - 1]?.startDate,
-    }),
-  )
+    })
+  }
+  return timeline
 }

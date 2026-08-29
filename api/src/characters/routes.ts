@@ -2,7 +2,9 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { deleteCharacter, listUserCharacters, setMainCharacter } from '../auth/store.js'
+import { characterAttributesScope, getCharacterAttributes } from './attributes.js'
 import { getCharacterEmploymentHistory } from './history.js'
+import { characterSkillQueueScope, getCharacterSkillQueue } from './skill-queue.js'
 import { characterSkillsScope, getCharacterSkills } from './skills.js'
 import {
   getCharacterLocation,
@@ -183,6 +185,72 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
       if (result === 'not-found')
         return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
       return context.body(null, 204)
+    },
+  )
+  .get(
+    '/:characterId/attributes',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
+        return context.json(await getCharacterAttributes(characterId))
+      } catch (error) {
+        if (error instanceof EsiQuotaError) return esiCooldown(context, error)
+        if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
+        if (error instanceof ScopeRequiredError) {
+          return scopeRequired(
+            context,
+            characterId,
+            'Authorize attributes access for this character.',
+            error.scope,
+          )
+        }
+
+        const status = errorStatus(error)
+        if (status === 401 || status === 403) {
+          return reauthorizationRequired(context, characterId, characterAttributesScope)
+        }
+        return context.json(
+          { code: 'ESI_UNAVAILABLE', message: 'EVE Online ESI is temporarily unavailable.' },
+          502,
+        )
+      }
+    },
+  )
+  .get(
+    '/:characterId/skill-queue',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
+        return context.json(await getCharacterSkillQueue(characterId))
+      } catch (error) {
+        if (error instanceof EsiQuotaError) return esiCooldown(context, error)
+        if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
+        if (error instanceof ScopeRequiredError) {
+          return scopeRequired(
+            context,
+            characterId,
+            'Authorize skill queue access for this character.',
+            error.scope,
+          )
+        }
+
+        const status = errorStatus(error)
+        if (status === 401 || status === 403) {
+          return reauthorizationRequired(context, characterId, characterSkillQueueScope)
+        }
+        return context.json(
+          { code: 'ESI_UNAVAILABLE', message: 'EVE Online ESI is temporarily unavailable.' },
+          502,
+        )
+      }
     },
   )
   .get(

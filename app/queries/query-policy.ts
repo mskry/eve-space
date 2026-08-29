@@ -7,6 +7,8 @@ export const QUERY_POLICY = {
   character: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   characterRoster: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
   characterOverview: { staleTime: 30_000, gcTime: QUERY_GC_TIME },
+  characterAttributes: { staleTime: 120_000, gcTime: QUERY_GC_TIME },
+  characterSkillQueue: { staleTime: 120_000, gcTime: QUERY_GC_TIME },
   characterSkills: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   characterHistory: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   wallet: { staleTime: 30_000, gcTime: QUERY_GC_TIME },

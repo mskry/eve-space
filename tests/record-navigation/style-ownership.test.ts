@@ -14,6 +14,7 @@ describe('record page style ownership', () => {
 
     expect(component).toContain('.record-section-navigation')
     expect(component).toContain('overflow-x: auto')
+    expect(component).toContain('overflow-y: hidden')
     expect(component).toContain('focus-visible')
     expect(component).not.toContain('25%')
     expect(record).not.toContain('.character-tabs')
@@ -49,6 +50,17 @@ describe('record page style ownership', () => {
     expect(timelineCss).not.toContain('.history-npc-toggle')
     expect(characterCss).toContain('.history-npc-toggle')
     expect(characterCss).not.toContain('.employment-timeline')
+  })
+
+  it('keeps attribute and queue styles with the skills route', () => {
+    const page = source('app/pages/characters/[characterId]/skills.vue')
+    const skills = source('app/assets/css/features/skills.css')
+    const record = source('app/assets/css/features/character-record.css')
+
+    expect(page).toContain('features/skills.css')
+    expect(skills).toContain('.skill-attribute-cells')
+    expect(skills).toContain('.skill-queue-list')
+    expect(record).not.toContain('.skill-attribute-cells')
   })
 
   it('removes unrelated route imports and obsolete feature selectors', () => {

@@ -174,6 +174,24 @@ describe('query infrastructure', () => {
     expect(PRIVATE_QUERY_KEYS.characterHistory(7)).not.toEqual(
       PRIVATE_QUERY_KEYS.characterHistory(8),
     )
+    expect(PRIVATE_QUERY_KEYS.characterAttributes(7)).toEqual([
+      'private',
+      'characters',
+      7,
+      'attributes',
+    ])
+    expect(PRIVATE_QUERY_KEYS.characterAttributes(7)).not.toEqual(
+      PRIVATE_QUERY_KEYS.characterAttributes(8),
+    )
+    expect(PRIVATE_QUERY_KEYS.characterSkillQueue(7)).toEqual([
+      'private',
+      'characters',
+      7,
+      'skill-queue',
+    ])
+    expect(PRIVATE_QUERY_KEYS.characterSkillQueue(7)).not.toEqual(
+      PRIVATE_QUERY_KEYS.characterSkillQueue(8),
+    )
     expect(PRIVATE_QUERY_KEYS.characterOverview(7)).toEqual([
       'private',
       'characters',

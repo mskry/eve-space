@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import Fuse, { type IFuseOptions } from 'fuse.js'
 import { useQuery } from '@pinia/colada'
-import { characterSkillsQuery } from '../../../queries/characters'
+import {
+  characterAttributesQuery,
+  characterSkillQueueQuery,
+  characterSkillsQuery,
+} from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
@@ -13,111 +16,70 @@ const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
+const protectedQueryEnabled = computed(() =>
+  canRunProtectedQuery(import.meta.client, authSession.value.authenticated, characterId.value),
+)
+
 const skillsQuery = useQuery(() => ({
   ...characterSkillsQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled: canRunProtectedQuery(
-    import.meta.client,
-    authSession.value.authenticated,
-    characterId.value,
-  ),
+  enabled: protectedQueryEnabled.value,
+}))
+const attributesQuery = useQuery(() => ({
+  ...characterAttributesQuery({ apiClient, characterId: characterId.value ?? 0 }),
+  enabled: protectedQueryEnabled.value,
+}))
+const skillQueueQuery = useQuery(() => ({
+  ...characterSkillQueueQuery({ apiClient, characterId: characterId.value ?? 0 }),
+  enabled: protectedQueryEnabled.value,
 }))
 const skills = skillsQuery.data
-const skillsMessage = computed(() =>
-  skillsQuery.error.value instanceof Error ? skillsQuery.error.value.message : '',
-)
-const skillsAuthorizeUrl = computed(() =>
-  skillsQuery.error.value instanceof ApiQueryError
-    ? (skillsQuery.error.value.authorizeUrl ?? '')
-    : '',
-)
+const attributes = attributesQuery.data
+const skillQueue = skillQueueQuery.data
+
+const skillsMessage = computed(() => queryMessage(skillsQuery.error.value))
+const skillsAuthorizeUrl = computed(() => queryAuthorizeUrl(skillsQuery.error.value))
 const skillsStatus = computed(() => {
   if (skillsQuery.data.value) return 'idle'
   const error = skillsQuery.error.value
   if (error instanceof ApiQueryError && error.status === 404) return 'not-found'
+  return queryStatus(skillsQuery)
+})
+const attributesStatus = computed(() => queryStatus(attributesQuery))
+const skillQueueStatus = computed(() => queryStatus(skillQueueQuery))
+const attributesMessage = computed(() => queryMessage(attributesQuery.error.value))
+const skillQueueMessage = computed(() => queryMessage(skillQueueQuery.error.value))
+const attributesAuthorizeUrl = computed(() => queryAuthorizeUrl(attributesQuery.error.value))
+const skillQueueAuthorizeUrl = computed(() => queryAuthorizeUrl(skillQueueQuery.error.value))
+
+function loadCharacterSkills(force = false) {
+  return force ? skillsQuery.refetch() : skillsQuery.refresh()
+}
+
+useCharacterReauthorization(characterId, () => {
+  void Promise.all([skillsQuery.refetch(), attributesQuery.refetch(), skillQueueQuery.refetch()])
+})
+
+function queryStatus(query: typeof skillsQuery | typeof attributesQuery | typeof skillQueueQuery) {
+  if (query.data.value) return 'idle'
+  const error = query.error.value
   if (
     error instanceof ApiQueryError &&
     (error.code === 'EVE_SCOPE_REQUIRED' || error.code === 'EVE_REAUTH_REQUIRED')
   ) {
     return 'scope-required'
   }
-  if (skillsQuery.status.value === 'error') return 'error'
-  if (skillsQuery.asyncStatus.value === 'loading') return 'loading'
+  if (query.status.value === 'error') return 'error'
+  if (query.asyncStatus.value === 'loading') return 'loading'
   return 'idle'
-})
-
-function loadCharacterSkills(force = false) {
-  return force ? skillsQuery.refetch() : skillsQuery.refresh()
 }
 
-useCharacterReauthorization(characterId, () => void skillsQuery.refetch())
-
-const totalSpLabel = computed(() => skills.value?.totalSp.toLocaleString('en-US') ?? '0')
-const unallocatedSpLabel = computed(
-  () => skills.value?.unallocatedSp.toLocaleString('en-US') ?? '0',
-)
-const levelFiveSummary = computed(() => {
-  let count = 0
-  let skillpoints = 0
-
-  for (const group of skills.value?.groups ?? []) {
-    for (const skill of group.skills) {
-      if (skill.trainedLevel !== 5) continue
-      count += 1
-      skillpoints += skill.skillpoints
-    }
-  }
-
-  return { count, skillpoints: skillpoints.toLocaleString('en-US') }
-})
-const search = ref('')
-const searchTerm = computed(() => search.value.trim())
-useCustomHighlight({
-  highlightName: 'skill-search',
-  term: searchTerm,
-  selector: '.skill-group-name, .skill-identity strong',
-})
-const fuseOptions: IFuseOptions<Record<string, unknown>> = {
-  keys: ['name'],
-  threshold: 0.18,
-  ignoreLocation: true,
-  minMatchCharLength: 2,
+function queryMessage(error: unknown) {
+  return error instanceof Error ? error.message : ''
 }
 
-function fuzzyContains(name: string, token: string): boolean {
-  if (!name || !token) return false
-  const fuse = new Fuse([{ name }], fuseOptions as IFuseOptions<{ name: string }>)
-  return fuse.search(token).length > 0
+function queryAuthorizeUrl(error: unknown) {
+  return error instanceof ApiQueryError ? (error.authorizeUrl ?? '') : ''
 }
-
-function groupMatchesAllTokens(name: string, tokens: string[]): boolean {
-  return tokens.every((tok) => fuzzyContains(name, tok))
-}
-
-const filteredGroups = computed(() => {
-  const groups = skills.value?.groups ?? []
-  const raw = searchTerm.value
-  if (!raw) return groups
-  const tokens = raw.toLowerCase().split(/\s+/).filter(Boolean)
-  if (tokens.length === 0) return groups
-  return groups.flatMap((group) => {
-    if (groupMatchesAllTokens(group.name ?? '', tokens)) return [group]
-    const hits = group.skills.filter((skill) => groupMatchesAllTokens(skill.name ?? '', tokens))
-    if (hits.length) {
-      return [
-        { ...group, skills: hits, trainedSp: hits.reduce((sum, s) => sum + s.skillpoints, 0) },
-      ]
-    }
-    return []
-  })
-})
-const filteredSkillCount = computed(() =>
-  filteredGroups.value.reduce((sum, g) => sum + g.skills.length, 0),
-)
-const skillGroupColumns = computed(() => {
-  const groups = filteredGroups.value.map((group, index) => ({ group, index }))
-  const midpoint = Math.ceil(groups.length / 2)
-  return [groups.slice(0, midpoint), groups.slice(midpoint)]
-})
 </script>
 
 <template>
@@ -148,128 +110,27 @@ const skillGroupColumns = computed(() => {
       </template>
     </UiStatePanel>
 
-    <template v-else-if="skills">
-      <CharacterSummaryCard>
-        <template #icon>
-          <UiEveImage kind="type-icon" :id="3300" :dimension="42" alt="" aria-hidden="true" />
-        </template>
-        <template #eyebrow>CHARACTER SKILLS</template>
-        <template #value>{{ totalSpLabel }} SP</template>
-        <template #label>TOTAL SKILL POINTS</template>
+    <div v-else-if="skills" class="skills-layout">
+      <section class="skills-catalogue" aria-label="Skill catalogue">
+        <CharacterSkillsSummaryCard
+          :skills="skills"
+          :attributes="attributes"
+          :attributes-status="attributesStatus"
+          :attributes-message="attributesMessage"
+          :attributes-authorize-url="attributesAuthorizeUrl"
+          @retry-attributes="attributesQuery.refetch()"
+        />
+        <CharacterSkillsCatalogue :skills="skills" :skill-queue="skillQueue" />
+      </section>
 
-        <dl class="skills-summary-stats skills-summary-stats--inline">
-          <div>
-            <dt>UNALLOCATED</dt>
-            <dd>{{ unallocatedSpLabel }} SP</dd>
-          </div>
-          <div>
-            <dt>LEVEL V SKILLS</dt>
-            <dd>{{ levelFiveSummary.count }}</dd>
-          </div>
-          <div>
-            <dt>SP IN LEVEL V</dt>
-            <dd>{{ levelFiveSummary.skillpoints }} SP</dd>
-          </div>
-        </dl>
-        <div class="skill-level-legend" aria-label="Skill level indicator legend">
-          <span><i class="is-active" aria-hidden="true" />ACTIVE</span>
-          <span><i class="is-trained" aria-hidden="true" />TRAINED</span>
-        </div>
-      </CharacterSummaryCard>
-
-      <div class="skills-search-row">
-        <span class="app-search-status skills-search-status" aria-live="polite">
-          <template v-if="!searchTerm">&nbsp;</template>
-          <template v-else-if="filteredGroups.length === 0">NO MATCHES</template>
-          <template v-else
-            >{{ filteredGroups.length }} / {{ skills.groups.length }} GROUPS MATCHED</template
-          >
-        </span>
-        <UiToolbar class="skills-toolbar" label="Skills search">
-          <input
-            v-model="search"
-            type="search"
-            autocomplete="off"
-            placeholder="Search skills or groups"
-            aria-label="Search skills by name or group"
-          />
-        </UiToolbar>
-      </div>
-
-      <UiStatePanel
-        v-if="skills.groups.length === 0"
-        code="00 / NO RECORDS"
-        title="No trained skills returned"
-        compact
-      >
-        <p>This character's authorized ESI skill archive is currently empty.</p>
-      </UiStatePanel>
-
-      <UiStatePanel
-        v-else-if="filteredGroups.length === 0"
-        code="00 / NO MATCHES"
-        title="No matching skills"
-        compact
-      >
-        <p>No groups or skills match "{{ searchTerm }}".</p>
-      </UiStatePanel>
-
-      <div v-else class="skill-groups">
-        <div
-          v-for="(column, columnIndex) in skillGroupColumns"
-          :key="columnIndex"
-          class="skill-group-column"
-        >
-          <TransitionGroup name="skill-group">
-            <UiCollapsible
-              v-for="entry in column"
-              :key="`${entry.group.groupId ?? 'unknown'}-${entry.index}-${searchTerm}`"
-              class="skill-group"
-              :class="{ 'skill-group--unknown': entry.group.groupId === null }"
-              :default-open="Boolean(searchTerm)"
-            >
-              <template #trigger>
-                <button class="skill-group-trigger" type="button">
-                  <span class="skill-group-heading">
-                    <span>{{ String(entry.index + 1).padStart(2, '0') }} / SKILL GROUP</span>
-                    <h2 class="skill-group-name">{{ entry.group.name }}</h2>
-                    <span v-if="entry.group.groupId === null" class="skill-group-warning">
-                      Static data unavailable for these skill IDs.
-                    </span>
-                  </span>
-                  <strong>{{ entry.group.trainedSp.toLocaleString('en-US') }} SP</strong>
-                  <span class="skill-group-toggle" aria-hidden="true" />
-                </button>
-              </template>
-              <ul class="skill-list">
-                <li v-for="skill in entry.group.skills" :key="skill.typeId" class="skill-row">
-                  <div class="skill-identity">
-                    <strong>{{ skill.name }}</strong>
-                    <span>{{ skill.skillpoints.toLocaleString('en-US') }} SP</span>
-                  </div>
-                  <div class="skill-levels">
-                    <div
-                      class="skill-level-track"
-                      :aria-label="`Active level ${skill.activeLevel}; trained level ${skill.trainedLevel} of 5`"
-                    >
-                      <span
-                        v-for="level in 5"
-                        :key="level"
-                        :class="{
-                          'is-trained': level <= skill.trainedLevel,
-                          'is-active': level <= skill.activeLevel,
-                        }"
-                        aria-hidden="true"
-                      />
-                    </div>
-                  </div>
-                </li>
-              </ul>
-            </UiCollapsible>
-          </TransitionGroup>
-        </div>
-      </div>
-    </template>
+      <CharacterSkillsQueue
+        :skill-queue="skillQueue"
+        :status="skillQueueStatus"
+        :message="skillQueueMessage"
+        :authorize-url="skillQueueAuthorizeUrl"
+        @retry="skillQueueQuery.refetch()"
+      />
+    </div>
   </section>
 </template>
 

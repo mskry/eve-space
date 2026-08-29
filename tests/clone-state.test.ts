@@ -10,12 +10,12 @@ describe('clone state inference', () => {
     ).toBe('alpha')
   })
 
-  it('infers omega when a non-empty archive has no inactive levels', () => {
+  it('does not infer omega from equal active and trained levels', () => {
     expect(
       inferCloneState({
         groups: [{ skills: [{ activeLevel: 5, trainedLevel: 5 }] }],
       }),
-    ).toBe('omega')
+    ).toBeUndefined()
   })
 
   it('returns no status for an empty archive', () => {

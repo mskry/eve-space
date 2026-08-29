@@ -68,6 +68,8 @@ describe('ESI operation policies', () => {
         'mail-delete-label',
         'character-search',
         'character-cspa-charge',
+        'attributes',
+        'skill-queue',
         'skills',
         'location',
         'ship',
@@ -213,6 +215,38 @@ describe('ESI operation policies', () => {
         maximumTokens: 600,
         window: '15m',
       },
+    })
+    expect(esiOperationMetadata.attributes).toMatchObject({
+      method: 'GET',
+      path: '/characters/{character_id}/attributes',
+      esiOperationId: 'GetCharactersCharacterIdAttributes',
+      requiredScope: 'esi-skills.read_skills.v1',
+      cache: { kind: 'relative', seconds: 120 },
+      supportsConditionalRequests: true,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+    })
+    expect(getEsiOperationContract('attributes')).toMatchObject({
+      authorization: { kind: 'character', scope: 'esi-skills.read_skills.v1' },
+      identity: { kind: 'ordered', fields: ['characterId'] },
+      cache: { kind: 'shared', revalidate: true, stale: { kind: 'none' } },
+      retry: { kind: 'idempotent' },
+    })
+    expect(esiOperationMetadata['skill-queue']).toMatchObject({
+      path: '/characters/{character_id}/skillqueue',
+      esiOperationId: 'GetCharactersCharacterIdSkillqueue',
+      requiredScope: 'esi-skills.read_skillqueue.v1',
+      cache: { kind: 'relative', seconds: 120 },
+      supportsConditionalRequests: true,
+    })
+    expect(getEsiOperationContract('skill-queue')).toMatchObject({
+      authorization: { kind: 'character', scope: 'esi-skills.read_skillqueue.v1' },
+      identity: { kind: 'ordered', fields: ['characterId'] },
+      cache: { kind: 'shared', revalidate: true, stale: { kind: 'none' } },
     })
     expect([
       esiOperationMetadata['wallet-balance'],
@@ -387,7 +421,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-search.search_structures.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -404,6 +438,7 @@ describe('ESI operation policies', () => {
           'esi-mail.read_mail.v1',
           'esi-mail.send_mail.v1',
           'esi-search.search_structures.v1',
+          'esi-skills.read_skillqueue.v1',
           'esi-skills.read_skills.v1',
           'esi-wallet.read_character_wallet.v1',
         ],

@@ -1,4 +1,4 @@
-export type InferredCloneState = 'alpha' | 'omega'
+export type InferredCloneState = 'alpha'
 
 interface SkillArchive {
   groups: ReadonlyArray<{
@@ -10,12 +10,10 @@ interface SkillArchive {
 }
 
 export function inferCloneState(skills: SkillArchive | undefined): InferredCloneState | undefined {
-  let hasSkills = false
   for (const group of skills?.groups ?? []) {
     for (const skill of group.skills) {
-      hasSkills = true
       if (skill.activeLevel < skill.trainedLevel) return 'alpha'
     }
   }
-  return hasSkills ? 'omega' : undefined
+  return undefined
 }

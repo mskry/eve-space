@@ -9,7 +9,7 @@ export default defineVitestConfig({
       reportsDirectory: 'coverage/ui',
     },
     environment: 'nuxt',
-    include: ['tests/ui/**/*.nuxt.test.ts'],
+    include: ['tests/character/**/*.nuxt.test.ts', 'tests/ui/**/*.nuxt.test.ts'],
     maxWorkers: 1,
     pool: 'forks',
   },
