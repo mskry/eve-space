@@ -1,16 +1,15 @@
-# EVE Space POC
+# EVE Space
 
-A small EVE Online character application with:
+EVE Space is a self-hosted EVE Online character dashboard. It supports:
 
-- Nuxt 4 frontend
-- Pinia Colada for typed in-memory remote data, deduplication, and invalidation
-- Local Nuxt UI layer with Reka UI primitives
-- Hono API and EVE SSO service
-- PostgreSQL 17 in OrbStack / Docker Compose
-- Redis 7 durable queue/coordination storage, an isolated disposable ESI cache, and a separate backend worker
-- `@evespace/esi-client` for public ESI requests
-- Multi-character application accounts with one selectable main character
-- Character-ID-scoped overview, skills, wallet, and employment-history views
+- Multiple individually authorized characters per application account, with one selectable main character
+- Character overview, location, active ship, skills, wallet balance and transactions, employment history, and mail
+- Public EVE character and corporation records inside the authenticated application
+- Mail reading, composition, recipient lookup, CSPA estimates, and label management
+- A separate local deployment-administrator account for organization ownership, module enablement, and navigation order
+- Statically installed first-party modules with runtime enablement
+
+The application is a pnpm workspace built from a Nuxt 4 frontend, a chained Hono API, a separate Node worker, PostgreSQL 17, and two Redis 7 roles. Pinia Colada provides typed in-memory frontend queries, the local Nuxt UI layer wraps Reka UI primitives, and `@evespace/esi-client` owns all ESI access in the API and worker.
 
 The Nuxt UI uses routed dashboard sections. The default layout owns the persistent sidebar and top bar, while the authorization route uses a focused auth layout. New integrations register a route and sidebar entry without modifying the shell.
 
@@ -24,7 +23,7 @@ EVE portraits, corporation/alliance logos, and type images use the official EVE 
 
 - Node.js 22.18 or newer
 - pnpm 11.22.0 through Corepack
-- OrbStack with its Docker engine running
+- Docker Engine with Docker Compose (OrbStack and Docker Desktop are both suitable locally)
 - An EVE Developer application for the SSO flow
 
 ## EVE Application
@@ -35,20 +34,31 @@ Create an application in the [EVE Developer Portal](https://developers.eveonline
 http://localhost:8788/auth/eve/callback
 ```
 
-The POC requests protected scopes for each attached character's wallet, location, ship, and skills:
+The application requests these protected scopes for each attached character:
 
 ```text
 esi-wallet.read_character_wallet.v1
 esi-location.read_location.v1
 esi-location.read_ship_type.v1
 esi-skills.read_skills.v1
+esi-mail.read_mail.v1
+esi-mail.organize_mail.v1
+esi-mail.send_mail.v1
+esi-search.search_structures.v1
+esi-characters.read_contacts.v1
 ```
 
 Each character must be authorized individually. The attachment flow can select a character after signing into the same or a different EVE account; EVE Space does not discover an account's alts automatically. Existing authorizations must be refreshed after adding scopes.
 
 ## Environment
 
-Create `.env` from `.env.example`, then supply:
+Create `.env` from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+At minimum, supply:
 
 ```dotenv
 NUXT_PUBLIC_EVE_IMAGE_BASE=https://images.evetech.net
@@ -56,6 +66,7 @@ POSTGRES_PASSWORD=your-url-safe-random-postgres-password
 DATABASE_URL=postgres://eve_space:your-url-safe-random-postgres-password@localhost:5432/eve_space
 EVE_CLIENT_ID=your-client-id
 EVE_CLIENT_SECRET=your-client-secret
+ESI_USER_AGENT=EveSpace/0.1 (eve:your-character) @evespace/esi-client/2.0.0
 TOKEN_ENCRYPTION_KEY=your-base64-encoded-32-byte-key
 ADMIN_SETUP_SECRET=your-high-entropy-one-time-setup-secret
 ```
@@ -71,7 +82,7 @@ Use the same hex output for `POSTGRES_PASSWORD` and the password component of `D
 
 The client secret, encryption key, and setup secret must remain server-side. Never provide EVE account credentials to this application; the browser authenticates directly with EVE Online.
 
-Generate a separate setup secret with `openssl rand -base64 32`, then open `/admin/login` directly to create the local deployment owner and select the owning corporation or alliance by EVE organization ID. The Admin navigation remains hidden unless that separate local owner session is authenticated.
+Generate a separate setup secret with `openssl rand -base64 32`. After signing in with EVE, open `/admin/login` directly to create the local deployment owner and select the owning corporation or alliance by EVE organization ID. The Admin navigation remains hidden unless that separate local owner session is authenticated.
 
 ## Run
 
@@ -82,7 +93,7 @@ corepack enable
 pnpm install --frozen-lockfile
 ```
 
-Start PostgreSQL and the Hono API in OrbStack:
+Start the backend stack:
 
 ```bash
 pnpm stack:up
@@ -94,7 +105,9 @@ Start Nuxt on the host:
 pnpm dev
 ```
 
-This starts PostgreSQL, durable queue Redis, disposable cache Redis, the Hono API, and the worker. Open `http://localhost:3000`. The API is available at `http://localhost:8788`.
+`pnpm stack:up` starts PostgreSQL, durable queue Redis, disposable cache Redis, the Hono API, and the worker. The API container applies pending core and installed-module migrations before opening its HTTP socket. `pnpm dev` runs Nuxt separately on the host.
+
+Open `http://localhost:3000`. The API is available at `http://localhost:8788`.
 
 Useful commands:
 
@@ -112,30 +125,36 @@ The Hono routes use Vitest with the typed `testClient()` helper and `app.request
 ```bash
 pnpm lint
 pnpm format:check
+pnpm typecheck
 pnpm test:frontend
-pnpm --filter @eve-space/api test
-pnpm --filter @eve-space/api test:coverage
-pnpm --filter @eve-space/api test:redis
-pnpm --filter @eve-space/api test:postgres
+pnpm test:api
+pnpm test:modules
+pnpm test:redis
+pnpm test:postgres
+pnpm test:packaging
 ```
 
-Run `pnpm lint:fix` for safe lint fixes and `pnpm format` to format supported files.
+Run `pnpm test:e2e` for the production-server browser suite, `pnpm lint:fix` for safe lint fixes, and `pnpm format` to format supported files. `pnpm build` builds installed module dependencies and the Nuxt application.
 
-Coverage thresholds cover SSO routes, session middleware, character resources, status telemetry, the wallet cache/quota state machine, and queue registry/admission/scheduling behavior. `test:redis` runs its own thresholded Testcontainers suite against Redis 7.4 Alpine; `test:postgres` exercises real PostgreSQL migration and token-refresh coordination.
+Coverage suites exercise SSO, administrator and session middleware, character, corporation and mail resources, module composition, status telemetry, ESI cache/quota behavior, and queue scheduling. `test:redis` runs a thresholded Testcontainers suite against Redis 7.4 Alpine; `test:postgres` exercises real PostgreSQL migrations and coordination behavior.
 
 ## Service Boundaries
 
 ```text
-Browser -> Nuxt :3000 -> Hono API :8788 -> PostgreSQL :5432
-                              |                  ^
-                              +-> EVE SSO and ESI |
-                        Queue Redis :6379 <- Worker (no HTTP)
-                             (durable coordination)
-                        Cache Redis :6380
-                             (disposable ESI values)
+Browser ----> Nuxt :3000
+   |
+   +--------> Hono API :8788 --------> PostgreSQL :5432
+                    |  \------------> EVE SSO and ESI
+                    |  \------------> Queue Redis :6379
+                    |                  (durable coordination)
+                    \---------------> Cache Redis :6380
+                                       (disposable ESI values)
+
+Nuxt (public SSR only) ---------------> Hono API :8788
+Worker (no HTTP) --------------------> PostgreSQL / ESI / both Redis roles
 ```
 
-Nuxt does not hold EVE credentials or call `@evespace/esi-client`. The API and worker share server-only ESI, OAuth, character ownership, token encryption, session, and persistence behavior. An EVE Space user can own multiple individually authorized characters, and protected character routes load resources for an explicit owned character ID.
+The browser calls Hono directly with credentials for session and character-owned requests. Nuxt may call public endpoints such as status during SSR, but it does not proxy authenticated traffic, hold EVE credentials, or call `@evespace/esi-client`. The API and worker share server-only ESI, OAuth, character ownership, token encryption, session, and persistence behavior. Protected character routes load resources for an explicit owned character ID.
 
 Nuxt constructs EVE Image Server URLs locally and lets browsers fetch those public assets directly. Image requests do not consume Hono or ESI API capacity.
 
@@ -145,26 +164,43 @@ The API exports its chained Hono `AppType`. Nuxt uses `hono/client` to build URL
 
 ## API Routes
 
+System and module discovery:
+
 - `GET /health` checks API and PostgreSQL availability.
-- `GET /api/status` returns replica-local API, PostgreSQL, Tranquility, queue, and safe ESI resilience telemetry.
-- `GET /api/modules` returns enabled module identities and the resolved shared shell navigation order.
-- `GET /api/admin/modules` lists installed module settings for the deployment administrator.
-- `PUT /api/admin/modules/:moduleId` enables or disables an installed module at runtime.
-- `GET|PUT /api/admin/shell-navigation-order` reads or rearranges the deployment-wide shell order.
-- `GET /api/characters/:characterId` returns a public EVE character profile inside the authenticated application.
-- `GET /api/me/characters` returns the authenticated user's attached character roster.
-- `GET /api/me/characters/:characterId` returns an owned character's profile, location, ship, and skill-point summary.
-- `PATCH /api/me/characters/:characterId/main` atomically selects an owned character as the account main.
-- `GET /api/me/characters/:characterId/skills` returns owned live skills grouped with local SDE names.
-- `GET /api/me/characters/:characterId/wallet` returns the owned character's protected wallet balance.
-- `GET /api/me/characters/:characterId/history` returns the owned character's public corporation employment history.
-- `GET /auth/config` reports EVE SSO configuration and safe login/attachment URLs.
-- `GET /auth/eve/start` starts login authorization.
-- `GET /auth/eve/attach` starts an authenticated character attachment.
-- `GET /auth/eve/reauthorize/:characterId` refreshes authorization for an owned character.
-- `GET /auth/eve/callback` verifies intent-bound state, exchanges the code, and validates the JWT.
-- `GET /auth/session` returns the application user and nested current-main summary.
-- `POST /auth/logout` revokes the local session.
+- `GET /api/status` returns replica-local API, PostgreSQL, Tranquility, queue, worker, outbox, and safe ESI resilience telemetry.
+- `GET /api/modules` returns enabled module identities and the resolved shared shell navigation order. Installed module routes also mount below this prefix.
+
+Application authentication and owned characters:
+
+- `GET /auth/config`, `GET /auth/eve/start`, `GET /auth/eve/attach`, `GET /auth/eve/reauthorize/:characterId`, and `GET /auth/eve/callback` implement login, attachment, and exact-character reauthorization.
+- `GET /auth/session` returns the application session; `POST /auth/logout` revokes it.
+- `GET /api/me/characters` lists the user's attached character roster.
+- `GET /api/me/characters/:characterId` returns the owned character's profile, location, ship, and skill-point summary.
+- `PATCH /api/me/characters/:characterId/main` selects the account main; `DELETE /api/me/characters/:characterId` removes a non-main character.
+- `GET /api/me/characters/:characterId/skills` returns live skills enriched from the local SDE.
+- `GET /api/me/characters/:characterId/wallet` and `/wallet/transactions` return protected wallet data.
+- `GET /api/me/characters/:characterId/history` returns corporation employment history.
+
+Character mail:
+
+- `GET|POST /api/me/characters/:characterId/mail` lists messages or sends mail.
+- `GET|PUT|DELETE /api/me/characters/:characterId/mail/:mailId` reads, updates, or deletes a message.
+- `/mail/labels` and `/mail/lists` expose label and mailing-list operations.
+- `/mail/recipients/resolve`, `/mail/recipients/search`, and `/mail/cspa` support composition.
+
+Authenticated public EVE records:
+
+- `GET /api/characters/:characterId` returns a public EVE character profile.
+- `GET /api/corporations/npc`, `GET /api/corporations/:corporationId`, and `GET /api/corporations/:corporationId/alliance-history` return public corporation data.
+
+Deployment administration (an application session is also required):
+
+- `/api/admin/setup`, `/login`, `/session`, and `/logout` manage the separate local administrator identity.
+- `PUT /api/admin/organization` changes the owning EVE corporation or alliance.
+- `GET /api/admin/modules` and `PUT /api/admin/modules/:moduleId` read or change installed-module enablement.
+- `GET|PUT /api/admin/shell-navigation-order` reads or rearranges deployment-wide shell navigation.
+
+Although character and corporation profile data originates from public ESI endpoints, the root Hono app requires an application session for `/api/characters/*` and `/api/corporations/*`. Every `/api/me/characters/:characterId/*` route additionally verifies character ownership before token or ESI access.
 
 Installed module server packages run inside the existing API and worker processes; they are package
 boundaries, not one service per module. Installation, runtime enablement, safe disablement, migration
@@ -188,7 +224,7 @@ failure, retained data, telemetry, and explicit removal are documented in
 
 ## Database
 
-The migrations create users, one-to-many attached characters, encrypted per-character EVE tokens, intent-bound OAuth states, sessions, transactional domain events, SDE reference tables, and migration history. A partial unique index prevents more than one main character per user. Migrations run automatically when the API container starts.
+The migrations create users, one-to-many attached characters, encrypted per-character EVE tokens, intent-bound OAuth states, application and administrator sessions, deployment and module settings, transactional domain events, SDE reference tables, and migration history. A partial unique index prevents more than one main character per user. Migrations run automatically when the API container starts.
 
 PostgreSQL data is retained in the `postgres_data` Compose volume. To intentionally delete local database data:
 
