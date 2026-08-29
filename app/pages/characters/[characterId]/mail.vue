@@ -18,9 +18,14 @@ const mailbox = useCharacterMailbox({
   apiClient,
   authenticated,
   characterId,
+  createdLabels: mutations.createdLabels,
+  deletedLabelIds: mutations.deletedLabelIds,
   deletedMailIds: mutations.deletedMailIds,
   deletePendingIds: mutations.deletePendingIds,
+  labelOverrides: mutations.labelOverrides,
   readStateOverrides: mutations.readStateOverrides,
+  reconcileCreatedLabels: mutations.reconcileCreatedLabels,
+  reconcileLabelState: mutations.reconcileLabelState,
   reconcileReadState: mutations.reconcileReadState,
 })
 const organization = useMailOrganization({ characterId, mailbox, mutations })
@@ -37,6 +42,7 @@ const {
   cursorQuery,
   detailError,
   detailQuery,
+  displayedDetail,
   displayedCounts,
   displayedHeaders,
   filteredHeaders,
@@ -60,7 +66,23 @@ const {
   showMailboxSkeleton,
   unreadOnly,
 } = mailbox
-const { changeOpenMessageRead, mutationPending, requestMailDeletion } = organization
+const {
+  assignedLabelIds,
+  assignmentFeedback,
+  changeOpenMessageLabel,
+  changeOpenMessageRead,
+  createLabel,
+  createLabelFeedback,
+  labelAssignmentOpen,
+  labelColor,
+  labelManagementOpen,
+  labelName,
+  mutationPending,
+  openLabelAssignment,
+  openLabelManagement,
+  requestLabelDeletion,
+  requestMailDeletion,
+} = organization
 const {
   addRecipient,
   body,
@@ -145,6 +167,9 @@ watch(
       <p>No messages were returned for this character.</p>
       <template #action>
         <button class="ui-action-primary" type="button" @click="openNew">COMPOSE MAIL</button>
+        <button class="ui-action-secondary" type="button" @click="openLabelManagement">
+          MANAGE LABELS
+        </button>
       </template>
     </UiStatePanel>
     <div v-else class="mail-workspace" :aria-busy="showMailboxSkeleton">
@@ -155,6 +180,7 @@ watch(
         :selected-mailing-list-id="selectedMailingListId"
         :total-unread-count="displayedCounts.totalUnreadCount"
         @compose="openNew"
+        @manage-labels="openLabelManagement"
         @select-label="selectLabel"
         @select-mailing-list="selectedMailingListId = $event"
       />
@@ -175,7 +201,7 @@ watch(
         @select="selectMail"
       />
       <MailReader
-        :detail="detailQuery.data.value"
+        :detail="displayedDetail"
         :error-code="detailError?.code"
         :error-message="
           detailQuery.error.value instanceof Error ? detailQuery.error.value.message : ''
@@ -190,11 +216,32 @@ watch(
         @change-read="changeOpenMessageRead"
         @delete="requestMailDeletion"
         @forward="openForward"
+        @manage-labels="openLabelAssignment"
         @reply="openReply"
         @reply-all="openReplyAll"
         @retry="detailQuery.refetch()"
       />
     </div>
+    <MailLabelManagementDialog
+      v-model:color="labelColor"
+      v-model:name="labelName"
+      v-model:open="labelManagementOpen"
+      :create-feedback="createLabelFeedback"
+      :creating="mutations.createLabelPending.value"
+      :delete-pending-ids="mutations.deleteLabelPendingIds.value"
+      :labels="labels"
+      :undeletable-label-ids="mutations.undeletableLabelIds.value"
+      @create="createLabel"
+      @delete="requestLabelDeletion"
+    />
+    <MailLabelAssignmentDialog
+      v-model:open="labelAssignmentOpen"
+      :assigned-label-ids="assignedLabelIds"
+      :feedback="assignmentFeedback"
+      :labels="labels"
+      :pending="mutationPending || mutations.deleteLabelPendingIds.value.size > 0"
+      @change="changeOpenMessageLabel"
+    />
     <MailComposeDialog
       v-model:body="body"
       v-model:recipient-input="recipientInput"

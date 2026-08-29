@@ -13,7 +13,9 @@ import {
   isMailUnread,
   mailPartyName,
   mergePaginatedMailHeaders,
+  reconcileMailLabelOverrides,
   reconcileMailReadOverrides,
+  removeMailLabelIds,
   scheduleMailReadDwell,
   splitMailBodyParagraphs,
 } from '../../app/utils/mail-view'
@@ -97,7 +99,7 @@ describe('mail frontend behavior', () => {
     const staleHeader = mailHeader(1, { isRead: false })
     const overrides = new Map([[1, true]])
 
-    expect(applyMailOverlays([staleHeader], overrides, new Set())[0]?.isRead).toBe(true)
+    expect(applyMailOverlays([staleHeader], overrides, new Set(), new Map())[0]?.isRead).toBe(true)
     const retained = reconcileMailReadOverrides([staleHeader], overrides)
     expect(retained).toBe(overrides)
     expect(retained.get(1)).toBe(true)
@@ -105,7 +107,8 @@ describe('mail frontend behavior', () => {
     const reconciled = reconcileMailReadOverrides([mailHeader(1, { isRead: true })], retained)
     expect(reconciled.has(1)).toBe(false)
     expect(
-      applyMailOverlays([mailHeader(1, { isRead: true })], reconciled, new Set())[0]?.isRead,
+      applyMailOverlays([mailHeader(1, { isRead: true })], reconciled, new Set(), new Map())[0]
+        ?.isRead,
     ).toBe(true)
   })
 
@@ -122,8 +125,19 @@ describe('mail frontend behavior', () => {
     const staleHeaders = [mailHeader(1), mailHeader(2)]
 
     expect(
-      applyMailOverlays(staleHeaders, new Map(), new Set([1])).map(({ mailId }) => mailId),
+      applyMailOverlays(staleHeaders, new Map(), new Set([1]), new Map()).map(
+        ({ mailId }) => mailId,
+      ),
     ).toEqual([2])
+  })
+
+  it('removes deleted labels from stale mail without replacing unchanged records', () => {
+    const staleHeader = mailHeader(1, { labelIds: [1, 2] })
+    const unchangedHeader = mailHeader(2, { labelIds: [1] })
+    const deletedLabelIds = new Set([2])
+
+    expect(removeMailLabelIds(staleHeader, deletedLabelIds).labelIds).toEqual([1])
+    expect(removeMailLabelIds(unchangedHeader, deletedLabelIds)).toBe(unchangedHeader)
   })
 
   it('adjusts every message label and the total for read changes in both directions', () => {
@@ -133,6 +147,7 @@ describe('mail frontend behavior', () => {
       deletedMailIds: new Set(),
       headers: [unreadHeader],
       labels,
+      labelOverrides: new Map(),
       readStateOverrides: new Map([[1, true]]),
       totalUnreadCount: 6,
     })
@@ -144,6 +159,7 @@ describe('mail frontend behavior', () => {
       deletedMailIds: new Set(),
       headers: [mailHeader(1, { isRead: true, labelIds: [1, 2] })],
       labels,
+      labelOverrides: new Map(),
       readStateOverrides: new Map([[1, false]]),
       totalUnreadCount: 6,
     })
@@ -156,7 +172,63 @@ describe('mail frontend behavior', () => {
       deletedMailIds: new Set([1]),
       headers: [mailHeader(1, { isRead: false, labelIds: [1, 2] })],
       labels: [mailLabel(1, 1), mailLabel(2, 1)],
+      labelOverrides: new Map(),
       readStateOverrides: new Map(),
+      totalUnreadCount: 1,
+    })
+
+    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toEqual([0, 0])
+    expect(counts.totalUnreadCount).toBe(0)
+  })
+
+  it('retains label overrides through stale data and releases them on set agreement', () => {
+    const staleHeader = mailHeader(1, { labelIds: [1] })
+    const overrides = new Map<number, readonly number[]>([[1, [1, 2]]])
+
+    expect(applyMailOverlays([staleHeader], new Map(), new Set(), overrides)[0]?.labelIds).toEqual([
+      1, 2,
+    ])
+    expect(reconcileMailLabelOverrides([staleHeader], overrides)).toBe(overrides)
+
+    const reconciled = reconcileMailLabelOverrides([mailHeader(1, { labelIds: [2, 1] })], overrides)
+    expect(reconciled.has(1)).toBe(false)
+  })
+
+  it('moves unread contributions between labels without changing the total', () => {
+    const counts = deriveDisplayedMailCounts({
+      deletedMailIds: new Set(),
+      headers: [mailHeader(1, { isRead: false, labelIds: [1] })],
+      labels: [mailLabel(1, 1), mailLabel(2, 0)],
+      labelOverrides: new Map([[1, [2]]]),
+      readStateOverrides: new Map(),
+      totalUnreadCount: 1,
+    })
+
+    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toEqual([0, 1])
+    expect(counts.totalUnreadCount).toBe(1)
+  })
+
+  it('leaves counts unchanged when a read message is relabelled', () => {
+    const counts = deriveDisplayedMailCounts({
+      deletedMailIds: new Set(),
+      headers: [mailHeader(1, { isRead: true, labelIds: [1] })],
+      labels: [mailLabel(1, 3), mailLabel(2, 4)],
+      labelOverrides: new Map([[1, [2]]]),
+      readStateOverrides: new Map(),
+      totalUnreadCount: 5,
+    })
+
+    expect(counts.labels.map(({ unreadCount }) => unreadCount)).toEqual([3, 4])
+    expect(counts.totalUnreadCount).toBe(5)
+  })
+
+  it('composes pending read and label changes from their final contributions', () => {
+    const counts = deriveDisplayedMailCounts({
+      deletedMailIds: new Set(),
+      headers: [mailHeader(1, { isRead: false, labelIds: [1] })],
+      labels: [mailLabel(1, 1), mailLabel(2, 0)],
+      labelOverrides: new Map([[1, [2]]]),
+      readStateOverrides: new Map([[1, true]]),
       totalUnreadCount: 1,
     })
 

@@ -53,6 +53,7 @@ const title = computed(() => {
 <template>
   <UiDialog
     v-model:open="guardedOpen"
+    class="mail-compose-dialog"
     :title="title"
     description="Address and send plain-text EVE mail."
   >
