@@ -11,6 +11,7 @@ defineProps<{
 
 defineEmits<{
   compose: []
+  manageLabels: []
   selectLabel: [labelId: number | null]
   selectMailingList: [mailingListId: number | null]
 }>()
@@ -24,6 +25,9 @@ function labelName(label: MailLabel, index: number) {
   <aside class="mail-pane mail-sidebar" aria-label="Mailbox navigation">
     <header class="mail-pane-heading">
       <h2>Folders</h2>
+      <button class="mail-pane-heading-action" type="button" @click="$emit('manageLabels')">
+        MANAGE
+      </button>
     </header>
     <UiScrollArea class="mail-pane-scroll">
       <nav aria-label="Mail labels">
@@ -45,7 +49,15 @@ function labelName(label: MailLabel, index: number) {
           :disabled="label.labelId === null"
           @click="label.labelId !== null && $emit('selectLabel', label.labelId)"
         >
-          <span>{{ labelName(label, index) }}</span>
+          <span class="mail-label-name-with-swatch">
+            <span
+              v-if="label.color"
+              class="mail-label-color"
+              :style="{ backgroundColor: label.color }"
+              aria-hidden="true"
+            />
+            <span>{{ labelName(label, index) }}</span>
+          </span>
           <strong v-if="label.unreadCount !== null">{{ label.unreadCount }}</strong>
         </button>
       </nav>

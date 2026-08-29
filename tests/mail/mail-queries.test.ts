@@ -6,6 +6,9 @@ import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  assignMailLabelsMutation,
+  createMailLabelMutation,
+  deleteMailLabelMutation,
   mailDetailQuery,
   mailDeleteMutation,
   mailHeadersQuery,
@@ -193,6 +196,80 @@ describe('mail queries', () => {
     await expect(mailDeleteMutation({ apiClient, characterId, mailId })).resolves.toBeUndefined()
     expect(requests).toHaveBeenCalledOnce()
   })
+
+  it('creates, deletes, and assigns labels through the inferred contract', async () => {
+    const requestBodies: unknown[] = []
+    const labelRequests = vi.fn()
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail/labels', async ({ request }) => {
+        requestBodies.push(await request.json())
+        return HttpResponse.json({ characterId, labelId: 44 }, { status: 201 })
+      }),
+      http.delete(
+        'http://localhost/api/me/characters/7/mail/labels/44',
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+      http.put('http://localhost/api/me/characters/7/mail/7001', async ({ request }) => {
+        requestBodies.push(await request.json())
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.get('http://localhost/api/me/characters/7/mail/labels', labelRequests),
+    )
+
+    await expect(
+      createMailLabelMutation({ apiClient, characterId, name: 'Priority', color: '#fe0000' }),
+    ).resolves.toBe(44)
+    await expect(
+      deleteMailLabelMutation({ apiClient, characterId, labelId: 44 }),
+    ).resolves.toBeUndefined()
+    await expect(
+      assignMailLabelsMutation({ apiClient, characterId, labels: [1, 44], mailId }),
+    ).resolves.toBeUndefined()
+
+    expect(requestBodies).toEqual([{ name: 'Priority', color: '#fe0000' }, { labels: [1, 44] }])
+    expect(requestBodies[1]).not.toHaveProperty('read')
+    expect(labelRequests).not.toHaveBeenCalled()
+  })
+
+  it('omits the optional label color so EVE can apply its white default', async () => {
+    let requestBody: unknown
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail/labels', async ({ request }) => {
+        requestBody = await request.json()
+        return HttpResponse.json({ characterId, labelId: 44 }, { status: 201 })
+      }),
+    )
+
+    await createMailLabelMutation({ apiClient, characterId, name: 'Default color' })
+
+    expect(requestBody).toEqual({ name: 'Default color' })
+    expect(requestBody).not.toHaveProperty('color')
+  })
+
+  it.each(['EVE_SCOPE_REQUIRED', 'EVE_REAUTH_REQUIRED', 'MAIL_MUTATION_REJECTED'])(
+    'preserves %s from label writes',
+    async (code) => {
+      const status = code === 'MAIL_MUTATION_REJECTED' ? 409 : 403
+      queryServer.use(
+        http.put('http://localhost/api/me/characters/7/mail/7001', () =>
+          HttpResponse.json(
+            {
+              authorizeUrl: code.startsWith('EVE_')
+                ? 'http://localhost/auth/eve/reauthorize/7'
+                : undefined,
+              code,
+              message: `Outcome ${code}`,
+            },
+            { status },
+          ),
+        ),
+      )
+
+      await expect(
+        assignMailLabelsMutation({ apiClient, characterId, labels: [1], mailId }),
+      ).rejects.toMatchObject({ code, status })
+    },
+  )
 
   it('sends mail once, returns the new mail ID, and forwards the approved cost', async () => {
     const requests = vi.fn()

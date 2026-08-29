@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref, watch, type ComputedRef } from 'vue'
-import type { MailHeader } from '../queries/mail'
+import type { CreateMailLabelMutationParameters, MailHeader, MailLabel } from '../queries/mail'
 import { isMailUnread, scheduleMailReadDwell } from '../utils/mail-view'
 import { ApiQueryError } from '../utils/query-error'
 import type { useCharacterMailbox } from './useCharacterMailbox'
@@ -15,6 +15,12 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   const { openConfirmDialog } = useConfirmDialog()
   const { dismissToast, showToast } = useToast()
   const autoReadSuppressedMailId = ref<number | null>(null)
+  const labelManagementOpen = ref(false)
+  const labelAssignmentOpen = ref(false)
+  const labelName = ref('')
+  const labelColor = ref<CreateMailLabelMutationParameters['color']>()
+  const createLabelFeedback = ref('')
+  const assignmentFeedback = ref('')
   let cancelReadDwell: (() => void) | undefined
   let organizationToastKey: number | undefined
   let scopeActive = true
@@ -23,8 +29,14 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     () =>
       options.mailbox.selectedMailId.value !== null &&
       (options.mutations.readPendingIds.value.has(options.mailbox.selectedMailId.value) ||
-        options.mutations.deletePendingIds.value.has(options.mailbox.selectedMailId.value)),
+        options.mutations.deletePendingIds.value.has(options.mailbox.selectedMailId.value) ||
+        options.mutations.labelPendingIds.value.has(options.mailbox.selectedMailId.value)),
   )
+  const assignedLabelIds = computed(() => {
+    const detail = options.mailbox.detailQuery.data.value
+    if (!detail || detail.mailId !== options.mailbox.selectedMailId.value) return new Set<number>()
+    return new Set(options.mutations.labelOverrides.value.get(detail.mailId) ?? detail.labelIds)
+  })
   function resetOrganizationView() {
     cancelReadDwell?.()
     cancelReadDwell = undefined
@@ -35,9 +47,17 @@ export function useMailOrganization(options: MailOrganizationOptions) {
     organizationToastKey = showToast(toast)
   }
 
-  function showMutationFailure(action: 'delete' | 'read', error: unknown) {
-    const fallback =
-      action === 'delete' ? 'The message was not deleted.' : 'The read change was reverted.'
+  function showMutationFailure(
+    action: 'assign-label' | 'create-label' | 'delete-label' | 'delete-mail' | 'read',
+    error: unknown,
+  ) {
+    const fallback = {
+      'assign-label': 'The label change was reverted.',
+      'create-label': 'The label was not created.',
+      'delete-label': 'The label was not deleted.',
+      'delete-mail': 'The message was not deleted.',
+      read: 'The read change was reverted.',
+    }[action]
     if (
       error instanceof ApiQueryError &&
       (error.code === 'EVE_SCOPE_REQUIRED' || error.code === 'EVE_REAUTH_REQUIRED')
@@ -63,9 +83,12 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       })
       return
     }
+    let title = 'Label change reverted'
+    if (action === 'read') title = 'Read change reverted'
+    else if (action === 'delete-mail') title = 'Deletion reverted'
     showOrganizationToast({
       description: error instanceof Error ? `${fallback} ${error.message}` : fallback,
-      title: action === 'delete' ? 'Deletion reverted' : 'Read change reverted',
+      title,
     })
   }
 
@@ -156,10 +179,137 @@ export function useMailOrganization(options: MailOrganizationOptions) {
       options.mailbox.selectedMailId.value = previousSelection
     }
     showMutationFailure(
-      'delete',
+      'delete-mail',
       outcome.error ?? new Error('Another mail action is still in progress.'),
     )
     return true
+  }
+
+  function openLabelManagement() {
+    createLabelFeedback.value = ''
+    labelManagementOpen.value = true
+  }
+
+  function openLabelAssignment() {
+    const detail = options.mailbox.detailQuery.data.value
+    if (!detail || detail.mailId !== options.mailbox.selectedMailId.value) return
+    assignmentFeedback.value = ''
+    labelAssignmentOpen.value = true
+  }
+
+  async function createLabel() {
+    const characterId = options.characterId.value
+    const name = labelName.value.trim()
+    if (!characterId || name.length < 1 || name.length > 40) return
+    createLabelFeedback.value = ''
+    const outcome = await options.mutations.createMailLabel({
+      characterId,
+      name,
+      ...(labelColor.value === undefined ? {} : { color: labelColor.value }),
+    })
+    if (!scopeActive || options.characterId.value !== characterId) return
+    if (outcome.success) {
+      labelName.value = ''
+      labelColor.value = undefined
+      showOrganizationToast({
+        description: `${name} is now available for mail assignment.`,
+        title: 'Label created',
+      })
+      return
+    }
+    if (outcome.error) {
+      createLabelFeedback.value =
+        outcome.error instanceof Error ? outcome.error.message : 'EVE refused the label creation.'
+      showMutationFailure('create-label', outcome.error)
+    }
+  }
+
+  function requestLabelDeletion(label: MailLabel) {
+    const labelId = label.labelId
+    if (labelId === null || options.mutations.undeletableLabelIds.value.has(labelId)) {
+      return
+    }
+    const name = label.name?.trim() || `Label #${labelId}`
+    openConfirmDialog({
+      confirmLabel: 'Delete label',
+      description: `Deleting ${name} removes it from every message carrying it. The messages themselves remain in the mailbox.`,
+      onConfirm: () => confirmLabelDeletion(labelId, name),
+      pending: () =>
+        options.mutations.labelPendingIds.value.size > 0 ||
+        options.mutations.deleteLabelPendingIds.value.has(labelId),
+      pendingLabel: () =>
+        options.mutations.labelPendingIds.value.size > 0
+          ? 'Waiting for label update...'
+          : 'Deleting...',
+      title: `Delete ${name}?`,
+      tone: 'danger',
+    })
+  }
+
+  async function confirmLabelDeletion(labelId: number, name: string) {
+    const characterId = options.characterId.value
+    if (
+      !characterId ||
+      options.mutations.labelPendingIds.value.size > 0 ||
+      options.mutations.deleteLabelPendingIds.value.has(labelId)
+    )
+      return false
+    const outcome = await options.mutations.deleteMailLabel({ characterId, labelId })
+    if (!scopeActive || options.characterId.value !== characterId) return true
+    if (outcome.success) {
+      if (options.mailbox.activeLabelId.value === labelId) options.mailbox.selectLabel(null)
+      showOrganizationToast({
+        description: `${name} was removed from the character and its messages.`,
+        title: 'Label deleted',
+      })
+      return true
+    }
+    if (outcome.error instanceof ApiQueryError && outcome.error.code === 'MAIL_MUTATION_REJECTED') {
+      options.mutations.markLabelUndeletable(labelId)
+      showOrganizationToast({
+        description: `EVE does not permit deleting ${name}. It remains available for use.`,
+        title: 'Label cannot be deleted',
+      })
+      return true
+    }
+    if (outcome.error) showMutationFailure('delete-label', outcome.error)
+    return true
+  }
+
+  async function changeOpenMessageLabel(labelId: number, assigned: boolean) {
+    const characterId = options.characterId.value
+    const detail = options.mailbox.detailQuery.data.value
+    if (!characterId || !detail || detail.mailId !== options.mailbox.selectedMailId.value) {
+      assignmentFeedback.value = 'Wait for the complete message before changing its labels.'
+      return
+    }
+    const current = options.mutations.labelOverrides.value.get(detail.mailId) ?? detail.labelIds
+    if (new Set(current).size !== current.length) {
+      assignmentFeedback.value = 'A mail can carry at most 25 unique labels.'
+      return
+    }
+    const containsLabel = current.includes(labelId)
+    if (containsLabel === assigned) return
+    const labels = assigned
+      ? [...current, labelId]
+      : current.filter((candidate) => candidate !== labelId)
+    if (labels.length > 25 || new Set(labels).size !== labels.length) {
+      assignmentFeedback.value = 'A mail can carry at most 25 unique labels.'
+      return
+    }
+
+    assignmentFeedback.value = ''
+    const outcome = await options.mutations.assignMailLabels({
+      characterId,
+      header: detail,
+      labels,
+    })
+    if (!scopeActive || options.characterId.value !== characterId) return
+    if (outcome.error) {
+      assignmentFeedback.value =
+        outcome.error instanceof Error ? outcome.error.message : 'The label change was refused.'
+      showMutationFailure('assign-label', outcome.error)
+    }
   }
 
   watch(
@@ -193,10 +343,20 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   )
 
   watch(options.mailbox.activeLabelId, resetOrganizationView, { flush: 'sync' })
+  watch(options.mailbox.selectedMailId, () => {
+    labelAssignmentOpen.value = false
+    assignmentFeedback.value = ''
+  })
   watch(
     options.characterId,
     () => {
       resetOrganizationView()
+      labelManagementOpen.value = false
+      labelAssignmentOpen.value = false
+      labelName.value = ''
+      labelColor.value = undefined
+      createLabelFeedback.value = ''
+      assignmentFeedback.value = ''
       options.mutations.resetMailMutations()
     },
     { flush: 'sync' },
@@ -209,8 +369,20 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   })
 
   return {
+    assignedLabelIds,
+    assignmentFeedback,
+    changeOpenMessageLabel,
     changeOpenMessageRead,
+    createLabel,
+    createLabelFeedback,
+    labelAssignmentOpen,
+    labelColor,
+    labelManagementOpen,
+    labelName,
     mutationPending,
+    openLabelAssignment,
+    openLabelManagement,
+    requestLabelDeletion,
     requestMailDeletion,
   }
 }

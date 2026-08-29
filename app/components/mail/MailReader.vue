@@ -19,6 +19,7 @@ const emit = defineEmits<{
   changeRead: [read: boolean]
   delete: []
   forward: []
+  manageLabels: []
   reply: []
   replyAll: []
   retry: []
@@ -32,6 +33,7 @@ const labelChips = computed(() => {
     ),
   )
   return (props.detail?.labelIds ?? []).map((labelId) => ({
+    color: byId.get(labelId)?.color,
     labelId,
     name: byId.get(labelId)?.name?.trim() || `Label #${labelId}`,
   }))
@@ -147,6 +149,9 @@ const readerTitleId = computed(() => {
             </button>
             <button type="button" @click="emit('replyAll')">REPLY ALL</button>
             <button type="button" @click="emit('forward')">FORWARD</button>
+            <button type="button" :disabled="mutationPending" @click="emit('manageLabels')">
+              LABELS
+            </button>
             <button
               type="button"
               :disabled="mutationPending"
@@ -171,7 +176,15 @@ const readerTitleId = computed(() => {
           </p>
           <h2 id="mail-reader-message-title">{{ detail.subject?.trim() || '(No subject)' }}</h2>
           <div v-if="labelChips.length > 0" class="mail-label-chips">
-            <span v-for="label in labelChips" :key="label.labelId">{{ label.name }}</span>
+            <span v-for="label in labelChips" :key="label.labelId">
+              <span
+                v-if="label.color"
+                class="mail-label-color"
+                :style="{ backgroundColor: label.color }"
+                aria-hidden="true"
+              />
+              {{ label.name }}
+            </span>
           </div>
           <MailBodyText :body="detail.body" />
         </section>

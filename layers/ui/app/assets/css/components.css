@@ -407,6 +407,53 @@
   border-top: 1px solid var(--ui-border);
 }
 
+.ui-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ui-radio-group-item {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  display: grid;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-control);
+  outline: none;
+  background: var(--ui-surface-solid);
+  color: var(--ui-text);
+  cursor: pointer;
+}
+
+.ui-radio-group-item:hover,
+.ui-radio-group-item:focus-visible,
+.ui-radio-group-item[data-state='checked'] {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 0 1px var(--ui-primary);
+}
+
+.ui-radio-group-item:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.ui-radio-group-indicator {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 50%;
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+  font: 700 9px/1 var(--ui-font-mono);
+}
+
 .ui-confirm-dialog-overlay {
   position: fixed;
   z-index: 110;

@@ -21,6 +21,7 @@ const visibleLabels = computed(() => {
     ),
   )
   return props.header.labelIds.map((labelId) => ({
+    color: byId.get(labelId)?.color,
     labelId,
     name: byId.get(labelId)?.name?.trim() || `Label #${labelId}`,
   }))
@@ -54,7 +55,15 @@ const relativeTime = computed(() => formatRelativeTime(props.header.sentAt, prop
         {{ header.subject?.trim() || '(No subject)' }}
       </span>
       <span v-if="visibleLabels.length > 0" class="mail-label-chips">
-        <span v-for="label in visibleLabels" :key="label.labelId">{{ label.name }}</span>
+        <span v-for="label in visibleLabels" :key="label.labelId">
+          <span
+            v-if="label.color"
+            class="mail-label-color"
+            :style="{ backgroundColor: label.color }"
+            aria-hidden="true"
+          />
+          {{ label.name }}
+        </span>
       </span>
     </span>
   </button>

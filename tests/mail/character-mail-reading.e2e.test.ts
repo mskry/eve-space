@@ -13,6 +13,7 @@ type ApiMode =
   | 'detail-error'
   | 'mailbox'
   | 'mail-rejected'
+  | 'label-delete-refused'
   | 'organize-scope-required'
   | 'search-scope-required'
   | 'send-delivery-unknown'
@@ -56,7 +57,10 @@ let heldMutation: HeldMutation | undefined
 
 const apiServer = await startCorsJsonApi(async (request) => {
   const url = new URL(request.url ?? '/', 'http://mock-api.invalid')
-  const requestBody = request.method === 'POST' ? await readJsonRequest(request) : undefined
+  const requestBody =
+    request.method === 'POST' || request.method === 'PUT'
+      ? await readJsonRequest(request)
+      : undefined
   recordedRequests.push({
     body: requestBody,
     method: request.method ?? 'GET',
@@ -237,7 +241,26 @@ const apiServer = await startCorsJsonApi(async (request) => {
       }
       return { status: 204, body: null }
     }
-    if (url.pathname === `/api/me/characters/${characterId}/mail/labels`) {
+    const labelMatch = url.pathname.match(/\/mail\/labels\/(\d+)$/)
+    if (labelMatch && request.method === 'DELETE') {
+      if (apiMode === 'label-delete-refused') {
+        return {
+          status: 409,
+          body: { code: 'MAIL_MUTATION_REJECTED', message: 'EVE rejected the mail change.' },
+        }
+      }
+      return { status: 204, body: null }
+    }
+    if (
+      url.pathname === `/api/me/characters/${characterId}/mail/labels` &&
+      request.method === 'POST'
+    ) {
+      return { status: 201, body: { characterId, labelId: 3 } }
+    }
+    if (
+      url.pathname === `/api/me/characters/${characterId}/mail/labels` &&
+      request.method === 'GET'
+    ) {
       return {
         body: {
           characterId,
@@ -448,6 +471,117 @@ describe('character mail reading', async () => {
       `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
     )
     expect(mailRequests().length).toBeGreaterThan(0)
+  })
+
+  it('creates a label locally from the fixed palette without refetching labels', async () => {
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    const labelsRequestsBefore = mailRequests().filter(
+      ({ method, url }) =>
+        method === 'GET' && url.pathname === `/api/me/characters/${characterId}/mail/labels`,
+    ).length
+    await page.getByRole('button', { name: 'MANAGE' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Manage mail labels' })
+    await dialog.waitFor()
+
+    const swatches = dialog.getByRole('radio')
+    expect(await swatches.count()).toBe(18)
+    for (const theme of ['void', 'high-sec']) {
+      await page.evaluate((value) => {
+        document.documentElement.dataset.theme = value
+      }, theme)
+      const visibility = await swatches.evaluateAll((elements) =>
+        elements.map((element) => {
+          const swatch = element.querySelector<HTMLElement>('.mail-label-swatch')
+          const style = getComputedStyle(element)
+          return {
+            borderStyle: style.borderStyle,
+            borderWidth: style.borderWidth,
+            color: swatch?.style.backgroundColor,
+          }
+        }),
+      )
+      expect(
+        visibility.every(
+          ({ borderStyle, borderWidth }) => borderStyle !== 'none' && borderWidth !== '0px',
+        ),
+      ).toBe(true)
+      expect(new Set(visibility.map(({ color }) => color)).size).toBe(18)
+    }
+
+    await dialog.getByLabel('LABEL NAME').fill('Priority')
+    await dialog.getByRole('radio', { name: 'Label color #fe0000' }).click()
+    const createResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === `/api/me/characters/${characterId}/mail/labels`,
+    )
+    await dialog.getByRole('button', { name: 'CREATE LABEL' }).click()
+    await createResponse
+    await dialog.getByText('Priority', { exact: true }).waitFor()
+
+    const createRequest = mailRequests().find(
+      ({ method, url }) =>
+        method === 'POST' && url.pathname === `/api/me/characters/${characterId}/mail/labels`,
+    )
+    expect(createRequest?.body).toEqual({ color: '#fe0000', name: 'Priority' })
+    expect(
+      mailRequests().filter(
+        ({ method, url }) =>
+          method === 'GET' && url.pathname === `/api/me/characters/${characterId}/mail/labels`,
+      ),
+    ).toHaveLength(labelsRequestsBefore)
+  })
+
+  it('withdraws deletion after EVE identifies a protected label', async () => {
+    apiMode = 'label-delete-refused'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-workspace').waitFor()
+    await page.getByRole('button', { name: 'MANAGE' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Manage mail labels' })
+    await dialog.getByRole('button', { name: 'Delete Archive' }).click()
+    const confirmation = page.getByRole('alertdialog')
+    await confirmation.waitFor()
+    expect(await confirmation.textContent()).toContain('every message carrying it')
+    await confirmation.getByRole('button', { name: 'Delete label' }).click()
+    await page.getByText('Label cannot be deleted', { exact: true }).waitFor()
+    await dialog.waitFor()
+
+    expect(await dialog.getByText('Archive', { exact: true }).isVisible()).toBe(true)
+    expect(await dialog.getByText('EVE PROTECTED', { exact: true }).isVisible()).toBe(true)
+    expect(await dialog.getByRole('button', { name: 'Delete Archive' }).count()).toBe(0)
+    await dialog.getByRole('button', { name: 'Close dialog' }).click()
+    await expect.poll(() => dialog.count()).toBe(0)
+    expect(await page.getByRole('button', { name: /^Archive/ }).isVisible()).toBe(true)
+  })
+
+  it('assigns the complete detail label set without carrying read state', async () => {
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.locator('.mail-header-row').first().waitFor()
+    await page.getByRole('button', { name: /Priority operations update/ }).click()
+    await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
+    await page.getByRole('button', { name: 'LABELS' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Assign mail labels' })
+    const assignmentResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        new URL(response.url()).pathname.endsWith('/mail/120'),
+    )
+    await dialog.getByText('Archive', { exact: true }).click()
+    await assignmentResponse
+
+    const assignment = mailMutationRequests('PUT').find(
+      ({ body }) => body && typeof body === 'object' && Object.hasOwn(body, 'labels'),
+    )
+    expect(assignment?.body).toEqual({ labels: [1, 2] })
+    expect(assignment?.body).not.toHaveProperty('read')
+    expect(await dialog.getByLabel('Archive').isChecked()).toBe(true)
+    expect(await page.locator('.mail-reader').getByText('Inbox', { exact: true }).isVisible()).toBe(
+      true,
+    )
+    expect(
+      await page.locator('.mail-reader').getByText('Archive', { exact: true }).isVisible(),
+    ).toBe(true)
   })
 
   it('seeds a reply from the open plain-text message', async () => {

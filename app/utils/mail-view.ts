@@ -68,12 +68,28 @@ export function applyMailOverlays(
   headers: readonly MailHeader[],
   readStateOverrides: ReadonlyMap<number, boolean>,
   deletedMailIds: ReadonlySet<number>,
+  labelOverrides: ReadonlyMap<number, readonly number[]>,
 ) {
   return headers.flatMap((header) => {
     if (deletedMailIds.has(header.mailId)) return []
     const readState = readStateOverrides.get(header.mailId)
-    return readState === undefined ? [header] : [{ ...header, isRead: readState }]
+    const labelIds = labelOverrides.get(header.mailId)
+    return readState === undefined && labelIds === undefined
+      ? [header]
+      : [
+          {
+            ...header,
+            ...(readState === undefined ? {} : { isRead: readState }),
+            ...(labelIds === undefined ? {} : { labelIds: [...labelIds] }),
+          },
+        ]
   })
+}
+
+export function sameMailLabelIds(left: readonly number[], right: readonly number[]) {
+  if (left.length !== right.length) return false
+  const rightIds = new Set(right)
+  return rightIds.size === right.length && left.every((labelId) => rightIds.has(labelId))
 }
 
 export function reconcileMailReadOverrides(
@@ -90,10 +106,53 @@ export function reconcileMailReadOverrides(
   return reconciled ?? readStateOverrides
 }
 
+export function reconcileMailLabelOverrides(
+  headers: readonly Pick<MailHeader, 'labelIds' | 'mailId'>[],
+  labelOverrides: ReadonlyMap<number, readonly number[]>,
+) {
+  let reconciled: Map<number, readonly number[]> | undefined
+  for (const header of headers) {
+    const override = labelOverrides.get(header.mailId)
+    if (!override || !sameMailLabelIds(header.labelIds, override)) continue
+    reconciled ??= new Map(labelOverrides)
+    reconciled.delete(header.mailId)
+  }
+  return reconciled ?? labelOverrides
+}
+
+function accumulateMailCountDeltas(
+  labelDeltas: Map<number, number>,
+  header: MailHeader,
+  options: {
+    deletedMailIds: ReadonlySet<number>
+    labelOverrides: ReadonlyMap<number, readonly number[]>
+    readStateOverrides: ReadonlyMap<number, boolean>
+  },
+) {
+  const wasUnread = isMailUnread(header.isRead)
+  const readOverride = options.readStateOverrides.get(header.mailId)
+  const deleted = options.deletedMailIds.has(header.mailId)
+  let isUnread = wasUnread
+  if (deleted) isUnread = false
+  else if (readOverride !== undefined) isUnread = !readOverride
+  const previousLabels = new Set(header.labelIds)
+  const displayedLabels = new Set(
+    deleted ? [] : (options.labelOverrides.get(header.mailId) ?? header.labelIds),
+  )
+  for (const labelId of new Set([...previousLabels, ...displayedLabels])) {
+    const previousContribution = Number(wasUnread && previousLabels.has(labelId))
+    const displayedContribution = Number(isUnread && displayedLabels.has(labelId))
+    const delta = displayedContribution - previousContribution
+    if (delta !== 0) labelDeltas.set(labelId, (labelDeltas.get(labelId) ?? 0) + delta)
+  }
+  return Number(isUnread) - Number(wasUnread)
+}
+
 export function deriveDisplayedMailCounts(options: {
   deletedMailIds: ReadonlySet<number>
   headers: readonly MailHeader[]
   labels: readonly MailLabel[]
+  labelOverrides: ReadonlyMap<number, readonly number[]>
   readStateOverrides: ReadonlyMap<number, boolean>
   totalUnreadCount: number | null
 }) {
@@ -104,18 +163,7 @@ export function deriveDisplayedMailCounts(options: {
   for (const header of options.headers) {
     if (visited.has(header.mailId)) continue
     visited.add(header.mailId)
-    const wasUnread = isMailUnread(header.isRead)
-    const override = options.readStateOverrides.get(header.mailId)
-    let isUnread = wasUnread
-    if (options.deletedMailIds.has(header.mailId)) isUnread = false
-    else if (override !== undefined) isUnread = !override
-    if (wasUnread === isUnread) continue
-
-    const delta = isUnread ? 1 : -1
-    totalDelta += delta
-    for (const labelId of new Set(header.labelIds)) {
-      labelDeltas.set(labelId, (labelDeltas.get(labelId) ?? 0) + delta)
-    }
+    totalDelta += accumulateMailCountDeltas(labelDeltas, header, options)
   }
 
   return {

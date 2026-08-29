@@ -6,6 +6,7 @@ import {
   mailingListsQuery,
   mailLabelsQuery,
   type MailHeader,
+  type MailLabel,
 } from '../queries/mail'
 import { canRunProtectedQuery } from '../queries/query-cache'
 import type { ApiClient } from '../utils/api-client'
@@ -26,7 +27,11 @@ interface CharacterMailboxOptions {
   characterId: ComputedRef<number | undefined>
   deletedMailIds: Ref<Set<number>>
   deletePendingIds: Ref<Set<number>>
+  createdLabels: Ref<readonly MailLabel[]>
+  labelOverrides: Ref<Map<number, readonly number[]>>
   readStateOverrides: Ref<Map<number, boolean>>
+  reconcileCreatedLabels: (labels: readonly MailLabel[]) => void
+  reconcileLabelState: (headers: readonly Pick<MailHeader, 'labelIds' | 'mailId'>[]) => void
   reconcileReadState: (headers: readonly MailHeader[]) => void
 }
 
@@ -88,23 +93,42 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     enabled: selectedMailId.value !== null && queryEnabled(),
   }))
 
-  const displayedHeaders = computed(() =>
-    applyMailOverlays(
+  const displayedHeaders = computed(() => {
+    const headers = applyMailOverlays(
       loadedHeaders.value,
       options.readStateOverrides.value,
       options.deletedMailIds.value,
-    ),
-  )
+      options.labelOverrides.value,
+    )
+    return activeLabelId.value === null
+      ? headers
+      : headers.filter((header) => header.labelIds.includes(activeLabelId.value!))
+  })
+  const retrievedLabels = computed(() => labelsQuery.data.value?.labels ?? [])
+  const mergedLabels = computed(() => {
+    const retrievedIds = new Set(retrievedLabels.value.map((label) => label.labelId))
+    return [
+      ...retrievedLabels.value,
+      ...options.createdLabels.value.filter((label) => !retrievedIds.has(label.labelId)),
+    ]
+  })
   const displayedCounts = computed(() =>
     deriveDisplayedMailCounts({
       deletedMailIds: options.deletePendingIds.value,
       headers: loadedHeaders.value,
-      labels: labelsQuery.data.value?.labels ?? [],
+      labels: mergedLabels.value,
+      labelOverrides: options.labelOverrides.value,
       readStateOverrides: options.readStateOverrides.value,
       totalUnreadCount: labelsQuery.data.value?.totalUnreadCount ?? null,
     }),
   )
   const labels = computed(() => displayedCounts.value.labels)
+  const displayedDetail = computed(() => {
+    const detail = detailQuery.data.value
+    if (!detail) return undefined
+    const labelIds = options.labelOverrides.value.get(detail.mailId)
+    return labelIds === undefined ? detail : { ...detail, labelIds: [...labelIds] }
+  })
   const mailingLists = computed(() => listsQuery.data.value?.mailingLists ?? [])
   const filteredHeaders = computed(() =>
     filterDisplayedMailHeaders(
@@ -238,6 +262,7 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
         ? mergePaginatedMailHeaders(loadedHeaders.value, page.messages)
         : replaceLatestMailHeaders(page.messages)
       options.reconcileReadState(page.messages)
+      options.reconcileLabelState(page.messages)
       if (!hasPaginated.value) nextLastMailId.value = page.nextLastMailId
     },
     { immediate: true },
@@ -249,10 +274,26 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
       if (!page || requestedCursor.value === null) return
       loadedHeaders.value = appendUniqueMailHeaders(loadedHeaders.value, page.messages)
       options.reconcileReadState(page.messages)
+      options.reconcileLabelState(page.messages)
       hasPaginated.value = true
       nextLastMailId.value = page.nextLastMailId
       requestedCursor.value = null
     },
+  )
+
+  watch(
+    () => detailQuery.data.value,
+    (detail) => {
+      if (detail) options.reconcileLabelState([detail])
+    },
+  )
+
+  watch(
+    () => labelsQuery.data.value,
+    (retrieved) => {
+      if (retrieved) options.reconcileCreatedLabels(retrieved.labels)
+    },
+    { immediate: true },
   )
 
   return {
@@ -262,6 +303,7 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     cursorQuery,
     detailError,
     detailQuery,
+    displayedDetail,
     displayedCounts,
     displayedHeaders,
     filteredHeaders,

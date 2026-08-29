@@ -15,6 +15,7 @@ type MailRecipientResolution = InferResponseType<MailClient['recipients']['resol
 type MailRecipientSearch = InferResponseType<MailClient['recipients']['search']['$get'], 200>
 type MailCspaCharge = InferResponseType<MailClient['cspa']['$post'], 200>
 type SendMailBody = InferRequestType<MailClient['$post']>['json']
+type CreateMailLabelBody = InferRequestType<MailClient['labels']['$post']>['json']
 export type MailHeader = MailHeaders['messages'][number]
 export type MailParty = NonNullable<MailHeader['sender']>
 export type MailLabel = MailLabels['labels'][number]
@@ -53,6 +54,17 @@ export interface MailReadMutationParameters extends MailDetailQueryParameters {
 }
 
 export type MailDeleteMutationParameters = MailDetailQueryParameters
+
+export interface CreateMailLabelMutationParameters
+  extends MailQueryParameters, CreateMailLabelBody {}
+
+export interface DeleteMailLabelMutationParameters extends MailQueryParameters {
+  labelId: number
+}
+
+export interface AssignMailLabelsMutationParameters extends MailDetailQueryParameters {
+  labels: readonly number[]
+}
 
 export interface SendMailMutationParameters extends MailQueryParameters, SendMailBody {}
 
@@ -232,6 +244,54 @@ export async function mailDeleteMutation({
   })
   if (response.status !== 204) {
     throw await toApiQueryError(response, 'Mail could not be deleted.')
+  }
+}
+
+export async function createMailLabelMutation({
+  apiClient,
+  characterId,
+  name,
+  color,
+}: CreateMailLabelMutationParameters) {
+  const response = await apiClient.api.me.characters[':characterId'].mail.labels.$post({
+    param: { characterId: String(characterId) },
+    json: { name, ...(color === undefined ? {} : { color }) },
+  })
+  if (response.status !== 201) {
+    throw await toApiQueryError(response, 'Mail label could not be created.')
+  }
+  const result = await response.json()
+  if (result.characterId !== characterId) throw mailIdentityMismatch()
+  return result.labelId
+}
+
+export async function deleteMailLabelMutation({
+  apiClient,
+  characterId,
+  labelId,
+}: DeleteMailLabelMutationParameters) {
+  const response = await apiClient.api.me.characters[':characterId'].mail.labels[
+    ':labelId'
+  ].$delete({
+    param: { characterId: String(characterId), labelId: String(labelId) },
+  })
+  if (response.status !== 204) {
+    throw await toApiQueryError(response, 'Mail label could not be deleted.')
+  }
+}
+
+export async function assignMailLabelsMutation({
+  apiClient,
+  characterId,
+  labels,
+  mailId,
+}: AssignMailLabelsMutationParameters) {
+  const response = await apiClient.api.me.characters[':characterId'].mail[':mailId'].$put({
+    param: { characterId: String(characterId), mailId: String(mailId) },
+    json: { labels: [...labels] },
+  })
+  if (response.status !== 204) {
+    throw await toApiQueryError(response, 'Mail labels could not be changed.')
   }
 }
 
