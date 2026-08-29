@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
-import { routeNotFoundBody } from '../http-contracts.js'
+import { routeNotFoundBody } from '../http/contracts.js'
 import { isInstalledModuleEnabled } from '../platform/module-settings.js'
 
 export function requireInstalledModuleEnabled(moduleId: string): MiddlewareHandler {

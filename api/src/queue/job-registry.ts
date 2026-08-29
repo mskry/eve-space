@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto'
 import { UnrecoverableError, type Queue } from 'bullmq'
 import { z } from 'zod'
-import { affiliationJobPayload, processAffiliationBatch } from '../affiliation-sync.js'
+import { affiliationJobPayload, processAffiliationBatch } from '../characters/affiliation-sync.js'
 import { sql } from '../db/client.js'
-import { DomainEventNotFoundError } from '../domain-event-handlers.js'
-import { DomainEventValidationError } from '../domain-events.js'
+import { DomainEventNotFoundError } from '../domain-events/handlers.js'
+import { DomainEventValidationError } from '../domain-events/definitions.js'
 import { env } from '../env.js'
 import {
   collectionStateIdentityJson,
@@ -80,7 +80,7 @@ const domainEventJob: JobDefinition<z.infer<typeof domainEventPayload>> = {
       ? 'permanent'
       : 'retryable',
   async process({ eventId }) {
-    const { dispatchDomainEvent } = await import('../domain-event-handlers.js')
+    const { dispatchDomainEvent } = await import('../domain-events/handlers.js')
     await dispatchDomainEvent(eventId)
   },
 }
@@ -116,7 +116,7 @@ const eventRetentionJob: JobDefinition<z.infer<typeof eventRetentionPayload>> = 
   classifyError: () => 'retryable',
   async process(_payload, signal) {
     signal?.throwIfAborted()
-    const { deletePublishedDomainEvents } = await import('../domain-event-store.js')
+    const { deletePublishedDomainEvents } = await import('../domain-events/store.js')
     await deletePublishedDomainEvents({
       retentionMs: env.DOMAIN_EVENT_PUBLISHED_RETENTION_DAYS * 24 * 60 * 60 * 1_000,
     })

@@ -7,8 +7,8 @@ import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../token-service.js'
-import { zValidator } from '../validation.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
+import { zValidator } from '../http/validation.js'
 import {
   createMailLabel,
   deleteMail,
@@ -25,7 +25,7 @@ import {
   MailRejectedError,
   sendMail,
   updateMail,
-} from './service.js'
+} from './mailbox.js'
 
 const readMailScope = 'esi-mail.read_mail.v1'
 const sendMailScope = 'esi-mail.send_mail.v1'

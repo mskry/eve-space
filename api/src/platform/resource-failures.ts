@@ -2,7 +2,7 @@ import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-mo
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
-import { TokenRefreshUnavailableError } from '../token-service.js'
+import { TokenRefreshUnavailableError } from '../auth/tokens.js'
 import type {
   PlatformCollectionFailureClass,
   PlatformCollectionStateIdentity,

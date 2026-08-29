@@ -7,7 +7,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgres://localhost:5432/eve_space',
     },
-    include: ['tests/integration/redis/**/*.test.ts', 'tests/queue-platform-logging.test.ts'],
+    include: ['tests/integration/redis/**/*.test.ts', 'tests/queue/platform-logging.test.ts'],
     testTimeout: 60_000,
     hookTimeout: 60_000,
     coverage: {

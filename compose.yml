@@ -144,7 +144,7 @@ services:
       cache-redis:
         condition: service_started
     healthcheck:
-      test: ['CMD', 'node', 'dist/worker-health.js']
+      test: ['CMD', 'node', 'dist/worker/health.js']
       interval: 30s
       timeout: 3s
       retries: 10

@@ -1,5 +1,5 @@
 import type { Redis } from 'ioredis'
-import { esiCooldownFallbackSeconds, esiErrorBudgetFloor } from '../esi-policy.js'
+import { esiCooldownFallbackSeconds, esiErrorBudgetFloor } from './policy.js'
 import { env } from '../env.js'
 import { esiOperationCatalog, type EsiOperation } from './catalog.js'
 

@@ -3,7 +3,7 @@ import type {
   PlatformOwnedCharacterRouteEnv,
 } from '@eve-space/platform-module-contract'
 import { createMiddleware } from 'hono/factory'
-import { authRequiredBody } from '../http-contracts.js'
+import { authRequiredBody } from '../http/contracts.js'
 import { createOwnedCharacterCoreReads } from '../platform/core-read-capabilities.js'
 import type { SessionEnv } from './auth-session.js'
 import type { OwnedCharacterEnv } from './owned-character.js'

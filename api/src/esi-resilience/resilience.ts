@@ -1,8 +1,8 @@
 import type { EsiResponseMetadata } from '@evespace/esi-client'
 import { randomInt } from 'node:crypto'
 import { env } from '../env.js'
-import { esiCooldownFallbackSeconds } from '../esi-policy.js'
-import { getCharacterAuthorization } from '../token-service.js'
+import { esiCooldownFallbackSeconds } from './policy.js'
+import { getCharacterAuthorization } from '../auth/tokens.js'
 import { getSharedCacheRedisConnection, type CacheRedisConnection } from './cache-redis.js'
 import { esiOperationCatalog, getEsiOperationContract, type EsiOperation } from './catalog.js'
 import {
