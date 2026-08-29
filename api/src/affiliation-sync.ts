@@ -18,7 +18,7 @@ export const affiliationJobPayload = z
   .object({
     operationId: z
       .string()
-      .regex(/^affiliation-[0-9]+(?:-[0-9]+)*(?:--[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})?$/i),
+      .regex(/^affiliation-\d+(?:-\d+)*(?:--[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12})?$/i),
     characterIds: z.array(z.number().int().positive()).min(1).max(affiliationBatchLimit),
   })
   .strict()
@@ -59,7 +59,8 @@ export function partitionAffiliationCharacterIds(characterIds: readonly number[]
 
 export function affiliationOperationIdentity(characterIds: readonly number[], refreshId?: string) {
   const ordered = characterIds.toSorted((left, right) => left - right)
-  return `affiliation-${ordered.join('-')}${refreshId ? `--${refreshId}` : ''}`
+  const refreshSuffix = refreshId ? `--${refreshId}` : ''
+  return `affiliation-${ordered.join('-')}${refreshSuffix}`
 }
 
 export async function processAffiliationBatch(
@@ -102,7 +103,7 @@ export async function persistAffiliationObservations(
   await db.transaction(async (transaction) => {
     if (returned.size > 0) {
       const records = JSON.stringify(
-        [...returned.values()].map((observation) => ({
+        Array.from(returned.values(), (observation) => ({
           character_id: observation.characterId,
           corporation_id: observation.corporationId,
           alliance_id: observation.allianceId,

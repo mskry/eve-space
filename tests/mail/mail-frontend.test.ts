@@ -12,7 +12,7 @@ import {
   filterLoadedMailHeaders,
   isMailUnread,
   mailPartyName,
-  mergeLatestMailHeaders,
+  mergePaginatedMailHeaders,
   reconcileMailReadOverrides,
   scheduleMailReadDwell,
   splitMailBodyParagraphs,
@@ -87,7 +87,7 @@ describe('mail frontend behavior', () => {
     const refreshed = mailHeader(2, { subject: 'Refreshed latest copy' })
     const newest = mailHeader(3, { subject: 'New arrival' })
 
-    const result = mergeLatestMailHeaders([oldLatest, older], [newest, refreshed], true)
+    const result = mergePaginatedMailHeaders([oldLatest, older], [newest, refreshed])
 
     expect(result.map((header) => header.mailId)).toEqual([3, 2, 1])
     expect(result[1]).toBe(refreshed)

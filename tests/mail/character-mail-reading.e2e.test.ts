@@ -240,7 +240,7 @@ describe('character mail reading', async () => {
   afterEach(async () => {
     heldMutation?.release()
     heldMutation = undefined
-    await Promise.all([...openPages].map((page) => page.close()))
+    await Promise.all(Array.from(openPages, (page) => page.close()))
     openPages.clear()
   })
 
@@ -373,7 +373,7 @@ describe('character mail reading', async () => {
     await page.locator('.mail-header-row').first().waitFor()
     await page.getByRole('button', { name: /Priority operations update/ }).click()
     await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
-    await page.waitForTimeout(600)
+    await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 600)
     expect(
       mailMutationRequests('PUT').filter(({ url }) => url.pathname.endsWith('/mail/120')),
     ).toHaveLength(0)
@@ -385,7 +385,7 @@ describe('character mail reading', async () => {
     )
     await page.getByRole('button', { name: 'MARK UNREAD' }).click()
     await unreadResponse
-    await page.waitForTimeout(700)
+    await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 700)
 
     expect(await page.getByRole('button', { name: 'MARK READ' }).isVisible()).toBe(true)
     expect(
@@ -406,7 +406,7 @@ describe('character mail reading', async () => {
     expect(await recoveryLink.getAttribute('href')).toBe(
       `${apiOrigin}/auth/eve/reauthorize/${characterId}`,
     )
-    await page.waitForTimeout(5200)
+    await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 5_200)
     expect(await recoveryLink.isVisible()).toBe(true)
   })
 
@@ -417,7 +417,7 @@ describe('character mail reading', async () => {
 
     await page.getByText('Routine dispatch 1', { exact: true }).click()
     await page.getByRole('heading', { name: 'Contents could not be retrieved' }).waitFor()
-    await page.waitForTimeout(700)
+    await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 700)
 
     expect(mailMutationRequests('PUT')).toHaveLength(0)
   })
@@ -440,8 +440,14 @@ describe('character mail reading', async () => {
     heldMutation?.release()
     heldMutation = undefined
     await expect.poll(() => confirm.isEnabled()).toBe(true)
-    const allMailUnreadCount = page.getByRole('button', { name: /All mail/ }).locator('strong')
-    const inboxUnreadCount = page.getByRole('button', { name: /Inbox/ }).locator('strong')
+    const allMailUnreadCount = page
+      .locator('.mail-nav-row')
+      .filter({ hasText: 'All mail' })
+      .locator('strong')
+    const inboxUnreadCount = page
+      .locator('.mail-nav-row')
+      .filter({ hasText: 'Inbox' })
+      .locator('strong')
     await expect
       .poll(async () => [
         await allMailUnreadCount.textContent(),

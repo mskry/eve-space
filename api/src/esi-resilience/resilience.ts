@@ -335,7 +335,7 @@ export class EsiResilienceLayer {
     try {
       return await this.#loadAndPublish(resource, identity, key, dependencies, lease, stale, policy)
     } catch (error) {
-      return await this.#recoverLoadFailure(
+      return await this.#recoverLoadFailure({
         resource,
         identity,
         key,
@@ -344,7 +344,7 @@ export class EsiResilienceLayer {
         stale,
         policy,
         error,
-      )
+      })
     } finally {
       stopRenewal?.()
       await this.#releaseLease(lease)
@@ -409,33 +409,38 @@ export class EsiResilienceLayer {
     throw new Error('ESI retry attempts were exhausted')
   }
 
-  async #recoverLoadFailure<Data>(
-    resource: InternalEsiResource<Data>,
-    identity: EsiRepresentationIdentity,
-    key: string,
-    dependencies: { canWriteL2: boolean },
-    lease: Awaited<ReturnType<typeof acquireEsiRequestLease>>,
-    stale: EsiCacheEnvelope<Data> | undefined,
-    policy: ReturnType<typeof getEsiOperationContract>,
-    error: unknown,
-  ): Promise<EsiCachedResult<Data>> {
-    const metadata = getErrorMetadata(error)
-    if (getErrorStatus(error) === 304 && stale) {
-      const envelope = updateNotModifiedEnvelope(
-        stale,
+  async #recoverLoadFailure<Data>(options: {
+    resource: InternalEsiResource<Data>
+    identity: EsiRepresentationIdentity
+    key: string
+    dependencies: { canWriteL2: boolean }
+    lease: Awaited<ReturnType<typeof acquireEsiRequestLease>>
+    stale: EsiCacheEnvelope<Data> | undefined
+    policy: ReturnType<typeof getEsiOperationContract>
+    error: unknown
+  }): Promise<EsiCachedResult<Data>> {
+    const metadata = getErrorMetadata(options.error)
+    if (getErrorStatus(options.error) === 304 && options.stale) {
+      const envelope = updateNotModifiedEnvelope({
+        envelope: options.stale,
         metadata,
-        policy,
-        identity.representationVersion,
-        resource.authorization,
-        Date.now(),
-        lease?.fence,
-        identity.resourceRevision,
+        policy: options.policy,
+        representationVersion: options.identity.representationVersion,
+        authorization: options.resource.authorization,
+        fence: options.lease?.fence,
+        resourceRevision: options.identity.resourceRevision,
+      })
+      const published = await this.#publish(
+        options.key,
+        options.identity,
+        envelope,
+        options.dependencies,
+        options.lease,
       )
-      const published = await this.#publish(key, identity, envelope, dependencies, lease)
-      if (published) this.#l1.set(key, envelope)
+      if (published) this.#l1.set(options.key, envelope)
       return toCachedResult(envelope, 'not-modified', false, undefined, getEsiQuota(metadata))
     }
-    return this.#serveStaleOrThrow(stale, policy, toEsiQuotaError(error))
+    return this.#serveStaleOrThrow(options.stale, options.policy, toEsiQuotaError(options.error))
   }
 
   #serveStaleOrThrow<Data>(
@@ -559,7 +564,7 @@ export class EsiResilienceLayer {
     authorization: EsiCacheAuthorization | undefined,
   ): Promise<EsiResourceRevision | undefined | null> {
     if (!policy.resourceRevision) return undefined
-    if (!authorization || authorization.kind !== 'character')
+    if (authorization?.kind !== 'character')
       throw new Error('Revision-sensitive ESI operation is missing character authorization')
     const unsafeKey = resourceRevisionUnsafeKey(
       policy.resourceRevision.namespace,

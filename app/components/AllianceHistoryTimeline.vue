@@ -20,15 +20,15 @@ const sorted = computed(() =>
   [...props.history].toSorted((a, b) => Date.parse(b.startDate) - Date.parse(a.startDate)),
 )
 
-const timeline = computed(() =>
-  sorted.value.map((entry, index) =>
-    Object.assign({}, entry, {
-      endDate: index === 0 ? undefined : sorted.value[index - 1]?.startDate,
-      displayName:
-        entry.allianceName ?? (entry.allianceId ? `Alliance ${entry.allianceId}` : 'No alliance'),
-    }),
-  ),
-)
+const timeline = computed(() => {
+  const toTimelineEntry = (entry: AllianceHistoryEntry, index: number) => ({
+    ...entry,
+    endDate: index === 0 ? undefined : sorted.value[index - 1]?.startDate,
+    displayName:
+      entry.allianceName ?? (entry.allianceId ? `Alliance ${entry.allianceId}` : 'No alliance'),
+  })
+  return sorted.value.map(toTimelineEntry)
+})
 
 const matches = computed(() => {
   if (!searchTerm.value) return new Set<number>()

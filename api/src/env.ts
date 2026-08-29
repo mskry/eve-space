@@ -6,7 +6,6 @@ const optionalValue = z.preprocess(
 )
 
 const redisUrl = z
-  .string()
   .url()
   .refine((value) => ['redis:', 'rediss:'].includes(new URL(value).protocol), {
     message: 'Expected a redis:// or rediss:// URL',
@@ -25,18 +24,18 @@ const cronSchedule = z
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8788),
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
   DATABASE_POOL_MAX: positiveInteger.default(10),
-  WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
+  WEB_ORIGIN: z.url().default('http://localhost:3000'),
   EVE_CLIENT_ID: optionalValue,
   EVE_CLIENT_SECRET: optionalValue,
-  EVE_CALLBACK_URL: z.string().url().default('http://localhost:8788/auth/eve/callback'),
+  EVE_CALLBACK_URL: z.url().default('http://localhost:8788/auth/eve/callback'),
   EVE_SCOPES: z.string().default(''),
   ESI_USER_AGENT: z
     .string()
     .min(1)
     .default('EveSpace/0.1 (eve:Bandera Primary) @evespace/esi-client/2.0.0'),
-  ESI_COMPATIBILITY_DATE: z.string().date().default('2026-08-23'),
+  ESI_COMPATIBILITY_DATE: z.iso.date().default('2026-08-23'),
   TOKEN_ENCRYPTION_KEY: optionalValue,
   EVE_SSO_TIMEOUT_MS: positiveInteger.default(15_000),
   TOKEN_REFRESH_LOCK_TIMEOUT_MS: positiveInteger.default(45_000),

@@ -23,7 +23,7 @@ describe('worker entrypoint', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
     const assertWorkerStartupDependencies = vi.fn().mockResolvedValue(undefined)
     const assertWorkerDependencies = vi.fn().mockResolvedValue(undefined)
-    const { close, stopped } = pendingPlatform()
+    const { close, stopped, stopRunLoop } = pendingPlatform()
     const startWorkerPlatform = vi.fn().mockResolvedValue({ close, stopped })
     vi.doMock('../src/db/client.js', () => ({ sql: { end: vi.fn().mockResolvedValue(undefined) } }))
     vi.doMock('../src/queue/platform.js', () => ({ startWorkerPlatform }))
@@ -32,12 +32,14 @@ describe('worker entrypoint', () => {
       assertWorkerDependencies,
     }))
 
-    await import('../src/worker.js')
+    const workerEntry = import('../src/worker.js')
 
     await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce())
     expect(assertWorkerStartupDependencies).toHaveBeenCalledOnce()
     // The heartbeat-aware check belongs to the healthcheck command, not to startup.
     expect(assertWorkerDependencies).not.toHaveBeenCalled()
+    stopRunLoop()
+    await workerEntry
   })
 
   test('closes and exits nonzero when the processing loop ends outside shutdown', async () => {
@@ -53,9 +55,10 @@ describe('worker entrypoint', () => {
       assertWorkerDependencies: vi.fn().mockResolvedValue(undefined),
     }))
 
-    await import('../src/worker.js')
+    const workerEntry = import('../src/worker.js')
     await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce())
     stopRunLoop()
+    await workerEntry
 
     await vi.waitFor(() => expect(process.exitCode).toBe(1))
     expect(close).toHaveBeenCalledOnce()
@@ -80,9 +83,10 @@ describe('worker entrypoint', () => {
       assertWorkerDependencies: vi.fn().mockResolvedValue(undefined),
     }))
 
-    await import('../src/worker.js')
+    const workerEntry = import('../src/worker.js')
     await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce())
     process.emit('SIGTERM')
+    await workerEntry
 
     await vi.waitFor(() => expect(end).toHaveBeenCalled())
     expect(close).toHaveBeenCalledOnce()

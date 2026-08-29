@@ -1,13 +1,13 @@
 import { createLocationClient } from '@evespace/esi-client/domains/location'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
-import { characterSkillsScope, getCharacterSkillsData } from './character-skills-service.js'
+import { getCharacterSkillsData } from './character-skills-service.js'
 import { getCharacterEsiScope } from './esi-resilience/catalog.js'
 import { getEsiResilienceLayer } from './esi-resilience/resilience.js'
 import { createEsiTransport } from './esi-resilience/transport.js'
 
 export const locationScope = getCharacterEsiScope('location')
 export const shipScope = getCharacterEsiScope('ship')
-export const skillsScope = characterSkillsScope
+export { characterSkillsScope as skillsScope } from './character-skills-service.js'
 
 export interface CharacterLocation {
   solarSystemId: number

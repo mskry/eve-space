@@ -56,13 +56,11 @@ export function commitMailReadState(queryCache: QueryCache, target: MailReadTarg
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'headers'] })) {
     const page = queryCache.getQueryData<MailHeaders>(entry.key)
     if (!page) continue
+    const updateReadState = (header: MailHeader) =>
+      header.mailId === target.header.mailId ? { ...header, isRead: target.read } : header
     queryCache.setQueryData<MailHeaders>(entry.key, {
       ...page,
-      messages: page.messages.map((header) =>
-        header.mailId === target.header.mailId
-          ? Object.assign({}, header, { isRead: target.read })
-          : header,
-      ),
+      messages: page.messages.map(updateReadState),
     })
   }
 
@@ -75,9 +73,11 @@ export function commitMailReadState(queryCache: QueryCache, target: MailReadTarg
   if (labels) {
     const wasUnread = isMailUnread(target.header.isRead)
     const isUnread = !target.read
+    let unreadDelta = 0
+    if (wasUnread !== isUnread) unreadDelta = isUnread ? 1 : -1
     queryCache.setQueryData<MailLabels>(
       labelsKey,
-      updateUnreadCounts(labels, target.header, wasUnread === isUnread ? 0 : isUnread ? 1 : -1),
+      updateUnreadCounts(labels, target.header, unreadDelta),
     )
   }
 }

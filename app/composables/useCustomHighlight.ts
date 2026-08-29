@@ -34,15 +34,13 @@ export function useCustomHighlight(options: UseCustomHighlightOptions) {
       return
     }
     await nextTick()
-    const roots: Element[] =
-      typeof selector === 'function'
-        ? Array.from(selector() ?? [])
-        : Array.from(
-            (typeof container === 'function'
-              ? container()
-              : (container?.value ?? document)
-            )?.querySelectorAll(selector) ?? [],
-          )
+    let roots: Element[]
+    if (typeof selector === 'function') {
+      roots = Array.from(selector() ?? [])
+    } else {
+      const root = typeof container === 'function' ? container() : (container?.value ?? document)
+      roots = Array.from(root?.querySelectorAll(selector) ?? [])
+    }
     applySearchHighlight(highlight, roots, rawTerm)
   }
 

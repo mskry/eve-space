@@ -58,7 +58,7 @@ const readerTitleId = computed(() => {
         <p>Choose a message from the list.</p>
       </div>
       <template v-else-if="loading && !detail">
-        <p id="mail-reader-loading-title" class="sr-only" role="status">Opening message...</p>
+        <output id="mail-reader-loading-title" class="sr-only">Opening message...</output>
         <div class="mail-reader-skeleton" aria-hidden="true">
           <header class="mail-reader-heading">
             <div class="mail-reader-identity">

@@ -14,20 +14,31 @@ const escapedCharacters: Readonly<Record<string, string>> = {
 
 export function eveDescriptionToPlainText(html: string | undefined | null): string | undefined {
   if (!html) return undefined
-  const text = html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/\n{3,}/g, '\n\n')
+  const text = stripMarkup(html.replaceAll(/<br\s*\/?>/gi, '\n').replaceAll(/<\/p>/gi, '\n'))
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&nbsp;', ' ')
+    .replaceAll('&amp;', '&')
+    .replaceAll(/\n{3,}/g, '\n\n')
     .trim()
   const normalized = decodeLegacyUnicodeLiteral(text).trim()
   return normalized || undefined
+}
+
+function stripMarkup(value: string) {
+  let plainText = ''
+  let cursor = 0
+  while (cursor < value.length) {
+    const start = value.indexOf('<', cursor)
+    if (start === -1) return plainText + value.slice(cursor)
+    const end = value.indexOf('>', start + 1)
+    if (end === -1) return plainText + value.slice(cursor)
+    plainText += value.slice(cursor, start)
+    cursor = end + 1
+  }
+  return plainText
 }
 
 function decodeLegacyUnicodeLiteral(value: string) {

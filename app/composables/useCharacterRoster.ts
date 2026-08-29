@@ -59,8 +59,12 @@ export function useCharacterRoster(apiClient: ApiClient) {
       : undefined,
   )
 
-  function loadCharacterRoster(force = false) {
-    return force ? rosterQuery.refetch() : rosterQuery.refresh()
+  function loadCharacterRoster() {
+    return rosterQuery.refresh()
+  }
+
+  function refetchCharacterRoster() {
+    return rosterQuery.refetch()
   }
 
   async function selectMainCharacter(characterId: number) {
@@ -72,13 +76,13 @@ export function useCharacterRoster(apiClient: ApiClient) {
 
     try {
       const { mainCharacter } = await mainCharacterMutation.mutateAsync(characterId)
+      const updateMainCharacter = (character: CharacterRosterEntry) => ({
+        ...character,
+        isMain: character.characterId === mainCharacter.characterId,
+      })
       queryCache.setQueryData(characterRosterQuery(apiClient).key, (roster) => ({
         characters: (roster?.characters ?? characters.value)
-          .map((character) =>
-            Object.assign({}, character, {
-              isMain: character.characterId === mainCharacter.characterId,
-            }),
-          )
+          .map(updateMainCharacter)
           .toSorted(
             (left, right) =>
               Number(right.isMain) - Number(left.isMain) ||
@@ -129,6 +133,7 @@ export function useCharacterRoster(apiClient: ApiClient) {
     rosterMessage,
     rosterStatus,
     removeCharacter,
+    refetchCharacterRoster,
     selectMainCharacter,
   }
 }

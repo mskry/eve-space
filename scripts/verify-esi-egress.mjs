@@ -42,8 +42,10 @@ function coreEgressViolations(sources, operationIds, executorPolicies) {
 
 function coreSourceEgressViolations(path, source, operationIds, executorPolicies) {
   const findings = []
-  findings.push(...sdkClientConstructionViolations(path, source, 'core'))
-  findings.push(...characterExecutorViolations(path, source, executorPolicies))
+  findings.push(
+    ...sdkClientConstructionViolations(path, source, 'core'),
+    ...characterExecutorViolations(path, source, executorPolicies),
+  )
 
   const transportOperations = operationArguments(source, 'createEsiTransport')
   const executorOperations = operationProperties(source)
@@ -190,9 +192,10 @@ function moduleSourceEgressViolations(path, source, operationIds) {
   if (/(?:^|[^\w$])(?:globalThis\.)?fetch\s*\(/m.test(source))
     findings.push(`${path}: feature server code performs direct fetch instead of shared ESI egress`)
   if (
-    /\bcreateEsiTransport\b|(?:class|function)\s+\w*Esi\w*Transport\w*|(?:const|let|var)\s+\w*(?:esi\w*transport|transport\w*esi)\w*/i.test(
-      source,
-    ) ||
+    source.includes('createEsiTransport') ||
+    /(?:class|function)\s+\w*Esi\w*Transport\w*/i.test(source) ||
+    /(?:const|let|var)\s+\w*esi\w*transport\w*/i.test(source) ||
+    /(?:const|let|var)\s+\w*transport\w*esi\w*/i.test(source) ||
     /(?:from\s*|import\s*\(?)['"](?:node-fetch|undici|axios|got)['"]/.test(source)
   )
     findings.push(`${path}: feature server code defines or imports a duplicate ESI transport`)
@@ -217,9 +220,9 @@ function moduleSourceEgressViolations(path, source, operationIds) {
 }
 
 function operationArguments(source, functionName) {
-  return [...source.matchAll(new RegExp(`${functionName}\\(\\s*['"]([^'"]+)['"]`, 'g'))].map(
-    (match) => match[1],
-  )
+  return [
+    ...source.matchAll(new RegExp(String.raw`${functionName}\(\s*['"]([^'"]+)['"]`, 'g')),
+  ].map((match) => match[1])
 }
 
 function operationProperties(source) {
@@ -257,7 +260,8 @@ function hasRuntimeEsiSdkImport(path, source) {
 
 function hasRuntimeImportClause(importClause) {
   if (!importClause) return true
-  if (importClause.isTypeOnly || importClause.name) return !importClause.isTypeOnly
+  const typeOnly = importClause.phaseModifier === ts.SyntaxKind.TypeKeyword
+  if (typeOnly || importClause.name) return !typeOnly
   if (!importClause.namedBindings) return false
   if (ts.isNamespaceImport(importClause.namedBindings)) return true
   return importClause.namedBindings.elements.some((element) => !element.isTypeOnly)
@@ -291,7 +295,7 @@ function collectSdkClientReference(node, factories, namespaces, declarations) {
   if (!ts.isImportDeclaration(node) || !isEsiSdkSpecifier(node.moduleSpecifier)) return
 
   const clause = node.importClause
-  if (!clause || clause.isTypeOnly) return
+  if (!clause || clause.phaseModifier === ts.SyntaxKind.TypeKeyword) return
   if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
     namespaces.add(clause.namedBindings.name.text)
   if (!clause.namedBindings || !ts.isNamedImports(clause.namedBindings)) return

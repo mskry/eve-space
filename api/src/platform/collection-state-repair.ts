@@ -17,7 +17,7 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
   const subjectId =
     options.characterId === undefined
       ? null
-      : String(z.number().int().positive().safe().parse(options.characterId))
+      : String(z.number().int().positive().parse(options.characterId))
   const repairs = (options.resources ?? installedModuleResources).flatMap((resource) => {
     if (resource.subjectKind !== 'character') return []
     const requiredScope = getOptionalCharacterEsiScope(resource.operationId as EsiOperation)

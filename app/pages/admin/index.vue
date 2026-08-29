@@ -94,7 +94,7 @@ useHead({ title: 'Administration // EVE Space' })
     </div>
 
     <template v-else>
-      <p v-if="feedback" class="auth-feedback" role="status">{{ feedback }}</p>
+      <output v-if="feedback" class="auth-feedback">{{ feedback }}</output>
       <section class="admin-panel">
         <div class="admin-panel-heading">
           <span>OWNER</span>

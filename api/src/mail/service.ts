@@ -528,16 +528,14 @@ function recipientParties(
   recipients: readonly EsiMailRecipient[] | undefined,
   parties: Awaited<ReturnType<typeof enrichParties>>,
 ): MailParty[] {
-  return (recipients ?? []).map((recipient) => ({
-    id: recipient.recipient_id,
-    type: recipient.recipient_type,
-    name:
-      recipient.recipient_type === 'mailing_list'
-        ? (parties.mailingListNames.get(recipient.recipient_id) ?? null)
-        : parties.universeNames.get(recipient.recipient_id)?.category === recipient.recipient_type
-          ? parties.universeNames.get(recipient.recipient_id)!.name
-          : null,
-  }))
+  return (recipients ?? []).map((recipient) => {
+    let name = parties.mailingListNames.get(recipient.recipient_id) ?? null
+    if (recipient.recipient_type !== 'mailing_list') {
+      const universeParty = parties.universeNames.get(recipient.recipient_id)
+      name = universeParty?.category === recipient.recipient_type ? universeParty.name : null
+    }
+    return { id: recipient.recipient_id, type: recipient.recipient_type, name }
+  })
 }
 
 function isUniversePartyType(value: string): value is Exclude<MailRecipientType, 'mailing_list'> {

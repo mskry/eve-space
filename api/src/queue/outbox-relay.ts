@@ -111,17 +111,10 @@ export async function runOutboxRelayBatch(
   const published = outcomes.filter((result) => result.outcome === 'published').length
   const failed = outcomes.length - published
   const category = outcomes.find((result) => result.category)?.category ?? null
-  await recordRelayOutcome(
-    queue,
-    failed === 0
-      ? published === 0
-        ? 'idle'
-        : 'published'
-      : published === 0
-        ? 'failed'
-        : 'partial-failure',
-    category,
-  )
+  let relayOutcome: 'idle' | 'published' | 'failed' | 'partial-failure'
+  if (failed === 0) relayOutcome = published === 0 ? 'idle' : 'published'
+  else relayOutcome = published === 0 ? 'failed' : 'partial-failure'
+  await recordRelayOutcome(queue, relayOutcome, category)
 
   return { admission, claimed: claims.length, published, failed }
 }

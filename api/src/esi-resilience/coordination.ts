@@ -8,7 +8,7 @@ const keyPrefix = `eve-space:${coordinationIdentityVersion}:esi-resilience`
 const esiRequestLeaseTtlMs = 15_000
 const fenceStateTtlMs = 86_400_000
 const revisionNamespacePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
-const revisionPrincipalPattern = /^character-[1-9][0-9]*$/
+const revisionPrincipalPattern = /^character-[1-9]\d*$/
 
 export interface EsiRequestLease {
   key: string

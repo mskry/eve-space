@@ -15,7 +15,8 @@ import {
   deriveDisplayedMailCounts,
   deriveMailboxStatus,
   filterDisplayedMailHeaders,
-  mergeLatestMailHeaders,
+  mergePaginatedMailHeaders,
+  replaceLatestMailHeaders,
 } from '../utils/mail-view'
 import { ApiQueryError } from '../utils/query-error'
 
@@ -233,11 +234,9 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     () => headersQuery.data.value,
     (page) => {
       if (!page) return
-      loadedHeaders.value = mergeLatestMailHeaders(
-        loadedHeaders.value,
-        page.messages,
-        hasPaginated.value,
-      )
+      loadedHeaders.value = hasPaginated.value
+        ? mergePaginatedMailHeaders(loadedHeaders.value, page.messages)
+        : replaceLatestMailHeaders(page.messages)
       options.reconcileReadState(page.messages)
       if (!hasPaginated.value) nextLastMailId.value = page.nextLastMailId
     },

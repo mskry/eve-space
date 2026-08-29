@@ -12,7 +12,7 @@ withDefaults(
 </script>
 
 <template>
-  <div class="character-authorization-state" role="status">
+  <output class="character-authorization-state">
     <span class="private-badge">SCOPE REQUIRED</span>
     <div>
       <h2>{{ title }}</h2>
@@ -21,7 +21,7 @@ withDefaults(
     <a v-if="authorizeUrl" class="ui-action-primary" :href="authorizeUrl">
       AUTHORIZE THIS CHARACTER
     </a>
-  </div>
+  </output>
 </template>
 
 <style scoped>

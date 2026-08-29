@@ -12,7 +12,7 @@ const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
 const { authLoading, authSession, initializeAuth } = useAuthSession(apiClient)
-const { characters, loadCharacterRoster, rosterMessage, rosterStatus } =
+const { characters, refetchCharacterRoster, rosterMessage, rosterStatus } =
   useCharacterRoster(apiClient)
 const callbackHandled = ref('')
 const { navigation: characterNavigation } = usePlatformNavigation('character')
@@ -31,17 +31,17 @@ const selectedCharacter = computed(() =>
 const characterBreadcrumb = computed(() => {
   const name = selectedCharacter.value?.name
   if (!name) return 'CHARACTERS'
-  const section = route.path.endsWith('/skills')
-    ? 'SKILLS'
-    : route.path.endsWith('/wallet')
-      ? 'WALLET'
-      : route.path.endsWith('/history')
-        ? 'HISTORY'
-        : route.path.endsWith('/mail')
-          ? 'MAIL'
-          : ''
+  const section = characterSection(route.path)
   return ['CHARACTERS', name, section].filter(Boolean).join(' / ')
 })
+
+function characterSection(path: string) {
+  if (path.endsWith('/skills')) return 'SKILLS'
+  if (path.endsWith('/wallet')) return 'WALLET'
+  if (path.endsWith('/history')) return 'HISTORY'
+  if (path.endsWith('/mail')) return 'MAIL'
+  return ''
+}
 const reauthorizeStatus = computed(() =>
   typeof route.query.reauthorize === 'string' ? route.query.reauthorize : '',
 )
@@ -103,7 +103,7 @@ watch(
 
     if (callbackStatus === 'success' && callbackHandled.value !== route.fullPath) {
       callbackHandled.value = route.fullPath
-      await Promise.all([initializeAuth(true), loadCharacterRoster(true)])
+      await Promise.all([initializeAuth(true), refetchCharacterRoster()])
     }
   },
   { immediate: true },

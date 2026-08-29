@@ -103,6 +103,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
   function requestMailDeletion() {
     const header = options.mailbox.selectedHeader.value
     if (!header) return
+    const subject = header.subject?.trim() || `mail ${header.mailId}`
     openConfirmDialog({
       confirmLabel: 'Delete message',
       description:
@@ -115,7 +116,7 @@ export function useMailOrganization(options: MailOrganizationOptions) {
         options.mutations.readPendingIds.value.has(header.mailId)
           ? 'Waiting for mail update...'
           : 'Deleting...',
-      title: `Delete ${header.subject?.trim() || `mail ${header.mailId}`}?`,
+      title: `Delete ${subject}?`,
       tone: 'danger',
     })
   }

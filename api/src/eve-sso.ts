@@ -3,10 +3,10 @@ import { z } from 'zod'
 import { env, getSsoConfig } from './env.js'
 
 const metadataSchema = z.object({
-  issuer: z.string().url(),
-  authorization_endpoint: z.string().url(),
-  token_endpoint: z.string().url(),
-  jwks_uri: z.string().url(),
+  issuer: z.url(),
+  authorization_endpoint: z.url(),
+  token_endpoint: z.url(),
+  jwks_uri: z.url(),
 })
 
 const tokenResponseSchema = z.object({
@@ -28,13 +28,11 @@ const scopesSchema = z
     return typeof scopes === 'string' ? scopes.split(/\s+/).filter(Boolean) : scopes
   })
 
-const claimsSchema = z
-  .object({
-    sub: z.string().regex(/^CHARACTER:EVE:\d+$/),
-    name: z.string().min(1),
-    scp: scopesSchema,
-  })
-  .passthrough()
+const claimsSchema = z.looseObject({
+  sub: z.string().regex(/^CHARACTER:EVE:\d+$/),
+  name: z.string().min(1),
+  scp: scopesSchema,
+})
 
 const metadataUrl = 'https://login.eveonline.com/.well-known/oauth-authorization-server'
 // The token call is the slow leg and gets the full budget. Discovery and JWKS are small, cached

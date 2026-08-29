@@ -21,4 +21,4 @@ async function runWorkerHealthcheck() {
   }
 }
 
-void runWorkerHealthcheck()
+await runWorkerHealthcheck()

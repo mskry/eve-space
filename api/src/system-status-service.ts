@@ -78,19 +78,19 @@ async function probeSystemStatus(now: number): Promise<SystemStatus> {
   const eventRelay = await probeDomainEventStatus(queue)
   const unavailableCount =
     Number(database.status === 'unavailable') + Number(esi.status === 'unavailable')
-  const status =
-    unavailableCount === 2
-      ? 'unavailable'
-      : database.status === 'operational' &&
-          esi.status === 'operational' &&
-          queue.status === 'operational' &&
-          eventRelay.status === 'operational' &&
-          esiResilience.cache.status === 'operational' &&
-          esiResilience.coordination.status === 'operational' &&
-          esiResilience.cooldown.status === 'inactive' &&
-          esiResilience.upstream.status === 'operational'
-        ? 'operational'
-        : 'degraded'
+  let status: SystemStatus['status'] = 'degraded'
+  if (unavailableCount === 2) status = 'unavailable'
+  else if (
+    database.status === 'operational' &&
+    esi.status === 'operational' &&
+    queue.status === 'operational' &&
+    eventRelay.status === 'operational' &&
+    esiResilience.cache.status === 'operational' &&
+    esiResilience.coordination.status === 'operational' &&
+    esiResilience.cooldown.status === 'inactive' &&
+    esiResilience.upstream.status === 'operational'
+  )
+    status = 'operational'
 
   const cachedUntil = Math.min(now + cacheTtlMs, Date.parse(esi.cachedUntil))
   return {
@@ -137,14 +137,16 @@ async function probeEsi(): Promise<EsiStatus> {
           .get(revalidation),
     })
     const errorBudgetRemaining = response.quota.errorRemaining ?? null
+    let status: EsiStatus['status'] = 'operational'
+    if (response.stale) status = 'stale'
+    else if (
+      response.data.vip ||
+      response.data.players === 0 ||
+      (errorBudgetRemaining !== null && errorBudgetRemaining <= esiErrorBudgetFloor)
+    )
+      status = 'degraded'
     return {
-      status: response.stale
-        ? 'stale'
-        : response.data.vip ||
-            response.data.players === 0 ||
-            (errorBudgetRemaining !== null && errorBudgetRemaining <= esiErrorBudgetFloor)
-          ? 'degraded'
-          : 'operational',
+      status,
       latencyMs: Date.now() - startedAt,
       checkedAt: response.validatedAt,
       players: response.data.players,

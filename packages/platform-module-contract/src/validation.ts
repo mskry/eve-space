@@ -21,7 +21,9 @@ export interface PlatformModuleValidationAuthorities {
 }
 
 export function compareStable(left: string, right: string) {
-  return left < right ? -1 : left > right ? 1 : 0
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
 }
 
 export class PlatformModuleValidationError extends Error {
@@ -29,9 +31,8 @@ export class PlatformModuleValidationError extends Error {
 
   constructor(issues: readonly string[]) {
     const sortedIssues = issues.toSorted(compareStable)
-    super(
-      `Invalid platform module declarations:\n${sortedIssues.map((issue) => `- ${issue}`).join('\n')}`,
-    )
+    const issueList = sortedIssues.map((issue) => `- ${issue}`).join('\n')
+    super(`Invalid platform module declarations:\n${issueList}`)
     this.name = 'PlatformModuleValidationError'
     this.issues = sortedIssues
   }
@@ -368,7 +369,7 @@ function normalizeIdentity(value: string) {
 }
 
 function canonicalizePath(path: string) {
-  return path.replace(/:[A-Za-z0-9_]+/g, ':parameter').replace(/\/$/, '') || '/'
+  return path.replace(/:\w+/g, ':parameter').replace(/\/$/, '') || '/'
 }
 
 function isNormalizedPath(path: string) {

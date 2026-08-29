@@ -326,9 +326,11 @@ function invalidateModuleRuntimeState() {
  * `beforeAll`, so binding either at module-load time would capture the pre-test configuration.
  */
 function moduleRuntimeCacheTtlMs() {
-  return (runtimeStateCacheTtl ??= import('../env.js').then(
-    ({ env }) => env.MODULE_RUNTIME_CACHE_TTL_MS,
-  ))
+  const cached = runtimeStateCacheTtl
+  if (cached) return cached
+  const loaded = import('../env.js').then(({ env }) => env.MODULE_RUNTIME_CACHE_TTL_MS)
+  runtimeStateCacheTtl = loaded
+  return loaded
 }
 
 async function connectionOrDefault(connection?: postgres.Sql) {

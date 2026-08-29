@@ -65,7 +65,7 @@ describe('generic resource planner BullMQ integration', () => {
       await waitFor(async () => (await queue.getActiveCount()) === 1)
 
       await runResourcePlanner(queue as never, undefined, { resources: [resource], dependencies })
-      expect((await queue.getJobs(['active', 'waiting', 'delayed', 'prioritized'])).length).toBe(1)
+      expect(await queue.getJobs(['active', 'waiting', 'delayed', 'prioritized'])).toHaveLength(1)
 
       release?.()
       await waitFor(async () => (await queue.getCompletedCount()) === 1)

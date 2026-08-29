@@ -240,9 +240,7 @@ const skillGroupColumns = computed(() => {
                 <button class="skill-group-trigger" type="button">
                   <span class="skill-group-heading">
                     <span>{{ String(entry.index + 1).padStart(2, '0') }} / SKILL GROUP</span>
-                    <span class="skill-group-name" role="heading" aria-level="2">{{
-                      entry.group.name
-                    }}</span>
+                    <h2 class="skill-group-name">{{ entry.group.name }}</h2>
                     <span v-if="entry.group.groupId === null" class="skill-group-warning">
                       Static data unavailable for these skill IDs.
                     </span>

@@ -50,7 +50,7 @@ onBeforeUnmount(() => {
     <header class="mail-pane-heading">
       <h2 id="mail-headers-title">Messages</h2>
     </header>
-    <p v-if="loading" class="sr-only" role="status">Loading messages...</p>
+    <output v-if="loading" class="sr-only">Loading messages...</output>
     <div v-if="loading" class="mail-filter-controls mail-skeleton-filter" aria-hidden="true">
       <span class="mail-skeleton-block mail-skeleton-search" />
       <span class="mail-skeleton-block mail-skeleton-toggle" />
