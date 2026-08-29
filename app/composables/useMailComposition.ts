@@ -36,6 +36,11 @@ interface MailCompositionOptions {
   mailbox: ReturnType<typeof useCharacterMailbox>
 }
 
+type MailSubmission = Pick<
+  Parameters<typeof sendMailMutation>[0],
+  'body' | 'recipients' | 'subject'
+>
+
 function recipientKey(recipient: Pick<MailRecipient, 'id' | 'type'>) {
   return `${recipient.type}:${recipient.id}`
 }
@@ -298,7 +303,7 @@ export function useMailComposition(options: MailCompositionOptions) {
   }
 
   function requestClose() {
-    if (!open.value) return
+    if (!open.value || sending.value) return
     if (!dirty.value) {
       resetDraft()
       return
@@ -327,11 +332,16 @@ export function useMailComposition(options: MailCompositionOptions) {
     chargeRecoveryAvailable.value = false
     sendAuthorizationMessage.value = ''
     sendAuthorizationUrl.value = ''
-    const characterRecipients = recipients.value
+    const submission: MailSubmission = {
+      body: body.value,
+      recipients: recipients.value.map(({ id, type }) => ({ id, type })),
+      subject: subject.value,
+    }
+    const characterRecipients = submission.recipients
       .filter((recipient) => recipient.type === 'character')
       .map((recipient) => recipient.id)
     if (characterRecipients.length === 0) {
-      await submitMail(characterId, 0, operationGeneration)
+      await submitMail(characterId, 0, operationGeneration, submission)
       return
     }
 
@@ -343,7 +353,7 @@ export function useMailComposition(options: MailCompositionOptions) {
       })
       if (!scopeActive || operationGeneration !== generation) return
       if (approvedCost === 0) {
-        await submitMail(characterId, 0, operationGeneration)
+        await submitMail(characterId, 0, operationGeneration, submission)
         return
       }
       const approvedIntegerCost = Math.ceil(approvedCost)
@@ -351,7 +361,7 @@ export function useMailComposition(options: MailCompositionOptions) {
         confirmLabel: 'Approve cost and send',
         description: `EVE will charge ${formatIsk(approvedIntegerCost)} ISK to deliver this mail.`,
         onConfirm: async () => {
-          await submitMail(characterId, approvedIntegerCost, operationGeneration)
+          await submitMail(characterId, approvedIntegerCost, operationGeneration, submission)
         },
         pending: sending,
         pendingLabel: 'Sending...',
@@ -366,7 +376,7 @@ export function useMailComposition(options: MailCompositionOptions) {
         description:
           'The recipient charge is unknown. Sending with no approved cost may be refused by EVE.',
         onConfirm: async () => {
-          await submitMail(characterId, 0, operationGeneration)
+          await submitMail(characterId, 0, operationGeneration, submission)
         },
         pending: sending,
         pendingLabel: 'Sending...',
@@ -379,7 +389,12 @@ export function useMailComposition(options: MailCompositionOptions) {
     const characterId = options.characterId.value
     if (!characterId || sendDisabledReason.value) return
     const operationGeneration = generation
-    const characterRecipients = recipients.value
+    const submission: MailSubmission = {
+      body: body.value,
+      recipients: recipients.value.map(({ id, type }) => ({ id, type })),
+      subject: subject.value,
+    }
+    const characterRecipients = submission.recipients
       .filter((recipient) => recipient.type === 'character')
       .map((recipient) => recipient.id)
     chargeRecoveryAvailable.value = false
@@ -405,7 +420,7 @@ export function useMailComposition(options: MailCompositionOptions) {
         confirmLabel: 'Approve cost and send',
         description: `EVE will charge ${formatIsk(approvedIntegerCost)} ISK to deliver this mail.`,
         onConfirm: async () => {
-          await submitMail(characterId, approvedIntegerCost, operationGeneration)
+          await submitMail(characterId, approvedIntegerCost, operationGeneration, submission)
         },
         pending: sending,
         pendingLabel: 'Sending...',
@@ -422,15 +437,14 @@ export function useMailComposition(options: MailCompositionOptions) {
     characterId: number,
     approvedCost: number,
     operationGeneration: number,
+    submission: MailSubmission,
   ) {
     try {
       await sendMutation.mutateAsync({
         apiClient: options.apiClient,
         approvedCost,
-        body: body.value,
         characterId,
-        recipients: recipients.value.map(({ id, type }) => ({ id, type })),
-        subject: subject.value,
+        ...submission,
       })
       if (!scopeActive || operationGeneration !== generation) return
       resetDraft()

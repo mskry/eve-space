@@ -172,7 +172,19 @@ describe('mail composition', () => {
     await composition.recoverCharge()
 
     expect(composition.sendDisabledReason.value).toContain('Subject exceeds')
+    expect(composition.subjectRemaining.value).toBe(-1)
     expect(fetchMock).not.toHaveBeenCalled()
+    composition.subject.value = ''
+    composition.body.value = 'x'.repeat(MAIL_BODY_LIMIT + 1)
+    expect(composition.sendDisabledReason.value).toContain('Body exceeds')
+    expect(composition.bodyRemaining.value).toBe(-1)
+    composition.body.value = ''
+    composition.recipients.value = Array.from({ length: MAIL_RECIPIENT_LIMIT + 1 }, (_, id) => ({
+      id: id + 1,
+      name: `Pilot ${id + 1}`,
+      type: 'character' as const,
+    }))
+    expect(composition.sendDisabledReason.value).toContain('at most 50')
     wrapper.unmount()
     vi.unstubAllGlobals()
   })
@@ -263,6 +275,37 @@ describe('mail composition', () => {
     vi.unstubAllGlobals()
   })
 
+  it('keeps the draft open and processes the outcome while sending', async () => {
+    let releaseSend!: () => void
+    const heldSend = new Promise<void>((release) => (releaseSend = release))
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail', async () => {
+        await heldSend
+        return HttpResponse.json({ characterId: 7, mailId: 9001 }, { status: 201 })
+      }),
+    )
+    const harness = mountCompositionHarness()
+    harness.composition.openNew()
+    harness.composition.recipients.value = [
+      { id: 91, name: 'Operations Control', type: 'corporation' },
+    ]
+    harness.composition.subject.value = 'Slow transmission'
+    harness.composition.body.value = 'Message body'
+
+    const send = harness.composition.send()
+    await vi.waitFor(() => expect(harness.composition.sending.value).toBe(true))
+    harness.composition.requestClose()
+
+    expect(harness.composition.open.value).toBe(true)
+    expect(harness.openConfirmDialog).not.toHaveBeenCalled()
+    releaseSend()
+    await send
+    expect(harness.composition.open.value).toBe(false)
+    expect(harness.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Mail sent' }))
+    harness.wrapper.unmount()
+    vi.unstubAllGlobals()
+  })
+
   it('sends directly or after approving a calculated recipient charge', async () => {
     const sentBodies: unknown[] = []
     queryServer.use(
@@ -286,6 +329,9 @@ describe('mail composition', () => {
     const confirmation = lastConfirmation(harness.openConfirmDialog)
     expect(confirmation.description).toContain('126 ISK')
     expect(sentBodies).toEqual([])
+    harness.composition.recipients.value = [{ id: 45, name: 'Late addition', type: 'character' }]
+    harness.composition.subject.value = 'Edited after charge lookup'
+    harness.composition.body.value = 'Edited body'
     await confirmation.onConfirm()
 
     expect(sentBodies).toEqual([
@@ -398,6 +444,15 @@ describe('mail composition', () => {
     await harness.composition.send()
     expect(harness.composition.chargeRecoveryAvailable.value).toBe(true)
     expect(harness.composition.feedback.value).toContain('message was refused')
+
+    harness.composition.openNew()
+    harness.composition.recipients.value = [corporation]
+    response = {
+      status: 502,
+      body: { code: 'ESI_UNAVAILABLE', message: 'Mail provider unavailable.' },
+    }
+    await harness.composition.send()
+    expect(harness.composition.feedback.value).toBe('Mail provider unavailable.')
     harness.wrapper.unmount()
     expect(harness.dismissToast).toHaveBeenCalledWith(1)
     vi.unstubAllGlobals()
