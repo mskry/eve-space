@@ -93,6 +93,7 @@ describe('AppSidebar mail entry', () => {
 
     const links = wrapper.findAllComponents(RouterLinkStub)
     expect(links.map((link) => link.props('to'))).toContain('/characters/7/mail')
+    expect(mailLink(wrapper)?.find('path[d="m3.5 6.5 8.5 6.5 8.5-6.5"]').exists()).toBe(true)
   })
 
   it('falls back to the roster when no character is authorized', async () => {
