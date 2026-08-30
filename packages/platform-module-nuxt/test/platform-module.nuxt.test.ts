@@ -4,11 +4,15 @@ import { afterAll, describe, expect, it } from 'vitest'
 import { startCorsJsonApi } from '../../../tests/support/cors-json-api'
 
 let alphaEnabled = true
+let dashboardOrderComplete = true
 const apiServer = await startCorsJsonApi(() => ({
   body: {
     enabledModuleIds: alphaEnabled ? ['alpha'] : [],
     shellNavigationOrder: {
-      dashboard: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }] : [],
+      dashboard:
+        alphaEnabled && dashboardOrderComplete
+          ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }]
+          : [],
       character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
     },
   },
@@ -44,6 +48,7 @@ describe('platform Nuxt module fixture', async () => {
 
   it('filters runtime navigation without rebuilding', async () => {
     alphaEnabled = true
+    dashboardOrderComplete = true
     apiServer.setAllowedOrigin(useTestContext().url)
     const page = await createPage('/')
     await page.getByRole('link', { name: 'Alpha', exact: true }).waitFor({ state: 'visible' })
@@ -55,6 +60,17 @@ describe('platform Nuxt module fixture', async () => {
       waitUntil: 'networkidle',
     })
     expect(disabledPage?.status()).toBe(404)
+  })
+
+  it('retains enabled navigation missing from an older runtime order', async () => {
+    alphaEnabled = true
+    dashboardOrderComplete = false
+    apiServer.setAllowedOrigin(useTestContext().url)
+    const page = await createPage('/')
+    const link = page.getByRole('link', { name: 'Alpha override', exact: true })
+
+    await link.waitFor({ state: 'visible' })
+    expect(await link.isVisible()).toBe(true)
   })
 
   it('emits typed metadata with module icon defaults and entry overrides', async () => {

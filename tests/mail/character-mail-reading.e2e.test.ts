@@ -96,7 +96,12 @@ const apiServer = await startCorsJsonApi(async (request) => {
       body: {
         enabledModuleIds: [],
         shellNavigationOrder: {
-          dashboard: [],
+          dashboard: [
+            { ownerId: 'core', navigationId: 'core-overview' },
+            { ownerId: 'core', navigationId: 'core-characters' },
+            { ownerId: 'core', navigationId: 'core-settings' },
+            { ownerId: 'core', navigationId: 'core-admin' },
+          ],
           character: [
             { ownerId: 'core', navigationId: 'core-character-overview' },
             { ownerId: 'core', navigationId: 'core-character-skills' },
@@ -917,6 +922,12 @@ describe('character mail reading', async () => {
   it('marks a read message unread once without automatically reopening it', async () => {
     const page = await openPage(`/characters/${characterId}/mail`)
     await page.locator('.mail-header-row').first().waitFor()
+    const mailBadge = page.locator('.dashboard-sidebar--persistent .sidebar-badge')
+    await expect.poll(() => mailBadge.textContent()).toBe('44 unread mails')
+    const shellLabels = await page
+      .locator('.dashboard-sidebar--persistent .sidebar-label strong')
+      .allTextContents()
+    expect(shellLabels.indexOf('Mail')).toBe(shellLabels.indexOf('Settings') - 1)
     await page.getByRole('button', { name: /Priority operations update/ }).click()
     await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
     await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 600)
@@ -934,6 +945,7 @@ describe('character mail reading', async () => {
     await page.waitForFunction((deadline) => Date.now() >= deadline, Date.now() + 700)
 
     expect(await page.getByRole('button', { name: 'MARK READ' }).isVisible()).toBe(true)
+    await expect.poll(() => mailBadge.textContent()).toBe('55 unread mails')
     expect(
       mailMutationRequests('PUT').filter(({ url }) => url.pathname.endsWith('/mail/120')),
     ).toHaveLength(1)

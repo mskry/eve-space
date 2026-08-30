@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useQuery, useQueryCache } from '@pinia/colada'
 import { adminSessionQuery } from '../queries/admin'
-import { prefetchQuery } from '../queries/query-cache'
+import { mailLabelsQuery } from '../queries/mail'
+import { canRunProtectedQuery, prefetchQuery } from '../queries/query-cache'
+import { resolveMailUnreadCount } from '../utils/mail-unread-badge'
 import { systemStatusQuery } from '../queries/system-status'
 
 const props = withDefaults(
@@ -52,6 +54,17 @@ const authorizedCharacter = computed(() =>
 const adminAuthenticated = computed(
   () => adminSessionQueryResult.data.value?.authenticated === true,
 )
+const mailUnreadQuery = useQuery(() => ({
+  ...mailLabelsQuery({ apiClient, characterId: authorizedCharacter.value?.characterId ?? 0 }),
+  enabled: canRunProtectedQuery(
+    import.meta.client,
+    authSession.value.authenticated,
+    authorizedCharacter.value?.characterId,
+  ),
+}))
+const mailUnreadCount = computed(() =>
+  resolveMailUnreadCount(authorizedCharacter.value?.characterId, mailUnreadQuery.data.value),
+)
 
 onMounted(() => void initializeAuth())
 
@@ -86,6 +99,7 @@ async function handleLogout() {
       :auth-loading="authLoading"
       :character-id="authorizedCharacter?.characterId"
       :character-name="authorizedCharacter?.name"
+      :mail-unread-count="mailUnreadCount"
       @logout="handleLogout"
       @toggle="sidebarExpanded = !sidebarExpanded"
     />
@@ -112,6 +126,7 @@ async function handleLogout() {
               :auth-loading="authLoading"
               :character-id="authorizedCharacter?.characterId"
               :character-name="authorizedCharacter?.name"
+              :mail-unread-count="mailUnreadCount"
               @navigate="mobileNavigationOpen = false"
               @logout="handleLogout"
             />
@@ -262,6 +277,7 @@ async function handleLogout() {
           :auth-loading="authLoading"
           :character-id="authorizedCharacter?.characterId"
           :character-name="authorizedCharacter?.name"
+          :mail-unread-count="mailUnreadCount"
           @navigate="mobileNavigationOpen = false"
           @logout="handleLogout"
         />

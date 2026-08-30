@@ -42,11 +42,8 @@ vi.mock('../../src/deployment/organization.js', () => ({
   resolveDeploymentOrganization: mocks.resolveOrganization,
 }))
 
-vi.mock('../../src/platform/module-settings.js', () => ({
-  isCompleteShellNavigationOrder: (order: {
-    dashboard: readonly unknown[]
-    character: readonly unknown[]
-  }) => order.dashboard.length === 4 && order.character.length === 5,
+vi.mock('../../src/platform/module-settings.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/platform/module-settings.js')>()),
   listInstalledModuleSettings: mocks.listInstalledModuleSettings,
   loadInstalledShellNavigationOrder: mocks.loadInstalledShellNavigationOrder,
   saveInstalledShellNavigationOrder: mocks.saveInstalledShellNavigationOrder,
@@ -78,6 +75,7 @@ const shellNavigationOrder = {
   dashboard: [
     { ownerId: 'core', navigationId: 'core-overview' },
     { ownerId: 'core', navigationId: 'core-characters' },
+    { ownerId: 'core', navigationId: 'core-mail' },
     { ownerId: 'core', navigationId: 'core-settings' },
     { ownerId: 'core', navigationId: 'core-admin' },
   ],
@@ -311,7 +309,12 @@ describe('deployment administration routes', () => {
         Origin: 'http://localhost:3000',
       },
       body: JSON.stringify({
-        shellNavigationOrder: { ...shellNavigationOrder, character: [] },
+        shellNavigationOrder: {
+          ...shellNavigationOrder,
+          dashboard: shellNavigationOrder.dashboard.filter(
+            ({ navigationId }) => navigationId !== 'core-mail',
+          ),
+        },
       }),
     })
 

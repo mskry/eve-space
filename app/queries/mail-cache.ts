@@ -58,11 +58,6 @@ function updateUnreadCounts(
 }
 
 function cachedMailState(queryCache: QueryCache, target: MailMutationTarget): CachedMailState {
-  const detail = queryCache.getQueryData<MailDetail>(
-    PRIVATE_QUERY_KEYS.mailDetail(target.characterId, target.header.mailId),
-  )
-  if (detail) return detail
-
   const mailKey = PRIVATE_QUERY_KEYS.mail(target.characterId)
   for (const entry of queryCache.getEntries({ key: [...mailKey, 'headers'] })) {
     const header = queryCache
@@ -70,6 +65,11 @@ function cachedMailState(queryCache: QueryCache, target: MailMutationTarget): Ca
       ?.messages.find((candidate) => candidate.mailId === target.header.mailId)
     if (header) return header
   }
+
+  const detail = queryCache.getQueryData<MailDetail>(
+    PRIVATE_QUERY_KEYS.mailDetail(target.characterId, target.header.mailId),
+  )
+  if (detail) return detail
   return target.header
 }
 

@@ -112,6 +112,32 @@ describe('mail mutations', () => {
     unmount()
   })
 
+  it('increments cached unread counts when a read message is marked unread', async () => {
+    queryServer.use(
+      http.put(
+        'http://localhost/api/me/characters/7/mail/1',
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    )
+    const { mutations, queryCache, unmount } = mountMutations()
+    const headersKey = mailHeadersQuery({ apiClient, characterId }).key
+    const detailKey = mailDetailQuery({ apiClient, characterId, mailId: 1 }).key
+    const labelsKey = mailLabelsQuery({ apiClient, characterId }).key
+    queryCache.setQueryData(headersKey, mailHeaders([mailHeader(1, true)]))
+    queryCache.setQueryData(detailKey, mailDetail(false))
+    queryCache.setQueryData(labelsKey, mailLabels(0))
+
+    await expect(
+      mutations.setMailRead({ characterId, header: mailHeader(1, true), read: false }),
+    ).resolves.toEqual({ success: true })
+
+    expect(queryCache.getQueryData<ReturnType<typeof mailLabels>>(labelsKey)).toMatchObject({
+      labels: [{ unreadCount: 1 }],
+      totalUnreadCount: 1,
+    })
+    unmount()
+  })
+
   it('removes a successful deletion from fresh header, detail, and count caches', async () => {
     queryServer.use(
       http.delete(

@@ -12,7 +12,12 @@ const adminSessionQueryResult = useQuery(() => ({
   enabled: import.meta.client,
 }))
 const sections = computed(() =>
-  visibleDashboardSections(adminSessionQueryResult.data.value?.authenticated === true),
+  visibleDashboardSections(
+    adminSessionQueryResult.data.value?.authenticated === true,
+    authSession.value.authenticated
+      ? authSession.value.account.mainCharacter.characterId
+      : undefined,
+  ),
 )
 
 useHead({
@@ -64,7 +69,7 @@ useHead({
     <section class="section-grid" aria-label="Dashboard sections">
       <NuxtLink
         v-for="(section, index) in sections"
-        :key="section.to"
+        :key="`${section.ownerId}/${section.navigationId}`"
         :to="section.to"
         class="section-card"
       >

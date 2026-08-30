@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { usePlatformNavigation } from '#imports'
+import { resolveShellSectionPath } from '../utils/dashboard-sections'
+import { mailUnreadBadgeValue, resolveMailUnreadBadge } from '../utils/mail-unread-badge'
 
 const props = withDefaults(
   defineProps<{
@@ -9,6 +11,7 @@ const props = withDefaults(
     characterId?: number
     characterName?: string
     expanded?: boolean
+    mailUnreadCount?: number
     variant?: 'persistent' | 'drawer'
   }>(),
   {
@@ -28,23 +31,39 @@ const visibleSections = computed(() =>
   dashboardNavigation.value
     .filter((section) => section.audience !== 'admin' || props.adminAuthenticated)
     .map((section) => ({
+      ownerId: section.ownerId,
+      navigationId: section.navigationId,
       label: section.label,
       description: section.description,
-      to: section.to,
+      to: resolveShellSectionPath(section.to, props.characterId),
       icon: section.icon,
       access: section.audience === 'authenticated' ? 'authorized' : section.audience,
+      badge: section.navigationId === 'core-mail' ? mailBadge.value : undefined,
     })),
 )
+const mailBadge = computed(() => resolveMailUnreadBadge(props.characterId, props.mailUnreadCount))
 const warpDirection = ref<'expand' | 'collapse'>()
 const labelsVisible = computed(() => props.expanded || warpDirection.value === 'collapse')
 const accountActions = [{ value: 'logout', label: 'Log out', tone: 'danger' }] as const
 const route = useRoute()
 let warpTimer: ReturnType<typeof setTimeout> | undefined
 
-function sectionIsActive(path: string) {
-  return path === '/'
-    ? route.path === '/'
-    : route.path === path || route.path.startsWith(`${path}/`)
+// Shell destinations can nest (/characters and /characters/7/mail); only the
+// most specific match may present itself as the current section.
+const activeSectionId = computed(() => {
+  const matches = visibleSections.value
+    .filter((section) =>
+      section.to === '/'
+        ? route.path === '/'
+        : route.path === section.to || route.path.startsWith(`${section.to}/`),
+    )
+    .toSorted((left, right) => right.to.length - left.to.length)
+  const active = matches[0]
+  return active ? `${active.ownerId}/${active.navigationId}` : undefined
+})
+
+function sectionIsActive(ownerId: string, navigationId: string) {
+  return activeSectionId.value === `${ownerId}/${navigationId}`
 }
 
 function handleLogout() {
@@ -100,7 +119,7 @@ onBeforeUnmount(() => {
     <nav class="sidebar-nav" aria-label="Dashboard sections">
       <UiTooltip
         v-for="section in visibleSections"
-        :key="section.to"
+        :key="`${section.ownerId}/${section.navigationId}`"
         :content="
           section.access === 'authorized'
             ? `${section.label} / AUTH REQUIRED`
@@ -114,10 +133,18 @@ onBeforeUnmount(() => {
         <NuxtLink
           :to="section.to"
           class="sidebar-link"
-          :class="{ 'sidebar-link--active': sectionIsActive(section.to) }"
+          :class="{
+            'sidebar-link--active': sectionIsActive(section.ownerId, section.navigationId),
+          }"
           @click="$emit('navigate')"
         >
-          <span class="sidebar-icon"><AppIcon :name="section.icon" /></span>
+          <span class="sidebar-icon">
+            <AppIcon :name="section.icon" />
+            <span v-if="section.badge" class="sidebar-badge">
+              <span aria-hidden="true">{{ mailUnreadBadgeValue(section.badge.count) }}</span>
+              <span class="sr-only">{{ section.badge.label }}</span>
+            </span>
+          </span>
           <span class="sidebar-label">
             <strong>{{ section.label }}</strong>
             <small>{{ section.description }}</small>
