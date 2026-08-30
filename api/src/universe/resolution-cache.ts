@@ -22,7 +22,7 @@ export interface ResolutionCacheResult<Key, Value> {
 export async function readUniverseNames(
   ids: readonly number[],
 ): Promise<ResolutionCacheResult<number, UniverseName>> {
-  return readCache(ids, (id) => String(id), 'name', isUniverseName)
+  return readCache(ids, String, 'name', isUniverseName)
 }
 
 export async function writeUniverseNames(entries: readonly UniverseName[]) {
@@ -30,7 +30,7 @@ export async function writeUniverseNames(entries: readonly UniverseName[]) {
 }
 
 export async function suppressUniverseNameIds(ids: readonly number[]) {
-  await suppressCache(ids, (id) => String(id), 'name')
+  await suppressCache(ids, String, 'name')
 }
 
 export async function readUniverseIds(
