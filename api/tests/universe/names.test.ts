@@ -1,9 +1,15 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getPublic: vi.fn(),
+  readUniverseIds: vi.fn(),
+  readUniverseNames: vi.fn(),
   resolveIds: vi.fn(),
   resolveNames: vi.fn(),
+  suppressUniverseIdNames: vi.fn(),
+  suppressUniverseNameIds: vi.fn(),
+  writeUniverseIds: vi.fn(),
+  writeUniverseNames: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client/domains/universe', () => ({
@@ -15,12 +21,28 @@ vi.mock('../../src/esi-resilience/resilience.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.getPublic }),
 }))
 vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/universe/resolution-cache.js', () => ({
+  readUniverseIds: mocks.readUniverseIds,
+  readUniverseNames: mocks.readUniverseNames,
+  suppressUniverseIdNames: mocks.suppressUniverseIdNames,
+  suppressUniverseNameIds: mocks.suppressUniverseNameIds,
+  writeUniverseIds: mocks.writeUniverseIds,
+  writeUniverseNames: mocks.writeUniverseNames,
+}))
+
+const emptyCache = () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() })
 
 beforeEach(() => {
+  mocks.readUniverseIds.mockImplementation(emptyCache)
+  mocks.readUniverseNames.mockImplementation(emptyCache)
   mocks.getPublic.mockImplementation(async (resource) => {
     const loaded = await resource.load({ ifNoneMatch: '"names"' })
     return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
   })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('universe name resolver', () => {
@@ -75,6 +97,69 @@ describe('universe name resolver', () => {
       resolveUniverseNames(Array.from({ length: 66 }, (_, index) => index + 1)),
     ).rejects.toMatchObject({ name: 'UniverseNameResolutionLimitError', status: 424 })
   })
+
+  test('reuses fresh entries and stale entries under negative suppression', async () => {
+    mocks.readUniverseNames.mockResolvedValue({
+      fresh: new Map([[1, { category: 'character', id: 1, name: 'Fresh' }]]),
+      stale: new Map([[2, { category: 'character', id: 2, name: 'Stale' }]]),
+      suppressed: new Set([2, 3]),
+    })
+    const { resolveUniverseNames } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseNames([1, 2, 3])).resolves.toEqual(
+      new Map([
+        [2, { category: 'character', id: 2, name: 'Stale' }],
+        [1, { category: 'character', id: 1, name: 'Fresh' }],
+      ]),
+    )
+    expect(mocks.getPublic).not.toHaveBeenCalled()
+  })
+
+  test('suppresses singleton name resolution failures after preserving successful entries', async () => {
+    mocks.resolveNames.mockImplementation(async ({ body }: { body: number[] }) => {
+      if (body.includes(2))
+        throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      return response([{ category: 'character', id: 1, name: 'Resolved' }])
+    })
+    const { resolveUniverseNames } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseNames([1, 2])).resolves.toEqual(
+      new Map([[1, { category: 'character', id: 1, name: 'Resolved' }]]),
+    )
+    expect(mocks.writeUniverseNames).toHaveBeenCalledWith([
+      { category: 'character', id: 1, name: 'Resolved' },
+    ])
+    expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([2])
+  })
+
+  test('records missing IDs before rethrowing a sibling split failure', async () => {
+    mocks.resolveNames.mockImplementation(async ({ body }: { body: number[] }) => {
+      if (body.length > 1) throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      if (body[0] === 1) throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
+      throw Object.assign(new Error('Unavailable'), { status: 503 })
+    })
+    const { resolveUniverseNames } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseNames([1, 2])).rejects.toMatchObject({ status: 503 })
+    expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([1])
+  })
+
+  test('does not refresh per-item entries from a stale aggregate response', async () => {
+    mocks.getPublic.mockResolvedValue({
+      data: [{ category: 'character', id: 1, name: 'Stale' }],
+      cachedUntil: '',
+      quota: {},
+      source: 'cache',
+      stale: true,
+    })
+    const { resolveUniverseNames } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseNames([1])).resolves.toEqual(
+      new Map([[1, { category: 'character', id: 1, name: 'Stale' }]]),
+    )
+    expect(mocks.writeUniverseNames).not.toHaveBeenCalled()
+    expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([])
+  })
 })
 
 describe('universe ID resolver', () => {
@@ -124,6 +209,52 @@ describe('universe ID resolver', () => {
       { id: 9, name: 'Known', category: 'character' },
     ])
     await expect(resolveUniverseIds(['Unknown'])).resolves.toEqual([])
+  })
+
+  test('reuses cached ID resolutions without querying ESI', async () => {
+    mocks.readUniverseIds.mockResolvedValue({
+      fresh: new Map([['Known', [{ category: 'character', id: 9, name: 'Known' }]]]),
+      stale: new Map(),
+      suppressed: new Set(['Unknown']),
+    })
+    const { resolveUniverseIds } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseIds(['Known', 'Unknown'])).resolves.toEqual([
+      { category: 'character', id: 9, name: 'Known' },
+    ])
+    expect(mocks.getPublic).not.toHaveBeenCalled()
+  })
+
+  test('retains but does not refresh a stale ID resolution omitted by a fresh response', async () => {
+    const staleEntry = { category: 'character', id: 5, name: 'Alpha' }
+    mocks.readUniverseIds.mockResolvedValue({
+      fresh: new Map(),
+      stale: new Map([['Alpha', [staleEntry]]]),
+      suppressed: new Set(),
+    })
+    mocks.resolveIds.mockResolvedValue(response({}))
+    const { resolveUniverseIds } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseIds(['Alpha'])).resolves.toEqual([staleEntry])
+    expect(mocks.writeUniverseIds).not.toHaveBeenCalled()
+    expect(mocks.suppressUniverseIdNames).toHaveBeenCalledWith(['Alpha'])
+  })
+
+  test('does not refresh ID entries from a stale aggregate response', async () => {
+    mocks.getPublic.mockResolvedValue({
+      data: { characters: [{ id: 5, name: 'Alpha' }] },
+      cachedUntil: '',
+      quota: {},
+      source: 'cache',
+      stale: true,
+    })
+    const { resolveUniverseIds } = await import('../../src/universe/names.js')
+
+    await expect(resolveUniverseIds(['Alpha'])).resolves.toEqual([
+      { category: 'character', id: 5, name: 'Alpha' },
+    ])
+    expect(mocks.writeUniverseIds).not.toHaveBeenCalled()
+    expect(mocks.suppressUniverseIdNames).toHaveBeenCalledWith([])
   })
 })
 

@@ -18,6 +18,11 @@ vi.mock('../../src/esi-resilience/resilience.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
 vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/universe/resolution-cache.js', () => ({
+  readUniverseNames: () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() }),
+  writeUniverseNames: vi.fn(),
+  suppressUniverseNameIds: vi.fn(),
+}))
 
 beforeEach(() => {
   mocks.get.mockImplementation(async (resource) => {
