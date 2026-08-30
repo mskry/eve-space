@@ -44,6 +44,7 @@ export type PlatformSubjectKind = (typeof platformSubjectKinds)[number]
 export const platformIconTokens = [
   'overview',
   'character',
+  'mail',
   'wallet',
   'corporation',
   'settings',
@@ -83,6 +84,17 @@ export const platformCoreNavigation = [
     description: 'Authorized capsuleer record',
     path: '/characters',
     icon: 'character',
+    audience: 'authenticated',
+  },
+  {
+    ownerId: 'core',
+    navigationId: 'core-mail',
+    placement: 'dashboard',
+    order: 25,
+    label: 'Mail',
+    description: 'Main character mailbox',
+    path: '/characters/:characterId/mail',
+    icon: 'mail',
     audience: 'authenticated',
   },
   {
@@ -159,7 +171,7 @@ export const platformCoreNavigation = [
     label: 'Mail',
     description: 'Character mail',
     path: '/characters/:characterId/mail',
-    icon: 'character',
+    icon: 'mail',
     audience: 'owned-character',
   },
 ] as const satisfies readonly PlatformCoreNavigationEntry[]

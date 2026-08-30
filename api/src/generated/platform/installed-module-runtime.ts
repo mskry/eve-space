@@ -10,6 +10,7 @@ export const installedModuleDefinitions =
 export const platformNavigationDefaults = [
   { ownerId: 'core', navigationId: 'core-overview', placement: 'dashboard', order: 10 },
   { ownerId: 'core', navigationId: 'core-characters', placement: 'dashboard', order: 20 },
+  { ownerId: 'core', navigationId: 'core-mail', placement: 'dashboard', order: 25 },
   { ownerId: 'core', navigationId: 'core-settings', placement: 'dashboard', order: 30 },
   { ownerId: 'core', navigationId: 'core-admin', placement: 'dashboard', order: 40 },
   { ownerId: 'core', navigationId: 'core-character-overview', placement: 'character', order: 10 },

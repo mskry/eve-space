@@ -9,4 +9,15 @@ describe('dashboard section visibility', () => {
   it('shows administration to the authenticated deployment owner', () => {
     expect(visibleDashboardSections(true).some((section) => section.to === '/admin')).toBe(true)
   })
+
+  it('retains distinct identities when protected destinations share the roster fallback', () => {
+    const rosterSections = visibleDashboardSections(false).filter(
+      (section) => section.to === '/characters',
+    )
+
+    expect(rosterSections.map(({ navigationId }) => navigationId)).toEqual([
+      'core-characters',
+      'core-mail',
+    ])
+  })
 })

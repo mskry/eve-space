@@ -35,10 +35,25 @@ export function usePlatformNavigation(placement: PlatformNavigationPlacement) {
     if (!order) return entries
 
     const entriesById = new Map(entries.map((entry) => [entryId(entry), entry]))
-    return order.flatMap((entry) => {
+    const ordered = order.flatMap((entry) => {
       const resolved = entriesById.get(entryId(entry))
       return resolved ? [resolved] : []
     })
+    const orderedIds = new Set(ordered.map(entryId))
+    const resolved = [...ordered]
+    for (const entry of entries) {
+      if (orderedIds.has(entryId(entry))) continue
+      const preceding = entries
+        .slice(0, entries.indexOf(entry))
+        .findLast((candidate) =>
+          resolved.some((resolvedEntry) => entryId(resolvedEntry) === entryId(candidate)),
+        )
+      const precedingIndex = preceding
+        ? resolved.findIndex((candidate) => entryId(candidate) === entryId(preceding))
+        : -1
+      resolved.splice(precedingIndex + 1, 0, entry)
+    }
+    return resolved
   })
 
   return { navigation }

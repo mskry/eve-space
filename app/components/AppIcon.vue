@@ -18,6 +18,10 @@ defineProps<{
       <circle cx="9" cy="12" r="4.5" />
       <path d="M14 9.5h5l-2.5 6.5" />
     </template>
+    <template v-else-if="name === 'mail'">
+      <rect x="3" y="5.5" width="18" height="13" />
+      <path d="m3.5 6.5 8.5 6.5 8.5-6.5" />
+    </template>
     <template v-else-if="name === 'wallet'">
       <path d="M3 6.5h15a3 3 0 0 1 3 3v8.5H5a2 2 0 0 1-2-2V6.5Z" />
       <path d="M3 7V5a2 2 0 0 1 2-2h12" />
