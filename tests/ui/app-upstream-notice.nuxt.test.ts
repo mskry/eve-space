@@ -10,7 +10,7 @@ afterEach(() => {
 })
 
 async function mountNotice(props: {
-  status: 'operational' | 'degraded' | 'unavailable' | 'stale' | undefined
+  status: 'operational' | 'degraded' | 'unavailable' | 'partial' | 'stale' | undefined
   checkedAt?: string
   vip?: boolean
 }) {
@@ -46,6 +46,17 @@ describe('AppUpstreamNotice', () => {
     expect(wrapper.get('.upstream-notice').attributes('data-status')).toBe('unavailable')
     expect(wrapper.get('.upstream-notice').text()).toContain('TRANQUILITY UNREACHABLE')
     expect(wrapper.get('.upstream-notice').text()).toContain('until EVE Online returns')
+    expect(wrapper.find('.upstream-notice-contact').exists()).toBe(false)
+  })
+
+  it('reports a partial character-data outage without declaring Tranquility unreachable', async () => {
+    const wrapper = await mountNotice({ status: 'partial' })
+
+    expect(wrapper.get('.upstream-notice').attributes('data-status')).toBe('partial')
+    expect(wrapper.get('.upstream-notice').text()).toContain('CHARACTER DATA DEGRADED')
+    expect(wrapper.get('.upstream-notice').text()).toContain(
+      'Some character data is temporarily unavailable.',
+    )
     expect(wrapper.find('.upstream-notice-contact').exists()).toBe(false)
   })
 

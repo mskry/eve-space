@@ -5,7 +5,7 @@ import { mailLabelsQuery } from '../queries/mail'
 import { canRunProtectedQuery, prefetchQuery } from '../queries/query-cache'
 import { PRIVATE_QUERY_KEYS, PUBLIC_QUERY_KEYS } from '../queries/query-keys'
 import { systemStatusQuery } from '../queries/system-status'
-import { getStaleEsiResult } from '../utils/esi-freshness'
+import { getStaleEsiResult, hasUnavailableOverviewSection } from '../utils/esi-freshness'
 import { resolveMailUnreadCount } from '../utils/mail-unread-badge'
 import { parseRouteId } from '../utils/route-id'
 
@@ -53,13 +53,26 @@ const activeCharacterStaleResult = computed(() => {
   }
   return oldest
 })
+const activeCharacterOverviewUnavailable = computed(() => {
+  const characterId = parseRouteId(route.params.characterId)
+  if (characterId === undefined) return false
+
+  return queryCache
+    .getEntries({ exact: true, key: PRIVATE_QUERY_KEYS.characterOverview(characterId) })
+    .some(
+      (entry) => entry.active && hasUnavailableOverviewSection(queryCache.getQueryData(entry.key)),
+    )
+})
 const upstreamStatus = computed(() => {
   const status = systemStatus.value?.services.esi.status
   if (status === 'unavailable') return status
+  if (activeCharacterOverviewUnavailable.value) return 'partial'
   return activeCharacterStaleResult.value ? 'stale' : status
 })
-const upstreamCheckedAt = computed(
-  () => activeCharacterStaleResult.value?.validatedAt ?? systemStatus.value?.services.esi.checkedAt,
+const upstreamCheckedAt = computed(() =>
+  activeCharacterOverviewUnavailable.value
+    ? undefined
+    : (activeCharacterStaleResult.value?.validatedAt ?? systemStatus.value?.services.esi.checkedAt),
 )
 const upstreamVip = computed(() => systemStatus.value?.services.esi.vip === true)
 const sidebarExpanded = useCookie<boolean>('eve-space-sidebar-expanded', {

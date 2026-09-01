@@ -24,3 +24,18 @@ export function getStaleEsiResult(value: unknown): StaleEsiResult | undefined {
 
   return undefined
 }
+
+export function hasUnavailableOverviewSection(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+
+  const record = value as Record<string, unknown>
+  return ['location', 'ship', 'skills'].some((key) => {
+    const section = record[key]
+    return Boolean(
+      section &&
+      typeof section === 'object' &&
+      'status' in section &&
+      section.status === 'unavailable',
+    )
+  })
+}

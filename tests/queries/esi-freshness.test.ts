@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getStaleEsiResult } from '../../app/utils/esi-freshness'
+import { getStaleEsiResult, hasUnavailableOverviewSection } from '../../app/utils/esi-freshness'
 
 describe('ESI freshness metadata', () => {
   it('reads stale metadata from the response root', () => {
@@ -33,5 +33,22 @@ describe('ESI freshness metadata', () => {
         nested: { stale: true, validatedAt: '2026-09-01T10:58:00.000Z' },
       }),
     ).toBeUndefined()
+  })
+
+  it('detects unavailable overview sections without treating authorization as an outage', () => {
+    expect(
+      hasUnavailableOverviewSection({
+        location: { status: 'ok', data: {} },
+        ship: { status: 'unavailable', message: 'ESI unavailable' },
+        skills: { status: 'scope-required' },
+      }),
+    ).toBe(true)
+    expect(
+      hasUnavailableOverviewSection({
+        location: { status: 'ok', data: {} },
+        ship: { status: 'scope-required' },
+        skills: { status: 'ok', data: {} },
+      }),
+    ).toBe(false)
   })
 })
