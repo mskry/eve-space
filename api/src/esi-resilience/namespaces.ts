@@ -1,6 +1,6 @@
 import type { EsiRepresentationIdentity } from './identity.js'
 
-export const cacheEnvelopeVersion = 'v2'
+export const cacheEnvelopeVersion = 'v3'
 export const cacheIdentityVersion = 'v2'
 const cachePrefix = `eve-space:esi-cache:${cacheEnvelopeVersion}:${cacheIdentityVersion}`
 

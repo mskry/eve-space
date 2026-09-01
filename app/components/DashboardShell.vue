@@ -3,8 +3,11 @@ import { useQuery, useQueryCache } from '@pinia/colada'
 import { adminSessionQuery } from '../queries/admin'
 import { mailLabelsQuery } from '../queries/mail'
 import { canRunProtectedQuery, prefetchQuery } from '../queries/query-cache'
-import { resolveMailUnreadCount } from '../utils/mail-unread-badge'
+import { PRIVATE_QUERY_KEYS, PUBLIC_QUERY_KEYS } from '../queries/query-keys'
 import { systemStatusQuery } from '../queries/system-status'
+import { getStaleEsiResult, hasUnavailableOverviewSection } from '../utils/esi-freshness'
+import { resolveMailUnreadCount } from '../utils/mail-unread-badge'
+import { parseRouteId } from '../utils/route-id'
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +33,48 @@ const statusLoading = computed(() => statusQuery.asyncStatus.value === 'loading'
 const statusError = computed(() => statusQuery.status.value === 'error')
 const systemStatus = computed(() => statusQuery.data.value?.telemetry)
 const apiLatencyMs = computed(() => statusQuery.data.value?.latencyMs)
+const activeCharacterStaleResult = computed(() => {
+  const characterId = parseRouteId(route.params.characterId)
+  if (characterId === undefined) return undefined
+
+  let oldest: ReturnType<typeof getStaleEsiResult>
+  for (const entry of queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.character(characterId) })) {
+    if (!entry.active) continue
+    const candidate = getStaleEsiResult(queryCache.getQueryData(entry.key))
+    if (!candidate || (oldest && candidate.validatedAt >= oldest.validatedAt)) continue
+    oldest = candidate
+  }
+  for (const entry of queryCache.getEntries({ key: PUBLIC_QUERY_KEYS.character(characterId) })) {
+    if (!entry.active) continue
+    const result = queryCache.getQueryData(entry.key) as { profile?: unknown } | undefined
+    const candidate = getStaleEsiResult(result?.profile)
+    if (!candidate || (oldest && candidate.validatedAt >= oldest.validatedAt)) continue
+    oldest = candidate
+  }
+  return oldest
+})
+const activeCharacterOverviewUnavailable = computed(() => {
+  const characterId = parseRouteId(route.params.characterId)
+  if (characterId === undefined) return false
+
+  return queryCache
+    .getEntries({ exact: true, key: PRIVATE_QUERY_KEYS.characterOverview(characterId) })
+    .some(
+      (entry) => entry.active && hasUnavailableOverviewSection(queryCache.getQueryData(entry.key)),
+    )
+})
+const upstreamStatus = computed(() => {
+  const status = systemStatus.value?.services.esi.status
+  if (status === 'unavailable') return status
+  if (activeCharacterOverviewUnavailable.value) return 'partial'
+  return activeCharacterStaleResult.value ? 'stale' : status
+})
+const upstreamCheckedAt = computed(() =>
+  activeCharacterOverviewUnavailable.value
+    ? undefined
+    : (activeCharacterStaleResult.value?.validatedAt ?? systemStatus.value?.services.esi.checkedAt),
+)
+const upstreamVip = computed(() => systemStatus.value?.services.esi.vip === true)
 const sidebarExpanded = useCookie<boolean>('eve-space-sidebar-expanded', {
   default: () => false,
   maxAge: 60 * 60 * 24 * 365,
@@ -284,6 +329,11 @@ async function handleLogout() {
       </UiDrawer>
 
       <main :class="['dashboard-content', { 'character-content': props.hideTopbar }]">
+        <AppUpstreamNotice
+          :status="upstreamStatus"
+          :checked-at="upstreamCheckedAt"
+          :vip="upstreamVip"
+        />
         <slot />
       </main>
     </div>

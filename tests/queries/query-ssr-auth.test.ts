@@ -12,23 +12,23 @@ import { createPinia } from 'pinia'
 import { createSSRApp, defineComponent, h, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
-import { unauthenticatedSession } from '../app/queries/auth'
-import { characterOverviewQuery } from '../app/queries/characters'
-import { corporationQuery } from '../app/queries/corporations'
-import { canRunProtectedQuery, clearAuthenticatedQueries } from '../app/queries/query-cache'
-import { PRIVATE_QUERY_KEYS } from '../app/queries/query-keys'
-import { systemStatusQuery } from '../app/queries/system-status'
-import { createApiClient } from '../app/utils/api-client'
-import { coladaOptions } from '../app/utils/colada-options'
+import { unauthenticatedSession } from '../../app/queries/auth'
+import { characterOverviewQuery } from '../../app/queries/characters'
+import { corporationQuery } from '../../app/queries/corporations'
+import { canRunProtectedQuery, clearAuthenticatedQueries } from '../../app/queries/query-cache'
+import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import { systemStatusQuery } from '../../app/queries/system-status'
+import { createApiClient } from '../../app/utils/api-client'
+import { coladaOptions } from '../../app/utils/colada-options'
 import {
   ApiQueryError,
   reduceApiQueryError,
   reduceNativeError,
   reviveApiQueryError,
   reviveNativeError,
-} from '../app/utils/query-error'
-import { mountWithQueryPlugins } from './support/mount-with-query-plugins'
-import { queryServer } from './support/query-server'
+} from '../../app/utils/query-error'
+import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
+import { queryServer } from '../support/query-server'
 
 describe('SSR and authentication query boundaries', () => {
   it('hydrates a public SSR result without a duplicate browser request', async () => {

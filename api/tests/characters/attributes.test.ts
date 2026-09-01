@@ -19,6 +19,18 @@ vi.mock('../../src/esi-resilience/transport.js', () => ({
 
 const characterId = 1404328063
 const revalidation = { ifNoneMatch: 'etag', ifModifiedSince: 'date' }
+const esiMetadata = {
+  cachedUntil: '2026-09-01T11:01:00.000Z',
+  validatedAt: '2026-09-01T11:00:00.000Z',
+  quota: {},
+  source: 'esi' as const,
+  stale: false,
+}
+const publicMetadata = {
+  cachedUntil: esiMetadata.cachedUntil,
+  validatedAt: esiMetadata.validatedAt,
+  stale: false,
+}
 
 beforeEach(() => {
   mocks.get.mockImplementation(async (resource) => {
@@ -26,7 +38,7 @@ beforeEach(() => {
       { accessToken: 'access-token', principal: `character-${characterId}` },
       revalidation,
     )
-    return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
+    return { data: loaded.data, ...esiMetadata }
   })
   mocks.createSkillsClient.mockReturnValue({
     withMetadata: () => ({ getAttributes: mocks.getAttributes }),
@@ -59,6 +71,7 @@ describe('character attributes', () => {
       bonusRemaps: 2,
       accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
       lastRemapDate: '2025-10-01T12:00:00Z',
+      ...publicMetadata,
     })
     expect(characterAttributesScope).toBe('esi-skills.read_skills.v1')
     expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
@@ -96,13 +109,19 @@ describe('character attributes', () => {
     mocks.get.mockResolvedValueOnce({
       data: cached,
       cachedUntil: '',
+      validatedAt: '2026-09-01T11:00:00.000Z',
       quota: {},
       source: 'cache',
       stale: false,
     })
     const { getCharacterAttributes } = await import('../../src/characters/attributes.js')
 
-    await expect(getCharacterAttributes(characterId)).resolves.toEqual(cached)
+    await expect(getCharacterAttributes(characterId)).resolves.toEqual({
+      ...cached,
+      cachedUntil: '',
+      validatedAt: '2026-09-01T11:00:00.000Z',
+      stale: false,
+    })
     expect(mocks.getAttributes).not.toHaveBeenCalled()
   })
 })

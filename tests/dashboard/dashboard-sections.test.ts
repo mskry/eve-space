@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { visibleDashboardSections } from '../app/utils/dashboard-sections'
+import { visibleDashboardSections } from '../../app/utils/dashboard-sections'
 
 describe('dashboard section visibility', () => {
   it('hides administration without a local owner session', () => {

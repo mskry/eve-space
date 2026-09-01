@@ -244,7 +244,10 @@ function validateCache(operation: string, value: unknown, issues: string[]) {
     return
   }
   if (value.stale.kind === 'none') return
-  if (value.stale.kind !== 'bounded' || !isPositiveSafeInteger(value.stale.milliseconds)) {
+  if (
+    (value.stale.kind !== 'bounded' && value.stale.kind !== 'outage') ||
+    !isPositiveSafeInteger(value.stale.milliseconds)
+  ) {
     issues.push(`operation ${operation} has an invalid bounded stale duration`)
     return
   }

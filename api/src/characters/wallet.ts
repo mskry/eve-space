@@ -4,22 +4,20 @@ import { db } from '../db/client.js'
 import { sdeTypes } from '../db/schema.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
+import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
-import type { EsiQuota } from '../esi-resilience/types.js'
+import type { EsiResultMetadata } from '../esi-resilience/types.js'
 
 export const walletScope = getCharacterEsiScope('wallet-balance')
 
-export interface WalletBalanceResult {
+interface WalletBalanceData {
   balance: number
-  cachedUntil: string
-  source: 'esi' | 'cache' | 'not-modified'
-  stale: boolean
-  retryAt?: string
-  quota: EsiQuota
 }
 
-export interface WalletTransactionsResult {
+export type WalletBalanceResult = WalletBalanceData & EsiResultMetadata
+
+interface WalletTransactionsData {
   transactions: Array<{
     transactionId: number
     date: string
@@ -33,12 +31,9 @@ export interface WalletTransactionsResult {
     clientId: number
     locationId: number
   }>
-  cachedUntil: string
-  source: 'esi' | 'cache' | 'not-modified'
-  stale: boolean
-  retryAt?: string
-  quota: EsiQuota
 }
+
+export type WalletTransactionsResult = WalletTransactionsData & EsiResultMetadata
 
 export class WalletQuotaError extends Error {
   constructor(readonly retryAfterSeconds: number) {
@@ -104,8 +99,8 @@ async function loadWalletTransactions(characterId: number) {
 
 export async function getWalletBalance(characterId: number): Promise<WalletBalanceResult> {
   try {
-    const { data, ...rest } = await loadWalletBalance(characterId)
-    return { balance: data, ...rest }
+    const result = await loadWalletBalance(characterId)
+    return { balance: result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)
   }
@@ -115,8 +110,8 @@ export async function getWalletTransactions(
   characterId: number,
 ): Promise<WalletTransactionsResult> {
   try {
-    const { data, ...rest } = await loadWalletTransactions(characterId)
-    return { transactions: data, ...rest }
+    const result = await loadWalletTransactions(characterId)
+    return { transactions: result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)
   }

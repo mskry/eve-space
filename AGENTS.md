@@ -179,7 +179,8 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 - Account for both ESI rate-limit systems: route-group floating-window buckets and the legacy global error limit. Do not operate at either limit; spread periodic work and slow down as `X-Ratelimit-Remaining` approaches zero.
 - Avoid preventable ESI errors: 2xx costs 2 bucket tokens, 3xx costs 1, 4xx costs 5 (except 429), and 5xx costs 0. Legacy error-limit headers are `X-ESI-Error-Limit-Remain` and `X-ESI-Error-Limit-Reset`.
 - For cursor-paginated routes, treat `before` and `after` tokens as opaque. Initial collection pages backward with `before`; persist the initial `after` token for incremental updates. Deduplicate by keeping existing records from `before` pages and replacing them from `after` pages.
-- Public and character-owned resource DTOs use bounded L1 plus disposable shared Cache Redis envelopes; private entries are generation-bound and never served stale.
+- Public and character-owned resource DTOs use bounded L1 plus disposable shared Cache Redis envelopes; private entries are generation-bound and are never served stale in normal operation.
+- Private entries carry an outage-only stale window bounded by their retention. It is released solely when the refresh failure classifies as `esi-unavailable` or `esi-cooldown`, never on ordinary expiry or on `response-invalid`. Generation binding still applies, so a refreshed or revoked token invalidates the entry regardless.
 
 ## Persistence
 

@@ -26,7 +26,7 @@ export interface EsiCacheResourceRevision {
 }
 
 export interface EsiCacheEnvelope<Data> {
-  version: 2
+  version: 3
   representationVersion: string
   data: Data
   freshUntil: number
@@ -55,3 +55,8 @@ export interface EsiCachedResult<Data> {
   refreshFailureClass?: 'esi-cooldown' | 'esi-unavailable' | 'response-invalid' | 'unknown'
   quota: EsiQuota
 }
+
+export type EsiResultMetadata = Pick<
+  EsiCachedResult<unknown>,
+  'cachedUntil' | 'validatedAt' | 'stale' | 'refreshFailureClass'
+>

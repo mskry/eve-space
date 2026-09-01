@@ -97,6 +97,11 @@ const altCharacter = {
 const altSubjectLifecycleId = 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011'
 const ownedAltCharacter = { ...altCharacter, subjectLifecycleId: altSubjectLifecycleId }
 const session = { userId, mainCharacter }
+const freshness = {
+  cachedUntil: '2026-09-01T11:01:00.000Z',
+  validatedAt: '2026-09-01T11:00:00.000Z',
+  stale: false,
+}
 const profile = {
   id: altCharacter.characterId,
   name: altCharacter.name,
@@ -109,7 +114,10 @@ const profile = {
   achievementScore: 10,
   corporation: { id: 1000166, name: 'Test Corp', ticker: 'TEST', memberCount: 5 },
   alliance: { id: 99000001, name: 'Test Alliance', ticker: 'ALLY' },
+  ...freshness,
 }
+const location = { solarSystemId: 30000142, solarSystemName: 'Jita', ...freshness }
+const ship = { typeId: 670, typeName: 'Capsule', name: 'My Pod', ...freshness }
 
 beforeEach(() => {
   mocks.deleteCharacter.mockResolvedValue('deleted')
@@ -126,15 +134,18 @@ beforeEach(() => {
       corporation: { id: 1000166, name: 'Test Corp' },
     },
   ])
-  mocks.getCharacterLocation.mockResolvedValue({ solarSystemId: 30000142, solarSystemName: 'Jita' })
-  mocks.getCharacterShip.mockResolvedValue({ typeId: 670, typeName: 'Capsule', name: 'My Pod' })
-  mocks.getCharacterSkillsSummary.mockResolvedValue({ totalSp: 5_000_000, unallocatedSp: 0 })
+  mocks.getCharacterLocation.mockResolvedValue(location)
+  mocks.getCharacterShip.mockResolvedValue(ship)
+  mocks.getCharacterSkillsSummary.mockResolvedValue({
+    totalSp: 5_000_000,
+    unallocatedSp: 0,
+    ...freshness,
+  })
   mocks.getWalletBalance.mockResolvedValue({
     balance: 1_234_567.89,
     cachedUntil: new Date().toISOString(),
-    source: 'esi',
+    validatedAt: new Date().toISOString(),
     stale: false,
-    quota: {},
   })
   mocks.getWalletTransactions.mockResolvedValue({
     transactions: [
@@ -153,9 +164,8 @@ beforeEach(() => {
       },
     ],
     cachedUntil: new Date().toISOString(),
-    source: 'esi',
+    validatedAt: new Date().toISOString(),
     stale: false,
-    quota: {},
   })
 })
 
@@ -181,8 +191,8 @@ describe('character roster', () => {
           birthday: profile.birthday,
           securityStatus: profile.securityStatus,
           raceFactionId: profile.raceFactionId,
-          location: { solarSystemId: 30000142, solarSystemName: 'Jita' },
-          ship: { typeId: 670, typeName: 'Capsule', name: 'My Pod' },
+          location,
+          ship,
           walletBalance: 1_234_567.89,
           totalSp: 5_000_000,
           corporation: { id: mainCharacter.corporationId, name: 'Test Corp' },
@@ -193,8 +203,8 @@ describe('character roster', () => {
           birthday: profile.birthday,
           securityStatus: profile.securityStatus,
           raceFactionId: profile.raceFactionId,
-          location: { solarSystemId: 30000142, solarSystemName: 'Jita' },
-          ship: { typeId: 670, typeName: 'Capsule', name: 'My Pod' },
+          location,
+          ship,
           walletBalance: 1_234_567.89,
           totalSp: 5_000_000,
           corporation: { id: altCharacter.corporationId, name: 'Test Corp' },
@@ -227,8 +237,8 @@ describe('character roster', () => {
           birthday: null,
           securityStatus: null,
           raceFactionId: null,
-          location: { solarSystemId: 30000142, solarSystemName: 'Jita' },
-          ship: { typeId: 670, typeName: 'Capsule', name: 'My Pod' },
+          location,
+          ship,
           walletBalance: 1_234_567.89,
           totalSp: 5_000_000,
           corporation: { id: mainCharacter.corporationId, name: 'Unknown corporation' },
@@ -239,8 +249,8 @@ describe('character roster', () => {
           birthday: null,
           securityStatus: null,
           raceFactionId: null,
-          location: { solarSystemId: 30000142, solarSystemName: 'Jita' },
-          ship: { typeId: 670, typeName: 'Capsule', name: 'My Pod' },
+          location,
+          ship,
           walletBalance: 1_234_567.89,
           totalSp: 5_000_000,
           corporation: { id: altCharacter.corporationId, name: 'Unknown corporation' },
@@ -302,14 +312,38 @@ describe('owned character overview', () => {
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({
       profile,
-      location: { status: 'ok', data: { solarSystemId: 30000142, solarSystemName: 'Jita' } },
-      ship: { status: 'ok', data: { typeId: 670, typeName: 'Capsule', name: 'My Pod' } },
-      skills: { status: 'ok', data: { totalSp: 5_000_000, unallocatedSp: 0 } },
+      location: { status: 'ok', data: location },
+      ship: { status: 'ok', data: ship },
+      skills: {
+        status: 'ok',
+        data: { totalSp: 5_000_000, unallocatedSp: 0, ...freshness },
+      },
+      ...freshness,
     })
     expect(mocks.getCharacterProfile).toHaveBeenCalledWith(altCharacter.characterId)
     expect(mocks.getCharacterLocation).toHaveBeenCalledWith(altCharacter.characterId)
     expect(mocks.getCharacterShip).toHaveBeenCalledWith(altCharacter.characterId)
     expect(mocks.getCharacterSkillsSummary).toHaveBeenCalledWith(altCharacter.characterId)
+  })
+
+  test('reports stale location and ship metadata at the overview root', async () => {
+    mocks.getCharacterShip.mockResolvedValue({
+      ...ship,
+      cachedUntil: '2026-09-01T10:59:00.000Z',
+      validatedAt: '2026-09-01T10:58:00.000Z',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+
+    const response = await authorizedRequest(`/${altCharacter.characterId}`)
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      cachedUntil: '2026-09-01T10:59:00.000Z',
+      validatedAt: '2026-09-01T10:58:00.000Z',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
   })
 
   test('returns character-bound reauthorization links for scope failures', async () => {

@@ -1,11 +1,13 @@
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance'
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
-import { getCorporationPublic } from '../corporations/public-data.js'
+import { getCorporationPublicResult } from '../corporations/public-data.js'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
+import { combineEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
 import { getEsiOperationContract } from '../esi-resilience/catalog.js'
+import type { EsiResultMetadata } from '../esi-resilience/types.js'
 
 // Only the four empire races are playable. These are faction IDs, which the EVE image server
 // serves as empire emblems under its corporations category.
@@ -16,7 +18,7 @@ const raceFactionIds: Record<number, number> = {
   8: 500_004, // Gallente Federation
 }
 
-interface CharacterProfile {
+interface CharacterProfileData {
   id: number
   name: string
   birthday: string
@@ -42,19 +44,20 @@ interface CharacterProfile {
   } | null
 }
 
+type CharacterProfile = CharacterProfileData & EsiResultMetadata
+
 export async function getCharacterProfile(characterId: number) {
-  const character = (
-    await getEsiResilienceLayer().getPublic({
-      operation: 'public-character',
-      inputs: { characterId },
-      load: (revalidation) =>
-        createCharacterClient({ fetch: createEsiTransport('public-character') })
-          .withMetadata()
-          .getPublicInfo(characterId, revalidation),
-    })
-  ).data
-  const [corporation, races, bloodlines, alliance] = await Promise.all([
-    getCorporationPublic(character.corporation_id),
+  const characterResult = await getEsiResilienceLayer().getPublic({
+    operation: 'public-character',
+    inputs: { characterId },
+    load: (revalidation) =>
+      createCharacterClient({ fetch: createEsiTransport('public-character') })
+        .withMetadata()
+        .getPublicInfo(characterId, revalidation),
+  })
+  const character = characterResult.data
+  const [corporationResult, races, bloodlines, alliance] = await Promise.all([
+    getCorporationPublicResult(character.corporation_id),
     getEsiResilienceLayer().getPublic({
       operation: 'universe-races',
       inputs: {},
@@ -87,7 +90,15 @@ export async function getCharacterProfile(characterId: number) {
       : Promise.resolve(null),
   ])
 
+  const corporation = corporationResult.data
   const race = races.data.find((entry) => entry.race_id === character.race_id)
+  const metadata = combineEsiResultMetadata([
+    characterResult,
+    corporationResult,
+    races,
+    bloodlines,
+    ...(alliance ? [alliance] : []),
+  ])
 
   const profile: CharacterProfile = {
     id: characterId,
@@ -119,6 +130,7 @@ export async function getCharacterProfile(characterId: number) {
             ticker: alliance.data.ticker,
           }
         : null,
+    ...metadata,
   }
 
   return profile

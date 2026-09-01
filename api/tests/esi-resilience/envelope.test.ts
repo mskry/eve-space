@@ -32,7 +32,7 @@ describe('ESI cache envelopes', () => {
     })
 
     expect(envelope).toMatchObject({
-      version: 2,
+      version: 3,
       representationVersion: 'v1',
       freshUntil: now + 60_000,
       staleUntil: now + 3_660_000,
@@ -138,7 +138,7 @@ describe('ESI cache envelopes', () => {
     })
   })
 
-  test('retains private validators without permitting stale serving and bounds L1 by recency', () => {
+  test('retains private validators behind an outage-only stale window and bounds L1 by recency', () => {
     const privateEnvelope = createCacheEnvelope({
       data: 5,
       fence: 1,
@@ -153,8 +153,9 @@ describe('ESI cache envelopes', () => {
     cache.set('third', privateEnvelope)
 
     expect(privateEnvelope.retainUntil).toBeGreaterThan(privateEnvelope.freshUntil)
-    expect(privateEnvelope.staleUntil).toBe(privateEnvelope.freshUntil)
-    expect(isEnvelopeStaleUsable(privateEnvelope, privateEnvelope.freshUntil)).toBe(false)
+    expect(privateEnvelope.staleUntil).toBe(privateEnvelope.retainUntil)
+    expect(isEnvelopeStaleUsable(privateEnvelope, privateEnvelope.freshUntil)).toBe(true)
+    expect(isEnvelopeStaleUsable(privateEnvelope, privateEnvelope.retainUntil)).toBe(false)
     expect(cache.get('first')).toBeDefined()
     expect(cache.get('second')).toBeUndefined()
     expect(cache.get('third')).toBeDefined()

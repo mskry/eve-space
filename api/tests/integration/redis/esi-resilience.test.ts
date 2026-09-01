@@ -307,7 +307,7 @@ describe('ESI resilience Redis coordination', () => {
     await cache.set(
       cacheEnvelopeKey(namespace, resource),
       JSON.stringify({
-        version: 2,
+        version: 3,
         representationVersion: resource.representationVersion,
         data: { name: 'cached' },
         freshUntil,

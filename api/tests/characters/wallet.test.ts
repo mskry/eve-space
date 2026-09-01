@@ -61,6 +61,7 @@ beforeEach(() => {
     return {
       data: loaded.data,
       cachedUntil: '2026-08-20T12:01:00.000Z',
+      validatedAt: '2026-08-20T12:00:00.000Z',
       quota: { remaining: 149 },
       source: 'esi',
       stale: false,
@@ -83,6 +84,7 @@ describe('wallet service', () => {
       return {
         data: loaded.data,
         cachedUntil: '2026-08-20T12:01:00.000Z',
+        validatedAt: '2026-08-20T12:00:00.000Z',
         quota: {},
         source: 'esi',
         stale: false,
@@ -92,8 +94,7 @@ describe('wallet service', () => {
 
     await expect(getWalletBalance(90_000_001)).resolves.toMatchObject({
       balance: 123.45,
-      source: 'esi',
-      quota: {},
+      validatedAt: '2026-08-20T12:00:00.000Z',
     })
 
     expect(calls).toEqual(['cache-read'])
@@ -104,10 +105,11 @@ describe('wallet service', () => {
     })
   })
 
-  test('preserves cache provenance without reporting a historical quota snapshot', async () => {
+  test('preserves cache freshness without publishing internal provenance or quota', async () => {
     mocks.get.mockResolvedValueOnce({
       data: 500,
       cachedUntil: '2026-08-20T12:05:00.000Z',
+      validatedAt: '2026-08-20T12:00:00.000Z',
       quota: {},
       source: 'cache',
       stale: false,
@@ -117,17 +119,17 @@ describe('wallet service', () => {
     await expect(getWalletBalance(90_000_002)).resolves.toEqual({
       balance: 500,
       cachedUntil: '2026-08-20T12:05:00.000Z',
-      quota: {},
-      source: 'cache',
+      validatedAt: '2026-08-20T12:00:00.000Z',
       stale: false,
     })
     expect(mocks.getCharacterBalance).not.toHaveBeenCalled()
   })
 
-  test('preserves not-modified provenance from a resilient envelope refresh', async () => {
+  test('projects freshness from a not-modified resilient envelope refresh', async () => {
     mocks.get.mockResolvedValueOnce({
       data: 500,
       cachedUntil: '2026-08-20T12:05:00.000Z',
+      validatedAt: '2026-08-20T12:00:00.000Z',
       quota: { remaining: 100 },
       source: 'not-modified',
       stale: false,
@@ -136,8 +138,7 @@ describe('wallet service', () => {
 
     await expect(getWalletBalance(90_000_005)).resolves.toMatchObject({
       balance: 500,
-      source: 'not-modified',
-      quota: { remaining: 100 },
+      validatedAt: '2026-08-20T12:00:00.000Z',
     })
   })
 
@@ -172,7 +173,6 @@ describe('wallet service', () => {
     const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
     await expect(getWalletTransactions(90_000_004)).resolves.toMatchObject({
-      source: 'esi',
       transactions: [
         { transactionId: 1, typeName: 'Pyerite' },
         { transactionId: 2, typeName: 'Tritanium' },

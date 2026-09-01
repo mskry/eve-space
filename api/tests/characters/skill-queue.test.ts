@@ -33,6 +33,18 @@ vi.mock('../../src/esi-resilience/transport.js', () => ({
 
 const characterId = 1404328063
 const revalidation = { ifNoneMatch: 'etag', ifModifiedSince: 'date' }
+const esiMetadata = {
+  cachedUntil: '2026-09-01T11:01:00.000Z',
+  validatedAt: '2026-09-01T11:00:00.000Z',
+  quota: {},
+  source: 'esi' as const,
+  stale: false,
+}
+const publicMetadata = {
+  cachedUntil: esiMetadata.cachedUntil,
+  validatedAt: esiMetadata.validatedAt,
+  stale: false,
+}
 
 beforeEach(() => {
   mocks.get.mockImplementation(async (resource) => {
@@ -40,7 +52,7 @@ beforeEach(() => {
       { accessToken: 'access-token', principal: `character-${characterId}` },
       revalidation,
     )
-    return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
+    return { data: loaded.data, ...esiMetadata }
   })
   mocks.createSkillsClient.mockReturnValue({
     withMetadata: () => ({ getSkillQueue: mocks.getSkillQueue }),
@@ -78,6 +90,7 @@ describe('character skill queue', () => {
       await import('../../src/characters/skill-queue.js')
 
     await expect(getCharacterSkillQueue(characterId)).resolves.toMatchObject({
+      ...publicMetadata,
       entries: [
         {
           queuePosition: 1,
@@ -134,6 +147,7 @@ describe('character skill queue', () => {
     mocks.get.mockResolvedValueOnce({
       data: { entries: [] },
       cachedUntil: '',
+      validatedAt: '2026-09-01T11:00:00.000Z',
       quota: {},
       source: 'cache',
       stale: false,
@@ -144,6 +158,9 @@ describe('character skill queue', () => {
       state: 'empty',
       activeQueuePosition: null,
       entries: [],
+      cachedUntil: '',
+      validatedAt: '2026-09-01T11:00:00.000Z',
+      stale: false,
     })
     expect(mocks.getSkillQueue).not.toHaveBeenCalled()
     expect(mocks.select).not.toHaveBeenCalled()
@@ -157,6 +174,7 @@ describe('character skill queue', () => {
     mocks.get.mockResolvedValue({
       data: { entries },
       cachedUntil: '',
+      validatedAt: '2026-09-01T11:00:00.000Z',
       quota: {},
       source: 'cache',
       stale: false,
