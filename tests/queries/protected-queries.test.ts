@@ -10,14 +10,14 @@ import {
   characterSkillQueueQuery,
   characterSkillsQuery,
   type CharacterOverview,
-} from '../app/queries/characters'
-import { removeCharacterQueries } from '../app/queries/query-cache'
-import { PRIVATE_QUERY_KEYS } from '../app/queries/query-keys'
-import { walletQuery, walletTransactionsQuery } from '../app/queries/wallet'
-import { createApiClient } from '../app/utils/api-client'
-import { ApiQueryError } from '../app/utils/query-error'
-import { mountWithQueryPlugins } from './support/mount-with-query-plugins'
-import { queryServer } from './support/query-server'
+} from '../../app/queries/characters'
+import { removeCharacterQueries } from '../../app/queries/query-cache'
+import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import { walletQuery, walletTransactionsQuery } from '../../app/queries/wallet'
+import { createApiClient } from '../../app/utils/api-client'
+import { ApiQueryError } from '../../app/utils/query-error'
+import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
+import { queryServer } from '../support/query-server'
 
 describe('protected character queries', () => {
   it('deduplicates a shared character request', async () => {

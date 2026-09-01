@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inferCloneState } from '../app/utils/clone-state'
+import { inferCloneState } from '../../app/utils/clone-state'
 
 describe('clone state inference', () => {
   it('infers alpha when a trained skill level is inactive', () => {

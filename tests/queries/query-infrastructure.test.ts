@@ -3,11 +3,11 @@ import { flushPromises } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
 import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PRIVATE_QUERY_KEYS } from '../app/queries/query-keys'
-import { queryRetryDelay, shouldRetryQuery } from '../app/utils/colada-options'
-import { ApiQueryError, toApiQueryError } from '../app/utils/query-error'
-import { mountWithQueryPlugins } from './support/mount-with-query-plugins'
-import { queryServer } from './support/query-server'
+import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import { queryRetryDelay, shouldRetryQuery } from '../../app/utils/colada-options'
+import { ApiQueryError, toApiQueryError } from '../../app/utils/query-error'
+import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
+import { queryServer } from '../support/query-server'
 
 afterEach(() => {
   vi.useRealTimers()

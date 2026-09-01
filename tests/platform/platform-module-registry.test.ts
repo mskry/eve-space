@@ -6,14 +6,14 @@ import {
   PlatformModuleValidationError,
   validatePlatformModuleManifests,
   type PlatformModuleManifest,
-} from '../packages/platform-module-contract/src/index'
-import { definePlatformExecutableEsiOperation } from '../packages/platform-module-server/src/index'
-import { coreModuleValidationAuthorities } from '../scripts/module-registry/authorities'
-import { generateRegistryFiles } from '../scripts/module-registry/generator'
-import { moduleServerImportViolations } from '../scripts/module-registry/server-boundaries'
-import { loadFeatureServerSources } from '../scripts/module-registry/server-sources'
-import { moduleNuxtBoundaryViolations } from '../scripts/module-registry/nuxt-boundaries'
-import { moduleServerSourceExtensions } from '../scripts/module-registry/source-extensions.mjs'
+} from '../../packages/platform-module-contract/src/index'
+import { definePlatformExecutableEsiOperation } from '../../packages/platform-module-server/src/index'
+import { coreModuleValidationAuthorities } from '../../scripts/module-registry/authorities'
+import { generateRegistryFiles } from '../../scripts/module-registry/generator'
+import { moduleServerImportViolations } from '../../scripts/module-registry/server-boundaries'
+import { loadFeatureServerSources } from '../../scripts/module-registry/server-sources'
+import { moduleNuxtBoundaryViolations } from '../../scripts/module-registry/nuxt-boundaries'
+import { moduleServerSourceExtensions } from '../../scripts/module-registry/source-extensions.mjs'
 
 describe('platform module declarations', () => {
   it('rejects Nuxt source that performs runtime or server work', () => {

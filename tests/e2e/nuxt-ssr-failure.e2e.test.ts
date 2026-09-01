@@ -3,7 +3,7 @@
 import { $fetch, createPage, setup, useTestContext } from '@nuxt/test-utils/e2e'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { startCorsJsonApi } from './support/cors-json-api'
+import { startCorsJsonApi } from '../support/cors-json-api'
 
 let apiAvailable = false
 const apiServer = await startCorsJsonApi((request) => {
@@ -43,7 +43,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     nuxtConfig: {
       nitro: {
         output: {
-          dir: fileURLToPath(new URL('../.output', import.meta.url)),
+          dir: fileURLToPath(new URL('../../.output', import.meta.url)),
         },
       },
     },

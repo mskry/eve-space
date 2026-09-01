@@ -2,12 +2,12 @@ import { useQuery } from '@pinia/colada'
 import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import { authSessionQuery } from '../app/queries/auth'
-import { prefetchProtectedQuery, prefetchQuery } from '../app/queries/query-cache'
-import { createApiClient } from '../app/utils/api-client'
-import { QUERY_ERROR_EVENT } from '../app/utils/colada-options'
-import { ApiQueryError } from '../app/utils/query-error'
-import { mountWithQueryPlugins } from './support/mount-with-query-plugins'
+import { authSessionQuery } from '../../app/queries/auth'
+import { prefetchProtectedQuery, prefetchQuery } from '../../app/queries/query-cache'
+import { createApiClient } from '../../app/utils/api-client'
+import { QUERY_ERROR_EVENT } from '../../app/utils/colada-options'
+import { ApiQueryError } from '../../app/utils/query-error'
+import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 
 describe('query prefetching and hooks', () => {
   it('opts the production session query into the centralized error policy', () => {
