@@ -61,6 +61,7 @@ const session = {
 const skills = {
   totalSp: 1000,
   unallocatedSp: 0,
+  injectedSkillCount: 1,
   groups: [
     {
       groupId: 10,
@@ -70,6 +71,7 @@ const skills = {
         {
           typeId: 3300,
           name: 'Gunnery',
+          injected: true,
           activeLevel: 3,
           trainedLevel: 4,
           skillpoints: 1000,
@@ -96,6 +98,20 @@ describe('character skills route', () => {
     expect(response.headers.get('vary')).toBe('Cookie')
   })
 
+  test('requires an application session before ownership or skills access', async () => {
+    const response = await characterRoutes.request(`/${character.characterId}/skills`)
+
+    expect(response.status).toBe(401)
+    await expect(response.json()).resolves.toEqual({
+      code: 'AUTH_REQUIRED',
+      message: 'Log in with EVE Online first.',
+    })
+    expect(mocks.findSession).not.toHaveBeenCalled()
+    expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
+    expect(mocks.getCharacterSkills).not.toHaveBeenCalled()
+    expectPrivateHeaders(response)
+  })
+
   test('validates malformed IDs before session and ownership access', async () => {
     const response = await authorizedRequest('/invalid/skills')
 
@@ -103,6 +119,7 @@ describe('character skills route', () => {
     expect(mocks.findSession).not.toHaveBeenCalled()
     expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
     expect(mocks.getCharacterSkills).not.toHaveBeenCalled()
+    expectPrivateHeaders(response)
   })
 
   test('returns the same 404 for non-owned characters before protected service access', async () => {
@@ -116,6 +133,7 @@ describe('character skills route', () => {
       message: 'Character not found.',
     })
     expect(mocks.getCharacterSkills).not.toHaveBeenCalled()
+    expectPrivateHeaders(response)
   })
 
   test('returns a character-bound scope-required response without token material', async () => {
@@ -133,6 +151,7 @@ describe('character skills route', () => {
     })
     expect(JSON.stringify(body)).not.toMatch(/access.token|refresh.token|encrypted/i)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(response.headers.get('vary')).toBe('Cookie')
   })
 
   test('maps rejected ESI authorization to reauthorization for the exact character', async () => {
@@ -149,6 +168,7 @@ describe('character skills route', () => {
       requiredScope: 'esi-skills.read_skills.v1',
       authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${character.characterId}`,
     })
+    expectPrivateHeaders(response)
   })
 
   test('maps unexpected ESI failures to a safe temporary failure', async () => {
@@ -161,6 +181,7 @@ describe('character skills route', () => {
       code: 'ESI_UNAVAILABLE',
       message: 'EVE Online ESI is temporarily unavailable.',
     })
+    expectPrivateHeaders(response)
   })
 
   test('maps ESI concurrency and cooldown deferrals to a retryable response', async () => {
@@ -175,6 +196,7 @@ describe('character skills route', () => {
       message: 'EVE Online ESI is temporarily rate limited.',
       retryAfterSeconds: 12,
     })
+    expectPrivateHeaders(response)
   })
 
   test('maps token refresh contention to a controlled unavailable response', async () => {
@@ -187,6 +209,7 @@ describe('character skills route', () => {
       code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
       message: 'EVE token refresh is temporarily unavailable. Try again shortly.',
     })
+    expectPrivateHeaders(response)
   })
 })
 
@@ -194,4 +217,9 @@ function authorizedRequest(path: string) {
   return characterRoutes.request(path, {
     headers: { Cookie: 'eve_space_session=active-session' },
   })
+}
+
+function expectPrivateHeaders(response: Response) {
+  expect(response.headers.get('cache-control')).toBe('private, no-store')
+  expect(response.headers.get('vary')).toBe('Cookie')
 }

@@ -120,7 +120,12 @@ function queryAuthorizeUrl(error: unknown) {
           :attributes-authorize-url="attributesAuthorizeUrl"
           @retry-attributes="attributesQuery.refetch()"
         />
-        <CharacterSkillsCatalogue :skills="skills" :skill-queue="skillQueue" />
+        <CharacterSkillsCatalogue
+          :key="characterId"
+          :skills="skills"
+          :skill-queue="skillQueue"
+          :skill-queue-status="skillQueueStatus"
+        />
       </section>
 
       <CharacterSkillsQueue

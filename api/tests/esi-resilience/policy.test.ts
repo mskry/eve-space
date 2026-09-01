@@ -87,6 +87,9 @@ describe('ESI operation policies', () => {
     expect(getEsiOperationContract('public-corporation')).toMatchObject({
       representationVersion: 'v2',
     })
+    expect(getEsiOperationContract('skills')).toMatchObject({
+      representationVersion: 'v2',
+    })
     expect(esiOperationMetadata['universe-resolve-names']).toMatchObject({
       cache: { kind: 'runtime-only' },
     })

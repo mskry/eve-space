@@ -5,29 +5,36 @@ import { queuedLevelsByType, romanLevel } from '../../../utils/skill-queue'
 import {
   groupKeyOf,
   indexSkills,
+  isInjectedOnly,
   levelCells,
   levelDescription,
   resolveActiveGroupKey,
+  resolveInitialGroupKey,
   selectVisibleSkills,
   summariseGroups,
+  type GroupSummary,
   type IndexedSkill,
 } from '../../../utils/skill-catalogue'
 
 const props = defineProps<{
   skills: CharacterSkills
   skillQueue: CharacterSkillQueue | undefined
+  skillQueueStatus: 'idle' | 'loading' | 'scope-required' | 'error'
 }>()
 
 const search = ref('')
 const searchTerm = computed(() => search.value.trim())
 const searchTokens = computed(() => searchTerm.value.toLowerCase().split(/\s+/).filter(Boolean))
 const searching = computed(() => searchTokens.value.length > 0)
-const levelFilter = ref<'all' | 'partial' | 'v'>('all')
+const levelFilter = ref<'all' | 'untrained' | 'progress' | 'v'>('all')
 const levelFilters = [
   { id: 'all', label: 'ALL' },
-  { id: 'partial', label: 'BELOW V' },
+  { id: 'untrained', label: 'UNTRAINED' },
+  { id: 'progress', label: 'IN PROGRESS' },
   { id: 'v', label: 'AT V' },
 ] as const
+const queuedOnly = ref(false)
+const revealedSkillNameId = ref<number | null>(null)
 const groups = computed(() => props.skills.groups)
 const fuseOptions = {
   keys: ['name'],
@@ -73,11 +80,28 @@ const searchMatches = computed(() =>
       }
     : null,
 )
-const visibleSkills = computed(() =>
+const queuedLevels = computed(() => queuedLevelsByType(props.skillQueue))
+const hasQueuedSkills = computed(() => queuedLevels.value.size > 0)
+const queuedFilterDisabled = computed(
+  () => !queuedOnly.value && (props.skillQueueStatus !== 'idle' || !hasQueuedSkills.value),
+)
+const queuedFilterLabel = computed(() => {
+  if (queuedOnly.value) return 'Show all catalogue skills'
+  if (props.skillQueueStatus === 'loading') return 'Skill queue is loading'
+  if (props.skillQueueStatus === 'scope-required') return 'Skill queue authorization required'
+  if (props.skillQueueStatus === 'error') return 'Skill queue unavailable'
+  return hasQueuedSkills.value ? 'Show queued skills only' : 'No queued skills available'
+})
+const filteredSkills = computed(() =>
   selectVisibleSkills(indexedSkills.value, levelFilter.value, searchMatches.value),
 )
+const visibleSkills = computed(() =>
+  queuedOnly.value
+    ? filteredSkills.value.filter((skill) => queuedLevels.value.has(skill.typeId))
+    : filteredSkills.value,
+)
 const groupSummaries = computed(() => summariseGroups(groups.value, visibleSkills.value))
-const selectedGroupKey = ref<string | null>(null)
+const selectedGroupKey = ref<string | null>(resolveInitialGroupKey(groups.value))
 const activeGroupKey = computed(() =>
   resolveActiveGroupKey(groupSummaries.value, selectedGroupKey.value, searching.value),
 )
@@ -88,6 +112,15 @@ const activeGroup = computed(() =>
 function selectGroup(key: string) {
   selectedGroupKey.value = key
   search.value = ''
+}
+
+function revealTruncatedSkillName(typeId: number, event: MouseEvent) {
+  const name = event.currentTarget as HTMLElement
+  revealedSkillNameId.value = name.scrollWidth > name.clientWidth ? typeId : null
+}
+
+function hideSkillName(typeId: number) {
+  if (revealedSkillNameId.value === typeId) revealedSkillNameId.value = null
 }
 
 const rows = computed(() =>
@@ -103,14 +136,47 @@ const listTitle = computed(() =>
 )
 const listMeta = computed(() =>
   searching.value
-    ? `${rows.value.length} SKILLS ACROSS ${rowsGroupCount.value} GROUPS`
-    : `${rows.value.length} SKILLS / ${rowsAtFive.value} AT V`,
+    ? `${rows.value.length} CATALOGUE SKILLS ACROSS ${rowsGroupCount.value} GROUPS`
+    : `${rows.value.length} CATALOGUE SKILLS / ${rowsAtFive.value} AT V`,
 )
-const matchLabel = computed(() =>
-  searching.value
-    ? `${rows.value.length} SKILLS MATCHED`
-    : `${groups.value.length} GROUPS / ${indexedSkills.value.length} SKILLS`,
+const visibleGroupCount = computed(
+  () => groupSummaries.value.filter((group) => group.count > 0).length,
 )
+const resultsRefined = computed(
+  () => searching.value || levelFilter.value !== 'all' || queuedOnly.value,
+)
+const compactResultStatus = computed(() => {
+  const resultLabel = searching.value
+    ? pluralize(visibleSkills.value.length, 'MATCH', 'MATCHES')
+    : pluralize(visibleSkills.value.length, 'SKILL', 'SKILLS')
+  const groupWord = visibleGroupCount.value === 1 ? 'GROUP' : 'GROUPS'
+  return `${visibleSkills.value.length} ${resultLabel} / ${visibleGroupCount.value} ${groupWord}`
+})
+const resultAnnouncement = computed(() => {
+  const skillLabel = visibleSkills.value.length === 1 ? 'SKILL' : 'SKILLS'
+  const groupWord = visibleGroupCount.value === 1 ? 'GROUP' : 'GROUPS'
+  return `${visibleSkills.value.length} CATALOGUE ${skillLabel}${searching.value ? ' MATCHED' : ''} ACROSS ${visibleGroupCount.value} ${groupWord}`
+})
+const announcedResult = ref('')
+let announcementTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(
+  resultAnnouncement,
+  (announcement) => {
+    if (announcementTimer) clearTimeout(announcementTimer)
+    if (!searching.value) {
+      announcedResult.value = announcement
+      return
+    }
+    announcementTimer = setTimeout(() => {
+      announcedResult.value = announcement
+    }, 300)
+  },
+  { immediate: true },
+)
+onUnmounted(() => {
+  if (announcementTimer) clearTimeout(announcementTimer)
+})
 
 useCustomHighlight({
   highlightName: 'skill-search',
@@ -118,14 +184,25 @@ useCustomHighlight({
   selector: '.skill-row-name, .skill-group-chip-name',
 })
 
-const queuedLevels = computed(() => queuedLevelsByType(props.skillQueue))
-
 function skillLevelCells(skill: IndexedSkill) {
   return levelCells(skill, queuedLevels.value.get(skill.typeId) ?? 0)
 }
 
 function skillLevelDescription(skill: IndexedSkill) {
   return levelDescription(skill, queuedLevels.value.get(skill.typeId) ?? 0)
+}
+
+function skillIsInjectedOnly(skill: IndexedSkill) {
+  return isInjectedOnly(skill, queuedLevels.value.get(skill.typeId) ?? 0)
+}
+
+function groupLabel(group: GroupSummary) {
+  const skillLabel = group.count === 1 ? 'catalogue skill' : 'catalogue skills'
+  return `${group.name}, ${group.count} ${skillLabel}, ${group.progressPercent}% of skill levels trained`
+}
+
+function pluralize(count: number, singular: string, plural: string) {
+  return count === 1 ? singular : plural
 }
 </script>
 
@@ -138,34 +215,63 @@ function skillLevelDescription(skill: IndexedSkill) {
           type="search"
           autocomplete="off"
           placeholder="Search skills or groups"
-          aria-label="Search skills by name or group"
+          aria-label="Search catalogue skills by skill or group name"
         />
       </UiToolbar>
-      <fieldset class="skills-level-filter">
-        <legend class="sr-only">Filter skills by trained level</legend>
+      <span
+        class="app-search-status skills-match-status"
+        :class="{ 'is-visible': resultsRefined }"
+        aria-hidden="true"
+      >
+        {{ compactResultStatus }}
+      </span>
+      <div class="skills-filter-controls">
+        <fieldset class="skills-level-filter">
+          <legend class="sr-only">Filter skills by trained level</legend>
+          <button
+            v-for="filter in levelFilters"
+            :key="filter.id"
+            type="button"
+            :class="{ 'is-selected': levelFilter === filter.id }"
+            :aria-pressed="levelFilter === filter.id"
+            @click="levelFilter = filter.id"
+          >
+            {{ filter.label }}
+          </button>
+        </fieldset>
         <button
-          v-for="filter in levelFilters"
-          :key="filter.id"
           type="button"
-          :class="{ 'is-selected': levelFilter === filter.id }"
-          :aria-pressed="levelFilter === filter.id"
-          @click="levelFilter = filter.id"
+          class="skills-queued-filter"
+          :class="{ 'is-selected': queuedOnly }"
+          :disabled="queuedFilterDisabled"
+          :aria-pressed="queuedOnly"
+          :aria-label="queuedFilterLabel"
+          @click="queuedOnly = !queuedOnly"
         >
-          {{ filter.label }}
+          QUEUED ONLY
         </button>
-      </fieldset>
-      <span class="app-search-status skills-match-status" aria-live="polite">
-        {{ matchLabel }}
+      </div>
+      <span class="sr-only skills-result-announcement" aria-live="polite">
+        {{ announcedResult }}
       </span>
     </div>
 
+    <output
+      v-if="skills.injectedSkillCount === 0 && skills.groups.length > 0"
+      class="skill-catalogue-notice"
+    >
+      <span class="ui-eyebrow">00 / NO INJECTED SKILLS</span>
+      This character has no injected skills. The complete catalogue is shown at level 0.
+    </output>
+
     <UiStatePanel
       v-if="skills.groups.length === 0"
-      code="00 / NO RECORDS"
-      title="No trained skills returned"
+      code="NO CATALOGUE"
+      title="Skill catalogue unavailable"
       compact
+      role="status"
     >
-      <p>This character's authorized ESI skill archive is currently empty.</p>
+      <p>No published skills are available. Retry after static data ingestion completes.</p>
     </UiStatePanel>
 
     <template v-else>
@@ -181,7 +287,9 @@ function skillLevelDescription(skill: IndexedSkill) {
             'is-vacant': group.count === 0,
             'is-unknown': group.groupId === null,
           }"
+          :style="{ '--skill-group-progress': `${group.progressPercent}%` }"
           :disabled="group.count === 0"
+          :aria-label="groupLabel(group)"
           :aria-pressed="group.key === activeGroupKey"
           @click="selectGroup(group.key)"
         >
@@ -199,12 +307,23 @@ function skillLevelDescription(skill: IndexedSkill) {
             <span><i class="is-active" aria-hidden="true" />ACTIVE</span>
             <span><i class="is-trained" aria-hidden="true" />TRAINED</span>
             <span><i class="is-queued" aria-hidden="true" />QUEUED</span>
+            <span><i class="is-injected" aria-hidden="true" />INJECTED</span>
           </span>
-          <span class="skill-list-sp">{{ rowsSp.toLocaleString('en-US') }} SP</span>
+          <span
+            class="skill-list-sp"
+            :aria-label="`${rowsSp.toLocaleString('en-US')} trained skill points`"
+          >
+            {{ rowsSp.toLocaleString('en-US') }} TRAINED SP
+          </span>
         </div>
 
         <ul v-if="rows.length" class="skill-list">
-          <li v-for="skill in rows" :key="skill.typeId" class="skill-row">
+          <li
+            v-for="skill in rows"
+            :key="skill.typeId"
+            class="skill-row"
+            :class="{ 'is-injected': skillIsInjectedOnly(skill) }"
+          >
             <span class="skill-level-track" :aria-label="skillLevelDescription(skill)">
               <i
                 v-for="cell in skillLevelCells(skill)"
@@ -217,11 +336,25 @@ function skillLevelDescription(skill: IndexedSkill) {
                 aria-hidden="true"
               />
             </span>
-            <span class="skill-row-name">{{ skill.name }}</span>
-            <span class="skill-row-sp">{{ skill.skillpoints.toLocaleString('en-US') }} SP</span>
+            <span
+              class="skill-row-name"
+              :class="{ 'is-revealed': revealedSkillNameId === skill.typeId }"
+              :data-full-name="skill.name"
+              @mouseenter="revealTruncatedSkillName(skill.typeId, $event)"
+              @mouseleave="hideSkillName(skill.typeId)"
+            >
+              {{ skill.name }}
+            </span>
+            <span
+              class="skill-row-sp"
+              :aria-label="`${skill.skillpoints.toLocaleString('en-US')} trained skill points`"
+            >
+              {{ skill.skillpoints.toLocaleString('en-US') }} SP
+            </span>
             <span
               class="skill-row-level"
               :class="{ 'is-partial': skill.activeLevel < skill.trainedLevel }"
+              :aria-label="`Trained level ${skill.trainedLevel}`"
             >
               {{ romanLevel(skill.trainedLevel) }}
             </span>

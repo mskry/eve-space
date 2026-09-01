@@ -15,6 +15,7 @@ export const skillGroupIconNames = [
   'fleet-support',
   'science',
   'production',
+  'sequencing',
   'resource-processing',
   'trade',
   'planet-management',

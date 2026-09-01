@@ -15,6 +15,8 @@ describe('skills catalogue markup', () => {
   it('keeps the route focused on orchestration and composes feature components', () => {
     expect(route).toContain('<CharacterSkillsSummaryCard')
     expect(route).toContain('<CharacterSkillsCatalogue')
+    expect(route).toContain(':key="characterId"')
+    expect(route).toContain(':skill-queue-status="skillQueueStatus"')
     expect(route).toContain('<CharacterSkillsQueue')
     expect(route).not.toContain('new Fuse(')
     expect(route).not.toContain('setInterval(')
@@ -36,10 +38,18 @@ describe('skills catalogue markup', () => {
     expect(features).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))')
     expect(features).toContain('grid-template-columns: auto minmax(0, 1fr) auto')
     expect(responsive).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
+    expect(features).toContain('.skill-group-chip::after')
+    expect(features).toContain('clip-path: var(--skill-chip-shape)')
+    expect(features).toContain('border-shape: var(--skill-chip-shape)')
+    expect(features).toMatch(
+      /\.skill-group-chip::before \{[^}]*calc\(var\(--skill-chip-notch\) - 0\.0625rem\)/s,
+    )
+    expect(features).not.toMatch(/\.skill-group-chip \{[^}]*overflow: hidden/s)
   })
 
   it('marks selection and vacancy on group chips programmatically', () => {
     expect(page).toContain(':aria-pressed="group.key === activeGroupKey"')
+    expect(page).toContain(':aria-label="groupLabel(group)"')
     expect(page).toContain(':disabled="group.count === 0"')
     expect(page).toContain("'is-vacant': group.count === 0")
   })
@@ -49,19 +59,47 @@ describe('skills catalogue markup', () => {
     expect(page).toContain('<legend class="sr-only">Filter skills by trained level</legend>')
     expect(page).not.toContain('role="group"')
     expect(page).toContain(':aria-pressed="levelFilter === filter.id"')
-    expect(page).toContain("{ id: 'partial', label: 'BELOW V' }")
+    expect(page).toContain("{ id: 'untrained', label: 'UNTRAINED' }")
+    expect(page).toContain("{ id: 'progress', label: 'IN PROGRESS' }")
     expect(page).toContain("{ id: 'v', label: 'AT V' }")
+    expect(page).toContain('class="skills-queued-filter"')
+  })
+
+  it('keeps the result label beside search and aligns filter controls to the right', () => {
+    const search = catalogue.indexOf('<UiToolbar class="skills-toolbar"')
+    const status = catalogue.indexOf('class="app-search-status skills-match-status"')
+    const controls = catalogue.indexOf('<div class="skills-filter-controls">')
+
+    expect(search).toBeGreaterThan(-1)
+    expect(search).toBeLessThan(status)
+    expect(status).toBeLessThan(controls)
+    expect(features).toMatch(/\.skills-filter-controls \{[^}]*margin-left: auto/s)
+    expect(features).toMatch(/\.skills-filter-controls \{[^}]*justify-content: flex-end/s)
   })
 
   it('announces the changing result count politely', () => {
     expect(page).toContain('aria-live="polite"')
-    expect(page).toContain('{{ matchLabel }}')
+    expect(page).toContain('{{ announcedResult }}')
+    expect(page).toContain('}, 300)')
+    expect(page).toContain('{{ compactResultStatus }}')
+    expect(page).toContain("'is-visible': resultsRefined")
+    expect(page).toContain('CATALOGUE SKILLS')
   })
 
-  it('keeps both empty states and names the search term', () => {
-    expect(page).toContain('No trained skills returned')
+  it('keeps the no-injected notice non-blocking and names an empty search', () => {
+    expect(page).toContain('skills.injectedSkillCount === 0 && skills.groups.length > 0')
+    expect(page).toContain('This character has no injected skills.')
+    expect(page).toContain('skills.groups.length === 0')
+    expect(page).toContain('Skill catalogue unavailable')
     expect(page).toContain('00 / NO MATCHES')
     expect(page).toContain('No skills match "{{ searchTerm }}".')
+  })
+
+  it('labels catalogue counts, trained points, and trained levels explicitly', () => {
+    expect(page).toContain("'catalogue skill' : 'catalogue skills'")
+    expect(page).toContain('TRAINED SP')
+    expect(page).toContain('trained skill points')
+    expect(page).toContain(':aria-label="`Trained level ${skill.trainedLevel}`"')
   })
 
   it('builds one search index rather than one per candidate name', () => {
@@ -159,6 +197,10 @@ describe('responsive layout', () => {
     for (const selector of ['.skill-row-name', '.skill-group-chip-name', '.skill-queue-entry-name'])
       expect(features).toContain(selector)
     expect(features.match(/text-overflow: ellipsis/g)?.length ?? 0).toBeGreaterThanOrEqual(3)
+    expect(page).toContain(':data-full-name="skill.name"')
+    expect(page).toContain('name.scrollWidth > name.clientWidth')
+    expect(features).toMatch(/\.skill-row-name\.is-revealed::after \{[^}]*position: absolute/s)
+    expect(features).toMatch(/\.skill-row-name\.is-revealed::after \{[^}]*white-space: nowrap/s)
   })
 })
 

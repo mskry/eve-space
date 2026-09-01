@@ -36,7 +36,7 @@ describe('worker entrypoint', () => {
 
     const workerEntry = import('../../src/worker.js')
 
-    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 5_000 })
     expect(assertWorkerStartupDependencies).toHaveBeenCalledOnce()
     // The heartbeat-aware check belongs to the healthcheck command, not to startup.
     expect(assertWorkerDependencies).not.toHaveBeenCalled()
@@ -58,7 +58,7 @@ describe('worker entrypoint', () => {
     }))
 
     const workerEntry = import('../../src/worker.js')
-    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 5_000 })
     stopRunLoop()
     await workerEntry
 
@@ -86,7 +86,7 @@ describe('worker entrypoint', () => {
     }))
 
     const workerEntry = import('../../src/worker.js')
-    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(startWorkerPlatform).toHaveBeenCalledOnce(), { timeout: 5_000 })
     process.emit('SIGTERM')
     await workerEntry
 

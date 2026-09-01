@@ -1,6 +1,6 @@
 import { skillGroupIcon, type SkillGroupIcon } from './skill-group-icons'
 
-export type SkillLevelFilter = 'all' | 'partial' | 'v'
+export type SkillLevelFilter = 'all' | 'untrained' | 'progress' | 'v'
 
 export interface CatalogueGroup {
   groupId: number | null
@@ -8,6 +8,7 @@ export interface CatalogueGroup {
   skills: ReadonlyArray<{
     typeId: number
     name: string
+    injected: boolean
     activeLevel: number
     trainedLevel: number
     skillpoints: number
@@ -17,6 +18,7 @@ export interface CatalogueGroup {
 export interface IndexedSkill {
   typeId: number
   name: string
+  injected: boolean
   skillpoints: number
   activeLevel: number
   trainedLevel: number
@@ -30,6 +32,7 @@ export interface GroupSummary {
   groupId: number | null
   icon: SkillGroupIcon
   count: number
+  progressPercent: number
 }
 
 export function groupKeyOf(groupId: number | null) {
@@ -41,6 +44,7 @@ export function indexSkills(groups: readonly CatalogueGroup[]): IndexedSkill[] {
     group.skills.map((skill) => ({
       typeId: skill.typeId,
       name: skill.name,
+      injected: skill.injected,
       skillpoints: skill.skillpoints,
       activeLevel: skill.activeLevel,
       trainedLevel: skill.trainedLevel,
@@ -50,9 +54,14 @@ export function indexSkills(groups: readonly CatalogueGroup[]): IndexedSkill[] {
   )
 }
 
+export function isInjectedOnly(skill: IndexedSkill, queuedTarget = 0) {
+  return skill.trainedLevel === 0 && (skill.injected || queuedTarget > 0)
+}
+
 export function passesLevelFilter(skill: IndexedSkill, filter: SkillLevelFilter) {
   if (filter === 'v') return skill.trainedLevel === 5
-  if (filter === 'partial') return skill.trainedLevel < 5
+  if (filter === 'progress') return skill.trainedLevel > 0 && skill.trainedLevel < 5
+  if (filter === 'untrained') return skill.trainedLevel === 0
   return true
 }
 
@@ -83,14 +92,32 @@ export function summariseGroups(
   for (const skill of visible) counts.set(skill.groupKey, (counts.get(skill.groupKey) ?? 0) + 1)
   return groups.map((group) => {
     const key = groupKeyOf(group.groupId)
+    const trainedLevels = group.skills.reduce(
+      (total, skill) => total + Math.min(5, Math.max(0, skill.trainedLevel)),
+      0,
+    )
     return {
       key,
       name: group.name,
       groupId: group.groupId,
       icon: skillGroupIcon(group.name),
       count: counts.get(key) ?? 0,
+      progressPercent:
+        group.skills.length === 0
+          ? 0
+          : Math.round((trainedLevels / (group.skills.length * 5)) * 100),
     }
   })
+}
+
+export function resolveInitialGroupKey(groups: readonly CatalogueGroup[]): string | null {
+  if (groups.length === 0) return null
+  const groupWithProgress = groups.find((group) =>
+    group.skills.some(
+      (skill) => skill.activeLevel > 0 || skill.trainedLevel > 0 || skill.skillpoints > 0,
+    ),
+  )
+  return groupKeyOf((groupWithProgress ?? groups[0])!.groupId)
 }
 
 /**
@@ -125,6 +152,10 @@ export function levelCells(skill: IndexedSkill, queuedTarget: number): LevelCell
 }
 
 export function levelDescription(skill: IndexedSkill, queuedTarget: number) {
-  const base = `Active level ${skill.activeLevel}; trained level ${skill.trainedLevel} of 5`
-  return queuedTarget > skill.trainedLevel ? `${base}; queued to level ${queuedTarget}` : base
+  let description = `Active level ${skill.activeLevel}; trained level ${skill.trainedLevel} of 5`
+  if (skill.trainedLevel === 0) {
+    description += skill.injected || queuedTarget > 0 ? '; injected, not trained' : '; not injected'
+  }
+  if (queuedTarget > skill.trainedLevel) description += `; queued to level ${queuedTarget}`
+  return description
 }
