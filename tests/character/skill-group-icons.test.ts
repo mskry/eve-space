@@ -11,6 +11,7 @@ describe('skillGroupIcon', () => {
     expect(skillGroupIcon('Gunnery')).toBe('gunnery')
     expect(skillGroupIcon('Spaceship Command')).toBe('spaceship-command')
     expect(skillGroupIcon('Neural Enhancement')).toBe('neural-enhancement')
+    expect(skillGroupIcon('Sequencing')).toBe('sequencing')
     expect(skillGroupIcon('  Resource   Processing ')).toBe('resource-processing')
   })
 
@@ -20,9 +21,9 @@ describe('skillGroupIcon', () => {
     expect(skillGroupIcon('')).toBe('unknown')
   })
 
-  it('covers the twenty-three skill groups the design specifies', () => {
-    expect(skillGroupIconNames).toHaveLength(23)
-    expect(new Set(skillGroupIconNames).size).toBe(23)
+  it('covers all twenty-four published skill groups', () => {
+    expect(skillGroupIconNames).toHaveLength(24)
+    expect(new Set(skillGroupIconNames).size).toBe(24)
   })
 })
 

@@ -91,6 +91,11 @@ defineProps<{
       <path d="M3.6 20.4V9.6l4.6 3V9.6l4.6 3V9.6l4.6 3V6.4h3.2v14Z" />
       <path d="M3.6 16.4h16.8" />
     </template>
+    <template v-else-if="name === 'sequencing'">
+      <path d="m10.2 3.8 7.2 3.8-7.2 3.8L3 7.6Z" />
+      <path d="m3 11.2 7.2 3.8 5.2-2.7M3 14.8l7.2 3.8 4-2.1" />
+      <path d="M18.2 13.8v5.4M15.5 16.5h5.4" />
+    </template>
     <template v-else-if="name === 'resource-processing'">
       <path d="M12.8 4.8l5.7 9.9" />
       <path d="M16.4 13.5 18.5 14.7V12.3" />

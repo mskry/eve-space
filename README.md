@@ -178,7 +178,7 @@ Application authentication and owned characters:
 - `GET /api/me/characters` lists the user's attached character roster.
 - `GET /api/me/characters/:characterId` returns the owned character's profile, location, ship, and skill-point summary.
 - `PATCH /api/me/characters/:characterId/main` selects the account main; `DELETE /api/me/characters/:characterId` removes a non-main character.
-- `GET /api/me/characters/:characterId/skills` returns live skills enriched from the local SDE.
+- `GET /api/me/characters/:characterId/skills` overlays live progress onto the full published SDE skill catalogue. Each API process loads that catalogue once; restart all API processes after ingesting an SDE build that changes it.
 - `GET /api/me/characters/:characterId/wallet` and `/wallet/transactions` return protected wallet data.
 - `GET /api/me/characters/:characterId/history` returns corporation employment history.
 

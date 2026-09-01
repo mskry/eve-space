@@ -225,6 +225,7 @@ export const coreEsiOperationCatalog = {
     retry,
   }),
   skills: defineContract('skills', {
+    representationVersion: 'v2',
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
     retry,
