@@ -1,3 +1,5 @@
+import { skillGroupIcon, type SkillGroupIcon } from './skill-group-icons'
+
 export type SkillLevelFilter = 'all' | 'partial' | 'v'
 
 export interface CatalogueGroup {
@@ -26,6 +28,7 @@ export interface GroupSummary {
   key: string
   name: string
   groupId: number | null
+  icon: SkillGroupIcon
   count: number
 }
 
@@ -80,7 +83,13 @@ export function summariseGroups(
   for (const skill of visible) counts.set(skill.groupKey, (counts.get(skill.groupKey) ?? 0) + 1)
   return groups.map((group) => {
     const key = groupKeyOf(group.groupId)
-    return { key, name: group.name, groupId: group.groupId, count: counts.get(key) ?? 0 }
+    return {
+      key,
+      name: group.name,
+      groupId: group.groupId,
+      icon: skillGroupIcon(group.name),
+      count: counts.get(key) ?? 0,
+    }
   })
 }
 

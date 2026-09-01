@@ -31,6 +31,13 @@ describe('skills catalogue markup', () => {
     expect(page).toContain('CharacterSummaryCard')
   })
 
+  it('gives every group chip a decorative category glyph in a three-column grid', () => {
+    expect(page).toContain('<CharacterSkillsGroupIcon :name="group.icon" />')
+    expect(features).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))')
+    expect(features).toContain('grid-template-columns: auto minmax(0, 1fr) auto')
+    expect(responsive).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
+  })
+
   it('marks selection and vacancy on group chips programmatically', () => {
     expect(page).toContain(':aria-pressed="group.key === activeGroupKey"')
     expect(page).toContain(':disabled="group.count === 0"')

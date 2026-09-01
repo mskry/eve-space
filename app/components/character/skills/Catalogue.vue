@@ -185,6 +185,7 @@ function skillLevelDescription(skill: IndexedSkill) {
           :aria-pressed="group.key === activeGroupKey"
           @click="selectGroup(group.key)"
         >
+          <CharacterSkillsGroupIcon :name="group.icon" />
           <span class="skill-group-chip-name">{{ group.name }}</span>
           <span class="skill-group-chip-count">{{ group.count }}</span>
         </button>

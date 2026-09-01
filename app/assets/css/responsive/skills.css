@@ -26,6 +26,10 @@
     margin-left: 0;
   }
 
+  .skill-group-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .skill-list {
     grid-template-columns: 1fr;
   }
@@ -33,7 +37,7 @@
 
 @media (max-width: 520px) {
   .skill-group-chips {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .skill-row {
