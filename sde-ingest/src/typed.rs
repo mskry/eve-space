@@ -35,9 +35,18 @@ struct RawCategory {
 pub fn ingest_categories(archive: &mut ZipArchive<File>, client: &mut Transaction) -> Result<u64> {
     let lines = zip_stream::lines(archive, "categories.jsonl")?;
     let rows = map_lines::<RawCategory, _>(lines, |raw| {
-        vec![db::num(raw.key), db::text(&raw.name.into_text()), db::boolean(raw.published)]
+        vec![
+            db::num(raw.key),
+            db::text(&raw.name.into_text()),
+            db::boolean(raw.published),
+        ]
     });
-    db::copy_rows(client, "sde_categories", &["category_id", "name", "published"], rows)
+    db::copy_rows(
+        client,
+        "sde_categories",
+        &["category_id", "name", "published"],
+        rows,
+    )
 }
 
 #[derive(Deserialize)]
@@ -61,7 +70,12 @@ pub fn ingest_groups(archive: &mut ZipArchive<File>, client: &mut Transaction) -
             db::boolean(raw.published),
         ]
     });
-    db::copy_rows(client, "sde_groups", &["group_id", "category_id", "name", "published"], rows)
+    db::copy_rows(
+        client,
+        "sde_groups",
+        &["group_id", "category_id", "name", "published"],
+        rows,
+    )
 }
 
 #[derive(Deserialize)]
@@ -76,6 +90,8 @@ struct RawType {
     market_group_id: Option<i64>,
     #[serde(default)]
     name: LocalizedText,
+    #[serde(default)]
+    description: Option<LocalizedText>,
     published: bool,
     mass: Option<f64>,
     volume: Option<f64>,
@@ -86,23 +102,27 @@ struct RawType {
     base_price: Option<f64>,
 }
 
+fn type_row(raw: RawType) -> Vec<String> {
+    let description = raw.description.and_then(LocalizedText::into_optional_text);
+    vec![
+        db::num(raw.key),
+        db::num(raw.group_id),
+        db::opt_num(raw.race_id),
+        db::opt_num(raw.market_group_id),
+        db::text(&raw.name.into_text()),
+        db::opt_text(description.as_deref()),
+        db::boolean(raw.published),
+        db::opt_num(raw.mass),
+        db::opt_num(raw.volume),
+        db::opt_num(raw.capacity),
+        db::opt_num(raw.portion_size),
+        db::opt_num(raw.base_price),
+    ]
+}
+
 pub fn ingest_types(archive: &mut ZipArchive<File>, client: &mut Transaction) -> Result<u64> {
     let lines = zip_stream::lines(archive, "types.jsonl")?;
-    let rows = map_lines::<RawType, _>(lines, |raw| {
-        vec![
-            db::num(raw.key),
-            db::num(raw.group_id),
-            db::opt_num(raw.race_id),
-            db::opt_num(raw.market_group_id),
-            db::text(&raw.name.into_text()),
-            db::boolean(raw.published),
-            db::opt_num(raw.mass),
-            db::opt_num(raw.volume),
-            db::opt_num(raw.capacity),
-            db::opt_num(raw.portion_size),
-            db::opt_num(raw.base_price),
-        ]
-    });
+    let rows = map_lines::<RawType, _>(lines, type_row);
     db::copy_rows(
         client,
         "sde_types",
@@ -112,6 +132,7 @@ pub fn ingest_types(archive: &mut ZipArchive<File>, client: &mut Transaction) ->
             "race_id",
             "market_group_id",
             "name",
+            "description",
             "published",
             "mass",
             "volume",
@@ -135,7 +156,10 @@ struct RawMarketGroup {
     description: Option<LocalizedText>,
 }
 
-pub fn ingest_market_groups(archive: &mut ZipArchive<File>, client: &mut Transaction) -> Result<u64> {
+pub fn ingest_market_groups(
+    archive: &mut ZipArchive<File>,
+    client: &mut Transaction,
+) -> Result<u64> {
     let lines = zip_stream::lines(archive, "marketGroups.jsonl")?;
     let rows = map_lines::<RawMarketGroup, _>(lines, |raw| {
         vec![
@@ -168,7 +192,10 @@ struct RawDogmaAttribute {
     stackable: bool,
 }
 
-pub fn ingest_dogma_attributes(archive: &mut ZipArchive<File>, client: &mut Transaction) -> Result<u64> {
+pub fn ingest_dogma_attributes(
+    archive: &mut ZipArchive<File>,
+    client: &mut Transaction,
+) -> Result<u64> {
     let lines = zip_stream::lines(archive, "dogmaAttributes.jsonl")?;
     let rows = map_lines::<RawDogmaAttribute, _>(lines, |raw| {
         vec![
@@ -184,7 +211,15 @@ pub fn ingest_dogma_attributes(archive: &mut ZipArchive<File>, client: &mut Tran
     db::copy_rows(
         client,
         "sde_dogma_attributes",
-        &["attribute_id", "name", "description", "default_value", "published", "high_is_good", "stackable"],
+        &[
+            "attribute_id",
+            "name",
+            "description",
+            "default_value",
+            "published",
+            "high_is_good",
+            "stackable",
+        ],
         rows,
     )
 }
@@ -206,7 +241,10 @@ struct RawDogmaEffect {
     is_warp_safe: bool,
 }
 
-pub fn ingest_dogma_effects(archive: &mut ZipArchive<File>, client: &mut Transaction) -> Result<u64> {
+pub fn ingest_dogma_effects(
+    archive: &mut ZipArchive<File>,
+    client: &mut Transaction,
+) -> Result<u64> {
     let lines = zip_stream::lines(archive, "dogmaEffects.jsonl")?;
     let rows = map_lines::<RawDogmaEffect, _>(lines, |raw| {
         vec![
@@ -222,7 +260,15 @@ pub fn ingest_dogma_effects(archive: &mut ZipArchive<File>, client: &mut Transac
     db::copy_rows(
         client,
         "sde_dogma_effects",
-        &["effect_id", "name", "effect_category_id", "published", "is_offensive", "is_assistance", "is_warp_safe"],
+        &[
+            "effect_id",
+            "name",
+            "effect_category_id",
+            "published",
+            "is_offensive",
+            "is_assistance",
+            "is_warp_safe",
+        ],
         rows,
     )
 }
@@ -253,23 +299,30 @@ struct RawTypeDogma {
 }
 
 /// Reads `typeDogma.jsonl` once and buffers both output tables, since a connection can only run one `COPY` at a time.
-pub fn ingest_type_dogma(archive: &mut ZipArchive<File>, client: &mut Transaction) -> Result<(u64, u64)> {
+pub fn ingest_type_dogma(
+    archive: &mut ZipArchive<File>,
+    client: &mut Transaction,
+) -> Result<(u64, u64)> {
     let mut attribute_rows: Vec<Vec<String>> = Vec::new();
     let mut effect_rows: Vec<Vec<String>> = Vec::new();
 
     for line in zip_stream::lines(archive, "typeDogma.jsonl")? {
         let raw: RawTypeDogma = serde_json::from_str(&line?)?;
         let type_id = raw.key;
-        attribute_rows.extend(
-            raw.dogma_attributes
-                .into_iter()
-                .map(|attribute| vec![db::num(type_id), db::num(attribute.attribute_id), db::num(attribute.value)]),
-        );
-        effect_rows.extend(
-            raw.dogma_effects
-                .into_iter()
-                .map(|effect| vec![db::num(type_id), db::num(effect.effect_id), db::boolean(effect.is_default)]),
-        );
+        attribute_rows.extend(raw.dogma_attributes.into_iter().map(|attribute| {
+            vec![
+                db::num(type_id),
+                db::num(attribute.attribute_id),
+                db::num(attribute.value),
+            ]
+        }));
+        effect_rows.extend(raw.dogma_effects.into_iter().map(|effect| {
+            vec![
+                db::num(type_id),
+                db::num(effect.effect_id),
+                db::boolean(effect.is_default),
+            ]
+        }));
     }
 
     let attribute_count = db::copy_rows(
@@ -306,7 +359,12 @@ pub fn ingest_races(archive: &mut ZipArchive<File>, client: &mut Transaction) ->
             db::opt_text(raw.description.map(LocalizedText::into_text).as_deref()),
         ]
     });
-    db::copy_rows(client, "sde_races", &["race_id", "name", "description"], rows)
+    db::copy_rows(
+        client,
+        "sde_races",
+        &["race_id", "name", "description"],
+        rows,
+    )
 }
 
 #[derive(Deserialize)]
@@ -331,7 +389,12 @@ pub fn ingest_bloodlines(archive: &mut ZipArchive<File>, client: &mut Transactio
             db::opt_text(raw.description.map(LocalizedText::into_text).as_deref()),
         ]
     });
-    db::copy_rows(client, "sde_bloodlines", &["bloodline_id", "race_id", "name", "description"], rows)
+    db::copy_rows(
+        client,
+        "sde_bloodlines",
+        &["bloodline_id", "race_id", "name", "description"],
+        rows,
+    )
 }
 
 #[derive(Deserialize)]
@@ -356,7 +419,12 @@ pub fn ingest_ancestries(archive: &mut ZipArchive<File>, client: &mut Transactio
             db::opt_text(raw.short_description.as_deref()),
         ]
     });
-    db::copy_rows(client, "sde_ancestries", &["ancestry_id", "bloodline_id", "name", "short_description"], rows)
+    db::copy_rows(
+        client,
+        "sde_ancestries",
+        &["ancestry_id", "bloodline_id", "name", "short_description"],
+        rows,
+    )
 }
 
 #[derive(Deserialize)]
@@ -378,5 +446,40 @@ pub fn ingest_factions(archive: &mut ZipArchive<File>, client: &mut Transaction)
             db::opt_text(raw.description.map(LocalizedText::into_text).as_deref()),
         ]
     });
-    db::copy_rows(client, "sde_factions", &["faction_id", "name", "description"], rows)
+    db::copy_rows(
+        client,
+        "sde_factions",
+        &["faction_id", "name", "description"],
+        rows,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{RawType, type_row};
+
+    fn description_field(json: &str) -> String {
+        let raw: RawType = serde_json::from_str(json).unwrap();
+        type_row(raw)[5].clone()
+    }
+
+    #[test]
+    fn type_descriptions_are_nullable_and_preserve_raw_markup() {
+        assert_eq!(
+            description_field(r#"{"_key":1,"groupID":2,"name":{"en":"Name"},"published":true}"#),
+            "\\N"
+        );
+        assert_eq!(
+            description_field(
+                r#"{"_key":1,"groupID":2,"name":{"en":"Name"},"description":{"en":""},"published":true}"#,
+            ),
+            "\\N"
+        );
+        assert_eq!(
+            description_field(
+                r#"{"_key":1,"groupID":2,"name":{"en":"Name"},"description":{"en":"<b>Raw</b>\ntext"},"published":true}"#,
+            ),
+            "<b>Raw</b>\\ntext"
+        );
+    }
 }
