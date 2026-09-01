@@ -1,12 +1,16 @@
 # EVE Space
 
-EVE Space is a self-hosted EVE Online character dashboard. It supports:
+EVE Space is a self-hosted, organization-governed platform for EVE Online corporations and
+alliances. It combines a managed-organization membership boundary with capabilities delivered
+through individually authorized characters. It supports:
 
+- Corporation deployments that govern one corporation and alliance deployments that govern their current member corporations
+- Account-level registration compliance across every character a member discloses and attaches
 - Multiple individually authorized characters per application account, with one selectable main character
 - Character overview, location, active ship, skills, wallet balance and transactions, employment history, and mail
 - Public EVE character and corporation records inside the authenticated application
 - Mail reading, composition, recipient lookup, CSPA estimates, and label management
-- A separate local deployment-administrator account for organization ownership, module enablement, and navigation order
+- Separate deployment administration and verified EVE organization authority
 - Statically installed first-party modules with runtime enablement
 
 The application is a pnpm workspace built from a Nuxt 4 frontend, a chained Hono API, a separate Node worker, PostgreSQL 17, and two Redis 7 roles. Pinia Colada provides typed in-memory frontend queries, the local Nuxt UI layer wraps Reka UI primitives, and `@evespace/esi-client` owns all ESI access in the API and worker.
@@ -47,9 +51,32 @@ esi-mail.organize_mail.v1
 esi-mail.send_mail.v1
 esi-search.search_structures.v1
 esi-characters.read_contacts.v1
+esi-characters.read_corporation_roles.v1
 ```
 
-Each character must be authorized individually. The attachment flow can select a character after signing into the same or a different EVE account; EVE Space does not discover an account's alts automatically. Existing authorizations must be refreshed after adding scopes.
+Each character must be authorized individually. An organization may require members to disclose and
+attach every character as a condition of access, and EVE Space evaluates compliance across every
+attached character. The attachment flow can select a character after signing into the same or a
+different EVE account. EVE SSO authorizes only the character selected in each flow: it cannot discover
+all characters on an EVE account or prove that a member has no undisclosed characters. Existing
+authorizations must be refreshed after adding scopes.
+
+## Managed Organization
+
+The configured deployment organization is the membership boundary. A corporation deployment manages
+that corporation. An alliance deployment discovers its current member corporations publicly, then
+requires a separately authorized data-source character in each corporation for private corporation
+roster coverage. An alliance executor character cannot enumerate every member of every alliance
+corporation, so coverage is reported per corporation as current, stale, unauthorized, or not
+configured rather than treating missing coverage as an empty roster.
+
+The local deployment administrator owns hosting settings, module enablement, and shared navigation. It
+does not receive member, HR, director, or private organization-data access from that authority. EVE
+organization authority is claimed and maintained separately through verifiable character affiliation,
+scope, and corporation-role evidence.
+
+See [`docs/organization-platform.md`](docs/organization-platform.md) for the disclosure policy,
+core/module ownership boundary, and reviewed ESI operation catalog.
 
 ## Environment
 

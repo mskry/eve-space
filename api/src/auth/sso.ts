@@ -19,6 +19,7 @@ const tokenResponseSchema = z.object({
 const refreshResponseSchema = tokenResponseSchema.extend({
   refresh_token: z.string().min(1).optional(),
 })
+const tokenErrorResponseSchema = z.object({ error: z.string() }).loose()
 
 const scopesSchema = z
   .union([z.string(), z.array(z.string())])
@@ -42,6 +43,19 @@ const metadataUrl = 'https://login.eveonline.com/.well-known/oauth-authorization
 const tokenTimeoutMs = env.EVE_SSO_TIMEOUT_MS
 const discoveryTimeoutMs = Math.ceil(env.EVE_SSO_TIMEOUT_MS / 2)
 let metadataPromise: ReturnType<typeof loadMetadata> | undefined
+
+export class EveSsoTokenRefreshError extends Error {
+  constructor(
+    readonly status: number,
+    readonly authorizationRevoked: boolean,
+  ) {
+    super(
+      authorizationRevoked
+        ? 'EVE authorization is no longer valid'
+        : 'EVE token refresh is unavailable',
+    )
+  }
+}
 
 async function loadMetadata() {
   const response = await fetch(metadataUrl, { signal: AbortSignal.timeout(discoveryTimeoutMs) })
@@ -109,7 +123,13 @@ export async function refreshAccessToken(refreshToken: string) {
     }),
   })
 
-  if (!response.ok) throw new Error(`EVE token refresh returned HTTP ${response.status}`)
+  if (!response.ok) {
+    const body = tokenErrorResponseSchema.safeParse(await response.json().catch(() => null))
+    throw new EveSsoTokenRefreshError(
+      response.status,
+      body.success && body.data.error === 'invalid_grant',
+    )
+  }
   return refreshResponseSchema.parse(await response.json())
 }
 

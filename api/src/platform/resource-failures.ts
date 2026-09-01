@@ -1,8 +1,9 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import { EveSsoTokenRefreshError } from '../auth/sso.js'
+import { TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
-import { TokenRefreshUnavailableError } from '../auth/tokens.js'
 import type {
   PlatformCollectionFailureClass,
   PlatformCollectionStateIdentity,
@@ -24,6 +25,13 @@ export class PlatformResourcePersistenceError extends Error {
   constructor(cause: unknown) {
     super('Platform resource persistence failed', { cause })
     this.name = 'PlatformResourcePersistenceError'
+  }
+}
+
+export class PlatformResourceAuthorizationError extends Error {
+  constructor(cause: unknown) {
+    super('Platform resource authorization failed', { cause })
+    this.name = 'PlatformResourceAuthorizationError'
   }
 }
 
@@ -88,6 +96,11 @@ export async function recordInstalledResourceCollectionFailure(
 }
 
 export function classifyPlatformResourceFailure(error: unknown, now = new Date()) {
+  if (
+    error instanceof PlatformResourceAuthorizationError ||
+    (error instanceof EveSsoTokenRefreshError && error.authorizationRevoked)
+  )
+    return { failureClass: 'authorization-required', nextEligibleAt: null } as const
   if (error instanceof EsiQuotaError)
     return { failureClass: 'esi-cooldown', nextEligibleAt: error.retryAt } as const
   if (

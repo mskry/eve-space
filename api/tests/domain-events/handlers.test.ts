@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
+  createManagedCorporationComplianceEventHandlers,
   createPlatformCollectionStateEventHandlers,
   dispatchDomainEvent,
   DomainEventNotFoundError,
@@ -78,6 +79,31 @@ describe('domain event handlers', () => {
       expect(repair).toHaveBeenCalledWith({ characterId: 1404328063 })
     },
   )
+
+  test.each([
+    'organization.managed-corporation-added',
+    'organization.managed-corporation-removed',
+  ] as const)('recomputes affected compliance for %s events', async (eventType) => {
+    const recompute = vi.fn().mockResolvedValue(undefined)
+    const handlers = createManagedCorporationComplianceEventHandlers(recompute)
+    const event = {
+      ...storedEvent(),
+      eventType,
+      aggregateType: 'deployment',
+      aggregateId: '1',
+      payload: { deploymentId: 1, organizationVersion: 4, corporationId: 98000001 },
+    } as never
+
+    await expect(
+      dispatchDomainEvent(eventId, handlers, vi.fn().mockResolvedValue(event)),
+    ).resolves.toBe(event)
+    expect(recompute).toHaveBeenCalledOnce()
+    expect(recompute).toHaveBeenCalledWith({
+      deploymentId: 1,
+      organizationVersion: 4,
+      corporationId: 98000001,
+    })
+  })
 })
 
 function handler(idempotency: DomainEventHandler['idempotency']): DomainEventHandler {

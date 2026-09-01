@@ -43,7 +43,7 @@ beforeAll(async () => {
     insert into oauth_states (state_hash, intent, user_id, character_id, expires_at)
     values (${'a'.repeat(64)}, 'reauthorize', ${userId}, ${characterId}, now() + interval '10 minutes')
   `
-  await runMigrations(connection, [migrations[returnPathMigrationIndex]!])
+  await runMigrations(connection, migrations.slice(returnPathMigrationIndex))
   const [legacyState] = await connection<{ return_path: string | null }[]>`
     select return_path from oauth_states where state_hash = ${'a'.repeat(64)}
   `
@@ -200,6 +200,53 @@ describe('OAuth state return path persistence', () => {
 
     expect(results.filter((result) => result === null)).toHaveLength(1)
     expect(results.filter((result) => result !== null)).toEqual([context])
+  })
+
+  test('round-trips a single-use organization-owner claim context', async () => {
+    const userId = await insertOwnedCharacter()
+    await connection`
+      insert into organization_epochs (
+        deployment_id,
+        organization_version,
+        organization_type,
+        organization_id,
+        organization_name,
+        organization_ticker
+      ) values (1, 1, 'corporation', 1000166, 'Claim Corporation', 'CLAIM')
+      on conflict do nothing
+    `
+    const context = {
+      intent: 'claim-organization-owner' as const,
+      userId,
+      characterId,
+      organizationId: 1_000_166,
+      organizationVersion: 1,
+    }
+    await authStore.storeOAuthState('owner-claim-state', context)
+
+    const [stored] = await connection<
+      {
+        state_hash: string
+        organization_id: string
+        organization_version: string
+      }[]
+    >`
+      select state_hash, organization_id, organization_version
+      from oauth_states
+      where intent = 'claim-organization-owner'
+    `
+    expect(stored).toEqual({
+      state_hash: hashState('owner-claim-state'),
+      organization_id: '1000166',
+      organization_version: '1',
+    })
+
+    const results = await Promise.all([
+      authStore.consumeOAuthState('owner-claim-state'),
+      authStore.consumeOAuthState('owner-claim-state'),
+    ])
+    expect(results.filter(Boolean)).toEqual([context])
+    expect(results.filter((result) => result === null)).toHaveLength(1)
   })
 })
 

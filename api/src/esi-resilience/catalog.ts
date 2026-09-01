@@ -122,6 +122,16 @@ export const coreEsiOperationCatalog = {
     cache: sharedPublicCache(),
     retry,
   }),
+  'alliance-corporations': defineContract('alliance-corporations', {
+    identity: { kind: 'ordered', fields: ['allianceId'] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  'corporation-members': defineContract('corporation-members', {
+    identity: { kind: 'ordered', fields: ['corporationId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
   'universe-races': defineContract('universe-races', {
     identity: { kind: 'ordered', fields: [] },
     cache: sharedPublicCache(),
@@ -217,6 +227,11 @@ export const coreEsiOperationCatalog = {
     cache: { kind: 'none' },
     retry,
   }),
+  'character-corporation-roles': defineContract('character-corporation-roles', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
   attributes: defineContract('attributes', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),
@@ -300,6 +315,29 @@ export const esiOperationCatalog = {
   ...installedModuleEsiOperationCatalog,
 } as const satisfies Record<string, EsiOperationContract>
 
+const coreExecutableEsiOperationCatalog = {
+  'alliance-corporations': coreEsiOperationCatalog['alliance-corporations'],
+  'corporation-members': coreEsiOperationCatalog['corporation-members'],
+} as const
+
+const coreExecutableEsiOperationDefinitions = {
+  'alliance-corporations': {
+    sdkOperationId: 'GetAlliancesAllianceIdCorporations',
+    descriptor: operationRegistry.GetAlliancesAllianceIdCorporations!,
+    contract: coreExecutableEsiOperationCatalog['alliance-corporations'],
+  },
+  'corporation-members': {
+    sdkOperationId: 'GetCorporationsCorporationIdMembers',
+    descriptor: operationRegistry.GetCorporationsCorporationIdMembers!,
+    contract: coreExecutableEsiOperationCatalog['corporation-members'],
+  },
+} as const satisfies Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
+
+const executableEsiOperationDefinitions = {
+  ...coreExecutableEsiOperationDefinitions,
+  ...installedModuleEsiOperationDefinitions,
+}
+
 export type EsiOperation = keyof typeof esiOperationCatalog
 export const esiOperations = Object.keys(esiOperationCatalog) as EsiOperation[]
 
@@ -329,7 +367,7 @@ export function getExecutableEsiOperationDefinition(
   operation: string,
   definitions: Readonly<
     Record<string, PlatformExecutableEsiOperationDefinition>
-  > = installedModuleEsiOperationDefinitions,
+  > = executableEsiOperationDefinitions,
 ) {
   const definition = definitions[operation]
   if (!definition) throw new Error(`ESI operation ${operation} has no executable definition`)
@@ -348,6 +386,11 @@ export function assertEsiOperationCatalogConfiguration(
     : {},
 ) {
   assertEsiOperationContracts(catalog, expectedSdkOperationIds)
+  if (catalog === esiOperationCatalog)
+    assertExecutableEsiOperationDefinitions(
+      coreExecutableEsiOperationCatalog,
+      coreExecutableEsiOperationDefinitions,
+    )
   if (catalog === esiOperationCatalog)
     assertExecutableEsiOperationDefinitions(
       installedModuleEsiOperationCatalog,

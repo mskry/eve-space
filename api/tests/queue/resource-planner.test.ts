@@ -10,6 +10,7 @@ import {
 } from '../../src/queue/job-registry.js'
 import { derivedResourcePriorityBand, resourceRefreshPriority } from '../../src/queue/policy.js'
 import { runResourcePlanner } from '../../src/queue/resource-planner.js'
+import { coreResources } from '../../src/platform/core-resources.js'
 
 const resource = {
   moduleId: 'member-audit',
@@ -117,6 +118,25 @@ describe('generic resource planner', () => {
     ])
     const addedOptions = subject.addBulk.mock.calls[0]?.[0][0]?.opts
     expect(addedOptions).not.toHaveProperty('jobId')
+  })
+
+  test('uses a corporation source character for private cooldown coordination', async () => {
+    const subject = queue()
+    const candidate = dueResource('98000001', coreResources[1], 1_404_328_063)
+    const dependencies = dependencyMocks({ candidates: [candidate] })
+
+    await runResourcePlanner(subject as never, undefined, {
+      resources: [coreResources[1]],
+      dependencies,
+    })
+
+    expect(dependencies.getCooldowns).toHaveBeenCalledWith({
+      connection: subject.client,
+      requests: [{ operation: 'corporation-members', principal: 'character-1404328063' }],
+    })
+    expect(subject.addBulk).toHaveBeenCalledWith([
+      expect.objectContaining({ name: 'resource-refresh', data: candidate.identity }),
+    ])
   })
 
   test('reuses one lifecycle-bound simple deduplication identity across planning passes', async () => {
@@ -293,6 +313,7 @@ function dependencyMocks(
 function dueResource(
   subjectId: string,
   descriptor: PlatformInstalledResourceDescriptor = resource,
+  authorizationCharacterId?: number,
 ) {
   return {
     identity: {
@@ -302,6 +323,7 @@ function dueResource(
       subjectLifecycleId: '6f80b8de-8ff0-4dc6-af2c-9fb5c892174a',
       subjectId,
     },
-    operationId: 'skills' as const,
+    operationId: descriptor.operationId as 'skills',
+    ...(authorizationCharacterId ? { authorizationCharacterId } : {}),
   }
 }

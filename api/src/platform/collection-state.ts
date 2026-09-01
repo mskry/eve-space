@@ -27,9 +27,11 @@ const installedModuleIdSchema = z
     message: 'Reserved platform module identity',
   })
 
+const resourceOwnerIdSchema = z.union([z.literal('core'), installedModuleIdSchema])
+
 export const platformCollectionStateIdentitySchema = z
   .object({
-    moduleId: installedModuleIdSchema,
+    moduleId: resourceOwnerIdSchema,
     resourceId: z.string().regex(platformContributionIdPattern),
     subjectKind: z.enum(platformSubjectKinds),
     subjectLifecycleId: z.uuid(),

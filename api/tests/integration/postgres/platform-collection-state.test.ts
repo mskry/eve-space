@@ -20,6 +20,8 @@ import {
   selectDueInstalledResources,
 } from '../../../src/platform/resource-eligibility.js'
 import { guardInstalledResourceExecution } from '../../../src/platform/resource-execution-guard.js'
+import { coreResources } from '../../../src/platform/core-resources.js'
+import { materializeCoreResourceObservation } from '../../../src/platform/core-resource-materialization.js'
 
 let container: StartedTestContainer
 let databaseUrl: string
@@ -815,6 +817,344 @@ describe('platform collection state PostgreSQL persistence', () => {
           ],
         }),
       ).resolves.toHaveLength(25)
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('versions alliance resource lifecycles and makes superseded work obsolete', async () => {
+    const connection = postgres(databaseUrl)
+    const adminId = randomUUID()
+    const firstLifecycleId = randomUUID()
+    const secondLifecycleId = randomUUID()
+    try {
+      await connection`
+        insert into deployment_admins (id, email, password_hash)
+        values (${adminId}, 'alliance-owner@example.com', 'hash')
+      `
+      await connection`
+        insert into organization_epochs (
+          deployment_id, organization_version, organization_type, organization_id,
+          organization_name, organization_ticker
+        ) values (1, 1, 'alliance', 99000001, 'Managed Alliance', 'ALLY')
+      `
+      await connection`
+        insert into deployment_settings (
+          id, owner_admin_id, organization_type, organization_id,
+          organization_name, organization_ticker, organization_version
+        ) values (1, ${adminId}, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id,
+          organization_deployment_id, organization_version
+        ) values (${firstLifecycleId}, 'alliance', '99000001', 1, 1)
+      `
+      const firstIdentity = {
+        moduleId: 'core',
+        resourceId: 'managed-corporations',
+        subjectKind: 'alliance' as const,
+        subjectLifecycleId: firstLifecycleId,
+        subjectId: '99000001',
+      }
+
+      await expect(
+        selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[0]] }),
+      ).resolves.toEqual([{ identity: firstIdentity, operationId: 'alliance-corporations' }])
+
+      await connection.begin(async (transaction) => {
+        await transaction`
+          insert into organization_epochs (
+            deployment_id, organization_version, organization_type, organization_id,
+            organization_name, organization_ticker
+          ) values (1, 2, 'alliance', 99000001, 'Managed Alliance', 'ALLY')
+        `
+        await transaction`
+          update organization_epochs
+          set superseded_at = clock_timestamp()
+          where deployment_id = 1 and organization_version = 1
+        `
+        await transaction`
+          update deployment_settings set organization_version = 2 where id = 1
+        `
+        await transaction`
+          insert into platform_subject_lifecycles (
+            subject_lifecycle_id, subject_kind, subject_id,
+            organization_deployment_id, organization_version
+          ) values (${secondLifecycleId}, 'alliance', '99000001', 1, 2)
+        `
+      })
+
+      await expect(
+        resolveInstalledResourceEligibility(firstIdentity, {
+          connection,
+          resources: [coreResources[0]],
+        }),
+      ).resolves.toEqual({ status: 'obsolete' })
+      await expect(
+        selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[0]] }),
+      ).resolves.toEqual([
+        {
+          identity: { ...firstIdentity, subjectLifecycleId: secondLifecycleId },
+          operationId: 'alliance-corporations',
+        },
+      ])
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('binds corporation collection to one active source and replaces full roster snapshots', async () => {
+    const connection = postgres(databaseUrl)
+    const database = drizzle(connection, { schema })
+    const adminId = randomUUID()
+    const userId = randomUUID()
+    const characterId = 1_404_328_080
+    const sourceId = randomUUID()
+    const replacementSourceId = randomUUID()
+    const sourceLifecycleId = randomUUID()
+    const replacementLifecycleId = randomUUID()
+    try {
+      await connection`
+        insert into deployment_admins (id, email, password_hash)
+        values (${adminId}, 'corporation-owner@example.com', 'hash')
+      `
+      await connection`
+        insert into organization_epochs (
+          deployment_id, organization_version, organization_type, organization_id,
+          organization_name, organization_ticker
+        ) values (1, 1, 'corporation', 98000001, 'Managed Corporation', 'CORP')
+      `
+      await connection`
+        insert into deployment_settings (
+          id, owner_admin_id, organization_type, organization_id,
+          organization_name, organization_ticker, organization_version
+        ) values (1, ${adminId}, 'corporation', 98000001, 'Managed Corporation', 'CORP', 1)
+      `
+      await connection`
+        insert into organization_managed_corporations (
+          deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
+        ) values (1, 1, 98000001, now(), now())
+      `
+      await connection`insert into users (id) values (${userId})`
+      await connection`
+        insert into characters (
+          character_id, user_id, name, corporation_id, is_main,
+          affiliation_resolution_state, affiliation_checked_at
+        ) values (${characterId}, ${userId}, 'Source Pilot', 98000001, true, 'resolved', now())
+      `
+      const characterLifecycleId = await connection<{ subject_lifecycle_id: string }[]>`
+        insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+        values ('character', ${String(characterId)}, ${characterId})
+        returning subject_lifecycle_id
+      `.then(([row]) => row!.subject_lifecycle_id)
+      await connection`
+        insert into eve_tokens (
+          character_id, encrypted_tokens, access_token_expires_at, scopes, token_version
+        ) values (
+          ${characterId}, 'test ciphertext', now() + interval '1 hour',
+          '["esi-corporations.read_corporation_membership.v1"]'::jsonb, 7
+        )
+      `
+      await connection`
+        insert into organization_corporation_sources (
+          source_id, deployment_id, organization_version, corporation_id,
+          character_id, evidence_character_id, registered_by_user_id
+        ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id, corporation_source_id
+        ) values (${sourceLifecycleId}, 'corporation', '98000001', ${sourceId})
+      `
+      const identity = {
+        moduleId: 'core',
+        resourceId: 'corporation-roster',
+        subjectKind: 'corporation' as const,
+        subjectLifecycleId: sourceLifecycleId,
+        subjectId: '98000001',
+      }
+
+      await expect(
+        selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[1]] }),
+      ).resolves.toEqual([
+        { identity, operationId: 'corporation-members', authorizationCharacterId: characterId },
+      ])
+      await expect(
+        resolveInstalledResourceEligibility(identity, {
+          connection,
+          resources: [coreResources[1]],
+        }),
+      ).resolves.toMatchObject({
+        status: 'eligible',
+        authorizationGeneration: 7,
+        authorizationCharacterId: characterId,
+        authorizationCharacterLifecycleId: characterLifecycleId,
+      })
+
+      await database.transaction((transaction) =>
+        materializeCoreResourceObservation(transaction, {
+          resourceId: 'corporation-roster',
+          subject: { kind: 'corporation', corporationId: 98000001, lifecycleId: sourceLifecycleId },
+          data: [90_000_001, 90_000_002],
+          validatedAt: new Date('2026-09-01T10:00:00Z'),
+          authorizationGeneration: 7,
+        }),
+      )
+      await database.transaction((transaction) =>
+        materializeCoreResourceObservation(transaction, {
+          resourceId: 'corporation-roster',
+          subject: { kind: 'corporation', corporationId: 98000001, lifecycleId: sourceLifecycleId },
+          data: [90_000_002],
+          validatedAt: new Date('2026-09-01T11:00:00Z'),
+          authorizationGeneration: 7,
+        }),
+      )
+      await expect(connection<{ character_id: string }[]>`
+        select character_id from organization_corporation_roster_observations order by character_id
+      `).resolves.toEqual([{ character_id: '90000002' }])
+
+      await connection`
+        update eve_tokens set scopes = '[]'::jsonb where character_id = ${characterId}
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, {
+          connection,
+          resources: [coreResources[1]],
+        }),
+      ).resolves.toMatchObject({ status: 'authorization-required' })
+      await connection`
+        update eve_tokens
+        set scopes = '["esi-corporations.read_corporation_membership.v1"]'::jsonb
+        where character_id = ${characterId}
+      `
+      await connection`
+        update characters set affiliation_resolution_state = 'pending'
+        where character_id = ${characterId}
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, {
+          connection,
+          resources: [coreResources[1]],
+        }),
+      ).resolves.toMatchObject({ status: 'authorization-required' })
+      await connection`
+        update characters set affiliation_resolution_state = 'resolved'
+        where character_id = ${characterId}
+      `
+
+      await connection`
+        update organization_corporation_sources
+        set revoked_at = now(), revoked_by_user_id = ${userId}, revocation_reason = 'Replacement'
+        where source_id = ${sourceId}
+      `
+      await connection`
+        insert into organization_corporation_sources (
+          source_id, deployment_id, organization_version, corporation_id,
+          character_id, evidence_character_id, registered_by_user_id
+        ) values (
+          ${replacementSourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId}
+        )
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id, corporation_source_id
+        ) values (${replacementLifecycleId}, 'corporation', '98000001', ${replacementSourceId})
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, {
+          connection,
+          resources: [coreResources[1]],
+        }),
+      ).resolves.toEqual({ status: 'obsolete' })
+      await expect(
+        selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[1]] }),
+      ).resolves.toEqual([
+        {
+          identity: { ...identity, subjectLifecycleId: replacementLifecycleId },
+          operationId: 'corporation-members',
+          authorizationCharacterId: characterId,
+        },
+      ])
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('materializes alliance departures with stable secret-free domain events', async () => {
+    const connection = postgres(databaseUrl)
+    const database = drizzle(connection, { schema })
+    const adminId = randomUUID()
+    const lifecycleId = randomUUID()
+    try {
+      await connection`
+        insert into deployment_admins (id, email, password_hash)
+        values (${adminId}, 'event-owner@example.com', 'hash')
+      `
+      await connection`
+        insert into organization_epochs (
+          deployment_id, organization_version, organization_type, organization_id,
+          organization_name, organization_ticker
+        ) values (1, 1, 'alliance', 99000001, 'Managed Alliance', 'ALLY')
+      `
+      await connection`
+        insert into deployment_settings (
+          id, owner_admin_id, organization_type, organization_id,
+          organization_name, organization_ticker, organization_version
+        ) values (1, ${adminId}, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id,
+          organization_deployment_id, organization_version
+        ) values (${lifecycleId}, 'alliance', '99000001', 1, 1)
+      `
+
+      await database.transaction((transaction) =>
+        materializeCoreResourceObservation(transaction, {
+          resourceId: 'managed-corporations',
+          subject: { kind: 'alliance', allianceId: 99000001, lifecycleId },
+          data: [98000001, 98000002],
+          validatedAt: new Date('2026-09-01T10:00:00Z'),
+          authorizationGeneration: null,
+        }),
+      )
+      await database.transaction((transaction) =>
+        materializeCoreResourceObservation(transaction, {
+          resourceId: 'managed-corporations',
+          subject: { kind: 'alliance', allianceId: 99000001, lifecycleId },
+          data: [98000002],
+          validatedAt: new Date('2026-09-01T11:00:00Z'),
+          authorizationGeneration: null,
+        }),
+      )
+
+      await expect(connection<{ corporation_id: string; is_current: boolean }[]>`
+        select corporation_id, is_current
+        from organization_managed_corporations
+        order by corporation_id
+      `).resolves.toEqual([
+        { corporation_id: '98000001', is_current: false },
+        { corporation_id: '98000002', is_current: true },
+      ])
+      await expect(connection<{ event_type: string; payload: unknown }[]>`
+        select event_type, payload
+        from domain_events
+        order by event_sequence
+      `).resolves.toEqual([
+        {
+          event_type: 'organization.managed-corporation-added',
+          payload: { deploymentId: 1, organizationVersion: 1, corporationId: 98000001 },
+        },
+        {
+          event_type: 'organization.managed-corporation-added',
+          payload: { deploymentId: 1, organizationVersion: 1, corporationId: 98000002 },
+        },
+        {
+          event_type: 'organization.managed-corporation-removed',
+          payload: { deploymentId: 1, organizationVersion: 1, corporationId: 98000001 },
+        },
+      ])
     } finally {
       await connection.end()
     }

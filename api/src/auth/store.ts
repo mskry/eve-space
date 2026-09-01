@@ -1,10 +1,15 @@
-import { and, asc, desc, eq, gt, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lte, or, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { characterLockKey, characterLockNamespace } from '../db/locks.js'
 import {
   characters,
+  deploymentSettings,
   eveTokens,
   oauthStates,
+  organizationAuthorityEvidence,
+  organizationCorporationSources,
+  organizationManagedCorporations,
+  organizationRoleGrants,
   platformSubjectLifecycles,
   sessions,
   users,
@@ -35,6 +40,13 @@ export type OAuthStateContext =
   | { intent: 'login' }
   | { intent: 'attach'; userId: string }
   | { intent: 'reauthorize'; userId: string; characterId: number; returnPath?: string }
+  | {
+      intent: 'claim-organization-owner'
+      userId: string
+      characterId: number
+      organizationId: number
+      organizationVersion: number
+    }
 
 export interface StoredCharacterToken {
   userId: string
@@ -69,6 +81,7 @@ interface CharacterAuthorizationInput {
   characterName: string
   corporationId: number
   allianceId: number | null
+  affiliationCheckedAt?: Date
   accessToken: string
   refreshToken: string
   expiresIn: number
@@ -99,8 +112,15 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
     stateHash: hashToken(state),
     intent: context.intent,
     userId: context.intent === 'login' ? null : context.userId,
-    characterId: context.intent === 'reauthorize' ? context.characterId : null,
+    characterId:
+      context.intent === 'reauthorize' || context.intent === 'claim-organization-owner'
+        ? context.characterId
+        : null,
     returnPath: context.intent === 'reauthorize' ? (context.returnPath ?? null) : null,
+    organizationDeploymentId: context.intent === 'claim-organization-owner' ? 1 : null,
+    organizationId: context.intent === 'claim-organization-owner' ? context.organizationId : null,
+    organizationVersion:
+      context.intent === 'claim-organization-owner' ? context.organizationVersion : null,
     expiresAt: new Date(Date.now() + oauthStateTtlMs),
   })
 }
@@ -114,6 +134,8 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
       userId: oauthStates.userId,
       characterId: oauthStates.characterId,
       returnPath: oauthStates.returnPath,
+      organizationId: oauthStates.organizationId,
+      organizationVersion: oauthStates.organizationVersion,
     })
 
   if (!record) return null
@@ -126,6 +148,20 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
       userId: record.userId,
       characterId: record.characterId,
       ...(record.returnPath ? { returnPath: record.returnPath } : {}),
+    }
+  if (
+    record.intent === 'claim-organization-owner' &&
+    record.userId &&
+    record.characterId &&
+    record.organizationId &&
+    record.organizationVersion
+  )
+    return {
+      intent: 'claim-organization-owner',
+      userId: record.userId,
+      characterId: record.characterId,
+      organizationId: record.organizationId,
+      organizationVersion: record.organizationVersion,
     }
   throw new Error('Stored OAuth state has invalid authorization context')
 }
@@ -232,7 +268,7 @@ export async function reauthorizeCharacter(
     throw new ReauthorizationCharacterMismatchError()
 
   const token = prepareToken(input)
-  await db.transaction(async (transaction) => {
+  return db.transaction(async (transaction) => {
     await lockCharacterRow(transaction, input.characterId)
     const [ownedCharacter] = await transaction
       .select(authorizationCharacterSelection)
@@ -243,7 +279,7 @@ export async function reauthorizeCharacter(
       )
 
     if (!ownedCharacter) throw new CharacterOwnershipError()
-    await updateCharacterIdentity(transaction, input)
+    const affiliationCheckedAt = await updateCharacterIdentity(transaction, input)
     const scopes = normalizeScopeSet(input.scopes)
     await upsertCharacterToken(transaction, input.characterId, scopes, token)
     await appendScopeChangeEvent(
@@ -253,6 +289,7 @@ export async function reauthorizeCharacter(
       ownedCharacter.scopes ?? [],
       scopes,
     )
+    return affiliationCheckedAt
   })
 }
 
@@ -347,6 +384,61 @@ export async function deleteCharacter(
       )
     if (!target) return 'not-found' as const
     if (target.isMain) return 'main-character' as const
+    const [retainedAuthorityEvidence] = await transaction
+      .select({ evidenceId: organizationAuthorityEvidence.evidenceId })
+      .from(organizationAuthorityEvidence)
+      .innerJoin(
+        organizationRoleGrants,
+        eq(organizationRoleGrants.grantId, organizationAuthorityEvidence.grantId),
+      )
+      .where(
+        and(
+          eq(organizationAuthorityEvidence.characterId, characterId),
+          isNull(organizationRoleGrants.revokedAt),
+        ),
+      )
+      .limit(1)
+    if (retainedAuthorityEvidence) return 'authority-evidence' as const
+    const [activeCorporationSource] = await transaction
+      .select({ sourceId: organizationCorporationSources.sourceId })
+      .from(organizationCorporationSources)
+      .innerJoin(
+        deploymentSettings,
+        and(
+          eq(deploymentSettings.id, organizationCorporationSources.deploymentId),
+          eq(
+            deploymentSettings.organizationVersion,
+            organizationCorporationSources.organizationVersion,
+          ),
+        ),
+      )
+      .innerJoin(
+        organizationManagedCorporations,
+        and(
+          eq(
+            organizationManagedCorporations.deploymentId,
+            organizationCorporationSources.deploymentId,
+          ),
+          eq(
+            organizationManagedCorporations.organizationVersion,
+            organizationCorporationSources.organizationVersion,
+          ),
+          eq(
+            organizationManagedCorporations.corporationId,
+            organizationCorporationSources.corporationId,
+          ),
+          eq(organizationManagedCorporations.isCurrent, true),
+        ),
+      )
+      .where(
+        and(
+          eq(organizationCorporationSources.characterId, characterId),
+          isNull(organizationCorporationSources.revokedAt),
+        ),
+      )
+      .for('update')
+      .limit(1)
+    if (activeCorporationSource) return 'corporation-source' as const
 
     const [deleted] = await transaction
       .delete(characters)
@@ -534,7 +626,7 @@ const authorizationCharacterSelection = {
 }
 
 function characterValues(input: CharacterAuthorizationInput, userId: string, isMain: boolean) {
-  const affiliationObservedAt = new Date()
+  const affiliationObservedAt = input.affiliationCheckedAt ?? new Date()
   return {
     characterId: input.characterId,
     userId,
@@ -620,11 +712,14 @@ async function updateCharacterIdentity(
   transaction: DatabaseTransaction,
   input: CharacterAuthorizationInput,
 ) {
-  const affiliationObservedAt = new Date()
+  const affiliationObservedAt = input.affiliationCheckedAt ?? new Date()
   await transaction
     .update(characters)
+    .set({ name: input.characterName, updatedAt: new Date() })
+    .where(eq(characters.characterId, input.characterId))
+  const [updated] = await transaction
+    .update(characters)
     .set({
-      name: input.characterName,
       corporationId: input.corporationId,
       allianceId: input.allianceId,
       affiliationCheckedAt: affiliationObservedAt,
@@ -632,7 +727,24 @@ async function updateCharacterIdentity(
       nextAffiliationCheck: nextActiveAffiliationCheck(affiliationObservedAt),
       updatedAt: new Date(),
     })
+    .where(
+      and(
+        eq(characters.characterId, input.characterId),
+        or(
+          isNull(characters.affiliationCheckedAt),
+          lte(characters.affiliationCheckedAt, affiliationObservedAt),
+        ),
+      ),
+    )
+    .returning({ affiliationCheckedAt: characters.affiliationCheckedAt })
+  if (updated?.affiliationCheckedAt) return updated.affiliationCheckedAt
+
+  const [current] = await transaction
+    .select({ affiliationCheckedAt: characters.affiliationCheckedAt })
+    .from(characters)
     .where(eq(characters.characterId, input.characterId))
+  if (!current?.affiliationCheckedAt) throw new Error('Character affiliation is missing')
+  return current.affiliationCheckedAt
 }
 
 function nextActiveAffiliationCheck(observedAt: Date) {

@@ -162,16 +162,50 @@ describe('platform module declarations', () => {
   it('rejects unsupported resource eligibility and scheduling metadata', () => {
     const invalid = manifest('alpha', {
       resource: {
-        subjectKind: 'corporation' as never,
+        subjectKind: 'deployment' as never,
         materializationIntervalSeconds: 0,
         eligibility: { kind: 'module-callback' } as never,
       },
     })
 
     const message = validationErrorMessage(invalid)
-    expect(message).toContain('uses unsupported initial subject kind corporation')
-    expect(message).toContain('must use a positive whole interval')
     expect(message).toContain('uses unsupported eligibility module-callback')
+    expect(message).toContain('must use a positive whole interval')
+    expect(message).toContain('uses unsupported subject kind deployment')
+  })
+
+  it.each([
+    ['alliance', 'current-managed-alliance'],
+    ['corporation', 'current-managed-corporation-source'],
+  ] as const)('accepts scalar %s resource eligibility', (subjectKind, eligibilityKind) => {
+    const declaration = manifest('alpha')
+    declaration.server.resources = [
+      {
+        id: 'alpha-resource',
+        operationId: 'alpha-operation',
+        subjectKind,
+        materializationIntervalSeconds: 900,
+        eligibility: { kind: eligibilityKind },
+        exportName: 'alphaResource',
+      },
+    ]
+
+    expect(() =>
+      validatePlatformModuleManifests([declaration], coreModuleValidationAuthorities),
+    ).not.toThrow()
+  })
+
+  it('rejects a legal resource eligibility paired with the wrong subject kind', () => {
+    const invalid = manifest('alpha', {
+      resource: {
+        subjectKind: 'alliance' as never,
+        eligibility: { kind: 'current-owned-character' } as never,
+      },
+    })
+
+    expect(validationErrorMessage(invalid)).toContain(
+      'eligibility current-owned-character is incompatible with subject kind alliance; expected current-managed-alliance',
+    )
   })
 
   it('validates and renders a pure batch resource descriptor', () => {
@@ -318,7 +352,7 @@ describe('platform module registry generation', () => {
     expect(routes).toContain('export const installedModuleRoutes = new Hono()')
     expect(routes).not.toContain('requireInstalledModuleEnabled')
     expect(first.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      'installedModuleResources =\n  [] as const satisfies readonly PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>[]',
+      'installedModuleResources =\n  [] as const satisfies readonly PlatformInstalledResourceDescriptor[]',
     )
     expect(first.get('api/src/generated/platform/installed-module-migrations.ts')).toContain(
       'installedModuleIds = [] as const',

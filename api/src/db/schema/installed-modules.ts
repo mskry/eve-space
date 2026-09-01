@@ -18,7 +18,9 @@ import type {
   PlatformCollectionStateIdentity,
 } from '../../platform/collection-state.js'
 import { characters } from './identity.js'
-import { auditTimestamps, moduleIdCheck } from './shared.js'
+import { organizationEpochs } from './organization-epochs.js'
+import { organizationCorporationSources } from './organization.js'
+import { auditTimestamps } from './shared.js'
 
 // The deployment_* tables here are module-scoped despite the prefix: installed
 // module settings and the navigation order owned by 'core' or by a module.
@@ -39,7 +41,13 @@ export const deploymentModules = pgTable(
     enabled: boolean().default(false).notNull(),
     ...auditTimestamps(),
   },
-  (_table) => [moduleIdCheck('deployment_modules_module_id_check')],
+  () => [
+    check(
+      'deployment_modules_module_id_check',
+      sql`module_id = 'core' or is_valid_module_id(module_id)`,
+    ),
+    check('deployment_modules_core_enabled_check', sql`module_id <> 'core' or enabled`),
+  ],
 )
 
 export const deploymentShellNavigationOrder = pgTable(
@@ -76,13 +84,19 @@ export const platformSubjectLifecycles = pgTable(
       .notNull(),
     subjectId: text('subject_id').notNull(),
     characterId: bigint('character_id', { mode: 'number' }),
+    organizationDeploymentId: integer('organization_deployment_id'),
+    organizationVersion: bigint('organization_version', { mode: 'number' }),
+    corporationSourceId: uuid('corporation_source_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [
     uniqueIndex('platform_subject_lifecycles_character_id_key').on(table.characterId),
-    uniqueIndex('platform_subject_lifecycles_subject_kind_subject_id_key').on(
-      table.subjectKind,
-      table.subjectId,
+    uniqueIndex('platform_subject_lifecycles_organization_epoch_key').on(
+      table.organizationDeploymentId,
+      table.organizationVersion,
+    ),
+    uniqueIndex('platform_subject_lifecycles_corporation_source_id_key').on(
+      table.corporationSourceId,
     ),
     uniqueIndex('platform_subject_lifecycles_subject_kind_lifecycle_subject_id_key').on(
       table.subjectKind,
@@ -94,11 +108,21 @@ export const platformSubjectLifecycles = pgTable(
       foreignColumns: [characters.characterId],
       name: 'platform_subject_lifecycles_character_id_fkey',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.organizationDeploymentId, table.organizationVersion],
+      foreignColumns: [organizationEpochs.deploymentId, organizationEpochs.organizationVersion],
+      name: 'platform_subject_lifecycles_organization_epoch_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.corporationSourceId],
+      foreignColumns: [organizationCorporationSources.sourceId],
+      name: 'platform_subject_lifecycles_corporation_source_id_fkey',
+    }).onDelete('restrict'),
     subjectKindCheck('platform_subject_lifecycles_subject_kind_check'),
     subjectIdCheck('platform_subject_lifecycles_subject_id_check'),
     check(
-      'platform_subject_lifecycles_character_binding_check',
-      sql`(is_character_subject_kind(subject_kind) and character_id is not null and subject_id = character_id::text) or (not is_character_subject_kind(subject_kind) and character_id is null)`,
+      'platform_subject_lifecycles_binding_check',
+      sql`(is_character_subject_kind(subject_kind) and character_id is not null and subject_id = character_id::text and organization_deployment_id is null and organization_version is null and corporation_source_id is null) or (subject_kind = 'alliance' and character_id is null and organization_deployment_id is not null and organization_version is not null and corporation_source_id is null) or (subject_kind = 'corporation' and character_id is null and organization_deployment_id is null and organization_version is null and corporation_source_id is not null) or (subject_kind = 'deployment' and character_id is null and organization_deployment_id is null and organization_version is null and corporation_source_id is null)`,
     ),
   ],
 )
@@ -159,7 +183,10 @@ export const platformCollectionState = pgTable(
       table.subjectLifecycleId,
       table.subjectId,
     ),
-    moduleIdCheck('platform_collection_state_module_id_check'),
+    check(
+      'platform_collection_state_module_id_check',
+      sql`module_id = 'core' or is_valid_module_id(module_id)`,
+    ),
     check(
       'platform_collection_state_resource_id_check',
       sql`is_valid_platform_identifier(resource_id)`,

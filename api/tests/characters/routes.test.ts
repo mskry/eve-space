@@ -585,6 +585,31 @@ describe('character deletion', () => {
     })
   })
 
+  test('returns a typed conflict when organization authority evidence retains the character', async () => {
+    mocks.deleteCharacter.mockResolvedValue('authority-evidence')
+
+    const response = await authorizedRequest(`/${altCharacter.characterId}`, 'DELETE')
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'CHARACTER_AUTHORITY_EVIDENCE_RETAINED',
+      message:
+        'This character supplies retained organization-owner authority evidence and cannot be deleted.',
+    })
+  })
+
+  test('returns a typed conflict when the character is an active corporation source', async () => {
+    mocks.deleteCharacter.mockResolvedValue('corporation-source')
+
+    const response = await authorizedRequest(`/${altCharacter.characterId}`, 'DELETE')
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'CHARACTER_CORPORATION_SOURCE_ACTIVE',
+      message: 'Replace this character as the corporation data source before deleting it.',
+    })
+  })
+
   test('returns the same 404 and never deletes a non-owned target', async () => {
     mocks.findOwnedCharacter.mockResolvedValue(null)
 

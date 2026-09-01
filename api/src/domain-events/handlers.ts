@@ -1,5 +1,6 @@
 import { loadDomainEvent } from './store.js'
 import type { DomainEventEnvelope, DomainEventType } from './definitions.js'
+import { recomputeComplianceForManagedCorporation } from '../organization/compliance.js'
 import { repairPlatformCollectionState } from '../platform/collection-state-repair.js'
 
 const domainEventIdempotencyStrategies = ['event-id-persistence', 'convergent-state'] as const
@@ -58,7 +59,38 @@ export function createPlatformCollectionStateEventHandlers(
   }))
 }
 
-const domainEventHandlers = createPlatformCollectionStateEventHandlers()
+type ManagedCorporationComplianceRecompute = typeof recomputeComplianceForManagedCorporation
+const managedCorporationEventTypes = [
+  'organization.managed-corporation-added',
+  'organization.managed-corporation-removed',
+] as const
+type ManagedCorporationEvent = Extract<
+  DomainEventEnvelope,
+  { eventType: (typeof managedCorporationEventTypes)[number] }
+>
+
+function isManagedCorporationEvent(event: DomainEventEnvelope): event is ManagedCorporationEvent {
+  return (managedCorporationEventTypes as readonly DomainEventType[]).includes(event.eventType)
+}
+
+export function createManagedCorporationComplianceEventHandlers(
+  recompute: ManagedCorporationComplianceRecompute = recomputeComplianceForManagedCorporation,
+): readonly DomainEventHandler[] {
+  return managedCorporationEventTypes.map((eventType) => ({
+    eventType,
+    payloadVersion: 1,
+    idempotency: 'convergent-state',
+    async handle(event) {
+      if (!isManagedCorporationEvent(event)) return
+      await recompute(event.payload)
+    },
+  }))
+}
+
+const domainEventHandlers = [
+  ...createPlatformCollectionStateEventHandlers(),
+  ...createManagedCorporationComplianceEventHandlers(),
+]
 
 export function verifyDomainEventHandlers(
   handlers: readonly Partial<DomainEventHandler>[] = domainEventHandlers,

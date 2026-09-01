@@ -58,6 +58,11 @@ export const PRIVATE_QUERY_KEYS = {
   mailLabels: (characterId: number) => [...PRIVATE_QUERY_KEYS.mail(characterId), 'labels'] as const,
   mailingLists: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.mail(characterId), 'mailing-lists'] as const,
+  organization: () => [...PRIVATE_QUERY_KEYS.root, 'organization'] as const,
+  organizationContext: () => [...PRIVATE_QUERY_KEYS.organization(), 'context'] as const,
+  organizationRoles: () => [...PRIVATE_QUERY_KEYS.organization(), 'roles'] as const,
+  organizationRosterCoverage: () =>
+    [...PRIVATE_QUERY_KEYS.organization(), 'roster-coverage'] as const,
   mailRecipientResolution: (characterId: number, name: string) =>
     [...PRIVATE_QUERY_KEYS.mail(characterId), 'recipient-resolution', name] as const,
   mailRecipientSearch: (characterId: number, query: string) =>

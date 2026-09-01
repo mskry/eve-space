@@ -354,21 +354,52 @@ export interface PlatformResourceBatchContribution {
   readonly operationId: string
 }
 
-export interface PlatformResourceContribution {
+interface PlatformResourceContributionBase {
   id: string
   operationId: string
-  batch?: PlatformResourceBatchContribution
-  subjectKind: 'character'
   materializationIntervalSeconds: number
-  eligibility: { readonly kind: 'current-owned-character' }
   exportName: string
 }
+
+export type PlatformResourceContribution =
+  | (PlatformResourceContributionBase & {
+      batch?: PlatformResourceBatchContribution
+      subjectKind: 'character'
+      eligibility: { readonly kind: 'current-owned-character' }
+    })
+  | (PlatformResourceContributionBase & {
+      batch?: never
+      subjectKind: 'corporation'
+      eligibility: { readonly kind: 'current-managed-corporation-source' }
+    })
+  | (PlatformResourceContributionBase & {
+      batch?: never
+      subjectKind: 'alliance'
+      eligibility: { readonly kind: 'current-managed-alliance' }
+    })
 
 export interface PlatformCharacterResourceSubject {
   readonly kind: 'character'
   readonly characterId: number
   readonly lifecycleId: string
 }
+
+export interface PlatformCorporationResourceSubject {
+  readonly kind: 'corporation'
+  readonly corporationId: number
+  readonly lifecycleId: string
+}
+
+export interface PlatformAllianceResourceSubject {
+  readonly kind: 'alliance'
+  readonly allianceId: number
+  readonly lifecycleId: string
+}
+
+export type PlatformResourceSubject =
+  | PlatformCharacterResourceSubject
+  | PlatformCorporationResourceSubject
+  | PlatformAllianceResourceSubject
 
 export interface PlatformEsiRevalidation {
   readonly ifNoneMatch?: string
@@ -402,8 +433,11 @@ export interface PlatformEsiLoadResult<Data> {
   readonly meta: PlatformEsiResponseMetadata
 }
 
-export interface PlatformResourceMaterializationContext<Data> {
-  readonly subject: PlatformCharacterResourceSubject
+export interface PlatformResourceMaterializationContext<
+  Data,
+  Subject extends PlatformResourceSubject = PlatformResourceSubject,
+> {
+  readonly subject: Subject
   readonly data: Data
   readonly validatedAt: string
   readonly authorizationGeneration: number | null
@@ -457,15 +491,13 @@ export interface PlatformResourceOperationImplementation<
   Data = unknown,
   BatchOperation extends string = string,
   BatchData = unknown,
+  Subject extends PlatformResourceSubject = PlatformCharacterResourceSubject,
 > {
   readonly operation: Operation
-  request(subject: PlatformCharacterResourceSubject): Readonly<Record<string, unknown>>
-  map(input: {
-    readonly subject: PlatformCharacterResourceSubject
-    readonly data: OperationData
-  }): Data
+  request(subject: Subject): Readonly<Record<string, unknown>>
+  map(input: { readonly subject: Subject; readonly data: OperationData }): Data
   /** Repeated delivery for the same subject lifecycle identity must converge. */
-  materialize(context: PlatformResourceMaterializationContext<Data>): Promise<void>
+  materialize(context: PlatformResourceMaterializationContext<Data, Subject>): Promise<void>
   readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
 }
 
@@ -493,16 +525,30 @@ export function definePlatformResourceOperation<
   return implementation
 }
 
-export interface PlatformInstalledResourceDescriptor<Implementation = unknown> {
+interface PlatformInstalledResourceDescriptorBase<Implementation> {
   readonly moduleId: string
   readonly resourceId: string
   readonly operationId: string
-  readonly batch?: PlatformResourceBatchContribution
-  readonly subjectKind: 'character'
   readonly materializationIntervalSeconds: number
-  readonly eligibility: { readonly kind: 'current-owned-character' }
   readonly implementation: Implementation
 }
+
+export type PlatformInstalledResourceDescriptor<Implementation = unknown> =
+  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+      readonly batch?: PlatformResourceBatchContribution
+      readonly subjectKind: 'character'
+      readonly eligibility: { readonly kind: 'current-owned-character' }
+    })
+  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+      readonly batch?: never
+      readonly subjectKind: 'corporation'
+      readonly eligibility: { readonly kind: 'current-managed-corporation-source' }
+    })
+  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+      readonly batch?: never
+      readonly subjectKind: 'alliance'
+      readonly eligibility: { readonly kind: 'current-managed-alliance' }
+    })
 
 export interface PlatformEsiOperationContribution {
   id: string

@@ -149,27 +149,41 @@ function validateResources(
   resourceIds: Map<string, string>,
   issues: string[],
 ) {
+  const eligibilityBySubject = {
+    character: 'current-owned-character',
+    corporation: 'current-managed-corporation-source',
+    alliance: 'current-managed-alliance',
+  } as const
+  const eligibilityKinds = Object.values(eligibilityBySubject)
   for (const resource of manifest.server.resources) {
     const identity = `${manifest.id}/${resource.id}`
     validateContributionId(resource.id, manifest.id, 'resource', issues)
     validateExportName(resource.exportName, manifest.id, 'resource', issues)
     claimValue(resourceIds, resource.id, manifest.id, 'resource ID', issues)
-    if (resource.subjectKind !== 'character')
+    const expectedEligibility = Object.hasOwn(eligibilityBySubject, resource.subjectKind)
+      ? eligibilityBySubject[resource.subjectKind]
+      : undefined
+    if (!expectedEligibility)
       issues.push(
-        `resource ${identity} uses unsupported initial subject kind ${String(resource.subjectKind)}`,
+        `resource ${identity} uses unsupported subject kind ${String(resource.subjectKind)}`,
       )
     if (
       !Number.isSafeInteger(resource.materializationIntervalSeconds) ||
       resource.materializationIntervalSeconds <= 0
     )
       issues.push(`resource ${identity} must use a positive whole interval`)
-    if (resource.eligibility?.kind !== 'current-owned-character')
+    const eligibilityKind = resource.eligibility?.kind
+    if (!eligibilityKinds.includes(eligibilityKind as never))
+      issues.push(`resource ${identity} uses unsupported eligibility ${String(eligibilityKind)}`)
+    else if (expectedEligibility && eligibilityKind !== expectedEligibility)
       issues.push(
-        `resource ${identity} uses unsupported eligibility ${String(resource.eligibility?.kind)}`,
+        `resource ${identity} eligibility ${String(eligibilityKind)} is incompatible with subject kind ${String(resource.subjectKind)}; expected ${expectedEligibility}`,
       )
     if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
       issues.push(`resource ${identity} references unknown ESI operation ${resource.operationId}`)
     if (resource.batch === undefined) continue
+    if (resource.subjectKind !== 'character')
+      issues.push(`resource ${identity} may only declare a batch for character subjects`)
     validateMember(
       resource.batch.mode,
       platformResourceBatchModes,

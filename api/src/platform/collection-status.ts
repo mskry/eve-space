@@ -1,5 +1,5 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
-import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
+import { platformResources } from './resources.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { findInstalledResource } from './resource-declarations.js'
 import {
@@ -50,7 +50,7 @@ export async function getInstalledResourceCollectionStatus(
   identity: PlatformCollectionStateIdentity,
   options: CollectionStatusOptions = {},
 ): Promise<PlatformCollectionStatus> {
-  const resources = options.resources ?? installedModuleResources
+  const resources = options.resources ?? platformResources
   const eligibility = await (options.resolveEligibility ?? resolveInstalledResourceEligibility)(
     identity,
     { resources },
@@ -95,7 +95,7 @@ function projectCollectionStatus(
       validatedAt,
       lastFailureClass: 'authorization-required',
       requiredScope: eligibility.requiredScope,
-      reauthorizationPath: `/auth/eve/reauthorize/${encodeURIComponent(identity.subjectId)}`,
+      reauthorizationPath: `/auth/eve/reauthorize/${encodeURIComponent(String(eligibility.authorizationCharacterId ?? identity.subjectId))}`,
     }
   if (eligibility.status !== 'eligible')
     return {
@@ -105,7 +105,7 @@ function projectCollectionStatus(
     }
   if (validatedAt)
     return {
-      status: eligibility.due ? 'stale' : 'current',
+      status: eligibility.due || lastFailureClass ? 'stale' : 'current',
       validatedAt,
       lastFailureClass,
     }

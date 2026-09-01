@@ -798,6 +798,11 @@ describe('multi-process safety', () => {
           updated_at: expect.any(Date),
         },
         {
+          module_id: 'core',
+          enabled: true,
+          updated_at: expect.any(Date),
+        },
+        {
           module_id: 'delta',
           enabled: true,
           updated_at: expect.any(Date),

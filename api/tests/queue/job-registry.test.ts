@@ -13,7 +13,7 @@ import {
 describe('job registry', () => {
   test('registers classified jobs with stable identities and authoritative recovery', () => {
     verifyJobRegistry()
-    expect(listJobDefinitions()).toHaveLength(8)
+    expect(listJobDefinitions()).toHaveLength(9)
     const job = getJobDefinition('diagnostic') as {
       operationIdentity(payload: { operationId: 'queue-diagnostic' }): string
       durability: string
@@ -27,6 +27,10 @@ describe('job registry', () => {
       attempts: 5,
     })
     expect(getJobDefinition('affiliation')).toMatchObject({ durability: 'derived', attempts: 5 })
+    expect(getJobDefinition('organization-owner-evidence')).toMatchObject({
+      durability: 'derived',
+      attempts: 3,
+    })
     expect(getJobDefinition('resource-refresh')).toMatchObject({
       durability: 'derived',
       attempts: 1,

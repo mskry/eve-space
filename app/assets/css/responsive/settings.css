@@ -16,4 +16,42 @@
     grid-column: 2;
     width: max-content;
   }
+
+  .authority-separation-note,
+  .authority-claim-panel,
+  .role-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .authority-evidence-card {
+    grid-template-columns: 52px 1fr;
+    padding: 22px 18px;
+  }
+
+  .authority-evidence-marker {
+    width: 52px;
+    height: 52px;
+  }
+
+  .authority-evidence-card dl {
+    grid-column: 1 / -1;
+  }
+
+  .authority-claim-panel {
+    padding: 22px 18px;
+    gap: 24px;
+  }
+
+  .authority-organization-strip {
+    align-items: start;
+  }
+
+  .role-grant-form {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .role-grant-row {
+    grid-template-columns: 1fr;
+  }
 }

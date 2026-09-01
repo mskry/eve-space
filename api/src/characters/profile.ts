@@ -137,18 +137,19 @@ export async function getCharacterProfile(characterId: number) {
 }
 
 export async function getCharacterAffiliation(characterId: number) {
-  const character = (
-    await getEsiResilienceLayer().getPublic({
-      operation: 'public-character',
-      inputs: { characterId },
-      load: (revalidation) =>
-        createCharacterClient({ fetch: createEsiTransport('public-character') })
-          .withMetadata()
-          .getPublicInfo(characterId, revalidation),
-    })
-  ).data
+  const result = await getEsiResilienceLayer().getPublic({
+    operation: 'public-character',
+    inputs: { characterId },
+    load: (revalidation) =>
+      createCharacterClient({ fetch: createEsiTransport('public-character') })
+        .withMetadata()
+        .getPublicInfo(characterId, revalidation),
+  })
+  const character = result.data
   return {
     corporationId: character.corporation_id,
     allianceId: character.alliance_id ?? null,
+    affiliationCheckedAt: new Date(result.validatedAt),
+    stale: result.stale,
   }
 }

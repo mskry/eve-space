@@ -8,19 +8,22 @@ describe('queue planner composition', () => {
     const signal = new AbortController().signal
     const enqueueDiagnostic = vi.fn(async () => calls.push('diagnostic'))
     const planAffiliations = vi.fn(async () => calls.push('affiliation'))
+    const planOrganizationOwnerEvidence = vi.fn(async () => calls.push('owner-evidence'))
     const repairCollectionState = vi.fn(async () => calls.push('repair'))
     const planResources = vi.fn(async () => calls.push('resources'))
 
     await runQueuePlanner(queue as never, signal, {
       enqueueDiagnostic,
       planAffiliations,
+      planOrganizationOwnerEvidence,
       repairCollectionState,
       planResources,
     })
 
-    expect(calls).toEqual(['diagnostic', 'affiliation', 'repair', 'resources'])
+    expect(calls).toEqual(['diagnostic', 'affiliation', 'owner-evidence', 'repair', 'resources'])
     expect(enqueueDiagnostic).toHaveBeenCalledWith('planner', signal)
     expect(planAffiliations).toHaveBeenCalledWith(queue, signal)
+    expect(planOrganizationOwnerEvidence).toHaveBeenCalledWith(queue, signal)
     expect(repairCollectionState).toHaveBeenCalledWith({ signal })
     expect(planResources).toHaveBeenCalledWith(queue, signal)
   })
@@ -33,6 +36,7 @@ describe('queue planner composition', () => {
     await runQueuePlanner({} as never, undefined, {
       enqueueDiagnostic: vi.fn().mockResolvedValue({ reason: 'coalesced' }),
       planAffiliations,
+      planOrganizationOwnerEvidence: vi.fn().mockResolvedValue({ reason: 'idle' }),
       repairCollectionState,
       planResources,
     })
@@ -51,6 +55,7 @@ describe('queue planner composition', () => {
       runQueuePlanner({} as never, undefined, {
         enqueueDiagnostic: vi.fn().mockResolvedValue(undefined),
         planAffiliations: vi.fn().mockRejectedValue(failure),
+        planOrganizationOwnerEvidence: vi.fn(),
         repairCollectionState,
         planResources,
       }),
@@ -67,6 +72,7 @@ describe('queue planner composition', () => {
       runQueuePlanner({} as never, undefined, {
         enqueueDiagnostic: vi.fn().mockResolvedValue(undefined),
         planAffiliations: vi.fn().mockResolvedValue(undefined),
+        planOrganizationOwnerEvidence: vi.fn().mockResolvedValue(undefined),
         repairCollectionState: vi.fn().mockRejectedValue(failure),
         planResources,
       }),

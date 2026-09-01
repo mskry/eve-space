@@ -94,6 +94,9 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 
 - Nuxt renders the UI and may fetch public API data during SSR. Browser-side auth and character-owned requests call Hono directly with credentials enabled.
 - The API and worker share server-only ownership of EVE SSO, ESI, session, token, encryption, cache, and persistence behavior.
+- Managed-organization identity, organization-version isolation, account compliance, role/group/block decisions, and organization authorization middleware are core security capabilities. Activity collection and presentation remain module-owned and cannot weaken the core gate.
+- A corporation deployment manages one corporation. An alliance deployment manages its current member corporations, but private roster and corporation-resource coverage requires a separate eligible data-source character in each corporation.
+- Changing the configured organization increments the organization version transactionally. Old-version grants, compliance, scheduling eligibility, and private snapshots must become unable to authorize current access while retained audit history remains attributable to its original version.
 - Queue/coordination Redis is a dedicated durable BullMQ instance: AOF with `appendfsync always`, `noeviction`, capacity health checks, and a persistent volume. It must remain separate from a future disposable cache Redis instance.
 - The worker is a separate Node process built from the `api` workspace. It never runs migrations or an HTTP socket, verifies its required database migration directly, and has a non-HTTP dependency healthcheck. Backlog age degrades `/api/status` but not worker liveness; restarting the worker cannot be the response to work only that worker can drain.
 - PostgreSQL `domain_events` rows are the acceptance and queue-loss recovery record for occurrence-based work. Material state and its event commit in one transaction; Redis jobs contain only the stable event ID.
@@ -119,6 +122,8 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 - Keep handlers inline unless logic is reusable or belongs to a service boundary.
 - Load authenticated sessions through `middleware/auth-session.ts`; do not duplicate cookie/database lookup or import one route module from another.
 - Character-ID-scoped routes must validate the path and load ownership through `middleware/owned-character.ts` before loading tokens or calling protected ESI operations.
+- Organization modules declare their audience and required permission in the build-time manifest. Core applies current-version compliance and role middleware before contributed handlers execute or private data is read.
+- Enabled member-facing modules may contribute bounded activity providers. Providers read only module-owned storage, return intentional member-safe DTOs, and fail independently; core supplies authorized organization and compliant-character context, merges stable identities, and never reads module tables directly.
 
 ## Code Review Rules
 
@@ -147,6 +152,7 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 
 - The browser authenticates directly with EVE Online. Never collect EVE account credentials.
 - One EVE Space user can own multiple individually authorized characters from the same or different EVE accounts; EVE SSO does not provide automatic alt discovery.
+- Character disclosure may be mandatory organization policy, but neither EVE SSO nor EVE Space can discover every character on an account or prove that no undisclosed character exists. UI, logs, audits, and APIs must describe only disclosed registration and observed corporation-roster coverage.
 - Exactly one attached character is main for session identity. Character views and protected resources require an explicit owned character ID.
 - The registered callback URL is `http://localhost:8788/auth/eve/callback` in local development.
 - OAuth state is random, bound to an HttpOnly SameSite cookie, stored only as a SHA-256 hash, and persisted with login, attachment, or exact-character reauthorization intent.
@@ -156,6 +162,9 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 - EVE access and refresh tokens are encrypted with AES-256-GCM before persistence.
 - Refresh tokens, the EVE client secret, and `TOKEN_ENCRYPTION_KEY` must never reach Nuxt or logs.
 - Domain-event payloads, queue jobs, telemetry, and logs must never contain tokens, session bearers, credentials, encryption material, or secrets.
+- Deployment-administrator authority grants no member, HR, director, organization-owner, or private organization-data access. A user holding both deployment and organization authority must receive and revoke each grant independently.
+- Organization grants, compliance projections, exceptions, groups, blocks, corporation sources, roster observations, and module snapshots must be scoped to the current organization version. Derived member access belongs to compliance state, not the elevated role-grant table.
+- Organization audit rows are append-only and retained separately from domain-event recovery. They contain actor/subject identifiers, decisions, reasons, policy and organization versions, and resulting entitlement outcomes, never token or raw private ESI fields.
 - JWT signature, expiration, issuer, and required audiences must remain verified.
 - Wallet access requires `esi-wallet.read_character_wallet.v1`; preserve scope checks and reauthorization responses.
 - Keep auth cookies HttpOnly, SameSite Lax, high priority, and secure when `SESSION_COOKIE_SECURE` is enabled.
@@ -167,6 +176,7 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 
 - Use `@evespace/esi-client` rather than ad hoc ESI fetch calls.
 - Discover endpoint paths, required scopes, route-specific cache behavior, and OpenAPI `x-rate-limit` metadata through the EVE API Explorer before implementing an ESI integration.
+- The reviewed organization operation catalog is recorded in `docs/organization-platform.md`. Re-review it before implementation when the requested compatibility date or SDK version changes.
 - Enrich character skills from local `sde_types` and `sde_groups` in one bounded query; retain ESI records with deterministic unknown labels when static rows are missing.
 - Preserve the configured identifiable ESI user agent and SDK response validation. Browser requests that must identify themselves use `X-User-Agent`; server requests use `User-Agent`.
 - Preserve `X-Compatibility-Date` on ESI requests. The compatibility date is not a future date and API changes take effect at 11:00 UTC.

@@ -1,7 +1,7 @@
 import type {
-  PlatformCharacterResourceSubject,
   PlatformInstalledResourceDescriptor,
   PlatformResourceOperationImplementation,
+  PlatformResourceSubject,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import {
@@ -24,14 +24,16 @@ import {
 } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
-import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
+import { platformResources } from './resources.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
+import { toPlatformResourceSubject } from './core-resources.js'
 import {
   guardInstalledResourceExecution,
   type PlatformResourceExecutionGuard,
 } from './resource-execution-guard.js'
 import {
   assertPlatformResourceRefreshSucceeded,
+  PlatformResourceAuthorizationError,
   PlatformResourceMappingError,
 } from './resource-failures.js'
 
@@ -40,7 +42,7 @@ type PlatformResourceOperationExecution =
   | {
       readonly outcome: 'loaded'
       readonly resource: PlatformInstalledResourceDescriptor
-      readonly subject: PlatformCharacterResourceSubject
+      readonly subject: PlatformResourceSubject
       readonly authorizationGeneration: number | null
       readonly result: EsiCachedResult<unknown>
     }
@@ -57,18 +59,24 @@ export async function executeInstalledResourceOperation(
   identity: PlatformCollectionStateIdentity,
   options: ResourceOperationExecutorOptions = {},
 ): Promise<PlatformResourceOperationExecution> {
-  const resources = options.resources ?? installedModuleResources
+  const resources = options.resources ?? platformResources
   const guarded = await (options.guardExecution ?? guardInstalledResourceExecution)(identity, {
     resources,
   })
   if (guarded.outcome === 'noop') return guarded
 
-  const subject: PlatformCharacterResourceSubject = {
-    kind: 'character',
-    characterId: guarded.characterId,
-    lifecycleId: identity.subjectLifecycleId,
-  }
-  const implementation = guarded.resource.implementation as PlatformResourceOperationImplementation
+  const subject =
+    guarded.subject ??
+    toPlatformResourceSubject(identity as Parameters<typeof toPlatformResourceSubject>[0])
+  if (!subject) return { outcome: 'noop', reason: 'obsolete' }
+  const implementation = guarded.resource.implementation as PlatformResourceOperationImplementation<
+    string,
+    unknown,
+    unknown,
+    string,
+    unknown,
+    PlatformResourceSubject
+  >
   const operation = guarded.resource.operationId as EsiOperation
   const definition = getExecutableEsiOperationDefinition(operation, options.definitions)
   let inputs: Readonly<Record<string, unknown>>
@@ -109,28 +117,46 @@ export async function executeInstalledResourceOperation(
     throw new Error(
       `Character resource ${identity.moduleId}/${identity.resourceId} lacks authorization`,
     )
-  const transportPrincipal = characterEsiPrincipal(guarded.characterId)
-  const result = await resilience.getCharacterWithAuthorization(
-    {
-      operation: operation as CharacterEsiOperation,
-      inputs,
-      load: (revalidation) =>
-        (options.dispatchOperation ?? dispatchModuleEsiOperation)(definition, {
-          inputs,
-          authorization: {
-            kind: 'character',
-            accessToken: authorization.accessToken,
-          },
-          revalidation,
-          transport: createEsiTransport(operation, transportPrincipal),
-        }),
-    },
-    {
-      kind: 'character',
-      principal: characterLifecycleEsiPrincipal(guarded.characterId, identity.subjectLifecycleId),
-      generation: authorization.tokenVersion,
-    },
-  )
+  const authorizationCharacterId =
+    guarded.authorizationCharacterId ?? (subject.kind === 'character' ? subject.characterId : null)
+  const authorizationCharacterLifecycleId =
+    guarded.authorizationCharacterLifecycleId ??
+    (subject.kind === 'character' ? subject.lifecycleId : null)
+  if (!authorizationCharacterId || !authorizationCharacterLifecycleId)
+    throw new Error(
+      `Character-authorized resource ${identity.moduleId}/${identity.resourceId} lacks an authorization source`,
+    )
+  const transportPrincipal = characterEsiPrincipal(authorizationCharacterId)
+  let result: EsiCachedResult<unknown>
+  try {
+    result = await resilience.getCharacterWithAuthorization(
+      {
+        operation: operation as CharacterEsiOperation,
+        inputs,
+        load: (revalidation) =>
+          (options.dispatchOperation ?? dispatchModuleEsiOperation)(definition, {
+            inputs,
+            authorization: {
+              kind: 'character',
+              accessToken: authorization.accessToken,
+            },
+            revalidation,
+            transport: createEsiTransport(operation, transportPrincipal),
+          }),
+      },
+      {
+        kind: 'character',
+        principal: characterLifecycleEsiPrincipal(
+          authorizationCharacterId,
+          authorizationCharacterLifecycleId,
+        ),
+        generation: authorization.tokenVersion,
+      },
+    )
+  } catch (error) {
+    if (isAuthorizationResponse(error)) throw new PlatformResourceAuthorizationError(error)
+    throw error
+  }
   return {
     outcome: 'loaded',
     resource: guarded.resource,
@@ -142,8 +168,15 @@ export async function executeInstalledResourceOperation(
 
 function mapResourceResult(
   result: EsiCachedResult<unknown>,
-  implementation: PlatformResourceOperationImplementation,
-  subject: PlatformCharacterResourceSubject,
+  implementation: PlatformResourceOperationImplementation<
+    string,
+    unknown,
+    unknown,
+    string,
+    unknown,
+    PlatformResourceSubject
+  >,
+  subject: PlatformResourceSubject,
 ): EsiCachedResult<unknown> {
   assertPlatformResourceRefreshSucceeded(result)
   try {
@@ -151,4 +184,9 @@ function mapResourceResult(
   } catch (error) {
     throw new PlatformResourceMappingError(error)
   }
+}
+
+function isAuthorizationResponse(error: unknown) {
+  if (typeof error !== 'object' || !error || !('status' in error)) return false
+  return error.status === 401 || error.status === 403
 }

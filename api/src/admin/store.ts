@@ -1,13 +1,21 @@
-import { and, eq, gt, sql } from 'drizzle-orm'
+import { and, eq, gt, isNull, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { deploymentSetupLockId } from '../db/locks.js'
 import {
   adminSessions,
   deploymentAdmins,
   deploymentSettings,
+  organizationAccountCompliance,
+  organizationAuthorityEvidence,
+  organizationEpochs,
+  organizationManagedCorporations,
+  organizationRoleGrants,
   type DeploymentOrganizationType,
 } from '../db/schema.js'
 import { hashToken } from '../auth/security.js'
+import { appendDomainEvent } from '../domain-events/store.js'
+import { appendOrganizationAuditEvent } from '../organization/audit.js'
+import { initializeManagedOrganization } from '../organization/managed-corporations.js'
 
 export interface DeploymentSettingsRecord {
   organization: {
@@ -66,6 +74,14 @@ export async function createDeployment(input: {
       .returning({ id: deploymentAdmins.id, email: deploymentAdmins.email })
     if (!admin) throw new Error('Failed to create deployment owner')
 
+    await transaction.insert(organizationEpochs).values({
+      deploymentId: 1,
+      organizationVersion: 1,
+      organizationType: input.organization.type,
+      organizationId: input.organization.id,
+      organizationName: input.organization.name,
+      organizationTicker: input.organization.ticker,
+    })
     await transaction.insert(deploymentSettings).values({
       id: 1,
       ownerAdminId: admin.id,
@@ -74,6 +90,16 @@ export async function createDeployment(input: {
       organizationName: input.organization.name,
       organizationTicker: input.organization.ticker,
     })
+    await initializeManagedOrganization(
+      transaction,
+      {
+        deploymentId: 1,
+        organizationVersion: 1,
+        organizationType: input.organization.type,
+        organizationId: input.organization.id,
+      },
+      new Date(),
+    )
     await transaction.insert(adminSessions).values({
       sessionHash: hashToken(input.sessionToken),
       adminId: admin.id,
@@ -129,18 +155,152 @@ export async function deleteAdminSession(sessionToken: string) {
 
 export async function updateDeploymentOrganization(
   organization: DeploymentSettingsRecord['organization'],
+  actorAdminId: string,
 ) {
-  await db
-    .update(deploymentSettings)
-    .set({
+  return db.transaction(async (transaction) => {
+    const [current] = await transaction
+      .select()
+      .from(deploymentSettings)
+      .where(eq(deploymentSettings.id, 1))
+      .for('update')
+    if (!current) throw new Error('Deployment settings are missing')
+
+    const now = new Date()
+    const identityChanged =
+      current.organizationType !== organization.type || current.organizationId !== organization.id
+    if (!identityChanged) {
+      await transaction
+        .update(deploymentSettings)
+        .set({
+          organizationName: organization.name,
+          organizationTicker: organization.ticker,
+          updatedAt: now,
+        })
+        .where(eq(deploymentSettings.id, 1))
+      return organization
+    }
+
+    const organizationVersion = current.organizationVersion + 1
+    await transaction.insert(organizationEpochs).values({
+      deploymentId: current.id,
+      organizationVersion,
       organizationType: organization.type,
       organizationId: organization.id,
       organizationName: organization.name,
       organizationTicker: organization.ticker,
-      updatedAt: new Date(),
+      createdAt: now,
     })
-    .where(eq(deploymentSettings.id, 1))
-  return organization
+    await transaction
+      .update(organizationEpochs)
+      .set({ supersededAt: sql`greatest(clock_timestamp(), ${organizationEpochs.createdAt})` })
+      .where(
+        and(
+          eq(organizationEpochs.deploymentId, current.id),
+          eq(organizationEpochs.organizationVersion, current.organizationVersion),
+        ),
+      )
+    await transaction
+      .update(organizationRoleGrants)
+      .set({
+        revokedAt: now,
+        revokedByUserId: null,
+        revocationReason: 'Managed organization changed.',
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(organizationRoleGrants.deploymentId, current.id),
+          eq(organizationRoleGrants.organizationVersion, current.organizationVersion),
+          isNull(organizationRoleGrants.revokedAt),
+        ),
+      )
+    await transaction
+      .update(organizationAuthorityEvidence)
+      .set({
+        status: 'invalid',
+        reviewDeadline: null,
+        failureClass: 'strict:organization-changed',
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(organizationAuthorityEvidence.deploymentId, current.id),
+          eq(organizationAuthorityEvidence.organizationVersion, current.organizationVersion),
+        ),
+      )
+    await transaction
+      .update(organizationAccountCompliance)
+      .set({ authoritative: false, invalidatedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(organizationAccountCompliance.deploymentId, current.id),
+          eq(organizationAccountCompliance.organizationVersion, current.organizationVersion),
+          eq(organizationAccountCompliance.authoritative, true),
+        ),
+      )
+    await transaction
+      .update(organizationManagedCorporations)
+      .set({ isCurrent: false, removedAt: now, updatedAt: now })
+      .where(
+        and(
+          eq(organizationManagedCorporations.deploymentId, current.id),
+          eq(organizationManagedCorporations.organizationVersion, current.organizationVersion),
+          eq(organizationManagedCorporations.isCurrent, true),
+        ),
+      )
+    await transaction
+      .update(deploymentSettings)
+      .set({
+        organizationType: organization.type,
+        organizationId: organization.id,
+        organizationName: organization.name,
+        organizationTicker: organization.ticker,
+        organizationVersion,
+        updatedAt: now,
+      })
+      .where(eq(deploymentSettings.id, current.id))
+
+    await initializeManagedOrganization(
+      transaction,
+      {
+        deploymentId: current.id,
+        organizationVersion,
+        organizationType: organization.type,
+        organizationId: organization.id,
+      },
+      now,
+    )
+
+    await appendOrganizationAuditEvent(transaction, {
+      deploymentId: 1,
+      organizationVersion,
+      policyVersion: current.registrationPolicyVersion,
+      eventType: 'organization.changed',
+      actorType: 'deployment_admin',
+      actorId: actorAdminId,
+      subjectType: 'deployment',
+      subjectId: String(current.id),
+      reason: 'The deployment administrator changed the managed organization.',
+      outcome: 'transitioned',
+      occurredAt: now,
+    })
+    await appendDomainEvent(transaction, {
+      type: 'organization.changed',
+      payloadVersion: 1,
+      aggregateId: String(current.id),
+      payload: {
+        actorAdminId,
+        previousOrganizationType: current.organizationType,
+        previousOrganizationId: current.organizationId,
+        previousOrganizationVersion: current.organizationVersion,
+        organizationType: organization.type,
+        organizationId: organization.id,
+        organizationVersion,
+      },
+      occurredAt: now,
+    })
+    return organization
+  })
 }
 
 function toOrganization(record: SettingsColumns) {

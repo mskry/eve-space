@@ -4,7 +4,7 @@ import { assertRegisteredEsiOperation, getEsiOperationContract } from '../esi-re
 import { getEsiRequestCooldowns } from '../esi-resilience/cooldowns.js'
 import { characterEsiPrincipal } from '../esi-resilience/identity.js'
 import { env } from '../env.js'
-import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
+import { platformResources } from '../platform/resources.js'
 import { findInstalledResource } from '../platform/resource-declarations.js'
 import {
   selectDueInstalledResources,
@@ -51,7 +51,7 @@ export async function runResourcePlanner(
 ) {
   const dependencies = { ...defaultDependencies, ...options.dependencies }
   signal?.throwIfAborted()
-  const resources = options.resources ?? installedModuleResources
+  const resources = options.resources ?? platformResources
   if (resources.length === 0) return { selected: 0, planned: 0, reason: 'idle' as const }
 
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK
@@ -157,10 +157,20 @@ function createResourceWorkItems(
     const operationId = descriptor.batch?.operationId ?? candidate.operationId
     assertRegisteredEsiOperation(operationId)
     const authorization = getEsiOperationContract(operationId).authorization
+    const authorizationCharacterId =
+      candidate.authorizationCharacterId ??
+      (descriptor.subjectKind === 'character' ? Number(candidate.identity.subjectId) : null)
+    if (
+      authorization.kind === 'character' &&
+      (!authorizationCharacterId || !Number.isSafeInteger(authorizationCharacterId))
+    )
+      throw new Error(
+        `Character-authorized resource ${descriptor.moduleId}/${descriptor.resourceId} has no authorization source`,
+      )
     const operation = {
       operation: operationId,
       ...(authorization.kind === 'character'
-        ? { principal: characterEsiPrincipal(candidate.identity.subjectId) }
+        ? { principal: characterEsiPrincipal(authorizationCharacterId!) }
         : {}),
     }
     const work = descriptor.batch
@@ -216,7 +226,7 @@ function createBatchWork(
   const payload: PlatformResourceBatchJobPayload = {
     moduleId: resource.moduleId,
     resourceId: resource.resourceId,
-    subjectKind: resource.subjectKind,
+    subjectKind: 'character',
     subjects,
   }
   return {

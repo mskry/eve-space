@@ -28,6 +28,24 @@ describe('domain event registry', () => {
       { type: 'character.detached', payloadVersion: 1, aggregateType: 'character' },
       { type: 'character.main-changed', payloadVersion: 1, aggregateType: 'user' },
       { type: 'character.scopes-changed', payloadVersion: 1, aggregateType: 'character' },
+      { type: 'organization.changed', payloadVersion: 1, aggregateType: 'deployment' },
+      { type: 'organization.member-blocked', payloadVersion: 1, aggregateType: 'user' },
+      { type: 'organization.member-unblocked', payloadVersion: 1, aggregateType: 'user' },
+      {
+        type: 'organization.managed-corporation-added',
+        payloadVersion: 1,
+        aggregateType: 'deployment',
+      },
+      {
+        type: 'organization.managed-corporation-removed',
+        payloadVersion: 1,
+        aggregateType: 'deployment',
+      },
+      {
+        type: 'organization.compliance-transitioned',
+        payloadVersion: 1,
+        aggregateType: 'user',
+      },
     ])
   })
 
@@ -64,6 +82,20 @@ describe('domain event registry', () => {
         characterId: 1404328063,
         addedScopes: ['scope-z', 'scope-a'],
         removedScopes: ['scope-old'],
+      },
+    },
+    {
+      type: 'organization.changed',
+      payloadVersion: 1,
+      aggregateId: '1',
+      payload: {
+        actorAdminId: userId,
+        previousOrganizationType: 'corporation',
+        previousOrganizationId: 98_000_001,
+        previousOrganizationVersion: 1,
+        organizationType: 'alliance',
+        organizationId: 99_000_001,
+        organizationVersion: 2,
       },
     },
   ] as const)('validates $type v$payloadVersion', (input) => {

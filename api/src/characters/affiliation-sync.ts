@@ -31,6 +31,17 @@ export interface AffiliationObservation {
   allianceId: number | null
 }
 
+export async function getCharacterAffiliationObservation(characterId: number) {
+  const result = await lookupAffiliationResult([characterId])
+  const observation = result.data.find((entry) => entry.characterId === characterId)
+  if (!observation) return null
+  return {
+    ...observation,
+    affiliationCheckedAt: new Date(result.validatedAt),
+    stale: result.stale,
+  }
+}
+
 export class AffiliationCooldownError extends Error {
   constructor(readonly retryAfterSeconds: number) {
     super('Character affiliation refresh is deferred by ESI cooldown')
@@ -155,27 +166,29 @@ export async function persistAffiliationObservations(
 }
 
 async function lookupAffiliations(characterIds: readonly number[]) {
-  return (
-    await getEsiResilienceLayer().executeNoValue<AffiliationObservation[]>({
-      operation: 'bulk-affiliation',
-      inputs: { characterIds },
-      load: async () => {
-        const response = await createCharacterClient({
-          fetch: createEsiTransport('bulk-affiliation'),
-        })
-          .withMetadata()
-          .lookupAffiliations({ body: [...characterIds] })
-        return {
-          data: response.data.map((affiliation) => ({
-            characterId: affiliation.character_id,
-            corporationId: affiliation.corporation_id,
-            allianceId: affiliation.alliance_id ?? null,
-          })),
-          meta: response.meta,
-        }
-      },
-    })
-  ).data
+  return (await lookupAffiliationResult(characterIds)).data
+}
+
+async function lookupAffiliationResult(characterIds: readonly number[]) {
+  return getEsiResilienceLayer().executeNoValue<AffiliationObservation[]>({
+    operation: 'bulk-affiliation',
+    inputs: { characterIds },
+    load: async () => {
+      const response = await createCharacterClient({
+        fetch: createEsiTransport('bulk-affiliation'),
+      })
+        .withMetadata()
+        .lookupAffiliations({ body: [...characterIds] })
+      return {
+        data: response.data.map((affiliation) => ({
+          characterId: affiliation.character_id,
+          corporationId: affiliation.corporation_id,
+          allianceId: affiliation.alliance_id ?? null,
+        })),
+        meta: response.meta,
+      }
+    },
+  })
 }
 
 function nextAffiliationCheckSql(observedAt: string) {

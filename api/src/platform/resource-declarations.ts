@@ -9,7 +9,7 @@ import {
   getEsiOperationContract,
   getExecutableEsiOperationDefinition,
 } from '../esi-resilience/catalog.js'
-import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
+import { platformResources } from './resources.js'
 
 export function findInstalledResource(
   identity: {
@@ -17,7 +17,7 @@ export function findInstalledResource(
     readonly resourceId: string
     readonly subjectKind: string
   },
-  resources: readonly PlatformInstalledResourceDescriptor[] = installedModuleResources,
+  resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
 ) {
   return resources.find(
     (resource) =>
@@ -28,7 +28,7 @@ export function findInstalledResource(
 }
 
 export function assertInstalledResourceDeclarations(
-  resources: readonly PlatformInstalledResourceDescriptor[] = installedModuleResources,
+  resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
   for (const resource of resources) {

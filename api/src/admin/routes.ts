@@ -200,7 +200,7 @@ export const adminRoutes = new Hono<AdminEnv>()
           input.organizationType,
           input.organizationId,
         )
-        await updateDeploymentOrganization(organization)
+        await updateDeploymentOrganization(organization, context.var.adminSession!.adminId)
         return context.json({ organization })
       } catch (error) {
         return organizationFailure(context, error)

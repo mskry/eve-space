@@ -39,6 +39,7 @@
   }
 
   .dashboard-content {
+    min-height: calc(100dvh - 64px);
     padding: 30px 16px 44px;
   }
 }

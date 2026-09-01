@@ -6,6 +6,9 @@ const mocks = vi.hoisted(() => {
   return {
     OwnershipConflict,
     attachCharacter: vi.fn(),
+    assertOrganizationOwnerDirectorRole: vi.fn(),
+    assertOrganizationOwnerScope: vi.fn(),
+    claimOrganizationOwnership: vi.fn(),
     consumeOAuthState: vi.fn(),
     createAuthorizationUrl: vi.fn(),
     deleteSession: vi.fn(),
@@ -13,8 +16,12 @@ const mocks = vi.hoisted(() => {
     findOwnedCharacter: vi.fn(),
     findSession: vi.fn(),
     getCharacterAffiliation: vi.fn(),
+    getCharacterAffiliationObservation: vi.fn(),
+    getCharacterCorporationRoles: vi.fn(),
+    loadCurrentOrganizationIdentity: vi.fn(),
     isSsoConfigured: vi.fn(),
     reauthorizeCharacter: vi.fn(),
+    resolveOrganizationAuthorityCorporation: vi.fn(),
     saveLogin: vi.fn(),
     storeOAuthState: vi.fn(),
     verifyAccessToken: vi.fn(),
@@ -69,6 +76,31 @@ vi.mock('../../src/characters/profile.js', () => ({
   getCharacterProfile: vi.fn(),
 }))
 
+vi.mock('../../src/characters/affiliation-sync.js', () => ({
+  getCharacterAffiliationObservation: mocks.getCharacterAffiliationObservation,
+}))
+
+vi.mock('../../src/characters/corporation-roles.js', () => ({
+  characterCorporationRolesScope: 'esi-characters.read_corporation_roles.v1',
+  getCharacterCorporationRoles: mocks.getCharacterCorporationRoles,
+}))
+
+vi.mock('../../src/organization/context.js', () => ({
+  loadCurrentOrganizationIdentity: mocks.loadCurrentOrganizationIdentity,
+}))
+
+vi.mock('../../src/organization/authority.js', () => ({
+  OrganizationAuthorityError: class OrganizationAuthorityError extends Error {},
+  assertOrganizationOwnerDirectorRole: mocks.assertOrganizationOwnerDirectorRole,
+  assertOrganizationOwnerScope: mocks.assertOrganizationOwnerScope,
+  resolveOrganizationAuthorityCorporation: mocks.resolveOrganizationAuthorityCorporation,
+}))
+
+vi.mock('../../src/organization/owner-claim.js', () => ({
+  OrganizationOwnerClaimError: class OrganizationOwnerClaimError extends Error {},
+  claimOrganizationOwnership: mocks.claimOrganizationOwnership,
+}))
+
 vi.mock('../../src/db/client.js', () => ({ db: {}, sql: vi.fn() }))
 
 import { app } from '../../src/index.js'
@@ -106,8 +138,29 @@ beforeEach(() => {
     corporationId: mainCharacter.corporationId,
     allianceId: mainCharacter.allianceId,
   })
+  mocks.getCharacterAffiliationObservation.mockResolvedValue({
+    characterId: mainCharacter.characterId,
+    corporationId: mainCharacter.corporationId,
+    allianceId: mainCharacter.allianceId,
+    affiliationCheckedAt: new Date('2026-08-31T12:00:00Z'),
+    stale: false,
+  })
+  mocks.getCharacterCorporationRoles.mockResolvedValue({
+    roles: ['Director'],
+    rolesAtBase: [],
+    rolesAtHeadquarters: [],
+    rolesAtOther: [],
+  })
+  mocks.reauthorizeCharacter.mockResolvedValue(new Date('2026-08-31T12:00:00Z'))
+  mocks.resolveOrganizationAuthorityCorporation.mockResolvedValue(mainCharacter.corporationId)
   mocks.findSession.mockResolvedValue(account)
   mocks.findOwnedCharacter.mockResolvedValue(mainCharacter)
+  mocks.loadCurrentOrganizationIdentity.mockResolvedValue({
+    deploymentId: 1,
+    organizationType: 'corporation',
+    organizationId: mainCharacter.corporationId,
+    organizationVersion: 1,
+  })
 })
 
 afterEach(() => vi.restoreAllMocks())
@@ -197,6 +250,34 @@ describe('EVE SSO start routes', () => {
       userId,
       characterId: mainCharacter.characterId,
     })
+  })
+
+  test('binds an owner claim to the session, exact owned character, and current organization', async () => {
+    const response = await app.request(
+      `/auth/eve/claim-organization-owner/${mainCharacter.characterId}`,
+      { headers: sessionHeader() },
+    )
+    const state = mocks.storeOAuthState.mock.calls[0]?.[0] as string
+
+    expect(response.status).toBe(302)
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, {
+      intent: 'claim-organization-owner',
+      userId,
+      characterId: mainCharacter.characterId,
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 1,
+    })
+  })
+
+  test('requires ownership before reading organization context for an owner claim', async () => {
+    mocks.findOwnedCharacter.mockResolvedValueOnce(null)
+    const response = await app.request('/auth/eve/claim-organization-owner/90000001', {
+      headers: sessionHeader(),
+    })
+
+    expect(response.status).toBe(404)
+    expect(mocks.loadCurrentOrganizationIdentity).not.toHaveBeenCalled()
+    expect(mocks.storeOAuthState).not.toHaveBeenCalled()
   })
 
   test('persists a normalized same-character mailbox return with a safe query', async () => {
@@ -349,6 +430,24 @@ describe('EVE SSO callback intents', () => {
     expect(mocks.attachCharacter).not.toHaveBeenCalled()
   })
 
+  test('requires an owner-claim callback session to match its immutable state user', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'claim-organization-owner',
+      userId,
+      characterId: mainCharacter.characterId,
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 1,
+    })
+    mocks.findSession.mockResolvedValue({ ...account, userId: 'different-user' })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/settings/integrations?organizationOwner=error',
+    )
+    expect(mocks.exchangeAuthorizationCode).not.toHaveBeenCalled()
+  })
+
   test('attaches or refreshes a same-user character without replacing the session or main', async () => {
     mocks.consumeOAuthState.mockResolvedValue({ intent: 'attach', userId })
     mocks.verifyAccessToken.mockResolvedValue({
@@ -401,6 +500,145 @@ describe('EVE SSO callback intents', () => {
     )
     expect(mocks.getCharacterAffiliation).not.toHaveBeenCalled()
     expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+  })
+
+  test('rejects a wrong-character owner claim before affiliation or persistence', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'claim-organization-owner',
+      userId,
+      characterId: mainCharacter.characterId,
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 1,
+    })
+    mocks.verifyAccessToken.mockResolvedValue({
+      characterId: 2_112_625_428,
+      characterName: 'Wrong Character',
+      scopes: [],
+    })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/settings/integrations?organizationOwner=error',
+    )
+    expect(mocks.getCharacterAffiliation).not.toHaveBeenCalled()
+    expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+  })
+
+  test('reauthorizes and atomically persists a verified owner claim', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'claim-organization-owner',
+      userId,
+      characterId: mainCharacter.characterId,
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 1,
+    })
+    mocks.verifyAccessToken.mockResolvedValue({
+      characterId: mainCharacter.characterId,
+      characterName: mainCharacter.name,
+      scopes: ['esi-characters.read_corporation_roles.v1'],
+    })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/settings/integrations?organizationOwner=success',
+    )
+    expect(mocks.saveLogin).not.toHaveBeenCalled()
+    expect(mocks.attachCharacter).not.toHaveBeenCalled()
+    expect(mocks.reauthorizeCharacter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        expectedCharacterId: mainCharacter.characterId,
+        characterId: mainCharacter.characterId,
+      }),
+    )
+    expect(mocks.getCharacterCorporationRoles).toHaveBeenCalledWith(mainCharacter.characterId)
+    expect(mocks.claimOrganizationOwnership).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        characterId: mainCharacter.characterId,
+        organizationId: mainCharacter.corporationId,
+        organizationVersion: 1,
+        authorityCorporationId: mainCharacter.corporationId,
+        requiredScope: 'esi-characters.read_corporation_roles.v1',
+      }),
+    )
+  })
+
+  test('rejects stale owner-claim affiliation before token persistence', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'claim-organization-owner',
+      userId,
+      characterId: mainCharacter.characterId,
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 1,
+    })
+    mocks.getCharacterAffiliationObservation.mockResolvedValue({
+      characterId: mainCharacter.characterId,
+      corporationId: mainCharacter.corporationId,
+      allianceId: null,
+      affiliationCheckedAt: new Date('2026-08-31T12:00:00Z'),
+      stale: true,
+    })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/settings/integrations?organizationOwner=error',
+    )
+    expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+    expect(mocks.claimOrganizationOwnership).not.toHaveBeenCalled()
+  })
+
+  test('rejects stale organization state before token persistence', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'claim-organization-owner',
+      userId,
+      characterId: mainCharacter.characterId,
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 1,
+    })
+    mocks.loadCurrentOrganizationIdentity.mockResolvedValue({
+      deploymentId: 1,
+      organizationType: 'corporation',
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 2,
+    })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/settings/integrations?organizationOwner=error',
+    )
+    expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+    expect(mocks.claimOrganizationOwnership).not.toHaveBeenCalled()
+  })
+
+  test('does not persist an owner grant when current EVE roles lack Director', async () => {
+    mocks.consumeOAuthState.mockResolvedValue({
+      intent: 'claim-organization-owner',
+      userId,
+      characterId: mainCharacter.characterId,
+      organizationId: mainCharacter.corporationId,
+      organizationVersion: 1,
+    })
+    mocks.verifyAccessToken.mockResolvedValue({
+      characterId: mainCharacter.characterId,
+      characterName: mainCharacter.name,
+      scopes: ['esi-characters.read_corporation_roles.v1'],
+    })
+    mocks.assertOrganizationOwnerDirectorRole.mockImplementationOnce(() => {
+      throw new Error('not-director')
+    })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/settings/integrations?organizationOwner=error',
+    )
+    expect(mocks.reauthorizeCharacter).toHaveBeenCalled()
+    expect(mocks.claimOrganizationOwnership).not.toHaveBeenCalled()
   })
 
   test('reauthorizes only the state-bound character and preserves the active session', async () => {

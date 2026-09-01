@@ -213,7 +213,7 @@ function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
     return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, implementation: ${binding} }`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
-  return `${generatedHeader}import type {\n  PlatformInstalledResourceDescriptor,\n  PlatformResourceOperationImplementation,\n} from '@eve-space/platform-module-contract'\n${imports.join('')}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>[]\n`
+  return `${generatedHeader}import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'\n${imports.join('')}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
 }
 
 function renderMigrations(manifests: readonly PlatformModuleManifest[]) {

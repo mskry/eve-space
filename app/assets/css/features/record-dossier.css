@@ -46,7 +46,7 @@
 .overview-bio-copy {
   max-height: 6.2em;
   margin-top: 14px;
-  overflow: auto;
+  overflow: hidden;
   color: var(--ui-text);
   font-size: 11px;
   line-height: 1.55;
@@ -191,6 +191,7 @@ a.affiliation-identity:focus-visible {
 
   .overview-bio-card--expandable:hover .overview-bio-copy {
     max-height: calc(var(--bio-expanded-height) - 71px);
+    overflow: visible;
   }
 }
 

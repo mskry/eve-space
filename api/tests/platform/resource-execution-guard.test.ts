@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
+import { coreResources } from '../../src/platform/core-resources.js'
 
 const identity = {
   moduleId: 'test-feature',
@@ -125,6 +126,66 @@ describe('platform resource execution guard', () => {
         loadCharacterAuthorization,
       }),
     ).resolves.toMatchObject({ outcome: 'ready', authorization: null })
+    expect(loadCharacterAuthorization).not.toHaveBeenCalled()
+  })
+
+  test('loads a corporation resource token from its source-character lifecycle', async () => {
+    const sourceLifecycleId = '70eb0397-adff-4a82-94d6-065bd2149ea8'
+    const corporationIdentity = {
+      moduleId: 'core',
+      resourceId: 'corporation-roster',
+      subjectKind: 'corporation' as const,
+      subjectLifecycleId: '34b4904d-c8d2-451a-b1d2-465f4bac99c4',
+      subjectId: '98000001',
+    }
+    const loadCharacterAuthorization = vi
+      .fn()
+      .mockResolvedValue({ accessToken: 'private', tokenVersion: 7 })
+
+    await expect(
+      guardInstalledResourceExecution(corporationIdentity, {
+        resources: [coreResources[1]],
+        resolveEligibility: vi.fn().mockResolvedValue({
+          ...eligible(7),
+          authorizationCharacterId: 1_404_328_063,
+          authorizationCharacterLifecycleId: sourceLifecycleId,
+        }),
+        loadCharacterAuthorization,
+      }),
+    ).resolves.toMatchObject({
+      outcome: 'ready',
+      subject: { kind: 'corporation', corporationId: 98_000_001 },
+      authorizationCharacterId: 1_404_328_063,
+    })
+    expect(loadCharacterAuthorization).toHaveBeenCalledWith(
+      1_404_328_063,
+      sourceLifecycleId,
+      'esi-corporations.read_corporation_membership.v1',
+    )
+  })
+
+  test('runs managed-alliance discovery without character authorization', async () => {
+    const loadCharacterAuthorization = vi.fn()
+    await expect(
+      guardInstalledResourceExecution(
+        {
+          moduleId: 'core',
+          resourceId: 'managed-corporations',
+          subjectKind: 'alliance',
+          subjectLifecycleId: '34b4904d-c8d2-451a-b1d2-465f4bac99c4',
+          subjectId: '99000001',
+        },
+        {
+          resources: [coreResources[0]],
+          resolveEligibility: vi.fn().mockResolvedValue(eligible(null)),
+          loadCharacterAuthorization,
+        },
+      ),
+    ).resolves.toMatchObject({
+      outcome: 'ready',
+      subject: { kind: 'alliance', allianceId: 99_000_001 },
+      authorization: null,
+    })
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
   })
 })

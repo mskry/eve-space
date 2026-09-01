@@ -15,6 +15,7 @@ import {
 } from './store.js'
 import type { OAuthStateContext } from './store.js'
 import { getCharacterAffiliation } from '../characters/profile.js'
+import { getCharacterAffiliationObservation } from '../characters/affiliation-sync.js'
 import { env, isSsoConfigured } from '../env.js'
 import { createAuthorizationUrl, exchangeAuthorizationCode, verifyAccessToken } from './sso.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
@@ -22,6 +23,21 @@ import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-chara
 import { loadSession, sessionCookie } from '../middleware/auth-session.js'
 import { createOpaqueToken, tokensMatch } from './security.js'
 import { zValidator } from '../http/validation.js'
+import { loadCurrentOrganizationIdentity } from '../organization/context.js'
+import {
+  assertOrganizationOwnerDirectorRole,
+  assertOrganizationOwnerScope,
+  OrganizationAuthorityError,
+  resolveOrganizationAuthorityCorporation,
+} from '../organization/authority.js'
+import {
+  characterCorporationRolesScope,
+  getCharacterCorporationRoles,
+} from '../characters/corporation-roles.js'
+import {
+  claimOrganizationOwnership,
+  OrganizationOwnerClaimError,
+} from '../organization/owner-claim.js'
 
 const oauthStateCookie = 'eve_space_oauth_state'
 const sessionDurationSeconds = 7 * 24 * 60 * 60
@@ -58,6 +74,23 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       return context.json({ code: 'AUTH_REQUIRED', message: 'Log in with EVE Online first.' }, 401)
     return startAuthorization(context, { intent: 'attach', userId: session.userId })
   })
+  .get(
+    '/eve/claim-organization-owner/:characterId',
+    zValidator('param', characterIdParams),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      setPrivateHeaders(context)
+      const organization = await loadCurrentOrganizationIdentity()
+      return startAuthorization(context, {
+        intent: 'claim-organization-owner',
+        userId: context.var.session!.userId,
+        characterId: context.var.ownedCharacter.characterId,
+        organizationId: organization.organizationId,
+        organizationVersion: organization.organizationVersion,
+      })
+    },
+  )
   .get(
     '/eve/reauthorize/:characterId',
     zValidator('param', characterIdParams),
@@ -113,15 +146,24 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       const tokens = await exchangeAuthorizationCode(code)
       const identity = await verifyAccessToken(tokens.access_token)
       if (
-        stateContext.intent === 'reauthorize' &&
+        (stateContext.intent === 'reauthorize' ||
+          stateContext.intent === 'claim-organization-owner') &&
         identity.characterId !== stateContext.characterId
       ) {
         return redirectForIntent(context, stateContext, 'error')
       }
-      const affiliation = await getCharacterAffiliation(identity.characterId)
+      const affiliation =
+        stateContext.intent === 'claim-organization-owner'
+          ? await getCharacterAffiliationObservation(identity.characterId)
+          : await getCharacterAffiliation(identity.characterId)
+      if (!affiliation) throw new OrganizationAuthorityError('stale-affiliation')
+      if (stateContext.intent === 'claim-organization-owner' && affiliation.stale)
+        throw new OrganizationAuthorityError('stale-affiliation')
       const authorization = {
         ...identity,
-        ...affiliation,
+        corporationId: affiliation.corporationId,
+        allianceId: affiliation.allianceId,
+        affiliationCheckedAt: affiliation.affiliationCheckedAt,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
         expiresIn: tokens.expires_in,
@@ -218,7 +260,47 @@ async function saveAuthorizationForIntent(
         userId: stateContext.userId,
         expectedCharacterId: stateContext.characterId,
       })
+      return
+    case 'claim-organization-owner':
+      await saveOrganizationOwnerClaim(stateContext, authorization)
+      return
   }
+}
+
+async function saveOrganizationOwnerClaim(
+  state: Extract<OAuthStateContext, { intent: 'claim-organization-owner' }>,
+  authorization: CharacterAuthorization,
+) {
+  const organization = await loadCurrentOrganizationIdentity()
+  if (
+    organization.organizationId !== state.organizationId ||
+    organization.organizationVersion !== state.organizationVersion
+  )
+    throw new OrganizationOwnerClaimError('stale-organization')
+
+  assertOrganizationOwnerScope(characterCorporationRolesScope, authorization.scopes)
+  const authorityCorporationId = await resolveOrganizationAuthorityCorporation(
+    organization,
+    authorization,
+  )
+  const affiliationCheckedAt = await reauthorizeCharacter({
+    ...authorization,
+    userId: state.userId,
+    expectedCharacterId: state.characterId,
+  })
+  const roles = await getCharacterCorporationRoles(state.characterId)
+  assertOrganizationOwnerDirectorRole(roles)
+  await claimOrganizationOwnership({
+    userId: state.userId,
+    characterId: state.characterId,
+    organizationId: state.organizationId,
+    organizationVersion: state.organizationVersion,
+    authorityCorporationId,
+    observedCorporationId: authorization.corporationId,
+    observedAllianceId: authorization.allianceId,
+    affiliationCheckedAt,
+    requiredScope: characterCorporationRolesScope,
+  })
 }
 
 function redirectForIntent(
@@ -232,6 +314,12 @@ function redirectForIntent(
     destination.searchParams.set('auth', status === 'conflict' ? 'error' : status)
     if (status === 'success' && characterId)
       destination.searchParams.set('character', String(characterId))
+    return context.redirect(destination.toString())
+  }
+
+  if (state.intent === 'claim-organization-owner') {
+    const destination = new URL('/settings/integrations', env.WEB_ORIGIN)
+    destination.searchParams.set('organizationOwner', status === 'conflict' ? 'error' : status)
     return context.redirect(destination.toString())
   }
 

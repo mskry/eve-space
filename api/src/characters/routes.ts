@@ -189,6 +189,25 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
           409,
         )
       }
+      if (result === 'authority-evidence') {
+        return context.json(
+          {
+            code: 'CHARACTER_AUTHORITY_EVIDENCE_RETAINED',
+            message:
+              'This character supplies retained organization-owner authority evidence and cannot be deleted.',
+          },
+          409,
+        )
+      }
+      if (result === 'corporation-source') {
+        return context.json(
+          {
+            code: 'CHARACTER_CORPORATION_SOURCE_ACTIVE',
+            message: 'Replace this character as the corporation data source before deleting it.',
+          },
+          409,
+        )
+      }
       if (result === 'not-found')
         return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
       return context.body(null, 204)

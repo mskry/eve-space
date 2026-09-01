@@ -77,7 +77,7 @@ export type ClaimedDomainEvent =
   | (DomainEventClaim & { valid: false; event: { eventId: string } })
 
 export async function appendDomainEvent(
-  transaction: DomainEventTransaction,
+  transaction: Pick<DomainEventTransaction, 'insert'>,
   input: RegisteredDomainEventInput,
 ) {
   const event = validateDomainEventInput(input)

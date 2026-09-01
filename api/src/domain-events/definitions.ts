@@ -44,7 +44,54 @@ const characterScopesChangedPayloadSchema = z
     }
   })
 
-export type DomainEventAggregateType = 'character' | 'user'
+const organizationChangedPayloadSchema = z
+  .object({
+    actorAdminId: z.uuid(),
+    previousOrganizationType: z.enum(['corporation', 'alliance']),
+    previousOrganizationId: positiveIdentifier,
+    previousOrganizationVersion: positiveIdentifier,
+    organizationType: z.enum(['corporation', 'alliance']),
+    organizationId: positiveIdentifier,
+    organizationVersion: positiveIdentifier,
+  })
+  .strict()
+  .refine(
+    (payload) =>
+      payload.previousOrganizationType !== payload.organizationType ||
+      payload.previousOrganizationId !== payload.organizationId,
+    { message: 'Previous and new organizations must differ' },
+  )
+  .refine((payload) => payload.organizationVersion === payload.previousOrganizationVersion + 1, {
+    message: 'Organization version must advance exactly once',
+  })
+
+const organizationMemberBlockPayloadSchema = z
+  .object({
+    organizationVersion: positiveIdentifier,
+    userId: z.uuid(),
+    blockId: z.uuid(),
+  })
+  .strict()
+
+const managedCorporationPayloadSchema = z
+  .object({
+    deploymentId: z.literal(1),
+    organizationVersion: positiveIdentifier,
+    corporationId: positiveIdentifier,
+  })
+  .strict()
+
+const complianceTransitionPayloadSchema = z
+  .object({
+    deploymentId: z.literal(1),
+    organizationVersion: positiveIdentifier,
+    userId: z.uuid(),
+    state: z.enum(['pending', 'compliant', 'review_required', 'suspended']),
+    evidenceFreshness: z.enum(['fresh', 'stale', 'unavailable']),
+  })
+  .strict()
+
+export type DomainEventAggregateType = 'character' | 'user' | 'deployment'
 
 const domainEventRegistry = {
   'character.attached': {
@@ -62,6 +109,30 @@ const domainEventRegistry = {
   'character.scopes-changed': {
     aggregateType: 'character',
     versions: { 1: characterScopesChangedPayloadSchema },
+  },
+  'organization.changed': {
+    aggregateType: 'deployment',
+    versions: { 1: organizationChangedPayloadSchema },
+  },
+  'organization.member-blocked': {
+    aggregateType: 'user',
+    versions: { 1: organizationMemberBlockPayloadSchema },
+  },
+  'organization.member-unblocked': {
+    aggregateType: 'user',
+    versions: { 1: organizationMemberBlockPayloadSchema },
+  },
+  'organization.managed-corporation-added': {
+    aggregateType: 'deployment',
+    versions: { 1: managedCorporationPayloadSchema },
+  },
+  'organization.managed-corporation-removed': {
+    aggregateType: 'deployment',
+    versions: { 1: managedCorporationPayloadSchema },
+  },
+  'organization.compliance-transitioned': {
+    aggregateType: 'user',
+    versions: { 1: complianceTransitionPayloadSchema },
   },
 } as const
 

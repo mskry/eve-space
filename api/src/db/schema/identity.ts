@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -15,8 +16,9 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 import { auditTimestamps } from './shared.js'
+import { organizationEpochs } from './organization-epochs.js'
 
-export type AuthorizationIntent = 'login' | 'attach' | 'reauthorize'
+export type AuthorizationIntent = 'login' | 'attach' | 'reauthorize' | 'claim-organization-owner'
 
 export const users = pgTable('users', {
   id: uuid().defaultRandom().primaryKey().notNull(),
@@ -47,6 +49,7 @@ export const characters = pgTable(
     uniqueIndex('one_main_character_per_user')
       .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
       .where(sql`is_main`),
+    uniqueIndex('characters_user_character_key').on(table.userId, table.characterId),
     index('characters_due_affiliation_check_idx')
       .on(table.nextAffiliationCheck, table.characterId)
       .where(
@@ -94,6 +97,9 @@ export const oauthStates = pgTable(
     intent: text().$type<AuthorizationIntent>().default('login').notNull(),
     userId: uuid('user_id'),
     characterId: bigint('character_id', { mode: 'number' }),
+    organizationDeploymentId: smallint('organization_deployment_id'),
+    organizationId: bigint('organization_id', { mode: 'number' }),
+    organizationVersion: bigint('organization_version', { mode: 'number' }),
     returnPath: varchar('return_path', { length: 512 }),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
@@ -120,12 +126,56 @@ export const oauthStates = pgTable(
       foreignColumns: [characters.characterId],
       name: 'oauth_states_character_id_fkey',
     }).onDelete('cascade'),
-    check('oauth_states_intent_check', sql`intent in ('login', 'attach', 'reauthorize')`),
+    foreignKey({
+      columns: [table.organizationDeploymentId, table.organizationVersion, table.organizationId],
+      foreignColumns: [
+        organizationEpochs.deploymentId,
+        organizationEpochs.organizationVersion,
+        organizationEpochs.organizationId,
+      ],
+      name: 'oauth_states_organization_epoch_fkey',
+    }).onDelete('cascade'),
+    index('oauth_states_organization_epoch_idx')
+      .on(table.organizationDeploymentId, table.organizationVersion)
+      .where(sql`organization_deployment_id is not null`),
+    check(
+      'oauth_states_intent_check',
+      sql`intent in ('login', 'attach', 'reauthorize', 'claim-organization-owner')`,
+    ),
     check(
       'oauth_states_context_check',
-      sql`(intent = 'login' and user_id is null and character_id is null)
-        or (intent = 'attach' and user_id is not null and character_id is null)
-        or (intent = 'reauthorize' and user_id is not null and character_id is not null)`,
+      sql`(
+          intent = 'login'
+          and user_id is null
+          and character_id is null
+          and organization_deployment_id is null
+          and organization_id is null
+          and organization_version is null
+        )
+        or (
+          intent = 'attach'
+          and user_id is not null
+          and character_id is null
+          and organization_deployment_id is null
+          and organization_id is null
+          and organization_version is null
+        )
+        or (
+          intent = 'reauthorize'
+          and user_id is not null
+          and character_id is not null
+          and organization_deployment_id is null
+          and organization_id is null
+          and organization_version is null
+        )
+        or (
+          intent = 'claim-organization-owner'
+          and user_id is not null
+          and character_id is not null
+          and organization_deployment_id = 1
+          and organization_id is not null
+          and organization_version is not null
+        )`,
     ),
     check(
       'oauth_states_return_path_context_check',

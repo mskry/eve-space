@@ -136,6 +136,29 @@ const affiliationJob: JobDefinition<z.infer<typeof affiliationJobPayload>> = {
   },
 }
 
+const organizationOwnerEvidencePayload = z
+  .object({
+    operationId: z.string().regex(/^organization-owner-evidence-[\da-f-]{36}$/i),
+    grantId: z.uuid(),
+  })
+  .strict()
+
+const organizationOwnerEvidenceJob: JobDefinition<
+  z.infer<typeof organizationOwnerEvidencePayload>
+> = {
+  name: 'organization-owner-evidence',
+  queueName: operationsQueueName,
+  payload: organizationOwnerEvidencePayload,
+  durability: 'derived',
+  attempts: 3,
+  operationIdentity: ({ operationId }) => operationId,
+  classifyError: () => 'retryable',
+  async process({ grantId }) {
+    const { refreshOrganizationOwnerEvidence } = await import('../organization/owner-evidence.js')
+    await refreshOrganizationOwnerEvidence(grantId)
+  },
+}
+
 const resourceRefreshJob: JobDefinition<PlatformCollectionStateIdentity> = {
   name: 'resource-refresh',
   queueName: operationsQueueName,
@@ -193,6 +216,7 @@ const jobRegistry = [
   outboxRelayJob,
   eventRetentionJob,
   affiliationJob,
+  organizationOwnerEvidenceJob,
   resourceRefreshJob,
   resourceBatchJob,
 ] as const
