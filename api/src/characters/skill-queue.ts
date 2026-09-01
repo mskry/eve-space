@@ -4,8 +4,10 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
+import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
+import type { EsiResultMetadata } from '../esi-resilience/types.js'
 
 const primaryAttributeId = 180
 const secondaryAttributeId = 181
@@ -43,10 +45,12 @@ interface CharacterSkillQueueEntries {
   entries: CharacterSkillQueueEntry[]
 }
 
-export interface CharacterSkillQueue extends CharacterSkillQueueEntries {
+interface CharacterSkillQueueData extends CharacterSkillQueueEntries {
   state: SkillQueueState
   activeQueuePosition: number | null
 }
+
+export type CharacterSkillQueue = CharacterSkillQueueData & EsiResultMetadata
 
 /**
  * Classification depends on the current time, so it is resolved per response rather than stored in
@@ -69,23 +73,25 @@ export function resolveSkillQueueState(
 }
 
 export async function getCharacterSkillQueue(characterId: number): Promise<CharacterSkillQueue> {
-  const { entries } = (
-    await getEsiResilienceLayer().getCharacter({
-      operation: 'skill-queue',
-      inputs: { characterId },
-      load: async (authority, revalidation) => {
-        const response = await createSkillsClient({
-          fetch: createEsiTransport('skill-queue', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .getSkillQueue(characterId, revalidation)
-        return { data: await mapCharacterSkillQueue(response.data), meta: response.meta }
-      },
-    })
-  ).data
+  const result = await getEsiResilienceLayer().getCharacter({
+    operation: 'skill-queue',
+    inputs: { characterId },
+    load: async (authority, revalidation) => {
+      const response = await createSkillsClient({
+        fetch: createEsiTransport('skill-queue', authority.principal),
+        token: authority.accessToken,
+      })
+        .withMetadata()
+        .getSkillQueue(characterId, revalidation)
+      return { data: await mapCharacterSkillQueue(response.data), meta: response.meta }
+    },
+  })
 
-  return { ...resolveSkillQueueState(entries, Date.now()), entries }
+  return {
+    ...resolveSkillQueueState(result.data.entries, Date.now()),
+    entries: result.data.entries,
+    ...toEsiResultMetadata(result),
+  }
 }
 
 async function mapCharacterSkillQueue(

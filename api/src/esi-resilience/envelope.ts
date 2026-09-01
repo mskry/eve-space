@@ -31,12 +31,12 @@ export function createCacheEnvelope<Data>(options: {
   )
   const retainUntil = freshUntil + maximumRetentionMs
   const declaredStaleUntil =
-    options.policy.cache.kind !== 'none' && options.policy.cache.stale.kind === 'bounded'
+    options.policy.cache.kind !== 'none' && options.policy.cache.stale.kind !== 'none'
       ? freshUntil + options.policy.cache.stale.milliseconds
       : freshUntil
   const staleUntil = Math.min(declaredStaleUntil, retainUntil)
   return {
-    version: 2,
+    version: 3,
     representationVersion: options.representationVersion,
     data: options.data,
     freshUntil,

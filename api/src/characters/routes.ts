@@ -19,6 +19,7 @@ import { getCharacterProfile } from './profile.js'
 import { getWalletBalance, getWalletTransactions, walletScope, WalletQuotaError } from './wallet.js'
 import { env } from '../env.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { combineEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
@@ -141,7 +142,13 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
           502,
         )
       }
-      return context.json({ profile, location, ship, skills })
+      const metadata = combineEsiResultMetadata([
+        profile,
+        ...(location.status === 'ok' ? [location.data] : []),
+        ...(ship.status === 'ok' ? [ship.data] : []),
+        ...(skills.status === 'ok' ? [skills.data] : []),
+      ])
+      return context.json({ profile, location, ship, skills, ...metadata })
     },
   )
   .patch(

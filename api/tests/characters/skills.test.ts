@@ -28,6 +28,18 @@ vi.mock('../../src/esi-resilience/resilience.js', () => ({
 vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 const characterId = 1404328063
+const esiMetadata = {
+  cachedUntil: '2026-09-01T11:01:00.000Z',
+  validatedAt: '2026-09-01T11:00:00.000Z',
+  quota: {},
+  source: 'esi' as const,
+  stale: false,
+}
+const publicMetadata = {
+  cachedUntil: esiMetadata.cachedUntil,
+  validatedAt: esiMetadata.validatedAt,
+  stale: false,
+}
 
 beforeEach(() => {
   vi.resetModules()
@@ -45,7 +57,7 @@ beforeEach(() => {
       { accessToken: 'access-token', principal: `character-${characterId}` },
       {},
     )
-    return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
+    return { data: loaded.data, ...esiMetadata }
   })
   mocks.createSkillsClient.mockReturnValue({ withMetadata: () => ({ getSkills: mocks.getSkills }) })
   mocks.select.mockReturnValue({ from: mocks.from })
@@ -66,12 +78,15 @@ describe('character skills snapshot', () => {
       await import('../../src/characters/skills.js')
 
     await expect(getCharacterSkillsData(characterId)).resolves.toEqual({
-      totalSp: 19_000,
-      unallocatedSp: 0,
-      skills: [
-        { typeId: 4, skillpoints: 4000, activeLevel: 4, trainedLevel: 5 },
-        { typeId: 2, skillpoints: 2000, activeLevel: 2, trainedLevel: 2 },
-      ],
+      data: {
+        totalSp: 19_000,
+        unallocatedSp: 0,
+        skills: [
+          { typeId: 4, skillpoints: 4000, activeLevel: 4, trainedLevel: 5 },
+          { typeId: 2, skillpoints: 2000, activeLevel: 2, trainedLevel: 2 },
+        ],
+      },
+      ...esiMetadata,
     })
     expect(characterSkillsScope).toBe('esi-skills.read_skills.v1')
     expect(mocks.get).toHaveBeenCalledOnce()
@@ -92,6 +107,7 @@ describe('character skills snapshot', () => {
     await expect(getCharacterSkillsSummary(characterId)).resolves.toEqual({
       totalSp: 2500,
       unallocatedSp: 125,
+      ...publicMetadata,
     })
     expect(mocks.select).not.toHaveBeenCalled()
   })
@@ -175,6 +191,7 @@ describe('detailed character skills catalogue', () => {
           ],
         },
       ],
+      ...publicMetadata,
     })
     expect(skillCategoryId).toBe(16)
     expect(mocks.get).toHaveBeenCalledOnce()
@@ -215,6 +232,7 @@ describe('detailed character skills catalogue', () => {
           ],
         },
       ],
+      ...publicMetadata,
     })
   })
 
@@ -226,6 +244,7 @@ describe('detailed character skills catalogue', () => {
         skills: [{ typeId: 2, skillpoints: 2000, activeLevel: 2, trainedLevel: 2 }],
       },
       cachedUntil: '',
+      validatedAt: '2026-09-01T11:00:00.000Z',
       quota: {},
       source: 'cache',
       stale: false,

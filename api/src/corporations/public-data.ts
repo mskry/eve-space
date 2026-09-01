@@ -3,6 +3,7 @@ import type { EsiResponseMetadata } from '@evespace/esi-client'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
+import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
 interface CorporationPublic {
@@ -41,69 +42,71 @@ interface AllianceHistoryEntry {
 type CorporationLookup = { found: true; corporation: CorporationPublic } | { found: false }
 
 export async function getCorporationPublic(corporationId: number): Promise<CorporationPublic> {
-  const lookup = (
-    await getEsiResilienceLayer().getPublic<CorporationLookup>({
-      operation: 'public-corporation',
-      inputs: { corporationId },
-      load: async (revalidation) => {
-        try {
-          const response = await createCorporationClient({
-            fetch: createEsiTransport('public-corporation'),
-          })
-            .withMetadata()
-            .getPublicInfo(corporationId, revalidation)
-          const corporation = response.data
-          const ceoId = corporation.ceo_id ?? null
-          const creatorId = corporation.creator_id ?? null
-          const allianceId = corporation.alliance_id ?? null
-          const homeStationId = corporation.home_station_id ?? null
-          const idsToResolve = [
-            ...new Set(
-              [ceoId, creatorId, allianceId, homeStationId].filter(
-                (id): id is number => id !== null,
-              ),
-            ),
-          ]
-          const names = idsToResolve.length ? await resolveUniverseNames(idsToResolve) : new Map()
-          return {
-            data: {
-              found: true as const,
-              corporation: {
-                corporationId,
-                name: corporation.name,
-                ticker: corporation.ticker,
-                memberCount: corporation.member_count,
-                ceoId,
-                ceoName: ceoId ? (names.get(ceoId)?.name ?? null) : null,
-                creatorId,
-                creatorName: creatorId ? (names.get(creatorId)?.name ?? null) : null,
-                taxRate: corporation.tax_rates?.isk ?? null,
-                dateFounded: corporation.date_founded ?? null,
-                description: eveDescriptionToPlainText(corporation.description) ?? null,
-                url: corporation.url ?? null,
-                factionId: corporation.enlisted_faction_id ?? null,
-                homeStationId,
-                homeStationName: homeStationId ? (names.get(homeStationId)?.name ?? null) : null,
-                shares: corporation.shares ?? null,
-                allianceId,
-                allianceName: allianceId ? (names.get(allianceId)?.name ?? null) : null,
-                type: corporation.type ?? 'unknown',
-                state: corporation.state ?? 'unknown',
-                warEligible: corporation.war_eligible ?? null,
-                warHistory: [],
-              },
+  return (await getCorporationPublicResult(corporationId)).data
+}
+
+export async function getCorporationPublicResult(
+  corporationId: number,
+): Promise<EsiCachedResult<CorporationPublic>> {
+  const result = await getEsiResilienceLayer().getPublic<CorporationLookup>({
+    operation: 'public-corporation',
+    inputs: { corporationId },
+    load: async (revalidation) => {
+      try {
+        const response = await createCorporationClient({
+          fetch: createEsiTransport('public-corporation'),
+        })
+          .withMetadata()
+          .getPublicInfo(corporationId, revalidation)
+        const corporation = response.data
+        const ceoId = corporation.ceo_id ?? null
+        const creatorId = corporation.creator_id ?? null
+        const allianceId = corporation.alliance_id ?? null
+        const homeStationId = corporation.home_station_id ?? null
+        const idsToResolve = [
+          ...new Set(
+            [ceoId, creatorId, allianceId, homeStationId].filter((id): id is number => id !== null),
+          ),
+        ]
+        const names = idsToResolve.length ? await resolveUniverseNames(idsToResolve) : new Map()
+        return {
+          data: {
+            found: true as const,
+            corporation: {
+              corporationId,
+              name: corporation.name,
+              ticker: corporation.ticker,
+              memberCount: corporation.member_count,
+              ceoId,
+              ceoName: ceoId ? (names.get(ceoId)?.name ?? null) : null,
+              creatorId,
+              creatorName: creatorId ? (names.get(creatorId)?.name ?? null) : null,
+              taxRate: corporation.tax_rates?.isk ?? null,
+              dateFounded: corporation.date_founded ?? null,
+              description: eveDescriptionToPlainText(corporation.description) ?? null,
+              url: corporation.url ?? null,
+              factionId: corporation.enlisted_faction_id ?? null,
+              homeStationId,
+              homeStationName: homeStationId ? (names.get(homeStationId)?.name ?? null) : null,
+              shares: corporation.shares ?? null,
+              allianceId,
+              allianceName: allianceId ? (names.get(allianceId)?.name ?? null) : null,
+              type: corporation.type ?? 'unknown',
+              state: corporation.state ?? 'unknown',
+              warEligible: corporation.war_eligible ?? null,
+              warHistory: [],
             },
-            meta: response.meta,
-          }
-        } catch (error) {
-          if (errorStatus(error) !== 404) throw error
-          return { data: { found: false as const }, meta: errorMetadata(error) }
+          },
+          meta: response.meta,
         }
-      },
-    })
-  ).data
-  if (!lookup.found) throw Object.assign(new Error('Corporation not found'), { status: 404 })
-  return lookup.corporation
+      } catch (error) {
+        if (errorStatus(error) !== 404) throw error
+        return { data: { found: false as const }, meta: errorMetadata(error) }
+      }
+    },
+  })
+  if (!result.data.found) throw Object.assign(new Error('Corporation not found'), { status: 404 })
+  return { ...result, data: result.data.corporation }
 }
 
 export async function getCorporationAllianceHistory(

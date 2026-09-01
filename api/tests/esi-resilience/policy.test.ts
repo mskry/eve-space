@@ -108,7 +108,7 @@ describe('ESI operation policies', () => {
     })
     expect(getEsiOperationContract('wallet-balance')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-wallet.read_character_wallet.v1' },
-      cache: { kind: 'shared', stale: { kind: 'none' } },
+      cache: { kind: 'shared', stale: { kind: 'outage', milliseconds: 3_600_000 } },
     })
   })
 
@@ -236,7 +236,11 @@ describe('ESI operation policies', () => {
     expect(getEsiOperationContract('attributes')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-skills.read_skills.v1' },
       identity: { kind: 'ordered', fields: ['characterId'] },
-      cache: { kind: 'shared', revalidate: true, stale: { kind: 'none' } },
+      cache: {
+        kind: 'shared',
+        revalidate: true,
+        stale: { kind: 'outage', milliseconds: 3_600_000 },
+      },
       retry: { kind: 'idempotent' },
     })
     expect(esiOperationMetadata['skill-queue']).toMatchObject({
@@ -249,7 +253,11 @@ describe('ESI operation policies', () => {
     expect(getEsiOperationContract('skill-queue')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-skills.read_skillqueue.v1' },
       identity: { kind: 'ordered', fields: ['characterId'] },
-      cache: { kind: 'shared', revalidate: true, stale: { kind: 'none' } },
+      cache: {
+        kind: 'shared',
+        revalidate: true,
+        stale: { kind: 'outage', milliseconds: 3_600_000 },
+      },
     })
     expect([
       esiOperationMetadata['wallet-balance'],
@@ -307,7 +315,11 @@ describe('ESI operation policies', () => {
     expect(getEsiOperationContract('character-search')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-search.search_structures.v1' },
       identity: { kind: 'ordered', fields: ['characterId', 'search'] },
-      cache: { kind: 'shared', revalidate: true, stale: { kind: 'none' } },
+      cache: {
+        kind: 'shared',
+        revalidate: true,
+        stale: { kind: 'outage', milliseconds: 3_600_000 },
+      },
       retry: { kind: 'idempotent' },
     })
 

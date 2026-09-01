@@ -400,7 +400,7 @@ export class EsiResilienceLayer {
       } catch (error) {
         if (
           // Prefer an already validated stale value over spending more upstream attempts.
-          this.#canServeStale(stale, policy) ||
+          this.#canServeStale(stale, policy, error) ||
           attempt === attempts ||
           !isRetryableEsiError(error)
         )
@@ -453,7 +453,7 @@ export class EsiResilienceLayer {
     policy: ReturnType<typeof getEsiOperationContract>,
     error: unknown,
   ): EsiCachedResult<Data> {
-    if (!this.#canServeStale(stale, policy)) throw error
+    if (!this.#canServeStale(stale, policy, error)) throw error
     const retryAt = error instanceof EsiQuotaError ? error.retryAt.toISOString() : undefined
     return toCachedResult(stale, 'cache', true, retryAt, {}, classifyStaleRefreshFailure(error))
   }
@@ -461,12 +461,14 @@ export class EsiResilienceLayer {
   #canServeStale<Data>(
     stale: EsiCacheEnvelope<Data> | undefined,
     policy: ReturnType<typeof getEsiOperationContract>,
+    error: unknown,
   ): stale is EsiCacheEnvelope<Data> {
     return Boolean(
       stale &&
       policy.cache.kind !== 'none' &&
       isEnvelopeRetained(stale) &&
-      isEnvelopeStaleUsable(stale),
+      isEnvelopeStaleUsable(stale) &&
+      isStaleUsableForFailure(policy.cache.stale, error),
     )
   }
 
@@ -748,6 +750,18 @@ function getErrorStatus(error: unknown) {
   return Number.isFinite(status) ? status : undefined
 }
 
+function isStaleUsableForFailure(
+  stale:
+    | { readonly kind: 'bounded' | 'outage'; readonly milliseconds: number }
+    | { readonly kind: 'none' },
+  error: unknown,
+) {
+  if (stale.kind === 'none') return false
+  if (stale.kind === 'bounded') return true
+  const failure = classifyStaleRefreshFailure(error)
+  return failure === 'esi-unavailable' || failure === 'esi-cooldown'
+}
+
 function classifyStaleRefreshFailure(
   error: unknown,
 ): NonNullable<EsiCachedResult<unknown>['refreshFailureClass']> {
@@ -759,9 +773,7 @@ function classifyStaleRefreshFailure(
     (error.code === 'ESI_RESPONSE_PARSE_ERROR' || error.code === 'ESI_RESPONSE_VALIDATION_ERROR')
   )
     return 'response-invalid'
-  return isRetryableEsiError(error) || error instanceof EsiRequestWaitTimeoutError
-    ? 'esi-unavailable'
-    : 'unknown'
+  return isRetryableEsiError(error) ? 'esi-unavailable' : 'unknown'
 }
 
 function getErrorMetadata(error: unknown): EsiResponseMetadata | undefined {
@@ -830,7 +842,7 @@ function parseEnvelope<Data>(serialized: string): EsiCacheEnvelope<Data> | undef
       !value ||
       typeof value !== 'object' ||
       !('version' in value) ||
-      value.version !== 2 ||
+      value.version !== 3 ||
       !('representationVersion' in value) ||
       !('data' in value) ||
       !('freshUntil' in value) ||

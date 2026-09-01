@@ -294,6 +294,7 @@ export type PlatformEsiCacheContract =
       readonly revalidate: boolean
       readonly stale:
         | { readonly kind: 'bounded'; readonly milliseconds: number }
+        | { readonly kind: 'outage'; readonly milliseconds: number }
         | { readonly kind: 'none' }
       readonly retentionMilliseconds: number
     }

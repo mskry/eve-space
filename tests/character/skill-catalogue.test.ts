@@ -291,6 +291,7 @@ describe('isInjectedOnly', () => {
 
     expect(isInjectedOnly(injected!)).toBe(true)
     expect(isInjectedOnly(absent!)).toBe(false)
+    expect(isInjectedOnly(absent!, 1)).toBe(true)
     expect(isInjectedOnly(trained!)).toBe(false)
   })
 })

@@ -4,8 +4,10 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypes } from '../db/schema.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
+import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
+import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 
 export const characterSkillsScope = getCharacterEsiScope('skills')
 export const skillCategoryId = 16
@@ -35,25 +37,23 @@ let skillCataloguePromise: Promise<SkillCatalogue> | undefined
 
 export async function getCharacterSkillsData(
   characterId: number,
-): Promise<CharacterSkillsSnapshot> {
-  return (
-    await getEsiResilienceLayer().getCharacter({
-      operation: 'skills',
-      inputs: { characterId },
-      load: async (authority, revalidation) => {
-        const response = await createSkillsClient({
-          fetch: createEsiTransport('skills', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .getSkills(characterId, revalidation)
-        return { data: mapCharacterSkillsSnapshot(response.data), meta: response.meta }
-      },
-    })
-  ).data
+): Promise<EsiCachedResult<CharacterSkillsSnapshot>> {
+  return getEsiResilienceLayer().getCharacter({
+    operation: 'skills',
+    inputs: { characterId },
+    load: async (authority, revalidation) => {
+      const response = await createSkillsClient({
+        fetch: createEsiTransport('skills', authority.principal),
+        token: authority.accessToken,
+      })
+        .withMetadata()
+        .getSkills(characterId, revalidation)
+      return { data: mapCharacterSkillsSnapshot(response.data), meta: response.meta }
+    },
+  })
 }
 
-export interface CharacterSkills {
+interface CharacterSkillsData {
   totalSp: number
   unallocatedSp: number
   injectedSkillCount: number
@@ -72,12 +72,17 @@ export interface CharacterSkills {
   }>
 }
 
+export type CharacterSkills = CharacterSkillsData & EsiResultMetadata
+
 export async function getCharacterSkills(characterId: number): Promise<CharacterSkills> {
   const [snapshot, catalogue] = await Promise.all([
     getCharacterSkillsData(characterId),
     getSkillCatalogue(),
   ])
-  return composeCharacterSkills(snapshot, catalogue)
+  return {
+    ...composeCharacterSkills(snapshot.data, catalogue),
+    ...toEsiResultMetadata(snapshot),
+  }
 }
 
 function mapCharacterSkillsSnapshot(
@@ -147,10 +152,10 @@ async function loadSkillCatalogue(): Promise<SkillCatalogue> {
 function composeCharacterSkills(
   snapshot: CharacterSkillsSnapshot,
   catalogue: SkillCatalogue,
-): CharacterSkills {
+): CharacterSkillsData {
   const progressByType = new Map(snapshot.skills.map((skill) => [skill.typeId, skill]))
   const catalogueTypeIds = new Set<number>()
-  const groups: CharacterSkills['groups'] = catalogue.groups.map((catalogueGroup) => {
+  const groups: CharacterSkillsData['groups'] = catalogue.groups.map((catalogueGroup) => {
     let trainedSp = 0
     const skills = catalogueGroup.skills.map((catalogueSkill) => {
       catalogueTypeIds.add(catalogueSkill.typeId)

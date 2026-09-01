@@ -342,7 +342,7 @@ describe('ESI resilience layer', () => {
     expect(outerLoad).toHaveBeenCalledOnce()
   })
 
-  test('retains a private entry for conditional revalidation without serving it stale', async () => {
+  test('serves a retained private entry while the upstream is unreachable', async () => {
     const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
     const load = vi
       .fn()
@@ -368,11 +368,34 @@ describe('ESI resilience layer', () => {
         inputs: { characterId: 1 },
         load,
       }),
-    ).rejects.toEqual(new EsiQuotaError(12))
+    ).resolves.toMatchObject({
+      data: { name: 'cached' },
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-cooldown',
+      retryAt: new EsiQuotaError(12).retryAt.toISOString(),
+    })
     expect(load).toHaveBeenLastCalledWith(
       { accessToken: 'token', principal: 'character-1' },
       { ifNoneMatch: '"etag"', ifModifiedSince: 'yesterday' },
     )
+  })
+
+  test('refuses a retained private entry when the refresh failure is not an outage', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const invalid = Object.assign(new Error('Response failed validation'), {
+      code: 'ESI_RESPONSE_VALIDATION_ERROR',
+    })
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce(result({ name: 'cached' }))
+      .mockRejectedValueOnce(invalid)
+
+    await layer.getCharacter({ operation: 'wallet-balance', inputs: { characterId: 1 }, load })
+    await vi.advanceTimersByTimeAsync(60_001)
+    await expect(
+      layer.getCharacter({ operation: 'wallet-balance', inputs: { characterId: 1 }, load }),
+    ).rejects.toBe(invalid)
   })
 
   test('reuses a validated cache namespace for one second', async () => {
@@ -478,6 +501,26 @@ describe('ESI resilience layer', () => {
     const error = await caught
     expect(error).toMatchObject({ name: 'EsiRequestWaitTimeoutError' })
     expect(error).not.toBeInstanceOf(EsiQuotaError)
+  })
+
+  test('does not release retained private data after a request-owner wait timeout', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const load = vi.fn().mockResolvedValue(result({ name: 'cached' }))
+
+    await layer.getCharacter({ operation: 'wallet-balance', inputs: { characterId: 1 }, load })
+    await vi.advanceTimersByTimeAsync(60_001)
+    mocks.acquire.mockResolvedValue(undefined)
+    mocks.getLeaseTtl.mockResolvedValue(100)
+    const pending = layer.getCharacter({
+      operation: 'wallet-balance',
+      inputs: { characterId: 1 },
+      load,
+    })
+    const caught = pending.catch((error: unknown) => error)
+
+    await vi.advanceTimersByTimeAsync(30_001)
+    await expect(caught).resolves.toMatchObject({ name: 'EsiRequestWaitTimeoutError' })
+    expect(load).toHaveBeenCalledOnce()
   })
 
   test('does not cache a no-value operation while still loading it', async () => {
@@ -856,7 +899,7 @@ function authorize(tokenVersion = 1) {
 
 function serializedEnvelope(overrides: Partial<Record<string, unknown>>) {
   return JSON.stringify({
-    version: 2,
+    version: 3,
     representationVersion: 'v2',
     data: { name: 'cached' },
     freshUntil: now + 60_000,

@@ -109,9 +109,8 @@ describe('protected character queries', () => {
         characterId,
         transactions: [],
         cachedUntil: '2026-08-20T00:00:00.000Z',
-        source: 'cache',
+        validatedAt: '2026-08-19T23:59:00.000Z',
         stale: false,
-        quota: {},
       })
       queryCache.ensure({
         key: PRIVATE_QUERY_KEYS.characterModuleResource(characterId, 'member-audit', 'records'),
@@ -146,17 +145,16 @@ describe('protected character queries', () => {
     wrapper.unmount()
   })
 
-  it('keeps a successful stale wallet response and its retry metadata', async () => {
+  it('keeps a successful stale wallet response and its validation time', async () => {
     queryServer.use(
       http.get('http://localhost/api/me/characters/7/wallet', () =>
         HttpResponse.json({
           characterId: 7,
           balance: 123.45,
           cachedUntil: '2026-08-20T00:00:00.000Z',
-          source: 'cache',
+          validatedAt: '2026-08-19T23:59:00.000Z',
           stale: true,
-          retryAt: '2026-08-20T00:01:00.000Z',
-          quota: {},
+          refreshFailureClass: 'esi-unavailable' as const,
         }),
       ),
     )
@@ -164,14 +162,14 @@ describe('protected character queries', () => {
     const Root = defineComponent({
       setup() {
         const result = useQuery(walletQuery({ apiClient, characterId: 7 }))
-        return () => h('span', result.data.value?.stale ? result.data.value.retryAt : 'loading')
+        return () => h('span', result.data.value?.stale ? result.data.value.validatedAt : 'loading')
       },
     })
 
     const { wrapper } = mountWithQueryPlugins(Root)
     await flushPromises()
 
-    expect(wrapper.text()).toBe('2026-08-20T00:01:00.000Z')
+    expect(wrapper.text()).toBe('2026-08-19T23:59:00.000Z')
     wrapper.unmount()
   })
 
@@ -182,9 +180,8 @@ describe('protected character queries', () => {
           characterId: 8,
           balance: 123.45,
           cachedUntil: '2026-08-20T00:00:00.000Z',
-          source: 'cache',
+          validatedAt: '2026-08-19T23:59:00.000Z',
           stale: false,
-          quota: {},
         }),
       ),
     )
@@ -233,9 +230,8 @@ describe('protected character queries', () => {
             },
           ],
           cachedUntil: '2026-08-20T00:01:00.000Z',
-          source: 'esi',
+          validatedAt: '2026-08-20T00:00:00.000Z',
           stale: false,
-          quota: {},
         })
       }),
     )

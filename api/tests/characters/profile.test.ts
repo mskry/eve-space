@@ -32,6 +32,7 @@ vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi
 
 const character = {
   achievement_score: 0,
+  alliance_id: 99_000_001,
   birthday: '2008-01-31T00:00:00Z',
   bloodline_id: 5,
   corporation_id: 1_000_166,
@@ -41,16 +42,25 @@ const character = {
   race_id: 4,
   security_status: -0.3,
 }
+const esiMetadata = {
+  cachedUntil: '2026-08-20T12:01:00.000Z',
+  validatedAt: '2026-08-20T12:00:00.000Z',
+  quota: {},
+  source: 'esi' as const,
+  stale: false,
+}
+const publicMetadata = {
+  cachedUntil: esiMetadata.cachedUntil,
+  validatedAt: esiMetadata.validatedAt,
+  stale: false,
+}
 
 beforeEach(() => {
   mocks.get.mockImplementation(async (resource) => {
     const loaded = await resource.load({})
     return {
       data: loaded.data,
-      cachedUntil: '2026-08-20T12:01:00.000Z',
-      quota: {},
-      source: 'esi',
-      stale: false,
+      ...esiMetadata,
     }
   })
   mocks.getCharacter.mockResolvedValue(response(character))
@@ -71,13 +81,50 @@ describe('character profile', () => {
       name: 'Bandera Primary',
       bio: '고생 끝에 낙이 온다',
       corporation: { id: 1_000_166, name: 'Imperial Academy', ticker: 'IAC', memberCount: 1 },
+      ...publicMetadata,
     })
     expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
       'public-character',
       'public-corporation',
       'universe-races',
       'universe-bloodlines',
+      'public-alliance',
     ])
+  })
+
+  test('reports the oldest validation and staleness across every profile resource', async () => {
+    const validatedAtByOperation: Record<string, string> = {
+      'public-character': '2026-08-20T12:00:00.000Z',
+      'public-corporation': '2026-08-20T11:59:00.000Z',
+      'universe-races': '2026-08-20T11:58:00.000Z',
+      'universe-bloodlines': '2026-08-20T11:57:00.000Z',
+      'public-alliance': '2026-08-20T11:56:00.000Z',
+    }
+    mocks.get.mockImplementation(async (resource) => {
+      const loaded = await resource.load({})
+      const stale = resource.operation === 'universe-bloodlines'
+      return {
+        data: loaded.data,
+        cachedUntil: '2026-08-20T12:01:00.000Z',
+        validatedAt: validatedAtByOperation[resource.operation],
+        quota: { remaining: 12 },
+        source: 'cache',
+        stale,
+        ...(stale ? { refreshFailureClass: 'response-invalid' } : {}),
+      }
+    })
+    const { getCharacterProfile } = await import('../../src/characters/profile.js')
+
+    const profile = await getCharacterProfile(90_000_001)
+
+    expect(profile).toMatchObject({
+      cachedUntil: '2026-08-20T12:01:00.000Z',
+      validatedAt: '2026-08-20T11:56:00.000Z',
+      stale: true,
+      refreshFailureClass: 'response-invalid',
+    })
+    expect(profile).not.toHaveProperty('source')
+    expect(profile).not.toHaveProperty('quota')
   })
 
   test.each(['profile-first', 'deployment-first'] as const)(
@@ -87,10 +134,24 @@ describe('character profile', () => {
       mocks.get.mockImplementation(async (resource) => {
         const key = JSON.stringify([resource.operation, resource.inputs])
         if (cache.has(key))
-          return { data: cache.get(key), cachedUntil: '', quota: {}, source: 'cache', stale: false }
+          return {
+            data: cache.get(key),
+            cachedUntil: '',
+            validatedAt: '2026-08-20T12:00:00.000Z',
+            quota: {},
+            source: 'cache',
+            stale: false,
+          }
         const loaded = await resource.load({})
         cache.set(key, loaded.data)
-        return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
+        return {
+          data: loaded.data,
+          cachedUntil: '',
+          validatedAt: '2026-08-20T12:00:00.000Z',
+          quota: {},
+          source: 'esi',
+          stale: false,
+        }
       })
       const [{ getCharacterProfile }, { getCorporationPublic }, { resolveDeploymentOrganization }] =
         await Promise.all([

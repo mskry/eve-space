@@ -41,7 +41,10 @@ type EsiCacheContract =
       kind: 'shared'
       collapse: boolean
       revalidate: boolean
-      stale: { kind: 'bounded'; milliseconds: number } | { kind: 'none' }
+      stale:
+        | { kind: 'bounded'; milliseconds: number }
+        | { kind: 'outage'; milliseconds: number }
+        | { kind: 'none' }
       retentionMilliseconds: number
     }
   | { kind: 'none' }
@@ -480,7 +483,13 @@ function sharedPrivateCache(retentionMilliseconds = hour): EsiCacheConfiguration
   return {
     kind: 'shared',
     collapse: true,
-    stale: { kind: 'none' },
+    // Private DTOs stay fresh-only in normal operation. The retained envelope is released only
+    // while ESI itself is unreachable, when upstream cannot contradict it and the alternative is
+    // failing a request whose answer is already generation-bound to this character and token.
+    stale:
+      retentionMilliseconds > 0
+        ? { kind: 'outage', milliseconds: retentionMilliseconds }
+        : { kind: 'none' },
     retentionMilliseconds,
   }
 }
