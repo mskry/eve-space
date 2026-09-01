@@ -70,9 +70,9 @@ describe('summariseGroups', () => {
     const visible = selectVisibleSkills(indexed, 'v', null)
 
     expect(summariseGroups(groups, visible)).toEqual([
-      { key: '255', name: 'Gunnery', groupId: 255, count: 1 },
-      { key: '1210', name: 'Armor', groupId: 1210, count: 1 },
-      { key: 'unknown', name: 'Unknown', groupId: null, count: 0 },
+      { key: '255', name: 'Gunnery', groupId: 255, icon: 'gunnery', count: 1 },
+      { key: '1210', name: 'Armor', groupId: 1210, icon: 'armor', count: 1 },
+      { key: 'unknown', name: 'Unknown', groupId: null, icon: 'unknown', count: 0 },
     ])
   })
 })
