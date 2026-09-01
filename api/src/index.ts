@@ -18,6 +18,7 @@ import { statusRoutes } from './system/status-routes.js'
 import { ssoRoutes } from './auth/routes.js'
 import { loadSession, requireSession } from './middleware/auth-session.js'
 import { TokenRefreshUnavailableError } from './auth/tokens.js'
+import { universeRoutes } from './universe/routes.js'
 
 export const app = new Hono()
   .use('*', secureHeaders())
@@ -27,6 +28,7 @@ export const app = new Hono()
   .route('/api/status', statusRoutes)
   .route('/api/modules', moduleRuntimeRoutes)
   .route('/api/modules', installedModuleRoutes)
+  .route('/api/universe', universeRoutes)
   .use('/api/admin/*', loadSession, requireSession)
   .use('/api/characters/*', loadSession, requireSession)
   .use('/api/corporations/*', loadSession, requireSession)

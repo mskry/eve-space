@@ -192,6 +192,10 @@ function skillLevelDescription(skill: IndexedSkill) {
   return levelDescription(skill, queuedLevels.value.get(skill.typeId) ?? 0)
 }
 
+function skillInformationStatusDescription(skill: IndexedSkill) {
+  return `${skillLevelDescription(skill)}; ${skill.skillpoints.toLocaleString('en-US')} trained skill points; trained level ${romanLevel(skill.trainedLevel)}`
+}
+
 function skillIsInjectedOnly(skill: IndexedSkill) {
   return isInjectedOnly(skill, queuedLevels.value.get(skill.typeId) ?? 0)
 }
@@ -324,40 +328,46 @@ function pluralize(count: number, singular: string, plural: string) {
             class="skill-row"
             :class="{ 'is-injected': skillIsInjectedOnly(skill) }"
           >
-            <span class="skill-level-track" :aria-label="skillLevelDescription(skill)">
-              <i
-                v-for="cell in skillLevelCells(skill)"
-                :key="cell.level"
-                :class="{
-                  'is-active': cell.active,
-                  'is-trained': cell.trained,
-                  'is-queued': cell.queued,
-                }"
-                aria-hidden="true"
-              />
-            </span>
-            <span
-              class="skill-row-name"
-              :class="{ 'is-revealed': revealedSkillNameId === skill.typeId }"
-              :data-full-name="skill.name"
-              @mouseenter="revealTruncatedSkillName(skill.typeId, $event)"
-              @mouseleave="hideSkillName(skill.typeId)"
+            <CharacterSkillsItemInformationPopover
+              :type-id="skill.typeId"
+              :name="skill.name"
+              :status-description="skillInformationStatusDescription(skill)"
             >
-              {{ skill.name }}
-            </span>
-            <span
-              class="skill-row-sp"
-              :aria-label="`${skill.skillpoints.toLocaleString('en-US')} trained skill points`"
-            >
-              {{ skill.skillpoints.toLocaleString('en-US') }} SP
-            </span>
-            <span
-              class="skill-row-level"
-              :class="{ 'is-partial': skill.activeLevel < skill.trainedLevel }"
-              :aria-label="`Trained level ${skill.trainedLevel}`"
-            >
-              {{ romanLevel(skill.trainedLevel) }}
-            </span>
+              <span class="skill-level-track" :aria-label="skillLevelDescription(skill)">
+                <i
+                  v-for="cell in skillLevelCells(skill)"
+                  :key="cell.level"
+                  :class="{
+                    'is-active': cell.active,
+                    'is-trained': cell.trained,
+                    'is-queued': cell.queued,
+                  }"
+                  aria-hidden="true"
+                />
+              </span>
+              <span
+                class="skill-row-name"
+                :class="{ 'is-revealed': revealedSkillNameId === skill.typeId }"
+                :data-full-name="skill.name"
+                @mouseenter="revealTruncatedSkillName(skill.typeId, $event)"
+                @mouseleave="hideSkillName(skill.typeId)"
+              >
+                {{ skill.name }}
+              </span>
+              <span
+                class="skill-row-sp"
+                :aria-label="`${skill.skillpoints.toLocaleString('en-US')} trained skill points`"
+              >
+                {{ skill.skillpoints.toLocaleString('en-US') }} SP
+              </span>
+              <span
+                class="skill-row-level"
+                :class="{ 'is-partial': skill.activeLevel < skill.trainedLevel }"
+                :aria-label="`Trained level ${skill.trainedLevel}`"
+              >
+                {{ romanLevel(skill.trainedLevel) }}
+              </span>
+            </CharacterSkillsItemInformationPopover>
           </li>
         </ul>
 

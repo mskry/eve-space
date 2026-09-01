@@ -21,4 +21,5 @@ export const QUERY_POLICY = {
   mailRecipientSearch: { staleTime: 60 * 60_000, gcTime: QUERY_GC_TIME },
   corporation: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
   corporationAllianceHistory: { staleTime: 5 * 60_000, gcTime: QUERY_GC_TIME },
+  staticTypeDetail: { staleTime: 24 * 60 * 60_000, gcTime: QUERY_GC_TIME },
 } as const

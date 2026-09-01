@@ -45,7 +45,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .skill-row {
+  .skill-row-trigger {
     grid-template-columns: auto minmax(0, 1fr) auto;
     row-gap: 4px;
   }

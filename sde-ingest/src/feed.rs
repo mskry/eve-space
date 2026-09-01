@@ -46,12 +46,16 @@ pub fn download_build(
     temp_path.push(".part");
     let temp_path = Path::new(&temp_path);
 
-    let mut file = File::create(temp_path)
-        .with_context(|| format!("creating {}", temp_path.display()))?;
+    let mut file =
+        File::create(temp_path).with_context(|| format!("creating {}", temp_path.display()))?;
     copy(&mut response, &mut file).context("writing the downloaded SDE zip to disk")?;
     drop(file);
 
-    std::fs::rename(temp_path, destination)
-        .with_context(|| format!("moving downloaded archive into place at {}", destination.display()))?;
+    std::fs::rename(temp_path, destination).with_context(|| {
+        format!(
+            "moving downloaded archive into place at {}",
+            destination.display()
+        )
+    })?;
     Ok(())
 }

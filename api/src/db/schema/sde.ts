@@ -18,6 +18,7 @@ export const sdeBuilds = pgTable('sde_builds', {
   buildNumber: bigint('build_number', { mode: 'number' }).primaryKey().notNull(),
   releaseDate: timestamp('release_date', { withTimezone: true, mode: 'date' }).notNull(),
   ingestedAt: timestamp('ingested_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
+  ingestVersion: integer('ingest_version').default(1).notNull(),
 })
 
 export const sdeCategories = pgTable('sde_categories', {
@@ -50,6 +51,7 @@ export const sdeTypes = pgTable(
     raceId: bigint('race_id', { mode: 'number' }),
     marketGroupId: bigint('market_group_id', { mode: 'number' }),
     name: text().notNull(),
+    description: text(),
     published: boolean().notNull(),
     mass: doublePrecision(),
     volume: doublePrecision(),

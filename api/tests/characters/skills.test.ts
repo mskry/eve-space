@@ -131,7 +131,8 @@ describe('detailed character skills catalogue', () => {
     )
     const { getCharacterSkills, skillCategoryId } = await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkills(characterId)).resolves.toEqual({
+    const result = await getCharacterSkills(characterId)
+    expect(result).toEqual({
       totalSp: 19_000,
       unallocatedSp: 125,
       injectedSkillCount: 2,
@@ -201,9 +202,18 @@ describe('detailed character skills catalogue', () => {
     })
     expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).toHaveBeenCalledOnce()
+    expect(Object.keys(mocks.select.mock.calls[0]![0])).toEqual([
+      'groupId',
+      'groupName',
+      'typeId',
+      'typeName',
+    ])
     expect(mocks.from).toHaveBeenCalledOnce()
     expect(mocks.leftJoin).toHaveBeenCalledOnce()
     expect(mocks.where).toHaveBeenCalledOnce()
+    expect(JSON.stringify(result)).not.toMatch(
+      /description|"detail"|"rank"|primaryAttribute|secondaryAttribute/,
+    )
   })
 
   test('returns the full zero-progress catalogue for an empty ESI skill list', async () => {
