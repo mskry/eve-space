@@ -65,6 +65,18 @@ describe('skills catalogue markup', () => {
     expect(page).toContain('class="skills-queued-filter"')
   })
 
+  it('keeps the result label beside search and aligns filter controls to the right', () => {
+    const search = catalogue.indexOf('<UiToolbar class="skills-toolbar"')
+    const status = catalogue.indexOf('class="app-search-status skills-match-status"')
+    const controls = catalogue.indexOf('<div class="skills-filter-controls">')
+
+    expect(search).toBeGreaterThan(-1)
+    expect(search).toBeLessThan(status)
+    expect(status).toBeLessThan(controls)
+    expect(features).toMatch(/\.skills-filter-controls \{[^}]*margin-left: auto/s)
+    expect(features).toMatch(/\.skills-filter-controls \{[^}]*justify-content: flex-end/s)
+  })
+
   it('announces the changing result count politely', () => {
     expect(page).toContain('aria-live="polite"')
     expect(page).toContain('{{ announcedResult }}')
@@ -185,6 +197,10 @@ describe('responsive layout', () => {
     for (const selector of ['.skill-row-name', '.skill-group-chip-name', '.skill-queue-entry-name'])
       expect(features).toContain(selector)
     expect(features.match(/text-overflow: ellipsis/g)?.length ?? 0).toBeGreaterThanOrEqual(3)
+    expect(page).toContain(':data-full-name="skill.name"')
+    expect(page).toContain('name.scrollWidth > name.clientWidth')
+    expect(features).toMatch(/\.skill-row-name\.is-revealed::after \{[^}]*position: absolute/s)
+    expect(features).toMatch(/\.skill-row-name\.is-revealed::after \{[^}]*white-space: nowrap/s)
   })
 })
 

@@ -213,6 +213,32 @@ describe('character Skills components', () => {
     expect(wrapper.find('.skill-row').exists()).toBe(false)
   })
 
+  it('reveals only truncated skill names without changing row layout', async () => {
+    const wrapper = await mountSuspended(CharacterSkillsCatalogue, {
+      props: { skillQueue: undefined, skillQueueStatus: 'idle', skills },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    const [truncated, fitting] = wrapper.findAll('.skill-row-name')
+
+    Object.defineProperties(truncated!.element, {
+      clientWidth: { configurable: true, value: 80 },
+      scrollWidth: { configurable: true, value: 160 },
+    })
+    Object.defineProperties(fitting!.element, {
+      clientWidth: { configurable: true, value: 160 },
+      scrollWidth: { configurable: true, value: 80 },
+    })
+
+    await truncated!.trigger('mouseenter')
+    expect(truncated!.classes()).toContain('is-revealed')
+
+    await truncated!.trigger('mouseleave')
+    await fitting!.trigger('mouseenter')
+    expect(truncated!.classes()).not.toContain('is-revealed')
+    expect(fitting!.classes()).not.toContain('is-revealed')
+  })
+
   it('keeps a zero-injected character catalogue and controls available', async () => {
     const wrapper = await mountSuspended(CharacterSkillsCatalogue, {
       props: { skillQueue: undefined, skillQueueStatus: 'idle', skills: uninjectedSkills },

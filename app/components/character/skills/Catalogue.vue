@@ -34,6 +34,7 @@ const levelFilters = [
   { id: 'v', label: 'AT V' },
 ] as const
 const queuedOnly = ref(false)
+const revealedSkillNameId = ref<number | null>(null)
 const groups = computed(() => props.skills.groups)
 const fuseOptions = {
   keys: ['name'],
@@ -113,6 +114,15 @@ function selectGroup(key: string) {
   search.value = ''
 }
 
+function revealTruncatedSkillName(typeId: number, event: MouseEvent) {
+  const name = event.currentTarget as HTMLElement
+  revealedSkillNameId.value = name.scrollWidth > name.clientWidth ? typeId : null
+}
+
+function hideSkillName(typeId: number) {
+  if (revealedSkillNameId.value === typeId) revealedSkillNameId.value = null
+}
+
 const rows = computed(() =>
   searching.value
     ? visibleSkills.value
@@ -182,6 +192,10 @@ function skillLevelDescription(skill: IndexedSkill) {
   return levelDescription(skill, queuedLevels.value.get(skill.typeId) ?? 0)
 }
 
+function skillIsInjectedOnly(skill: IndexedSkill) {
+  return isInjectedOnly(skill, queuedLevels.value.get(skill.typeId) ?? 0)
+}
+
 function groupLabel(group: GroupSummary) {
   const skillLabel = group.count === 1 ? 'catalogue skill' : 'catalogue skills'
   return `${group.name}, ${group.count} ${skillLabel}, ${group.progressPercent}% of skill levels trained`
@@ -204,30 +218,6 @@ function pluralize(count: number, singular: string, plural: string) {
           aria-label="Search catalogue skills by skill or group name"
         />
       </UiToolbar>
-      <fieldset class="skills-level-filter">
-        <legend class="sr-only">Filter skills by trained level</legend>
-        <button
-          v-for="filter in levelFilters"
-          :key="filter.id"
-          type="button"
-          :class="{ 'is-selected': levelFilter === filter.id }"
-          :aria-pressed="levelFilter === filter.id"
-          @click="levelFilter = filter.id"
-        >
-          {{ filter.label }}
-        </button>
-      </fieldset>
-      <button
-        type="button"
-        class="skills-queued-filter"
-        :class="{ 'is-selected': queuedOnly }"
-        :disabled="queuedFilterDisabled"
-        :aria-pressed="queuedOnly"
-        :aria-label="queuedFilterLabel"
-        @click="queuedOnly = !queuedOnly"
-      >
-        QUEUED ONLY
-      </button>
       <span
         class="app-search-status skills-match-status"
         :class="{ 'is-visible': resultsRefined }"
@@ -235,6 +225,32 @@ function pluralize(count: number, singular: string, plural: string) {
       >
         {{ compactResultStatus }}
       </span>
+      <div class="skills-filter-controls">
+        <fieldset class="skills-level-filter">
+          <legend class="sr-only">Filter skills by trained level</legend>
+          <button
+            v-for="filter in levelFilters"
+            :key="filter.id"
+            type="button"
+            :class="{ 'is-selected': levelFilter === filter.id }"
+            :aria-pressed="levelFilter === filter.id"
+            @click="levelFilter = filter.id"
+          >
+            {{ filter.label }}
+          </button>
+        </fieldset>
+        <button
+          type="button"
+          class="skills-queued-filter"
+          :class="{ 'is-selected': queuedOnly }"
+          :disabled="queuedFilterDisabled"
+          :aria-pressed="queuedOnly"
+          :aria-label="queuedFilterLabel"
+          @click="queuedOnly = !queuedOnly"
+        >
+          QUEUED ONLY
+        </button>
+      </div>
       <span class="sr-only skills-result-announcement" aria-live="polite">
         {{ announcedResult }}
       </span>
@@ -306,7 +322,7 @@ function pluralize(count: number, singular: string, plural: string) {
             v-for="skill in rows"
             :key="skill.typeId"
             class="skill-row"
-            :class="{ 'is-injected': isInjectedOnly(skill) }"
+            :class="{ 'is-injected': skillIsInjectedOnly(skill) }"
           >
             <span class="skill-level-track" :aria-label="skillLevelDescription(skill)">
               <i
@@ -320,7 +336,15 @@ function pluralize(count: number, singular: string, plural: string) {
                 aria-hidden="true"
               />
             </span>
-            <span class="skill-row-name">{{ skill.name }}</span>
+            <span
+              class="skill-row-name"
+              :class="{ 'is-revealed': revealedSkillNameId === skill.typeId }"
+              :data-full-name="skill.name"
+              @mouseenter="revealTruncatedSkillName(skill.typeId, $event)"
+              @mouseleave="hideSkillName(skill.typeId)"
+            >
+              {{ skill.name }}
+            </span>
             <span
               class="skill-row-sp"
               :aria-label="`${skill.skillpoints.toLocaleString('en-US')} trained skill points`"

@@ -269,6 +269,9 @@ describe('levelDescription', () => {
     expect(levelDescription(injected!, 2)).toBe(
       'Active level 0; trained level 0 of 5; injected, not trained; queued to level 2',
     )
+    expect(levelDescription(absent!, 3)).toBe(
+      'Active level 0; trained level 0 of 5; injected, not trained; queued to level 3',
+    )
   })
 })
 

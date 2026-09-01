@@ -54,8 +54,8 @@ export function indexSkills(groups: readonly CatalogueGroup[]): IndexedSkill[] {
   )
 }
 
-export function isInjectedOnly(skill: IndexedSkill) {
-  return skill.injected && skill.trainedLevel === 0
+export function isInjectedOnly(skill: IndexedSkill, queuedTarget = 0) {
+  return skill.trainedLevel === 0 && (skill.injected || queuedTarget > 0)
 }
 
 export function passesLevelFilter(skill: IndexedSkill, filter: SkillLevelFilter) {
@@ -154,7 +154,7 @@ export function levelCells(skill: IndexedSkill, queuedTarget: number): LevelCell
 export function levelDescription(skill: IndexedSkill, queuedTarget: number) {
   let description = `Active level ${skill.activeLevel}; trained level ${skill.trainedLevel} of 5`
   if (skill.trainedLevel === 0) {
-    description += skill.injected ? '; injected, not trained' : '; not injected'
+    description += skill.injected || queuedTarget > 0 ? '; injected, not trained' : '; not injected'
   }
   if (queuedTarget > skill.trainedLevel) description += `; queued to level ${queuedTarget}`
   return description

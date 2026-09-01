@@ -22,8 +22,8 @@
 }
 
 @media (max-width: 760px) {
-  .skills-match-status {
-    margin-left: 0;
+  .skills-filter-controls {
+    flex: 1 0 100%;
   }
 
   .skill-group-chips {
@@ -36,6 +36,11 @@
 }
 
 @media (max-width: 520px) {
+  .skills-toolbar,
+  .skills-match-status {
+    flex-basis: 100%;
+  }
+
   .skill-group-chips {
     grid-template-columns: minmax(0, 1fr);
   }
