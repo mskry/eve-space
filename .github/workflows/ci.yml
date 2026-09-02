@@ -49,6 +49,9 @@ jobs:
       - name: Run API tests
         run: pnpm test:api
 
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run module tests
         run: pnpm test:modules
 

@@ -45,6 +45,9 @@ jobs:
       - name: Run PostgreSQL coverage
         run: pnpm --filter @eve-space/api test:postgres:coverage
 
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run module coverage
         run: pnpm test:modules:coverage
 
