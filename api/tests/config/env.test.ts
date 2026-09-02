@@ -85,6 +85,11 @@ describe('environment configuration', () => {
       { MODULE_RUNTIME_CACHE_TTL_MS: '30001' },
       'Too big: expected number to be <=30000',
     ],
+    [
+      'token encryption key',
+      { TOKEN_ENCRYPTION_KEY: 'not-a-base64-key' },
+      'Expected a base64-encoded 32-byte key',
+    ],
   ])('rejects an invalid %s', (_, values, message) => {
     expect(() => parseEnvironment({ ...databaseEnvironment, ...values })).toThrow(message)
   })
@@ -174,5 +179,14 @@ describe('environment configuration', () => {
       parseEnvironment({ ...databaseEnvironment, QUEUE_PLANNER_SCHEDULE_OFFSET_MS: '' })
         .QUEUE_PLANNER_SCHEDULE_OFFSET_MS,
     ).toBeUndefined()
+  })
+
+  test('accepts a base64-encoded 32-byte token encryption key', () => {
+    expect(
+      parseEnvironment({
+        ...databaseEnvironment,
+        TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+      }).TOKEN_ENCRYPTION_KEY,
+    ).toBe('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')
   })
 })

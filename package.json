@@ -4,6 +4,9 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
     "build": "pnpm build:nuxt:dependencies && nuxt build",
     "build:nuxt:dependencies": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts nuxt build",
@@ -40,6 +43,7 @@
     "typecheck:nuxt": "pnpm build:nuxt:dependencies && pnpm --filter @eve-space/platform-module-nuxt typecheck && tsx scripts/run-installed-module-package-script.ts nuxt typecheck && nuxt typecheck",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
     "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install"
   },
   "dependencies": {
