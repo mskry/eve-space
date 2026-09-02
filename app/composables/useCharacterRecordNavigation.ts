@@ -2,8 +2,14 @@ import { useQueryCache } from '@pinia/colada'
 import { usePlatformNavigation } from '#imports'
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
-import { characterHistoryQuery, characterSkillsQuery } from '../queries/characters'
-import { characterFinanceBalanceQuery } from '../queries/finance'
+import {
+  characterAttributesQuery,
+  characterHistoryQuery,
+  characterSkillQueueQuery,
+  characterSkillsQuery,
+} from '../queries/characters'
+import { characterFinanceBalanceQuery, characterFinanceJournalQuery } from '../queries/finance'
+import { mailHeadersQuery, mailingListsQuery, mailLabelsQuery } from '../queries/mail'
 import { prefetchProtectedQuery } from '../queries/query-cache'
 import type { RecordSectionNavigationEntry } from '../types/record-navigation'
 import type { ApiClient } from '../utils/api-client'
@@ -16,12 +22,14 @@ interface CharacterRecordNavigationParameters {
   readonly apiClient: ApiClient
   readonly authenticated: ComputedRef<boolean>
   readonly characterId: ComputedRef<number | undefined>
+  readonly ownsCharacter: ComputedRef<boolean>
 }
 
 export function useCharacterRecordNavigation({
   apiClient,
   authenticated,
   characterId,
+  ownsCharacter,
 }: CharacterRecordNavigationParameters) {
   const route = useRoute()
   const queryCache = useQueryCache()
@@ -32,30 +40,60 @@ export function useCharacterRecordNavigation({
 
   const prefetchers: Readonly<Record<string, () => void>> = {
     'core-character-skills': () => {
-      void prefetchProtectedQuery(
-        queryCache,
-        characterSkillsQuery({ apiClient, characterId: characterId.value ?? 0 }),
-        import.meta.client,
-        authenticated.value,
-        characterId.value,
-      )
+      const id = characterId.value ?? 0
+      void Promise.all([
+        prefetchProtectedQuery(
+          queryCache,
+          characterSkillsQuery({ apiClient, characterId: id }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          characterAttributesQuery({ apiClient, characterId: id }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          characterSkillQueueQuery({ apiClient, characterId: id }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+      ])
     },
     'core-character-finance': () => {
-      void prefetchProtectedQuery(
-        queryCache,
-        characterFinanceBalanceQuery({
-          apiClient,
-          characterId: characterId.value ?? 0,
-          access: {
-            isClient: import.meta.client,
-            authenticated: authenticated.value,
-            ownsCharacter: true,
-          },
-        }),
-        import.meta.client,
-        authenticated.value,
-        characterId.value,
-      )
+      const id = characterId.value ?? 0
+      const access = {
+        isClient: import.meta.client,
+        authenticated: authenticated.value,
+        ownsCharacter: ownsCharacter.value,
+      }
+      void Promise.all([
+        prefetchProtectedQuery(
+          queryCache,
+          characterFinanceBalanceQuery({ apiClient, characterId: id, access }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          characterFinanceJournalQuery({
+            apiClient,
+            characterId: id,
+            access,
+            requested: true,
+            page: 1,
+          }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+      ])
     },
     'core-character-history': () => {
       void prefetchProtectedQuery(
@@ -66,9 +104,36 @@ export function useCharacterRecordNavigation({
         characterId.value,
       )
     },
+    'core-character-mail': () => {
+      const id = characterId.value ?? 0
+      void Promise.all([
+        prefetchProtectedQuery(
+          queryCache,
+          mailHeadersQuery({ apiClient, characterId: id }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          mailLabelsQuery({ apiClient, characterId: id }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          mailingListsQuery({ apiClient, characterId: id }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+      ])
+    },
   }
 
   function prefetchNavigation(entry: RecordSectionNavigationEntry) {
+    if (!ownsCharacter.value) return
     prefetchers[entry.id]?.()
   }
 

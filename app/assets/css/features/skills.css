@@ -68,6 +68,9 @@
 }
 
 .skills-hero-profile {
+  box-sizing: border-box;
+  width: min(17.75rem, 100%);
+  min-height: 5.5rem;
   display: grid;
   align-content: start;
   gap: 0.625rem;
@@ -136,27 +139,6 @@
   display: block;
   border: 0;
   background: none;
-}
-
-.skills-toolbar input[type='search'] {
-  width: 100%;
-  min-width: 0;
-  padding: 0.5rem 0.6875rem;
-  border: 0.0625rem solid var(--ui-border-strong);
-  outline: none;
-  background: var(--ui-control);
-  color: var(--ui-text);
-  font: 0.6875rem/1 var(--ui-font-mono);
-  letter-spacing: 0.06em;
-}
-
-.skills-toolbar input[type='search']::placeholder {
-  color: var(--ui-text-faint);
-}
-
-.skills-toolbar input[type='search']:focus {
-  border-color: var(--ui-primary);
-  box-shadow: inset 0.125rem 0 0 var(--ui-primary);
 }
 
 .skills-filter-controls {

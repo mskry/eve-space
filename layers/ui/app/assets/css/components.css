@@ -564,6 +564,131 @@
   font: 700 9px/1 var(--ui-font-mono);
 }
 
+.ui-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 26px;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-border-strong);
+  outline: none;
+  background: var(--ui-control);
+  color: var(--ui-text);
+  font: 11px/1 var(--ui-font-mono);
+  letter-spacing: 0.06em;
+}
+
+.ui-input::placeholder {
+  color: var(--ui-text-faint);
+}
+
+.ui-input:focus-visible {
+  border-color: var(--ui-primary);
+  box-shadow: inset 2px 0 0 var(--ui-primary);
+}
+
+.ui-input:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.ui-toggle-group {
+  display: inline-flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  border: 1px solid var(--ui-border-strong);
+  background: transparent;
+}
+
+.ui-toggle-group-item {
+  padding: 8px 11px;
+  border: 0;
+  border-right: 1px solid var(--ui-border-strong);
+  outline: none;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font: 700 8px/1 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ui-toggle-group-item:last-child {
+  border-right: 0;
+}
+
+.ui-toggle-group-item:hover:not(:disabled) {
+  background: var(--ui-surface-raised);
+  color: var(--ui-text);
+}
+
+.ui-toggle-group-item[data-state='on'] {
+  background: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  color: var(--ui-primary);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.ui-toggle-group-item:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 1px;
+}
+
+.ui-toggle-group-item:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.ui-pagination {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ui-pagination-button {
+  min-height: 32px;
+  padding: 6px 11px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  outline: none;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font: 500 9px/1 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ui-pagination-button:hover:not(:disabled) {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+
+.ui-pagination-button:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+.ui-pagination-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui-pagination-status {
+  color: var(--ui-text-faint);
+  font: 400 9px/1.4 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ui-pagination-status strong {
+  color: var(--ui-text-muted);
+  font-weight: 500;
+}
+
 .ui-confirm-dialog-overlay {
   position: fixed;
   z-index: 110;

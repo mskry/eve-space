@@ -30,7 +30,7 @@ describe('skills catalogue markup', () => {
     expect(page).not.toContain('UiCollapsible')
     expect(page).not.toContain('TransitionGroup')
     expect(page).not.toContain('skillGroupColumns')
-    expect(page).toContain('CharacterSummaryCard')
+    expect(page).toContain('AppSummaryCard')
   })
 
   it('gives every group chip a decorative category glyph in a three-column grid', () => {

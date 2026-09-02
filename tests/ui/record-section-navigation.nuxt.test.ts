@@ -42,7 +42,7 @@ describe('RecordSectionNavigation', () => {
     )
   })
 
-  it('keeps entries keyboard focusable and emits focus intent', async () => {
+  it('emits preload intent for pointer and keyboard navigation', async () => {
     currentRoute.path = '/characters/42'
     const wrapper = await mountSuspended(RecordSectionNavigation, {
       attachTo: document.body,
@@ -55,11 +55,14 @@ describe('RecordSectionNavigation', () => {
     const historyLink = wrapper.findAll('a')[1]
     expect(wrapper.findAllComponents(RouterLinkStub)[1]?.props('to')).toBe('/characters/42/history')
 
+    await historyLink?.trigger('pointerenter')
+    expect(wrapper.emitted('intent')?.[0]?.[0]).toEqual(entries[1])
+
     historyLink?.element.focus()
     await historyLink?.trigger('focus')
 
     expect(document.activeElement).toBe(historyLink?.element)
-    expect(wrapper.emitted('intent')?.[0]?.[0]).toEqual(entries[1])
+    expect(wrapper.emitted('intent')?.[1]?.[0]).toEqual(entries[1])
   })
 
   it('renders additional contributed sections without assuming a fixed count', async () => {

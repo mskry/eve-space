@@ -22,7 +22,7 @@ describe('record page style ownership', () => {
   })
 
   it('separates summary-card and Finance service styles', () => {
-    const summary = source('app/components/CharacterSummaryCard.vue')
+    const summary = source('app/components/AppSummaryCard.vue')
     const finance = source('app/pages/characters/[characterId]/finance.vue')
     const summaryCss = source('app/assets/css/features/character-summary.css')
     const financeCss = source('app/assets/css/features/finance.css')

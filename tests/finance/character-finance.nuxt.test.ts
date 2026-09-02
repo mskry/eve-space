@@ -3,11 +3,12 @@ import { useQueryCache } from '@pinia/colada'
 import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
-import CharacterFinanceServicePanel from '../../app/components/character/finance/ServicePanel.vue'
+import FinanceContractDrawer from '../../app/components/finance/ContractDrawer.vue'
+import FinanceServicePanel from '../../app/components/finance/ServicePanel.vue'
 import FinancePage from '../../app/pages/characters/[characterId]/finance.vue'
 import { provideCharacterReauthorization } from '../../app/composables/useCharacterReauthorization'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
-import { ApiQueryError } from '../../app/utils/query-error'
+import type { FinanceContract, FinanceResourceState } from '../../app/types/finance'
 import { queryServer } from '../support/query-server'
 
 interface FinanceScenario {
@@ -48,6 +49,19 @@ function metadata(stale = false) {
     cachedUntil: '2026-09-02T13:00:00.000Z',
     validatedAt: '2026-09-02T12:00:00.000Z',
     stale,
+  }
+}
+
+function resourceState(overrides: Partial<FinanceResourceState> = {}): FinanceResourceState {
+  return {
+    authorizationAction: null,
+    authorizationRequired: false,
+    canRetry: false,
+    errorCode: null,
+    errorMessage: null,
+    loading: false,
+    stale: false,
+    ...overrides,
   }
 }
 
@@ -135,7 +149,7 @@ describe('character Finance page', () => {
     expect(wrapper.get('.finance-hero-metrics').text()).toContain('12,500')
     expect(wrapper.get('.finance-hero-metrics').text()).not.toContain('Awaiting me')
     expect(wrapper.get('.finance-table-footer').text()).toContain('in the complete collection')
-    await wrapper.findAll('.finance-mode button')[1]!.trigger('click')
+    await wrapper.get('[aria-label="Order collection"]').findAll('button')[1]!.trigger('click')
     await seedOnly('Order history')
     await vi.waitFor(() => expect(wrapper.text()).toContain('Scordite'))
     expect(wrapper.get('.finance-table--orders .finance-volume').text()).toBe('0 / 20')
@@ -151,10 +165,10 @@ describe('character Finance page', () => {
 
     // Returning to a tab preserves the filter it was left with.
     await openTab(wrapper, 'Journal')
-    expect(chip(wrapper, 'Market').attributes('data-state')).toBe('active')
+    expect(chip(wrapper, 'Market').attributes('data-state')).toBe('on')
     expect(wrapper.findAll('.finance-table--journal tbody tr')).toHaveLength(1)
     await openTab(wrapper, 'Contracts')
-    expect(chip(wrapper, 'Couriers').attributes('data-state')).toBe('active')
+    expect(chip(wrapper, 'Couriers').attributes('data-state')).toBe('on')
   })
 
   it('scopes the ledger range to loaded data without refetching a service', async () => {
@@ -179,6 +193,7 @@ describe('character Finance page', () => {
     const tabs = wrapper.findAll('.finance-tabs .ui-tabs-trigger')
     const journalTab = tabs[0]!
     const transactionsTab = tabs[1]!
+    const contractsTab = tabs[3]!
 
     expect(journalTab.attributes('role')).toBe('tab')
     expect(journalTab.attributes('data-state')).toBe('active')
@@ -193,6 +208,16 @@ describe('character Finance page', () => {
     await settle()
     expect(transactionsTab.attributes('aria-selected')).toBe('true')
     expect(document.activeElement).toBe(transactionsTab.element)
+
+    await transactionsTab.trigger('keydown', { key: 'End' })
+    await settle()
+    expect(contractsTab.attributes('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(contractsTab.element)
+
+    await contractsTab.trigger('keydown', { key: 'Home' })
+    await settle()
+    expect(journalTab.attributes('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(journalTab.element)
   })
 
   it('preserves successful siblings through independent loading, scope, error, stale, and refresh states', async () => {
@@ -210,34 +235,44 @@ describe('character Finance page', () => {
         return () =>
           h('div', [
             h('button', { 'data-refresh': '', onClick: startRefresh }, 'REFRESH SIBLING'),
-            h(CharacterFinanceServicePanel, {
+            h(FinanceServicePanel, {
               hasData: false,
-              loading: true,
+              state: resourceState({ loading: true }),
               title: 'Loading service',
             }),
-            h(CharacterFinanceServicePanel, {
-              error: new ApiQueryError('Authorize this service.', {
-                authorizeUrl: '/reauthorize',
-                code: 'EVE_SCOPE_REQUIRED',
-                status: 403,
-              }),
+            h(FinanceServicePanel, {
               hasData: false,
-              loading: false,
+              state: resourceState({
+                authorizationAction: {
+                  href: '/reauthorize',
+                  label: 'AUTHORIZE THIS CHARACTER',
+                },
+                authorizationRequired: true,
+                errorCode: 'SCOPE REQUIRED',
+                errorMessage: 'Authorize this service.',
+              }),
               title: 'Scope service',
             }),
-            h(CharacterFinanceServicePanel, {
-              error: new Error('Service failed independently.'),
+            h(FinanceServicePanel, {
               hasData: false,
-              loading: false,
+              state: resourceState({
+                canRetry: true,
+                errorCode: 'ESI 502 / FINANCE',
+                errorMessage: 'Service failed independently.',
+              }),
               title: 'Failed service',
             }),
             h(
-              CharacterFinanceServicePanel,
+              FinanceServicePanel,
               {
-                error: refreshError.value,
                 hasData: true,
-                loading: refreshing.value,
-                stale: true,
+                state: resourceState({
+                  canRetry: refreshError.value !== null,
+                  errorCode: refreshError.value ? 'ESI 502 / FINANCE' : null,
+                  errorMessage: refreshError.value?.message ?? null,
+                  loading: refreshing.value,
+                  stale: true,
+                }),
                 title: 'Successful service',
                 validatedAt: '2026-09-02T12:00:00.000Z',
                 onRetry: startRefresh,
@@ -272,6 +307,53 @@ describe('character Finance page', () => {
     expect(panels[3]?.text()).toContain('Preserved sibling data')
   })
 
+  it('keeps authorization failures without a URL actionable in contract details', async () => {
+    const drawerContract: FinanceContract = {
+      availability: 'personal',
+      collateral: null,
+      contractId: 7_001,
+      daysToComplete: null,
+      expiredAt: '2026-09-08T10:00:00.000Z',
+      issuedAt: '2026-09-01T10:00:00.000Z',
+      price: 100,
+      reward: null,
+      role: 'assigned',
+      status: 'outstanding',
+      title: 'Item exchange',
+      type: 'item_exchange',
+      volume: 5,
+    }
+    const wrapper = await mountSuspended(FinanceContractDrawer, {
+      attachTo: document.body,
+      props: {
+        bidPrivacyNote: '',
+        bidState: resourceState(),
+        bids: null,
+        contract: drawerContract,
+        description: 'Contract details',
+        itemState: resourceState({
+          authorizationRequired: true,
+          errorCode: 'ESI 403 / FINANCE',
+          errorMessage: 'Contract item authorization is unavailable.',
+        }),
+        items: null,
+        now: Date.parse('2026-09-02T12:00:00.000Z'),
+        open: true,
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    await settle()
+
+    const retry = [...document.querySelectorAll<HTMLButtonElement>('button')].find(
+      (button) => button.textContent?.trim() === 'RETRY',
+    )
+    expect(retry).toBeDefined()
+    retry!.click()
+    await settle()
+    expect(wrapper.emitted('retry-items')).toHaveLength(1)
+  })
+
   it('keeps contract drill-downs applicable and restores focus on close and page-local navigation', async () => {
     const wrapper = await mountFinance(7_103)
     await openTab(wrapper, 'Contracts')
@@ -298,8 +380,9 @@ describe('character Finance page', () => {
     await settle()
     expect(document.activeElement).toBe(closeButton)
 
-    closeButton.click()
+    document.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Escape' }))
     await settle()
+    expect(document.querySelector('.finance-drawer[data-state="open"]')).toBeNull()
     expect(document.activeElement).toBe(auctionTrigger.element)
 
     await contractButton(wrapper, 'Courier package').trigger('click')
@@ -433,7 +516,7 @@ async function seedOnly(service: string) {
 
 function chip(wrapper: Awaited<ReturnType<typeof mountFinance>>, label: string) {
   const found = wrapper
-    .findAll('.finance-chip')
+    .findAll('.finance-toolbar .ui-toggle-group-item')
     .find((candidate) => candidate.text().trim() === label)
   expect(found, `${label} chip was not rendered`).toBeDefined()
   return found!
@@ -441,7 +524,8 @@ function chip(wrapper: Awaited<ReturnType<typeof mountFinance>>, label: string) 
 
 function rangeButton(wrapper: Awaited<ReturnType<typeof mountFinance>>, label: string) {
   const found = wrapper
-    .findAll('.finance-range-options button')
+    .get('[aria-label="Loaded data range"]')
+    .findAll('button')
     .find((candidate) => candidate.text().trim() === label)
   expect(found, `${label} range was not rendered`).toBeDefined()
   return found!

@@ -7,13 +7,18 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { authSession } = useAuthSession(apiClient)
+const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
+const ownsCharacter = computed(() =>
+  characters.value.some((character) => character.characterId === characterId.value),
+)
 const mutations = useMailOrganizationMutations(apiClient)
 const mailbox = useCharacterMailbox({
   apiClient,
   authenticated,
   characterId,
+  ownsCharacter,
   createdLabels: mutations.createdLabels,
   deletedLabelIds: mutations.deletedLabelIds,
   deletedMailIds: mutations.deletedMailIds,
