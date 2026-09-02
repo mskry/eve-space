@@ -26,6 +26,7 @@ interface CharacterMailboxOptions {
   apiClient: ApiClient
   authenticated: ComputedRef<boolean>
   characterId: ComputedRef<number | undefined>
+  ownsCharacter: ComputedRef<boolean>
   deletedLabelIds: Ref<ReadonlySet<number>>
   deletedMailIds: Ref<Set<number>>
   deletePendingIds: Ref<Set<number>>
@@ -50,6 +51,7 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
 
   const selectedLabels = computed(() => (activeLabelId.value === null ? [] : [activeLabelId.value]))
   const queryEnabled = () =>
+    options.ownsCharacter.value &&
     canRunProtectedQuery(import.meta.client, options.authenticated.value, options.characterId.value)
 
   const headersQuery = useQuery(() => ({

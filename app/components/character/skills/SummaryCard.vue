@@ -64,7 +64,7 @@ function formatDate(value: string) {
 </script>
 
 <template>
-  <CharacterSummaryCard class="skills-hero">
+  <AppSummaryCard class="skills-hero">
     <template #icon>
       <UiEveImage kind="type-icon" :id="3300" :dimension="42" alt="" aria-hidden="true" />
     </template>
@@ -86,9 +86,16 @@ function formatDate(value: string) {
         </dl>
       </div>
 
-      <div class="skills-hero-profile" aria-labelledby="skill-attribute-band-title">
+      <div
+        class="skills-hero-profile"
+        aria-labelledby="skill-attribute-band-title"
+        :aria-busy="attributesStatus === 'loading'"
+      >
         <span id="skill-attribute-band-title" class="ui-eyebrow">ATTRIBUTES</span>
-        <p v-if="attributesStatus === 'scope-required'" class="skill-attribute-notice">
+        <p v-if="attributesStatus === 'loading'" class="skill-attribute-notice">
+          Loading attributes...
+        </p>
+        <p v-else-if="attributesStatus === 'scope-required'" class="skill-attribute-notice">
           Attributes are not authorized.
           <a v-if="attributesAuthorizeUrl" :href="attributesAuthorizeUrl">AUTHORIZE</a>
         </p>
@@ -119,5 +126,5 @@ function formatDate(value: string) {
         </template>
       </div>
     </div>
-  </CharacterSummaryCard>
+  </AppSummaryCard>
 </template>

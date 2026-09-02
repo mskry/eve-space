@@ -37,11 +37,6 @@
     margin-left: 0;
   }
 
-  .finance-search {
-    width: 100%;
-    margin-left: 0;
-  }
-
   .finance-table-footer {
     align-items: flex-start;
     flex-direction: column;
@@ -49,6 +44,10 @@
 
   .finance-footer-actions {
     width: 100%;
+  }
+
+  .finance-footer-actions .ui-pagination {
+    flex: 2;
   }
 
   .finance-ghost-button {

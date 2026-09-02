@@ -94,10 +94,11 @@ describe('character record navigation coordination', () => {
       'core-character-skills',
       'core-character-finance',
       'core-character-history',
+      'core-character-mail',
     ])
     expect(hasCoreCharacterDataPrefetch('core-character-skills')).toBe(true)
     expect(hasCoreCharacterDataPrefetch('core-character-overview')).toBe(false)
-    expect(hasCoreCharacterDataPrefetch('core-character-mail')).toBe(false)
+    expect(hasCoreCharacterDataPrefetch('core-character-mail')).toBe(true)
     expect(hasCoreCharacterDataPrefetch('module-intel')).toBe(false)
   })
 })

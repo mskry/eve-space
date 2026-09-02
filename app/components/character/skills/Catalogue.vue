@@ -215,6 +215,7 @@ function pluralize(count: number, singular: string, plural: string) {
     <div class="skills-filter-bar">
       <UiToolbar class="skills-toolbar" label="Skills search">
         <input
+          class="ui-input"
           v-model="search"
           type="search"
           autocomplete="off"

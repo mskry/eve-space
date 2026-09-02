@@ -20,14 +20,15 @@ const reauthorizationCycle = provideCharacterReauthorization()
 
 const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
+const selectedCharacter = computed(() =>
+  characters.value.find((character) => character.characterId === characterId.value),
+)
+const ownsCharacter = computed(() => selectedCharacter.value !== undefined)
 const {
   breadcrumbLabel: characterSectionLabel,
   entries: characterNavigation,
   prefetchNavigation: prefetchCharacterNavigation,
-} = useCharacterRecordNavigation({ apiClient, authenticated, characterId })
-const selectedCharacter = computed(() =>
-  characters.value.find((character) => character.characterId === characterId.value),
-)
+} = useCharacterRecordNavigation({ apiClient, authenticated, characterId, ownsCharacter })
 const characterBreadcrumb = computed(() => {
   const name = selectedCharacter.value?.name
   if (!name) return 'CHARACTERS'

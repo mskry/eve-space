@@ -10,6 +10,7 @@ export const CORE_CHARACTER_DATA_PREFETCH_IDS = [
   'core-character-skills',
   'core-character-finance',
   'core-character-history',
+  'core-character-mail',
 ] as const
 
 export function resolveCharacterNavigation(

@@ -58,6 +58,7 @@ onBeforeUnmount(() => {
     </div>
     <div v-else class="mail-filter-controls">
       <input
+        class="ui-input"
         :value="search"
         type="search"
         autocomplete="off"

@@ -66,6 +66,7 @@ function formatHistoryDate(value: string) {
   <div class="history-content">
     <UiToolbar class="history-toolbar" :label="`${entityLabel} history controls`">
       <input
+        class="ui-input"
         v-model="search"
         type="search"
         autocomplete="off"

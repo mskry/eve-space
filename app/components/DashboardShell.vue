@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useQuery, useQueryCache } from '@pinia/colada'
 import { adminSessionQuery } from '../queries/admin'
+import { characterRosterQuery } from '../queries/characters'
 import { mailLabelsQuery } from '../queries/mail'
 import { canRunProtectedQuery, prefetchQuery } from '../queries/query-cache'
 import { PRIVATE_QUERY_KEYS, PUBLIC_QUERY_KEYS } from '../queries/query-keys'
@@ -81,6 +82,10 @@ const sidebarExpanded = useCookie<boolean>('eve-space-sidebar-expanded', {
   sameSite: 'lax',
 })
 const { authLoading, authSession, initializeAuth, logout } = useAuthSession(apiClient)
+const characterRosterQueryResult = useQuery(() => ({
+  ...characterRosterQuery(apiClient),
+  enabled: import.meta.client && authSession.value.authenticated,
+}))
 
 const pageTitle = computed(() => String(route.meta.title ?? 'Overview'))
 const systemStatusState = computed(() => systemStatus.value?.status ?? 'pending')
@@ -93,9 +98,15 @@ const systemStatusLabel = computed(
       unavailable: 'UNAVAILABLE',
     })[systemStatusState.value],
 )
-const authorizedCharacter = computed(() =>
-  authSession.value.authenticated ? authSession.value.account.mainCharacter : undefined,
-)
+const authorizedCharacter = computed(() => {
+  if (!authSession.value.authenticated) return undefined
+  const mainCharacter = authSession.value.account.mainCharacter
+  return characterRosterQueryResult.data.value?.characters.some(
+    (character) => character.characterId === mainCharacter.characterId,
+  )
+    ? mainCharacter
+    : undefined
+})
 const adminAuthenticated = computed(
   () => adminSessionQueryResult.data.value?.authenticated === true,
 )

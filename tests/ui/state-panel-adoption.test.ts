@@ -17,15 +17,17 @@ describe('state panel adoption', () => {
     const mail = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
     const skills = readWorkspaceFile('app/pages/characters/[characterId]/skills.vue')
     const finance = readWorkspaceFile('app/pages/characters/[characterId]/finance.vue')
-    const financeState = readWorkspaceFile('app/components/character/finance/ServicePanel.vue')
+    const financeState = readWorkspaceFile('app/components/finance/ServicePanel.vue')
 
     expect(component).toContain('class="character-authorization-state"')
     expect(component).toContain('<a v-if="authorizeUrl"')
-    for (const page of [mail, skills, financeState]) {
+    for (const page of [mail, skills]) {
       expect(page).toContain('<CharacterAuthorizationRequired')
       expect(page).not.toMatch(/mail-access-state|skills-access-state/)
     }
-    expect(finance).toContain('<CharacterFinanceServicePanel')
+    expect(finance).toContain('<FinanceWorkspace')
+    expect(financeState).toContain('state.authorizationAction')
+    expect(financeState).not.toContain('CharacterAuthorizationRequired')
   })
 
   it('uses semantic state panels throughout migrated record pages', () => {
@@ -38,7 +40,12 @@ describe('state panel adoption', () => {
       'app/pages/characters/[characterId]/index.vue',
       'app/pages/characters/[characterId]/skills.vue',
       'app/pages/characters/[characterId]/history.vue',
-      'app/pages/characters/[characterId]/finance.vue',
+      'app/components/finance/ServicePanel.vue',
+      'app/components/finance/Journal.vue',
+      'app/components/finance/Transactions.vue',
+      'app/components/finance/Orders.vue',
+      'app/components/finance/Contracts.vue',
+      'app/components/finance/ContractDrawer.vue',
     ].map(readWorkspaceFile)
 
     for (const page of pages) {
@@ -55,14 +62,36 @@ describe('state panel adoption', () => {
     const skills = readWorkspaceFile('app/pages/characters/[characterId]/skills.vue')
     const history = readWorkspaceFile('app/pages/characters/[characterId]/history.vue')
     const finance = readWorkspaceFile('app/pages/characters/[characterId]/finance.vue')
-    const financeState = readWorkspaceFile('app/components/character/finance/ServicePanel.vue')
+    const financeState = readWorkspaceFile('app/components/finance/ServicePanel.vue')
 
-    for (const page of [roster, overview, skills, history, finance, financeState]) {
+    for (const page of [roster, overview, skills, history]) {
       expect(page).toContain('role="alert"')
       expect(page).toContain('tone="error"')
       expect(page).toContain('<template #action>')
     }
-    expect(financeState).toContain('apiError?.authorizeUrl')
-    expect(finance).toContain('if (transactionsRequested.value)')
+    expect(financeState).toContain('role="alert"')
+    expect(financeState).toContain('tone="error"')
+    expect(financeState).toContain('#action')
+    expect(financeState).toContain('state.authorizationAction.href')
+    expect(finance).toContain('useCharacterFinanceServices')
+    expect(finance).toContain('<FinanceContractDrawer')
+  })
+
+  it('keeps generic Finance presentation outside character and transport boundaries', () => {
+    const financeComponents = [
+      'app/components/finance/ServicePanel.vue',
+      'app/components/finance/Summary.vue',
+      'app/components/finance/Workspace.vue',
+      'app/components/finance/Journal.vue',
+      'app/components/finance/Transactions.vue',
+      'app/components/finance/Orders.vue',
+      'app/components/finance/Contracts.vue',
+      'app/components/finance/ContractDrawer.vue',
+    ].map(readWorkspaceFile)
+
+    for (const component of financeComponents) {
+      expect(component).not.toMatch(/queries\/finance|api-client|ApiQueryError|AppType/)
+      expect(component).not.toContain('CharacterAuthorizationRequired')
+    }
   })
 })
