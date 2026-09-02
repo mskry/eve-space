@@ -96,4 +96,10 @@ The web needs `NUXT_PUBLIC_API_BASE`. The SDE ingestion deployment needs only `$
 6. Verify `GET /health` on web and API, then inspect `GET /api/status` for PostgreSQL, both Redis roles, outbox, queue lag, and worker heartbeat.
 7. Complete EVE login, callback, character attachment, and one protected character request on the custom domains.
 
+## Continuous deployment
+
+Connect the `web`, `api`, `worker`, and `gateway` services to the GitHub repository's `main` branch and enable **Wait for CI** on every deployment trigger. The repository CI workflow runs on pushes to `main`, so Railway deploys a commit only after all GitHub Actions checks succeed and skips it when any check fails.
+
+Leave watch paths unset unless every shared workspace, lockfile, configuration, and generated-contract dependency is represented. Rebuilding all four application services is safer than allowing a shared monorepo change to skip a required deployment. Do not connect PostgreSQL or either Redis service to the repository, and keep SDE ingestion as a deliberate one-shot deployment.
+
 Use Railway volume backups for PostgreSQL and queue Redis. Never expose PostgreSQL or either Redis service through public TCP networking.
