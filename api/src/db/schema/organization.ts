@@ -180,6 +180,7 @@ export const organizationAccountCompliance = pgTable(
       .notNull(),
     evidenceAt: timestamp('evidence_at', { withTimezone: true, mode: 'date' }),
     reviewDeadline: timestamp('review_deadline', { withTimezone: true, mode: 'date' }),
+    accessValidUntil: timestamp('access_valid_until', { withTimezone: true, mode: 'date' }),
     establishedCompliantAt: timestamp('established_compliant_at', {
       withTimezone: true,
       mode: 'date',
@@ -221,6 +222,22 @@ export const organizationAccountCompliance = pgTable(
       sql`review_deadline is null or state in ('review_required', 'suspended')`,
     ),
     check(
+      'organization_account_compliance_access_validity_check',
+      sql`(state = 'compliant' and access_valid_until is not null)
+        or (
+          state = 'review_required'
+          and (
+            (established_compliant_at is null and access_valid_until is null)
+            or (
+              established_compliant_at is not null
+              and access_valid_until is not null
+              and access_valid_until <= review_deadline
+            )
+          )
+        )
+        or (state in ('pending', 'suspended') and access_valid_until is null)`,
+    ),
+    check(
       'organization_account_compliance_established_check',
       sql`established_compliant_at is null or established_compliant_at <= evaluated_at`,
     ),
@@ -238,6 +255,9 @@ export const organizationAccountCompliance = pgTable(
     index('organization_account_compliance_authoritative_idx')
       .on(table.deploymentId, table.organizationVersion, table.userId)
       .where(sql`authoritative`),
+    index('organization_account_compliance_access_expiry_idx')
+      .on(table.accessValidUntil, table.userId)
+      .where(sql`authoritative and access_valid_until is not null`),
   ],
 )
 
@@ -307,6 +327,7 @@ export const organizationCharacterExceptions = pgTable(
       .defaultNow()
       .notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+    expiredAt: timestamp('expired_at', { withTimezone: true, mode: 'date' }),
     revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
     revokedByUserId: uuid('revoked_by_user_id'),
     revocationReason: text('revocation_reason'),
@@ -353,6 +374,10 @@ export const organizationCharacterExceptions = pgTable(
           and revoked_at >= approved_at
         )`,
     ),
+    check(
+      'organization_character_exceptions_expired_at_check',
+      sql`expired_at is null or (expires_at is not null and expired_at >= expires_at)`,
+    ),
     index('organization_character_exceptions_subject_idx')
       .on(
         table.deploymentId,
@@ -362,6 +387,9 @@ export const organizationCharacterExceptions = pgTable(
         table.expiresAt,
       )
       .where(sql`revoked_at is null`),
+    index('organization_character_exceptions_expiry_idx')
+      .on(table.expiresAt, table.exceptionId)
+      .where(sql`revoked_at is null and expired_at is null and expires_at is not null`),
   ],
 )
 
@@ -581,6 +609,7 @@ export const organizationAuthorityEvidence = pgTable(
 
 export const organizationAuditEventTypes = [
   'organization.changed',
+  'registration-policy.changed',
   'role.granted',
   'role.revoked',
   'exception.approved',
@@ -672,6 +701,7 @@ export const organizationAuditEvents = pgTable(
       'organization_audit_events_type_check',
       sql`event_type in (
         'organization.changed',
+        'registration-policy.changed',
         'role.granted',
         'role.revoked',
         'exception.approved',

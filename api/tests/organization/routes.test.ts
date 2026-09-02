@@ -21,16 +21,51 @@ const mocks = vi.hoisted(() => {
       super(code)
     }
   }
+  class CharacterExceptionMutationError extends Error {
+    constructor(readonly code: string) {
+      super(code)
+    }
+  }
+  class RegistrationPolicyMutationError extends Error {
+    constructor(readonly code: string) {
+      super(code)
+    }
+  }
+  const organizationSession: {
+    context: {
+      organizationVersion: number
+      state: 'pending' | 'compliant' | 'review_required' | 'suspended'
+      evidenceFreshness: 'fresh' | 'stale' | 'unavailable'
+      reviewDeadline: Date | null
+      accessValidUntil: Date | null
+      blocked: boolean
+    }
+  } = {
+    context: {
+      organizationVersion: 1,
+      state: 'compliant' as const,
+      evidenceFreshness: 'fresh' as const,
+      reviewDeadline: null,
+      accessValidUntil: new Date('2027-09-01T12:00:00.000Z'),
+      blocked: false,
+    },
+  }
   return {
     CorporationSourceMutationError,
+    CharacterExceptionMutationError,
     GroupMutationError,
     MemberBlockMutationError,
     RoleMutationError,
+    RegistrationPolicyMutationError,
+    aggregateOrganizationActivities: vi.fn(),
+    approveOrganizationCharacterException: vi.fn(),
     assignOrganizationGroup: vi.fn(),
     blockOrganizationMember: vi.fn(),
     createOrganizationGroup: vi.fn(),
     createOrganizationPermissionBundle: vi.fn(),
+    expireOrganizationCharacterException: vi.fn(),
     findSession: vi.fn(),
+    getOrganizationAccountComplianceDetails: vi.fn(),
     getOrganizationAccessContext: vi.fn(),
     grantOrganizationRole: vi.fn(),
     hasCurrentOrganizationOwnerAuthority: vi.fn(),
@@ -38,17 +73,36 @@ const mocks = vi.hoisted(() => {
     hasCurrentOrganizationHrAuthority: vi.fn(),
     listOrganizationRosterCoverage: vi.fn(),
     listCurrentOrganizationGroups: vi.fn(),
+    listCurrentOrganizationCharacterExceptions: vi.fn(),
     listCurrentOrganizationMemberBlocks: vi.fn(),
     listCurrentOrganizationRoles: vi.fn(),
+    loadOrganizationSession: vi.fn(
+      async (
+        context: { set: (key: string, value: unknown) => void },
+        next: () => Promise<void>,
+      ) => {
+        context.set('organization', organizationSession.context)
+        await next()
+      },
+    ),
+    organizationSession,
     revokeOrganizationRole: vi.fn(),
+    revokeOrganizationCharacterException: vi.fn(),
     revokeOrganizationGroupAssignment: vi.fn(),
     registerOrganizationCorporationSource: vi.fn(),
     unblockOrganizationMember: vi.fn(),
+    updateOrganizationRegistrationPolicy: vi.fn(),
   }
 })
 
 vi.mock('../../src/env.js', () => ({ env: { WEB_ORIGIN: 'http://localhost:3000' } }))
 vi.mock('../../src/auth/store.js', () => ({ findSession: mocks.findSession }))
+vi.mock('../../src/organization/activity.js', () => ({
+  aggregateOrganizationActivities: mocks.aggregateOrganizationActivities,
+}))
+vi.mock('../../src/middleware/organization-session.js', () => ({
+  loadOrganizationSession: mocks.loadOrganizationSession,
+}))
 vi.mock('../../src/organization/block-store.js', () => ({
   OrganizationMemberBlockMutationError: mocks.MemberBlockMutationError,
   blockOrganizationMember: mocks.blockOrganizationMember,
@@ -68,6 +122,16 @@ vi.mock('../../src/organization/corporation-sources.js', () => ({
   OrganizationCorporationSourceMutationError: mocks.CorporationSourceMutationError,
   registerOrganizationCorporationSource: mocks.registerOrganizationCorporationSource,
 }))
+vi.mock('../../src/organization/compliance-details.js', () => ({
+  getOrganizationAccountComplianceDetails: mocks.getOrganizationAccountComplianceDetails,
+}))
+vi.mock('../../src/organization/exception-store.js', () => ({
+  OrganizationCharacterExceptionMutationError: mocks.CharacterExceptionMutationError,
+  approveOrganizationCharacterException: mocks.approveOrganizationCharacterException,
+  expireOrganizationCharacterException: mocks.expireOrganizationCharacterException,
+  listCurrentOrganizationCharacterExceptions: mocks.listCurrentOrganizationCharacterExceptions,
+  revokeOrganizationCharacterException: mocks.revokeOrganizationCharacterException,
+}))
 vi.mock('../../src/organization/roster-coverage.js', () => ({
   listOrganizationRosterCoverage: mocks.listOrganizationRosterCoverage,
 }))
@@ -79,6 +143,10 @@ vi.mock('../../src/organization/role-store.js', () => ({
   hasCurrentOrganizationHrAuthority: mocks.hasCurrentOrganizationHrAuthority,
   listCurrentOrganizationRoles: mocks.listCurrentOrganizationRoles,
   revokeOrganizationRole: mocks.revokeOrganizationRole,
+}))
+vi.mock('../../src/organization/policy-store.js', () => ({
+  OrganizationRegistrationPolicyMutationError: mocks.RegistrationPolicyMutationError,
+  updateOrganizationRegistrationPolicy: mocks.updateOrganizationRegistrationPolicy,
 }))
 
 import { organizationRoutes } from '../../src/organization/routes.js'
@@ -105,6 +173,14 @@ const grant = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.organizationSession.context = {
+    organizationVersion: 1,
+    state: 'compliant',
+    evidenceFreshness: 'fresh',
+    reviewDeadline: null,
+    accessValidUntil: new Date('2027-09-01T12:00:00.000Z'),
+    blocked: false,
+  }
   mocks.findSession.mockResolvedValue({
     userId: actorUserId,
     mainCharacter: {
@@ -143,6 +219,20 @@ beforeEach(() => {
     },
   })
   mocks.listCurrentOrganizationRoles.mockResolvedValue({ grants: [grant] })
+  mocks.getOrganizationAccountComplianceDetails.mockResolvedValue({
+    organizationVersion: 1,
+    state: 'compliant',
+    evidenceFreshness: 'fresh',
+    reviewDeadline: null,
+    characters: [],
+  })
+  mocks.aggregateOrganizationActivities.mockResolvedValue({
+    organizationVersion: 1,
+    generatedAt: '2026-09-02T12:00:00.000Z',
+    activities: [],
+    sources: [],
+  })
+  mocks.listCurrentOrganizationCharacterExceptions.mockResolvedValue([])
   mocks.grantOrganizationRole.mockResolvedValue(grant)
   mocks.revokeOrganizationRole.mockResolvedValue({
     ...grant,
@@ -226,6 +316,262 @@ beforeEach(() => {
       registeredByUserId: actorUserId,
       registeredAt: '2026-09-01T12:00:00.000Z',
     },
+  })
+  mocks.updateOrganizationRegistrationPolicy.mockResolvedValue({
+    organizationVersion: 1,
+    policyVersion: 2,
+    requiredScopes: ['esi-skills.read_skills.v1'],
+    strictRemediationDurationSeconds: 0,
+    staleEvidenceGraceDurationSeconds: 3600,
+  })
+  const exception = {
+    exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+    organizationVersion: 1,
+    userId: targetUserId,
+    characterId: 90_000_001,
+    approverUserId: actorUserId,
+    reason: 'Approved external character.',
+    approvedAt: new Date('2026-09-01T12:00:00.000Z'),
+    expiresAt: null,
+    expiredAt: null,
+    revokedAt: null,
+    revokedByUserId: null,
+    revocationReason: null,
+  }
+  mocks.approveOrganizationCharacterException.mockResolvedValue(exception)
+  mocks.expireOrganizationCharacterException.mockResolvedValue({
+    ...exception,
+    expiresAt: new Date('2026-09-02T12:00:00.000Z'),
+    expiredAt: new Date('2026-09-02T12:00:00.000Z'),
+  })
+  mocks.revokeOrganizationCharacterException.mockResolvedValue({
+    ...exception,
+    revokedAt: new Date('2026-09-02T12:00:00.000Z'),
+    revokedByUserId: actorUserId,
+    revocationReason: 'No longer required.',
+  })
+})
+
+describe('organization compliance routes', () => {
+  test.each(['pending', 'review_required', 'suspended'] as const)(
+    'keeps self compliance details available while the account is %s',
+    async (state) => {
+      mocks.organizationSession.context.state = state
+      mocks.organizationSession.context.accessValidUntil = null
+
+      const response = await get('/compliance')
+
+      expect(response.status).toBe(200)
+      expect(mocks.getOrganizationAccountComplianceDetails).toHaveBeenCalledWith(actorUserId)
+    },
+  )
+
+  test('keeps self compliance details available to a blocked account', async () => {
+    mocks.organizationSession.context.blocked = true
+
+    const response = await get('/compliance')
+
+    expect(response.status).toBe(200)
+    expect(mocks.getOrganizationAccountComplianceDetails).toHaveBeenCalledOnce()
+  })
+
+  test.each(['pending', 'review_required', 'suspended'] as const)(
+    'refuses protected data before role or private store reads while %s',
+    async (state) => {
+      mocks.organizationSession.context.state = state
+      mocks.organizationSession.context.accessValidUntil = null
+
+      const response = await get('/roles')
+
+      expect(response.status).toBe(403)
+      expect(await response.json()).toMatchObject({
+        code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
+        state,
+      })
+      expect(mocks.hasCurrentOrganizationOwnerAuthority).not.toHaveBeenCalled()
+      expect(mocks.listCurrentOrganizationRoles).not.toHaveBeenCalled()
+    },
+  )
+
+  test('refuses expired compliance and explicit blocks before private reads', async () => {
+    mocks.organizationSession.context.accessValidUntil = new Date('2026-01-01T00:00:00.000Z')
+    const expired = await get('/roles')
+    expect(expired.status).toBe(403)
+
+    mocks.organizationSession.context.accessValidUntil = new Date('2027-09-01T12:00:00.000Z')
+    mocks.organizationSession.context.blocked = true
+    const blocked = await get('/roles')
+    expect(blocked.status).toBe(403)
+    expect(await blocked.json()).toMatchObject({ code: 'ORGANIZATION_MEMBER_BLOCKED' })
+    expect(mocks.listCurrentOrganizationRoles).not.toHaveBeenCalled()
+  })
+
+  test('does not extend governance access during a member review period', async () => {
+    const deadline = new Date(Date.now() + 60_000)
+    mocks.organizationSession.context.state = 'review_required'
+    mocks.organizationSession.context.reviewDeadline = deadline
+    mocks.organizationSession.context.accessValidUntil = deadline
+
+    const response = await get('/roles')
+
+    expect(response.status).toBe(403)
+    expect(mocks.hasCurrentOrganizationOwnerAuthority).not.toHaveBeenCalled()
+    expect(mocks.listCurrentOrganizationRoles).not.toHaveBeenCalled()
+  })
+
+  test('returns bounded member activity for compliant and review-period accounts', async () => {
+    const compliant = await get('/activities')
+    expect(compliant.status).toBe(200)
+    expect(compliant.headers.get('cache-control')).toBe('private, no-store')
+
+    const deadline = new Date(Date.now() + 60_000)
+    mocks.organizationSession.context.state = 'review_required'
+    mocks.organizationSession.context.reviewDeadline = deadline
+    mocks.organizationSession.context.accessValidUntil = deadline
+    const review = await get('/activities')
+
+    expect(review.status).toBe(200)
+    expect(mocks.aggregateOrganizationActivities).toHaveBeenCalledTimes(2)
+  })
+
+  test('refuses blocked or suspended activity requests before providers are selected', async () => {
+    mocks.organizationSession.context.blocked = true
+    const blocked = await get('/activities')
+    expect(blocked.status).toBe(403)
+    expect(await blocked.json()).toMatchObject({ code: 'ORGANIZATION_MEMBER_BLOCKED' })
+
+    mocks.organizationSession.context.blocked = false
+    mocks.organizationSession.context.state = 'suspended'
+    mocks.organizationSession.context.accessValidUntil = null
+    const suspended = await get('/activities')
+    expect(suspended.status).toBe(403)
+    expect(await suspended.json()).toMatchObject({ code: 'ORGANIZATION_COMPLIANCE_REQUIRED' })
+    expect(mocks.aggregateOrganizationActivities).not.toHaveBeenCalled()
+  })
+})
+
+describe('organization compliance management routes', () => {
+  test('updates registration policy through an audited owner mutation', async () => {
+    const response = await mutate('PUT', '/registration-policy', {
+      requiredScopes: ['esi-skills.read_skills.v1'],
+      strictRemediationDurationSeconds: 0,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Require current skills authorization.',
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.updateOrganizationRegistrationPolicy).toHaveBeenCalledWith({
+      actorUserId,
+      requiredScopes: ['esi-skills.read_skills.v1'],
+      strictRemediationDurationSeconds: 0,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Require current skills authorization.',
+    })
+  })
+
+  test('allows a suspended verified owner to submit a recovery policy', async () => {
+    mocks.organizationSession.context.state = 'suspended'
+    mocks.organizationSession.context.accessValidUntil = null
+
+    const response = await mutate('PUT', '/registration-policy', {
+      requiredScopes: [],
+      strictRemediationDurationSeconds: 0,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Remove the policy that suspended the owner.',
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.updateOrganizationRegistrationPolicy).toHaveBeenCalledOnce()
+  })
+
+  test('still requires verified owner authority for policy recovery', async () => {
+    mocks.organizationSession.context.state = 'suspended'
+    mocks.organizationSession.context.accessValidUntil = null
+    mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
+
+    const response = await mutate('PUT', '/registration-policy', {
+      requiredScopes: [],
+      strictRemediationDurationSeconds: 0,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Unauthorized recovery attempt.',
+    })
+
+    expect(response.status).toBe(403)
+    expect(mocks.updateOrganizationRegistrationPolicy).not.toHaveBeenCalled()
+  })
+
+  test('maps a policy that would suspend its owner to a conflict', async () => {
+    mocks.updateOrganizationRegistrationPolicy.mockRejectedValueOnce(
+      new mocks.RegistrationPolicyMutationError('owner-policy-noncompliant'),
+    )
+
+    const response = await mutate('PUT', '/registration-policy', {
+      requiredScopes: ['esi-wallet.read_character_wallet.v1'],
+      strictRemediationDurationSeconds: 0,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Unsafe owner policy.',
+    })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({
+      code: 'REGISTRATION_POLICY_OWNER_NONCOMPLIANT',
+    })
+  })
+
+  test('lists, approves, expires, and revokes external-character exceptions for HR', async () => {
+    const listed = await get('/exceptions')
+    expect(listed.status).toBe(200)
+    expect(await listed.json()).toEqual({ exceptions: [] })
+
+    const approved = await request(`/members/${targetUserId}/characters/90000001/exception`, {
+      reason: 'Approved external character.',
+      expiresAt: null,
+    })
+    expect(approved.status).toBe(201)
+    expect(mocks.approveOrganizationCharacterException).toHaveBeenCalledWith({
+      actorUserId,
+      userId: targetUserId,
+      characterId: 90_000_001,
+      reason: 'Approved external character.',
+      expiresAt: null,
+    })
+
+    const expired = await request('/exceptions/22c7e94c-9cd3-4dc0-a3af-43117426ebec/expire', {
+      reason: 'Approval window ended.',
+    })
+    expect(expired.status).toBe(200)
+    expect(mocks.expireOrganizationCharacterException).toHaveBeenCalledWith({
+      actorUserId,
+      exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      reason: 'Approval window ended.',
+    })
+
+    const revoked = await request('/exceptions/22c7e94c-9cd3-4dc0-a3af-43117426ebec/revoke', {
+      reason: 'No longer required.',
+    })
+    expect(revoked.status).toBe(200)
+    expect(mocks.revokeOrganizationCharacterException).toHaveBeenCalledWith({
+      actorUserId,
+      exceptionId: '22c7e94c-9cd3-4dc0-a3af-43117426ebec',
+      reason: 'No longer required.',
+    })
+  })
+
+  test('refuses exception reads before their store and maps stale managed evidence', async () => {
+    mocks.hasCurrentOrganizationHrAuthority.mockResolvedValueOnce(false)
+    const unauthorized = await get('/exceptions')
+    expect(unauthorized.status).toBe(403)
+    expect(mocks.listCurrentOrganizationCharacterExceptions).not.toHaveBeenCalled()
+
+    mocks.approveOrganizationCharacterException.mockRejectedValueOnce(
+      new mocks.CharacterExceptionMutationError('managed-corporation-evidence-stale'),
+    )
+    const stale = await request(`/members/${targetUserId}/characters/90000001/exception`, {
+      reason: 'Cannot rely on stale evidence.',
+      expiresAt: null,
+    })
+    expect(stale.status).toBe(409)
+    expect(await stale.json()).toMatchObject({ code: 'MANAGED_CORPORATION_EVIDENCE_STALE' })
   })
 })
 
@@ -571,8 +917,17 @@ describe('organization corporation roster routes', () => {
 })
 
 function request(path: string, body: unknown, origin = 'http://localhost:3000') {
+  return mutate('POST', path, body, origin)
+}
+
+function mutate(
+  method: 'POST' | 'PUT',
+  path: string,
+  body: unknown,
+  origin = 'http://localhost:3000',
+) {
   return organizationRoutes.request(path, {
-    method: 'POST',
+    method,
     headers: {
       'Content-Type': 'application/json',
       Cookie: 'eve_space_session=session-token',

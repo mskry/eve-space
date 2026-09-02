@@ -3,10 +3,13 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   selectResults: [] as unknown[][],
   affectedUsers: [] as { userId: string }[],
+  services: [] as { permissionKey: string; reviewAllowed?: boolean }[],
   inserts: [] as unknown[],
   deletes: 0,
   appendAudit: vi.fn(),
+  appendAudits: vi.fn(),
   appendEvent: vi.fn(),
+  convergeGroups: vi.fn(),
 }))
 
 vi.mock('../../src/db/client.js', () => ({
@@ -19,8 +22,12 @@ vi.mock('../../src/db/client.js', () => ({
 }))
 vi.mock('../../src/organization/audit.js', () => ({
   appendOrganizationAuditEvent: mocks.appendAudit,
+  appendOrganizationAuditEvents: mocks.appendAudits,
 }))
 vi.mock('../../src/domain-events/store.js', () => ({ appendDomainEvent: mocks.appendEvent }))
+vi.mock('../../src/organization/group-store.js', () => ({
+  convergeRegistrationComplianceGroupsInTransaction: mocks.convergeGroups,
+}))
 
 import {
   recomputeComplianceForManagedCorporation,
@@ -35,17 +42,20 @@ describe('organization compliance persistence', () => {
   beforeEach(() => {
     mocks.selectResults.length = 0
     mocks.affectedUsers.length = 0
+    mocks.services.length = 0
     mocks.inserts.length = 0
     mocks.deletes = 0
     mocks.appendAudit.mockReset().mockResolvedValue(undefined)
+    mocks.appendAudits.mockReset().mockResolvedValue([])
     mocks.appendEvent.mockReset().mockResolvedValue(undefined)
+    mocks.convergeGroups.mockReset().mockResolvedValue(undefined)
   })
 
   test('ignores users or organization versions that are no longer current', async () => {
     mocks.selectResults.push([])
     await expect(recompute()).resolves.toEqual({ outcome: 'obsolete' })
 
-    mocks.selectResults.push([{ userId }], [])
+    mocks.selectResults.push([{ organizationVersion: 4 }], [])
     await expect(recompute()).resolves.toEqual({ outcome: 'obsolete' })
     expect(mocks.inserts).toHaveLength(0)
   })
@@ -72,7 +82,14 @@ describe('organization compliance persistence', () => {
     mocks.deletes = 0
     mocks.appendAudit.mockClear()
     mocks.appendEvent.mockClear()
-    givenEvaluationState({ previous: [compliantProjection()] })
+    givenEvaluationState({
+      previous: [
+        {
+          ...compliantProjection(),
+          accessValidUntil: new Date('2028-09-01T12:15:00.000Z'),
+        },
+      ],
+    })
     await expect(recompute()).resolves.toMatchObject({ outcome: 'unchanged' })
     expect(mocks.appendAudit).not.toHaveBeenCalled()
     expect(mocks.appendEvent).not.toHaveBeenCalled()
@@ -103,6 +120,137 @@ describe('organization compliance persistence', () => {
     expect(mocks.deletes).toBe(1)
   })
 
+  test('links external-service revocation audits to the compliance transition', async () => {
+    const auditId = 'cb05479f-36dd-4ec5-91a6-0b90cb8a1149'
+    mocks.appendAudit.mockResolvedValue({ auditId })
+    mocks.services.push({ permissionKey: 'discord.member' })
+    givenEvaluationState({ corporationId: 98000002, previous: [compliantProjection()] })
+
+    await expect(recompute()).resolves.toMatchObject({
+      outcome: 'changed',
+      evaluation: { state: 'suspended' },
+    })
+    expect(mocks.appendAudits).toHaveBeenCalledWith(expect.anything(), [
+      expect.objectContaining({
+        eventType: 'entitlement.revoked',
+        subjectType: 'external_service',
+        subjectId: 'discord.member',
+        causationAuditId: auditId,
+      }),
+    ])
+  })
+
+  test('audits effective service-key differences when review flags overlap', async () => {
+    mocks.appendAudit.mockResolvedValue({ auditId: 'review-transition' })
+    mocks.services.push(
+      { permissionKey: 'discord.member', reviewAllowed: false },
+      { permissionKey: 'discord.member', reviewAllowed: true },
+      { permissionKey: 'discord.leadership', reviewAllowed: false },
+    )
+    givenEvaluationState({
+      corporationId: 98000002,
+      previous: [compliantProjection()],
+      strictRemediationDurationSeconds: 3600,
+    })
+
+    await expect(recompute()).resolves.toMatchObject({
+      outcome: 'changed',
+      evaluation: { state: 'review_required' },
+    })
+    expect(mocks.appendAudits).toHaveBeenCalledWith(expect.anything(), [
+      expect.objectContaining({ subjectId: 'discord.leadership' }),
+    ])
+  })
+
+  test('audits all restored services when remediation follows expired review access', async () => {
+    mocks.appendAudit.mockResolvedValue({ auditId: 'remediation-transition' })
+    mocks.services.push(
+      { permissionKey: 'discord.member', reviewAllowed: true },
+      { permissionKey: 'discord.leadership', reviewAllowed: false },
+    )
+    givenEvaluationState({
+      previous: [
+        {
+          ...compliantProjection(),
+          state: 'review_required',
+          reviewDeadline: new Date('2026-09-01T11:00:00.000Z'),
+          accessValidUntil: new Date('2026-09-01T11:00:00.000Z'),
+        },
+      ],
+    })
+
+    await expect(recompute()).resolves.toMatchObject({
+      outcome: 'changed',
+      evaluation: { state: 'compliant' },
+    })
+    expect(mocks.appendAudits).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.arrayContaining([
+        expect.objectContaining({ subjectId: 'discord.member' }),
+        expect.objectContaining({ subjectId: 'discord.leadership' }),
+      ]),
+    )
+  })
+
+  test('audits delayed revocation after compliant access expires', async () => {
+    mocks.appendAudit.mockResolvedValue({ auditId: 'expired-compliance-transition' })
+    mocks.services.push(
+      { permissionKey: 'discord.member', reviewAllowed: true },
+      { permissionKey: 'discord.leadership', reviewAllowed: false },
+    )
+    givenEvaluationState({
+      corporationId: 98000002,
+      previous: [
+        {
+          ...compliantProjection(),
+          accessValidUntil: new Date('2026-09-01T11:00:00.000Z'),
+        },
+      ],
+    })
+
+    await expect(recompute()).resolves.toMatchObject({
+      outcome: 'changed',
+      evaluation: { state: 'suspended' },
+    })
+    expect(mocks.appendAudits).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.arrayContaining([
+        expect.objectContaining({ subjectId: 'discord.member' }),
+        expect.objectContaining({ subjectId: 'discord.leadership' }),
+      ]),
+    )
+  })
+
+  test('revokes only non-review services when expired compliant access enters review', async () => {
+    mocks.appendAudit.mockResolvedValue({ auditId: 'expired-review-transition' })
+    mocks.services.push(
+      { permissionKey: 'discord.member', reviewAllowed: true },
+      { permissionKey: 'discord.leadership', reviewAllowed: false },
+    )
+    givenEvaluationState({
+      corporationId: 98000002,
+      previous: [
+        {
+          ...compliantProjection(),
+          accessValidUntil: new Date('2026-09-01T11:00:00.000Z'),
+        },
+      ],
+      strictRemediationDurationSeconds: 3600,
+    })
+
+    await expect(recompute()).resolves.toMatchObject({
+      outcome: 'changed',
+      evaluation: { state: 'review_required' },
+    })
+    expect(mocks.appendAudits).toHaveBeenCalledTimes(1)
+    expect(mocks.appendAudits).toHaveBeenCalledWith(expect.anything(), [
+      expect.objectContaining({
+        eventType: 'entitlement.revoked',
+        subjectId: 'discord.leadership',
+      }),
+    ])
+  })
+
   test('recomputes each disclosed user currently affiliated with a changed corporation', async () => {
     mocks.affectedUsers.push({ userId })
     givenEvaluationState({ previous: [] })
@@ -131,19 +279,20 @@ function givenEvaluationState(input: {
   corporationId?: number
   previous: unknown[]
   previousIssues?: unknown[]
+  strictRemediationDurationSeconds?: number
 }) {
   mocks.selectResults.push(
-    [{ userId }],
     [
       {
         organizationVersion: 4,
         organizationType: 'corporation',
         policyVersion: 2,
         requiredScopes: [],
-        strictRemediationDurationSeconds: 0,
+        strictRemediationDurationSeconds: input.strictRemediationDurationSeconds ?? 0,
         staleEvidenceGraceDurationSeconds: 3600,
       },
     ],
+    [{ userId }],
     [
       {
         characterId: 1404328063,
@@ -171,6 +320,7 @@ function compliantProjection() {
     evidenceFreshness: 'fresh',
     evidenceAt,
     reviewDeadline: null,
+    accessValidUntil: new Date('2027-09-01T12:15:00.000Z'),
     establishedCompliantAt: now,
     authoritative: true,
     invalidatedAt: null,
@@ -184,6 +334,9 @@ function transaction() {
   return {
     select() {
       return query(mocks.selectResults.shift() ?? [])
+    },
+    selectDistinct() {
+      return query(mocks.services)
     },
     insert() {
       const values: unknown[] = []
@@ -199,7 +352,16 @@ function transaction() {
 
 function query(result: unknown[], insertedValues?: unknown[]) {
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'leftJoin', 'innerJoin', 'where', 'for', 'onConflictDoUpdate'])
+  for (const method of [
+    'from',
+    'leftJoin',
+    'innerJoin',
+    'where',
+    'limit',
+    'for',
+    'orderBy',
+    'onConflictDoUpdate',
+  ])
     builder[method] = () => builder
   builder.values = (values: unknown) => {
     insertedValues?.push(values)

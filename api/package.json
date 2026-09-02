@@ -23,6 +23,7 @@
     "test:coverage": "vitest run --coverage",
     "test:packaging": "vitest run --config vitest.packaging.config.ts",
     "test:postgres": "vitest run --config vitest.postgres.config.ts",
+    "test:postgres:coverage": "vitest run --config vitest.postgres.config.ts --coverage",
     "test:redis": "vitest run --config vitest.redis.config.ts --coverage",
     "typecheck": "pnpm build:dependencies && pnpm --filter @eve-space/platform-module-server typecheck && tsx ../scripts/run-installed-module-package-script.ts server typecheck && tsc --noEmit && tsc --project tsconfig.test.json --noEmit"
   },

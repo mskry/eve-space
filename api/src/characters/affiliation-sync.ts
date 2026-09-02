@@ -1,9 +1,10 @@
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
-import { and, asc, lte, sql } from 'drizzle-orm'
+import { and, asc, inArray, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db/client.js'
 import { characters } from '../db/schema.js'
 import { env } from '../env.js'
+import { appendDomainEvent } from '../domain-events/store.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getEsiOperationContract } from '../esi-resilience/catalog.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
@@ -162,6 +163,20 @@ export async function persistAffiliationObservations(
           ),
         )
     }
+    const affectedCharacters = await transaction
+      .select({ userId: characters.userId, characterId: characters.characterId })
+      .from(characters)
+      .where(inArray(characters.characterId, [...requested]))
+      .orderBy(asc(characters.userId), asc(characters.characterId))
+    for (const character of affectedCharacters)
+      // oxlint-disable-next-line no-await-in-loop -- Event sequence follows stable character order.
+      await appendDomainEvent(transaction, {
+        type: 'character.affiliation-observed',
+        payloadVersion: 1,
+        aggregateId: String(character.characterId),
+        payload: character,
+        occurredAt: observedAt,
+      })
   })
 }
 

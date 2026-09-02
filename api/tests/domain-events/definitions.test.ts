@@ -28,6 +28,7 @@ describe('domain event registry', () => {
       { type: 'character.detached', payloadVersion: 1, aggregateType: 'character' },
       { type: 'character.main-changed', payloadVersion: 1, aggregateType: 'user' },
       { type: 'character.scopes-changed', payloadVersion: 1, aggregateType: 'character' },
+      { type: 'character.affiliation-observed', payloadVersion: 1, aggregateType: 'character' },
       { type: 'organization.changed', payloadVersion: 1, aggregateType: 'deployment' },
       { type: 'organization.member-blocked', payloadVersion: 1, aggregateType: 'user' },
       { type: 'organization.member-unblocked', payloadVersion: 1, aggregateType: 'user' },

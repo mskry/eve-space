@@ -2,6 +2,7 @@ import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import {
   deploymentSettings,
+  organizationAccountCompliance,
   organizationAuthorityEvidence,
   organizationGroupAssignments,
   organizationGroupPermissionBundles,
@@ -20,6 +21,7 @@ import {
   appendOrganizationAuditEvents,
   type OrganizationAuditInput,
 } from './audit.js'
+import { hasCurrentComplianceAccess } from './compliance-access.js'
 
 export type OrganizationManagementAuthority = 'director' | 'organization_owner'
 
@@ -48,6 +50,7 @@ export class OrganizationGroupMutationError extends Error {
 interface PermissionInput {
   type: OrganizationPermissionType
   key: string
+  reviewAllowed?: boolean
 }
 
 export async function hasCurrentOrganizationManagerAuthority(userId: string) {
@@ -98,6 +101,7 @@ export async function createOrganizationPermissionBundle(input: {
         organizationVersion: organization.organizationVersion,
         permissionType: permission.type,
         permissionKey: permission.key,
+        reviewAllowed: permission.reviewAllowed,
       })),
     )
     return {
@@ -119,6 +123,7 @@ export async function createOrganizationGroup(input: {
 }) {
   return db.transaction(async (transaction) => {
     const organization = await lockCurrentOrganization(transaction)
+    const now = new Date()
     await requireOwner(transaction, organization.organizationVersion, input.actorUserId)
 
     const [existing] = await transaction
@@ -169,6 +174,29 @@ export async function createOrganizationGroup(input: {
         organizationVersion: organization.organizationVersion,
       })),
     )
+    if (group.managementMode === 'compliance' && group.complianceSource === 'core.registration') {
+      const eligibleAccounts = await transaction
+        .select({ userId: organizationAccountCompliance.userId })
+        .from(organizationAccountCompliance)
+        .where(
+          and(
+            eq(organizationAccountCompliance.deploymentId, 1),
+            eq(organizationAccountCompliance.organizationVersion, organization.organizationVersion),
+            eq(organizationAccountCompliance.authoritative, true),
+            gt(organizationAccountCompliance.accessValidUntil, now),
+          ),
+        )
+        .orderBy(asc(organizationAccountCompliance.userId))
+      for (const { userId } of eligibleAccounts)
+        // oxlint-disable-next-line no-await-in-loop -- Group locks must follow stable user order.
+        await convergeRegistrationComplianceGroupsInTransaction(transaction, {
+          organizationVersion: organization.organizationVersion,
+          policyVersion: organization.policyVersion,
+          userId,
+          eligible: true,
+          now,
+        })
+    }
     return toGroup(group, bundleIds)
   })
 }
@@ -372,6 +400,94 @@ export function convergeRegistrationComplianceGroupAssignment(input: {
   return convergeComplianceGroupAssignment('core.registration', input)
 }
 
+export async function convergeRegistrationComplianceGroupsInTransaction(
+  transaction: Transaction,
+  input: {
+    organizationVersion: number
+    policyVersion: number
+    userId: string
+    eligible: boolean
+    now: Date
+  },
+) {
+  const groups = await transaction
+    .select()
+    .from(organizationGroups)
+    .where(
+      and(
+        eq(organizationGroups.deploymentId, 1),
+        eq(organizationGroups.organizationVersion, input.organizationVersion),
+        eq(organizationGroups.managementMode, 'compliance'),
+        eq(organizationGroups.complianceSource, 'core.registration'),
+      ),
+    )
+    .orderBy(asc(organizationGroups.groupId))
+    .for('update')
+  /* oxlint-disable no-await-in-loop -- Assignment writes follow the locked group order. */
+  for (const group of groups) {
+    const existing = await loadUnrevokedAssignmentForUpdate(
+      transaction,
+      input.organizationVersion,
+      group.groupId,
+      input.userId,
+    )
+    if (input.eligible === Boolean(existing)) continue
+    if (input.eligible) {
+      const [assignment] = await transaction
+        .insert(organizationGroupAssignments)
+        .values({
+          groupId: group.groupId,
+          deploymentId: 1,
+          organizationVersion: input.organizationVersion,
+          userId: input.userId,
+          assignmentSource: 'compliance',
+          complianceSource: 'core.registration',
+          assignedActorType: 'system',
+          assignedByUserId: null,
+          reason: 'Account registration compliance established.',
+          assignedAt: input.now,
+          expiresAt: null,
+        })
+        .returning()
+      if (!assignment) throw new Error('Failed to converge organization group assignment')
+      await appendGroupAudit(
+        transaction,
+        { organizationVersion: input.organizationVersion, policyVersion: input.policyVersion },
+        {
+          eventType: 'group.assigned',
+          actorType: 'system',
+          actorId: null,
+          assignment,
+          reason: assignment.reason,
+          outcome: 'granted',
+          now: input.now,
+        },
+      )
+      continue
+    }
+    const revoked = await revokeAssignment(transaction, existing!.assignmentId, {
+      actorType: 'system',
+      actorUserId: null,
+      reason: 'Account registration compliance no longer grants this group.',
+      now: input.now,
+    })
+    await appendGroupAudit(
+      transaction,
+      { organizationVersion: input.organizationVersion, policyVersion: input.policyVersion },
+      {
+        eventType: 'group.revoked',
+        actorType: 'system',
+        actorId: null,
+        assignment: revoked,
+        reason: revoked.revocationReason!,
+        outcome: 'revoked',
+        now: input.now,
+      },
+    )
+  }
+  /* oxlint-enable no-await-in-loop */
+}
+
 async function convergeComplianceGroupAssignment(
   complianceSource: OrganizationComplianceSource,
   input: {
@@ -455,7 +571,11 @@ async function convergeComplianceGroupAssignment(
   })
 }
 
-export async function getOrganizationGroupPermissions(userId: string, now = new Date()) {
+export async function getOrganizationGroupPermissions(
+  userId: string,
+  now = new Date(),
+  organizationVersion?: number,
+) {
   await expireCurrentOrganizationGroupAssignments(now)
   const permissions = await db
     .select({
@@ -470,6 +590,26 @@ export async function getOrganizationGroupPermissions(userId: string, now = new 
         eq(organizationMemberBlocks.organizationVersion, deploymentSettings.organizationVersion),
         eq(organizationMemberBlocks.userId, userId),
         isNull(organizationMemberBlocks.unblockedAt),
+      ),
+    )
+    .innerJoin(
+      organizationAccountCompliance,
+      and(
+        eq(organizationAccountCompliance.deploymentId, deploymentSettings.id),
+        eq(
+          organizationAccountCompliance.organizationVersion,
+          deploymentSettings.organizationVersion,
+        ),
+        eq(organizationAccountCompliance.userId, userId),
+        eq(organizationAccountCompliance.authoritative, true),
+        or(
+          eq(organizationAccountCompliance.state, 'compliant'),
+          and(
+            eq(organizationAccountCompliance.state, 'review_required'),
+            gt(organizationAccountCompliance.reviewDeadline, now),
+          ),
+        ),
+        gt(organizationAccountCompliance.accessValidUntil, now),
       ),
     )
     .innerJoin(
@@ -517,11 +657,18 @@ export async function getOrganizationGroupPermissions(userId: string, now = new 
     .where(
       and(
         eq(organizationGroupAssignments.userId, userId),
+        organizationVersion === undefined
+          ? undefined
+          : eq(deploymentSettings.organizationVersion, organizationVersion),
         isNull(organizationMemberBlocks.blockId),
         isNull(organizationGroupAssignments.revokedAt),
         or(
           isNull(organizationGroupAssignments.expiresAt),
           gt(organizationGroupAssignments.expiresAt, now),
+        ),
+        or(
+          eq(organizationAccountCompliance.state, 'compliant'),
+          eq(organizationPermissionBundleEntries.reviewAllowed, true),
         ),
       ),
     )
@@ -607,6 +754,7 @@ export async function loadManagementAuthority(
   userId: string,
   now = new Date(),
 ) {
+  if (!(await hasCurrentComplianceAccess(database, organizationVersion, userId, now))) return null
   const [block] = await database
     .select({ blockId: organizationMemberBlocks.blockId })
     .from(organizationMemberBlocks)
@@ -794,13 +942,16 @@ function groupAuditInput(
 }
 
 function uniquePermissions(permissions: PermissionInput[]) {
-  const seen = new Set<string>()
-  return permissions.filter((permission) => {
+  const unique = new Map<string, PermissionInput & { reviewAllowed: boolean }>()
+  for (const permission of permissions) {
     const identity = `${permission.type}:${permission.key}`
-    if (seen.has(identity)) return false
-    seen.add(identity)
-    return true
-  })
+    const existing = unique.get(identity)
+    unique.set(identity, {
+      ...permission,
+      reviewAllowed: Boolean(existing?.reviewAllowed || permission.reviewAllowed),
+    })
+  }
+  return [...unique.values()]
 }
 
 function toGroup(group: typeof organizationGroups.$inferSelect, bundleIds: string[]) {

@@ -707,7 +707,7 @@ function migratedConnection() {
   return vi
     .fn()
     .mockResolvedValueOnce([{ exists: true, qualified: true }])
-    .mockResolvedValueOnce([{ module: 'core', name: '001_initial.sql' }])
+    .mockResolvedValueOnce([{ module: 'core', name: '037_review_permission_allowlist.sql' }])
 }
 
 async function flushQueueRedis() {

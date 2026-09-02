@@ -141,6 +141,7 @@ export const platformCollectionState = pgTable(
     authorizationGeneration: integer('authorization_generation'),
     validatedAt: timestamp('validated_at', { withTimezone: true, mode: 'date' }),
     lastFailureClass: text('last_failure_class').$type<PlatformCollectionFailureClass>(),
+    failureStartedAt: timestamp('failure_started_at', { withTimezone: true, mode: 'date' }),
     ...auditTimestamps(),
   },
   (table) => [
@@ -200,6 +201,10 @@ export const platformCollectionState = pgTable(
     check(
       'platform_collection_state_last_failure_class_check',
       sql`last_failure_class is null or last_failure_class in ('authorization-required', 'esi-cooldown', 'esi-unavailable', 'response-invalid', 'mapping-failed', 'persistence-failed', 'unknown')`,
+    ),
+    check(
+      'platform_collection_state_failure_started_at_check',
+      sql`(last_failure_class is null and failure_started_at is null) or (last_failure_class is not null and failure_started_at is not null)`,
     ),
   ],
 )

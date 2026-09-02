@@ -63,8 +63,7 @@ export async function materializeCorporationRoster(
     )
     .for('update')
   if (
-    !source ||
-    source.characterId !== input.characterId ||
+    source?.characterId !== input.characterId ||
     source.corporationId !== input.corporationId ||
     source.affiliationResolutionState !== 'resolved' ||
     source.tokenVersion !== input.tokenVersion ||

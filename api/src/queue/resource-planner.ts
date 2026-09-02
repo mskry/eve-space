@@ -154,25 +154,7 @@ function createResourceWorkItems(
     const batchKey = `${descriptor.moduleId}\0${descriptor.resourceId}\0${descriptor.subjectKind}`
     if (descriptor.batch && plannedBatchResources.has(batchKey)) continue
 
-    const operationId = descriptor.batch?.operationId ?? candidate.operationId
-    assertRegisteredEsiOperation(operationId)
-    const authorization = getEsiOperationContract(operationId).authorization
-    const authorizationCharacterId =
-      candidate.authorizationCharacterId ??
-      (descriptor.subjectKind === 'character' ? Number(candidate.identity.subjectId) : null)
-    if (
-      authorization.kind === 'character' &&
-      (!authorizationCharacterId || !Number.isSafeInteger(authorizationCharacterId))
-    )
-      throw new Error(
-        `Character-authorized resource ${descriptor.moduleId}/${descriptor.resourceId} has no authorization source`,
-      )
-    const operation = {
-      operation: operationId,
-      ...(authorization.kind === 'character'
-        ? { principal: characterEsiPrincipal(authorizationCharacterId!) }
-        : {}),
-    }
+    const operation = createCooldownRequest(candidate, descriptor)
     const work = descriptor.batch
       ? createBatchWork(descriptor, descriptor.batch, candidates, batchKey)
       : createScalarWork(candidate)
@@ -180,6 +162,31 @@ function createResourceWorkItems(
     workItems.push({ descriptor, operation, work })
   }
   return workItems
+}
+
+function createCooldownRequest(
+  candidate: DueInstalledResource,
+  descriptor: PlatformInstalledResourceDescriptor,
+) {
+  const operationId = descriptor.batch?.operationId ?? candidate.operationId
+  assertRegisteredEsiOperation(operationId)
+  const authorization = getEsiOperationContract(operationId).authorization
+  const authorizationCharacterId =
+    candidate.authorizationCharacterId ??
+    (descriptor.subjectKind === 'character' ? Number(candidate.identity.subjectId) : null)
+  if (
+    authorization.kind === 'character' &&
+    (!authorizationCharacterId || !Number.isSafeInteger(authorizationCharacterId))
+  )
+    throw new Error(
+      `Character-authorized resource ${descriptor.moduleId}/${descriptor.resourceId} has no authorization source`,
+    )
+  return {
+    operation: operationId,
+    ...(authorization.kind === 'character'
+      ? { principal: characterEsiPrincipal(authorizationCharacterId!) }
+      : {}),
+  }
 }
 
 function createScalarWork(candidate: DueInstalledResource) {

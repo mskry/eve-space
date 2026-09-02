@@ -37,8 +37,17 @@ function updateOpen(value: boolean) {
   if (value) return
 
   void nextTick(() => {
-    const triggerElement = trigger.value instanceof HTMLElement ? trigger.value : trigger.value?.$el
-    if (triggerElement instanceof HTMLElement) triggerElement.focus()
+    const triggerReference = trigger.value
+    if (triggerReference instanceof HTMLElement) {
+      triggerReference.focus()
+      return
+    }
+    if (
+      triggerReference &&
+      '$el' in triggerReference &&
+      triggerReference.$el instanceof HTMLElement
+    )
+      triggerReference.$el.focus()
   })
 }
 </script>

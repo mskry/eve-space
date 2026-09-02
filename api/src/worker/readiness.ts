@@ -11,7 +11,7 @@ export interface WorkerMigrationRequirement {
   readonly name: string
 }
 
-export const expectedWorkerMigration = '001_initial.sql'
+export const expectedWorkerMigration = '037_review_permission_allowlist.sql'
 const workerMigrationRequirements: readonly WorkerMigrationRequirement[] = [
   { module: 'core', name: expectedWorkerMigration },
   ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),

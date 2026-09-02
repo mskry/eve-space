@@ -71,6 +71,7 @@ export const organizationPermissionBundleEntries = pgTable(
     organizationVersion: bigint('organization_version', { mode: 'number' }).notNull(),
     permissionType: text('permission_type').$type<OrganizationPermissionType>().notNull(),
     permissionKey: text('permission_key').notNull(),
+    reviewAllowed: boolean('review_allowed').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [

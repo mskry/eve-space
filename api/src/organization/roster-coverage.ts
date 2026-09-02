@@ -154,7 +154,7 @@ export async function listOrganizationRosterCoverage() {
       })
     }),
   )
-  const managedStatus =
+  const configuredManagedStatus =
     managedSet?.organizationType === 'corporation'
       ? {
           status: 'current' as const,
@@ -162,15 +162,18 @@ export async function listOrganizationRosterCoverage() {
           attemptedAt: managedSet.configuredAt.toISOString(),
           lastFailureClass: null,
         }
-      : managedSet?.subjectLifecycleId
-        ? await getInstalledResourceCollectionStatus({
-            moduleId: 'core',
-            resourceId: 'managed-corporations',
-            subjectKind: 'alliance',
-            subjectLifecycleId: managedSet.subjectLifecycleId,
-            subjectId: String(managedSet.organizationId),
-          })
-        : null
+      : null
+  const collectedManagedStatus =
+    managedSet?.organizationType !== 'corporation' && managedSet?.subjectLifecycleId
+      ? await getInstalledResourceCollectionStatus({
+          moduleId: 'core',
+          resourceId: 'managed-corporations',
+          subjectKind: 'alliance',
+          subjectLifecycleId: managedSet.subjectLifecycleId,
+          subjectId: String(managedSet.organizationId),
+        })
+      : null
+  const managedStatus = configuredManagedStatus ?? collectedManagedStatus
 
   return {
     managedCorporations: {

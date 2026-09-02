@@ -6,6 +6,7 @@ import {
   platformNavigationPlacements,
   validatePlatformModuleManifests,
   type PlatformInstalledModuleMigrationDescriptor,
+  type PlatformInstalledActivityProviderDescriptor,
   type PlatformInstalledModuleDefinition,
   type PlatformInstalledNavigation,
   type PlatformModuleManifest,
@@ -16,6 +17,7 @@ import { coreModuleValidationAuthorities, coreNavigationDefaults } from './autho
 
 export const generatedRegistryPaths = [
   'api/src/generated/platform/installed-module-routes.ts',
+  'api/src/generated/platform/installed-module-activity-providers.ts',
   'api/src/generated/platform/installed-module-worker.ts',
   'api/src/generated/platform/installed-module-migrations.ts',
   'api/src/generated/platform/installed-module-esi.ts',
@@ -71,13 +73,14 @@ export function generateRegistryFiles(manifests: readonly PlatformModuleManifest
   const sorted = validatePlatformModuleManifests(manifests, coreModuleValidationAuthorities)
   return new Map<string, string>([
     [generatedRegistryPaths[0], renderApiRoutes(sorted)],
-    [generatedRegistryPaths[1], renderWorkerResources(sorted)],
-    [generatedRegistryPaths[2], renderMigrations(sorted)],
-    [generatedRegistryPaths[3], renderEsiOperations(sorted)],
-    [generatedRegistryPaths[4], renderModuleRuntime(sorted)],
-    [generatedRegistryPaths[5], renderNuxtModules(sorted)],
-    [generatedRegistryPaths[6], renderNuxtContributions(sorted)],
-    [generatedRegistryPaths[7], renderNavigation(sorted)],
+    [generatedRegistryPaths[1], renderActivityProviders(sorted)],
+    [generatedRegistryPaths[2], renderWorkerResources(sorted)],
+    [generatedRegistryPaths[3], renderMigrations(sorted)],
+    [generatedRegistryPaths[4], renderEsiOperations(sorted)],
+    [generatedRegistryPaths[5], renderModuleRuntime(sorted)],
+    [generatedRegistryPaths[6], renderNuxtModules(sorted)],
+    [generatedRegistryPaths[7], renderNuxtContributions(sorted)],
+    [generatedRegistryPaths[8], renderNavigation(sorted)],
   ])
 }
 
@@ -186,12 +189,49 @@ function renderApiRoutes(manifests: readonly PlatformModuleManifest[]) {
   )
   const chain = routes.map(
     ({ manifest, route, binding }) =>
-      `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(route.authorization)}](${quote(manifest.id)}, ${binding}),\n  )`,
+      `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(route.authorization)}](\n      ${quote(manifest.id)},\n      { audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)} },\n      ${binding},\n    ),\n  )`,
   )
   const composition = routes.length
     ? `${platformImports}${imports.join('')}\n${factories.join('')}\n`
     : '\n'
   return `${generatedHeader}import { Hono } from 'hono'\n${composition}export const installedModuleRoutes = new Hono()${chain.join('')}\n`
+}
+
+function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
+  const providers = manifests.flatMap((manifest, moduleIndex) =>
+    manifest.server.activityProviders.map((provider, providerIndex) => ({
+      manifest,
+      provider,
+      binding: `module${moduleIndex}ActivityProvider${providerIndex}`,
+    })),
+  )
+  const imports = providers.map(
+    ({ manifest, provider, binding }) =>
+      `import { ${provider.exportName} as ${binding}Factory } from ${quote(manifest.server.package)}\n`,
+  )
+  const platformImport = providers.length
+    ? "import { createPlatformModuleActivityProviderCapabilities } from '../../platform/module-activity-provider-capabilities.js'\n"
+    : ''
+  const descriptors: PlatformInstalledActivityProviderDescriptor[] = providers.map(
+    ({ manifest, provider }) => ({
+      moduleId: manifest.id,
+      providerId: provider.id,
+      audience: provider.audience,
+      requiredPermission: provider.requiredPermission,
+      freshness: provider.freshness,
+      pageIds: manifest.nuxt.pages.map(({ id }) => id),
+      invoke: undefined as never,
+    }),
+  )
+  const rendered = descriptors.length
+    ? `[${descriptors
+        .map((descriptor, index) => {
+          const binding = providers[index]!.binding
+          return `\n  { moduleId: ${quote(descriptor.moduleId)}, providerId: ${quote(descriptor.providerId)}, audience: ${quote(descriptor.audience)}, requiredPermission: ${quote(descriptor.requiredPermission)}, freshness: { staleAfterSeconds: ${descriptor.freshness.staleAfterSeconds} }, pageIds: [${descriptor.pageIds.map(quote).join(', ')}], invoke: (context) => ${binding}Factory(createPlatformModuleActivityProviderCapabilities(${quote(descriptor.moduleId)}, context.signal))(context) },`
+        })
+        .join('')}\n]`
+    : '[]'
+  return `${generatedHeader}import type { PlatformInstalledActivityProviderDescriptor } from '@eve-space/platform-module-contract'\n${platformImport}${imports.join('')}\nexport const installedModuleActivityProviders =\n  ${rendered} as const satisfies readonly PlatformInstalledActivityProviderDescriptor[]\n`
 }
 
 function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
@@ -388,6 +428,7 @@ function parsePlatformModuleManifest(value: unknown, moduleId: string): Platform
     !Array.isArray(value.server.migrations) ||
     !Array.isArray(value.server.resources) ||
     !Array.isArray(value.server.esiOperations) ||
+    !Array.isArray(value.server.activityProviders) ||
     !isRecord(value.nuxt) ||
     typeof value.nuxt.package !== 'string' ||
     !Array.isArray(value.nuxt.pages) ||

@@ -44,6 +44,10 @@ const characterScopesChangedPayloadSchema = z
     }
   })
 
+const characterAffiliationObservedPayloadSchema = z
+  .object({ userId: z.uuid(), characterId: positiveIdentifier })
+  .strict()
+
 const organizationChangedPayloadSchema = z
   .object({
     actorAdminId: z.uuid(),
@@ -109,6 +113,10 @@ const domainEventRegistry = {
   'character.scopes-changed': {
     aggregateType: 'character',
     versions: { 1: characterScopesChangedPayloadSchema },
+  },
+  'character.affiliation-observed': {
+    aggregateType: 'character',
+    versions: { 1: characterAffiliationObservedPayloadSchema },
   },
   'organization.changed': {
     aggregateType: 'deployment',

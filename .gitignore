@@ -6,7 +6,9 @@
 .cache
 dist
 coverage
+coverage-postgres
 coverage-redis
+coverage-registry
 .scannerwork
 
 # Node dependencies

@@ -9,6 +9,7 @@ import {
   organizationRoleGrants,
 } from '../db/schema.js'
 import { appendOrganizationAuditEvent } from './audit.js'
+import { recomputeOrganizationAccountCompliance } from './compliance.js'
 import { isOrganizationOwnerClaimAvailable } from './role-store.js'
 
 export class OrganizationOwnerClaimError extends Error {
@@ -191,6 +192,15 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
       outcome: 'granted',
       occurredAt: now,
     })
+    await recomputeOrganizationAccountCompliance(
+      {
+        deploymentId: 1,
+        organizationVersion: organization.organizationVersion,
+        userId: input.userId,
+        now,
+      },
+      transaction,
+    )
     return grant
   })
 }

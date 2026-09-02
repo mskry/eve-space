@@ -14,6 +14,10 @@ import {
 import { createTransactionScopedModulePersistenceCapability } from '../db/module-persistence.js'
 import { sdeCoreReads } from './core-read-capabilities.js'
 import { materializeCoreResourceObservation } from './core-resource-materialization.js'
+import {
+  recomputeAllOrganizationAccountsInTransaction,
+  recomputeComplianceForManagedCorporationsInTransaction,
+} from '../organization/compliance.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   upsertPlatformCollectionState,
@@ -175,5 +179,18 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
         upsertState: (input) => upsertPlatformCollectionState(input, transaction),
       },
     )
+    if (applied.recomputeAllAccounts)
+      await recomputeAllOrganizationAccountsInTransaction(transaction, {
+        deploymentId: 1,
+        organizationVersion: applied.organizationVersion,
+        now: new Date(),
+      })
+    else if (applied.affectedCorporationIds.length > 0)
+      await recomputeComplianceForManagedCorporationsInTransaction(transaction, {
+        deploymentId: 1,
+        organizationVersion: applied.organizationVersion,
+        corporationIds: applied.affectedCorporationIds,
+        now: new Date(),
+      })
   })
 }

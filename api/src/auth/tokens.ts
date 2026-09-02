@@ -1,5 +1,6 @@
 import {
   CharacterTokenNotFoundError,
+  deleteCharacterTokenAuthorization,
   findCharacterToken,
   findCharacterTokenForLifecycle,
   TokenRefreshLockUnavailableError,
@@ -9,9 +10,13 @@ import {
 } from './store.js'
 import type { StoredCharacterToken } from './store.js'
 import { appendDomainEvent } from '../domain-events/store.js'
+import {
+  lockCurrentOrganizationVersionForCompliance,
+  recomputeOrganizationAccountCompliance,
+} from '../organization/compliance.js'
 import { normalizeScopeSet } from '../domain-events/definitions.js'
 import { env } from '../env.js'
-import { refreshAccessToken, verifyAccessToken } from './sso.js'
+import { EveSsoTokenRefreshError, refreshAccessToken, verifyAccessToken } from './sso.js'
 import { decryptTokens, encryptTokens } from './security.js'
 
 interface CharacterAuthorization {
@@ -23,6 +28,12 @@ interface RefreshedCharacterAuthorization {
   readonly authorization: CharacterAuthorization
   readonly scopes: readonly string[]
 }
+
+interface RevokedCharacterAuthorization {
+  readonly authorizationRevoked: EveSsoTokenRefreshError
+}
+
+type CharacterRefreshResult = RefreshedCharacterAuthorization | RevokedCharacterAuthorization
 
 const refreshes = new Map<number, Promise<RefreshedCharacterAuthorization>>()
 
@@ -99,6 +110,8 @@ export async function getCharacterAuthorizationForLifecycle(
         )
       },
     )
+    if ('authorizationRevoked' in refreshed) throw refreshed.authorizationRevoked
+    requireScope(refreshed.scopes, requiredScope)
     return refreshed.authorization
   })
 }
@@ -156,11 +169,13 @@ async function refreshCharacterToken(
   requiredScope: string,
   original: StoredCharacterToken,
 ) {
-  return withRefreshLock(characterId, (stored, transaction) =>
+  const result = await withRefreshLock(characterId, (stored, transaction) =>
     refreshLockedCharacterToken(characterId, requiredScope, original, stored, transaction, () =>
       findCharacterToken(characterId, transaction),
     ),
   )
+  if ('authorizationRevoked' in result) throw result.authorizationRevoked
+  return result
 }
 
 async function refreshLockedCharacterToken(
@@ -170,18 +185,31 @@ async function refreshLockedCharacterToken(
   stored: StoredCharacterToken,
   transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
   findWinner: () => Promise<StoredCharacterToken | null>,
-): Promise<RefreshedCharacterAuthorization> {
+): Promise<CharacterRefreshResult> {
   if (stored.tokenVersion !== original.tokenVersion)
     return toRefreshedCharacterAuthorization(stored, requiredScope)
 
   const currentTokens = decryptTokens(stored.encryptedTokens)
-  const refreshed = await refreshAccessToken(currentTokens.refreshToken)
+  let refreshed
+  try {
+    refreshed = await refreshAccessToken(currentTokens.refreshToken)
+  } catch (error) {
+    if (!(error instanceof EveSsoTokenRefreshError) || !error.authorizationRevoked) throw error
+    await deleteRevokedCharacterAuthorization(characterId, stored, transaction)
+    return { authorizationRevoked: error }
+  }
   const identity = await verifyAccessToken(refreshed.access_token)
   if (identity.characterId !== characterId)
     throw new Error('Refreshed token belongs to a different character')
-  requireScope(identity.scopes, requiredScope)
   const previousScopes = new Set(normalizeScopeSet(stored.scopes))
   const nextScopes = normalizeScopeSet(identity.scopes)
+  const nextScopeSet = new Set(nextScopes)
+  const addedScopes = nextScopes.filter((scope) => !previousScopes.has(scope))
+  const removedScopes = [...previousScopes].filter((scope) => !nextScopeSet.has(scope))
+  const scopesChanged = addedScopes.length > 0 || removedScopes.length > 0
+  const organizationVersion = scopesChanged
+    ? await lockCurrentOrganizationVersionForCompliance(transaction)
+    : null
 
   // The advisory lock currently serializes writers. Keep the compare-and-set as a final guard
   // against a future uncoordinated caller overwriting a rotated refresh token.
@@ -199,16 +227,18 @@ async function refreshLockedCharacterToken(
     transaction,
   )
   if (updated) {
-    const nextScopeSet = new Set(nextScopes)
-    const addedScopes = nextScopes.filter((scope) => !previousScopes.has(scope))
-    const removedScopes = [...previousScopes].filter((scope) => !nextScopeSet.has(scope))
-    if (addedScopes.length > 0 || removedScopes.length > 0) {
+    if (scopesChanged) {
       await appendDomainEvent(transaction, {
         type: 'character.scopes-changed',
         payloadVersion: 1,
         aggregateId: String(characterId),
         payload: { userId: stored.userId, characterId, addedScopes, removedScopes },
       })
+      if (organizationVersion)
+        await recomputeOrganizationAccountCompliance(
+          { deploymentId: 1, organizationVersion, userId: stored.userId },
+          transaction,
+        )
     }
     return {
       authorization: { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 },
@@ -219,6 +249,39 @@ async function refreshLockedCharacterToken(
   const winner = await findWinner()
   if (!winner) throw new CharacterTokenNotFoundError()
   return toRefreshedCharacterAuthorization(winner, requiredScope)
+}
+
+async function deleteRevokedCharacterAuthorization(
+  characterId: number,
+  stored: StoredCharacterToken,
+  transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
+) {
+  const deleted = await deleteCharacterTokenAuthorization(
+    characterId,
+    stored.tokenVersion,
+    transaction,
+  )
+  if (!deleted) return
+
+  const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
+  const removedScopes = normalizeScopeSet(stored.scopes)
+  if (removedScopes.length > 0)
+    await appendDomainEvent(transaction, {
+      type: 'character.scopes-changed',
+      payloadVersion: 1,
+      aggregateId: String(characterId),
+      payload: {
+        userId: stored.userId,
+        characterId,
+        addedScopes: [],
+        removedScopes,
+      },
+    })
+  if (organizationVersion)
+    await recomputeOrganizationAccountCompliance(
+      { deploymentId: 1, organizationVersion, userId: stored.userId },
+      transaction,
+    )
 }
 
 async function mapRefreshLockError<T>(locked: Promise<T>) {

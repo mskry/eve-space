@@ -16,6 +16,7 @@ vi.mock('../../src/platform/core-read-capabilities.js', () => ({
 }))
 
 import { createPlatformModuleRouteCapabilities } from '../../src/platform/module-route-capabilities.js'
+import { createPlatformModuleActivityProviderCapabilities } from '../../src/platform/module-activity-provider-capabilities.js'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -29,5 +30,38 @@ describe('platform module route capabilities', () => {
     expect(capabilities).toEqual({ persistence: mocks.persistence, sde: mocks.sdeCoreReads })
     expect(Object.keys(capabilities)).toEqual(['persistence', 'sde'])
     expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha')
+  })
+
+  test('provides activity providers only transaction-scoped module persistence', async () => {
+    const unsafe = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
+    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
+    const controller = new AbortController()
+    const capabilities = createPlatformModuleActivityProviderCapabilities(
+      'alpha',
+      controller.signal,
+    )
+    let retainedTransaction: { query(statement: string): Promise<readonly object[]> } | undefined
+
+    await expect(
+      capabilities.persistence.transaction(async (transaction) => {
+        retainedTransaction = transaction
+        return transaction.query('select activity_id from activities', ['one'])
+      }),
+    ).resolves.toEqual([{ activity_id: 'one' }])
+
+    expect(Object.keys(capabilities)).toEqual(['persistence'])
+    expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha', {
+      readOnly: true,
+      statementTimeoutMilliseconds: 2000,
+    })
+    expect(unsafe).toHaveBeenCalledWith('select activity_id from activities', ['one'])
+    await expect(retainedTransaction!.query('select 1')).rejects.toThrow(
+      'Module activity transaction is no longer active',
+    )
+
+    controller.abort()
+    await expect(capabilities.persistence.transaction(async () => undefined)).rejects.toThrow(
+      'Module activity provider was aborted',
+    )
   })
 })

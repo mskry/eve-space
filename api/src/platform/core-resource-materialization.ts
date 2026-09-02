@@ -5,6 +5,7 @@ import {
   deploymentSettings,
   organizationCorporationSources,
   organizationManagedCorporations,
+  platformCollectionState,
   platformSubjectLifecycles,
 } from '../db/schema.js'
 import { materializeManagedAllianceCorporations } from '../organization/managed-corporations.js'
@@ -22,6 +23,21 @@ export async function materializeCoreResourceObservation(
 ) {
   const ids = parseIds(input.data)
   if (input.resourceId === 'managed-corporations' && input.subject.kind === 'alliance') {
+    const [previousCollection] = await database
+      .select({
+        validatedAt: platformCollectionState.validatedAt,
+        lastFailureClass: platformCollectionState.lastFailureClass,
+      })
+      .from(platformCollectionState)
+      .where(
+        and(
+          eq(platformCollectionState.moduleId, 'core'),
+          eq(platformCollectionState.resourceId, 'managed-corporations'),
+          eq(platformCollectionState.subjectKind, 'alliance'),
+          eq(platformCollectionState.subjectLifecycleId, input.subject.lifecycleId),
+          eq(platformCollectionState.subjectId, String(input.subject.allianceId)),
+        ),
+      )
     const [organization] = await database
       .select({ organizationVersion: deploymentSettings.organizationVersion })
       .from(deploymentSettings)
@@ -42,7 +58,7 @@ export async function materializeCoreResourceObservation(
           eq(deploymentSettings.organizationId, input.subject.allianceId),
         ),
       )
-    if (!organization) return false
+    if (!organization) return null
     const result = await materializeManagedAllianceCorporations(database, {
       organizationVersion: organization.organizationVersion,
       allianceId: input.subject.allianceId,
@@ -50,10 +66,17 @@ export async function materializeCoreResourceObservation(
       validatedAt: input.validatedAt,
     })
     return result.outcome === 'refreshed'
+      ? {
+          organizationVersion: organization.organizationVersion,
+          affectedCorporationIds: [...result.addedIds, ...result.removedIds],
+          recomputeAllAccounts:
+            !previousCollection?.validatedAt || previousCollection.lastFailureClass !== null,
+        }
+      : null
   }
 
   if (input.resourceId === 'corporation-roster' && input.subject.kind === 'corporation') {
-    if (input.authorizationGeneration === null) return false
+    if (input.authorizationGeneration === null) return null
     const [source] = await database
       .select({
         sourceId: organizationCorporationSources.sourceId,
@@ -101,7 +124,7 @@ export async function materializeCoreResourceObservation(
           eq(organizationCorporationSources.corporationId, input.subject.corporationId),
         ),
       )
-    if (!source?.characterId) return false
+    if (!source?.characterId) return null
     const result = await materializeCorporationRoster(database, {
       organizationVersion: source.organizationVersion,
       corporationId: input.subject.corporationId,
@@ -112,6 +135,12 @@ export async function materializeCoreResourceObservation(
       validatedAt: input.validatedAt,
     })
     return result.outcome === 'refreshed'
+      ? {
+          organizationVersion: source.organizationVersion,
+          affectedCorporationIds: [],
+          recomputeAllAccounts: false,
+        }
+      : null
   }
 
   throw new Error(`Unknown core resource ${input.resourceId}`)

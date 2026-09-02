@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
+  createCharacterComplianceEventHandlers,
   createManagedCorporationComplianceEventHandlers,
   createPlatformCollectionStateEventHandlers,
   dispatchDomainEvent,
@@ -53,32 +54,64 @@ describe('domain event handlers', () => {
     ).rejects.toBeInstanceOf(DomainEventNotFoundError)
   })
 
-  test.each(['character.attached', 'character.detached', 'character.scopes-changed'] as const)(
-    'repairs current collection state for %s events',
-    async (eventType) => {
-      const repair = vi.fn().mockResolvedValue(undefined)
-      const handlers = createPlatformCollectionStateEventHandlers(repair)
-      const event = {
-        ...storedEvent(),
-        eventType,
-        payload:
-          eventType === 'character.scopes-changed'
+  test.each([
+    'character.attached',
+    'character.detached',
+    'character.scopes-changed',
+    'character.affiliation-observed',
+  ] as const)('repairs current collection state for %s events', async (eventType) => {
+    const repair = vi.fn().mockResolvedValue(undefined)
+    const handlers = createPlatformCollectionStateEventHandlers(repair)
+    const event = {
+      ...storedEvent(),
+      eventType,
+      payload:
+        eventType === 'character.scopes-changed'
+          ? {
+              userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+              characterId: 1404328063,
+              addedScopes: ['esi-wallet.read_character_wallet.v1'],
+              removedScopes: [],
+            }
+          : eventType === 'character.affiliation-observed'
             ? {
                 userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
                 characterId: 1404328063,
-                addedScopes: ['esi-wallet.read_character_wallet.v1'],
-                removedScopes: [],
               }
             : storedEvent().payload,
-      } as never
+    } as never
 
-      await expect(
-        dispatchDomainEvent(eventId, handlers, vi.fn().mockResolvedValue(event)),
-      ).resolves.toBe(event)
-      expect(repair).toHaveBeenCalledOnce()
-      expect(repair).toHaveBeenCalledWith({ characterId: 1404328063 })
-    },
-  )
+    await expect(
+      dispatchDomainEvent(eventId, handlers, vi.fn().mockResolvedValue(event)),
+    ).resolves.toBe(event)
+    expect(repair).toHaveBeenCalledOnce()
+    expect(repair).toHaveBeenCalledWith({ characterId: 1404328063 })
+  })
+
+  test.each([
+    'character.attached',
+    'character.detached',
+    'character.scopes-changed',
+    'character.affiliation-observed',
+  ] as const)('recomputes account compliance for %s events', async (eventType) => {
+    const recompute = vi.fn().mockResolvedValue(undefined)
+    const handlers = createCharacterComplianceEventHandlers(recompute)
+    const event = {
+      ...storedEvent(),
+      eventType,
+      payload: {
+        ...storedEvent().payload,
+        ...(eventType === 'character.scopes-changed'
+          ? { addedScopes: ['scope'], removedScopes: [] }
+          : {}),
+      },
+    } as never
+
+    await expect(
+      dispatchDomainEvent(eventId, handlers, vi.fn().mockResolvedValue(event)),
+    ).resolves.toBe(event)
+    expect(recompute).toHaveBeenCalledWith('2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c')
+  })
 
   test.each([
     'organization.managed-corporation-added',
@@ -103,6 +136,26 @@ describe('domain event handlers', () => {
       organizationVersion: 4,
       corporationId: 98000001,
     })
+  })
+
+  test('redelivers compliance events through convergent handlers', async () => {
+    const recompute = vi.fn().mockResolvedValue({ outcome: 'unchanged' })
+    const handlers = createCharacterComplianceEventHandlers(recompute)
+    const event = {
+      ...storedEvent(),
+      eventType: 'character.affiliation-observed',
+      payload: {
+        userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
+        characterId: 1404328063,
+      },
+    } as never
+    const loader = vi.fn().mockResolvedValue(event)
+
+    await dispatchDomainEvent(eventId, handlers, loader)
+    await dispatchDomainEvent(eventId, handlers, loader)
+
+    expect(recompute).toHaveBeenCalledTimes(2)
+    expect(handlers.every(({ idempotency }) => idempotency === 'convergent-state')).toBe(true)
   })
 })
 

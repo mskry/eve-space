@@ -1,5 +1,6 @@
 import type { Queue } from 'bullmq'
 import { repairPlatformCollectionState } from '../platform/collection-state-repair.js'
+import { repairOrganizationCompliance } from '../organization/compliance-repair.js'
 import { runAffiliationPlanner } from './affiliation-planner.js'
 import { enqueueDiagnostic } from './platform.js'
 import { runOrganizationOwnerEvidencePlanner } from './owner-evidence-planner.js'
@@ -10,6 +11,7 @@ interface QueuePlannerDependencies {
   planAffiliations(queue: Queue, signal?: AbortSignal): Promise<unknown>
   planOrganizationOwnerEvidence(queue: Queue, signal?: AbortSignal): Promise<unknown>
   repairCollectionState(options: { signal?: AbortSignal }): Promise<unknown>
+  repairCompliance(options: { signal?: AbortSignal }): Promise<unknown>
   planResources(queue: Queue, signal?: AbortSignal): Promise<unknown>
 }
 
@@ -18,6 +20,7 @@ const defaultDependencies: QueuePlannerDependencies = {
   planAffiliations: runAffiliationPlanner,
   planOrganizationOwnerEvidence: runOrganizationOwnerEvidencePlanner,
   repairCollectionState: repairPlatformCollectionState,
+  repairCompliance: repairOrganizationCompliance,
   planResources: runResourcePlanner,
 }
 
@@ -32,4 +35,5 @@ export async function runQueuePlanner(
   await dependencies.planOrganizationOwnerEvidence(queue, signal)
   await dependencies.repairCollectionState({ signal })
   await dependencies.planResources(queue, signal)
+  await dependencies.repairCompliance({ signal })
 }

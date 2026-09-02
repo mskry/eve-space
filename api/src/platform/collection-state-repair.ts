@@ -53,7 +53,8 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
       next_eligible_at,
       authorization_generation,
       validated_at,
-      last_failure_class
+      last_failure_class,
+      failure_started_at
     )
     select
       resource.module_id,
@@ -64,7 +65,8 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
       null,
       token.token_version,
       null,
-      'authorization-required'
+      'authorization-required',
+      now()
     from installed_resources resource
     join deployment_modules module_setting
       on module_setting.module_id = resource.module_id
@@ -85,6 +87,10 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
       next_eligible_at = null,
       authorization_generation = excluded.authorization_generation,
       last_failure_class = 'authorization-required',
+      failure_started_at = case
+        when platform_collection_state.last_failure_class is null then now()
+        else platform_collection_state.failure_started_at
+      end,
       updated_at = now()
     where platform_collection_state.authorization_generation is distinct from
         excluded.authorization_generation
@@ -106,6 +112,7 @@ export async function repairPlatformCollectionState(options: CollectionStateRepa
       next_eligible_at = now(),
       authorization_generation = token.token_version,
       last_failure_class = null,
+      failure_started_at = null,
       updated_at = now()
     from installed_resources resource
     join deployment_modules module_setting

@@ -3,7 +3,11 @@ import { z } from 'zod'
 import { organizationComplianceSources } from '../db/schema.js'
 import { env } from '../env.js'
 import { zValidator } from '../http/validation.js'
-import { loadSession, requireSession, type SessionEnv } from '../middleware/auth-session.js'
+import { loadSession, requireSession } from '../middleware/auth-session.js'
+import {
+  loadOrganizationSession,
+  type OrganizationSessionEnv,
+} from '../middleware/organization-session.js'
 import {
   blockOrganizationMember,
   listCurrentOrganizationMemberBlocks,
@@ -14,6 +18,14 @@ import {
   OrganizationCorporationSourceMutationError,
   registerOrganizationCorporationSource,
 } from './corporation-sources.js'
+import {
+  approveOrganizationCharacterException,
+  expireOrganizationCharacterException,
+  listCurrentOrganizationCharacterExceptions,
+  OrganizationCharacterExceptionMutationError,
+  revokeOrganizationCharacterException,
+} from './exception-store.js'
+import { getOrganizationAccountComplianceDetails } from './compliance-details.js'
 import {
   assignOrganizationGroup,
   createOrganizationGroup,
@@ -33,6 +45,12 @@ import {
   revokeOrganizationRole,
 } from './role-store.js'
 import { listOrganizationRosterCoverage } from './roster-coverage.js'
+import { aggregateOrganizationActivities } from './activity.js'
+import { resolveOrganizationEntitlementScope } from './module-authorization.js'
+import {
+  OrganizationRegistrationPolicyMutationError,
+  updateOrganizationRegistrationPolicy,
+} from './policy-store.js'
 
 const reasonSchema = z.string().trim().min(1, 'A reason is required.').max(2000)
 const grantRoleSchema = z
@@ -58,7 +76,15 @@ const permissionBundleSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
     permissions: z
-      .array(z.object({ type: z.enum(['module', 'service']), key: permissionKeySchema }).strict())
+      .array(
+        z
+          .object({
+            type: z.enum(['module', 'service']),
+            key: permissionKeySchema,
+            reviewAllowed: z.boolean().optional(),
+          })
+          .strict(),
+      )
       .min(1)
       .max(100),
   })
@@ -99,20 +125,49 @@ const assignGroupSchema = z
   })
   .strict()
 const memberParamsSchema = z.object({ userId: z.uuid('Enter a valid user ID.') })
-const corporationParamsSchema = z.object({
-  corporationId: z.coerce.number().int().positive().safe(),
+const characterExceptionParamsSchema = memberParamsSchema.extend({
+  characterId: z.coerce.number().int().positive(),
 })
-const corporationSourceSchema = z
-  .object({ characterId: z.number().int().positive().safe() })
+const exceptionParamsSchema = z.object({ exceptionId: z.uuid('Enter a valid exception ID.') })
+const approveExceptionSchema = z
+  .object({
+    reason: reasonSchema,
+    expiresAt: z.iso.datetime({ offset: true }).nullable(),
+  })
   .strict()
+const registrationPolicySchema = z
+  .object({
+    requiredScopes: z.array(z.string().trim().min(1).max(200)).max(100),
+    strictRemediationDurationSeconds: z
+      .number()
+      .int()
+      .min(0)
+      .max(30 * 24 * 60 * 60),
+    staleEvidenceGraceDurationSeconds: z
+      .number()
+      .int()
+      .min(0)
+      .max(24 * 60 * 60),
+    reason: reasonSchema,
+  })
+  .strict()
+const corporationParamsSchema = z.object({
+  corporationId: z.coerce.number().int().positive(),
+})
+const corporationSourceSchema = z.object({ characterId: z.number().int().positive() }).strict()
 
-const requireTrustedOrigin: MiddlewareHandler<SessionEnv> = async (context, next) => {
+const requireTrustedOrigin: MiddlewareHandler<OrganizationSessionEnv> = async (context, next) => {
   if (context.req.header('Origin') !== env.WEB_ORIGIN)
     return context.json({ code: 'INVALID_ORIGIN', message: 'Request origin is not allowed.' }, 403)
   return next()
 }
 
-const requireOrganizationOwner: MiddlewareHandler<SessionEnv> = async (context, next) => {
+const requireOrganizationOwner: MiddlewareHandler<OrganizationSessionEnv> = async (
+  context,
+  next,
+) => {
+  const refusal = organizationComplianceRefusal(context)
+  if (refusal) return refusal
   if (!(await hasCurrentOrganizationOwnerAuthority(context.var.session!.userId)))
     return context.json(
       { code: 'ORGANIZATION_OWNER_REQUIRED', message: 'Organization-owner authority is required.' },
@@ -121,7 +176,24 @@ const requireOrganizationOwner: MiddlewareHandler<SessionEnv> = async (context, 
   return next()
 }
 
-const requireOrganizationManager: MiddlewareHandler<SessionEnv> = async (context, next) => {
+const requireRegistrationPolicyOwner: MiddlewareHandler<OrganizationSessionEnv> = async (
+  context,
+  next,
+) => {
+  if (!(await hasCurrentOrganizationOwnerAuthority(context.var.session!.userId)))
+    return context.json(
+      { code: 'ORGANIZATION_OWNER_REQUIRED', message: 'Organization-owner authority is required.' },
+      403,
+    )
+  return next()
+}
+
+const requireOrganizationManager: MiddlewareHandler<OrganizationSessionEnv> = async (
+  context,
+  next,
+) => {
+  const refusal = organizationComplianceRefusal(context)
+  if (refusal) return refusal
   if (!(await hasCurrentOrganizationManagerAuthority(context.var.session!.userId)))
     return context.json(
       { code: 'ORGANIZATION_MANAGER_REQUIRED', message: 'Organization management is required.' },
@@ -130,7 +202,9 @@ const requireOrganizationManager: MiddlewareHandler<SessionEnv> = async (context
   return next()
 }
 
-const requireOrganizationHr: MiddlewareHandler<SessionEnv> = async (context, next) => {
+const requireOrganizationHr: MiddlewareHandler<OrganizationSessionEnv> = async (context, next) => {
+  const refusal = organizationComplianceRefusal(context)
+  if (refusal) return refusal
   if (!(await hasCurrentOrganizationHrAuthority(context.var.session!.userId)))
     return context.json(
       { code: 'ORGANIZATION_HR_REQUIRED', message: 'Organization HR authority is required.' },
@@ -139,21 +213,60 @@ const requireOrganizationHr: MiddlewareHandler<SessionEnv> = async (context, nex
   return next()
 }
 
-const privateNoStore: MiddlewareHandler<SessionEnv> = async (context, next) => {
+const requireOrganizationActivityAccess: MiddlewareHandler<OrganizationSessionEnv> = async (
+  context,
+  next,
+) => {
+  const organization = context.var.organization!
+  if (organization.blocked)
+    return context.json(
+      {
+        code: 'ORGANIZATION_MEMBER_BLOCKED',
+        message: 'Organization access is blocked.',
+        state: organization.state,
+        reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
+      },
+      403,
+    )
+  if (!resolveOrganizationEntitlementScope(organization))
+    return context.json(
+      {
+        code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
+        message: 'Current organization compliance is required.',
+        state: organization.state,
+        reviewDeadline: organization.reviewDeadline?.toISOString() ?? null,
+      },
+      403,
+    )
+  return next()
+}
+
+const privateNoStore: MiddlewareHandler<OrganizationSessionEnv> = async (context, next) => {
   context.header('Cache-Control', 'private, no-store')
   await next()
 }
 
-export const organizationRoutes = new Hono<SessionEnv>()
-  .use('*', privateNoStore, loadSession, requireSession)
+export const organizationRoutes = new Hono<OrganizationSessionEnv>()
+  .use('*', privateNoStore, loadSession, requireSession, loadOrganizationSession)
   .get('/context', async (context) =>
     context.json(await getOrganizationAccessContext(context.var.session!.userId)),
+  )
+  .get('/compliance', async (context) =>
+    context.json(await getOrganizationAccountComplianceDetails(context.var.session!.userId)),
+  )
+  .get('/activities', requireOrganizationActivityAccess, async (context) =>
+    context.json(
+      await aggregateOrganizationActivities(context.var.session!.userId, context.var.organization!),
+    ),
   )
   .get('/roles', requireOrganizationOwner, async (context) =>
     context.json(await listCurrentOrganizationRoles()),
   )
   .get('/roster-coverage', requireOrganizationHr, async (context) =>
     context.json(await listOrganizationRosterCoverage()),
+  )
+  .get('/exceptions', requireOrganizationHr, async (context) =>
+    context.json({ exceptions: await listCurrentOrganizationCharacterExceptions() }),
   )
   .post(
     '/roles',
@@ -171,6 +284,84 @@ export const organizationRoutes = new Hono<SessionEnv>()
         return context.json({ grant }, 201)
       } catch (error) {
         return roleMutationFailure(context, error)
+      }
+    },
+  )
+  .put(
+    '/registration-policy',
+    requireTrustedOrigin,
+    requireRegistrationPolicyOwner,
+    zValidator('json', registrationPolicySchema),
+    async (context) => {
+      try {
+        const policy = await updateOrganizationRegistrationPolicy({
+          actorUserId: context.var.session!.userId,
+          ...context.req.valid('json'),
+        })
+        return context.json({ policy })
+      } catch (error) {
+        return registrationPolicyMutationFailure(context, error)
+      }
+    },
+  )
+  .post(
+    '/members/:userId/characters/:characterId/exception',
+    requireTrustedOrigin,
+    requireOrganizationHr,
+    zValidator('param', characterExceptionParamsSchema),
+    zValidator('json', approveExceptionSchema),
+    async (context) => {
+      try {
+        const parameters = context.req.valid('param')
+        const body = context.req.valid('json')
+        const exception = await approveOrganizationCharacterException({
+          actorUserId: context.var.session!.userId,
+          userId: parameters.userId,
+          characterId: parameters.characterId,
+          reason: body.reason,
+          expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+        })
+        return context.json({ exception }, 201)
+      } catch (error) {
+        return characterExceptionMutationFailure(context, error)
+      }
+    },
+  )
+  .post(
+    '/exceptions/:exceptionId/expire',
+    requireTrustedOrigin,
+    requireOrganizationHr,
+    zValidator('param', exceptionParamsSchema),
+    zValidator('json', revokeRoleSchema),
+    async (context) => {
+      try {
+        const exception = await expireOrganizationCharacterException({
+          actorUserId: context.var.session!.userId,
+          exceptionId: context.req.valid('param').exceptionId,
+          reason: context.req.valid('json').reason,
+        })
+        return context.json({ exception })
+      } catch (error) {
+        return characterExceptionMutationFailure(context, error)
+      }
+    },
+  )
+  .post(
+    '/exceptions/:exceptionId/revoke',
+    requireTrustedOrigin,
+    requireOrganizationHr,
+    zValidator('param', exceptionParamsSchema),
+    zValidator('json', revokeRoleSchema),
+    async (context) => {
+      try {
+        const exception = await revokeOrganizationCharacterException({
+          actorUserId: context.var.session!.userId,
+          exceptionId: context.req.valid('param').exceptionId,
+          reason: context.req.valid('json').reason,
+        })
+        return context.json({ exception })
+      } catch (error) {
+        return characterExceptionMutationFailure(context, error)
       }
     },
   )
@@ -483,4 +674,96 @@ function corporationSourceMutationFailure(context: Context, error: unknown) {
         409,
       )
   }
+}
+
+function registrationPolicyMutationFailure(context: Context, error: unknown) {
+  if (!(error instanceof OrganizationRegistrationPolicyMutationError)) throw error
+  if (error.code === 'owner-authority-required')
+    return context.json(
+      { code: 'ORGANIZATION_OWNER_REQUIRED', message: 'Organization-owner authority is required.' },
+      403,
+    )
+  if (error.code === 'owner-policy-noncompliant')
+    return context.json(
+      {
+        code: 'REGISTRATION_POLICY_OWNER_NONCOMPLIANT',
+        message: 'The organization owner must satisfy the proposed registration policy.',
+      },
+      409,
+    )
+  return context.json({ code: 'INVALID_REGISTRATION_POLICY', message: 'Policy is invalid.' }, 400)
+}
+
+function characterExceptionMutationFailure(context: Context, error: unknown) {
+  if (!(error instanceof OrganizationCharacterExceptionMutationError)) throw error
+  switch (error.code) {
+    case 'hr-authority-required':
+      return context.json(
+        { code: 'ORGANIZATION_HR_REQUIRED', message: 'Organization HR authority is required.' },
+        403,
+      )
+    case 'character-not-found':
+      return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
+    case 'character-affiliation-stale':
+      return context.json(
+        {
+          code: 'CHARACTER_AFFILIATION_STALE',
+          message: 'Fresh character affiliation is required to approve an exception.',
+        },
+        409,
+      )
+    case 'managed-corporation-evidence-stale':
+      return context.json(
+        {
+          code: 'MANAGED_CORPORATION_EVIDENCE_STALE',
+          message: 'Fresh managed-corporation evidence is required to approve an exception.',
+        },
+        409,
+      )
+    case 'character-not-external':
+      return context.json(
+        { code: 'CHARACTER_NOT_EXTERNAL', message: 'Managed characters do not need an exception.' },
+        409,
+      )
+    case 'exception-already-active':
+      return context.json(
+        { code: 'CHARACTER_EXCEPTION_EXISTS', message: 'An active exception already exists.' },
+        409,
+      )
+    case 'exception-not-found':
+      return context.json(
+        { code: 'CHARACTER_EXCEPTION_NOT_FOUND', message: 'Exception not found.' },
+        404,
+      )
+    case 'invalid-expiry':
+      return context.json(
+        { code: 'INVALID_EXCEPTION_EXPIRY', message: 'Exception expiry must be in the future.' },
+        400,
+      )
+  }
+}
+
+function organizationComplianceRefusal(context: Context<OrganizationSessionEnv>) {
+  const organization = context.var.organization
+  if (
+    organization &&
+    !organization.blocked &&
+    organization.state === 'compliant' &&
+    organization.accessValidUntil !== null &&
+    organization.accessValidUntil > new Date()
+  )
+    return null
+  return context.json(
+    {
+      code: organization?.blocked
+        ? ('ORGANIZATION_MEMBER_BLOCKED' as const)
+        : ('ORGANIZATION_COMPLIANCE_REQUIRED' as const),
+      message: organization?.blocked
+        ? 'Organization access is blocked.'
+        : 'Current organization compliance is required.',
+      state: organization?.state ?? ('pending' as const),
+      reviewDeadline: organization?.reviewDeadline?.toISOString() ?? null,
+    },
+    403,
+  )
 }

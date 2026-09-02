@@ -556,6 +556,23 @@ describe('multi-process safety', () => {
         },
         inserted: { id: 1, value: 'allowed' },
       })
+      const readOnlyPersistence = createModulePersistenceCapability(connection, 'alpha', {
+        readOnly: true,
+        statementTimeoutMilliseconds: 2_000,
+      })
+      await expect(
+        readOnlyPersistence.transaction(async (restricted) => {
+          const [record] = await restricted<{ value: string }[]>`
+            select value from alpha_records where id = 1
+          `
+          return record
+        }),
+      ).resolves.toEqual({ value: 'allowed' })
+      await expect(
+        readOnlyPersistence.transaction(
+          async (restricted) => restricted`insert into alpha_records (value) values ('forbidden')`,
+        ),
+      ).rejects.toMatchObject({ code: '25006' })
       await expect(
         alphaPersistence.transaction(
           async (restricted) => restricted`select count(*) from public.users`,

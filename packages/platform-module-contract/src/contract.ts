@@ -12,6 +12,16 @@ export function isReservedPlatformModuleId(moduleId: string) {
 export const platformAuthorizationStrategies = ['authenticated-session', 'owned-character'] as const
 export type PlatformAuthorizationStrategy = (typeof platformAuthorizationStrategies)[number]
 
+export const platformOrganizationAudiences = ['member', 'hr', 'director'] as const
+export type PlatformOrganizationAudience = (typeof platformOrganizationAudiences)[number]
+export const platformPermissionKeyPattern = /^[a-z][a-z0-9.:-]*$/
+export const platformPermissionKeyMaxLength = 200
+
+export interface PlatformOrganizationContributionAuthorization {
+  readonly audience: PlatformOrganizationAudience
+  readonly requiredPermission: string
+}
+
 export const platformNavigationAudiences = [
   'public',
   'authenticated',
@@ -182,7 +192,7 @@ export function resolvePlatformModuleRoutePath(namespace: string) {
   return `${platformModuleRouteMount}${namespace}`
 }
 
-export interface PlatformRouteContribution {
+export interface PlatformRouteContribution extends PlatformOrganizationContributionAuthorization {
   id: string
   namespace: string
   exportName: string
@@ -232,6 +242,13 @@ export interface PlatformModuleRouteCapabilities<Transaction> {
   readonly sde: SdeCoreReads
 }
 
+export interface PlatformAuthorizedOrganizationContext {
+  readonly organizationVersion: number
+  readonly audience: PlatformOrganizationAudience
+  readonly requiredPermission: string
+  readonly entitlementScope: 'all' | 'review'
+}
+
 export interface PlatformModuleResourceTransaction {
   query<Row extends object = Readonly<Record<string, unknown>>>(
     statement: string,
@@ -249,6 +266,7 @@ export interface PlatformAuthenticatedSessionRouteContext {
     readonly strategy: 'authenticated-session'
     readonly userId: string
   }
+  readonly organization: PlatformAuthorizedOrganizationContext
 }
 
 export interface PlatformOwnedCharacterRouteContext {
@@ -258,6 +276,7 @@ export interface PlatformOwnedCharacterRouteContext {
     readonly characterId: number
     readonly subjectLifecycleId: string
   }
+  readonly organization: PlatformAuthorizedOrganizationContext
   readonly coreReads: OwnedCharacterCoreReads
 }
 
@@ -550,6 +569,128 @@ export type PlatformInstalledResourceDescriptor<Implementation = unknown> =
       readonly eligibility: { readonly kind: 'current-managed-alliance' }
     })
 
+export const platformActivityFreshnessStates = [
+  'current',
+  'stale',
+  'unavailable',
+  'authorization-required',
+] as const
+export type PlatformActivityFreshnessState = (typeof platformActivityFreshnessStates)[number]
+
+export const platformActivityRequiredActionKinds = [
+  'authorization',
+  'acceptance',
+  'delivery',
+  'participation',
+  'other',
+] as const
+export type PlatformActivityRequiredActionKind =
+  (typeof platformActivityRequiredActionKinds)[number]
+
+export const platformActivityParticipationStates = [
+  'eligible',
+  'not-participating',
+  'participating',
+  'completed',
+  'authorization-required',
+  'unavailable',
+] as const
+export type PlatformActivityParticipationState =
+  (typeof platformActivityParticipationStates)[number]
+
+export const platformActivityProviderMaximumActivities = 100
+export const platformActivityProviderTimeoutMilliseconds = 2_000
+
+export interface PlatformActivityFreshness {
+  readonly state: PlatformActivityFreshnessState
+  readonly collectedAt: string | null
+}
+
+export interface PlatformActivityRequiredAction {
+  readonly kind: PlatformActivityRequiredActionKind
+  readonly label: string
+  readonly characterId: number | null
+}
+
+export interface PlatformActivityParticipation {
+  readonly characterId: number
+  readonly state: PlatformActivityParticipationState
+}
+
+export interface PlatformActivityLinkTarget {
+  readonly pageId: string
+  readonly characterId: number | null
+}
+
+export interface PlatformActivity {
+  readonly id: string
+  readonly kind: string
+  readonly title: string
+  readonly summary: string | null
+  readonly requiredAction: PlatformActivityRequiredAction | null
+  readonly organizationPriority: number
+  readonly deadline: string | null
+  readonly eligibleCharacterIds: readonly number[]
+  readonly participation: readonly PlatformActivityParticipation[]
+  readonly linkTarget: PlatformActivityLinkTarget | null
+  readonly freshness: PlatformActivityFreshness
+}
+
+export interface PlatformActivityProviderResult {
+  readonly activities: readonly PlatformActivity[]
+  readonly freshness: PlatformActivityFreshness
+}
+
+export interface PlatformActivityProviderCharacter {
+  readonly characterId: number
+  readonly subjectLifecycleId: string
+  readonly name: string
+  readonly corporationId: number
+  readonly allianceId: number | null
+  readonly isMain: boolean
+  readonly membership: 'managed' | 'approved-external'
+  readonly affiliationFreshness: 'fresh' | 'stale' | 'unavailable'
+  readonly affiliationCheckedAt: string | null
+}
+
+export interface PlatformActivityProviderContext {
+  readonly userId: string
+  readonly organizationVersion: number
+  readonly requestedAt: string
+  readonly signal: AbortSignal
+  readonly characters: readonly PlatformActivityProviderCharacter[]
+}
+
+export interface PlatformActivityProviderCapabilities<Transaction> {
+  readonly persistence: PlatformModulePersistence<Transaction>
+}
+
+export type PlatformActivityProvider = (
+  context: PlatformActivityProviderContext,
+) => Promise<PlatformActivityProviderResult>
+
+export type PlatformActivityProviderFactory<Transaction = PlatformModuleResourceTransaction> = (
+  capabilities: PlatformActivityProviderCapabilities<Transaction>,
+) => PlatformActivityProvider
+
+export interface PlatformActivityProviderContribution extends PlatformOrganizationContributionAuthorization {
+  readonly id: string
+  readonly exportName: string
+  readonly freshness: {
+    readonly staleAfterSeconds: number
+  }
+}
+
+export interface PlatformInstalledActivityProviderDescriptor extends PlatformOrganizationContributionAuthorization {
+  readonly moduleId: string
+  readonly providerId: string
+  readonly freshness: {
+    readonly staleAfterSeconds: number
+  }
+  readonly pageIds: readonly string[]
+  readonly invoke: PlatformActivityProvider
+}
+
 export interface PlatformEsiOperationContribution {
   id: string
   exportName: string
@@ -607,6 +748,7 @@ export interface PlatformModuleManifest {
     migrations: readonly PlatformMigrationContribution[]
     resources: readonly PlatformResourceContribution[]
     esiOperations: readonly PlatformEsiOperationContribution[]
+    activityProviders: readonly PlatformActivityProviderContribution[]
   }
   nuxt: {
     package: string

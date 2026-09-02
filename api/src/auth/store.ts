@@ -17,6 +17,10 @@ import {
 import { appendDomainEvent } from '../domain-events/store.js'
 import { normalizeScopeSet } from '../domain-events/definitions.js'
 import { env } from '../env.js'
+import {
+  lockCurrentOrganizationVersionForCompliance,
+  recomputeOrganizationAccountCompliance,
+} from '../organization/compliance.js'
 import { encryptTokens, hashToken } from './security.js'
 
 export interface CharacterSummary {
@@ -71,6 +75,7 @@ export class CharacterTokenNotFoundError extends Error {
 type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type TokenReader = Pick<DatabaseTransaction, 'select'>
 type TokenWriter = Pick<DatabaseTransaction, 'update'>
+type TokenDeleter = Pick<DatabaseTransaction, 'delete'>
 const incrementTokenVersion = sql`${eveTokens.tokenVersion} + 1`
 
 /** How long an unconsumed authorization round-trip stays redeemable. */
@@ -176,6 +181,7 @@ export async function saveLogin(
 
   await db.transaction(async (transaction) => {
     await lockCharacterRow(transaction, input.characterId)
+    const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
 
     const [existingCharacter] = await transaction
       .select(authorizationCharacterSelection)
@@ -191,6 +197,7 @@ export async function saveLogin(
       await transaction.insert(characters).values(characterValues(input, userId, true))
       await createCharacterSubjectLifecycle(transaction, input.characterId)
     } else {
+      if (!(await lockUserRow(transaction, userId))) throw new Error('User is missing')
       await updateCharacterIdentity(transaction, input)
     }
 
@@ -217,6 +224,11 @@ export async function saveLogin(
       userId,
       expiresAt: input.sessionExpiresAt,
     })
+    if (organizationVersion)
+      await recomputeOrganizationAccountCompliance(
+        { deploymentId: 1, organizationVersion, userId },
+        transaction,
+      )
   })
 }
 
@@ -225,6 +237,8 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
 
   await db.transaction(async (transaction) => {
     await lockCharacterRow(transaction, input.characterId)
+    const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
+    if (!(await lockUserRow(transaction, input.userId))) throw new CharacterOwnershipError()
     const [existingCharacter] = await transaction
       .select(authorizationCharacterSelection)
       .from(characters)
@@ -258,6 +272,11 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
         payload: characterSnapshotFromInput(input, input.userId, false, scopes),
       })
     }
+    if (organizationVersion)
+      await recomputeOrganizationAccountCompliance(
+        { deploymentId: 1, organizationVersion, userId: input.userId },
+        transaction,
+      )
   })
 }
 
@@ -270,6 +289,8 @@ export async function reauthorizeCharacter(
   const token = prepareToken(input)
   return db.transaction(async (transaction) => {
     await lockCharacterRow(transaction, input.characterId)
+    const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
+    if (!(await lockUserRow(transaction, input.userId))) throw new CharacterOwnershipError()
     const [ownedCharacter] = await transaction
       .select(authorizationCharacterSelection)
       .from(characters)
@@ -289,6 +310,11 @@ export async function reauthorizeCharacter(
       ownedCharacter.scopes ?? [],
       scopes,
     )
+    if (organizationVersion)
+      await recomputeOrganizationAccountCompliance(
+        { deploymentId: 1, organizationVersion, userId: input.userId },
+        transaction,
+      )
     return affiliationCheckedAt
   })
 }
@@ -362,8 +388,9 @@ export async function deleteCharacter(
   subjectLifecycleId: string,
 ) {
   return db.transaction(async (transaction) => {
-    if (!(await lockUserRow(transaction, userId))) return 'not-found' as const
     await lockCharacterRow(transaction, characterId)
+    const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
+    if (!(await lockUserRow(transaction, userId))) return 'not-found' as const
 
     const [target] = await transaction
       .select({
@@ -451,6 +478,11 @@ export async function deleteCharacter(
       aggregateId: String(characterId),
       payload: characterSnapshotFromRecord(target),
     })
+    if (organizationVersion)
+      await recomputeOrganizationAccountCompliance(
+        { deploymentId: 1, organizationVersion, userId },
+        transaction,
+      )
     return 'deleted' as const
   })
 }
@@ -558,6 +590,18 @@ export async function updateCharacterToken(
     )
     .returning({ tokenVersion: eveTokens.tokenVersion })
   return Boolean(updated)
+}
+
+export async function deleteCharacterTokenAuthorization(
+  characterId: number,
+  tokenVersion: number,
+  connection: TokenDeleter = db,
+) {
+  const deleted = await connection
+    .delete(eveTokens)
+    .where(and(eq(eveTokens.characterId, characterId), eq(eveTokens.tokenVersion, tokenVersion)))
+    .returning({ characterId: eveTokens.characterId })
+  return deleted.length > 0
 }
 
 async function withCharacterTokenLock<T>(

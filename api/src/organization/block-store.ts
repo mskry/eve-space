@@ -8,6 +8,8 @@ import {
 } from '../db/schema.js'
 import { appendOrganizationAuditEvent } from './audit.js'
 import { appendDomainEvent } from '../domain-events/store.js'
+import { loadCurrentEntitlementScope } from './compliance-access.js'
+import { appendExternalServiceEntitlementTransitions } from './compliance.js'
 import { loadManagementAuthority } from './group-store.js'
 
 export class OrganizationMemberBlockMutationError extends Error {
@@ -87,6 +89,12 @@ export async function blockOrganizationMember(input: {
     if (existing) throw new OrganizationMemberBlockMutationError('block-already-active')
 
     const now = new Date()
+    const targetEntitlementScope = await loadCurrentEntitlementScope(
+      transaction,
+      organization.organizationVersion,
+      input.targetUserId,
+      now,
+    )
     const [block] = await transaction
       .insert(organizationMemberBlocks)
       .values({
@@ -99,7 +107,7 @@ export async function blockOrganizationMember(input: {
       })
       .returning()
     if (!block) throw new Error('Failed to block organization member')
-    await appendOrganizationAuditEvent(transaction, {
+    const blockAudit = await appendOrganizationAuditEvent(transaction, {
       deploymentId: 1,
       organizationVersion: organization.organizationVersion,
       policyVersion: organization.policyVersion,
@@ -112,6 +120,18 @@ export async function blockOrganizationMember(input: {
       outcome: 'denied',
       occurredAt: now,
     })
+    if (targetEntitlementScope !== 'none')
+      await appendExternalServiceEntitlementTransitions(transaction, {
+        organizationVersion: organization.organizationVersion,
+        policyVersion: organization.policyVersion,
+        userId: input.targetUserId,
+        granted: false,
+        causationAuditId: blockAudit.auditId,
+        now,
+        reason: 'A member block revoked this external-service entitlement.',
+        permissionScope: targetEntitlementScope,
+        ignoreBlock: true,
+      })
     await appendDomainEvent(transaction, {
       type: 'organization.member-blocked',
       payloadVersion: 1,
@@ -161,7 +181,7 @@ export async function unblockOrganizationMember(input: {
       .where(eq(organizationMemberBlocks.blockId, block.blockId))
       .returning()
     if (!unblocked) throw new Error('Failed to unblock organization member')
-    await appendOrganizationAuditEvent(transaction, {
+    const unblockAudit = await appendOrganizationAuditEvent(transaction, {
       deploymentId: 1,
       organizationVersion: organization.organizationVersion,
       policyVersion: organization.policyVersion,
@@ -174,6 +194,23 @@ export async function unblockOrganizationMember(input: {
       outcome: 'transitioned',
       occurredAt: now,
     })
+    const targetEntitlementScope = await loadCurrentEntitlementScope(
+      transaction,
+      organization.organizationVersion,
+      input.targetUserId,
+      now,
+    )
+    if (targetEntitlementScope !== 'none')
+      await appendExternalServiceEntitlementTransitions(transaction, {
+        organizationVersion: organization.organizationVersion,
+        policyVersion: organization.policyVersion,
+        userId: input.targetUserId,
+        granted: true,
+        causationAuditId: unblockAudit.auditId,
+        now,
+        reason: 'Removing the member block restored this external-service entitlement.',
+        permissionScope: targetEntitlementScope,
+      })
     await appendDomainEvent(transaction, {
       type: 'organization.member-unblocked',
       payloadVersion: 1,

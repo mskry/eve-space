@@ -10,8 +10,10 @@ import {
   type ElevatedOrganizationRole,
 } from '../db/schema.js'
 import { appendOrganizationAuditEvent } from './audit.js'
+import { hasCurrentComplianceAccess } from './compliance-access.js'
 
 export type DelegatedOrganizationRole = Exclude<ElevatedOrganizationRole, 'organization_owner'>
+type Database = Pick<typeof db, 'select'>
 
 interface OrganizationOwnerClaimState {
   failureClass: string | null
@@ -41,8 +43,16 @@ export class OrganizationRoleMutationError extends Error {
   }
 }
 
-export async function hasCurrentOrganizationOwnerAuthority(userId: string, now = new Date()) {
-  const [grant] = await db
+export function hasCurrentOrganizationOwnerAuthority(userId: string, now = new Date()) {
+  return hasCurrentOrganizationOwnerAuthorityInTransaction(db, userId, now)
+}
+
+export async function hasCurrentOrganizationOwnerAuthorityInTransaction(
+  database: Database,
+  userId: string,
+  now = new Date(),
+) {
+  const [grant] = await database
     .select({ grantId: organizationRoleGrants.grantId })
     .from(deploymentSettings)
     .innerJoin(
@@ -63,7 +73,7 @@ export async function hasCurrentOrganizationOwnerAuthority(userId: string, now =
         eq(organizationRoleGrants.role, 'organization_owner'),
         isNull(organizationRoleGrants.revokedAt),
         notExists(
-          db
+          database
             .select({ one: sql`1` })
             .from(organizationMemberBlocks)
             .where(
@@ -395,6 +405,8 @@ async function requireOwnerAuthority(
   userId: string,
 ) {
   const now = new Date()
+  if (!(await hasCurrentComplianceAccess(transaction, organizationVersion, userId, now)))
+    throw new OrganizationRoleMutationError('owner-authority-required')
   const [owner] = await transaction
     .select({ grantId: organizationRoleGrants.grantId })
     .from(organizationRoleGrants)

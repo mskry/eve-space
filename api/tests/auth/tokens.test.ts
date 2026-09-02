@@ -2,15 +2,27 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
   class CharacterTokenNotFoundError extends Error {}
+  class EveSsoTokenRefreshError extends Error {
+    constructor(
+      readonly status: number,
+      readonly authorizationRevoked: boolean,
+    ) {
+      super('refresh failed')
+    }
+  }
   class TokenRefreshLockUnavailableError extends Error {}
   return {
     CharacterTokenNotFoundError,
+    EveSsoTokenRefreshError,
     TokenRefreshLockUnavailableError,
     appendDomainEvent: vi.fn(),
     decryptTokens: vi.fn(),
+    deleteCharacterTokenAuthorization: vi.fn(),
     encryptTokens: vi.fn(),
     findCharacterToken: vi.fn(),
     findCharacterTokenForLifecycle: vi.fn(),
+    lockCurrentOrganizationVersionForCompliance: vi.fn(),
+    recomputeOrganizationAccountCompliance: vi.fn(),
     refreshAccessToken: vi.fn(),
     updateCharacterToken: vi.fn(),
     verifyAccessToken: vi.fn(),
@@ -21,6 +33,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('../../src/auth/store.js', () => ({
   CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
+  deleteCharacterTokenAuthorization: mocks.deleteCharacterTokenAuthorization,
   TokenRefreshLockUnavailableError: mocks.TokenRefreshLockUnavailableError,
   findCharacterToken: mocks.findCharacterToken,
   findCharacterTokenForLifecycle: mocks.findCharacterTokenForLifecycle,
@@ -33,7 +46,13 @@ vi.mock('../../src/domain-events/store.js', () => ({
   appendDomainEvent: mocks.appendDomainEvent,
 }))
 
+vi.mock('../../src/organization/compliance.js', () => ({
+  lockCurrentOrganizationVersionForCompliance: mocks.lockCurrentOrganizationVersionForCompliance,
+  recomputeOrganizationAccountCompliance: mocks.recomputeOrganizationAccountCompliance,
+}))
+
 vi.mock('../../src/auth/sso.js', () => ({
+  EveSsoTokenRefreshError: mocks.EveSsoTokenRefreshError,
   refreshAccessToken: mocks.refreshAccessToken,
   verifyAccessToken: mocks.verifyAccessToken,
 }))
@@ -69,8 +88,11 @@ beforeEach(() => {
     refreshToken: `${encryptedTokens}-refresh`,
   }))
   mocks.encryptTokens.mockReturnValue('refreshed')
+  mocks.deleteCharacterTokenAuthorization.mockResolvedValue(true)
   mocks.findCharacterToken.mockResolvedValue(expired)
   mocks.findCharacterTokenForLifecycle.mockResolvedValue(expired)
+  mocks.lockCurrentOrganizationVersionForCompliance.mockResolvedValue(4)
+  mocks.recomputeOrganizationAccountCompliance.mockResolvedValue({ outcome: 'unchanged' })
   mocks.refreshAccessToken.mockResolvedValue({
     access_token: 'new-access',
     refresh_token: 'new-refresh',
@@ -296,10 +318,44 @@ describe('token refresh', () => {
       characterName: 'Test',
       scopes: [],
     })
+    mocks.updateCharacterToken.mockResolvedValueOnce(true)
     await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
       ScopeRequiredError,
     )
-    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+    expect(mocks.appendDomainEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        type: 'character.scopes-changed',
+        payload: expect.objectContaining({ removedScopes: [scope] }),
+      }),
+    )
+    expect(mocks.recomputeOrganizationAccountCompliance).toHaveBeenCalledWith(
+      { deploymentId: 1, organizationVersion: 4, userId },
+      expect.anything(),
+    )
+  })
+
+  test('commits definitive authorization revocation before returning the SSO refusal', async () => {
+    const revoked = new mocks.EveSsoTokenRefreshError(400, true)
+    mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
+      operation(expired, {}),
+    )
+    mocks.refreshAccessToken.mockRejectedValue(revoked)
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBe(revoked)
+    expect(mocks.deleteCharacterTokenAuthorization).toHaveBeenCalledWith(
+      characterId,
+      expired.tokenVersion,
+      expect.anything(),
+    )
+    expect(mocks.appendDomainEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        type: 'character.scopes-changed',
+        payload: expect.objectContaining({ removedScopes: [scope] }),
+      }),
+    )
+    expect(mocks.recomputeOrganizationAccountCompliance).toHaveBeenCalledOnce()
   })
 
   test('does not mutate or emit an event for a transient SSO refresh failure', async () => {

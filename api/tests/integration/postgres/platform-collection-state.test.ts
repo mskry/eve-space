@@ -164,7 +164,20 @@ describe('platform collection state PostgreSQL persistence', () => {
         nextEligibleAt: null,
         validatedAt,
       })
+      expect(updated.failureStartedAt).toBeInstanceOf(Date)
       expect(updated.createdAt).toEqual(first.createdAt)
+
+      const repeatedFailure = await upsertPlatformCollectionState(
+        {
+          ...identity,
+          nextEligibleAt: new Date('2026-08-26T12:05:00Z'),
+          authorizationGeneration: 3,
+          validatedAt,
+          lastFailureClass: 'esi-unavailable',
+        },
+        database,
+      )
+      expect(repeatedFailure.failureStartedAt).toEqual(updated.failureStartedAt)
 
       await connection`create schema member_audit`
       await connection`
@@ -422,27 +435,28 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`
         insert into platform_collection_state (
           module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id,
-          next_eligible_at, authorization_generation, validated_at, last_failure_class
+          next_eligible_at, authorization_generation, validated_at, last_failure_class,
+          failure_started_at
         ) values
           (
             ${resource.moduleId}, ${resource.resourceId}, 'character',
             ${characters.generation.lifecycle}, ${String(characters.generation.id)},
-            '2026-08-27T00:00:00Z', 1, '2026-08-26T00:00:00Z', null
+            '2026-08-27T00:00:00Z', 1, '2026-08-26T00:00:00Z', null, null
           ),
           (
             ${resource.moduleId}, ${resource.resourceId}, 'character',
             ${characters.timed.lifecycle}, ${String(characters.timed.id)},
-            '2026-08-25T00:00:00Z', 1, '2026-08-24T00:00:00Z', null
+            '2026-08-25T00:00:00Z', 1, '2026-08-24T00:00:00Z', null, null
           ),
           (
             ${resource.moduleId}, ${resource.resourceId}, 'character',
             ${characters.future.lifecycle}, ${String(characters.future.id)},
-            '2026-08-27T00:00:00Z', 1, '2026-08-26T00:00:00Z', null
+            '2026-08-27T00:00:00Z', 1, '2026-08-26T00:00:00Z', null, null
           ),
           (
             ${resource.moduleId}, ${resource.resourceId}, 'character',
             ${characters.unscoped.lifecycle}, ${String(characters.unscoped.id)},
-            null, 1, null, 'authorization-required'
+            null, 1, null, 'authorization-required', '2026-08-25T00:00:00Z'
           )
       `
 
@@ -694,10 +708,12 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`
         insert into platform_collection_state (
           module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id,
-          next_eligible_at, authorization_generation, validated_at, last_failure_class
+          next_eligible_at, authorization_generation, validated_at, last_failure_class,
+          failure_started_at
         ) values (
           ${identity.moduleId}, ${identity.resourceId}, 'character', ${lifecycle},
-          ${identity.subjectId}, null, 1, '2026-08-25T12:00:00Z', 'mapping-failed'
+          ${identity.subjectId}, null, 1, '2026-08-25T12:00:00Z', 'mapping-failed',
+          '2026-08-25T13:00:00Z'
         )
       `
 

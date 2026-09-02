@@ -44,6 +44,15 @@ let registerOrganizationCorporationSource: typeof import('../../../src/organizat
 let deleteCharacter: typeof import('../../../src/auth/store.js').deleteCharacter
 let recomputeOrganizationAccountCompliance: typeof import('../../../src/organization/compliance.js').recomputeOrganizationAccountCompliance
 let recomputeComplianceForManagedCorporation: typeof import('../../../src/organization/compliance.js').recomputeComplianceForManagedCorporation
+let recomputeAllOrganizationAccountsInTransaction: typeof import('../../../src/organization/compliance.js').recomputeAllOrganizationAccountsInTransaction
+let approveOrganizationCharacterException: typeof import('../../../src/organization/exception-store.js').approveOrganizationCharacterException
+let expireOrganizationCharacterExceptions: typeof import('../../../src/organization/exception-store.js').expireOrganizationCharacterExceptions
+let expireOrganizationCharacterException: typeof import('../../../src/organization/exception-store.js').expireOrganizationCharacterException
+let revokeOrganizationCharacterException: typeof import('../../../src/organization/exception-store.js').revokeOrganizationCharacterException
+let updateOrganizationRegistrationPolicy: typeof import('../../../src/organization/policy-store.js').updateOrganizationRegistrationPolicy
+let repairOrganizationCompliance: typeof import('../../../src/organization/compliance-repair.js').repairOrganizationCompliance
+let getOrganizationAccountComplianceDetails: typeof import('../../../src/organization/compliance-details.js').getOrganizationAccountComplianceDetails
+let loadOrganizationSessionContext: typeof import('../../../src/middleware/organization-session.js').loadOrganizationSessionContext
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
 const adminId = randomUUID()
@@ -95,8 +104,25 @@ beforeAll(async () => {
   ;({ registerOrganizationCorporationSource } =
     await import('../../../src/organization/corporation-sources.js'))
   ;({ deleteCharacter } = await import('../../../src/auth/store.js'))
-  ;({ recomputeComplianceForManagedCorporation, recomputeOrganizationAccountCompliance } =
-    await import('../../../src/organization/compliance.js'))
+  ;({
+    recomputeAllOrganizationAccountsInTransaction,
+    recomputeComplianceForManagedCorporation,
+    recomputeOrganizationAccountCompliance,
+  } = await import('../../../src/organization/compliance.js'))
+  ;({
+    approveOrganizationCharacterException,
+    expireOrganizationCharacterException,
+    expireOrganizationCharacterExceptions,
+    revokeOrganizationCharacterException,
+  } = await import('../../../src/organization/exception-store.js'))
+  ;({ updateOrganizationRegistrationPolicy } =
+    await import('../../../src/organization/policy-store.js'))
+  ;({ repairOrganizationCompliance } =
+    await import('../../../src/organization/compliance-repair.js'))
+  ;({ getOrganizationAccountComplianceDetails } =
+    await import('../../../src/organization/compliance-details.js'))
+  ;({ loadOrganizationSessionContext } =
+    await import('../../../src/middleware/organization-session.js'))
   dbClient = await import('../../../src/db/client.js')
 })
 
@@ -130,11 +156,6 @@ afterAll(async () => {
 describe('organization storage invariants', () => {
   test('blocks active source deletion but detaches historical source evidence safely', async () => {
     const sourceId = randomUUID()
-    await connection`
-      insert into organization_managed_corporations (
-        deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
-      ) values (1, 1, 98000001, now(), now())
-    `
     await connection`
       insert into organization_corporation_sources (
         source_id, deployment_id, organization_version, corporation_id,
@@ -175,11 +196,6 @@ describe('organization storage invariants', () => {
 
   test('persists compliance changes idempotently with normalized issues and stable events', async () => {
     const evaluatedAt = new Date('2026-09-01T12:00:00.000Z')
-    await connection`
-      insert into organization_managed_corporations (
-        deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
-      ) values (1, 1, 98000001, ${evaluatedAt}, ${evaluatedAt})
-    `
 
     await expect(
       recomputeOrganizationAccountCompliance({
@@ -212,13 +228,455 @@ describe('organization storage invariants', () => {
     expect(counts).toEqual({ projections: 1, issues: 0, audits: 1, events: 1 })
   })
 
+  test('prevents owner lockout and permits a verified owner to recover a bad policy', async () => {
+    await ensureManagedCorporation()
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId,
+    })
+
+    await expect(
+      updateOrganizationRegistrationPolicy({
+        actorUserId: userId,
+        requiredScopes: ['esi-wallet.read_character_wallet.v1'],
+        strictRemediationDurationSeconds: 0,
+        staleEvidenceGraceDurationSeconds: 3600,
+        reason: 'Require current wallet authorization.',
+      }),
+    ).rejects.toMatchObject({ code: 'owner-policy-noncompliant' })
+    const [unchanged] = await connection<
+      { policy_version: string; required_scopes: string[]; state: string; audits: number }[]
+    >`
+      select settings.registration_policy_version as policy_version,
+        settings.required_registration_scopes as required_scopes,
+        projection.state,
+        (select count(*)::integer from organization_audit_events
+          where event_type = 'registration-policy.changed') as audits
+      from deployment_settings settings
+      join organization_account_compliance projection
+        on projection.deployment_id = settings.id
+        and projection.organization_version = settings.organization_version
+        and projection.user_id = ${userId}
+      where settings.id = 1
+    `
+    expect(unchanged).toEqual({
+      policy_version: '1',
+      required_scopes: [],
+      state: 'compliant',
+      audits: 0,
+    })
+
+    await connection`
+      update deployment_settings
+      set required_registration_scopes = '["esi-wallet.read_character_wallet.v1"]'::jsonb,
+        registration_policy_version = 2
+      where id = 1
+    `
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId,
+    })
+    await expect(
+      updateOrganizationRegistrationPolicy({
+        actorUserId: userId,
+        requiredScopes: [],
+        strictRemediationDurationSeconds: 0,
+        staleEvidenceGraceDurationSeconds: 3600,
+        reason: 'Restore a policy the verified owner satisfies.',
+      }),
+    ).resolves.toMatchObject({ policyVersion: 3, requiredScopes: [] })
+    const [recovered] = await connection<{ state: string }[]>`
+      select state from organization_account_compliance where user_id = ${userId}
+    `
+    expect(recovered).toEqual({ state: 'compliant' })
+  })
+
+  test('rolls back policy and compliance together when transition persistence fails', async () => {
+    await ensureManagedCorporation()
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId,
+    })
+    await connection`
+      alter table domain_events
+      add constraint reject_compliance_transition
+      check (event_type <> 'organization.compliance-transitioned') not valid
+    `
+    try {
+      await expect(
+        updateOrganizationRegistrationPolicy({
+          actorUserId: userId,
+          requiredScopes: ['esi-wallet.read_character_wallet.v1'],
+          strictRemediationDurationSeconds: 0,
+          staleEvidenceGraceDurationSeconds: 3600,
+          reason: 'This mutation must roll back.',
+        }),
+      ).rejects.toMatchObject({ cause: { code: '23514' } })
+    } finally {
+      await connection`
+        alter table domain_events drop constraint if exists reject_compliance_transition
+      `
+    }
+
+    const [state] = await connection<
+      {
+        policy_version: string
+        required_scopes: string[]
+        compliance_state: string
+        audits: number
+      }[]
+    >`
+      select
+        settings.registration_policy_version as policy_version,
+        settings.required_registration_scopes as required_scopes,
+        projection.state as compliance_state,
+        (select count(*)::integer from organization_audit_events
+          where event_type = 'registration-policy.changed') as audits
+      from deployment_settings settings
+      join organization_account_compliance projection
+        on projection.deployment_id = settings.id
+        and projection.organization_version = settings.organization_version
+        and projection.user_id = ${userId}
+      where settings.id = 1
+    `
+    expect(state).toEqual({
+      policy_version: '1',
+      required_scopes: [],
+      compliance_state: 'compliant',
+      audits: 0,
+    })
+  })
+
+  test('retains established entitlements only until a configured remediation deadline', async () => {
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    const targetUserId = randomUUID()
+    await establishCompliantAccount(targetUserId, 90_000_001)
+    await updateOrganizationRegistrationPolicy({
+      actorUserId: userId,
+      requiredScopes: [],
+      strictRemediationDurationSeconds: 3600,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Allow one hour for established member remediation.',
+    })
+    const bundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Review-period access',
+      permissions: [
+        { type: 'service', key: 'discord.review-member', reviewAllowed: true },
+        { type: 'service', key: 'discord.review-denied', reviewAllowed: false },
+      ],
+    })
+    const group = await createOrganizationGroup({
+      actorUserId: userId,
+      name: 'Review-period members',
+      restricted: false,
+      managementMode: 'manual',
+      complianceSource: null,
+      bundleIds: [bundle.bundleId],
+    })
+    await assignOrganizationGroup({
+      actorUserId: userId,
+      groupId: group.groupId,
+      targetUserId,
+      reason: 'Established member access.',
+      expiresAt: null,
+    })
+    await connection`
+      update characters
+      set corporation_id = 98000002, affiliation_checked_at = now(),
+        next_affiliation_check = now() + interval '1 hour'
+      where user_id = ${targetUserId}
+    `
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: targetUserId,
+    })
+
+    const [review] = await connection<
+      { state: string; review_deadline: Date; access_valid_until: Date }[]
+    >`
+      select state, review_deadline, access_valid_until
+      from organization_account_compliance
+      where deployment_id = 1 and organization_version = 1 and user_id = ${targetUserId}
+    `
+    expect(review).toMatchObject({ state: 'review_required' })
+    expect(review!.access_valid_until).toEqual(review!.review_deadline)
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+      modules: [],
+      services: ['discord.review-member'],
+    })
+
+    const afterDeadline = new Date(review!.review_deadline.getTime() + 1)
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: targetUserId,
+      now: afterDeadline,
+    })
+    await expect(getOrganizationGroupPermissions(targetUserId, afterDeadline)).resolves.toEqual({
+      modules: [],
+      services: [],
+    })
+    await expect(loadComplianceState(targetUserId)).resolves.toBe('suspended')
+  })
+
+  test('clears first-time review deadlines when affiliation evidence becomes incomplete', async () => {
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    await updateOrganizationRegistrationPolicy({
+      actorUserId: userId,
+      requiredScopes: [],
+      strictRemediationDurationSeconds: 3600,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Allow a bounded first-time review.',
+    })
+    const targetUserId = randomUUID()
+    await seedCharacter(targetUserId, 90_000_001)
+    await connection`
+      update characters set corporation_id = 98000002 where user_id = ${targetUserId}
+    `
+    await expect(
+      recomputeOrganizationAccountCompliance({
+        deploymentId: 1,
+        organizationVersion: 1,
+        userId: targetUserId,
+      }),
+    ).resolves.toMatchObject({
+      evaluation: { state: 'review_required', accessValidUntil: null },
+    })
+    await connection`
+      update characters
+      set affiliation_resolution_state = 'pending',
+        affiliation_checked_at = now() - interval '2 hours',
+        next_affiliation_check = now() - interval '1 hour'
+      where user_id = ${targetUserId}
+    `
+
+    await expect(
+      recomputeOrganizationAccountCompliance({
+        deploymentId: 1,
+        organizationVersion: 1,
+        userId: targetUserId,
+      }),
+    ).resolves.toMatchObject({
+      evaluation: { state: 'pending', reviewDeadline: null, accessValidUntil: null },
+    })
+  })
+
+  test('approves, expires, and revokes exceptions with same-transaction compliance changes', async () => {
+    await ensureManagedCorporation()
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    await grantOrganizationRole({
+      actorUserId: userId,
+      targetUserId: userId,
+      role: 'hr_auditor',
+      reason: 'Registration review duty.',
+    })
+    const targetUserId = randomUUID()
+    const managedCharacterId = 90_000_001
+    const externalCharacterId = 90_000_002
+    await seedCharacter(targetUserId, managedCharacterId)
+    await connection`
+      insert into characters (
+        character_id, user_id, name, corporation_id, affiliation_checked_at,
+        next_affiliation_check, affiliation_resolution_state, is_main
+      ) values (
+        ${externalCharacterId}, ${targetUserId}, 'External Pilot', 98000002, now(),
+        now() + interval '1 hour', 'resolved', false
+      )
+    `
+    await connection`
+      insert into eve_tokens (character_id, encrypted_tokens, access_token_expires_at, scopes)
+      values (${externalCharacterId}, 'external-token', now() + interval '1 hour', '[]'::jsonb)
+    `
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: targetUserId,
+    })
+
+    const expiresAt = new Date(Date.now() + 60_000)
+    const first = await approveOrganizationCharacterException({
+      actorUserId: userId,
+      userId: targetUserId,
+      characterId: externalCharacterId,
+      reason: 'Approved disclosed external character.',
+      expiresAt,
+    })
+    await expect(loadComplianceState(targetUserId)).resolves.toBe('compliant')
+
+    await expireOrganizationCharacterExceptions(new Date(expiresAt.getTime() + 1), 10)
+    await expect(loadComplianceState(targetUserId)).resolves.toBe('suspended')
+
+    const second = await approveOrganizationCharacterException({
+      actorUserId: userId,
+      userId: targetUserId,
+      characterId: externalCharacterId,
+      reason: 'Renewed external-character approval.',
+      expiresAt: null,
+    })
+    await expect(loadComplianceState(targetUserId)).resolves.toBe('compliant')
+    await expireOrganizationCharacterException({
+      actorUserId: userId,
+      exceptionId: second.exceptionId,
+      reason: 'The renewed approval window ended.',
+    })
+    await expect(loadComplianceState(targetUserId)).resolves.toBe('suspended')
+
+    const third = await approveOrganizationCharacterException({
+      actorUserId: userId,
+      userId: targetUserId,
+      characterId: externalCharacterId,
+      reason: 'Final external-character approval.',
+      expiresAt: null,
+    })
+    await expect(loadComplianceState(targetUserId)).resolves.toBe('compliant')
+    await revokeOrganizationCharacterException({
+      actorUserId: userId,
+      exceptionId: third.exceptionId,
+      reason: 'External-character approval withdrawn.',
+    })
+    await expect(loadComplianceState(targetUserId)).resolves.toBe('suspended')
+
+    const decisions = await connection<{ event_type: string; subject_id: string }[]>`
+      select event_type, subject_id
+      from organization_audit_events
+      where event_type in ('exception.approved', 'exception.expired', 'exception.revoked')
+      order by audit_sequence
+    `
+    expect(decisions).toEqual([
+      { event_type: 'exception.approved', subject_id: first.exceptionId },
+      { event_type: 'exception.expired', subject_id: first.exceptionId },
+      { event_type: 'exception.approved', subject_id: second.exceptionId },
+      { event_type: 'exception.expired', subject_id: second.exceptionId },
+      { event_type: 'exception.approved', subject_id: third.exceptionId },
+      { event_type: 'exception.revoked', subject_id: third.exceptionId },
+    ])
+  })
+
+  test('refuses new alliance exceptions while managed-corporation evidence is stale', async () => {
+    await updateDeploymentOrganization(
+      { type: 'alliance', id: 99_000_001, name: 'Test Alliance', ticker: 'ALLY' },
+      adminId,
+    )
+    await connection`
+      insert into organization_role_grants (
+        deployment_id, organization_version, user_id, role, granted_by_user_id, reason
+      ) values (1, 2, ${userId}, 'hr_auditor', ${userId}, 'Test HR authority.')
+    `
+    const targetUserId = randomUUID()
+    const targetCharacterId = 90_000_001
+    await seedCharacter(targetUserId, targetCharacterId)
+    await connection`
+      update organization_account_compliance
+      set state = 'compliant', evidence_freshness = 'fresh', evidence_at = now(),
+        access_valid_until = now() + interval '1 hour', established_compliant_at = now(),
+        authoritative = true, review_deadline = null, evaluated_at = now(), updated_at = now()
+      where deployment_id = 1 and organization_version = 2 and user_id = ${userId}
+    `
+
+    await expect(
+      approveOrganizationCharacterException({
+        actorUserId: userId,
+        userId: targetUserId,
+        characterId: targetCharacterId,
+        reason: 'Cannot be approved from stale alliance evidence.',
+        expiresAt: null,
+      }),
+    ).rejects.toMatchObject({ code: 'managed-corporation-evidence-stale' })
+  })
+
+  test('repairs a missing current-version compliance projection from PostgreSQL state', async () => {
+    await ensureManagedCorporation()
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId,
+    })
+    await connection`delete from organization_account_compliance where user_id = ${userId}`
+
+    await expect(repairOrganizationCompliance({ limit: 10 })).resolves.toMatchObject({
+      repaired: 1,
+    })
+    await expect(loadComplianceState(userId)).resolves.toBe('compliant')
+  })
+
+  test('returns only caller-owned compliance reasons, freshness, and remediation actions', async () => {
+    const pendingUserId = randomUUID()
+    await connection`insert into users (id) values (${pendingUserId})`
+
+    await expect(getOrganizationAccountComplianceDetails(pendingUserId)).resolves.toMatchObject({
+      organizationVersion: 1,
+      state: 'pending',
+      evidenceFreshness: 'unavailable',
+      accountReasons: [{ code: 'no-attached-characters' }],
+      remediationActions: [{ type: 'attach-character', path: '/auth/eve/attach' }],
+      characters: [],
+      disclosureNotice: expect.stringContaining('member disclosure'),
+    })
+
+    await ensureManagedCorporation()
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId,
+    })
+    await expect(getOrganizationAccountComplianceDetails(userId)).resolves.toMatchObject({
+      state: 'compliant',
+      characters: [
+        {
+          characterId,
+          affiliationFreshness: 'fresh',
+          affiliationCheckedAt: expect.any(String),
+          nextAffiliationCheck: expect.any(String),
+          reasons: [],
+          remediationActions: [],
+        },
+      ],
+    })
+  })
+
+  test('recomputes an expired projection before constructing protected session context', async () => {
+    await ensureManagedCorporation()
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId,
+    })
+    await connection`
+      update organization_account_compliance
+      set access_valid_until = now() - interval '1 second'
+      where user_id = ${userId}
+    `
+
+    await expect(loadOrganizationSessionContext(userId)).resolves.toMatchObject({
+      organizationVersion: 1,
+      state: 'compliant',
+      evidenceFreshness: 'fresh',
+      accessValidUntil: expect.any(Date),
+      blocked: false,
+    })
+    const context = await loadOrganizationSessionContext(userId)
+    expect(context.accessValidUntil!.getTime()).toBeGreaterThan(Date.now())
+  })
+
   test('recomputes disclosed accounts from current state when a managed corporation departs', async () => {
     const observedAt = new Date()
-    await connection`
-      insert into organization_managed_corporations (
-        deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
-      ) values (1, 1, 98000001, ${observedAt}, ${observedAt})
-    `
     await recomputeOrganizationAccountCompliance({
       deploymentId: 1,
       organizationVersion: 1,
@@ -227,7 +685,9 @@ describe('organization storage invariants', () => {
     })
     await connection`
       update organization_managed_corporations
-      set is_current = false, removed_at = ${observedAt}, updated_at = ${observedAt}
+      set is_current = false,
+        removed_at = greatest(${observedAt}, first_observed_at),
+        updated_at = greatest(${observedAt}, first_observed_at)
       where deployment_id = 1 and organization_version = 1 and corporation_id = 98000001
     `
 
@@ -262,11 +722,6 @@ describe('organization storage invariants', () => {
   })
 
   test('registers a source and its scheduler lifecycle atomically for an eligible owner', async () => {
-    await connection`
-      insert into organization_managed_corporations (
-        deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
-      ) values (1, 1, 98000001, now(), now())
-    `
     await connection`
       update eve_tokens
       set scopes = '[
@@ -906,7 +1361,7 @@ describe('organization storage invariants', () => {
       ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
     )
     const targetUserId = randomUUID()
-    await connection`insert into users (id) values (${targetUserId})`
+    await establishCompliantAccount(targetUserId, 90_000_001)
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Operations access',
@@ -936,6 +1391,66 @@ describe('organization storage invariants', () => {
     await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
       modules: ['organization-activity.manage'],
       services: ['discord.operations'],
+    })
+    await connection`
+      update characters
+      set corporation_id = 98000002, affiliation_checked_at = now(),
+        next_affiliation_check = now() + interval '1 hour'
+      where user_id = ${targetUserId}
+    `
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: targetUserId,
+    })
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+      modules: [],
+      services: [],
+    })
+    const [revocation] = await connection<
+      { event_type: string; subject_id: string; causation_type: string }[]
+    >`
+      select entitlement.event_type, entitlement.subject_id,
+        causation.event_type as causation_type
+      from organization_audit_events entitlement
+      join organization_audit_events causation
+        on causation.audit_id = entitlement.causation_audit_id
+      where entitlement.event_type = 'entitlement.revoked'
+    `
+    expect(revocation).toEqual({
+      event_type: 'entitlement.revoked',
+      subject_id: 'discord.operations',
+      causation_type: 'compliance.transitioned',
+    })
+    await connection`
+      update characters
+      set corporation_id = 98000001, affiliation_checked_at = now(),
+        next_affiliation_check = now() + interval '1 hour'
+      where user_id = ${targetUserId}
+    `
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: targetUserId,
+    })
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+      modules: ['organization-activity.manage'],
+      services: ['discord.operations'],
+    })
+    const [grant] = await connection<
+      { event_type: string; subject_id: string; causation_type: string }[]
+    >`
+      select entitlement.event_type, entitlement.subject_id,
+        causation.event_type as causation_type
+      from organization_audit_events entitlement
+      join organization_audit_events causation
+        on causation.audit_id = entitlement.causation_audit_id
+      where entitlement.event_type = 'entitlement.granted'
+    `
+    expect(grant).toEqual({
+      event_type: 'entitlement.granted',
+      subject_id: 'discord.operations',
+      causation_type: 'compliance.transitioned',
     })
     await expect(
       getOrganizationGroupPermissions(targetUserId, new Date(expiresAt.getTime() + 1)),
@@ -1012,7 +1527,8 @@ describe('organization storage invariants', () => {
     )
     const directorUserId = randomUUID()
     const targetUserId = randomUUID()
-    await connection`insert into users (id) values (${directorUserId}), (${targetUserId})`
+    await establishCompliantAccount(directorUserId, 90_000_010)
+    await connection`insert into users (id) values (${targetUserId})`
     await grantOrganizationRole({
       actorUserId: userId,
       targetUserId: directorUserId,
@@ -1073,7 +1589,29 @@ describe('organization storage invariants', () => {
       ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
     )
     const targetUserId = randomUUID()
-    await connection`insert into users (id) values (${targetUserId})`
+    await establishCompliantAccount(targetUserId, 90_000_001)
+    await updateOrganizationRegistrationPolicy({
+      actorUserId: userId,
+      requiredScopes: [],
+      strictRemediationDurationSeconds: 3600,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Allow established members time to remediate.',
+    })
+    const reviewUserId = randomUUID()
+    await establishCompliantAccount(reviewUserId, 90_000_002)
+    await connection`
+      update characters
+      set corporation_id = 98000002, affiliation_checked_at = now(),
+        next_affiliation_check = now() + interval '1 hour'
+      where user_id = ${reviewUserId}
+    `
+    await expect(
+      recomputeOrganizationAccountCompliance({
+        deploymentId: 1,
+        organizationVersion: 1,
+        userId: reviewUserId,
+      }),
+    ).resolves.toMatchObject({ evaluation: { state: 'review_required' } })
     const bundle = await createOrganizationPermissionBundle({
       actorUserId: userId,
       name: 'Compliant member services',
@@ -1097,13 +1635,19 @@ describe('organization storage invariants', () => {
         expiresAt: null,
       }),
     ).rejects.toMatchObject({ code: 'compliance-group-manual-change' })
-    const granted = await convergeRegistrationComplianceGroupAssignment({
-      groupId: group.groupId,
-      targetUserId,
-      eligible: true,
-      reason: 'Registration compliance established.',
-    })
-    expect(granted).toMatchObject({ changed: true, assignment: { assignmentSource: 'compliance' } })
+    const [automaticAssignment] = await connection<
+      { assignment_id: string; assignment_source: string }[]
+    >`
+      select assignment_id, assignment_source
+      from organization_group_assignments
+      where group_id = ${group.groupId} and user_id = ${targetUserId} and revoked_at is null
+    `
+    expect(automaticAssignment).toMatchObject({ assignment_source: 'compliance' })
+    const [reviewAssignment] = await connection<{ assignment_source: string }[]>`
+      select assignment_source from organization_group_assignments
+      where group_id = ${group.groupId} and user_id = ${reviewUserId} and revoked_at is null
+    `
+    expect(reviewAssignment).toEqual({ assignment_source: 'compliance' })
     await expect(
       convergeRegistrationComplianceGroupAssignment({
         groupId: group.groupId,
@@ -1115,6 +1659,33 @@ describe('organization storage invariants', () => {
     await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
       modules: [],
       services: ['discord.member'],
+    })
+    await connection`
+      update characters
+      set corporation_id = 98000002, affiliation_checked_at = now(),
+        next_affiliation_check = now() + interval '1 hour'
+      where user_id = ${targetUserId}
+    `
+    await recomputeOrganizationAccountCompliance({
+      deploymentId: 1,
+      organizationVersion: 1,
+      userId: targetUserId,
+    })
+    await expect(getOrganizationGroupPermissions(targetUserId)).resolves.toEqual({
+      modules: [],
+      services: [],
+    })
+    const [serviceRevocation] = await connection<{ subject_id: string; causation_type: string }[]>`
+      select entitlement.subject_id, causation.event_type as causation_type
+      from organization_audit_events entitlement
+      join organization_audit_events causation
+        on causation.audit_id = entitlement.causation_audit_id
+      where entitlement.event_type = 'entitlement.revoked'
+        and entitlement.subject_id = 'discord.member'
+    `
+    expect(serviceRevocation).toEqual({
+      subject_id: 'discord.member',
+      causation_type: 'compliance.transitioned',
     })
 
     await updateDeploymentOrganization(
@@ -1130,7 +1701,8 @@ describe('organization storage invariants', () => {
     >`
       select actor_type, actor_id, event_type
       from organization_audit_events
-      where assignment_id = ${granted.assignment!.assignmentId}
+      where assignment_id = ${automaticAssignment!.assignment_id}
+        and event_type = 'group.assigned'
     `
     expect(audit).toEqual({ actor_type: 'system', actor_id: null, event_type: 'group.assigned' })
   })
@@ -1141,7 +1713,8 @@ describe('organization storage invariants', () => {
     )
     const directorUserId = randomUUID()
     const targetUserId = randomUUID()
-    await connection`insert into users (id) values (${directorUserId}), (${targetUserId})`
+    await establishCompliantAccount(directorUserId, 90_000_010)
+    await establishCompliantAccount(targetUserId, 90_000_001)
     await grantOrganizationRole({
       actorUserId: userId,
       targetUserId: directorUserId,
@@ -1295,6 +1868,34 @@ describe('organization storage invariants', () => {
       blockedByUserId: directorUserId,
       unblockedAt: null,
     })
+    const entitlementDecisions = await connection<
+      { event_type: string; subject_id: string; causation_type: string }[]
+    >`
+      select entitlement.event_type, entitlement.subject_id,
+        causation.event_type as causation_type
+      from organization_audit_events entitlement
+      join organization_audit_events causation
+        on causation.audit_id = entitlement.causation_audit_id
+      where entitlement.event_type in ('entitlement.granted', 'entitlement.revoked')
+      order by entitlement.audit_sequence
+    `
+    expect(entitlementDecisions).toEqual([
+      {
+        event_type: 'entitlement.revoked',
+        subject_id: 'discord.operations',
+        causation_type: 'member.blocked',
+      },
+      {
+        event_type: 'entitlement.granted',
+        subject_id: 'discord.operations',
+        causation_type: 'member.unblocked',
+      },
+      {
+        event_type: 'entitlement.revoked',
+        subject_id: 'discord.operations',
+        causation_type: 'member.blocked',
+      },
+    ])
   })
 
   test('serializes duplicate blocks and isolates prior-version decisions', async () => {
@@ -1328,6 +1929,81 @@ describe('organization storage invariants', () => {
       adminId,
     )
     await expect(hasCurrentOrganizationMemberBlock(targetUserId)).resolves.toBe(false)
+  })
+
+  test('bulk compliance recomputation locks all users before compliance groups', async () => {
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    const userIds = [randomUUID(), randomUUID()].toSorted()
+    const firstUserId = userIds[0]!
+    const secondUserId = userIds[1]!
+    await establishCompliantAccount(firstUserId, 90_000_001)
+    await establishCompliantAccount(secondUserId, 90_000_002)
+    const bundle = await createOrganizationPermissionBundle({
+      actorUserId: userId,
+      name: 'Bulk lock order bundle',
+      permissions: [{ type: 'service', key: 'discord.bulk-lock' }],
+    })
+    await createOrganizationGroup({
+      actorUserId: userId,
+      name: 'Bulk lock order group',
+      restricted: false,
+      managementMode: 'compliance',
+      complianceSource: 'core.registration',
+      bundleIds: [bundle.bundleId],
+    })
+    let userLocked!: () => void
+    let allowGroupLock!: () => void
+    let groupLocked!: () => void
+    let releaseBlocker!: () => void
+    const userLockAcquired = new Promise<void>((resolve) => {
+      userLocked = resolve
+    })
+    const groupLockAllowed = new Promise<void>((resolve) => {
+      allowGroupLock = resolve
+    })
+    const groupLockAcquired = new Promise<void>((resolve) => {
+      groupLocked = resolve
+    })
+    const blockerReleased = new Promise<void>((resolve) => {
+      releaseBlocker = resolve
+    })
+    const blocker = secondConnection.begin(async (transaction) => {
+      await transaction`select id from users where id = ${secondUserId} for update`
+      userLocked()
+      await groupLockAllowed
+      await transaction`
+        select group_id from organization_groups
+        where deployment_id = 1 and organization_version = 1
+        for update
+      `
+      groupLocked()
+      await blockerReleased
+    })
+    await userLockAcquired
+
+    let bulkSettled = false
+    const bulk = dbClient.db
+      .transaction((transaction) =>
+        recomputeAllOrganizationAccountsInTransaction(transaction, {
+          deploymentId: 1,
+          organizationVersion: 1,
+        }),
+      )
+      .finally(() => {
+        bulkSettled = true
+      })
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(bulkSettled).toBe(false)
+    allowGroupLock()
+    try {
+      await groupLockAcquired
+    } finally {
+      releaseBlocker()
+    }
+    await blocker
+    await expect(bulk).resolves.toHaveLength(3)
   })
 
   test('serializes group management changes against concurrent assignments', async () => {
@@ -1513,15 +2189,6 @@ describe('organization storage invariants', () => {
 
   test('permits only one active corporation source per corporation and version', async () => {
     await connection`
-      insert into organization_managed_corporations (
-        deployment_id,
-        organization_version,
-        corporation_id,
-        first_observed_at,
-        last_observed_at
-      ) values (1, 1, 98000001, now(), now())
-    `
-    await connection`
       insert into organization_corporation_sources (
         deployment_id,
         organization_version,
@@ -1576,7 +2243,42 @@ async function seedDeployment() {
       organization_version
     ) values (1, ${adminId}, 'corporation', 98000001, 'First Corporation', 'ONE', 1)
   `
+  await connection`
+    insert into organization_managed_corporations (
+      deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
+    ) values (1, 1, 98000001, now(), now())
+  `
   await seedCharacter(userId, characterId)
+}
+
+async function ensureManagedCorporation() {
+  await connection`
+    insert into organization_managed_corporations (
+      deployment_id, organization_version, corporation_id, first_observed_at, last_observed_at
+    ) values (1, 1, 98000001, now(), now())
+    on conflict (deployment_id, organization_version, corporation_id)
+    do update set is_current = true, removed_at = null, last_observed_at = excluded.last_observed_at
+  `
+}
+
+async function loadComplianceState(targetUserId: string) {
+  const [projection] = await connection<{ state: string }[]>`
+    select state
+    from organization_account_compliance
+    where deployment_id = 1 and organization_version = 1 and user_id = ${targetUserId}
+  `
+  return projection?.state ?? null
+}
+
+async function establishCompliantAccount(targetUserId: string, targetCharacterId: number) {
+  await ensureManagedCorporation()
+  await seedCharacter(targetUserId, targetCharacterId)
+  await connection`update characters set is_main = true where character_id = ${targetCharacterId}`
+  await recomputeOrganizationAccountCompliance({
+    deploymentId: 1,
+    organizationVersion: 1,
+    userId: targetUserId,
+  })
 }
 
 async function seedCharacter(seedUserId: string, seedCharacterId: number) {

@@ -199,6 +199,42 @@ describe('organization foundation migration', () => {
       constraint_name: 'organization_member_blocks_unblock_check',
     })
   })
+
+  test('requires every compliant projection to carry an explicit access-validity boundary', async () => {
+    await expect(
+      connection`
+        insert into organization_account_compliance (
+          deployment_id, organization_version, user_id, state, evidence_freshness, evidence_at
+        ) values (1, 1, ${userId}, 'compliant', 'fresh', now())
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'organization_account_compliance_access_validity_check',
+    })
+
+    await expect(
+      connection`
+        insert into organization_account_compliance (
+          deployment_id, organization_version, user_id, state, evidence_freshness,
+          evidence_at, access_valid_until, established_compliant_at
+        ) values (1, 1, ${userId}, 'compliant', 'fresh', now(), now() + interval '1 hour', now())
+      `,
+    ).resolves.toBeDefined()
+
+    const reviewUserId = randomUUID()
+    await connection`insert into users (id) values (${reviewUserId})`
+    await expect(
+      connection`
+        insert into organization_account_compliance (
+          deployment_id, organization_version, user_id, state, evidence_freshness,
+          evidence_at, review_deadline, access_valid_until, established_compliant_at
+        ) values (
+          1, 1, ${reviewUserId}, 'review_required', 'fresh', now(),
+          now() + interval '1 hour', now() + interval '1 hour', now()
+        )
+      `,
+    ).resolves.toBeDefined()
+  })
 })
 
 async function seedLegacyDeployment() {

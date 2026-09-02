@@ -15,6 +15,7 @@ import {
 import { hashToken } from '../auth/security.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { appendOrganizationAuditEvent } from '../organization/audit.js'
+import { recomputeAllOrganizationAccountsInTransaction } from '../organization/compliance.js'
 import { initializeManagedOrganization } from '../organization/managed-corporations.js'
 
 export interface DeploymentSettingsRecord {
@@ -240,7 +241,15 @@ export async function updateDeploymentOrganization(
       )
     await transaction
       .update(organizationManagedCorporations)
-      .set({ isCurrent: false, removedAt: now, updatedAt: now })
+      .set({
+        isCurrent: false,
+        removedAt: sql`greatest(
+          clock_timestamp(),
+          ${organizationManagedCorporations.firstObservedAt},
+          ${organizationManagedCorporations.lastObservedAt}
+        )`,
+        updatedAt: sql`clock_timestamp()`,
+      })
       .where(
         and(
           eq(organizationManagedCorporations.deploymentId, current.id),
@@ -298,6 +307,11 @@ export async function updateDeploymentOrganization(
         organizationVersion,
       },
       occurredAt: now,
+    })
+    await recomputeAllOrganizationAccountsInTransaction(transaction, {
+      deploymentId: 1,
+      organizationVersion,
+      now,
     })
     return organization
   })

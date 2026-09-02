@@ -68,12 +68,13 @@ describe('platform collection state', () => {
     const insert = vi.fn().mockReturnValue({ values })
 
     await expect(upsertPlatformCollectionState(input, { insert } as never)).resolves.toEqual(stored)
-    expect(values).toHaveBeenCalledWith(input)
+    expect(values).toHaveBeenCalledWith({ ...input, failureStartedAt: null })
     expect(onConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         target: expect.any(Array),
         set: expect.objectContaining({
           authorizationGeneration: input.authorizationGeneration,
+          failureStartedAt: null,
           lastFailureClass: input.lastFailureClass,
           nextEligibleAt: input.nextEligibleAt,
           validatedAt: input.validatedAt,

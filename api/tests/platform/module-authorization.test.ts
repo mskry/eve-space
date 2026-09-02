@@ -13,16 +13,26 @@ const mocks = vi.hoisted(() => {
     CharacterTokenNotFoundError,
     TokenRefreshLockUnavailableError,
     enabled: true,
+    authorizeOrganizationContribution: vi.fn(),
     events: [] as string[],
     findAdminSession: vi.fn(),
     findOwnedCharacter: vi.fn(),
     findSession: vi.fn(),
+    hasOrganizationContext: true,
     isInstalledModuleEnabled: vi.fn(),
     loadModuleRuntimeState: vi.fn(),
     saveInstalledShellNavigationOrder: vi.fn(),
     sessionHandler: vi.fn(),
     ownedHandler: vi.fn(),
     createOwnedCharacterCoreReads: vi.fn(),
+    organizationContext: {
+      organizationVersion: 7,
+      state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
+      evidenceFreshness: 'fresh' as 'fresh' | 'stale' | 'unavailable',
+      reviewDeadline: null as Date | null,
+      accessValidUntil: new Date(Date.now() + 60_000) as Date | null,
+      blocked: false,
+    },
   }
 })
 
@@ -82,16 +92,28 @@ vi.mock('../../src/platform/core-read-capabilities.js', () => ({
   sdeCoreReads: { loadPublishedTypeGroups: vi.fn() },
 }))
 
+vi.mock('../../src/middleware/organization-session.js', () => ({
+  loadOrganizationSession: async (
+    context: { set(key: string, value: unknown): void },
+    next: () => Promise<void>,
+  ) => {
+    mocks.events.push('organization')
+    if (mocks.hasOrganizationContext) context.set('organization', mocks.organizationContext)
+    await next()
+  },
+}))
+
+vi.mock('../../src/organization/module-authorization.js', () => ({
+  authorizeOrganizationContribution: mocks.authorizeOrganizationContribution,
+  resolveOrganizationEntitlementScope: (organization: typeof mocks.organizationContext) =>
+    organization.blocked || !organization.accessValidUntil ? null : 'all',
+}))
+
 vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
   const { Hono } = await import('hono')
-  const { loadSession, requireSession } = await import('../../src/middleware/auth-session.js')
-  const { requireInstalledModuleEnabled } =
-    await import('../../src/middleware/module-enablement.js')
-  const { exposeAuthenticatedSessionModuleContext, exposeOwnedCharacterModuleContext } =
-    await import('../../src/middleware/module-authorization.js')
-  const { characterIdParams, loadOwnedCharacter } =
-    await import('../../src/middleware/owned-character.js')
-  const { zValidator } = await import('../../src/http/validation.js')
+  const { platformModuleRouteComposers } =
+    await import('../../src/platform/module-route-composition.js')
+  const organization = { audience: 'member', requiredPermission: 'alpha.view' } as const
 
   const sessionRoutes = new Hono<PlatformAuthenticatedSessionRouteEnv>().get('/', (context) => {
     mocks.events.push('session-handler')
@@ -111,23 +133,19 @@ vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
     installedModuleRoutes: new Hono()
       .route(
         '/alpha/profile',
-        new Hono()
-          .use('*', requireInstalledModuleEnabled('alpha'))
-          .use('*', loadSession)
-          .use('*', requireSession)
-          .use('*', exposeAuthenticatedSessionModuleContext)
-          .route('/', sessionRoutes),
+        platformModuleRouteComposers['authenticated-session']('alpha', organization, sessionRoutes),
+      )
+      .route(
+        '/alpha/hr',
+        platformModuleRouteComposers['authenticated-session'](
+          'alpha',
+          { audience: 'hr', requiredPermission: 'alpha.view' },
+          sessionRoutes,
+        ),
       )
       .route(
         '/alpha/characters/:characterId',
-        new Hono()
-          .use('*', requireInstalledModuleEnabled('alpha'))
-          .use('*', loadSession)
-          .use('*', requireSession)
-          .use('*', zValidator('param', characterIdParams))
-          .use('*', loadOwnedCharacter)
-          .use('*', exposeOwnedCharacterModuleContext)
-          .route('/', ownedRoutes),
+        platformModuleRouteComposers['owned-character']('alpha', organization, ownedRoutes),
       ),
   }
 })
@@ -155,6 +173,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.events = []
   mocks.enabled = true
+  mocks.hasOrganizationContext = true
   mocks.findAdminSession.mockResolvedValue(null)
   mocks.isInstalledModuleEnabled.mockImplementation(async () => {
     mocks.events.push('enablement')
@@ -169,6 +188,26 @@ beforeEach(() => {
     return characterId === ownedCharacter.characterId ? ownedCharacter : null
   })
   mocks.createOwnedCharacterCoreReads.mockReturnValue({ loadAffiliation: vi.fn() })
+  mocks.organizationContext = {
+    organizationVersion: 7,
+    state: 'compliant',
+    evidenceFreshness: 'fresh',
+    reviewDeadline: null,
+    accessValidUntil: new Date(Date.now() + 60_000),
+    blocked: false,
+  }
+  mocks.authorizeOrganizationContribution.mockImplementation(async () => {
+    mocks.events.push('authorization')
+    return {
+      authorized: true,
+      context: {
+        organizationVersion: 7,
+        audience: 'member',
+        requiredPermission: 'alpha.view',
+        entitlementScope: 'all',
+      },
+    }
+  })
 })
 
 describe('full-root platform module authorization', () => {
@@ -228,7 +267,14 @@ describe('full-root platform module authorization', () => {
       },
       hasCoreReads: true,
     })
-    expect(mocks.events).toEqual(['enablement', 'session', 'ownership', 'owned-handler'])
+    expect(mocks.events).toEqual([
+      'enablement',
+      'session',
+      'organization',
+      'authorization',
+      'ownership',
+      'owned-handler',
+    ])
     expect(mocks.createOwnedCharacterCoreReads).toHaveBeenCalledWith({
       userId: session.userId,
       characterId: ownedCharacter.characterId,
@@ -236,6 +282,7 @@ describe('full-root platform module authorization', () => {
     })
     expect(Object.keys(mocks.ownedHandler.mock.calls[0]?.[0] ?? {})).toEqual([
       'authorization',
+      'organization',
       'coreReads',
     ])
   })
@@ -247,9 +294,58 @@ describe('full-root platform module authorization', () => {
     await expect(response.json()).resolves.toEqual({
       platform: {
         authorization: { strategy: 'authenticated-session', userId: session.userId },
+        organization: {
+          organizationVersion: 7,
+          audience: 'member',
+          requiredPermission: 'alpha.view',
+          entitlementScope: 'all',
+        },
       },
     })
-    expect(Object.keys(mocks.sessionHandler.mock.calls[0]?.[0] ?? {})).toEqual(['authorization'])
+    expect(Object.keys(mocks.sessionHandler.mock.calls[0]?.[0] ?? {})).toEqual([
+      'authorization',
+      'organization',
+    ])
+  })
+
+  test.each([
+    ['blocked', 'ORGANIZATION_MEMBER_BLOCKED'],
+    ['compliance', 'ORGANIZATION_COMPLIANCE_REQUIRED'],
+    ['audience', 'ORGANIZATION_MANAGER_REQUIRED'],
+    ['permission', 'ORGANIZATION_PERMISSION_REQUIRED'],
+  ] as const)('rejects module access denied for %s', async (reason, code) => {
+    mocks.authorizeOrganizationContribution.mockResolvedValue({ authorized: false, reason })
+
+    const response = await app.request('/api/modules/alpha/profile', { headers: sessionCookie })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toMatchObject({ code })
+    expect(mocks.sessionHandler).not.toHaveBeenCalled()
+  })
+
+  test('rejects module access without current organization context', async () => {
+    mocks.hasOrganizationContext = false
+
+    const response = await app.request('/api/modules/alpha/profile', { headers: sessionCookie })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
+      state: 'pending',
+    })
+    expect(mocks.authorizeOrganizationContribution).not.toHaveBeenCalled()
+  })
+
+  test('returns an HR-specific audience denial', async () => {
+    mocks.authorizeOrganizationContribution.mockResolvedValue({
+      authorized: false,
+      reason: 'audience',
+    })
+
+    const response = await app.request('/api/modules/alpha/hr', { headers: sessionCookie })
+
+    expect(response.status).toBe(403)
+    await expect(response.json()).resolves.toMatchObject({ code: 'ORGANIZATION_HR_REQUIRED' })
   })
 })
 

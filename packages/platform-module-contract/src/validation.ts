@@ -8,10 +8,14 @@ import {
   platformModuleIdPattern,
   platformNavigationAudiences,
   platformNavigationPlacements,
+  platformOrganizationAudiences,
   platformPageExtensionPoints,
+  platformPermissionKeyMaxLength,
+  platformPermissionKeyPattern,
   platformResourceBatchModes,
   resolvePlatformModuleRoutePath,
   type PlatformModuleManifest,
+  type PlatformResourceContribution,
 } from './contract.js'
 
 export interface PlatformModuleValidationAuthorities {
@@ -52,6 +56,7 @@ export function validatePlatformModuleManifests(
   const esiOperationIds = createOwnedValues(authorities.esiOperationIds, 'core')
   const migrationIds = new Map<string, string>()
   const resourceIds = new Map<string, string>()
+  const activityProviderIds = new Map<string, string>()
 
   for (const manifest of sorted)
     claimValue(moduleIds, manifest.id, manifest.id, 'module ID', issues)
@@ -75,6 +80,7 @@ export function validatePlatformModuleManifests(
     validateMigrations(manifest, migrationIds, issues)
     validateEsiOperations(manifest, issues)
     validateResources(manifest, esiOperationIds, resourceIds, issues)
+    validateActivityProviders(manifest, activityProviderIds, issues)
     validatePages(manifest, issues)
     validateNavigation(manifest, navigationIds, issues)
     validateExposedContributions(manifest, issues)
@@ -113,11 +119,31 @@ function validateRoutes(
       `route ${identity} uses unsupported authorization ${String(route.authorization)}`,
       issues,
     )
+    validateOrganizationAuthorization(route, `route ${identity}`, issues)
     if (
       route.authorization === 'owned-character' &&
       !route.namespace.split('/').includes(':characterId')
     )
       issues.push(`owned-character route ${identity} must include :characterId in its namespace`)
+  }
+}
+
+function validateActivityProviders(
+  manifest: PlatformModuleManifest,
+  providerIds: Map<string, string>,
+  issues: string[],
+) {
+  for (const provider of manifest.server.activityProviders) {
+    const identity = `${manifest.id}/${provider.id}`
+    validateContributionId(provider.id, manifest.id, 'activity provider', issues)
+    validateExportName(provider.exportName, manifest.id, 'activity provider', issues)
+    validateOrganizationAuthorization(provider, `activity provider ${identity}`, issues)
+    claimValue(providerIds, identity, manifest.id, 'activity provider identity', issues)
+    if (
+      !Number.isSafeInteger(provider.freshness?.staleAfterSeconds) ||
+      provider.freshness.staleAfterSeconds <= 0
+    )
+      issues.push(`activity provider ${identity} must use a positive whole stale interval`)
   }
 }
 
@@ -181,20 +207,29 @@ function validateResources(
       )
     if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
       issues.push(`resource ${identity} references unknown ESI operation ${resource.operationId}`)
-    if (resource.batch === undefined) continue
-    if (resource.subjectKind !== 'character')
-      issues.push(`resource ${identity} may only declare a batch for character subjects`)
-    validateMember(
-      resource.batch.mode,
-      platformResourceBatchModes,
-      `resource ${identity} uses unsupported batch mode ${String(resource.batch.mode)}`,
-      issues,
-    )
-    if (!esiOperationIds.has(normalizeIdentity(resource.batch.operationId)))
-      issues.push(
-        `resource ${identity} references unknown batch ESI operation ${resource.batch.operationId}`,
-      )
+    validateResourceBatch(resource, identity, esiOperationIds, issues)
   }
+}
+
+function validateResourceBatch(
+  resource: PlatformResourceContribution,
+  identity: string,
+  esiOperationIds: ReadonlyMap<string, string>,
+  issues: string[],
+) {
+  if (resource.batch === undefined) return
+  if (resource.subjectKind !== 'character')
+    issues.push(`resource ${identity} may only declare a batch for character subjects`)
+  validateMember(
+    resource.batch.mode,
+    platformResourceBatchModes,
+    `resource ${identity} uses unsupported batch mode ${String(resource.batch.mode)}`,
+    issues,
+  )
+  if (!esiOperationIds.has(normalizeIdentity(resource.batch.operationId)))
+    issues.push(
+      `resource ${identity} references unknown batch ESI operation ${resource.batch.operationId}`,
+    )
 }
 
 function validatePages(manifest: PlatformModuleManifest, issues: string[]) {
@@ -325,6 +360,28 @@ function validateContributionId(value: string, moduleId: string, kind: string, i
 function validateExportName(value: string, moduleId: string, kind: string, issues: string[]) {
   if (!platformExportNamePattern.test(value))
     issues.push(`${kind} ${moduleId} export ${value} is not a valid JavaScript export name`)
+}
+
+function validateOrganizationAuthorization(
+  contribution: { readonly audience: unknown; readonly requiredPermission: unknown },
+  identity: string,
+  issues: string[],
+) {
+  if (!platformOrganizationAudiences.includes(contribution.audience as never))
+    issues.push(
+      `${identity} uses unsupported organization audience ${String(contribution.audience)}`,
+    )
+  if (!isValidPermissionKey(contribution.requiredPermission))
+    issues.push(`${identity} must declare a valid required permission`)
+}
+
+function isValidPermissionKey(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length <= platformPermissionKeyMaxLength &&
+    platformPermissionKeyPattern.test(value) &&
+    value.split(/[.:]/).every((segment) => segment.length > 0 && !segment.endsWith('-'))
+  )
 }
 
 function validateMember(
