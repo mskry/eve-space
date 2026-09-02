@@ -7,11 +7,14 @@ packages:
 injectWorkspacePackages: true
 
 allowBuilds:
+  cpu-features: false
   esbuild: true
   fsevents: true
   lefthook: true
   msgpackr-extract: false
   msw: true
+  protobufjs: false
+  ssh2: false
   vue-demi: true
 
 minimumReleaseAgeExclude:
