@@ -42,6 +42,9 @@ describe('system status route', () => {
           active: 0,
           retrying: 0,
           failed: 0,
+          memoryUsedBytes: 53_687_091,
+          memoryMaxBytes: 536_870_912,
+          memoryUsedPercent: 10,
           plannerPaused: false,
           outboxRelayPaused: false,
           latestOutboxRelayOutcome: {
@@ -119,6 +122,9 @@ describe('system status route', () => {
           active: 0,
           retrying: 0,
           failed: 0,
+          memoryUsedBytes: 53_687_091,
+          memoryMaxBytes: 536_870_912,
+          memoryUsedPercent: 10,
           plannerPaused: false,
           outboxRelayPaused: false,
           latestOutboxRelayOutcome: {
