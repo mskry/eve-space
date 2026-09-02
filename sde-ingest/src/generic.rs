@@ -46,15 +46,28 @@ fn key_text(value: &Value) -> Option<String> {
     }
 }
 
-pub fn ingest_member(archive: &mut ZipArchive<File>, client: &mut Transaction, member: &str) -> Result<u64> {
+pub fn ingest_member(
+    archive: &mut ZipArchive<File>,
+    client: &mut Transaction,
+    member: &str,
+) -> Result<u64> {
     let dataset = member.trim_end_matches(".jsonl").to_string();
     let lines = zip_stream::lines(archive, member)?;
     let rows = lines.map(move |line| {
         let line = line?;
         let value: Value = serde_json::from_str(&line)?;
-        let key = key_text(&value)
-            .with_context(|| format!("{dataset} row is missing a usable _key"))?;
-        Ok(vec![db::text(&dataset), db::text(&key), db::text(&value.to_string())])
+        let key =
+            key_text(&value).with_context(|| format!("{dataset} row is missing a usable _key"))?;
+        Ok(vec![
+            db::text(&dataset),
+            db::text(&key),
+            db::text(&value.to_string()),
+        ])
     });
-    db::copy_rows(client, "sde_dataset_rows", &["dataset", "key", "data"], rows)
+    db::copy_rows(
+        client,
+        "sde_dataset_rows",
+        &["dataset", "key", "data"],
+        rows,
+    )
 }

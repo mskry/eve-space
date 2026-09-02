@@ -247,6 +247,93 @@
   stroke: var(--ui-border-strong);
 }
 
+.ui-popover {
+  z-index: 100;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-panel);
+  outline: none;
+  background: color-mix(in srgb, var(--ui-surface-solid) 97%, transparent);
+  color: var(--ui-text);
+  box-shadow: 0 18px 50px var(--ui-shadow);
+  backdrop-filter: blur(18px);
+  transform-origin: var(--reka-popover-content-transform-origin);
+  animation: ui-menu-in 120ms ease-out;
+}
+
+.ui-popover-close {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-surface-solid);
+  color: var(--ui-text-muted);
+  font: 700 9px/1 var(--ui-font-mono);
+  cursor: pointer;
+}
+
+.ui-popover-close:hover,
+.ui-popover-close:focus-visible {
+  border-color: var(--ui-primary);
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 35%, transparent);
+  outline-offset: 2px;
+  color: var(--ui-primary);
+}
+
+.ui-popover-arrow {
+  fill: var(--ui-surface-solid);
+  stroke: var(--ui-border-strong);
+}
+
+.ui-tabs-list {
+  padding: 0 12px;
+  display: flex;
+  gap: 16px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.ui-tabs-trigger {
+  min-height: 34px;
+  padding: 2px 2px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  outline: none;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font: 500 10px/1 var(--ui-font-body);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.ui-tabs-trigger:hover {
+  color: var(--ui-text);
+}
+
+.ui-tabs-trigger[data-state='active'] {
+  border-bottom-color: var(--ui-warning);
+  color: var(--ui-text);
+}
+
+.ui-tabs-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.ui-tabs-content {
+  min-height: 132px;
+  outline: none;
+}
+
+.ui-tabs-content:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-primary) 35%, transparent);
+  outline-offset: -2px;
+}
+
 .ui-drawer-overlay {
   position: fixed;
   z-index: 80;

@@ -8,6 +8,9 @@ export const PUBLIC_QUERY_KEYS = {
     [...PUBLIC_QUERY_KEYS.corporations(), corporationId] as const,
   corporationAllianceHistory: (corporationId: number) =>
     [...PUBLIC_QUERY_KEYS.corporation(corporationId), 'alliance-history'] as const,
+  universe: () => [...PUBLIC_QUERY_KEYS.root, 'universe'] as const,
+  universeTypes: () => [...PUBLIC_QUERY_KEYS.universe(), 'types'] as const,
+  universeType: (typeId: number) => [...PUBLIC_QUERY_KEYS.universeTypes(), typeId] as const,
 }
 
 export const AUTH_QUERY_KEYS = {

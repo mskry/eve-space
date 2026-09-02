@@ -8,18 +8,12 @@ import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
-
-const primaryAttributeId = 180
-const secondaryAttributeId = 181
-const attributeNames = new Map<number, SkillAttribute>([
-  [164, 'charisma'],
-  [165, 'intelligence'],
-  [166, 'memory'],
-  [167, 'perception'],
-  [168, 'willpower'],
-])
-
-type SkillAttribute = 'charisma' | 'intelligence' | 'memory' | 'perception' | 'willpower'
+import {
+  skillAttributeFromDogmaValue,
+  skillPrimaryAttributeId,
+  skillSecondaryAttributeId,
+} from '../skills/training.js'
+import type { SkillAttribute } from '../skills/training.js'
 
 export const characterSkillQueueScope = getCharacterEsiScope('skill-queue')
 
@@ -115,7 +109,10 @@ async function mapCharacterSkillQueue(
       sdeTypeDogmaAttributes,
       and(
         eq(sdeTypeDogmaAttributes.typeId, sdeTypes.typeId),
-        inArray(sdeTypeDogmaAttributes.attributeId, [primaryAttributeId, secondaryAttributeId]),
+        inArray(sdeTypeDogmaAttributes.attributeId, [
+          skillPrimaryAttributeId,
+          skillSecondaryAttributeId,
+        ]),
       ),
     )
     .where(
@@ -148,9 +145,9 @@ async function mapCharacterSkillQueue(
       }
       staticByType.set(row.typeId, skill)
     }
-    const attribute = attributeNames.get(Math.trunc(row.attributeValue ?? Number.NaN)) ?? null
-    if (row.attributeId === primaryAttributeId) skill.primaryAttribute = attribute
-    if (row.attributeId === secondaryAttributeId) skill.secondaryAttribute = attribute
+    const attribute = skillAttributeFromDogmaValue(row.attributeValue)
+    if (row.attributeId === skillPrimaryAttributeId) skill.primaryAttribute = attribute
+    if (row.attributeId === skillSecondaryAttributeId) skill.secondaryAttribute = attribute
   }
 
   return {

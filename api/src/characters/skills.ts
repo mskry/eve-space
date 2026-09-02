@@ -8,9 +8,10 @@ import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
 import { createEsiTransport } from '../esi-resilience/transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
+import { skillCategoryId } from '../skills/training.js'
 
 export const characterSkillsScope = getCharacterEsiScope('skills')
-export const skillCategoryId = 16
+export { skillCategoryId } from '../skills/training.js'
 
 interface CharacterSkillSnapshot {
   typeId: number
