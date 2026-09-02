@@ -176,6 +176,10 @@
   flex-direction: column;
 }
 
+.finance-tab-panel[hidden] {
+  display: none;
+}
+
 .finance-service-body,
 .finance-service,
 .finance-service-content {

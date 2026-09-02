@@ -87,6 +87,9 @@ describe('character Finance page', () => {
     expect(wrapper.get('.finance-hero-metrics').text()).not.toContain('Awaiting me')
 
     // The journal is the ledger's default tab, and it is the only service with data up front.
+    const inactivePanels = wrapper.findAll('.finance-tab-panel[hidden]')
+    expect(inactivePanels).toHaveLength(3)
+
     await vi.waitFor(() => expect(wrapper.text()).toContain('Mission reward'))
     expect(wrapper.text()).not.toContain('Tritanium')
     expect(wrapper.text()).not.toContain('Courier package')
