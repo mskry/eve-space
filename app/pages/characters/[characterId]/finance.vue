@@ -531,6 +531,10 @@ function orderFill(order: { volumeRemain: number; volumeTotal: number }) {
   return Math.round(((order.volumeTotal - order.volumeRemain) / order.volumeTotal) * 100)
 }
 
+function orderVolumeNumerator(order: { volumeRemain: number; volumeTotal: number }) {
+  return orderMode.value === 'open' ? order.volumeRemain : order.volumeTotal - order.volumeRemain
+}
+
 function formatIsk(value: number, fractionDigits = 2) {
   return new Intl.NumberFormat('en-US', {
     maximumFractionDigits: fractionDigits,
@@ -1055,7 +1059,7 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
                       <td class="is-numeric is-mono">{{ formatIsk(order.price) }}</td>
                       <td>
                         <span class="finance-volume">
-                          {{ order.volumeRemain.toLocaleString('en-US') }} /
+                          {{ orderVolumeNumerator(order).toLocaleString('en-US') }} /
                           {{ order.volumeTotal.toLocaleString('en-US') }}
                         </span>
                         <span class="finance-fill" aria-hidden="true">
@@ -1418,6 +1422,9 @@ useCharacterReauthorization(characterId, refreshRequestedFinance)
                   {{ item.direction.toLocaleUpperCase('en-US') }}
                 </span>
                 <CharacterFinanceItemIdentity :name="item.typeName" :type-id="item.typeId" />
+                <span v-if="item.blueprint" class="finance-drawer-blueprint">
+                  BLUEPRINT {{ item.blueprint.toLocaleUpperCase('en-US') }}
+                </span>
                 <span class="finance-drawer-quantity">
                   ×{{ item.quantity.toLocaleString('en-US') }}
                 </span>

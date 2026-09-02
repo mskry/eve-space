@@ -135,6 +135,7 @@ describe('character Finance page', () => {
     await wrapper.findAll('.finance-mode button')[1]!.trigger('click')
     await seedOnly('Order history')
     await vi.waitFor(() => expect(wrapper.text()).toContain('Scordite'))
+    expect(wrapper.get('.finance-table--orders .finance-volume').text()).toBe('0 / 20')
     expect(wrapper.get('.finance-table-footer').text()).toContain('on the loaded page')
     expect(wrapper.text()).toContain('EXPIRED')
 
@@ -367,6 +368,9 @@ describe('character Finance page', () => {
       },
     )
     await vi.waitFor(() => expect(document.body.textContent).toContain('Mexallon'))
+    expect(document.querySelector('.finance-drawer[data-state="open"]')?.textContent).toContain(
+      'BLUEPRINT COPY',
+    )
 
     const triggers = [itemTrigger('Mexallon')]
     for (const trigger of triggers) {
@@ -757,7 +761,11 @@ function openOrders() {
 
 function historyOrders() {
   return [
-    { ...marketOrder(301, 36, 'Scordite', false, 20), state: 'expired' },
+    {
+      ...marketOrder(301, 36, 'Scordite', false, 20),
+      volumeRemain: 20,
+      state: 'expired',
+    },
     { ...marketOrder(302, 35, 'Pyerite', true, 30), state: 'cancelled' },
   ]
 }

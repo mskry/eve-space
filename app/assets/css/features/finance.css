@@ -702,6 +702,16 @@
   font: 400 0.6875rem/1.2 var(--ui-font-mono);
 }
 
+.finance-drawer-blueprint {
+  padding: 0.1875rem 0.3125rem;
+  flex: none;
+  border: 0.0625rem solid var(--ui-border-strong);
+  color: var(--ui-warning);
+  font: 500 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
 .finance-drawer-empty,
 .finance-drawer-footnote {
   margin: 0;
