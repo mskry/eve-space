@@ -291,6 +291,7 @@
 }
 
 .ui-tabs-list {
+  position: relative;
   padding: 0 12px;
   display: flex;
   gap: 16px;
@@ -315,8 +316,21 @@
 }
 
 .ui-tabs-trigger[data-state='active'] {
-  border-bottom-color: var(--ui-warning);
   color: var(--ui-text);
+}
+
+.ui-tabs-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: var(--reka-tabs-indicator-size);
+  height: 2px;
+  pointer-events: none;
+  background: var(--ui-warning);
+  transform: translateX(var(--reka-tabs-indicator-position));
+  transition:
+    width 180ms ease,
+    transform 180ms ease;
 }
 
 .ui-tabs-trigger:focus-visible {
@@ -682,6 +696,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ui-tabs-indicator {
+    transition: none;
+  }
+
   .ui-theme-menu,
   .ui-action-menu,
   .ui-context-menu,

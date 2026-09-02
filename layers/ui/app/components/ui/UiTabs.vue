@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
+import { TabsContent, TabsIndicator, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 
 interface UiTab {
   label: string
@@ -43,6 +43,7 @@ watchEffect(() => {
     :unmount-on-hide="unmountOnHide"
   >
     <TabsList :class="['ui-tabs-list', listClass]" :aria-label="ariaLabel">
+      <TabsIndicator class="ui-tabs-indicator" />
       <TabsTrigger v-for="tab in tabs" :key="tab.value" class="ui-tabs-trigger" :value="tab.value">
         <slot name="trigger" :tab="tab">{{ tab.label }}</slot>
       </TabsTrigger>
