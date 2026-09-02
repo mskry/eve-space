@@ -141,8 +141,45 @@ export const coreEsiOperationCatalog = {
     cache: sharedPrivateCache(),
     retry,
   }),
+  'wallet-journal': defineContract('wallet-journal', {
+    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
   'wallet-transactions': defineContract('wallet-transactions', {
+    representationVersion: 'v3',
+    identity: {
+      kind: 'mixed',
+      fields: [
+        { kind: 'scalar', field: 'characterId' },
+        { kind: 'scalar', field: 'fromId', nullable: true },
+      ],
+    },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'market-orders': defineContract('market-orders', {
     identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'market-order-history': defineContract('market-order-history', {
+    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'character-contracts': defineContract('character-contracts', {
+    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'character-contract-items': defineContract('character-contract-items', {
+    identity: { kind: 'ordered', fields: ['characterId', 'contractId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'character-contract-bids': defineContract('character-contract-bids', {
+    identity: { kind: 'ordered', fields: ['characterId', 'contractId'] },
     cache: sharedPrivateCache(),
     retry,
   }),

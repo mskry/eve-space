@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { platformCoreNavigation } from '../../packages/platform-module-contract/src/contract'
 import {
   CORE_CHARACTER_DATA_PREFETCH_IDS,
   findActiveCharacterNavigationEntry,
@@ -25,6 +26,21 @@ const registryEntries = [
 ]
 
 describe('character record navigation coordination', () => {
+  it('registers Finance as the only core character financial destination', () => {
+    const finance = platformCoreNavigation.find(
+      (entry) => entry.navigationId === 'core-character-finance',
+    )
+
+    expect(finance).toMatchObject({
+      label: 'Finance',
+      path: '/characters/:characterId/finance',
+      placement: 'character',
+    })
+    expect(
+      platformCoreNavigation.some((entry) => entry.navigationId === 'core-character-wallet'),
+    ).toBe(false)
+  })
+
   it('resolves the selected character into core and contributed destinations', () => {
     const entries = resolveCharacterNavigation(registryEntries, 42)
 
@@ -76,7 +92,7 @@ describe('character record navigation coordination', () => {
   it('limits data-prefetch intent to the existing core query owners', () => {
     expect(CORE_CHARACTER_DATA_PREFETCH_IDS).toEqual([
       'core-character-skills',
-      'core-character-wallet',
+      'core-character-finance',
       'core-character-history',
     ])
     expect(hasCoreCharacterDataPrefetch('core-character-skills')).toBe(true)

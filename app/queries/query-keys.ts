@@ -40,10 +40,32 @@ export const PRIVATE_QUERY_KEYS = {
     [...PRIVATE_QUERY_KEYS.character(characterId), 'skills'] as const,
   characterHistory: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'history'] as const,
-  wallet: (characterId: number) =>
-    [...PRIVATE_QUERY_KEYS.character(characterId), 'wallet'] as const,
-  walletTransactions: (characterId: number) =>
-    [...PRIVATE_QUERY_KEYS.wallet(characterId), 'transactions'] as const,
+  characterFinance: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.character(characterId), 'finance'] as const,
+  characterFinanceWallet: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinance(characterId), 'wallet'] as const,
+  characterFinanceBalance: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceWallet(characterId), 'balance'] as const,
+  characterFinanceJournal: (characterId: number, page: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceWallet(characterId), 'journal', page] as const,
+  characterFinanceTransactions: (characterId: number, fromId: number | null = null) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceWallet(characterId), 'transactions', fromId] as const,
+  characterFinanceMarket: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinance(characterId), 'market'] as const,
+  characterFinanceOpenOrders: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceMarket(characterId), 'open-orders'] as const,
+  characterFinanceOrderHistory: (characterId: number, page: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceMarket(characterId), 'history', page] as const,
+  characterFinanceContracts: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinance(characterId), 'contracts'] as const,
+  characterFinanceContractPage: (characterId: number, page: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceContracts(characterId), 'pages', page] as const,
+  characterFinanceContract: (characterId: number, contractId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceContracts(characterId), 'detail', contractId] as const,
+  characterFinanceContractItems: (characterId: number, contractId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceContract(characterId, contractId), 'items'] as const,
+  characterFinanceContractBids: (characterId: number, contractId: number) =>
+    [...PRIVATE_QUERY_KEYS.characterFinanceContract(characterId, contractId), 'bids'] as const,
   mail: (characterId: number) => [...PRIVATE_QUERY_KEYS.character(characterId), 'mail'] as const,
   mailHeaders: (
     characterId: number,

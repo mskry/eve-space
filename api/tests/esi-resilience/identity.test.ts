@@ -104,6 +104,26 @@ describe('ESI representation identity', () => {
     ).toThrow('between 1 and 25 items')
   })
 
+  test('canonicalizes optional transaction continuations and isolates Finance ranges', () => {
+    const newest = identity('wallet-transactions', {
+      path: { character_id: 1 },
+      query: { from_id: undefined },
+    })
+    const explicitNewest = identity('wallet-transactions', { characterId: 1, fromId: null })
+    const older = identity('wallet-transactions', { characterId: 1, fromId: 42 })
+    const otherRange = identity('wallet-transactions', { characterId: 1, fromId: 41 })
+
+    expect(newest).toEqual(explicitNewest)
+    expect(newest.digest).not.toBe(older.digest)
+    expect(older.digest).not.toBe(otherRange.digest)
+    expect(identity('wallet-journal', { characterId: 1, page: 1 }).digest).not.toBe(
+      identity('wallet-journal', { characterId: 1, page: 2 }).digest,
+    )
+    expect(
+      identity('character-contract-items', { characterId: 1, contractId: 10 }).digest,
+    ).not.toBe(identity('character-contract-items', { characterId: 1, contractId: 11 }).digest)
+  })
+
   test('separates mailbox identities by resource revision', () => {
     const base = {
       operation: 'mail-message' as const,

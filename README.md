@@ -3,6 +3,7 @@
 [![CI](https://github.com/mskry/eve-space/actions/workflows/ci.yml/badge.svg)](https://github.com/mskry/eve-space/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mskry_eve-space)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space&metric=coverage)](https://sonarcloud.io/summary/overall?id=mskry_eve-space)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 EVE Space is a self-hosted management platform for EVE Online corporations and alliances. It is
 being built for organizations that want a modern member experience without giving up control of
@@ -39,7 +40,8 @@ access, first-party module composition, and the core organization governance fou
 activity-first landing page, activity source modules, and complete member/HR compliance experience
 are still in progress.
 
-Feedback, issue reports, technical review, and contributions are welcome.
+Feedback, issue reports, technical review, and contributions are welcome. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) to get started.
 
 ## Roadmap
 
@@ -213,3 +215,25 @@ Coverage suites exercise SSO, administrator and organization authorization, comp
 Detailed service boundaries, API routes, security decisions, persistence, Redis operations, ESI
 resilience, and background-work recovery are documented in
 [`docs/architecture.md`](docs/architecture.md).
+
+## License
+
+Copyright (C) 2026 skrypets@gmail.com
+
+EVE Space is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE).
+
+You may run EVE Space for your own corporation or alliance, modify it, and share it. If you run a
+modified version as a network service, the AGPL requires you to offer that version's complete
+corresponding source to its users.
+
+## EVE Online Intellectual Property
+
+EVE Online and the EVE logo are the registered trademarks of CCP hf. All rights reserved. All EVE
+Online-related materials are property of CCP hf. This includes the EVE Online data served through
+ESI, the Static Data Export, and the screenshots and recordings under `docs/images/`, none of which
+are covered by the license above.
+
+EVE Space is a third-party application and is not affiliated with, endorsed by, or sponsored by CCP
+hf. Deployments must comply with the
+[EVE Online Developer License Agreement](https://developers.eveonline.com/license-agreement) and the
+EVE Online Terms of Service.

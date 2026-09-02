@@ -21,20 +21,21 @@ describe('record page style ownership', () => {
     expect(responsiveRecord).not.toContain('.character-tabs')
   })
 
-  it('separates summary-card and wallet transaction styles', () => {
+  it('separates summary-card and Finance service styles', () => {
     const summary = source('app/components/CharacterSummaryCard.vue')
-    const wallet = source('app/pages/characters/[characterId]/wallet.vue')
+    const finance = source('app/pages/characters/[characterId]/finance.vue')
     const summaryCss = source('app/assets/css/features/character-summary.css')
-    const walletCss = source('app/assets/css/features/wallet.css')
+    const financeCss = source('app/assets/css/features/finance.css')
 
     expect(summary).toContain('features/character-summary.css')
-    expect(summary).not.toContain('features/wallet.css')
-    expect(wallet).toContain('features/wallet.css')
-    expect(wallet).not.toContain('features/skills.css')
+    expect(summary).not.toContain('features/finance.css')
+    expect(finance).toContain('features/finance.css')
+    expect(finance).toContain('responsive/finance.css')
+    expect(finance).not.toContain('features/skills.css')
     expect(summaryCss).toContain('.character-summary-card')
-    expect(summaryCss).not.toContain('.wallet-transaction-list')
-    expect(walletCss).toContain('.wallet-transaction-list')
-    expect(walletCss).not.toContain('.character-summary-card')
+    expect(summaryCss).not.toContain('.finance-ledger')
+    expect(financeCss).toContain('.finance-ledger')
+    expect(financeCss).not.toContain('.character-summary-card')
   })
 
   it('separates reusable timelines from character-only history controls', () => {

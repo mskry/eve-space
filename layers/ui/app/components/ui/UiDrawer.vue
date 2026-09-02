@@ -15,11 +15,17 @@ defineOptions({ inheritAttrs: false })
 
 withDefaults(
   defineProps<{
+    closeLabel?: string
+    contentClass?: string
     description?: string
+    side?: 'left' | 'right'
     title: string
   }>(),
   {
+    closeLabel: 'Close navigation',
+    contentClass: undefined,
     description: 'Application navigation',
+    side: 'left',
   },
 )
 
@@ -28,19 +34,23 @@ const open = defineModel<boolean>('open', { default: false })
 
 <template>
   <div class="ui-drawer-root">
-    <DrawerRoot v-model:open="open" swipe-direction="left">
-      <DrawerTrigger as-child>
+    <DrawerRoot v-model:open="open" :swipe-direction="side">
+      <DrawerTrigger v-if="$slots.trigger" as-child>
         <slot name="trigger" />
       </DrawerTrigger>
 
       <DrawerPortal defer>
         <DrawerOverlay class="ui-drawer-overlay" />
-        <DrawerContent class="ui-drawer-content">
+        <DrawerContent
+          aria-modal="true"
+          :class="['ui-drawer-content', contentClass]"
+          :data-side="side"
+        >
           <VisuallyHidden>
             <DrawerTitle>{{ title }}</DrawerTitle>
             <DrawerDescription>{{ description }}</DrawerDescription>
           </VisuallyHidden>
-          <DrawerClose class="ui-drawer-close" aria-label="Close navigation">
+          <DrawerClose class="ui-drawer-close" :aria-label="closeLabel">
             <span aria-hidden="true">X</span>
           </DrawerClose>
           <slot />

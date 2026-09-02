@@ -24,7 +24,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
     <p class="ui-eyebrow">SIGN IN</p>
     <h1>Authorize your capsuleer</h1>
     <p class="auth-intro">
-      Continue to EVE Online to approve identity and wallet access. Your account credentials are
+      Continue to EVE Online to approve identity and character access. Your account credentials are
       handled only by EVE.
     </p>
 
@@ -64,7 +64,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
       </a>
       <div class="scope-list">
         <span><i /> Public character identity</span>
-        <span><i /> Character wallet balance</span>
+        <span><i /> Character wallet, market orders, and contracts</span>
         <span><i /> Local encrypted token storage</span>
       </div>
     </div>

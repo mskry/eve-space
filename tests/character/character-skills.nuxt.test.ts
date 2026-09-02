@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import CharacterSkillsCatalogue from '../../app/components/character/skills/Catalogue.vue'
+import CharacterSkillsGroupIcon from '../../app/components/character/skills/GroupIcon.vue'
 import CharacterSkillsQueue from '../../app/components/character/skills/Queue.vue'
 import CharacterSkillsSummaryCard from '../../app/components/character/skills/SummaryCard.vue'
 import type {
@@ -8,6 +9,7 @@ import type {
   CharacterSkillQueue,
   CharacterSkills,
 } from '../../app/queries/characters'
+import { skillGroupIconNames } from '../../app/utils/skill-group-icons'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const skills = {
@@ -181,6 +183,29 @@ afterEach(() => {
 })
 
 describe('character Skills components', () => {
+  it('renders a distinct glyph for every published skill group and the unknown fallback', async () => {
+    const wrapper = await mountSuspended(CharacterSkillsGroupIcon, {
+      props: { name: 'unknown' },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    const svg = wrapper.get('svg')
+    const glyphs = new Set<string>()
+
+    expect(svg.attributes('viewBox')).toBe('0 0 24 24')
+    expect(svg.attributes('fill')).toBe('none')
+    expect(svg.attributes('aria-hidden')).toBe('true')
+
+    for (const name of [...skillGroupIconNames, 'unknown'] as const) {
+      await wrapper.setProps({ name })
+      expect(svg.element.children.length).toBeGreaterThan(0)
+      glyphs.add(svg.element.innerHTML)
+    }
+
+    expect(glyphs.size).toBe(skillGroupIconNames.length + 1)
+    expect(wrapper.get('circle').attributes('r')).toBe('8.6')
+  })
+
   it('filters the catalogue through native labelled groups', async () => {
     const wrapper = await mountSuspended(CharacterSkillsCatalogue, {
       props: { skillQueue: undefined, skillQueueStatus: 'idle', skills },

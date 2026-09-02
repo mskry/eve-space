@@ -10,6 +10,16 @@ function source(path: string) {
 describe('character reauthorization transitions', () => {
   const shell = source('app/pages/characters/[characterId].vue')
 
+  it('prefetches only the Finance balance from character navigation intent', () => {
+    const navigation = source('app/composables/useCharacterRecordNavigation.ts')
+    expect(navigation).toContain("'core-character-finance': () =>")
+    expect(navigation).toContain('characterFinanceBalanceQuery({')
+    expect(navigation).not.toContain('characterFinanceJournalQuery')
+    expect(navigation).not.toContain('characterFinanceTransactionsQuery')
+    expect(navigation).not.toContain('characterFinanceOpenOrdersQuery')
+    expect(navigation).not.toContain('characterFinanceContractsQuery')
+  })
+
   it('keys the nested page by route without remounting for the callback parameter', () => {
     expect(shell).toContain('<NuxtPage :key="characterPageKey" />')
     expect(shell).toContain('router.resolve(routeLocationWithoutReauthorization()).fullPath')
@@ -47,10 +57,36 @@ describe('character reauthorization transitions', () => {
     expect(page).toContain(refresh)
   })
 
-  it('only refreshes requested wallet transactions', () => {
-    const wallet = source('app/pages/characters/[characterId]/wallet.vue')
-    expect(wallet).toContain('useCharacterReauthorization(characterId')
-    expect(wallet).toContain('walletQueryResult.refetch()')
-    expect(wallet).toContain('if (transactionsRequested.value) void transactionQuery.refetch()')
+  it('refreshes only Finance resources and details whose gates were opened', () => {
+    const finance = source('app/pages/characters/[characterId]/finance.vue')
+    expect(finance).toContain('useCharacterReauthorization(characterId, refreshRequestedFinance)')
+    expect(finance).toContain('void balanceQuery.refetch()')
+    for (const gate of [
+      'journalRequested',
+      'transactionsRequested',
+      'openOrdersRequested',
+      'orderHistoryRequested',
+      'contractsRequested',
+    ]) {
+      expect(finance).toContain(`if (${gate}.value)`)
+    }
+    expect(finance).toContain('for (const [contractId, openedOnPage] of requestedItemPages.value)')
+    expect(finance).toContain('for (const [contractId, openedOnPage] of requestedBidPages.value)')
+  })
+
+  it('opens the order-history request gate only when history mode is selected', () => {
+    const finance = source('app/pages/characters/[characterId]/finance.vue')
+    const tabSelection = finance.slice(
+      finance.indexOf('function selectTab'),
+      finance.indexOf('function reviewAwaitingContracts'),
+    )
+    const modeSelection = finance.slice(
+      finance.indexOf('function selectOrderMode'),
+      finance.indexOf('function changePage'),
+    )
+
+    expect(tabSelection).toContain("if (tab === 'orders') openOrdersRequested.value = true")
+    expect(tabSelection).not.toContain('orderHistoryRequested.value = true')
+    expect(modeSelection).toContain("if (mode === 'history') orderHistoryRequested.value = true")
   })
 })

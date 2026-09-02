@@ -17,6 +17,16 @@ export function formatCheckedAt(value: string) {
   })
 }
 
+export function formatValidatedAt(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+    timeZone: 'UTC',
+  }).format(new Date(value))
+}
+
 export function formatRelativeTime(value: string | null, now = Date.now()) {
   if (!value) return 'Time unknown'
   const difference = Date.parse(value) - now

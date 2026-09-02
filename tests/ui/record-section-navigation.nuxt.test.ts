@@ -37,6 +37,9 @@ describe('RecordSectionNavigation', () => {
     expect(links[0]?.classes()).not.toContain('is-current')
     expect(links[1]?.attributes('aria-current')).toBe('page')
     expect(links[1]?.classes()).toContain('is-current')
+    expect(wrapper.get('.record-section-navigation-indicator').attributes('aria-hidden')).toBe(
+      'true',
+    )
   })
 
   it('keeps entries keyboard focusable and emits focus intent', async () => {
@@ -64,7 +67,7 @@ describe('RecordSectionNavigation', () => {
     const extendedEntries = [
       ...entries,
       { id: 'skills', label: 'SKILLS', to: '/characters/42/skills' },
-      { id: 'wallet', label: 'WALLET', to: '/characters/42/wallet' },
+      { id: 'finance', label: 'FINANCE', to: '/characters/42/finance' },
       { id: 'mail', label: 'MAIL', to: '/characters/42/mail' },
       {
         id: 'module-intelligence',
