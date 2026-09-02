@@ -39,12 +39,11 @@ Feedback, issue reports, technical review, and contributions are welcome.
 
 ## Roadmap
 
-The [EVE Space project in Linear](https://linear.app/byteover/project/eve-space-4eceefb194fa)
-tracks planned work. Current direction includes:
+Current planned direction includes:
 
-- Complete the organization action queue with corporation projects, freelance jobs, military campaigns, exact-character participation, freshness, and explicit alliance coverage ([EVE-20](https://linear.app/byteover/issue/EVE-20), [EVE-18](https://linear.app/byteover/issue/EVE-18), [EVE-21](https://linear.app/byteover/issue/EVE-21))
-- Add privacy-aware strategic, economic, infrastructure, production, logistics, and combat signals for the audiences authorized to see them ([EVE-19](https://linear.app/byteover/issue/EVE-19), [EVE-22](https://linear.app/byteover/issue/EVE-22), [EVE-23](https://linear.app/byteover/issue/EVE-23), [EVE-24](https://linear.app/byteover/issue/EVE-24))
-- Expand owned-character readiness with Member Audit, personal finance, assets, clones, implants, and combat history ([EVE-16](https://linear.app/byteover/issue/EVE-16), [EVE-26](https://linear.app/byteover/issue/EVE-26))
+- Complete the organization action queue with corporation projects, freelance jobs, military campaigns, exact-character participation, freshness, and explicit alliance coverage
+- Add privacy-aware strategic, economic, infrastructure, production, logistics, and combat signals for the audiences authorized to see them
+- Expand owned-character readiness with Member Audit, personal finance, assets, clones, implants, and combat history
 - Add provider-neutral delivery through Discord, Slack, and signed webhooks; link Discord identities; synchronize only explicitly managed, least-privilege Discord roles; and complete an observe-only staged rollout
 
 Roadmap items describe planned direction, not functionality available in the current build.

@@ -10,5 +10,10 @@ export default defineConfig({
     include: ['tests/integration/postgres/**/*.test.ts'],
     testTimeout: 60_000,
     hookTimeout: 60_000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'lcov'],
+      reportsDirectory: 'coverage-postgres',
+    },
   },
 })

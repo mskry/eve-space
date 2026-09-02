@@ -5,7 +5,7 @@
   "packageManager": "pnpm@11.22.0",
   "scripts": {
     "build": "pnpm build:nuxt:dependencies && nuxt build",
-    "build:nuxt:dependencies": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts nuxt build",
+    "build:nuxt:dependencies": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts nuxt build",
     "dev": "nuxt dev",
     "dev:api": "pnpm --filter @eve-space/api dev",
     "db:migrate": "pnpm --filter @eve-space/api migrate",
@@ -28,6 +28,7 @@
     "test:modules:coverage": "pnpm --filter @eve-space/platform-module-nuxt test:coverage && tsx scripts/run-installed-module-package-script.ts server test:coverage && tsx scripts/run-installed-module-package-script.ts nuxt test:coverage",
     "test:nuxt:fixtures": "pnpm --filter @eve-space/platform-module-nuxt test:fixtures && tsx scripts/run-installed-module-package-script.ts nuxt test:fixtures",
     "test:registry": "vitest run --config vitest.registry.config.ts",
+    "test:registry:coverage": "vitest run --config vitest.registry.config.ts --coverage",
     "test:api": "pnpm --filter @eve-space/api test",
     "test:api:coverage": "pnpm --filter @eve-space/api test:coverage",
     "test:postgres": "pnpm --filter @eve-space/api test:postgres && tsx scripts/run-installed-module-package-script.ts server test:postgres",

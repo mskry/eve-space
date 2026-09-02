@@ -6,6 +6,8 @@
 .cache
 dist
 coverage
+coverage-postgres
+coverage-registry
 coverage-redis
 .scannerwork
 
