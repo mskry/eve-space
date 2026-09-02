@@ -12,6 +12,10 @@ Members sign in through EVE Online and authorize each character they choose to a
 uses that verified character state for personal tools and organization access, while keeping hosting
 administration separate from in-game corporation or alliance authority.
 
+<p align="center">
+  <img src="docs/images/demo.gif" alt="EVE Space walkthrough" width="720">
+</p>
+
 ## Implemented
 
 - Run a deployment for one corporation or an alliance and its member corporations
@@ -67,6 +71,8 @@ The application requests these protected scopes for each attached character:
 
 ```text
 esi-wallet.read_character_wallet.v1
+esi-markets.read_character_orders.v1
+esi-contracts.read_character_contracts.v1
 esi-location.read_location.v1
 esi-location.read_ship_type.v1
 esi-skills.read_skills.v1

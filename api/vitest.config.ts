@@ -25,7 +25,6 @@ export default defineConfig({
         'src/domain-events/store.ts',
         'src/esi-resilience/{cache-redis,coordination,module-operation-dispatcher,types}.ts',
         'src/http/{contracts,validation}.ts',
-        'src/platform/{collection-state-repair,collection-status,core-read-capabilities,module-route-composition,resource-batch,resource-declarations,resource-execution-guard,resource-failures,resource-operation-executor,resource-refresh}.ts',
         'src/queue/{platform,redis,worker-identity}.ts',
         'src/system/health-routes.ts',
         'src/text/eve-description.ts',
