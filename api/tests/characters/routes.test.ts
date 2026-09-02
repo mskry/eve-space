@@ -5,12 +5,18 @@ const mocks = vi.hoisted(() => ({
   findOwnedCharacter: vi.fn(),
   findSession: vi.fn(),
   getCharacterEmploymentHistory: vi.fn(),
+  getCharacterContractBids: vi.fn(),
+  getCharacterContractItems: vi.fn(),
+  getCharacterContracts: vi.fn(),
   getCharacterLocation: vi.fn(),
+  getCharacterMarketOrderHistory: vi.fn(),
+  getCharacterMarketOrders: vi.fn(),
   getCharacterProfile: vi.fn(),
   getCharacterShip: vi.fn(),
   getCharacterSkills: vi.fn(),
   getCharacterSkillsSummary: vi.fn(),
   getWalletBalance: vi.fn(),
+  getWalletJournal: vi.fn(),
   getWalletTransactions: vi.fn(),
   listUserCharacters: vi.fn(),
   setMainCharacter: vi.fn(),
@@ -60,6 +66,7 @@ vi.mock('../../src/characters/overview.js', () => ({
 
 vi.mock('../../src/characters/wallet.js', () => ({
   getWalletBalance: mocks.getWalletBalance,
+  getWalletJournal: mocks.getWalletJournal,
   getWalletTransactions: mocks.getWalletTransactions,
   walletScope: 'esi-wallet.read_character_wallet.v1',
   WalletQuotaError: class WalletQuotaError extends Error {
@@ -67,6 +74,30 @@ vi.mock('../../src/characters/wallet.js', () => ({
       super('Quota exhausted')
     }
   },
+}))
+
+vi.mock('../../src/characters/market.js', () => ({
+  getCharacterMarketOrderHistory: mocks.getCharacterMarketOrderHistory,
+  getCharacterMarketOrders: mocks.getCharacterMarketOrders,
+  marketOrdersScope: 'esi-markets.read_character_orders.v1',
+  MarketQuotaError: class MarketQuotaError extends Error {
+    constructor(readonly retryAfterSeconds: number) {
+      super('Quota exhausted')
+    }
+  },
+}))
+
+vi.mock('../../src/characters/contracts.js', () => ({
+  characterContractsScope: 'esi-contracts.read_character_contracts.v1',
+  ContractNotFoundError: class ContractNotFoundError extends Error {},
+  ContractQuotaError: class ContractQuotaError extends Error {
+    constructor(readonly retryAfterSeconds: number) {
+      super('Quota exhausted')
+    }
+  },
+  getCharacterContractBids: mocks.getCharacterContractBids,
+  getCharacterContractItems: mocks.getCharacterContractItems,
+  getCharacterContracts: mocks.getCharacterContracts,
 }))
 
 vi.mock('../../src/characters/skills.js', () => ({
@@ -151,6 +182,7 @@ beforeEach(() => {
     transactions: [
       {
         transactionId: 1,
+        journalRefId: 2,
         date: '2026-08-20T12:00:00.000Z',
         typeId: 34,
         typeName: 'Tritanium',
@@ -158,11 +190,11 @@ beforeEach(() => {
         unitPrice: 10,
         totalPrice: 50,
         isBuy: true,
-        isPersonal: true,
-        clientId: 90_000_001,
         locationId: 60_000_001,
       },
     ],
+    fromId: null,
+    nextFromId: 1,
     cachedUntil: new Date().toISOString(),
     validatedAt: new Date().toISOString(),
     stale: false,
@@ -398,7 +430,7 @@ describe('owned character wallet', () => {
       balance: 1_234_567.89,
     })
     expect(mocks.getWalletBalance).toHaveBeenCalledWith(altCharacter.characterId)
-    expect(response.headers.get('cache-control')).toMatch(/^private, max-age=/)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('vary')).toBe('Cookie')
   })
 
@@ -423,7 +455,7 @@ describe('owned character wallet', () => {
       code: 'EVE_SCOPE_REQUIRED',
       message: 'Authorize wallet access for this character.',
       requiredScope: 'esi-wallet.read_character_wallet.v1',
-      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${altCharacter.characterId}`,
+      authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
     })
   })
 
@@ -440,7 +472,7 @@ describe('owned character wallet', () => {
     expect(rejected.status).toBe(403)
     expect(await rejected.json()).toMatchObject({
       code: 'EVE_REAUTH_REQUIRED',
-      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${altCharacter.characterId}`,
+      authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
     })
 
     mocks.getWalletBalance.mockRejectedValueOnce(new Error('ESI unavailable'))
@@ -456,8 +488,8 @@ describe('owned character wallet', () => {
       characterId: altCharacter.characterId,
       transactions: [{ transactionId: 1, typeName: 'Tritanium' }],
     })
-    expect(mocks.getWalletTransactions).toHaveBeenCalledWith(altCharacter.characterId)
-    expect(response.headers.get('cache-control')).toMatch(/^private, max-age=/)
+    expect(mocks.getWalletTransactions).toHaveBeenCalledWith(altCharacter.characterId, null)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
   })
 
   test('does not load transactions for a non-owned character', async () => {
@@ -477,7 +509,7 @@ describe('owned character wallet', () => {
     expect(scope.status).toBe(403)
     expect(await scope.json()).toMatchObject({
       code: 'EVE_SCOPE_REQUIRED',
-      authorizeUrl: `http://localhost:8788/auth/eve/reauthorize/${altCharacter.characterId}`,
+      authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
     })
 
     mocks.getWalletTransactions.mockRejectedValueOnce(new WalletQuotaError(45))
@@ -608,4 +640,8 @@ function authorizedRequest(path: string, method = 'GET') {
     method,
     headers: { Cookie: 'eve_space_session=active-session' },
   })
+}
+
+function financeAuthorizeUrl(characterId: number) {
+  return `http://localhost:8788/auth/eve/reauthorize/${characterId}?returnTo=%2Fcharacters%2F${characterId}%2Ffinance`
 }

@@ -15,7 +15,7 @@ export const platformNavigationDefaults = [
   { ownerId: 'core', navigationId: 'core-admin', placement: 'dashboard', order: 40 },
   { ownerId: 'core', navigationId: 'core-character-overview', placement: 'character', order: 10 },
   { ownerId: 'core', navigationId: 'core-character-skills', placement: 'character', order: 20 },
-  { ownerId: 'core', navigationId: 'core-character-wallet', placement: 'character', order: 30 },
+  { ownerId: 'core', navigationId: 'core-character-finance', placement: 'character', order: 30 },
   { ownerId: 'core', navigationId: 'core-character-history', placement: 'character', order: 40 },
   { ownerId: 'core', navigationId: 'core-character-mail', placement: 'character', order: 50 },
 ] as const satisfies readonly PlatformNavigationDefault[]

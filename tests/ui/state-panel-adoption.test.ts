@@ -16,14 +16,16 @@ describe('state panel adoption', () => {
     const component = readWorkspaceFile('app/components/character/AuthorizationRequired.vue')
     const mail = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
     const skills = readWorkspaceFile('app/pages/characters/[characterId]/skills.vue')
-    const wallet = readWorkspaceFile('app/pages/characters/[characterId]/wallet.vue')
+    const finance = readWorkspaceFile('app/pages/characters/[characterId]/finance.vue')
+    const financeState = readWorkspaceFile('app/components/character/finance/ServicePanel.vue')
 
     expect(component).toContain('class="character-authorization-state"')
     expect(component).toContain('<a v-if="authorizeUrl"')
-    for (const page of [mail, skills, wallet]) {
+    for (const page of [mail, skills, financeState]) {
       expect(page).toContain('<CharacterAuthorizationRequired')
       expect(page).not.toMatch(/mail-access-state|skills-access-state/)
     }
+    expect(finance).toContain('<CharacterFinanceServicePanel')
   })
 
   it('uses semantic state panels throughout migrated record pages', () => {
@@ -36,7 +38,7 @@ describe('state panel adoption', () => {
       'app/pages/characters/[characterId]/index.vue',
       'app/pages/characters/[characterId]/skills.vue',
       'app/pages/characters/[characterId]/history.vue',
-      'app/pages/characters/[characterId]/wallet.vue',
+      'app/pages/characters/[characterId]/finance.vue',
     ].map(readWorkspaceFile)
 
     for (const page of pages) {
@@ -52,14 +54,15 @@ describe('state panel adoption', () => {
     const overview = readWorkspaceFile('app/pages/characters/[characterId]/index.vue')
     const skills = readWorkspaceFile('app/pages/characters/[characterId]/skills.vue')
     const history = readWorkspaceFile('app/pages/characters/[characterId]/history.vue')
-    const wallet = readWorkspaceFile('app/pages/characters/[characterId]/wallet.vue')
+    const finance = readWorkspaceFile('app/pages/characters/[characterId]/finance.vue')
+    const financeState = readWorkspaceFile('app/components/character/finance/ServicePanel.vue')
 
-    for (const page of [roster, overview, skills, history, wallet]) {
+    for (const page of [roster, overview, skills, history, finance, financeState]) {
       expect(page).toContain('role="alert"')
       expect(page).toContain('tone="error"')
       expect(page).toContain('<template #action>')
     }
-    expect(wallet).toContain('transactionError?.authorizeUrl')
-    expect(wallet).toContain('if (transactionsRequested.value)')
+    expect(financeState).toContain('apiError?.authorizeUrl')
+    expect(finance).toContain('if (transactionsRequested.value)')
   })
 })

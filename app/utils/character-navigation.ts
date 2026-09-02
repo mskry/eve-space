@@ -8,7 +8,7 @@ interface CharacterNavigationSource {
 
 export const CORE_CHARACTER_DATA_PREFETCH_IDS = [
   'core-character-skills',
-  'core-character-wallet',
+  'core-character-finance',
   'core-character-history',
 ] as const
 

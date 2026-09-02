@@ -56,7 +56,13 @@ describe('ESI operation policies', () => {
         'universe-races',
         'universe-bloodlines',
         'wallet-balance',
+        'wallet-journal',
         'wallet-transactions',
+        'market-orders',
+        'market-order-history',
+        'character-contracts',
+        'character-contract-items',
+        'character-contract-bids',
         'mail-headers',
         'mail-message',
         'mail-labels',
@@ -109,6 +115,16 @@ describe('ESI operation policies', () => {
     expect(getEsiOperationContract('wallet-balance')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-wallet.read_character_wallet.v1' },
       cache: { kind: 'shared', stale: { kind: 'outage', milliseconds: 3_600_000 } },
+    })
+    expect(getEsiOperationContract('wallet-transactions')).toMatchObject({
+      representationVersion: 'v3',
+      identity: {
+        kind: 'mixed',
+        fields: [
+          { kind: 'scalar', field: 'characterId' },
+          { kind: 'scalar', field: 'fromId', nullable: true },
+        ],
+      },
     })
   })
 
@@ -261,6 +277,7 @@ describe('ESI operation policies', () => {
     })
     expect([
       esiOperationMetadata['wallet-balance'],
+      esiOperationMetadata['wallet-journal'],
       esiOperationMetadata['wallet-transactions'],
     ]).toEqual([
       expect.objectContaining({
@@ -281,7 +298,76 @@ describe('ESI operation policies', () => {
           window: '15m',
         },
       }),
+      expect.objectContaining({
+        cache: { kind: 'relative', seconds: 3_600 },
+        rateLimit: {
+          kind: 'declared',
+          group: 'char-wallet',
+          maximumTokens: 150,
+          window: '15m',
+        },
+      }),
     ])
+  })
+
+  test('records reviewed Finance operation descriptors and private resilience contracts', () => {
+    const expected = {
+      'wallet-journal': [
+        'GetCharactersCharacterIdWalletJournal',
+        'esi-wallet.read_character_wallet.v1',
+        { kind: 'declared', group: 'char-wallet', maximumTokens: 150, window: '15m' },
+      ],
+      'market-orders': [
+        'GetCharactersCharacterIdOrders',
+        'esi-markets.read_character_orders.v1',
+        { kind: 'legacy-only' },
+      ],
+      'market-order-history': [
+        'GetCharactersCharacterIdOrdersHistory',
+        'esi-markets.read_character_orders.v1',
+        { kind: 'legacy-only' },
+      ],
+      'character-contracts': [
+        'GetCharactersCharacterIdContracts',
+        'esi-contracts.read_character_contracts.v1',
+        { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
+      ],
+      'character-contract-items': [
+        'GetCharactersCharacterIdContractsContractIdItems',
+        'esi-contracts.read_character_contracts.v1',
+        { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
+      ],
+      'character-contract-bids': [
+        'GetCharactersCharacterIdContractsContractIdBids',
+        'esi-contracts.read_character_contracts.v1',
+        { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
+      ],
+    } as const
+
+    for (const [operation, [esiOperationId, scope, rateGroup]] of Object.entries(expected)) {
+      const metadata = esiOperationMetadata[operation as keyof typeof expected]
+      const contract = getEsiOperationContract(operation as keyof typeof expected)
+      expect(operationRegistry[esiOperationId]).toBeDefined()
+      expect(metadata).toMatchObject({
+        method: 'GET',
+        esiOperationId,
+        minimumCompatibilityDate: '2020-01-01',
+        requiredScope: scope,
+        supportsConditionalRequests: true,
+        rateLimit: rateGroup,
+      })
+      expect(contract).toMatchObject({
+        authorization: { kind: 'character', scope },
+        cache: {
+          kind: 'shared',
+          collapse: true,
+          revalidate: true,
+          stale: { kind: 'outage', milliseconds: 3_600_000 },
+        },
+        rateGroup,
+        retry: { kind: 'idempotent' },
+      })
+    }
   })
 
   test('records composition lookup and charge policies', () => {
@@ -436,7 +522,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-contracts.read_character_contracts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -447,11 +533,13 @@ describe('ESI operation policies', () => {
         ssoEnabled: true,
         requestableScopes: [
           'esi-characters.read_contacts.v1',
+          'esi-contracts.read_character_contracts.v1',
           'esi-location.read_location.v1',
           'esi-location.read_ship_type.v1',
           'esi-mail.organize_mail.v1',
           'esi-mail.read_mail.v1',
           'esi-mail.send_mail.v1',
+          'esi-markets.read_character_orders.v1',
           'esi-search.search_structures.v1',
           'esi-skills.read_skillqueue.v1',
           'esi-skills.read_skills.v1',
@@ -467,6 +555,36 @@ describe('ESI operation policies', () => {
       }),
     ).not.toThrow()
   })
+
+  test.each(['esi-markets.read_character_orders.v1', 'esi-contracts.read_character_contracts.v1'])(
+    'rejects configured SSO when %s is missing',
+    (missingScope) => {
+      const requestableScopes = [
+        'esi-characters.read_contacts.v1',
+        'esi-contracts.read_character_contracts.v1',
+        'esi-location.read_location.v1',
+        'esi-location.read_ship_type.v1',
+        'esi-mail.organize_mail.v1',
+        'esi-mail.read_mail.v1',
+        'esi-mail.send_mail.v1',
+        'esi-markets.read_character_orders.v1',
+        'esi-search.search_structures.v1',
+        'esi-skills.read_skillqueue.v1',
+        'esi-skills.read_skills.v1',
+        'esi-wallet.read_character_wallet.v1',
+      ].filter((scope) => scope !== missingScope)
+
+      expect(() =>
+        assertEsiOperationCatalogConfiguration({
+          compatibilityDate: '2026-08-23',
+          ssoEnabled: true,
+          requestableScopes,
+        }),
+      ).toThrow(
+        `EVE_SCOPES is missing scopes required by registered ESI operations: ${missingScope}`,
+      )
+    },
+  )
 
   test.each([
     [

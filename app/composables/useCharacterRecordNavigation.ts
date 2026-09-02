@@ -3,8 +3,8 @@ import { usePlatformNavigation } from '#imports'
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
 import { characterHistoryQuery, characterSkillsQuery } from '../queries/characters'
+import { characterFinanceBalanceQuery } from '../queries/finance'
 import { prefetchProtectedQuery } from '../queries/query-cache'
-import { walletQuery } from '../queries/wallet'
 import type { RecordSectionNavigationEntry } from '../types/record-navigation'
 import type { ApiClient } from '../utils/api-client'
 import {
@@ -40,10 +40,18 @@ export function useCharacterRecordNavigation({
         characterId.value,
       )
     },
-    'core-character-wallet': () => {
+    'core-character-finance': () => {
       void prefetchProtectedQuery(
         queryCache,
-        walletQuery({ apiClient, characterId: characterId.value ?? 0 }),
+        characterFinanceBalanceQuery({
+          apiClient,
+          characterId: characterId.value ?? 0,
+          access: {
+            isClient: import.meta.client,
+            authenticated: authenticated.value,
+            ownsCharacter: true,
+          },
+        }),
         import.meta.client,
         authenticated.value,
         characterId.value,

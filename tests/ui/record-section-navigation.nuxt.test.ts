@@ -64,7 +64,7 @@ describe('RecordSectionNavigation', () => {
     const extendedEntries = [
       ...entries,
       { id: 'skills', label: 'SKILLS', to: '/characters/42/skills' },
-      { id: 'wallet', label: 'WALLET', to: '/characters/42/wallet' },
+      { id: 'finance', label: 'FINANCE', to: '/characters/42/finance' },
       { id: 'mail', label: 'MAIL', to: '/characters/42/mail' },
       {
         id: 'module-intelligence',

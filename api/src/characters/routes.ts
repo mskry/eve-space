@@ -1,9 +1,24 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { createMiddleware } from 'hono/factory'
+import { z } from 'zod'
 import { deleteCharacter, listUserCharacters, setMainCharacter } from '../auth/store.js'
 import { characterAttributesScope, getCharacterAttributes } from './attributes.js'
+import {
+  characterContractsScope,
+  ContractNotFoundError,
+  ContractQuotaError,
+  getCharacterContractBids,
+  getCharacterContractItems,
+  getCharacterContracts,
+} from './contracts.js'
 import { getCharacterEmploymentHistory } from './history.js'
+import {
+  getCharacterMarketOrderHistory,
+  getCharacterMarketOrders,
+  MarketQuotaError,
+  marketOrdersScope,
+} from './market.js'
 import { characterSkillQueueScope, getCharacterSkillQueue } from './skill-queue.js'
 import { characterSkillsScope, getCharacterSkills } from './skills.js'
 import {
@@ -16,7 +31,13 @@ import {
 } from './overview.js'
 import type { CharacterLocation, CharacterShip, CharacterSkillsSummary } from './overview.js'
 import { getCharacterProfile } from './profile.js'
-import { getWalletBalance, getWalletTransactions, walletScope, WalletQuotaError } from './wallet.js'
+import {
+  getWalletBalance,
+  getWalletJournal,
+  getWalletTransactions,
+  walletScope,
+  WalletQuotaError,
+} from './wallet.js'
 import { env } from '../env.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { combineEsiResultMetadata } from '../esi-resilience/public-metadata.js'
@@ -30,6 +51,30 @@ type Section<Data> =
   | { status: 'ok'; data: Data }
   | { status: 'scope-required'; message: string; requiredScope: string; authorizeUrl: string }
   | { status: 'unavailable'; message: string }
+
+const positiveIntegerString = (name: string) =>
+  z
+    .string()
+    .regex(/^[1-9]\d*$/, `${name} must be a positive integer.`)
+    .transform(Number)
+    .pipe(
+      z
+        .number()
+        .int()
+        .positive(`${name} must be a positive integer.`)
+        .max(Number.MAX_SAFE_INTEGER, `${name} must be a positive integer.`),
+    )
+
+const pageQuery = z.object({ page: positiveIntegerString('Page') }).strict()
+const transactionQuery = z
+  .object({ fromId: positiveIntegerString('Transaction continuation ID').optional() })
+  .strict()
+const contractParams = characterIdParams.extend({
+  contractId: positiveIntegerString('Contract ID'),
+})
+const contractDetailQuery = z
+  .object({ contractPage: positiveIntegerString('Contract page') })
+  .strict()
 
 const privateNoStore = createMiddleware(async (context, next) => {
   setPrivateHeaders(context)
@@ -302,41 +347,43 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
     async (context) => {
       const characterId = context.var.ownedCharacter.characterId
       try {
-        const wallet = await getWalletBalance(characterId)
-        const maxAge = wallet.stale
-          ? 0
-          : Math.max(0, Math.floor((Date.parse(wallet.cachedUntil) - Date.now()) / 1_000))
-        context.header('Cache-Control', `private, max-age=${maxAge}`)
-        return context.json({ characterId, ...wallet })
+        return context.json({ characterId, ...(await getWalletBalance(characterId)) }, 200)
       } catch (error) {
-        if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
-        if (error instanceof ScopeRequiredError) {
-          return scopeRequired(
-            context,
-            characterId,
-            'Authorize wallet access for this character.',
-            error.scope,
-          )
-        }
-        if (error instanceof WalletQuotaError) {
-          context.header('Retry-After', String(error.retryAfterSeconds))
-          return context.json(
-            {
-              code: 'ESI_QUOTA_EXHAUSTED',
-              message: 'ESI wallet quota is temporarily exhausted.',
-              retryAfterSeconds: error.retryAfterSeconds,
-            },
-            429,
-          )
-        }
-        const status = errorStatus(error)
-        if (status === 401 || status === 403) {
-          return reauthorizationRequired(context, characterId, walletScope)
-        }
+        return financeError(context, error, characterId, {
+          requiredScope: walletScope,
+          scopeMessage: 'Authorize wallet access for this character.',
+          quota: 'wallet',
+          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve the EVE wallet balance.',
+        })
+      }
+    },
+  )
+  .get(
+    '/:characterId/wallet/journal',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    zValidator('query', pageQuery),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
         return context.json(
-          { code: 'ESI_UNAVAILABLE', message: 'Unable to retrieve the EVE wallet balance.' },
-          502,
+          {
+            characterId,
+            ...(await getWalletJournal(characterId, context.req.valid('query').page)),
+          },
+          200,
         )
+      } catch (error) {
+        return financeError(context, error, characterId, {
+          requiredScope: walletScope,
+          scopeMessage: 'Authorize wallet access for this character.',
+          quota: 'wallet',
+          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve the wallet journal.',
+        })
       }
     },
   )
@@ -344,46 +391,177 @@ export const characterRoutes = new Hono<OwnedCharacterEnv>()
     '/:characterId/wallet/transactions',
     privateNoStore,
     zValidator('param', characterIdParams),
+    zValidator('query', transactionQuery),
     loadSession,
     loadOwnedCharacter,
     async (context) => {
       const characterId = context.var.ownedCharacter.characterId
       try {
-        const wallet = await getWalletTransactions(characterId)
-        const maxAge = wallet.stale
-          ? 0
-          : Math.max(0, Math.floor((Date.parse(wallet.cachedUntil) - Date.now()) / 1_000))
-        context.header('Cache-Control', `private, max-age=${maxAge}`)
-        return context.json({ characterId, ...wallet })
-      } catch (error) {
-        if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
-        if (error instanceof ScopeRequiredError) {
-          return scopeRequired(
-            context,
-            characterId,
-            'Authorize wallet access for this character.',
-            error.scope,
-          )
-        }
-        if (error instanceof WalletQuotaError) {
-          context.header('Retry-After', String(error.retryAfterSeconds))
-          return context.json(
-            {
-              code: 'ESI_QUOTA_EXHAUSTED',
-              message: 'ESI wallet quota is temporarily exhausted.',
-              retryAfterSeconds: error.retryAfterSeconds,
-            },
-            429,
-          )
-        }
-        const status = errorStatus(error)
-        if (status === 401 || status === 403) {
-          return reauthorizationRequired(context, characterId, walletScope)
-        }
         return context.json(
-          { code: 'ESI_UNAVAILABLE', message: 'Unable to retrieve wallet transactions.' },
-          502,
+          {
+            characterId,
+            ...(await getWalletTransactions(
+              characterId,
+              context.req.valid('query').fromId ?? null,
+            )),
+          },
+          200,
         )
+      } catch (error) {
+        return financeError(context, error, characterId, {
+          requiredScope: walletScope,
+          scopeMessage: 'Authorize wallet access for this character.',
+          quota: 'wallet',
+          quotaMessage: 'ESI wallet quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve wallet transactions.',
+        })
+      }
+    },
+  )
+  .get(
+    '/:characterId/market/orders',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
+        return context.json({ characterId, ...(await getCharacterMarketOrders(characterId)) }, 200)
+      } catch (error) {
+        return financeError(context, error, characterId, {
+          requiredScope: marketOrdersScope,
+          scopeMessage: 'Authorize market order access for this character.',
+          quota: 'market',
+          quotaMessage: 'ESI market quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve character market orders.',
+        })
+      }
+    },
+  )
+  .get(
+    '/:characterId/market/orders/history',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    zValidator('query', pageQuery),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
+        return context.json(
+          {
+            characterId,
+            ...(await getCharacterMarketOrderHistory(characterId, context.req.valid('query').page)),
+          },
+          200,
+        )
+      } catch (error) {
+        return financeError(context, error, characterId, {
+          requiredScope: marketOrdersScope,
+          scopeMessage: 'Authorize market order access for this character.',
+          quota: 'market',
+          quotaMessage: 'ESI market quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve character market order history.',
+        })
+      }
+    },
+  )
+  .get(
+    '/:characterId/contracts',
+    privateNoStore,
+    zValidator('param', characterIdParams),
+    zValidator('query', pageQuery),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      try {
+        return context.json(
+          {
+            characterId,
+            ...(await getCharacterContracts(characterId, context.req.valid('query').page)),
+          },
+          200,
+        )
+      } catch (error) {
+        return financeError(context, error, characterId, {
+          requiredScope: characterContractsScope,
+          scopeMessage: 'Authorize contract access for this character.',
+          quota: 'contract',
+          quotaMessage: 'ESI contract quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve character contracts.',
+        })
+      }
+    },
+  )
+  .get(
+    '/:characterId/contracts/:contractId/items',
+    privateNoStore,
+    zValidator('param', contractParams),
+    zValidator('query', contractDetailQuery),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      const { contractId } = context.req.valid('param')
+      try {
+        return context.json(
+          {
+            characterId,
+            contractId,
+            ...(await getCharacterContractItems(
+              characterId,
+              contractId,
+              context.req.valid('query').contractPage,
+            )),
+          },
+          200,
+        )
+      } catch (error) {
+        return financeError(context, error, characterId, {
+          requiredScope: characterContractsScope,
+          scopeMessage: 'Authorize contract access for this character.',
+          quota: 'contract',
+          quotaMessage: 'ESI contract quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve character contract items.',
+          allowNotFound: true,
+        })
+      }
+    },
+  )
+  .get(
+    '/:characterId/contracts/:contractId/bids',
+    privateNoStore,
+    zValidator('param', contractParams),
+    zValidator('query', contractDetailQuery),
+    loadSession,
+    loadOwnedCharacter,
+    async (context) => {
+      const characterId = context.var.ownedCharacter.characterId
+      const { contractId } = context.req.valid('param')
+      try {
+        return context.json(
+          {
+            characterId,
+            contractId,
+            ...(await getCharacterContractBids(
+              characterId,
+              contractId,
+              context.req.valid('query').contractPage,
+            )),
+          },
+          200,
+        )
+      } catch (error) {
+        return financeError(context, error, characterId, {
+          requiredScope: characterContractsScope,
+          scopeMessage: 'Authorize contract access for this character.',
+          quota: 'contract',
+          quotaMessage: 'ESI contract quota is temporarily exhausted.',
+          unavailableMessage: 'Unable to retrieve character contract bids.',
+          allowNotFound: true,
+        })
       }
     },
   )
@@ -442,6 +620,78 @@ async function resolveSection<Data>(
   }
 }
 
+type FinanceQuotaKind = 'wallet' | 'market' | 'contract'
+
+interface FinanceErrorOptions {
+  requiredScope: string
+  scopeMessage: string
+  quota: FinanceQuotaKind
+  quotaMessage: string
+  unavailableMessage: string
+  allowNotFound?: boolean
+}
+
+function financeError(
+  context: Context,
+  error: unknown,
+  characterId: number,
+  options: FinanceErrorOptions,
+) {
+  if (options.allowNotFound && error instanceof ContractNotFoundError) {
+    return context.json(
+      { code: 'CONTRACT_NOT_FOUND', message: 'Contract not found in the referenced page.' },
+      404,
+    )
+  }
+  if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
+  if (error instanceof ScopeRequiredError) {
+    return context.json(
+      {
+        code: 'EVE_SCOPE_REQUIRED',
+        message: options.scopeMessage,
+        requiredScope: options.requiredScope,
+        authorizeUrl: financeReauthorizationUrl(characterId),
+      },
+      403,
+    )
+  }
+
+  const quotaError = financeQuotaError(error, options.quota)
+  if (quotaError) {
+    context.header('Retry-After', String(quotaError.retryAfterSeconds))
+    return context.json(
+      {
+        code: 'ESI_QUOTA_EXHAUSTED',
+        message: options.quotaMessage,
+        retryAfterSeconds: quotaError.retryAfterSeconds,
+      },
+      429,
+    )
+  }
+
+  const status = errorStatus(error)
+  if (status === 401 || status === 403) {
+    return context.json(
+      {
+        code: 'EVE_REAUTH_REQUIRED',
+        message: 'EVE authorization is no longer valid.',
+        requiredScope: options.requiredScope,
+        authorizeUrl: financeReauthorizationUrl(characterId),
+      },
+      403,
+    )
+  }
+
+  return context.json({ code: 'ESI_UNAVAILABLE', message: options.unavailableMessage }, 502)
+}
+
+function financeQuotaError(error: unknown, kind: FinanceQuotaKind) {
+  if (kind === 'wallet' && error instanceof WalletQuotaError) return error
+  if (kind === 'market' && error instanceof MarketQuotaError) return error
+  if (kind === 'contract' && error instanceof ContractQuotaError) return error
+  return undefined
+}
+
 function tokenRefreshUnavailable(context: Context) {
   return context.json(
     {
@@ -495,6 +745,12 @@ function reauthorizationRequired(context: Context, characterId: number, required
 
 function reauthorizationUrl(characterId: number) {
   return new URL(`/auth/eve/reauthorize/${characterId}`, env.EVE_CALLBACK_URL).toString()
+}
+
+function financeReauthorizationUrl(characterId: number) {
+  const url = new URL(`/auth/eve/reauthorize/${characterId}`, env.EVE_CALLBACK_URL)
+  url.searchParams.set('returnTo', `/characters/${characterId}/finance`)
+  return url.toString()
 }
 
 function errorStatus(error: unknown) {

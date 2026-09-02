@@ -13,8 +13,8 @@ const integrations = [
     tone: 'active',
   },
   {
-    name: 'Character Wallet',
-    detail: 'Protected balance with ETag revalidation and quota protection.',
+    name: 'Character Finance',
+    detail: 'Scoped wallet, personal market-order and contract access with quota protection.',
     state: 'SCOPE BASED',
     tone: 'warning',
   },
