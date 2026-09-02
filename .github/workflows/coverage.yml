@@ -1,0 +1,83 @@
+name: Coverage
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: Coverage suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run frontend coverage
+        run: pnpm test:frontend:coverage
+
+      - name: Run API coverage
+        run: pnpm test:api:coverage
+
+      - name: Run PostgreSQL coverage
+        run: pnpm --filter @eve-space/api test:postgres:coverage
+
+      - name: Run module coverage
+        run: pnpm test:modules:coverage
+
+      - name: Run registry coverage
+        run: pnpm test:registry:coverage
+
+      - name: Run Redis coverage
+        run: pnpm test:redis
+
+      - name: Analyze with SonarQube Cloud
+        if: >-
+          env.SONAR_TOKEN != '' &&
+          (github.event_name == 'push' || github.event.pull_request.head.repo.fork == false)
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >-
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.projectKey=mskry_eve-space
+            -Dsonar.organization=mskry
+
+      - name: Upload coverage reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          if-no-files-found: error
+          path: |
+            coverage/**/lcov.info
+            coverage-registry/lcov.info
+            api/coverage/lcov.info
+            api/coverage-postgres/lcov.info
+            api/coverage-redis/lcov.info
+            packages/platform-module-nuxt/coverage/lcov.info
+          retention-days: 14
