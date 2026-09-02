@@ -13,7 +13,7 @@ COPY api/package.json ./api/package.json
 COPY packages/platform-module-contract/package.json ./packages/platform-module-contract/package.json
 COPY packages/platform-module-server/package.json ./packages/platform-module-server/package.json
 COPY features ./features
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts --filter @eve-space/api...
+RUN pnpm install --frozen-lockfile --ignore-scripts --filter @eve-space/api...
 
 COPY api/tsconfig.json ./api/tsconfig.json
 COPY api/src ./api/src
