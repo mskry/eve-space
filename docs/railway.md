@@ -15,18 +15,20 @@ Run SDE ingestion as a one-shot deployment from `sde-ingest/Dockerfile` after mi
 
 ## Domains
 
-Production authentication requires the web and API to be same-site. Use sibling custom domains such as `app.example.com` and `api.example.com`; separate `*.up.railway.app` domains are cross-site because `railway.app` is a public suffix.
+Production authentication requires the web and API to be same-site. Use an apex and API subdomain such as `example.com` and `api.example.com`, or sibling custom domains such as `app.example.com` and `api.example.com`. Separate `*.up.railway.app` domains are cross-site because `railway.app` is a public suffix.
 
 Configure:
 
 ```dotenv
 NUXT_PUBLIC_API_BASE=https://api.example.com
-WEB_ORIGIN=https://app.example.com
+WEB_ORIGIN=https://example.com
 EVE_CALLBACK_URL=https://api.example.com/auth/eve/callback
 SESSION_COOKIE_SECURE=true
 ```
 
 Register the exact `EVE_CALLBACK_URL` in the EVE Developer Portal. Do not change the session cookies to `SameSite=None` as a substitute for same-site domains.
+
+On Railway, set `NUXT_PUBLIC_API_BASE=https://${{api.RAILWAY_PUBLIC_DOMAIN}}` so the value follows the API custom domain and the project canvas displays the `web` to `api` dependency. The resolved browser value remains the public HTTPS URL; do not use the private service domain for browser requests.
 
 If no custom domain is available, add a seventh `gateway` service from `gateway/Dockerfile`. Give only the gateway a Railway-provided public domain, set its healthcheck to `/health`, and configure:
 
@@ -88,6 +90,36 @@ The API additionally needs `WEB_ORIGIN`, `EVE_CALLBACK_URL`, `SESSION_COOKIE_SEC
 
 The web needs `NUXT_PUBLIC_API_BASE`. The SDE ingestion deployment needs only `${{postgres.DATABASE_URL}}`.
 
+## Credential rotation
+
+Treat output from `railway variable list --json` and `--kv` as secret-bearing. Filter to variable names when auditing configuration, never paste resolved values into logs, issues, or chat, and pass replacements through `railway variable set KEY --stdin` instead of command-line arguments that remain in shell history.
+
+The production credentials have different rotation requirements:
+
+| Credential             | Consumers                   | Rotation constraint                                                                                                                                                   |
+| ---------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ADMIN_SETUP_SECRET`   | `api`                       | Remove it after initial setup; existing administrator accounts and sessions do not depend on it.                                                                      |
+| `EVE_CLIENT_SECRET`    | `api`, `worker`             | Replace it in the EVE Developer Portal and both services as one rollout. A mismatch prevents authorization and token refresh.                                         |
+| `TOKEN_ENCRYPTION_KEY` | `api`, `worker`, PostgreSQL | Every `eve_tokens.encrypted_tokens` value uses this key. Replacing it without migrating or deleting those rows makes all stored EVE tokens unreadable.                |
+| PostgreSQL password    | PostgreSQL, `api`, `worker` | Change the database role password and the Railway source variable together. Changing only `POSTGRES_PASSWORD` does not update an already initialized PostgreSQL role. |
+
+Use this sequence after suspected disclosure:
+
+1. Restrict project access, review Railway and GitHub access history, schedule a maintenance window, and create a verified PostgreSQL backup. Generate every replacement independently in a password manager or another non-logging secret generator.
+2. Delete `ADMIN_SETUP_SECRET` from `api` when deployment setup is complete. Do not replace or restore it unless deployment bootstrap must deliberately be reopened.
+3. Replace the EVE application secret in the EVE Developer Portal. Set the same new `EVE_CLIENT_SECRET` on `api` and `worker` with deployments skipped until both values are staged, then deploy both services and verify EVE authorization and one protected request.
+4. Rotate `TOKEN_ENCRYPTION_KEY` using one of the paths below. Do not retain the old key in an ordinary Railway variable as a fallback.
+5. Rotate the PostgreSQL password using an authenticated `railway connect postgres --ssh` session. Keep that session open, use psql's `\password` command so the new value is not written into SQL or shell history, and immediately set the same value as the PostgreSQL service's `POSTGRES_PASSWORD`. Keep `PGPASSWORD` and `DATABASE_URL` as references derived from that source variable, and keep application `DATABASE_URL` values as `${{postgres.DATABASE_URL}}`; do not create independent password copies. Redeploy PostgreSQL, `api`, and `worker`, and update any future one-shot SDE ingestion deployment before it runs.
+6. Require successful deployments with one running replica each. Verify `/health`, every dependency in `/api/status`, EVE login and callback, a token refresh or protected character request, and administrator login. Check logs for database authentication, OAuth, token decryption, and worker heartbeat errors without printing configuration.
+
+For a small deployment where forced reauthorization is acceptable, stop `api` and `worker` for the maintenance window, delete all `eve_tokens` rows, set the same new base64-encoded 32-byte `TOKEN_ENCRYPTION_KEY` on both services, and deploy them together. User and character records and application sessions remain, but every character-owned integration stays unavailable until that character completes EVE reauthorization. Clear unconsumed `oauth_states` as part of the window so no authorization flow spans the key and client-secret change.
+
+If authorization continuity is required, first implement and test a one-shot migration that accepts the old and new keys separately, decrypts and re-encrypts every token while `api` and `worker` are stopped, verifies the migrated row count in one transaction, and then removes the old key before either service starts. The current runtime supports one encryption key only, so an ad hoc in-place key replacement is not a continuity-safe procedure.
+
+Application and administrator session bearer values are independently random and stored only as SHA-256 hashes. Rotating the credentials above does not invalidate those sessions. Delete `sessions` and `admin_sessions` only when raw session bearers or database contents may also have been disclosed and forced sign-out is part of the incident response.
+
+Do not roll production back to a disclosed secret. If PostgreSQL authentication fails, use the still-open administrative connection to set another fresh password and reconcile Railway variables. Keep a pre-rotation database backup only for offline recovery; restoring old token ciphertext and its disclosed encryption key into service would undo containment.
+
 ## Rollout and verification
 
 1. Provision PostgreSQL and the two Redis services.
@@ -100,8 +132,79 @@ The web needs `NUXT_PUBLIC_API_BASE`. The SDE ingestion deployment needs only `$
 
 ## Continuous deployment
 
-Connect the `web`, `api`, `worker`, and `gateway` services to the GitHub repository's `main` branch and enable **Wait for CI** on every deployment trigger. The repository CI workflow runs on pushes to `main`, so Railway deploys a commit only after all GitHub Actions checks succeed and skips it when any check fails.
+Connect the `web`, `api`, and `worker` services to the GitHub repository's `main` branch and enable **Wait for CI** on every deployment trigger. Connect `gateway` only when the fallback gateway topology is in use. The repository CI workflow runs on pushes to `main`, so Railway deploys a commit only after all GitHub Actions checks succeed and skips it when any check fails.
 
-Leave watch paths unset unless every shared workspace, lockfile, configuration, and generated-contract dependency is represented. Rebuilding all four application services is safer than allowing a shared monorepo change to skip a required deployment. Do not connect PostgreSQL or either Redis service to the repository, and keep SDE ingestion as a deliberate one-shot deployment.
+Set these root-relative watch paths on `web`:
+
+```gitignore
+/Dockerfile
+/.dockerignore
+/package.json
+/pnpm-lock.yaml
+/pnpm-workspace.yaml
+/.npmrc
+/.pnpmfile.*
+/.nuxtrc
+/nuxt.config.*
+/tsconfig*.json
+/colada.options.*
+/app.config.*
+/nitro.config.*
+/vite.config.*
+/postcss.config.*
+/tailwind.config.*
+/app/**
+/server/**
+/public/**
+/layers/**
+/generated/platform/**
+/api/package.json
+/api/src/**
+/packages/platform-module-contract/**
+/packages/platform-module-server/**
+/packages/platform-module-nuxt/**
+/features/**
+/scripts/run-installed-module-package-script.ts
+!/**/*.md
+!/**/README*
+!/**/docs/**
+!/**/test/**
+!/**/tests/**
+!/**/*.test.*
+!/**/*.spec.*
+```
+
+Set this identical list on `api` and `worker` because they build the same image:
+
+```gitignore
+/api/Dockerfile
+/.dockerignore
+/package.json
+/pnpm-lock.yaml
+/pnpm-workspace.yaml
+/.npmrc
+/.pnpmfile.*
+/api/package.json
+/api/tsconfig.json
+/api/src/**
+/api/migrations/**
+/packages/platform-module-contract/**
+/packages/platform-module-server/**
+/features/installed-modules.json
+/features/*/module.config.*
+/features/*/server/**
+/scripts/run-installed-module-package-script.ts
+!/**/*.md
+!/**/README*
+!/**/docs/**
+!/**/test/**
+!/**/tests/**
+!/**/*.test.*
+!/**/*.spec.*
+```
+
+Railway evaluates these as ordered gitignore-style patterns, so exclusions must remain after the inclusion rules. The web list includes `api/src` because Nuxt imports the Hono `AppType` contract directly. Root manifests, the lockfile, Docker inputs, shared packages, generated registries, and installed feature inputs remain covered, while documentation, tests, CI, gateway, and SDE-only changes do not deploy these services. Add any future production input before relying on its exclusion.
+
+Do not connect PostgreSQL or either Redis service to the repository, and keep SDE ingestion as a deliberate one-shot deployment.
 
 Use Railway volume backups for PostgreSQL and queue Redis. Never expose PostgreSQL or either Redis service through public TCP networking.

@@ -1,7 +1,7 @@
 # EVE Space
 
 [![CI](https://github.com/mskry/eve-space/actions/workflows/ci.yml/badge.svg)](https://github.com/mskry/eve-space/actions/workflows/ci.yml)
-[![Live on Railway](https://img.shields.io/badge/Live%20on-Railway-0B0D0E?logo=railway&logoColor=white)](https://gateway-production-d5cc.up.railway.app)
+[![Live on Railway](https://img.shields.io/badge/Live%20on-Railway-0B0D0E?logo=railway&logoColor=white)](https://eve-space.com)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mskry_eve-space)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space&metric=coverage)](https://sonarcloud.io/summary/overall?id=mskry_eve-space)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
