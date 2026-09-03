@@ -21,6 +21,7 @@ import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { loadSession, sessionCookie } from '../middleware/auth-session.js'
 import { createOpaqueToken, tokensMatch } from './security.js'
+import { setPrivateHeaders } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 
 const oauthStateCookie = 'eve_space_oauth_state'
@@ -260,11 +261,6 @@ function sessionCookieOptions(maxAge: number) {
     priority: 'High' as const,
     maxAge,
   }
-}
-
-function setPrivateHeaders(context: Context) {
-  context.header('Cache-Control', 'private, no-store')
-  context.header('Vary', 'Cookie')
 }
 
 function assertUniqueQueryParameters(url: string) {

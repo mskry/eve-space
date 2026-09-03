@@ -1,0 +1,440 @@
+.character-clones-route,
+.character-clones-workspace {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.character-clones-route {
+  overflow-x: clip;
+}
+
+.character-clones-workspace {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.character-clones-active {
+  margin-bottom: 0.625rem;
+}
+
+.character-clones-rack,
+.character-clones-home,
+.character-clones-stored {
+  min-width: 0;
+  border: 0.0625rem solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.character-clones-section-heading {
+  min-width: 0;
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 0.0625rem solid var(--ui-border);
+}
+
+.character-clones-section-heading h2 {
+  margin: 0.2rem 0 0;
+  color: var(--ui-text);
+  font: 400 1.125rem/1.1 var(--ui-font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.character-clones-section-heading > span {
+  flex: 0 0 auto;
+  color: var(--ui-text-faint);
+  font: 600 0.5625rem/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+}
+
+.character-clones-active .character-summary-details {
+  min-width: min(100%, 32rem);
+  flex: 1;
+}
+
+.character-clones-active-content {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* The details slot is placed at the card's end, so its own text reads to that edge too. */
+.character-clones-jump-status,
+.character-clones-active-content > .character-clones-vital-note,
+.character-clones-active .character-clones-stale {
+  text-align: right;
+}
+
+.character-clones-jump-status {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.character-clones-vital-label {
+  margin: 0;
+  color: var(--ui-text-faint);
+  font: 600 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.character-clones-vital-note {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ui-text-muted);
+  font: 0.5625rem/1.45 var(--ui-font-mono);
+}
+
+.character-clones-activity-value {
+  margin: 0;
+  color: var(--ui-text);
+  font: 400 1.0625rem/1.2 var(--ui-font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.character-clones-home-details {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.character-clones-home-details > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.4375rem;
+}
+
+.character-clones-home-details dt {
+  color: var(--ui-text-faint);
+  font: 600 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.character-clones-home-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ui-text);
+  font: 500 0.875rem/1.3 var(--ui-font-body);
+}
+
+.character-clones-stale {
+  min-width: 0;
+  margin: 0;
+  color: var(--ui-warning);
+  font: 0.5625rem/1.45 var(--ui-font-mono);
+}
+
+.character-clones-rack .character-clones-stale {
+  padding: 0 1rem 0.875rem;
+}
+
+.character-clones-rack-columns {
+  min-width: 0;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.character-clones-rack-column,
+.character-clones-rack-unslotted {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.4375rem;
+}
+
+.character-clones-rack-unslotted {
+  padding: 0 1rem 1rem;
+}
+
+.character-clones-rack-group {
+  margin: 0 0 0.1875rem;
+  color: var(--ui-text-faint);
+  font: 600 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+}
+
+.character-clones-slot-list,
+.character-clones-implant-list {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+}
+
+.character-clones-slot-list > li,
+.character-clones-implant-list > li {
+  min-width: 0;
+}
+
+.character-clones-implant-trigger,
+.character-clones-slot-empty {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  display: grid;
+  align-items: center;
+  gap: 0.6rem;
+  border: 0.0625rem solid var(--ui-border);
+  color: var(--ui-text-muted);
+  background: color-mix(in srgb, var(--ui-control) 86%, transparent);
+}
+
+.character-clones-slot-list .character-clones-implant-trigger {
+  grid-template-columns: 1.5rem 2rem minmax(0, 1fr) auto;
+}
+
+.character-clones-implant-list .character-clones-implant-trigger {
+  grid-template-columns: 1.5rem 2rem minmax(0, 1fr);
+}
+
+.character-clones-slot-empty {
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  border-style: dashed;
+  background: transparent;
+  color: var(--ui-text-faint);
+  font: 0.5625rem/1 var(--ui-font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.character-clones-implant-trigger:hover {
+  border-color: var(--ui-border-strong);
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-primary) 5%, var(--ui-control));
+}
+
+.character-clones-implant-name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.character-clones-implant-name > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.character-clones-slot-index {
+  color: var(--ui-primary);
+  font: 400 0.8125rem/1 var(--ui-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.character-clones-slot-empty .character-clones-slot-index {
+  color: var(--ui-text-faint);
+}
+
+.character-clones-implant-bonus {
+  padding: 0.25rem 0.375rem;
+  border: 0.0625rem solid color-mix(in srgb, var(--ui-primary) 30%, var(--ui-border));
+  color: var(--ui-primary);
+  font: 700 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.character-clones-implant-action {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: var(--ui-text-faint);
+}
+
+.character-clones-implant-trigger:hover .character-clones-implant-action,
+.character-clones-implant-trigger:focus-visible .character-clones-implant-action {
+  color: var(--ui-primary);
+}
+
+.character-clones-empty-implants {
+  margin: 0;
+  padding: 0.75rem;
+  border: 0.0625rem dashed var(--ui-border);
+  color: var(--ui-text-faint);
+  font: 0.625rem/1.4 var(--ui-font-mono);
+  text-align: center;
+}
+
+.character-clones-groups {
+  min-width: 0;
+  padding: 1rem;
+  display: grid;
+  gap: 0.875rem;
+}
+
+.character-clones-group {
+  min-width: 0;
+  display: grid;
+  gap: 0.4375rem;
+}
+
+.character-clones-group-heading {
+  min-width: 0;
+  padding: 0.5625rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.875rem;
+  border-left: 0.125rem solid var(--ui-border-strong);
+  background: var(--ui-surface-solid);
+}
+
+.character-clones-group-heading h3 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ui-text);
+  font: 500 0.8125rem/1.25 var(--ui-font-body);
+}
+
+.character-clones-group-heading > span {
+  flex: 0 0 auto;
+  color: var(--ui-text-faint);
+  font: 600 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+}
+
+.character-clones-group-list {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4375rem;
+  list-style: none;
+}
+
+.character-clones-group-list > li,
+.character-clones-card {
+  min-width: 0;
+}
+
+.character-clones-card {
+  border: 0.0625rem solid var(--ui-border);
+  background: var(--ui-surface-solid);
+}
+
+.character-clones-card-summary {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0.75rem;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.character-clones-card-summary:not(.character-clones-card-summary--static):hover {
+  background: color-mix(in srgb, var(--ui-primary) 4%, transparent);
+}
+
+.character-clones-card-summary--static {
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+}
+
+.character-clones-card-summary:focus-visible {
+  outline: 0.125rem solid var(--ui-primary);
+  outline-offset: -0.125rem;
+}
+
+.character-clones-card-summary > img {
+  border: 0.0625rem solid var(--ui-border);
+}
+
+.character-clones-card-body {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.character-clones-card-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ui-text);
+  font: 500 0.875rem/1.25 var(--ui-font-body);
+}
+
+.character-clones-card-preview {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.character-clones-card-preview-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.character-clones-card-preview-item .ui-eve-image {
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.38;
+  filter: saturate(0.55);
+}
+
+.character-clones-card-preview-empty {
+  color: var(--ui-text-faint);
+  font: 0.5625rem/1.25 var(--ui-font-mono);
+}
+
+.character-clones-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ui-text-faint);
+  font: 600 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+}
+
+.character-clones-card-chevron {
+  flex: 0 0 auto;
+}
+
+.character-clones-card-summary[data-state='open'] .character-clones-card-chevron {
+  transform: rotate(180deg);
+}
+
+.character-clones-card-summary[data-state='open'] .character-clones-card-preview {
+  visibility: hidden;
+}
+
+.character-clones-card-implants {
+  min-width: 0;
+  padding: 0.75rem;
+  border-top: 0.0625rem solid var(--ui-border);
+}
+
+.character-clones-stored-footer {
+  margin: 0;
+  padding: 0.8125rem 1rem;
+  border-top: 0.0625rem solid var(--ui-border);
+  color: var(--ui-text-faint);
+  font: 0.5625rem/1.4 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+}

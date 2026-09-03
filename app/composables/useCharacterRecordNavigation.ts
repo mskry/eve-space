@@ -1,5 +1,4 @@
 import { useQueryCache } from '@pinia/colada'
-import { usePlatformNavigation } from '#imports'
 import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
 import {
@@ -8,6 +7,7 @@ import {
   characterSkillQueueQuery,
   characterSkillsQuery,
 } from '../queries/characters'
+import { characterClonesQuery, characterImplantsQuery } from '../queries/clones'
 import { characterFinanceBalanceQuery, characterFinanceJournalQuery } from '../queries/finance'
 import { mailHeadersQuery, mailingListsQuery, mailLabelsQuery } from '../queries/mail'
 import { prefetchProtectedQuery } from '../queries/query-cache'
@@ -59,6 +59,30 @@ export function useCharacterRecordNavigation({
         prefetchProtectedQuery(
           queryCache,
           characterSkillQueueQuery({ apiClient, characterId: id }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+      ])
+    },
+    'core-character-clones': () => {
+      const id = characterId.value ?? 0
+      const access = {
+        isClient: import.meta.client,
+        authenticated: authenticated.value,
+        ownsCharacter: ownsCharacter.value,
+      }
+      void Promise.all([
+        prefetchProtectedQuery(
+          queryCache,
+          characterClonesQuery({ apiClient, characterId: id, access }),
+          import.meta.client,
+          authenticated.value,
+          characterId.value,
+        ),
+        prefetchProtectedQuery(
+          queryCache,
+          characterImplantsQuery({ apiClient, characterId: id, access }),
           import.meta.client,
           authenticated.value,
           characterId.value,

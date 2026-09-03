@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { createMiddleware } from 'hono/factory'
 import { z } from 'zod'
 import { env } from '../env.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
@@ -9,6 +8,7 @@ import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
+import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import {
   calculateMailCspaCharge,
@@ -122,12 +122,6 @@ const cspaChargeBody = z
       }),
   })
   .strict()
-
-const privateNoStore = createMiddleware(async (context, next) => {
-  context.header('Cache-Control', 'private, no-store')
-  context.header('Vary', 'Cookie')
-  await next()
-})
 
 export const mailRoutes = new Hono<OwnedCharacterEnv>()
   .get(

@@ -76,6 +76,8 @@ describe('ESI operation policies', () => {
         'character-cspa-charge',
         'attributes',
         'skill-queue',
+        'character-clones',
+        'character-implants',
         'skills',
         'location',
         'ship',
@@ -137,7 +139,7 @@ describe('ESI operation policies', () => {
   test('merges the reviewed core and generated installed-module catalogs', () => {
     expect(esiMetadataReview).toEqual({
       explorerUrl: 'https://developers.eveonline.com/api-explorer',
-      reviewedAt: '2026-08-29',
+      reviewedAt: '2026-09-03',
       requestedCompatibilityDate: '2026-08-23',
       resolvedCompatibilityDate: '2026-08-18',
     })
@@ -370,6 +372,53 @@ describe('ESI operation policies', () => {
     }
   })
 
+  test('records reviewed clone operation descriptors and private resilience contracts', () => {
+    const expected = {
+      'character-clones': [
+        '/characters/{character_id}/clones',
+        'GetCharactersCharacterIdClones',
+        'esi-clones.read_clones.v1',
+        { kind: 'declared', group: 'char-location', maximumTokens: 1_200, window: '15m' },
+      ],
+      'character-implants': [
+        '/characters/{character_id}/implants',
+        'GetCharactersCharacterIdImplants',
+        'esi-clones.read_implants.v1',
+        { kind: 'declared', group: 'char-detail', maximumTokens: 600, window: '15m' },
+      ],
+    } as const
+
+    for (const [operation, [path, esiOperationId, scope, rateGroup]] of Object.entries(expected)) {
+      const metadata = esiOperationMetadata[operation as keyof typeof expected]
+      const contract = getEsiOperationContract(operation as keyof typeof expected)
+      expect(operationRegistry[esiOperationId]).toBeDefined()
+      expect(metadata).toMatchObject({
+        method: 'GET',
+        path,
+        esiOperationId,
+        minimumCompatibilityDate: '2020-01-01',
+        requiredScope: scope,
+        cache: { kind: 'relative', seconds: 120 },
+        supportsConditionalRequests: true,
+        rateLimit: rateGroup,
+      })
+      expect(contract).toMatchObject({
+        authorization: { kind: 'character', scope },
+        identity: { kind: 'ordered', fields: ['characterId'] },
+        freshness: { kind: 'relative', seconds: 120 },
+        cache: {
+          kind: 'shared',
+          collapse: true,
+          revalidate: true,
+          stale: { kind: 'outage', milliseconds: 3_600_000 },
+          retentionMilliseconds: 3_600_000,
+        },
+        rateGroup,
+        retry: { kind: 'idempotent' },
+      })
+    }
+  })
+
   test('records composition lookup and charge policies', () => {
     expect(esiOperationMetadata['universe-resolve-ids']).toMatchObject({
       method: 'POST',
@@ -522,7 +571,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-contracts.read_character_contracts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -533,6 +582,8 @@ describe('ESI operation policies', () => {
         ssoEnabled: true,
         requestableScopes: [
           'esi-characters.read_contacts.v1',
+          'esi-clones.read_clones.v1',
+          'esi-clones.read_implants.v1',
           'esi-contracts.read_character_contracts.v1',
           'esi-location.read_location.v1',
           'esi-location.read_ship_type.v1',
@@ -556,35 +607,37 @@ describe('ESI operation policies', () => {
     ).not.toThrow()
   })
 
-  test.each(['esi-markets.read_character_orders.v1', 'esi-contracts.read_character_contracts.v1'])(
-    'rejects configured SSO when %s is missing',
-    (missingScope) => {
-      const requestableScopes = [
-        'esi-characters.read_contacts.v1',
-        'esi-contracts.read_character_contracts.v1',
-        'esi-location.read_location.v1',
-        'esi-location.read_ship_type.v1',
-        'esi-mail.organize_mail.v1',
-        'esi-mail.read_mail.v1',
-        'esi-mail.send_mail.v1',
-        'esi-markets.read_character_orders.v1',
-        'esi-search.search_structures.v1',
-        'esi-skills.read_skillqueue.v1',
-        'esi-skills.read_skills.v1',
-        'esi-wallet.read_character_wallet.v1',
-      ].filter((scope) => scope !== missingScope)
+  test.each([
+    'esi-clones.read_clones.v1',
+    'esi-clones.read_implants.v1',
+    'esi-markets.read_character_orders.v1',
+    'esi-contracts.read_character_contracts.v1',
+  ])('rejects configured SSO when %s is missing', (missingScope) => {
+    const requestableScopes = [
+      'esi-characters.read_contacts.v1',
+      'esi-clones.read_clones.v1',
+      'esi-clones.read_implants.v1',
+      'esi-contracts.read_character_contracts.v1',
+      'esi-location.read_location.v1',
+      'esi-location.read_ship_type.v1',
+      'esi-mail.organize_mail.v1',
+      'esi-mail.read_mail.v1',
+      'esi-mail.send_mail.v1',
+      'esi-markets.read_character_orders.v1',
+      'esi-search.search_structures.v1',
+      'esi-skills.read_skillqueue.v1',
+      'esi-skills.read_skills.v1',
+      'esi-wallet.read_character_wallet.v1',
+    ].filter((scope) => scope !== missingScope)
 
-      expect(() =>
-        assertEsiOperationCatalogConfiguration({
-          compatibilityDate: '2026-08-23',
-          ssoEnabled: true,
-          requestableScopes,
-        }),
-      ).toThrow(
-        `EVE_SCOPES is missing scopes required by registered ESI operations: ${missingScope}`,
-      )
-    },
-  )
+    expect(() =>
+      assertEsiOperationCatalogConfiguration({
+        compatibilityDate: '2026-08-23',
+        ssoEnabled: true,
+        requestableScopes,
+      }),
+    ).toThrow(`EVE_SCOPES is missing scopes required by registered ESI operations: ${missingScope}`)
+  })
 
   test.each([
     [

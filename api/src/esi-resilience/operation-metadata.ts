@@ -22,7 +22,7 @@ interface EsiOperationMetadata {
 
 export const esiMetadataReview = {
   explorerUrl: 'https://developers.eveonline.com/api-explorer',
-  reviewedAt: '2026-08-29',
+  reviewedAt: '2026-09-03',
   requestedCompatibilityDate: '2026-08-23',
   resolvedCompatibilityDate: '2026-08-18',
 } as const
@@ -336,6 +336,36 @@ export const esiOperationMetadata = {
     esiOperationId: 'GetCharactersCharacterIdSkillqueue',
     minimumCompatibilityDate: '2020-01-01',
     requiredScope: 'esi-skills.read_skillqueue.v1',
+    cache: { kind: 'relative', seconds: 120 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-detail',
+      maximumTokens: 600,
+      window: '15m',
+    },
+  },
+  'character-clones': {
+    method: 'GET',
+    path: '/characters/{character_id}/clones',
+    esiOperationId: 'GetCharactersCharacterIdClones',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-clones.read_clones.v1',
+    cache: { kind: 'relative', seconds: 120 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-location',
+      maximumTokens: 1_200,
+      window: '15m',
+    },
+  },
+  'character-implants': {
+    method: 'GET',
+    path: '/characters/{character_id}/implants',
+    esiOperationId: 'GetCharactersCharacterIdImplants',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-clones.read_implants.v1',
     cache: { kind: 'relative', seconds: 120 },
     supportsConditionalRequests: true,
     rateLimit: {

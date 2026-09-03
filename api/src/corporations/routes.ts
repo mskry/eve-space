@@ -8,17 +8,12 @@ import {
   getNpcCorporations,
 } from './public-data.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { z } from 'zod'
 
 const corporationIdParams = z.object({
   corporationId: z.coerce.number().int().positive().max(2_147_483_647),
-})
-
-const privateNoStore = createMiddleware(async (context, next) => {
-  context.header('Cache-Control', 'private, no-store')
-  context.header('Vary', 'Cookie')
-  await next()
 })
 
 const rateLimitWindowMs = 60_000

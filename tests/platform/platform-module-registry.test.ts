@@ -336,6 +336,9 @@ describe('platform module registry generation', () => {
       "navigationId: 'core-character-skills'",
     )
     expect(first.get('api/src/generated/platform/installed-module-runtime.ts')).toContain(
+      "navigationId: 'core-character-clones'",
+    )
+    expect(first.get('api/src/generated/platform/installed-module-runtime.ts')).toContain(
       "navigationId: 'core-character-mail'",
     )
     expect(first.get('generated/platform/installed-nuxt-modules.ts')).toContain(

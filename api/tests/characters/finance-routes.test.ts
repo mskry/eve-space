@@ -485,6 +485,28 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
   })
 
   test.each([
+    [mocks.getWalletJournal, `/${characterId}/wallet/journal?page=2`, new MarketQuotaError(11)],
+    [mocks.getCharacterMarketOrders, `/${characterId}/market/orders`, new ContractQuotaError(12)],
+    [
+      mocks.getCharacterContractItems,
+      `/${characterId}/contracts/${contractId}/items?contractPage=4`,
+      new WalletQuotaError(13),
+    ],
+  ])(
+    'sanitizes a quota error from another Finance resource family',
+    async (service, path, error) => {
+      service.mockRejectedValueOnce(error)
+
+      const response = await authorizedRequest(path)
+
+      expect(response.status).toBe(502)
+      expect(response.headers.get('retry-after')).toBeNull()
+      await expect(response.json()).resolves.toMatchObject({ code: 'ESI_UNAVAILABLE' })
+      expectPrivateNoStore(response)
+    },
+  )
+
+  test.each([
     [
       'items',
       mocks.getCharacterContractItems,

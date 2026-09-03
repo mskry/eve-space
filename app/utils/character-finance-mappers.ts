@@ -229,16 +229,17 @@ export function mapCharacterFinanceResourceState({
     authorizationRequired && apiError.authorizeUrl
       ? { href: apiError.authorizeUrl, label: authorizationLabel }
       : null
+  let errorCode: string | null = null
+  if (normalizedError) {
+    errorCode =
+      apiError?.status === 429 ? 'ESI / QUOTA' : `ESI ${apiError?.status ?? 502} / FINANCE`
+  }
 
   return {
     authorizationRequired,
     loading,
     stale: data?.stale ?? false,
-    errorCode: normalizedError
-      ? apiError?.status === 429
-        ? 'ESI / QUOTA'
-        : `ESI ${apiError?.status ?? 502} / FINANCE`
-      : null,
+    errorCode,
     errorMessage: financeErrorMessage(normalizedError, apiError),
     canRetry: normalizedError !== null && !authorizationRequired,
     authorizationAction,
