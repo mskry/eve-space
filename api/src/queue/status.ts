@@ -25,6 +25,9 @@ export interface QueueStatus {
   active: number | null
   retrying: number | null
   failed: number | null
+  memoryUsedBytes: number | null
+  memoryMaxBytes: number | null
+  memoryUsedPercent: number | null
   plannerPaused: boolean
   outboxRelayPaused: boolean
   latestOutboxRelayOutcome: OutboxRelayOutcome | null
@@ -68,6 +71,8 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       outboxRelayOutcome,
       schedulerOutcome,
       affiliationPlannerOutcome,
+      memoryInfo,
+      maxMemoryConfiguration,
     ] = await Promise.all([
       queue.getJobCounts('waiting', 'delayed', 'prioritized', 'active', 'failed'),
       queue.getJobs(['waiting'], 0, 0, true),
@@ -80,6 +85,8 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       connection.get(outboxRelayOutcomeKey),
       connection.get(schedulerOutcomeKey),
       connection.get(affiliationPlannerOutcomeKey),
+      connection.info('memory'),
+      connection.config('GET', 'maxmemory'),
     ])
     const heartbeat = latestHeartbeat(beats)
     const oldest = [...waiting, ...prioritized].reduce<(typeof waiting)[number] | undefined>(
@@ -96,8 +103,13 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       Number.isNaN(heartbeatTime) ||
       Date.now() - heartbeatTime > workerHeartbeatStaleAfterMs
     const lagged = (oldestWaitingAgeSeconds ?? 0) > env.QUEUE_LAG_DEGRADED_SECONDS
+    const memoryUsedBytes = parseMemoryInfo(memoryInfo, 'used_memory')
+    const memoryMaxBytes = parseMaxMemory(maxMemoryConfiguration)
+    const memoryUsedPercent =
+      memoryMaxBytes > 0 ? Math.round((memoryUsedBytes / memoryMaxBytes) * 10_000) / 100 : null
+    const memoryPressure = memoryUsedPercent !== null && memoryUsedPercent >= 90
     return {
-      status: workerStale || lagged ? 'degraded' : 'operational',
+      status: workerStale || lagged || memoryPressure ? 'degraded' : 'operational',
       workerHeartbeatAt: heartbeat,
       workers: beats.filter((beat) => beat !== null).length,
       depth,
@@ -105,6 +117,9 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       active: counts.active ?? 0,
       retrying: delayed.filter((job) => job.attemptsMade > 0).length,
       failed: counts.failed ?? 0,
+      memoryUsedBytes,
+      memoryMaxBytes,
+      memoryUsedPercent,
       plannerPaused: plannerState === 'paused',
       outboxRelayPaused: outboxRelayState === 'paused',
       latestOutboxRelayOutcome: parseOutboxRelayOutcome(outboxRelayOutcome),
@@ -121,6 +136,9 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       active: null,
       retrying: null,
       failed: null,
+      memoryUsedBytes: null,
+      memoryMaxBytes: null,
+      memoryUsedPercent: null,
       plannerPaused: false,
       outboxRelayPaused: false,
       latestOutboxRelayOutcome: null,
@@ -130,6 +148,20 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
   } finally {
     await Promise.allSettled([queue.close(), closeQueueRedisConnection(connection)])
   }
+}
+
+function parseMemoryInfo(info: string, metric: string) {
+  const prefix = `${metric}:`
+  const line = info.split('\n').find((candidate) => candidate.startsWith(prefix))
+  const value = line ? Number(line.slice(prefix.length).trim()) : Number.NaN
+  if (!Number.isSafeInteger(value) || value < 0) throw new Error(`Invalid Redis ${metric}`)
+  return value
+}
+
+function parseMaxMemory(configuration: string[]) {
+  const value = Number(configuration.at(-1))
+  if (!Number.isSafeInteger(value) || value < 0) throw new Error('Invalid Redis maxmemory')
+  return value
 }
 
 function parseOutboxRelayOutcome(value: string | null): OutboxRelayOutcome | null {

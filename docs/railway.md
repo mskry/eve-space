@@ -65,6 +65,8 @@ redis-server --appendonly no --save "" --maxmemory 256mb --maxmemory-policy allk
 
 Do not attach a volume to cache Redis. Keep PostgreSQL and both Redis services on private networking only.
 
+The API queue probe reports Redis `memoryUsedBytes`, `memoryMaxBytes`, and `memoryUsedPercent` through `/api/status` and degrades queue and system status when usage reaches 90% of `maxmemory`. Alert on that degraded state so queue capacity can be increased before `noeviction` rejects BullMQ writes.
+
 ## Variables
 
 Set these on both `api` and `worker` unless noted otherwise:
