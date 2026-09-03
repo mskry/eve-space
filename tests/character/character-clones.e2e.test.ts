@@ -200,9 +200,18 @@ describe('character Clones production route', async () => {
     await page.getByRole('heading', { name: 'Jump clones by location' }).waitFor()
     await page.getByRole('heading', { name: 'Active implant authorization required' }).waitFor()
     expect(await page.getByText('Industry clone', { exact: true }).isVisible()).toBe(true)
-    expect(
-      await page.getByRole('link', { name: 'AUTHORIZE THIS CHARACTER' }).getAttribute('href'),
-    ).toContain(`returnTo=%2Fcharacters%2F${characterId}%2Fclones`)
+    const authorizationState = page.locator('.character-clones-rack .character-authorization-state')
+    const authorizationLink = authorizationState.getByRole('link', {
+      name: 'AUTHORIZE THIS CHARACTER',
+    })
+    const authorizationStateBox = await authorizationState.boundingBox()
+    const authorizationLinkBox = await authorizationLink.boundingBox()
+    expect(authorizationStateBox).not.toBeNull()
+    expect(authorizationLinkBox).not.toBeNull()
+    expect(authorizationLinkBox!.width).toBeLessThan(authorizationStateBox!.width)
+    expect(await authorizationLink.getAttribute('href')).toContain(
+      `returnTo=%2Fcharacters%2F${characterId}%2Fclones`,
+    )
   })
 
   it('refreshes both resources after exact-character reauthorization', async () => {
