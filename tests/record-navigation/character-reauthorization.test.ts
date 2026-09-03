@@ -15,6 +15,9 @@ describe('character reauthorization transitions', () => {
     expect(navigation).toContain('characterSkillsQuery({')
     expect(navigation).toContain('characterAttributesQuery({')
     expect(navigation).toContain('characterSkillQueueQuery({')
+    expect(navigation).toContain("'core-character-clones': () =>")
+    expect(navigation).toContain('characterClonesQuery({')
+    expect(navigation).toContain('characterImplantsQuery({')
     expect(navigation).toContain("'core-character-finance': () =>")
     expect(navigation).toContain('characterFinanceBalanceQuery({')
     expect(navigation).toContain('characterFinanceJournalQuery({')
@@ -63,6 +66,12 @@ describe('character reauthorization transitions', () => {
     const page = source(path)
     expect(page).toContain('useCharacterReauthorization(characterId')
     expect(page).toContain(refresh)
+  })
+
+  it('refreshes both independent Clones resources after reauthorization', () => {
+    const clones = source('app/pages/characters/[characterId]/clones.vue')
+    expect(clones).toContain('useCharacterReauthorization(characterId')
+    expect(clones).toContain('Promise.all([clonesQuery.refetch(), implantsQuery.refetch()])')
   })
 
   it('refreshes only Finance resources and details whose gates were opened', () => {

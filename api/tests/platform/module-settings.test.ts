@@ -4,6 +4,7 @@ import {
   reconcileInstalledModules,
   resolveShellNavigationOrder,
 } from '../../src/platform/module-settings.js'
+import { platformNavigationDefaults } from '../../src/generated/platform/installed-module-runtime.js'
 
 describe('installed module reconciliation', () => {
   test('does nothing when no modules are installed', async () => {
@@ -90,6 +91,30 @@ describe('shell navigation order resolution', () => {
       isCompleteShellNavigationOrder(
         { ...complete, character: [{ ownerId: 'alpha', navigationId: 'alpha-audit' }] },
         defaults,
+      ),
+    ).toBe(false)
+  })
+
+  test('requires Clones in a complete generated character order', () => {
+    const complete = {
+      dashboard: platformNavigationDefaults
+        .filter((entry) => entry.placement === 'dashboard')
+        .map(({ ownerId, navigationId }) => ({ ownerId, navigationId })),
+      character: platformNavigationDefaults
+        .filter((entry) => entry.placement === 'character')
+        .map(({ ownerId, navigationId }) => ({ ownerId, navigationId })),
+    }
+
+    expect(isCompleteShellNavigationOrder(complete, platformNavigationDefaults)).toBe(true)
+    expect(
+      isCompleteShellNavigationOrder(
+        {
+          ...complete,
+          character: complete.character.filter(
+            (entry) => entry.navigationId !== 'core-character-clones',
+          ),
+        },
+        platformNavigationDefaults,
       ),
     ).toBe(false)
   })

@@ -106,6 +106,7 @@ vi.mock('../../src/characters/skills.js', () => ({
 }))
 
 import { characterRoutes } from '../../src/characters/routes.js'
+import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 import { app } from '../../src/index.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
 import { WalletQuotaError } from '../../src/characters/wallet.js'
@@ -560,6 +561,20 @@ describe('owned character employment history', () => {
     expect(await response.json()).toEqual({
       code: 'ESI_UNAVAILABLE',
       message: 'Employment history is temporarily unavailable.',
+    })
+  })
+
+  test('maps employment history cooldowns to a retryable response', async () => {
+    mocks.getCharacterEmploymentHistory.mockRejectedValue(new EsiQuotaError(12))
+
+    const response = await authorizedRequest(`/${altCharacter.characterId}/history`)
+
+    expect(response.status).toBe(429)
+    expect(response.headers.get('retry-after')).toBe('12')
+    expect(await response.json()).toEqual({
+      code: 'ESI_COOLDOWN',
+      message: 'EVE Online ESI is temporarily rate limited.',
+      retryAfterSeconds: 12,
     })
   })
 })

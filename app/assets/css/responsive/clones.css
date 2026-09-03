@@ -1,0 +1,60 @@
+@media (max-width: 56.25rem) {
+  .character-clones-rack-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .character-clones-slot-list .character-clones-implant-trigger {
+    grid-template-columns: 1.5rem 2rem minmax(0, 1fr) auto;
+  }
+}
+
+/* The summary card stacks here and its details slot starts from the left, so the text follows. */
+@media (max-width: 47.5rem) {
+  .character-clones-active .character-summary-details {
+    min-width: 0;
+  }
+
+  .character-clones-jump-status,
+  .character-clones-active-content > .character-clones-vital-note,
+  .character-clones-active .character-clones-stale {
+    text-align: left;
+  }
+}
+
+@media (max-width: 43.75rem) {
+  .character-clones-section-heading,
+  .character-clones-rack-columns,
+  .character-clones-rack-unslotted,
+  .character-clones-home-details,
+  .character-clones-groups,
+  .character-clones-stored-footer {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+  }
+
+  .character-clones-home-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 26.25rem) {
+  .character-clones-section-heading,
+  .character-clones-group-heading,
+  .character-clones-card-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .character-clones-card-summary {
+    display: flex;
+  }
+
+  .character-clones-slot-list .character-clones-implant-trigger,
+  .character-clones-implant-list .character-clones-implant-trigger {
+    grid-template-columns: 1.5rem 2rem minmax(0, 1fr);
+  }
+
+  .character-clones-implant-bonus {
+    display: none;
+  }
+}

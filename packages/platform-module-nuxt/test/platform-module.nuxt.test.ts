@@ -71,6 +71,15 @@ describe('platform Nuxt module fixture', async () => {
 
     await link.waitFor({ state: 'visible' })
     expect(await link.isVisible()).toBe(true)
+    expect(await page.locator('[data-testid="character-navigation"] a').allTextContents()).toEqual([
+      'Overview',
+      'Skills',
+      'Clones',
+      'Finance',
+      'Alpha',
+      'History',
+      'Mail',
+    ])
   })
 
   it('emits typed metadata with module icon defaults and entry overrides', async () => {

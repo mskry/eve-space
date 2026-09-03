@@ -38,6 +38,10 @@ export const PRIVATE_QUERY_KEYS = {
     [...PRIVATE_QUERY_KEYS.character(characterId), 'skill-queue'] as const,
   characterSkills: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'skills'] as const,
+  characterClones: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.character(characterId), 'clones'] as const,
+  characterImplants: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.character(characterId), 'implants'] as const,
   characterHistory: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'history'] as const,
   characterFinance: (characterId: number) =>

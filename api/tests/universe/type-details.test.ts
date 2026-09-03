@@ -65,7 +65,7 @@ describe('universe type details', () => {
       category: { id: 4, name: 'Material' },
       detail: null,
     })
-    expect(mocks.limit).toHaveBeenCalledWith(3)
+    expect(mocks.limit).toHaveBeenCalledWith(9)
     expect(Object.keys(mocks.select.mock.calls[0]![0])).toEqual([
       'typeId',
       'typeName',
@@ -81,7 +81,7 @@ describe('universe type details', () => {
       'attributeValue',
     ])
     expect(new PgDialect().sqlToQuery(mocks.leftJoin.mock.calls[0]![1]).params).toEqual([
-      180, 181, 275,
+      180, 181, 275, 175, 176, 177, 178, 179, 331,
     ])
     expect(new PgDialect().sqlToQuery(mocks.where.mock.calls[0]![0]).params).toEqual([
       34,
@@ -148,6 +148,107 @@ describe('universe type details', () => {
         secondaryAttribute: null,
       },
     })
+  })
+
+  test('maps supported implant slot and neural bonuses in stable semantic order', async () => {
+    const implantRows = [
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 179, attributeValue: 5 }),
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 331, attributeValue: 3 }),
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 177, attributeValue: 4 }),
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 175, attributeValue: 2 }),
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 178, attributeValue: -1 }),
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 176, attributeValue: 3 }),
+    ]
+    const { getUniverseTypeDetails } = await import('../../src/universe/type-details.js')
+
+    mocks.rows.push(...implantRows)
+    const first = await getUniverseTypeDetails(3300)
+    mocks.rows.splice(0, mocks.rows.length, ...implantRows.toReversed())
+    const second = await getUniverseTypeDetails(3300)
+
+    expect(first).toEqual(second)
+    expect(first).toMatchObject({
+      detail: {
+        kind: 'implant',
+        slot: 3,
+        bonuses: [
+          { attribute: 'charisma', value: 2 },
+          { attribute: 'intelligence', value: 3 },
+          { attribute: 'memory', value: 4 },
+          { attribute: 'perception', value: -1 },
+          { attribute: 'willpower', value: 5 },
+        ],
+      },
+    })
+  })
+
+  test('returns slot-only hardwiring details without fabricating neural bonuses', async () => {
+    mocks.rows.push(
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 331, attributeValue: 6 }),
+    )
+    const { getUniverseTypeDetails } = await import('../../src/universe/type-details.js')
+
+    await expect(getUniverseTypeDetails(3300)).resolves.toMatchObject({
+      detail: { kind: 'implant', slot: 6, bonuses: [] },
+    })
+  })
+
+  test.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'keeps an implant-category type generic when slot value %s is invalid',
+    async (slot) => {
+      mocks.rows.push(
+        row({ categoryId: 20, categoryName: 'Implant', attributeId: 331, attributeValue: slot }),
+        row({ categoryId: 20, categoryName: 'Implant', attributeId: 175, attributeValue: 3 }),
+      )
+      const { getUniverseTypeDetails } = await import('../../src/universe/type-details.js')
+
+      await expect(getUniverseTypeDetails(3300)).resolves.toMatchObject({ detail: null })
+    },
+  )
+
+  test('omits zero and non-finite neural bonuses from a valid implant', async () => {
+    mocks.rows.push(
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 331, attributeValue: 1 }),
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 175, attributeValue: 0 }),
+      row({
+        categoryId: 20,
+        categoryName: 'Implant',
+        attributeId: 176,
+        attributeValue: Number.NaN,
+      }),
+      row({
+        categoryId: 20,
+        categoryName: 'Implant',
+        attributeId: 177,
+        attributeValue: Number.POSITIVE_INFINITY,
+      }),
+      row({ categoryId: 20, categoryName: 'Implant', attributeId: 179, attributeValue: 2 }),
+    )
+    const { getUniverseTypeDetails } = await import('../../src/universe/type-details.js')
+
+    await expect(getUniverseTypeDetails(3300)).resolves.toMatchObject({
+      detail: {
+        kind: 'implant',
+        slot: 1,
+        bonuses: [{ attribute: 'willpower', value: 2 }],
+      },
+    })
+  })
+
+  test('keeps a category-20 booster without implantness generic', async () => {
+    mocks.rows.push(
+      row({
+        typeId: 9941,
+        typeName: 'Strong Blue Pill Booster',
+        categoryId: 20,
+        categoryName: 'Implant',
+        attributeId: null,
+        attributeValue: null,
+      }),
+    )
+    const { getUniverseTypeDetails } = await import('../../src/universe/type-details.js')
+
+    await expect(getUniverseTypeDetails(9941)).resolves.toMatchObject({ detail: null })
   })
 
   test.each(['typePublished', 'groupPublished', 'categoryPublished'] as const)(

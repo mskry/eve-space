@@ -164,7 +164,7 @@ function refreshBalance() {
 }
 
 function refreshOrders() {
-  void (orderMode.value === 'open' ? openOrdersQuery.refetch() : orderHistoryQuery.refetch())
+  return orderMode.value === 'open' ? openOrdersQuery.refetch() : orderHistoryQuery.refetch()
 }
 
 function showContractsInJournal() {
