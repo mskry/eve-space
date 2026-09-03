@@ -128,7 +128,7 @@ function implantCountLabel(count: number) {
                 <img src="/images/eve-clone.png" alt="" width="40" height="40" />
                 <span class="character-clones-card-body">
                   <span class="character-clones-card-name">{{ clone.name || 'No Name' }}</span>
-                  <span class="character-clones-card-preview-empty">No implants installed.</span>
+                  <span class="character-clones-card-preview-empty">No implants installed</span>
                 </span>
               </div>
             </article>

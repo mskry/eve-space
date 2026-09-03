@@ -35,5 +35,5 @@ defineProps<{
       </CharacterClonesImplantInformationPopover>
     </li>
   </ul>
-  <p v-else class="character-clones-empty-implants">No implants installed.</p>
+  <p v-else class="character-clones-empty-implants">No implants installed</p>
 </template>

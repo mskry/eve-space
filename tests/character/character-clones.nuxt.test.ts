@@ -79,7 +79,7 @@ describe('character Clones workspace', () => {
     expect(wrapper.text()).toContain('Industry clone')
     expect(wrapper.text()).toContain('No Name')
     expect(wrapper.text()).toContain('Structure 1035466617946')
-    expect(wrapper.text()).toContain('No implants installed.')
+    expect(wrapper.text()).toContain('No implants installed')
   })
 
   it('racks active implants by slot and leaves unfilled slots addressable', async () => {
@@ -141,7 +141,7 @@ describe('character Clones workspace', () => {
     const emptyCard = wrapper.findAll('.character-clones-card')[1]!
     expect(emptyCard.find('button.character-clones-card-summary').exists()).toBe(false)
     expect(emptyCard.find('.character-clones-card-chevron').exists()).toBe(false)
-    expect(emptyCard.text()).toContain('No implants installed.')
+    expect(emptyCard.text()).toContain('No implants installed')
     expect(emptyCard.text()).not.toContain('0 IMPLANTS')
   })
 
@@ -179,13 +179,14 @@ describe('character Clones workspace', () => {
     expect(wrapper.text()).not.toContain('Until the next jump is available')
   })
 
-  it('marks an absent clone jump unavailable and omits absent home-station activity', async () => {
+  it('omits absent clone jump and home-station activity', async () => {
     const wrapper = await mountWorkspace({
       clones: { ...clones, lastCloneJumpAt: null, lastStationChangeAt: null },
       implants,
     })
 
-    expect(wrapper.get('[aria-label="Active clone"]').text()).toContain('Unavailable')
+    expect(wrapper.get('[aria-label="Active clone"]').text()).not.toContain('LAST CLONE JUMP')
+    expect(wrapper.get('[aria-label="Active clone"]').text()).not.toContain('Unavailable')
     expect(wrapper.get('[aria-labelledby="character-clones-home-title"]').text()).not.toContain(
       'Last home-station change',
     )

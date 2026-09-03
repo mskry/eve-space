@@ -72,13 +72,12 @@ function historicalDate(value: string | null | undefined) {
         </template>
       </UiStatePanel>
       <template v-else-if="clones">
-        <div class="character-clones-jump-status">
+        <div v-if="lastCloneJumpLabel" class="character-clones-jump-status">
           <p class="character-clones-vital-label">LAST CLONE JUMP</p>
           <p class="character-clones-activity-value">
-            <time v-if="lastCloneJumpLabel" :datetime="clones.lastCloneJumpAt ?? undefined">
+            <time :datetime="clones.lastCloneJumpAt ?? undefined">
               {{ lastCloneJumpLabel }}
             </time>
-            <span v-else>Unavailable</span>
           </p>
         </div>
 

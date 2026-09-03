@@ -46,11 +46,17 @@
 .overview-bio-copy {
   max-height: 6.2em;
   margin-top: 14px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
   color: var(--ui-text);
   font-size: 11px;
   line-height: 1.55;
   white-space: pre-line;
+}
+
+.overview-bio-copy::-webkit-scrollbar {
+  display: none;
 }
 
 .overview-summary-grid--single-affiliation .affiliation-card {
@@ -162,7 +168,7 @@ a.affiliation-identity:focus-visible {
     height: 0;
     border-right: 1px solid var(--line);
     border-bottom: 1px solid var(--ui-border);
-    background: var(--panel);
+    background: var(--ui-surface-solid);
     opacity: 0;
     transition:
       height 240ms ease,
@@ -187,10 +193,15 @@ a.affiliation-identity:focus-visible {
     position: absolute;
     inset: 49px 25px auto;
     margin-top: 0;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
   }
 
   .overview-bio-card--expandable:hover .overview-bio-copy {
     max-height: calc(var(--bio-expanded-height) - 71px);
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
 
