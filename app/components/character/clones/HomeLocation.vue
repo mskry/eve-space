@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const homeLocationLabel = computed(() => {
   const location = props.homeLocation
-  if (!location?.locationId || !location.locationType) return 'Home location unavailable'
+  if (!location?.locationId || !location.locationType) return 'Home Station unavailable'
   if (location.name) return location.name
   return `${location.locationType === 'station' ? 'Station' : 'Structure'} ${location.locationId}`
 })
@@ -29,18 +29,18 @@ function historicalDate(value: string | null | undefined) {
   <section class="character-clones-home" aria-labelledby="character-clones-home-title">
     <header class="character-clones-section-heading">
       <div>
-        <p class="ui-eyebrow">MEDICAL CLONE</p>
-        <h2 id="character-clones-home-title">Home location</h2>
+        <p class="ui-eyebrow">RESPAWN</p>
+        <h2 id="character-clones-home-title">Home Station</h2>
       </div>
     </header>
 
     <dl class="character-clones-home-details">
       <div>
-        <dt>Location</dt>
-        <dd>{{ homeLocationLabel }}</dd>
+        <dt class="sr-only">Home Station</dt>
+        <dd class="character-clones-home-location">{{ homeLocationLabel }}</dd>
       </div>
       <div v-if="lastStationChangeLabel">
-        <dt>Last home-station change</dt>
+        <dt>Last Home Station change</dt>
         <dd>
           <time :datetime="lastStationChangeAt ?? undefined">
             {{ lastStationChangeLabel }}

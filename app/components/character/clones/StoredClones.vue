@@ -35,7 +35,7 @@ function implantCountLabel(count: number) {
   <section class="character-clones-stored" aria-labelledby="character-clones-stored-title">
     <header class="character-clones-section-heading">
       <div>
-        <p class="ui-eyebrow">REMOTE BODIES</p>
+        <p class="ui-eyebrow">INACTIVE CLONES</p>
         <h2 id="character-clones-stored-title">Jump clones by location</h2>
       </div>
       <span>{{ summaryLabel }}</span>
@@ -44,11 +44,11 @@ function implantCountLabel(count: number) {
     <div class="character-clones-groups">
       <UiStatePanel
         v-if="jumpClones.length === 0"
-        code="NO STORED CLONES"
+        code="NO JUMP CLONES"
         title="No jump clones installed"
         compact
       >
-        <p>This character has no stored jump clones.</p>
+        <p>This character has no jump clones installed.</p>
       </UiStatePanel>
 
       <section v-for="group in groups" :key="group.key" class="character-clones-group">
@@ -74,7 +74,9 @@ function implantCountLabel(count: number) {
                   >
                     <img src="/images/eve-clone.png" alt="" width="40" height="40" />
                     <span class="character-clones-card-body">
-                      <span class="character-clones-card-name">{{ clone.name || 'No Name' }}</span>
+                      <span class="character-clones-card-name">{{
+                        clone.name || 'Unnamed clone'
+                      }}</span>
                       <span class="character-clones-card-preview">
                         <UiTooltip
                           v-for="implant in clone.implants"
@@ -127,7 +129,9 @@ function implantCountLabel(count: number) {
               >
                 <img src="/images/eve-clone.png" alt="" width="40" height="40" />
                 <span class="character-clones-card-body">
-                  <span class="character-clones-card-name">{{ clone.name || 'No Name' }}</span>
+                  <span class="character-clones-card-name">{{
+                    clone.name || 'Unnamed clone'
+                  }}</span>
                   <span class="character-clones-card-preview-empty">No implants installed</span>
                 </span>
               </div>

@@ -484,12 +484,16 @@
 }
 
 .dashboard-workspace {
+  width: calc(100% - 88px);
   min-height: 100vh;
   margin-left: 88px;
-  transition: margin-left 180ms ease;
+  transition:
+    width 180ms ease,
+    margin-left 180ms ease;
 }
 
 .dashboard-shell--sidebar-expanded .dashboard-workspace {
+  width: calc(100% - 264px);
   margin-left: 264px;
 }
 
@@ -497,6 +501,7 @@
   position: sticky;
   z-index: 10;
   top: 0;
+  width: 100%;
   min-height: 76px;
   padding: 0 clamp(24px, 4vw, 58px);
   display: flex;

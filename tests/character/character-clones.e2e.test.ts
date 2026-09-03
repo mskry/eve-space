@@ -175,8 +175,8 @@ describe('character Clones production route', async () => {
       const requestsAfterIntent = cloneResourcePaths().length
       await clonesLink.click()
       await page.locator('.character-clones-workspace').waitFor()
-      await page.getByRole('region', { name: 'Active clone', exact: true }).waitFor()
-      await page.getByRole('region', { name: 'Home location', exact: true }).waitFor()
+      await page.getByRole('region', { name: 'Jump clones', exact: true }).waitFor()
+      await page.getByRole('region', { name: 'Home Station', exact: true }).waitFor()
       await page.getByRole('region', { name: 'Jump clones by location', exact: true }).waitFor()
       expect(cloneResourcePaths()).toHaveLength(requestsAfterIntent)
       expect(await clonesLink.getAttribute('aria-current')).toBe('page')
@@ -270,6 +270,11 @@ describe('character Clones production route', async () => {
     expect(previewStyle).toEqual({ width: '20px', height: '20px', opacity: '0.38' })
     const disclosureBefore = await disclosure.boundingBox()
     const cloneNameBefore = await cloneName.boundingBox()
+    const staticSummary = cards.nth(1).locator('.character-clones-card-summary--static')
+    expect(await staticSummary.evaluate((element) => element.tagName)).toBe('DIV')
+    expect(await staticSummary.evaluate((element) => getComputedStyle(element).cursor)).toBe(
+      'default',
+    )
     expect(await disclosure.getAttribute('aria-expanded')).toBe('false')
     await disclosure.focus()
     await page.keyboard.press('Enter')
@@ -352,7 +357,7 @@ function cloneState() {
         jumpCloneId: 12,
         name: null,
         location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
-        implants: [implantSummary(3)],
+        implants: [],
       },
     ],
     lastCloneJumpAt: '2026-09-02T12:00:00Z',

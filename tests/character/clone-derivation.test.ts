@@ -135,7 +135,7 @@ describe('jump clone grouping', () => {
     expect(groups[0]?.clones.map((entry) => entry.jumpCloneId)).toEqual([11, 13])
   })
 
-  it('labels an unresolved location by type and identifier', () => {
+  it('labels an unresolved location by type without exposing its identifier', () => {
     const groups = groupJumpClonesByLocation([
       {
         jumpCloneId: 14,
@@ -145,7 +145,7 @@ describe('jump clone grouping', () => {
       },
     ])
 
-    expect(groups[0]?.label).toBe('Structure 1035466617946')
+    expect(groups[0]?.label).toBe('Unknown structure')
     expect(groups[0]?.locationType).toBe('structure')
   })
 

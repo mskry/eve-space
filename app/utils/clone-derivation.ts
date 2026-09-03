@@ -100,7 +100,7 @@ export interface JumpCloneLocationGroup<Clone extends LocatedClone> {
 
 export function jumpCloneLocationLabel(location: CloneLocation) {
   if (location.name) return location.name
-  return `${location.locationType === 'station' ? 'Station' : 'Structure'} ${location.locationId}`
+  return location.locationType === 'station' ? 'Unknown station' : 'Unknown structure'
 }
 
 // ESI provides no meaningful clone order, so location groups retain first appearance.

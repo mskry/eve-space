@@ -26,8 +26,8 @@
 .character-summary-card h2,
 .character-summary-card h3 {
   margin: 0;
-  font: var(--ui-font-display-weight) var(--ui-font-display-size) / 0.95 var(--ui-font-mono);
-  letter-spacing: -0.07em;
+  font: var(--ui-font-display-weight) clamp(1.125rem, 2.2vw, 1.75rem) / 0.95 var(--ui-font-mono);
+  letter-spacing: -0.04em;
   overflow-wrap: anywhere;
 }
 

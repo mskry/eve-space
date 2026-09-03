@@ -385,6 +385,8 @@ describe('mail frontend behavior', () => {
     expect(page).toContain('showMailboxSkeleton || detailQuery.asyncStatus.value')
     expect(headers).toContain('class="mail-header-skeleton"')
     expect(reader).toContain('class="mail-reader-skeleton"')
+    expect(reader).toContain('v-for="index in 6"')
+    expect(css).toContain('.mail-reader-skeleton-actions')
     expect(css).toContain('@keyframes mail-skeleton-scan')
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
   })

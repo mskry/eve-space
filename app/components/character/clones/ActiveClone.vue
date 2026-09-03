@@ -15,9 +15,16 @@ defineEmits<{
 
 const capacityValue = computed(() =>
   props.capacity.maximum === null
-    ? String(props.capacity.installed)
-    : `${props.capacity.installed}/${props.capacity.maximum}`,
+    ? `${props.capacity.installed} INSTALLED`
+    : `${props.capacity.installed} OF ${props.capacity.maximum} INSTALLED`,
 )
+
+const capacityLabel = computed(() => {
+  if (props.capacity.maximum === null) return 'CAPACITY UNKNOWN'
+  const available = props.capacity.maximum - props.capacity.installed
+  if (available === 0) return 'CAPACITY REACHED'
+  return `${available} ${available === 1 ? 'SLOT' : 'SLOTS'} AVAILABLE`
+})
 
 const lastCloneJumpLabel = computed(() => historicalDate(props.clones?.lastCloneJumpAt))
 
@@ -36,18 +43,18 @@ function historicalDate(value: string | null | undefined) {
 </script>
 
 <template>
-  <AppSummaryCard class="character-clones-active" role="region" aria-label="Active clone">
+  <AppSummaryCard class="character-clones-active" role="region" aria-label="Jump clones">
     <template #icon>
       <UiEveImage kind="type-icon" :id="165" :dimension="40" alt="" aria-hidden="true" />
     </template>
-    <template #eyebrow>CLONE BAY</template>
+    <template #eyebrow>JUMP CLONES</template>
     <template #value>{{ clones ? capacityValue : '--' }}</template>
-    <template #label>JUMP CLONES INSTALLED</template>
+    <template #label>{{ clones ? capacityLabel : 'CAPACITY UNAVAILABLE' }}</template>
 
     <div class="character-clones-active-content">
       <UiStatePanel v-if="state.status === 'loading'" compact role="status">
         <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-        <p>Resolving home and stored clone records...</p>
+        <p>Resolving Home Station and jump clone records...</p>
       </UiStatePanel>
       <CharacterAuthorizationRequired
         v-else-if="state.status === 'authorization'"
