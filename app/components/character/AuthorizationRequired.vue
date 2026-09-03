@@ -71,7 +71,8 @@ withDefaults(
 }
 
 .character-authorization-state--compact .ui-action-primary {
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
   text-align: center;
 }
 
