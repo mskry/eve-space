@@ -14,8 +14,7 @@ build
 # Testing
 coverage
 
-# OpenSpec
-openspec/
+# OpenCode
 .opencode/
 
 # Logs

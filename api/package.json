@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm build:dependencies && tsc",
-    "build:dependencies": "pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsx ../scripts/run-installed-module-package-script.ts server build",
+    "build:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && tsx ../scripts/run-installed-module-package-script.ts server build",
     "dev": "tsx src/db/migrate.ts && tsx watch src/server.ts",
     "migrate": "tsx src/db/migrate.ts",
     "esi:rates": "tsx --env-file=../.env src/commands/report-esi-call-rates.ts",
@@ -31,7 +31,7 @@
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
     "@eve-space/platform-module-server": "workspace:*",
-    "@evespace/esi-client": "^2.0.0",
+    "@evespace/esi-client": "workspace:*",
     "@hono/node-server": "^2.1.1",
     "@hono/zod-validator": "^0.9.0",
     "bullmq": "6.2.0",

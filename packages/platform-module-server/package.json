@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
-    "@evespace/esi-client": "^2.0.0",
+    "@evespace/esi-client": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

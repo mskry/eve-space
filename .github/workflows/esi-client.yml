@@ -1,0 +1,58 @@
+name: ESI Client
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/esi-client.yml'
+      - 'api/package.json'
+      - 'package.json'
+      - 'packages/esi-client/**'
+      - 'packages/platform-module-server/package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/esi-client.yml'
+      - 'api/package.json'
+      - 'package.json'
+      - 'packages/esi-client/**'
+      - 'packages/platform-module-server/package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: esi-client-${{ github.ref }}-${{ matrix.os }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate ESI client
+        run: pnpm esi:validate

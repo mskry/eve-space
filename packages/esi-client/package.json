@@ -12,15 +12,16 @@
     "swagger",
     "typescript"
   ],
-  "homepage": "https://github.com/mskry/esi-client#readme",
+  "homepage": "https://github.com/mskry/eve-space/tree/main/packages/esi-client#readme",
   "bugs": {
-    "url": "https://github.com/mskry/esi-client/issues"
+    "url": "https://github.com/mskry/eve-space/issues"
   },
   "license": "MIT",
   "author": "Mykola Skrypets",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mskry/esi-client.git"
+    "url": "git+https://github.com/mskry/eve-space.git",
+    "directory": "packages/esi-client"
   },
   "files": [
     "dist"
@@ -251,8 +252,8 @@
     "docs:check": "node scripts/check-documentation.mjs",
     "drift:report": "node scripts/drift-report.mjs",
     "examples:check": "node scripts/check-examples.mjs",
-    "format": "oxfmt --write package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json pnpm-workspace.yaml src/index.ts src/operations.ts src/client scripts tests .github README.md CHANGELOG.md",
-    "format:check": "oxfmt --check package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json pnpm-workspace.yaml src/index.ts src/operations.ts src/client scripts tests .github README.md CHANGELOG.md",
+    "format": "oxfmt --write package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/client scripts tests README.md CHANGELOG.md",
+    "format:check": "oxfmt --check package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/client scripts tests README.md CHANGELOG.md",
     "generate": "node scripts/generate/source.mjs",
     "generate:check": "node scripts/generate/check.mjs",
     "generate:source:refresh": "node scripts/generate/source.mjs --refresh-snapshot",
@@ -290,5 +291,5 @@
   "engines": {
     "node": ">=22.18.0"
   },
-  "packageManager": "pnpm@11.21.0"
+  "packageManager": "pnpm@11.22.0"
 }

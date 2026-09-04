@@ -86,7 +86,15 @@ The generated domain indexes link focused references for every supported operati
 
 ## Development
 
-Development uses Node.js 22.18+ and pnpm 11.21.0. Run `pnpm validate` for generation reproducibility, documentation and example checks, formatting, linting, type checking, tests, build and package validation, installed-package smoke tests, and artifact inspection.
+Development uses Node.js 22.18+ and pnpm 11.22.0 from the EVE Space monorepo root. The package is owned and released independently but uses the root lockfile and workspace configuration.
+
+Run `pnpm esi:validate` from the repository root for generation reproducibility, documentation and example checks, formatting, linting, TypeScript 7 type checking, tests, build and package validation, installed-package smoke tests, and artifact inspection. Focused commands include `pnpm esi:generate:check`, `pnpm esi:package:check`, and `pnpm esi:smoke:package`.
+
+## Repository History And Releases
+
+The standalone repository `git@github.com:mskry/esi-client.git` was imported without squashing at commit `71f40ba27c63bd6e7119abce433ba84ef03fb93a`. Its source history remains reachable from the monorepo. The standalone `v2.0.0` tag points to commit `3ebda91a9a1839994c64d87066a7748928c34407`; that unqualified tag was not imported. Future package releases use annotated tags named `esi-client-v<version>`.
+
+To release, update this package's version and changelog in a reviewed commit, install from the root frozen lockfile, and run `pnpm esi:validate`. Publish only this package with `pnpm --filter @evespace/esi-client publish --access public`, then create and push the matching `esi-client-v<version>` tag. Never publish from the monorepo root, and do not create a release tag before package validation and npm publication succeed.
 
 ## License
 
