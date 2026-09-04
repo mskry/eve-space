@@ -265,6 +265,7 @@
     "prepublishOnly": "pnpm validate",
     "smoke:package": "node scripts/smoke-package.mjs",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.test.json --noEmit",
     "validate": "pnpm generate:check && pnpm docs:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm examples:check && pnpm build && pnpm run package:check -- --built"
   },
@@ -274,6 +275,7 @@
     "@bybrave/fast-json-patch2": "4.0.0",
     "@scalar/openapi-parser": "0.28.14",
     "@types/node": "22.18.0",
+    "@vitest/coverage-v8": "4.1.11",
     "es-module-lexer": "2.3.2",
     "esbuild": "0.28.2",
     "oxfmt": "0.64.0",

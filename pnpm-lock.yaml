@@ -182,6 +182,9 @@ importers:
       '@types/node':
         specifier: 22.18.0
         version: 22.18.0
+      '@vitest/coverage-v8':
+        specifier: 4.1.11
+        version: 4.1.11(vitest@4.1.11)
       es-module-lexer:
         specifier: 2.3.2
         version: 2.3.2
