@@ -4,23 +4,13 @@ on:
   pull_request:
     paths:
       - '.github/workflows/esi-client.yml'
-      - 'api/package.json'
-      - 'package.json'
       - 'packages/esi-client/**'
-      - 'packages/platform-module-server/package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
   push:
     branches:
       - main
     paths:
       - '.github/workflows/esi-client.yml'
-      - 'api/package.json'
-      - 'package.json'
       - 'packages/esi-client/**'
-      - 'packages/platform-module-server/package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
 
 permissions:
   contents: read
