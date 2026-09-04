@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--line);
-  background: color-mix(in srgb, var(--ui-surface-solid) 96%, transparent);
+  background: var(--ui-surface);
   backdrop-filter: blur(18px);
   transition: width 180ms ease;
 }

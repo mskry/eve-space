@@ -361,7 +361,7 @@ function autocompleteOptions<T extends string | number>(
 .assets-toolbar {
   min-width: 0;
   border-inline: 0.0625rem solid var(--ui-border);
-  background: color-mix(in srgb, var(--ui-surface-solid) 90%, transparent);
+  background: var(--ui-surface);
 }
 
 .assets-strip {

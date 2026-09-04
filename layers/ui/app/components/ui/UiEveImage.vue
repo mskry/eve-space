@@ -85,6 +85,6 @@ function sourceSize(minimum: number): EveImageSize {
 
 .ui-eve-image--logo {
   padding: 4px;
-  background: var(--ui-logo-background);
+  background: var(--ui-control);
 }
 </style>

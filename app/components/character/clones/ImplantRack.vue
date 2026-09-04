@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { CharacterImplants } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
-import type { EsiResourceState } from '../../../types/esi-resource'
 import {
   attributeImplantSlotCount,
   implantSlotCount,
   toImplantRack,
 } from '../../../utils/clone-derivation'
+import { toCloneEsiResourceState } from '../../../utils/clone-resource-state'
 
 const props = defineProps<{
   implants?: CharacterImplants
@@ -25,32 +25,14 @@ const slotSummaryLabel = computed(() => {
     ? `${filled} / ${rack.value.unslotted.length} UNPLACED`
     : filled
 })
-const resourceState = computed<EsiResourceState>(() => {
-  if (props.state.status === 'loading') {
-    return { status: 'loading', title: '', message: 'Reading active implant telemetry...' }
-  }
-  if (props.state.status === 'authorization') {
-    return {
-      status: 'authorization-required',
-      code: 'ESI 403 / IMPLANTS',
-      title: 'Active implant authorization required',
-      message: props.state.message,
-      action: props.state.authorizeUrl
-        ? { href: props.state.authorizeUrl, label: 'AUTHORIZE THIS CHARACTER' }
-        : null,
-    }
-  }
-  if (props.state.status === 'error') {
-    return {
-      status: 'error',
-      code: 'ERR / IMPLANTS',
-      title: 'Active implants unavailable',
-      message: props.state.message,
-      retryLabel: 'RETRY UPLINK',
-    }
-  }
-  return { status: 'ready' }
-})
+const resourceState = computed(() =>
+  toCloneEsiResourceState(props.state, {
+    resourceCode: 'IMPLANTS',
+    loadingMessage: 'Reading active implant telemetry...',
+    authorizationTitle: 'Active implant authorization required',
+    errorTitle: 'Active implants unavailable',
+  }),
+)
 </script>
 
 <template>

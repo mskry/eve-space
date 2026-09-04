@@ -4,6 +4,7 @@ import type {
   FinanceJournal,
   FinanceOrder,
   FinanceOrders,
+  FinanceResourceState,
 } from '../../app/types/finance'
 import {
   buildFinanceSummaryMetrics,
@@ -27,6 +28,7 @@ import {
   formatFinanceTerm,
   formatSignedFinanceIsk,
   isWithinFinanceRange,
+  toFinanceEsiResourceState,
 } from '../../app/utils/finance'
 
 const now = Date.parse('2026-09-02T12:00:00.000Z')
@@ -36,6 +38,67 @@ const summaryCopy = {
 }
 
 describe('Finance presentation helpers', () => {
+  it('maps finance loading, authorization, error, and ready states', () => {
+    expect(
+      toFinanceEsiResourceState(
+        financeResourceState({
+          authorizationAction: { href: '/reauthorize', label: 'AUTHORIZE' },
+          authorizationRequired: true,
+          errorMessage: 'Wallet scope required.',
+          loading: true,
+        }),
+        'Wallet',
+      ),
+    ).toEqual({
+      status: 'authorization-required',
+      code: 'ESI 403 / FINANCE',
+      title: 'Wallet not authorized',
+      message: 'Wallet scope required.',
+      action: { href: '/reauthorize', label: 'AUTHORIZE' },
+    })
+    expect(
+      toFinanceEsiResourceState(
+        financeResourceState({ errorMessage: 'Previous failure.', loading: true }),
+        'Wallet Journal',
+      ),
+    ).toEqual({
+      status: 'loading',
+      title: '',
+      message: 'Loading wallet journal...',
+    })
+    expect(
+      toFinanceEsiResourceState(
+        financeResourceState({
+          canRetry: true,
+          errorCode: 'ESI 504 / JOURNAL',
+          errorMessage: 'Journal timed out.',
+        }),
+        'Wallet Journal',
+      ),
+    ).toEqual({
+      status: 'error',
+      code: 'ESI 504 / JOURNAL',
+      title: 'Wallet Journal unavailable',
+      message: 'Journal timed out.',
+      retryLabel: 'RETRY',
+    })
+    expect(
+      toFinanceEsiResourceState(
+        financeResourceState({ errorMessage: 'Balance unavailable.' }),
+        'Wallet',
+      ),
+    ).toEqual({
+      status: 'error',
+      code: 'ESI 502 / FINANCE',
+      title: 'Wallet unavailable',
+      message: 'Balance unavailable.',
+      retryLabel: undefined,
+    })
+    expect(toFinanceEsiResourceState(financeResourceState(), 'Wallet')).toEqual({
+      status: 'ready',
+    })
+  })
+
   it('preserves nullable and formatting behavior', () => {
     expect(formatFinanceIsk(1234.5)).toBe('1,234.50')
     expect(formatSignedFinanceIsk(12)).toBe('+12.00')
@@ -226,6 +289,19 @@ describe('Finance presentation helpers', () => {
     expect(formatFinanceSynced(new Date(now).toISOString(), 0)).toBe('—')
   })
 })
+
+function financeResourceState(overrides: Partial<FinanceResourceState> = {}): FinanceResourceState {
+  return {
+    authorizationAction: null,
+    authorizationRequired: false,
+    canRetry: false,
+    errorCode: null,
+    errorMessage: null,
+    loading: false,
+    stale: false,
+    ...overrides,
+  }
+}
 
 function journalEntry(id: number, referenceType: string, amount: number | null, timestamp: number) {
   return {

@@ -83,7 +83,7 @@
 .finance-ledger {
   min-width: 0;
   border: 0.0625rem solid var(--ui-border);
-  background: var(--ui-surface-solid);
+  background: var(--ui-surface);
 }
 
 .finance-ledger-header {
@@ -133,7 +133,7 @@
 }
 
 .finance-tab-badge {
-  color: var(--ui-warning);
+  color: var(--ui-primary);
   font: 400 0.5625rem/1 var(--ui-font-mono);
 }
 

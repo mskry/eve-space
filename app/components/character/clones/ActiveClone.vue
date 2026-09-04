@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { CharacterClones } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
-import type { EsiResourceState } from '../../../types/esi-resource'
 import type { JumpCloneCapacity } from '../../../utils/clone-derivation'
+import { toCloneEsiResourceState } from '../../../utils/clone-resource-state'
 
 const props = defineProps<{
   clones?: CharacterClones
@@ -32,36 +32,14 @@ const lastCloneJumpLabel = computed(() => historicalDate(props.clones?.lastClone
 const capacityNote = computed(() =>
   props.capacity.maximum === null ? 'Maximum needs the skills resource for this character.' : '',
 )
-const resourceState = computed<EsiResourceState>(() => {
-  if (props.state.status === 'loading') {
-    return {
-      status: 'loading',
-      title: '',
-      message: 'Resolving Home Station and jump clone records...',
-    }
-  }
-  if (props.state.status === 'authorization') {
-    return {
-      status: 'authorization-required',
-      code: 'ESI 403 / CLONES',
-      title: 'Clone-state authorization required',
-      message: props.state.message,
-      action: props.state.authorizeUrl
-        ? { href: props.state.authorizeUrl, label: 'AUTHORIZE THIS CHARACTER' }
-        : null,
-    }
-  }
-  if (props.state.status === 'error') {
-    return {
-      status: 'error',
-      code: 'ERR / CLONES',
-      title: 'Clone state unavailable',
-      message: props.state.message,
-      retryLabel: 'RETRY UPLINK',
-    }
-  }
-  return { status: 'ready' }
-})
+const resourceState = computed(() =>
+  toCloneEsiResourceState(props.state, {
+    resourceCode: 'CLONES',
+    loadingMessage: 'Resolving Home Station and jump clone records...',
+    authorizationTitle: 'Clone-state authorization required',
+    errorTitle: 'Clone state unavailable',
+  }),
+)
 
 function historicalDate(value: string | null | undefined) {
   if (!value || !Number.isFinite(Date.parse(value))) return null

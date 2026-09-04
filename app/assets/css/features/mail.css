@@ -37,7 +37,7 @@
   grid-template-rows: minmax(0, 1fr);
   background:
     linear-gradient(140deg, color-mix(in srgb, var(--ui-primary) 5%, transparent), transparent 42%),
-    var(--ui-surface-solid);
+    var(--ui-surface);
 }
 
 .mail-pane-heading {

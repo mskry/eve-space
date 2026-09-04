@@ -117,10 +117,6 @@
   background: var(--ui-surface-raised);
 }
 
-.employment-timeline img {
-  background: var(--ui-logo-background);
-}
-
 .employment-deleted-mark {
   width: 48px;
   height: 48px;
