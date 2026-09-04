@@ -131,10 +131,7 @@ function matchingAssetIds(
   return matches
 }
 
-function includeAncestors(
-  rows: readonly { row: AssetHierarchyRow; parentId: number | null }[],
-  directMatches: ReadonlySet<number>,
-) {
+function includeAncestors(rows: readonly FlattenedAssetRow[], directMatches: ReadonlySet<number>) {
   const included = new Set(directMatches)
   const parentById = new Map<number, number>()
   for (const { row, parentId } of rows) {
