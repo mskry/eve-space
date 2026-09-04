@@ -269,6 +269,18 @@ describe('complete character asset collection', () => {
     expect(maximumActive).toBe(characterAssetWorkerConcurrency)
   })
 
+  test('collects an inventory advertising more than a hundred pages', async () => {
+    const advertisedPages = 150
+    mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
+      pageResponse([asset({ item_id: options.page })], advertisedPages),
+    )
+
+    const result = await getCharacterAssets(characterId)
+
+    expect(result.assets).toHaveLength(advertisedPages)
+    expect(mocks.listCharacterAssets).toHaveBeenCalledTimes(advertisedPages)
+  })
+
   test.each([undefined, 0, -1, 1.5, maximumCharacterAssetPages + 1, Number.MAX_VALUE])(
     'rejects invalid advertised page count %s before scheduling fan-out',
     async (pages) => {

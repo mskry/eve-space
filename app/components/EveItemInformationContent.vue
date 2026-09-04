@@ -181,10 +181,6 @@ function itemClassification(item: EveItemInformationItem) {
   padding: 14px 12px;
 }
 
-.eve-item-information-scroll {
-  max-height: min(20rem, calc(100dvh - 14rem));
-}
-
 .eve-item-information-description.is-standalone::before {
   content: 'Description';
   width: max-content;

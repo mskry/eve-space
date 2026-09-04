@@ -186,7 +186,7 @@ describe('character Assets production route', async () => {
     await page.getByRole('option', { name: 'Inventory item 2', exact: true }).click()
     expect(await typeFilter.inputValue()).toBe('Inventory item 2')
     await expect.poll(() => assetRows(page).count()).toBe(2)
-    await page.getByRole('button', { name: 'Clear type filter' }).click()
+    await page.getByRole('button', { name: 'Clear type filter', exact: true }).click()
 
     const search = page.getByRole('searchbox', { name: 'Search text' })
     await search.fill('Dep scaner')
@@ -252,6 +252,7 @@ describe('character Assets production route', async () => {
 
     const dialog = page.getByRole('dialog', { name: 'Item information' })
     await dialog.getByRole('heading', { name: longValue }).waitFor()
+    await expect.poll(async () => isWithinViewport(await dialog.boundingBox(), 390, 844)).toBe(true)
     expect(typeDetailRequests().map((url) => url.pathname)).toEqual(['/api/universe/types/103'])
     expect(assetRequests()).toHaveLength(assetsBefore)
     expectWithinViewport(await dialog.boundingBox(), 390, 844)
@@ -308,6 +309,16 @@ function expectWithinViewport(
   expect(box!.y + box!.height).toBeLessThanOrEqual(height)
 }
 
+function isWithinViewport(
+  box: { x: number; y: number; width: number; height: number } | null,
+  width: number,
+  height: number,
+) {
+  return Boolean(
+    box && box.x >= 0 && box.y >= 0 && box.x + box.width <= width && box.y + box.height <= height,
+  )
+}
+
 function assetsResponse() {
   return {
     characterId,
@@ -323,7 +334,7 @@ function assetsResponse() {
 }
 
 function inventoryAssets() {
-  const locationName = apiMode === 'long' ? longValue : 'Jita IV - Moon 4'
+  const locationName = 'Jita IV - Moon 4'
   const assets = [
     asset(1, {
       customName: 'Cargo vault',
@@ -342,7 +353,7 @@ function inventoryAssets() {
       customName: apiMode === 'long' ? longValue : null,
       typeId: 103,
       typeName: apiMode === 'long' ? longValue : 'Inventory item 103',
-      locationName,
+      locationName: apiMode === 'long' ? longValue : locationName,
       locationFlag: apiMode === 'long' ? longValue : 'Hangar',
     }),
   ]

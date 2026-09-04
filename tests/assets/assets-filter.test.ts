@@ -38,6 +38,21 @@ describe('asset filters', () => {
       'Raptor Aurora Universalis SKIN',
     ])
   })
+
+  it('matches an exact prefix longer than the fuzzy-search pattern limit', () => {
+    const longIdentity = 'LONG-ASSET-IDENTITY-WITHOUT-BREAKS-'.repeat(18)
+    const groups = buildAssetHierarchy([
+      asset(1, { customName: longIdentity, typeName: longIdentity }),
+      asset(2, { typeName: 'Amarr Shuttle' }),
+    ])
+
+    const result = filterAssetHierarchy(groups, {
+      ...EMPTY_ASSET_FILTERS,
+      search: longIdentity.slice(0, 40),
+    })
+
+    expect(result.groups.flatMap((group) => group.rows.map((row) => row.asset.itemId))).toEqual([1])
+  })
 })
 
 function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecord {

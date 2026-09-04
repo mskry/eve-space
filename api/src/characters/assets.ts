@@ -14,7 +14,9 @@ import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types
 import { resolveUniverseNamesBestEffort, type UniverseName } from '../universe/names.js'
 
 export const characterAssetsScope = getCharacterEsiScope('character-assets-page')
-export const maximumCharacterAssetPages = 100
+// A sanity bound on the advertised page count, not a product limit: the fan-out allocates an array
+// of page numbers, so a corrupt X-Pages must not reach it. 1,000 pages is ~1,000,000 assets.
+export const maximumCharacterAssetPages = 1_000
 export const characterAssetNameBatchSize = 1_000
 export const characterAssetWorkerConcurrency = 4
 

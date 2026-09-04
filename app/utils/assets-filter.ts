@@ -14,10 +14,16 @@ const searchIndexByHierarchy = new WeakMap<
   readonly AssetLocationGroup[],
   Fuse<AssetSearchDocument>
 >()
+const skinSearchTerms = new Set(['skin', 'skins'])
 
 interface AssetSearchDocument {
   itemId: number
   text: string
+}
+
+interface FlattenedAssetRow {
+  row: AssetHierarchyRow
+  parentId: number | null
 }
 
 export const EMPTY_ASSET_FILTERS: AssetFilterState = {
@@ -200,9 +206,25 @@ function searchTermMatches(
   index: Fuse<AssetSearchDocument>,
   term: string,
 ) {
-  if (term !== 'skin' && term !== 'skins') {
-    return new Set(index.search(term).map(({ item }) => item.itemId))
+  if (skinSearchTerms.has(term)) return skinAssetMatches(groups)
+  return textAssetMatches(groups, index, term)
+}
+
+function textAssetMatches(
+  groups: readonly AssetLocationGroup[],
+  index: Fuse<AssetSearchDocument>,
+  term: string,
+) {
+  const matches = new Set(index.search(term).map(({ item }) => item.itemId))
+  for (const group of groups) {
+    for (const { row } of flattenRows(group.rows)) {
+      if (searchableAssetText(row.asset, group).includes(term)) matches.add(row.asset.itemId)
+    }
   }
+  return matches
+}
+
+function skinAssetMatches(groups: readonly AssetLocationGroup[]) {
   return new Set(
     groups.flatMap((group) =>
       flattenRows(group.rows).flatMap(({ row }) =>
@@ -267,10 +289,8 @@ function compareText(left: string, right: string) {
 }
 
 function flattenRows(rows: readonly AssetHierarchyRow[]) {
-  const flattened: Array<{ row: AssetHierarchyRow; parentId: number | null }> = []
-  const pending: Array<{ row: AssetHierarchyRow; parentId: number | null }> = rows
-    .toReversed()
-    .map((row) => ({ row, parentId: null }))
+  const flattened: FlattenedAssetRow[] = []
+  const pending: FlattenedAssetRow[] = rows.toReversed().map((row) => ({ row, parentId: null }))
   while (pending.length > 0) {
     const current = pending.pop()!
     flattened.push(current)
@@ -284,22 +304,34 @@ function flattenRows(rows: readonly AssetHierarchyRow[]) {
   return flattened
 }
 
-function cloneIncludedRows(
-  rows: readonly { row: AssetHierarchyRow; parentId: number | null }[],
-  included: ReadonlySet<number>,
-) {
+function cloneIncludedRows(rows: readonly FlattenedAssetRow[], included: ReadonlySet<number>) {
+  const clones = cloneIncludedRowsById(rows, included)
+  return assembleClonedRows(rows, clones)
+}
+
+function cloneIncludedRowsById(rows: readonly FlattenedAssetRow[], included: ReadonlySet<number>) {
   const clones = new Map<number, AssetHierarchyRow>()
-  const roots: AssetHierarchyRow[] = []
   for (const { row } of rows) {
     if (!included.has(row.asset.itemId)) continue
     clones.set(row.asset.itemId, { ...row, children: [] })
   }
+  return clones
+}
+
+function assembleClonedRows(
+  rows: readonly FlattenedAssetRow[],
+  clones: ReadonlyMap<number, AssetHierarchyRow>,
+) {
+  const roots: AssetHierarchyRow[] = []
   for (const { row, parentId } of rows) {
     const clone = clones.get(row.asset.itemId)
     if (!clone) continue
     const parent = parentId === null ? undefined : clones.get(parentId)
-    if (parent) parent.children.push(clone)
-    else roots.push(clone)
+    if (!parent) {
+      roots.push(clone)
+      continue
+    }
+    parent.children.push(clone)
   }
   return roots
 }
