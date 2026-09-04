@@ -6,6 +6,7 @@ import {
   characterSkillsQuery,
 } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
+import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
 
@@ -50,6 +51,36 @@ const attributesMessage = computed(() => queryMessage(attributesQuery.error.valu
 const skillQueueMessage = computed(() => queryMessage(skillQueueQuery.error.value))
 const attributesAuthorizeUrl = computed(() => queryAuthorizeUrl(attributesQuery.error.value))
 const skillQueueAuthorizeUrl = computed(() => queryAuthorizeUrl(skillQueueQuery.error.value))
+const skillsResourceState = computed<EsiResourceState>(() => {
+  if (skillsStatus.value === 'loading') {
+    return {
+      status: 'loading',
+      title: '',
+      message: 'Decrypting trained skill archive...',
+    }
+  }
+  if (skillsStatus.value === 'scope-required') {
+    return {
+      status: 'authorization-required',
+      code: 'ESI 403 / SKILLS',
+      title: 'Skills authorization required',
+      message: skillsMessage.value,
+      action: skillsAuthorizeUrl.value
+        ? { href: skillsAuthorizeUrl.value, label: 'AUTHORIZE THIS CHARACTER' }
+        : null,
+    }
+  }
+  if (skillsStatus.value === 'error' || skillsStatus.value === 'not-found') {
+    return {
+      status: 'error',
+      code: skillsStatus.value === 'not-found' ? '404' : 'ERR / SKILLS',
+      title: 'Skill archive unavailable',
+      message: skillsMessage.value,
+      retryLabel: 'RETRY UPLINK',
+    }
+  }
+  return { status: 'ready' }
+})
 
 function loadCharacterSkills(force = false) {
   return force ? skillsQuery.refetch() : skillsQuery.refresh()
@@ -84,59 +115,39 @@ function queryAuthorizeUrl(error: unknown) {
 
 <template>
   <section class="character-skills-route">
-    <UiStatePanel v-if="skillsStatus === 'loading' && !skills" compact role="status">
-      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-      <p>Decrypting trained skill archive...</p>
-    </UiStatePanel>
-    <CharacterAuthorizationRequired
-      v-else-if="skillsStatus === 'scope-required'"
-      title="Skills authorization required"
-      :message="skillsMessage"
-      :authorize-url="skillsAuthorizeUrl"
-    />
-    <UiStatePanel
-      v-else-if="skillsStatus === 'error' || skillsStatus === 'not-found'"
-      :code="skillsStatus === 'not-found' ? '404' : 'ERR / SKILLS'"
-      title="Skill archive unavailable"
-      compact
-      role="alert"
-      tone="error"
+    <EsiResourceBoundary
+      :state="skillsResourceState"
+      :has-data="Boolean(skills)"
+      @retry="loadCharacterSkills(true)"
     >
-      <p>{{ skillsMessage }}</p>
-      <template #action>
-        <button class="ui-action-secondary" type="button" @click="loadCharacterSkills(true)">
-          RETRY UPLINK
-        </button>
-      </template>
-    </UiStatePanel>
+      <div v-if="skills" class="skills-layout">
+        <section class="skills-catalogue" aria-label="Skill catalogue">
+          <CharacterSkillsSummaryCard
+            :skills="skills"
+            :attributes="attributes"
+            :attributes-status="attributesStatus"
+            :attributes-message="attributesMessage"
+            :attributes-authorize-url="attributesAuthorizeUrl"
+            @retry-attributes="attributesQuery.refetch()"
+          />
+          <CharacterSkillsCatalogue
+            :key="characterId"
+            :skills="skills"
+            :skill-queue="skillQueue"
+            :skill-queue-status="skillQueueStatus"
+          />
+        </section>
 
-    <div v-else-if="skills" class="skills-layout">
-      <section class="skills-catalogue" aria-label="Skill catalogue">
-        <CharacterSkillsSummaryCard
-          :skills="skills"
-          :attributes="attributes"
-          :attributes-status="attributesStatus"
-          :attributes-message="attributesMessage"
-          :attributes-authorize-url="attributesAuthorizeUrl"
-          @retry-attributes="attributesQuery.refetch()"
-        />
-        <CharacterSkillsCatalogue
-          :key="characterId"
-          :skills="skills"
+        <CharacterSkillsQueue
           :skill-queue="skillQueue"
-          :skill-queue-status="skillQueueStatus"
+          :status="skillQueueStatus"
+          :message="skillQueueMessage"
+          :authorize-url="skillQueueAuthorizeUrl"
+          :unallocated-sp="skills.unallocatedSp"
+          @retry="skillQueueQuery.refetch()"
         />
-      </section>
-
-      <CharacterSkillsQueue
-        :skill-queue="skillQueue"
-        :status="skillQueueStatus"
-        :message="skillQueueMessage"
-        :authorize-url="skillQueueAuthorizeUrl"
-        :unallocated-sp="skills.unallocatedSp"
-        @retry="skillQueueQuery.refetch()"
-      />
-    </div>
+      </div>
+    </EsiResourceBoundary>
   </section>
 </template>
 

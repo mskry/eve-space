@@ -227,7 +227,7 @@ describe('character Assets production route', async () => {
       await state.getByText('Grant esi-assets.read_assets.v1 for this character.').isVisible(),
     ).toBe(true)
     expect(
-      await state.getByRole('button', { name: 'AUTHORIZE ASSETS FOR THIS CHARACTER' }).isVisible(),
+      await state.getByRole('link', { name: 'AUTHORIZE ASSETS FOR THIS CHARACTER' }).isVisible(),
     ).toBe(true)
     expect(assetRequests()).toHaveLength(1)
   })

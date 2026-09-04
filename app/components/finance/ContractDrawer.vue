@@ -13,6 +13,7 @@ import {
   formatFinanceDate,
   formatFinanceIsk,
   formatFinanceTerm,
+  toFinanceEsiResourceState,
 } from '../../utils/finance'
 
 const props = defineProps<{
@@ -45,6 +46,34 @@ const drawerTitle = computed(
     props.contract?.title ||
     (props.contract ? formatFinanceContractType(props.contract.type) : 'Contract details'),
 )
+const itemResourceState = computed(() => {
+  const state = toFinanceEsiResourceState(props.itemState, 'Contract items')
+  if (state.status === 'authorization-required') {
+    return {
+      ...state,
+      code: 'ESI 403 / CONTRACT ITEMS',
+      retryLabel: state.action ? undefined : 'RETRY',
+    }
+  }
+  if (state.status === 'error') {
+    return { ...state, code: props.itemState.errorCode ?? 'ERR / ITEMS' }
+  }
+  return state
+})
+const bidResourceState = computed(() => {
+  const state = toFinanceEsiResourceState(props.bidState, 'Auction bids')
+  if (state.status === 'authorization-required') {
+    return {
+      ...state,
+      code: 'ESI 403 / CONTRACT BIDS',
+      retryLabel: state.action ? undefined : 'RETRY',
+    }
+  }
+  if (state.status === 'error') {
+    return { ...state, code: props.bidState.errorCode ?? 'ERR / BIDS' }
+  }
+  return state
+})
 </script>
 
 <template>
@@ -109,55 +138,29 @@ const drawerTitle = computed(
             <span class="finance-drawer-section-label">Items</span>
             <span class="finance-drawer-section-note">FETCHED ON OPEN</span>
           </header>
-          <UiStatePanel v-if="itemState.loading && !items" compact role="status">
-            <p>Loading contract items...</p>
-          </UiStatePanel>
-          <UiStatePanel
-            v-else-if="itemState.errorMessage && !items"
-            code="ERR / ITEMS"
-            title="Contract items unavailable"
-            compact
-            role="alert"
-            tone="error"
+          <EsiResourceBoundary
+            :state="itemResourceState"
+            :has-data="Boolean(items)"
+            @retry="emit('retry-items')"
           >
-            <p>{{ itemState.errorMessage }}</p>
-            <template
-              v-if="
-                itemState.authorizationAction ||
-                itemState.canRetry ||
-                itemState.authorizationRequired
-              "
-              #action
-            >
-              <a
-                v-if="itemState.authorizationAction"
-                class="ui-action-primary"
-                :href="itemState.authorizationAction.href"
-              >
-                {{ itemState.authorizationAction.label }}
-              </a>
-              <button v-else class="ui-action-secondary" type="button" @click="emit('retry-items')">
-                RETRY
-              </button>
-            </template>
-          </UiStatePanel>
-          <p v-else-if="items && items.items.length === 0" class="finance-drawer-empty">
-            No item records apply to this contract.
-          </p>
-          <ul v-else-if="items" class="finance-drawer-list">
-            <li v-for="item in items.items" :key="item.recordId">
-              <span class="finance-drawer-direction" :class="`is-${item.direction}`">
-                {{ item.direction.toLocaleUpperCase('en-US') }}
-              </span>
-              <FinanceItemIdentity :name="item.typeName" :type-id="item.typeId" />
-              <span v-if="item.blueprint" class="finance-drawer-blueprint">
-                BLUEPRINT {{ item.blueprint.toLocaleUpperCase('en-US') }}
-              </span>
-              <span class="finance-drawer-quantity">
-                ×{{ item.quantity.toLocaleString('en-US') }}
-              </span>
-            </li>
-          </ul>
+            <p v-if="items && items.items.length === 0" class="finance-drawer-empty">
+              No item records apply to this contract.
+            </p>
+            <ul v-else-if="items" class="finance-drawer-list">
+              <li v-for="item in items.items" :key="item.recordId">
+                <span class="finance-drawer-direction" :class="`is-${item.direction}`">
+                  {{ item.direction.toLocaleUpperCase('en-US') }}
+                </span>
+                <FinanceItemIdentity :name="item.typeName" :type-id="item.typeId" />
+                <span v-if="item.blueprint" class="finance-drawer-blueprint">
+                  BLUEPRINT {{ item.blueprint.toLocaleUpperCase('en-US') }}
+                </span>
+                <span class="finance-drawer-quantity">
+                  ×{{ item.quantity.toLocaleString('en-US') }}
+                </span>
+              </li>
+            </ul>
+          </EsiResourceBoundary>
         </section>
 
         <section v-if="contract.type === 'auction'" class="finance-drawer-section">
@@ -165,48 +168,26 @@ const drawerTitle = computed(
             <span class="finance-drawer-section-label">Bids</span>
             <span class="finance-drawer-section-note">FETCHED ON OPEN</span>
           </header>
-          <UiStatePanel v-if="bidState.loading && !bids" compact role="status">
-            <p>Loading auction bids...</p>
-          </UiStatePanel>
-          <UiStatePanel
-            v-else-if="bidState.errorMessage && !bids"
-            code="ERR / BIDS"
-            title="Auction bids unavailable"
-            compact
-            role="alert"
-            tone="error"
+          <EsiResourceBoundary
+            :state="bidResourceState"
+            :has-data="Boolean(bids)"
+            @retry="emit('retry-bids')"
           >
-            <p>{{ bidState.errorMessage }}</p>
-            <template
-              v-if="
-                bidState.authorizationAction || bidState.canRetry || bidState.authorizationRequired
-              "
-              #action
-            >
-              <a
-                v-if="bidState.authorizationAction"
-                class="ui-action-primary"
-                :href="bidState.authorizationAction.href"
-              >
-                {{ bidState.authorizationAction.label }}
-              </a>
-              <button v-else class="ui-action-secondary" type="button" @click="emit('retry-bids')">
-                RETRY
-              </button>
-            </template>
-          </UiStatePanel>
-          <p v-else-if="bids && bids.bids.length === 0" class="finance-drawer-empty">
-            No bids have been placed on this auction.
-          </p>
-          <ul v-else-if="bids" class="finance-drawer-list">
-            <li v-for="bid in bids.bids" :key="bid.bidId">
-              <time :datetime="bid.bidAt" class="is-subtle">{{
-                formatFinanceDate(bid.bidAt)
-              }}</time>
-              <span class="finance-drawer-quantity">{{ formatFinanceIsk(bid.amount, 0) }} ISK</span>
-            </li>
-          </ul>
-          <p class="finance-drawer-footnote">{{ bidPrivacyNote }}</p>
+            <p v-if="bids && bids.bids.length === 0" class="finance-drawer-empty">
+              No bids have been placed on this auction.
+            </p>
+            <ul v-else-if="bids" class="finance-drawer-list">
+              <li v-for="bid in bids.bids" :key="bid.bidId">
+                <time :datetime="bid.bidAt" class="is-subtle">{{
+                  formatFinanceDate(bid.bidAt)
+                }}</time>
+                <span class="finance-drawer-quantity">
+                  {{ formatFinanceIsk(bid.amount, 0) }} ISK
+                </span>
+              </li>
+            </ul>
+            <p class="finance-drawer-footnote">{{ bidPrivacyNote }}</p>
+          </EsiResourceBoundary>
         </section>
 
         <div class="finance-drawer-actions">

@@ -10,14 +10,48 @@ import type {
   FinanceOrderMode,
   FinanceOrders,
   FinanceRange,
+  FinanceResourceState,
   FinanceSummary,
   FinanceSummaryCopy,
   FinanceSummaryMetric,
   FinanceTransaction,
   FinanceTransactionSideFilter,
 } from '../types/finance'
+import type { EsiResourceState } from '../types/esi-resource'
 
 export const FINANCE_RANGES: readonly FinanceRange[] = ['7D', '30D', '90D', 'ALL']
+
+export function toFinanceEsiResourceState(
+  state: FinanceResourceState,
+  title: string,
+): EsiResourceState {
+  if (state.authorizationRequired) {
+    return {
+      status: 'authorization-required',
+      code: 'ESI 403 / FINANCE',
+      title: `${title} not authorized`,
+      message: state.errorMessage,
+      action: state.authorizationAction,
+    }
+  }
+  if (state.loading) {
+    return {
+      status: 'loading',
+      title: '',
+      message: `Loading ${title.toLocaleLowerCase('en-US')}...`,
+    }
+  }
+  if (state.errorMessage) {
+    return {
+      status: 'error',
+      code: state.errorCode ?? 'ESI 502 / FINANCE',
+      title: `${title} unavailable`,
+      message: state.errorMessage,
+      retryLabel: state.canRetry ? 'RETRY' : undefined,
+    }
+  }
+  return { status: 'ready' }
+}
 
 const millisecondsPerDay = 86_400_000
 const millisecondsPerHour = 3_600_000

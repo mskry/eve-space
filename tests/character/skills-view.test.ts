@@ -196,7 +196,8 @@ describe('independent authorization', () => {
     expect(page).toContain('Skill queue authorization required')
     expect(page).toContain(':authorize-url="skillQueueAuthorizeUrl"')
     expect(page).toContain('Skills authorization required')
-    expect(page).toContain(':authorize-url="skillsAuthorizeUrl"')
+    expect(page).toContain('href: skillsAuthorizeUrl.value')
+    expect(page).toContain('<EsiResourceBoundary')
   })
 
   it('gives the queue and attributes their own retry affordances', () => {

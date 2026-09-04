@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CharacterClones } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
+import type { EsiResourceState } from '../../../types/esi-resource'
 import type { JumpCloneCapacity } from '../../../utils/clone-derivation'
 
 const props = defineProps<{
@@ -31,6 +32,36 @@ const lastCloneJumpLabel = computed(() => historicalDate(props.clones?.lastClone
 const capacityNote = computed(() =>
   props.capacity.maximum === null ? 'Maximum needs the skills resource for this character.' : '',
 )
+const resourceState = computed<EsiResourceState>(() => {
+  if (props.state.status === 'loading') {
+    return {
+      status: 'loading',
+      title: '',
+      message: 'Resolving Home Station and jump clone records...',
+    }
+  }
+  if (props.state.status === 'authorization') {
+    return {
+      status: 'authorization-required',
+      code: 'ESI 403 / CLONES',
+      title: 'Clone-state authorization required',
+      message: props.state.message,
+      action: props.state.authorizeUrl
+        ? { href: props.state.authorizeUrl, label: 'AUTHORIZE THIS CHARACTER' }
+        : null,
+    }
+  }
+  if (props.state.status === 'error') {
+    return {
+      status: 'error',
+      code: 'ERR / CLONES',
+      title: 'Clone state unavailable',
+      message: props.state.message,
+      retryLabel: 'RETRY UPLINK',
+    }
+  }
+  return { status: 'ready' }
+})
 
 function historicalDate(value: string | null | undefined) {
   if (!value || !Number.isFinite(Date.parse(value))) return null
@@ -51,49 +82,25 @@ function historicalDate(value: string | null | undefined) {
     <template #value>{{ clones ? capacityValue : '--' }}</template>
     <template #label>{{ clones ? capacityLabel : 'CAPACITY UNAVAILABLE' }}</template>
 
-    <UiStatePanel v-if="state.status === 'loading'" compact role="status">
-      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-      <p>Resolving Home Station and jump clone records...</p>
-    </UiStatePanel>
-    <CharacterAuthorizationRequired
-      v-else-if="state.status === 'authorization'"
-      title="Clone-state authorization required"
-      :message="state.message"
-      :authorize-url="state.authorizeUrl"
-      compact
-    />
-    <UiStatePanel
-      v-else-if="state.status === 'error'"
-      code="ERR / CLONES"
-      title="Clone state unavailable"
-      compact
-      role="alert"
-      tone="error"
-    >
-      <p>{{ state.message }}</p>
-      <template #action>
-        <button class="ui-action-secondary" type="button" @click="$emit('retry')">
-          RETRY UPLINK
-        </button>
+    <EsiResourceBoundary :state="resourceState" :has-data="Boolean(clones)" @retry="$emit('retry')">
+      <template v-if="clones">
+        <dl v-if="lastCloneJumpLabel" class="character-summary-stats">
+          <div>
+            <dt>LAST CLONE JUMP</dt>
+            <dd>
+              <time :datetime="clones.lastCloneJumpAt ?? undefined">
+                {{ lastCloneJumpLabel }}
+              </time>
+            </dd>
+          </div>
+        </dl>
+
+        <p v-if="capacityNote" class="character-clones-vital-note">{{ capacityNote }}</p>
+
+        <output v-if="clones.stale" class="character-clones-stale">
+          STALE SNAPSHOT / Last validated {{ clones.validatedAt }}
+        </output>
       </template>
-    </UiStatePanel>
-    <template v-else-if="clones">
-      <dl v-if="lastCloneJumpLabel" class="character-summary-stats">
-        <div>
-          <dt>LAST CLONE JUMP</dt>
-          <dd>
-            <time :datetime="clones.lastCloneJumpAt ?? undefined">
-              {{ lastCloneJumpLabel }}
-            </time>
-          </dd>
-        </div>
-      </dl>
-
-      <p v-if="capacityNote" class="character-clones-vital-note">{{ capacityNote }}</p>
-
-      <output v-if="clones.stale" class="character-clones-stale">
-        STALE SNAPSHOT / Last validated {{ clones.validatedAt }}
-      </output>
-    </template>
+    </EsiResourceBoundary>
   </AppSummaryCard>
 </template>

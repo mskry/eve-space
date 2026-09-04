@@ -393,7 +393,7 @@ function autocompleteOptions<T extends string | number>(
 .assets-filter-control > span,
 .assets-filter-toggle > span {
   color: var(--ui-text-subtle);
-  font: 700 0.56rem/1 var(--ui-font-mono);
+  font: 700 var(--character-meta-size) / 1 var(--ui-font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -427,7 +427,7 @@ function autocompleteOptions<T extends string | number>(
 }
 
 .assets-strip-filters {
-  height: 2rem;
+  height: var(--character-compact-row-height);
   flex: 0 0 auto;
   padding: 0 0.875rem;
   display: inline-flex;
@@ -436,7 +436,7 @@ function autocompleteOptions<T extends string | number>(
   border: 0.0625rem solid var(--ui-border-strong);
   background: transparent;
   color: var(--ui-text-muted);
-  font: 800 0.56rem/1 var(--ui-font-mono);
+  font: 800 var(--character-meta-size) / 1 var(--ui-font-mono);
   letter-spacing: 0.1em;
   cursor: pointer;
 }

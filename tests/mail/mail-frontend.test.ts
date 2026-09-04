@@ -409,11 +409,13 @@ describe('mail frontend behavior', () => {
   it('styles the mail feature only through semantic UI color tokens', () => {
     const page = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
     const css = readWorkspaceFile('app/assets/css/features/mail.css')
-    const authorization = readWorkspaceFile('app/components/character/AuthorizationRequired.vue')
+    const authorization = readWorkspaceFile('app/components/esi/AuthorizationRequired.vue')
     const variables = [...css.matchAll(/var\((--[^),\s]+)/g)].map((match) => match[1])
 
-    expect(page).toContain('<CharacterAuthorizationRequired')
-    expect(page).toContain('<UiStatePanel')
+    expect(page).toContain('<EsiResourceBoundary')
+    expect(page).toContain(':search-authorization-message="searchAuthorization?.message"')
+    expect(page).toContain(':search-feedback="searchFeedback"')
+    expect(page).not.toContain('searchAuthorization?.message || searchFeedback')
     expect(page).not.toMatch(/mail-access-state|skills-access-state/)
     expect(authorization).toContain('var(--ui-border)')
     expect(authorization).toContain('var(--ui-surface)')

@@ -211,12 +211,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
 
 <template>
   <div class="assets-workspace">
-    <AssetsResourceState
-      v-if="!collection"
-      :state="state"
-      @authorize="authorize"
-      @retry="emit('retry')"
-    />
+    <AssetsResourceState v-if="!collection" :state="state" @retry="emit('retry')" />
 
     <template v-else>
       <AssetsSummary
@@ -384,7 +379,7 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
   border-bottom: 0.0625rem solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-surface-raised) 74%, transparent);
   color: var(--ui-text-faint);
-  font: 700 0.5rem/1 var(--ui-font-mono);
+  font: 700 var(--character-meta-size) / 1 var(--ui-font-mono);
   letter-spacing: 0.09em;
   text-align: left;
   text-transform: uppercase;

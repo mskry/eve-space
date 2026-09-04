@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CharacterAttributes, CharacterSkills } from '../../../queries/characters'
+import type { EsiResourceState } from '../../../types/esi-resource'
 
 const props = defineProps<{
   skills: CharacterSkills
@@ -41,6 +42,31 @@ const remapAvailability = computed(() => {
   if (cooldown && Date.parse(cooldown) > Date.now())
     return { kind: 'cooldown' as const, date: cooldown }
   return { kind: 'available' as const }
+})
+const attributesResourceState = computed<EsiResourceState>(() => {
+  if (props.attributesStatus === 'loading') {
+    return { status: 'loading', title: '', message: 'Loading attributes...' }
+  }
+  if (props.attributesStatus === 'scope-required') {
+    return {
+      status: 'authorization-required',
+      code: 'ESI 403 / ATTRIBUTES',
+      title: 'Attributes not authorized',
+      message: props.attributesMessage,
+      action: props.attributesAuthorizeUrl
+        ? { href: props.attributesAuthorizeUrl, label: 'AUTHORIZE' }
+        : null,
+    }
+  }
+  if (props.attributesStatus === 'error') {
+    return {
+      status: 'error',
+      title: 'Attributes unavailable',
+      message: props.attributesMessage,
+      retryLabel: 'RETRY',
+    }
+  }
+  return { status: 'ready' }
 })
 
 function formatDate(value: string) {
@@ -90,26 +116,28 @@ function formatDate(value: string) {
         :aria-busy="attributesStatus === 'loading'"
       >
         <span id="skill-attribute-band-title" class="ui-eyebrow">ATTRIBUTES</span>
-        <p v-if="attributesStatus === 'loading'" class="skill-attribute-notice">
-          Loading attributes...
-        </p>
-        <p v-else-if="attributesStatus === 'scope-required'" class="skill-attribute-notice">
-          Attributes are not authorized.
-          <a v-if="attributesAuthorizeUrl" :href="attributesAuthorizeUrl">AUTHORIZE</a>
-        </p>
-        <p v-else-if="attributesStatus === 'error'" class="skill-attribute-notice">
-          {{ attributesMessage }}
-          <button type="button" @click="emit('retryAttributes')">RETRY</button>
-        </p>
-        <template v-else-if="attributes">
-          <dl class="skill-attribute-cells">
+        <EsiResourceBoundary
+          :state="attributesResourceState"
+          :has-data="Boolean(attributes)"
+          @retry="emit('retryAttributes')"
+        >
+          <template #loading>
+            <p class="skill-attribute-notice">Loading attributes...</p>
+          </template>
+          <template #error="{ state }">
+            <p class="skill-attribute-notice">
+              {{ state.message }}
+              <button type="button" @click="emit('retryAttributes')">RETRY</button>
+            </p>
+          </template>
+          <dl v-if="attributes" class="skill-attribute-cells">
             <div v-for="attribute in attributeCells" :key="attribute.key">
               <img :src="attribute.icon" alt="" aria-hidden="true" width="18" height="18" />
               <dt>{{ attribute.label }}</dt>
               <dd>{{ attribute.value }}</dd>
             </div>
           </dl>
-        </template>
+        </EsiResourceBoundary>
       </div>
     </div>
   </AppSummaryCard>

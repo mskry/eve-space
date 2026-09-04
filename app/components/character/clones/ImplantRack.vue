@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CharacterImplants } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
+import type { EsiResourceState } from '../../../types/esi-resource'
 import {
   attributeImplantSlotCount,
   implantSlotCount,
@@ -24,6 +25,32 @@ const slotSummaryLabel = computed(() => {
     ? `${filled} / ${rack.value.unslotted.length} UNPLACED`
     : filled
 })
+const resourceState = computed<EsiResourceState>(() => {
+  if (props.state.status === 'loading') {
+    return { status: 'loading', title: '', message: 'Reading active implant telemetry...' }
+  }
+  if (props.state.status === 'authorization') {
+    return {
+      status: 'authorization-required',
+      code: 'ESI 403 / IMPLANTS',
+      title: 'Active implant authorization required',
+      message: props.state.message,
+      action: props.state.authorizeUrl
+        ? { href: props.state.authorizeUrl, label: 'AUTHORIZE THIS CHARACTER' }
+        : null,
+    }
+  }
+  if (props.state.status === 'error') {
+    return {
+      status: 'error',
+      code: 'ERR / IMPLANTS',
+      title: 'Active implants unavailable',
+      message: props.state.message,
+      retryLabel: 'RETRY UPLINK',
+    }
+  }
+  return { status: 'ready' }
+})
 </script>
 
 <template>
@@ -36,56 +63,36 @@ const slotSummaryLabel = computed(() => {
       <span v-if="implants">{{ slotSummaryLabel }}</span>
     </header>
 
-    <UiStatePanel v-if="state.status === 'loading'" compact role="status">
-      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-      <p>Reading active implant telemetry...</p>
-    </UiStatePanel>
-    <CharacterAuthorizationRequired
-      v-else-if="state.status === 'authorization'"
-      title="Active implant authorization required"
-      :message="state.message"
-      :authorize-url="state.authorizeUrl"
-      compact
-    />
-    <UiStatePanel
-      v-else-if="state.status === 'error'"
-      code="ERR / IMPLANTS"
-      title="Active implants unavailable"
-      compact
-      role="alert"
-      tone="error"
+    <EsiResourceBoundary
+      :state="resourceState"
+      :has-data="Boolean(implants)"
+      @retry="$emit('retry')"
     >
-      <p>{{ state.message }}</p>
-      <template #action>
-        <button class="ui-action-secondary" type="button" @click="$emit('retry')">
-          RETRY UPLINK
-        </button>
+      <template v-if="implants">
+        <div class="character-clones-rack-columns">
+          <div class="character-clones-rack-column">
+            <p class="character-clones-rack-group">
+              ATTRIBUTE IMPLANTS / SLOTS 1-{{ attributeImplantSlotCount }}
+            </p>
+            <CharacterClonesImplantSlotList :entries="rack.attributes" />
+          </div>
+          <div class="character-clones-rack-column">
+            <p class="character-clones-rack-group">
+              HARDWIRINGS / SLOTS {{ attributeImplantSlotCount + 1 }}-{{ implantSlotCount }}
+            </p>
+            <CharacterClonesImplantSlotList :entries="rack.hardwirings" />
+          </div>
+        </div>
+
+        <div v-if="rack.unslotted.length > 0" class="character-clones-rack-unslotted">
+          <p class="character-clones-rack-group">SLOT UNKNOWN</p>
+          <CharacterClonesImplantList :implants="rack.unslotted" />
+        </div>
+
+        <output v-if="implants.stale" class="character-clones-stale">
+          STALE SNAPSHOT / Last validated {{ implants.validatedAt }}
+        </output>
       </template>
-    </UiStatePanel>
-    <template v-else-if="implants">
-      <div class="character-clones-rack-columns">
-        <div class="character-clones-rack-column">
-          <p class="character-clones-rack-group">
-            ATTRIBUTE IMPLANTS / SLOTS 1-{{ attributeImplantSlotCount }}
-          </p>
-          <CharacterClonesImplantSlotList :entries="rack.attributes" />
-        </div>
-        <div class="character-clones-rack-column">
-          <p class="character-clones-rack-group">
-            HARDWIRINGS / SLOTS {{ attributeImplantSlotCount + 1 }}-{{ implantSlotCount }}
-          </p>
-          <CharacterClonesImplantSlotList :entries="rack.hardwirings" />
-        </div>
-      </div>
-
-      <div v-if="rack.unslotted.length > 0" class="character-clones-rack-unslotted">
-        <p class="character-clones-rack-group">SLOT UNKNOWN</p>
-        <CharacterClonesImplantList :implants="rack.unslotted" />
-      </div>
-
-      <output v-if="implants.stale" class="character-clones-stale">
-        STALE SNAPSHOT / Last validated {{ implants.validatedAt }}
-      </output>
-    </template>
+    </EsiResourceBoundary>
   </section>
 </template>

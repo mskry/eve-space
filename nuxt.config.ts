@@ -28,7 +28,6 @@ export default defineNuxtConfig({
     '~/assets/css/shared/public-content.css',
     '~/assets/css/shared/async-state.css',
     '~/assets/css/shared/search-status.css',
-    '~/assets/css/shared/wallet-state.css',
     '~/assets/css/pages/dashboard-overview.css',
     '~/assets/css/responsive.css',
     '~/assets/css/responsive/reduced-motion.css',
