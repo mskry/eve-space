@@ -2,6 +2,7 @@
 import type { CharacterClones } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
 import type { JumpCloneCapacity } from '../../../utils/clone-derivation'
+import { toCloneEsiResourceState } from '../../../utils/clone-resource-state'
 
 const props = defineProps<{
   clones?: CharacterClones
@@ -31,6 +32,14 @@ const lastCloneJumpLabel = computed(() => historicalDate(props.clones?.lastClone
 const capacityNote = computed(() =>
   props.capacity.maximum === null ? 'Maximum needs the skills resource for this character.' : '',
 )
+const resourceState = computed(() =>
+  toCloneEsiResourceState(props.state, {
+    resourceCode: 'CLONES',
+    loadingMessage: 'Resolving Home Station and jump clone records...',
+    authorizationTitle: 'Clone-state authorization required',
+    errorTitle: 'Clone state unavailable',
+  }),
+)
 
 function historicalDate(value: string | null | undefined) {
   if (!value || !Number.isFinite(Date.parse(value))) return null
@@ -51,49 +60,25 @@ function historicalDate(value: string | null | undefined) {
     <template #value>{{ clones ? capacityValue : '--' }}</template>
     <template #label>{{ clones ? capacityLabel : 'CAPACITY UNAVAILABLE' }}</template>
 
-    <UiStatePanel v-if="state.status === 'loading'" compact role="status">
-      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-      <p>Resolving Home Station and jump clone records...</p>
-    </UiStatePanel>
-    <CharacterAuthorizationRequired
-      v-else-if="state.status === 'authorization'"
-      title="Clone-state authorization required"
-      :message="state.message"
-      :authorize-url="state.authorizeUrl"
-      compact
-    />
-    <UiStatePanel
-      v-else-if="state.status === 'error'"
-      code="ERR / CLONES"
-      title="Clone state unavailable"
-      compact
-      role="alert"
-      tone="error"
-    >
-      <p>{{ state.message }}</p>
-      <template #action>
-        <button class="ui-action-secondary" type="button" @click="$emit('retry')">
-          RETRY UPLINK
-        </button>
+    <EsiResourceBoundary :state="resourceState" :has-data="Boolean(clones)" @retry="$emit('retry')">
+      <template v-if="clones">
+        <dl v-if="lastCloneJumpLabel" class="character-summary-stats">
+          <div>
+            <dt>LAST CLONE JUMP</dt>
+            <dd>
+              <time :datetime="clones.lastCloneJumpAt ?? undefined">
+                {{ lastCloneJumpLabel }}
+              </time>
+            </dd>
+          </div>
+        </dl>
+
+        <p v-if="capacityNote" class="character-clones-vital-note">{{ capacityNote }}</p>
+
+        <output v-if="clones.stale" class="character-clones-stale">
+          STALE SNAPSHOT / Last validated {{ clones.validatedAt }}
+        </output>
       </template>
-    </UiStatePanel>
-    <template v-else-if="clones">
-      <dl v-if="lastCloneJumpLabel" class="character-summary-stats">
-        <div>
-          <dt>LAST CLONE JUMP</dt>
-          <dd>
-            <time :datetime="clones.lastCloneJumpAt ?? undefined">
-              {{ lastCloneJumpLabel }}
-            </time>
-          </dd>
-        </div>
-      </dl>
-
-      <p v-if="capacityNote" class="character-clones-vital-note">{{ capacityNote }}</p>
-
-      <output v-if="clones.stale" class="character-clones-stale">
-        STALE SNAPSHOT / Last validated {{ clones.validatedAt }}
-      </output>
-    </template>
+    </EsiResourceBoundary>
   </AppSummaryCard>
 </template>

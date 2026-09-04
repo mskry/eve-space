@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { defineComponent, h, nextTick, ref } from 'vue'
 import FinanceContractDrawer from '../../app/components/finance/ContractDrawer.vue'
 import FinanceServicePanel from '../../app/components/finance/ServicePanel.vue'
+import FinanceSummary from '../../app/components/finance/Summary.vue'
 import FinancePage from '../../app/pages/characters/[characterId]/finance.vue'
 import { provideCharacterReauthorization } from '../../app/composables/useCharacterReauthorization'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
@@ -305,6 +306,65 @@ describe('character Finance page', () => {
     expect(panels[1]?.text()).toContain('Authorize this service.')
     expect(panels[2]?.text()).toContain('Service failed independently.')
     expect(panels[3]?.text()).toContain('Preserved sibling data')
+  })
+
+  it('keeps wallet authorization and retained errors actionable', async () => {
+    const wrapper = await mountSuspended(FinanceSummary, {
+      props: {
+        balance: { balance: 1_234.5, ...metadata() },
+        balanceLabel: 'Available balance',
+        eyebrow: 'Character wallet',
+        metrics: [],
+        now: Date.parse('2026-09-02T12:00:00.000Z'),
+        state: resourceState({
+          authorizationAction: {
+            href: '/reauthorize',
+            label: 'AUTHORIZE THIS CHARACTER',
+          },
+          authorizationRequired: true,
+          errorMessage: 'Wallet scope required.',
+        }),
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    expect(wrapper.get('.esi-authorization-required-code').text()).toBe('ESI 403 / WALLET')
+    expect(wrapper.get('.esi-authorization-required-action').attributes('href')).toBe(
+      '/reauthorize',
+    )
+    expect(wrapper.find('.finance-hero-actions button').exists()).toBe(false)
+    expect(wrapper.find('.finance-inline-error').exists()).toBe(false)
+
+    await wrapper.setProps({
+      state: resourceState({
+        authorizationRequired: true,
+        errorMessage: 'Wallet scope required.',
+      }),
+    })
+    await wrapper.get('.esi-authorization-required button').trigger('click')
+    expect(wrapper.emitted('refresh')).toHaveLength(1)
+
+    await wrapper.setProps({
+      state: resourceState({ canRetry: true, errorMessage: 'Retained refresh failed.' }),
+    })
+    expect(wrapper.get('.finance-inline-error').text()).toContain('Retained refresh failed.')
+    expect(wrapper.get('.finance-hero-actions button').text()).toBe('REFRESH BALANCE')
+  })
+
+  it('forwards service-panel retries', async () => {
+    const wrapper = await mountSuspended(FinanceServicePanel, {
+      props: {
+        hasData: false,
+        state: resourceState({ canRetry: true, errorMessage: 'Service unavailable.' }),
+        title: 'Wallet journal',
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    await wrapper.get('[role="alert"] button').trigger('click')
+    expect(wrapper.emitted('retry')).toHaveLength(1)
   })
 
   it('keeps authorization failures without a URL actionable in contract details', async () => {

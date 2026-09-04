@@ -83,7 +83,7 @@
 .finance-ledger {
   min-width: 0;
   border: 0.0625rem solid var(--ui-border);
-  background: var(--ui-surface-solid);
+  background: var(--ui-surface);
 }
 
 .finance-ledger-header {
@@ -98,7 +98,7 @@
 .finance-ledger-header h2 {
   margin: 0;
   color: var(--ui-text);
-  font: 600 0.9375rem/1 var(--ui-font-body);
+  font: 600 var(--character-section-title-size) / 1 var(--ui-font-body);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -133,7 +133,7 @@
 }
 
 .finance-tab-badge {
-  color: var(--ui-warning);
+  color: var(--ui-primary);
   font: 400 0.5625rem/1 var(--ui-font-mono);
 }
 
@@ -228,7 +228,7 @@
   padding: 0.5625rem 0.625rem;
   border-bottom: 0.0625rem solid var(--ui-border);
   color: var(--ui-text-faint);
-  font: 500 0.5625rem/1 var(--ui-font-mono);
+  font: 500 var(--character-meta-size) / 1 var(--ui-font-mono);
   letter-spacing: 0.14em;
   text-align: left;
   text-transform: uppercase;
@@ -237,7 +237,7 @@
 .finance-table td {
   padding: 0.4375rem 0.625rem;
   color: var(--ui-text);
-  font: 400 0.6875rem/1.3 var(--ui-font-body);
+  font: 400 var(--character-data-size) / 1.3 var(--ui-font-body);
   vertical-align: middle;
 }
 

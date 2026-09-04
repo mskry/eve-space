@@ -9,7 +9,7 @@
 }
 
 .character-clones-workspace {
-  --clones-section-gap: 0.75rem;
+  --clones-section-gap: 0.625rem;
   display: grid;
   gap: var(--clones-section-gap);
 }
@@ -33,7 +33,7 @@
 
 .character-clones-section-heading {
   min-width: 0;
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,8 +44,8 @@
 .character-clones-section-heading h2 {
   margin: 0.2rem 0 0;
   color: var(--ui-text);
-  font: 400 1.125rem/1.1 var(--ui-font-body);
-  letter-spacing: 0.06em;
+  font: 600 var(--character-section-title-size) / 1 var(--ui-font-body);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -78,10 +78,10 @@
 .character-clones-home-details {
   min-width: 0;
   margin: 0;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .character-clones-home-details > div {
@@ -106,7 +106,7 @@
 }
 
 .character-clones-home-details .character-clones-home-location {
-  font-size: 1.125rem;
+  font-size: 0.875rem;
 }
 
 .character-clones-stale {
@@ -122,10 +122,10 @@
 
 .character-clones-rack-columns {
   min-width: 0;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .character-clones-rack-column,
@@ -133,7 +133,7 @@
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: 0.4375rem;
+  gap: 0.3125rem;
 }
 
 .character-clones-rack-unslotted {
@@ -153,7 +153,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.4rem;
+  gap: 0.3125rem;
   list-style: none;
 }
 
@@ -166,23 +166,28 @@
 .character-clones-slot-empty {
   box-sizing: border-box;
   width: 100%;
-  min-height: 2.75rem;
+  min-height: var(--character-item-row-height);
   margin: 0;
-  padding: 0.4rem 0.55rem;
+  padding: 0.3rem 0.5rem;
   display: grid;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   border: 0.0625rem solid var(--ui-border);
   color: var(--ui-text-muted);
   background: color-mix(in srgb, var(--ui-control) 86%, transparent);
 }
 
 .character-clones-slot-list .character-clones-implant-trigger {
-  grid-template-columns: 1.5rem 2rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.25rem 1.75rem minmax(0, 1fr) auto;
 }
 
 .character-clones-implant-list .character-clones-implant-trigger {
-  grid-template-columns: 1.5rem 2rem minmax(0, 1fr);
+  grid-template-columns: 1.25rem 1.75rem minmax(0, 1fr);
+}
+
+.character-clones-implant-trigger .ui-eve-image {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 .character-clones-slot-empty {
@@ -206,6 +211,8 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  font-size: var(--character-item-title-size);
+  line-height: 1.2;
 }
 
 .character-clones-implant-name > span {
@@ -217,7 +224,7 @@
 
 .character-clones-slot-index {
   color: var(--ui-primary);
-  font: 400 0.8125rem/1 var(--ui-font-mono);
+  font: 400 var(--character-data-size) / 1 var(--ui-font-mono);
   font-variant-numeric: tabular-nums;
 }
 
@@ -245,20 +252,20 @@
 
 .character-clones-groups {
   min-width: 0;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   display: grid;
-  gap: 0.875rem;
+  gap: 0.625rem;
 }
 
 .character-clones-group {
   min-width: 0;
   display: grid;
-  gap: 0.4375rem;
+  gap: 0.3125rem;
 }
 
 .character-clones-group-heading {
   min-width: 0;
-  padding: 0.5625rem 0.75rem;
+  padding: 0.4375rem 0.625rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -272,7 +279,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--ui-text);
-  font: 500 0.8125rem/1.25 var(--ui-font-body);
+  font: 500 var(--character-data-size) / 1.25 var(--ui-font-body);
 }
 
 .character-clones-group-heading > span {
@@ -287,7 +294,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.4375rem;
+  gap: 0.3125rem;
   list-style: none;
 }
 
@@ -305,11 +312,11 @@
   width: 100%;
   min-width: 0;
   border: 0;
-  padding: 0.75rem;
+  padding: 0.5rem;
   display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
   color: inherit;
   background: transparent;
   font: inherit;
@@ -322,7 +329,7 @@
 }
 
 .character-clones-card-summary--static {
-  grid-template-columns: 2.5rem minmax(0, 1fr);
+  grid-template-columns: 2rem minmax(0, 1fr);
   cursor: default;
 }
 
@@ -332,20 +339,22 @@
 }
 
 .character-clones-card-summary > img {
+  width: 2rem;
+  height: 2rem;
   border: 0.0625rem solid var(--ui-border);
 }
 
 .character-clones-card-body {
   min-width: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .character-clones-card-name {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--ui-text);
-  font: 500 0.875rem/1.25 var(--ui-font-body);
+  font: 500 var(--character-item-title-size) / 1.25 var(--ui-font-body);
 }
 
 .character-clones-card-preview {
@@ -401,7 +410,7 @@
 
 .character-clones-stored-footer {
   margin: 0;
-  padding: 0.8125rem 1rem;
+  padding: 0.6875rem 1rem;
   border-top: 0.0625rem solid var(--ui-border);
   color: var(--ui-text-faint);
   font: 0.5625rem/1.4 var(--ui-font-mono);

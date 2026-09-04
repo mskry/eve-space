@@ -49,10 +49,9 @@ describe('Assets workspace resource states', () => {
       )
       expect(access.get('[role="alert"] h2').text()).toBe(title)
       expect(access.text()).toContain(message)
-      await access.get('button').trigger('click')
-      expect(access.emitted('authorize')?.[0]).toEqual([
-        { href: `/reauthorize/${characterId}`, label: 'AUTHORIZE ASSETS' },
-      ])
+      const authorize = access.get('a')
+      expect(authorize.text()).toBe('AUTHORIZE ASSETS')
+      expect(authorize.attributes('href')).toBe(`/reauthorize/${characterId}`)
       access.unmount()
     }
 

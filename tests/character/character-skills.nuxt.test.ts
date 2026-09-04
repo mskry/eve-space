@@ -526,10 +526,7 @@ describe('character Skills components', () => {
       skillQueue: undefined,
       status: 'scope-required',
     })
-    expect(wrapper.get('.character-authorization-state').classes()).toContain(
-      'character-authorization-state--compact',
-    )
-    expect(wrapper.get('.character-authorization-state a').attributes('href')).toBe('/reauthorize')
+    expect(wrapper.get('.esi-authorization-required a').attributes('href')).toBe('/reauthorize')
     expect(wrapper.find('.skill-queue-unallocated').exists()).toBe(true)
   })
 

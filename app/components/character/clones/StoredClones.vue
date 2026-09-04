@@ -72,7 +72,7 @@ function implantCountLabel(count: number) {
                     type="button"
                     :aria-label="`Toggle implant details for ${clone.name || 'unnamed jump clone'}, ${implantCountLabel(clone.implants.length).toLowerCase()}`"
                   >
-                    <img src="/images/eve-clone.png" alt="" width="40" height="40" />
+                    <img src="/images/eve-clone.png" alt="" width="32" height="32" />
                     <span class="character-clones-card-body">
                       <span class="character-clones-card-name">{{
                         clone.name || 'Unnamed clone'
@@ -127,7 +127,7 @@ function implantCountLabel(count: number) {
                 v-else
                 class="character-clones-card-summary character-clones-card-summary--static"
               >
-                <img src="/images/eve-clone.png" alt="" width="40" height="40" />
+                <img src="/images/eve-clone.png" alt="" width="32" height="32" />
                 <span class="character-clones-card-body">
                   <span class="character-clones-card-name">{{
                     clone.name || 'Unnamed clone'

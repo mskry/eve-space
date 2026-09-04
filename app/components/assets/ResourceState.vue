@@ -1,117 +1,62 @@
 <script setup lang="ts">
 import type { AssetResourceState } from '../../types/assets'
+import type { EsiResourceState } from '../../types/esi-resource'
 
-defineProps<{
+const props = defineProps<{
   state: AssetResourceState
 }>()
 
 const emit = defineEmits<{
-  authorize: []
   retry: []
 }>()
+
+const resourceState = computed<EsiResourceState>(() => {
+  const state = props.state
+  if (state.phase === 'loading') {
+    return {
+      status: 'loading',
+      title: 'Resolving personal inventory',
+      message: 'Loading the complete asset collection and container context...',
+    }
+  }
+  if (state.phase === 'access-required' || state.phase === 'authorization-rejected') {
+    const rejected = state.phase === 'authorization-rejected'
+    return {
+      status: 'authorization-required',
+      code: rejected ? 'ESI 401 / ASSETS' : 'ESI 403 / ASSETS',
+      title: rejected ? 'Asset authorization expired' : 'Asset authorization required',
+      message:
+        state.message ??
+        (rejected
+          ? 'EVE rejected this character authorization. Reauthorize the exact character to continue.'
+          : 'Authorize personal asset access for this exact character.'),
+      action: state.action,
+      retryLabel: state.action ? undefined : 'RETRY',
+    }
+  }
+  if (state.phase === 'cooldown') {
+    return {
+      status: 'error',
+      code: 'ESI / QUOTA',
+      title: 'Asset service cooling down',
+      message: state.message ?? 'The asset request budget is recovering.',
+      retryAt: state.retryAt,
+      tone: 'default',
+    }
+  }
+  if (state.phase === 'unavailable') {
+    return {
+      status: 'error',
+      code: state.statusLabel ?? 'ESI 502 / ASSETS',
+      title: 'Personal inventory unavailable',
+      message: state.message ?? 'The complete asset collection could not be loaded.',
+      retryLabel: state.canRetry ? 'RETRY INVENTORY' : undefined,
+    }
+  }
+  return { status: 'ready' }
+})
 </script>
 
 <template>
-  <UiStatePanel
-    v-if="state.phase === 'loading'"
-    class="assets-resource-state"
-    compact
-    role="status"
-    title="Resolving personal inventory"
-  >
-    <template #icon><div class="app-scanner" aria-hidden="true"></div></template>
-    <p>Loading the complete asset collection and container context...</p>
-  </UiStatePanel>
-  <UiStatePanel
-    v-else-if="state.phase === 'access-required'"
-    class="assets-resource-state"
-    code="ESI 403 / ASSETS"
-    role="alert"
-    title="Asset authorization required"
-  >
-    <p>{{ state.message || 'Authorize personal asset access for this exact character.' }}</p>
-    <template #action>
-      <button
-        v-if="state.action"
-        class="ui-action-primary"
-        type="button"
-        @click="emit('authorize')"
-      >
-        {{ state.action.label }}
-      </button>
-      <button v-else class="ui-action-secondary" type="button" @click="emit('retry')">RETRY</button>
-    </template>
-  </UiStatePanel>
-  <UiStatePanel
-    v-else-if="state.phase === 'authorization-rejected'"
-    class="assets-resource-state"
-    code="ESI 401 / ASSETS"
-    role="alert"
-    title="Asset authorization expired"
-  >
-    <p>
-      {{
-        state.message ||
-        'EVE rejected this character authorization. Reauthorize the exact character to continue.'
-      }}
-    </p>
-    <template #action>
-      <button
-        v-if="state.action"
-        class="ui-action-primary"
-        type="button"
-        @click="emit('authorize')"
-      >
-        {{ state.action.label }}
-      </button>
-      <button v-else class="ui-action-secondary" type="button" @click="emit('retry')">RETRY</button>
-    </template>
-  </UiStatePanel>
-  <UiStatePanel
-    v-else-if="state.phase === 'cooldown'"
-    class="assets-resource-state"
-    code="ESI / QUOTA"
-    role="alert"
-    title="Asset service cooling down"
-  >
-    <p>{{ state.message || 'The asset request budget is recovering.' }}</p>
-    <p v-if="state.retryAt">
-      Do not retry before <time :datetime="state.retryAt">{{ state.retryAt }}</time
-      >.
-    </p>
-  </UiStatePanel>
-  <UiStatePanel
-    v-else
-    class="assets-resource-state"
-    :code="state.statusLabel || 'ESI 502 / ASSETS'"
-    role="alert"
-    title="Personal inventory unavailable"
-    tone="error"
-  >
-    <p>{{ state.message || 'The complete asset collection could not be loaded.' }}</p>
-    <template v-if="state.canRetry" #action>
-      <button class="ui-action-secondary" type="button" @click="emit('retry')">
-        RETRY INVENTORY
-      </button>
-    </template>
-  </UiStatePanel>
+  <EsiResourceBoundary :state="resourceState" @retry="emit('retry')" />
 </template>
-
-<style scoped>
-.assets-resource-state {
-  min-width: 0;
-  border: 0.0625rem solid var(--ui-border-strong);
-  background:
-    repeating-linear-gradient(
-      135deg,
-      transparent 0 1.5rem,
-      color-mix(in srgb, var(--ui-text) 2%, transparent) 1.5rem 1.5625rem
-    ),
-    var(--ui-surface);
-}
-
-.assets-resource-state :deep(button:focus-visible) {
-  outline: 0.125rem solid var(--ui-primary);
-  outline-offset: 0.125rem;
-}
-</style>

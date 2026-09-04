@@ -67,7 +67,7 @@
 
 .ui-theme-menu {
   z-index: 100;
-  min-width: 190px;
+  min-width: 220px;
   padding: 6px;
   border: 1px solid var(--ui-border-strong);
   border-radius: var(--ui-radius-panel);
@@ -90,7 +90,7 @@
   min-height: 36px;
   padding: 8px 10px;
   display: grid;
-  grid-template-columns: 12px 1fr auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 9px;
   outline: none;
@@ -110,13 +110,13 @@
 }
 
 .ui-theme-option-indicator {
+  justify-self: end;
   color: var(--ui-primary);
   font-size: 10px;
 }
 
-.ui-theme-option-code {
-  color: var(--ui-text-faint);
-  font-size: 7px;
+.ui-theme-option-name {
+  white-space: nowrap;
 }
 
 .ui-tooltip-content {
@@ -341,7 +341,7 @@
   width: var(--reka-tabs-indicator-size);
   height: 2px;
   pointer-events: none;
-  background: var(--ui-warning);
+  background: var(--ui-primary);
   transform: translateX(var(--reka-tabs-indicator-position));
   transition:
     width 180ms ease,

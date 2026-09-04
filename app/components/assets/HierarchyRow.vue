@@ -122,11 +122,11 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
 
 .assets-hierarchy-row > td {
   min-width: 0;
-  height: 2.75rem;
+  height: var(--character-item-row-height);
   padding: 0 0.75rem;
   border-bottom: 0.0625rem solid var(--ui-border);
   color: var(--ui-text-muted);
-  font: 500 0.69rem/1.2 var(--ui-font-mono);
+  font: 500 var(--character-data-size) / 1.2 var(--ui-font-mono);
   letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
@@ -142,7 +142,7 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
 .assets-hierarchy-item-layout {
   position: relative;
   min-width: 0;
-  min-height: 2.75rem;
+  min-height: var(--character-item-row-height);
   padding-left: calc(0.875rem + var(--assets-indent));
   display: flex;
   align-items: center;
@@ -244,7 +244,7 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
 .assets-hierarchy-custom-name {
   flex: 0 1 auto;
   color: var(--ui-text-subtle);
-  font: 500 0.69rem/1.2 var(--ui-font-mono);
+  font: 500 var(--character-data-size) / 1.2 var(--ui-font-mono);
   letter-spacing: 0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -254,7 +254,7 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
   min-width: 0;
   flex: 0 1 auto;
   color: var(--ui-text);
-  font: 400 0.78rem/1.2 var(--ui-font-body);
+  font: 400 var(--character-item-title-size) / 1.2 var(--ui-font-body);
 }
 
 .assets-hierarchy-identity :deep(.assets-item-information-type) {

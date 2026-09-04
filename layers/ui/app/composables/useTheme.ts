@@ -1,23 +1,30 @@
 export const uiThemes = [
-  { value: 'void', label: 'Void', code: 'DARK' },
-  { value: 'high-sec', label: 'High Sec', code: 'LIGHT' },
+  { value: 'gallente', label: 'Gallente Green' },
+  { value: 'amarr', label: 'Amarr Gold' },
+  { value: 'caldari', label: 'Caldari Steel' },
+  { value: 'minmatar', label: 'Minmatar Rust' },
+  { value: 'high-sec', label: 'CONCORD Daylight' },
 ] as const
 
 export type UiTheme = (typeof uiThemes)[number]['value']
+type StoredUiTheme = UiTheme | 'void'
 
 function isUiTheme(value: unknown): value is UiTheme {
   return uiThemes.some((theme) => theme.value === value)
 }
 
 export function useTheme() {
-  const preference = useCookie<UiTheme>('eve-space-theme', {
-    default: () => 'void',
+  const preference = useCookie<StoredUiTheme>('eve-space-theme', {
+    default: () => 'gallente',
     maxAge: 60 * 60 * 24 * 365,
     sameSite: 'lax',
   })
 
   const theme = computed<UiTheme>({
-    get: () => (isUiTheme(preference.value) ? preference.value : 'void'),
+    get: () => {
+      if (preference.value === 'void') return 'gallente'
+      return isUiTheme(preference.value) ? preference.value : 'gallente'
+    },
     set: (value) => {
       preference.value = value
     },

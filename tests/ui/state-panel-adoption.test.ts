@@ -12,22 +12,26 @@ describe('state panel adoption', () => {
     expect(css).toContain('.ui-state-panel--error {')
   })
 
-  it('centralizes character scope authorization presentation', () => {
-    const component = readWorkspaceFile('app/components/character/AuthorizationRequired.vue')
+  it('centralizes ESI scope authorization presentation', () => {
+    const authorization = readWorkspaceFile('app/components/esi/AuthorizationRequired.vue')
+    const boundary = readWorkspaceFile('app/components/esi/ResourceBoundary.vue')
     const mail = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
     const skills = readWorkspaceFile('app/pages/characters/[characterId]/skills.vue')
     const finance = readWorkspaceFile('app/pages/characters/[characterId]/finance.vue')
     const financeState = readWorkspaceFile('app/components/finance/ServicePanel.vue')
+    const compose = readWorkspaceFile('app/components/mail/MailComposeDialog.vue')
 
-    expect(component).toContain('class="character-authorization-state"')
-    expect(component).toContain('<a v-if="authorizeUrl"')
-    for (const page of [mail, skills]) {
-      expect(page).toContain('<CharacterAuthorizationRequired')
+    expect(authorization).toContain('class="esi-authorization-required"')
+    expect(authorization).toContain('<a v-if="authorizeUrl"')
+    expect(boundary).toContain('<EsiAuthorizationRequired')
+    for (const page of [mail, skills, financeState]) {
+      expect(page).toContain('<EsiResourceBoundary')
       expect(page).not.toMatch(/mail-access-state|skills-access-state/)
     }
+    expect(compose.match(/<EsiAuthorizationRequired/g)).toHaveLength(2)
+    expect(compose).not.toContain('<EsiResourceBoundary')
     expect(finance).toContain('<FinanceWorkspace')
-    expect(financeState).toContain('state.authorizationAction')
-    expect(financeState).not.toContain('CharacterAuthorizationRequired')
+    expect(financeState).toContain('toFinanceEsiResourceState')
   })
 
   it('uses semantic state panels throughout migrated record pages', () => {
@@ -49,7 +53,7 @@ describe('state panel adoption', () => {
     ].map(readWorkspaceFile)
 
     for (const page of pages) {
-      expect(page).toContain('<UiStatePanel')
+      expect(page).toMatch(/<(?:UiStatePanel|EsiResourceBoundary)/)
       expect(page).not.toMatch(/class="[^"]*app-state-panel/)
     }
     expect(pages.some((page) => page.includes('role="status"'))).toBe(true)
@@ -64,15 +68,14 @@ describe('state panel adoption', () => {
     const finance = readWorkspaceFile('app/pages/characters/[characterId]/finance.vue')
     const financeState = readWorkspaceFile('app/components/finance/ServicePanel.vue')
 
-    for (const page of [roster, overview, skills, history]) {
+    for (const page of [roster, history]) {
       expect(page).toContain('role="alert"')
       expect(page).toContain('tone="error"')
       expect(page).toContain('<template #action>')
     }
-    expect(financeState).toContain('role="alert"')
-    expect(financeState).toContain('tone="error"')
-    expect(financeState).toContain('#action')
-    expect(financeState).toContain('state.authorizationAction.href')
+    for (const page of [overview, skills, financeState]) {
+      expect(page).toContain('<EsiResourceBoundary')
+    }
     expect(finance).toContain('useCharacterFinanceServices')
     expect(finance).toContain('<FinanceContractDrawer')
   })
@@ -91,7 +94,6 @@ describe('state panel adoption', () => {
 
     for (const component of financeComponents) {
       expect(component).not.toMatch(/queries\/finance|api-client|ApiQueryError|AppType/)
-      expect(component).not.toContain('CharacterAuthorizationRequired')
     }
   })
 })

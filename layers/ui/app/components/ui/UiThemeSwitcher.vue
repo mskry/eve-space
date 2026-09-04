@@ -36,11 +36,10 @@ const activeTheme = computed(
             class="ui-theme-option"
             :value="option.value"
           >
+            <span class="ui-theme-option-name">{{ option.label }}</span>
             <DropdownMenuItemIndicator class="ui-theme-option-indicator">
               ◆
             </DropdownMenuItemIndicator>
-            <span>{{ option.label }}</span>
-            <span class="ui-theme-option-code">{{ option.code }}</span>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

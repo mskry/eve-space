@@ -114,7 +114,7 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
 .assets-location-toggle {
   width: 100%;
   min-width: 0;
-  height: 2rem;
+  height: var(--character-compact-row-height);
   padding: 0 0.875rem;
   display: flex;
   align-items: center;
@@ -122,7 +122,7 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
   border: 0;
   color: var(--ui-text);
   background: transparent;
-  font: 400 0.75rem/1 var(--ui-font-body);
+  font: 400 var(--character-data-size) / 1 var(--ui-font-body);
   letter-spacing: 0.01em;
   text-align: left;
   white-space: nowrap;

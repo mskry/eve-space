@@ -286,7 +286,7 @@ describe('character Clones workspace', () => {
     })
 
     expect(wrapper.text()).toContain('Active implant authorization required')
-    expect(wrapper.get('.character-authorization-state a').attributes('href')).toBe(authorizeUrl)
+    expect(wrapper.get('.esi-authorization-required a').attributes('href')).toBe(authorizeUrl)
     expect(wrapper.text()).toContain('Industry clone')
     expect(wrapper.find('.character-clones-card').exists()).toBe(true)
   })

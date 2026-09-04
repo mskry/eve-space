@@ -666,7 +666,7 @@ describe('character mail reading', async () => {
 
     const swatches = dialog.getByRole('radio')
     expect(await swatches.count()).toBe(18)
-    for (const theme of ['void', 'high-sec']) {
+    for (const theme of ['gallente', 'amarr', 'caldari', 'minmatar', 'high-sec']) {
       await page.evaluate((value) => {
         document.documentElement.dataset.theme = value
       }, theme)

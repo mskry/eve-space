@@ -201,7 +201,7 @@ describe('character Clones production route', async () => {
     await page.getByRole('heading', { name: 'Jump clones by location' }).waitFor()
     await page.getByRole('heading', { name: 'Active implant authorization required' }).waitFor()
     expect(await page.getByText('Industry clone', { exact: true }).isVisible()).toBe(true)
-    const authorizationState = page.locator('.character-clones-rack .character-authorization-state')
+    const authorizationState = page.locator('.character-clones-rack .esi-authorization-required')
     const authorizationLink = authorizationState.getByRole('link', {
       name: 'AUTHORIZE THIS CHARACTER',
     })
@@ -209,6 +209,7 @@ describe('character Clones production route', async () => {
     const authorizationLinkBox = await authorizationLink.boundingBox()
     expect(authorizationStateBox).not.toBeNull()
     expect(authorizationLinkBox).not.toBeNull()
+    expect(authorizationStateBox!.height).toBeLessThan(128)
     expect(authorizationLinkBox!.width).toBeLessThan(authorizationStateBox!.width)
     expect(await authorizationLink.getAttribute('href')).toContain(
       `returnTo=%2Fcharacters%2F${characterId}%2Fclones`,

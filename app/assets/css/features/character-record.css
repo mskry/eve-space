@@ -1,3 +1,12 @@
+.character-shell {
+  --character-section-title-size: 0.9375rem;
+  --character-data-size: 0.75rem;
+  --character-item-title-size: 0.8125rem;
+  --character-meta-size: 0.5625rem;
+  --character-compact-row-height: 2rem;
+  --character-item-row-height: 2.5rem;
+}
+
 .character-shell-header {
   margin-bottom: 1.5rem;
 }

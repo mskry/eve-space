@@ -21,7 +21,6 @@
 .employment-scroller {
   position: relative;
   isolation: isolate;
-  margin-top: 10px;
   max-height: min(58vh, 520px);
   border: 1px solid var(--ui-border);
   border-top: 0;
@@ -118,10 +117,6 @@
   background: var(--ui-surface-raised);
 }
 
-.employment-timeline img {
-  background: var(--ui-logo-background);
-}
-
 .employment-deleted-mark {
   width: 48px;
   height: 48px;
@@ -140,7 +135,7 @@
 .employment-timeline div > p,
 .employment-period {
   color: var(--ui-text-muted);
-  font: 8px/1.5 var(--ui-font-mono);
+  font: 9px/1.5 var(--ui-font-mono);
   letter-spacing: 0.08em;
 }
 
