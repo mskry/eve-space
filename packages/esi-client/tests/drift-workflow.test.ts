@@ -6,10 +6,12 @@ describe('scheduled specification drift workflow', () => {
   let workflow: string;
 
   beforeAll(async () => {
-    workflow = await readFile(
-      new URL('../../../.github/workflows/esi-specification-drift.yml', import.meta.url),
-      'utf8',
-    );
+    workflow = (
+      await readFile(
+        new URL('../../../.github/workflows/esi-specification-drift.yml', import.meta.url),
+        'utf8',
+      )
+    ).replaceAll('\r\n', '\n');
   });
 
   it('runs on a schedule and by explicit dispatch using the supported frozen toolchain', () => {
