@@ -53,7 +53,9 @@ describe('RecordSectionNavigation', () => {
     mountedWrappers.push(wrapper)
 
     const historyLink = wrapper.findAll('a')[1]
-    expect(wrapper.findAllComponents(RouterLinkStub)[1]?.props('to')).toBe('/characters/42/history')
+    const historyLinkComponent = wrapper.findAllComponents(RouterLinkStub)[1]
+    expect(historyLinkComponent?.props('to')).toBe('/characters/42/history')
+    expect(historyLinkComponent?.attributes('prefetch-on')).toBe('interaction')
 
     await historyLink?.trigger('pointerenter')
     expect(wrapper.emitted('intent')?.[0]?.[0]).toEqual(entries[1])

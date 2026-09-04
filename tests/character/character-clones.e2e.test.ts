@@ -185,6 +185,7 @@ describe('character Clones production route', async () => {
         'SKILLS',
         'CLONES',
         'FINANCE',
+        'ASSETS',
         'HISTORY',
         'MAIL',
       ])

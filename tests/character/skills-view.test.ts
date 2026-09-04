@@ -8,6 +8,7 @@ const summary = source('app/components/character/skills/SummaryCard.vue')
 const catalogue = source('app/components/character/skills/Catalogue.vue')
 const queue = source('app/components/character/skills/Queue.vue')
 const page = [route, summary, catalogue, queue].join('\n')
+const summaryStyles = source('app/assets/css/features/character-summary.css')
 const features = source('app/assets/css/features/skills.css')
 const responsive = source('app/assets/css/responsive/skills.css')
 
@@ -33,11 +34,16 @@ describe('skills catalogue markup', () => {
     expect(page).toContain('AppSummaryCard')
   })
 
-  it('gives every group chip a decorative category glyph in a three-column grid', () => {
+  it('keeps shared summary cards free of diagonal hatching', () => {
+    expect(summaryStyles).not.toContain('repeating-linear-gradient')
+    expect(features).not.toMatch(/\.character-summary-card\.skills-hero \{[^}]*background:/s)
+  })
+
+  it('gives every group chip a decorative category glyph in three columns', () => {
     expect(page).toContain('<CharacterSkillsGroupIcon :name="group.icon" />')
-    expect(features).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))')
+    expect(features).toMatch(/\.skill-group-chips \{[^}]*columns: 3;[^}]*column-gap: 0\.3125rem/s)
     expect(features).toContain('grid-template-columns: auto minmax(0, 1fr) auto')
-    expect(responsive).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))')
+    expect(responsive).toMatch(/\.skill-group-chips \{[^}]*columns: 2;/s)
     expect(features).toContain('.skill-group-chip::after')
     expect(features).toContain('clip-path: var(--skill-chip-shape)')
     expect(features).toContain('border-shape: var(--skill-chip-shape)')
@@ -47,6 +53,17 @@ describe('skills catalogue markup', () => {
     expect(features).not.toMatch(/\.skill-group-chip \{[^}]*overflow: hidden/s)
   })
 
+  it('flows alphabetical groups and skills down balanced columns', () => {
+    expect(page).not.toContain('skillGroupColumns')
+    expect(features).toMatch(/\.skill-group-chip \{[^}]*break-inside: avoid;/s)
+    expect(features).toMatch(/\.skill-list \{[^}]*columns: 2;[^}]*column-gap: 0\.125rem/s)
+    expect(features).toMatch(/\.skill-row \{[^}]*break-inside: avoid;/s)
+    expect(responsive).toMatch(/\.skill-list \{[^}]*columns: 1;/s)
+    expect(responsive).toMatch(
+      /@media \(max-width: 520px\) \{[\s\S]*\.skill-group-chips \{[^}]*columns: 1;/,
+    )
+  })
+
   it('marks selection and vacancy on group chips programmatically', () => {
     expect(page).toContain(':aria-pressed="group.key === activeGroupKey"')
     expect(page).toContain(':aria-label="groupLabel(group)"')
@@ -54,15 +71,17 @@ describe('skills catalogue markup', () => {
     expect(page).toContain("'is-vacant': group.count === 0")
   })
 
-  it('exposes the trained-level filter as a labelled native fieldset', () => {
-    expect(page).toContain('<fieldset class="skills-level-filter">')
-    expect(page).toContain('<legend class="sr-only">Filter skills by trained level</legend>')
-    expect(page).not.toContain('role="group"')
-    expect(page).toContain(':aria-pressed="levelFilter === filter.id"')
-    expect(page).toContain("{ id: 'untrained', label: 'UNTRAINED' }")
-    expect(page).toContain("{ id: 'progress', label: 'IN PROGRESS' }")
-    expect(page).toContain("{ id: 'v', label: 'AT V' }")
+  it('uses shared Reka-backed toggles for the catalogue filters', () => {
+    expect(page).toContain('<UiToggleGroup')
+    expect(page).toContain('class="skills-level-filter"')
+    expect(page).toContain('label="Filter skills by trained level"')
+    expect(page).toContain("{ value: 'untrained', label: 'UNTRAINED' }")
+    expect(page).toContain("{ value: 'progress', label: 'IN PROGRESS' }")
+    expect(page).toContain("{ value: 'v', label: 'AT V' }")
+    expect(page).toContain('<UiToggle\n          v-model="queuedOnly"')
     expect(page).toContain('class="skills-queued-filter"')
+    expect(features).not.toContain('.skills-level-filter button')
+    expect(features).not.toContain('.skills-queued-filter {')
   })
 
   it('keeps the result label beside search and aligns filter controls to the right', () => {
@@ -117,15 +136,31 @@ describe('training queue markup', () => {
     expect(page).toContain('aria-labelledby="skill-queue-title"')
     expect(page).toContain('Training Queue')
     expect(features).toContain('grid-template-columns: minmax(0, 1fr) minmax(18.75rem, 22rem)')
+    expect(responsive).toContain('min-height: min(42rem, calc(100dvh - 12rem))')
   })
 
-  it('renders the training state with progress, remaining time and totals', () => {
-    expect(page).toContain('<progress')
-    expect(page).toContain(':value="activeQueueProgress?.percent ?? 0"')
-    expect(page).not.toContain('role="progressbar"')
+  it('renders the training state with level indicators, remaining time and totals', () => {
+    expect(page).not.toContain('<UiProgress')
+    expect(page).not.toContain('<progress')
+    expect(page).toContain('class="skill-level-track skill-queue-current-levels"')
+    expect(page).toContain('v-for="level in 5"')
+    expect(page).toContain("'is-active': level === activeQueueEntry.finishedLevel")
+    expect(page).toContain('class="skill-queue-chevron-field"')
+    expect(page).toContain('v-for="chevron in 32"')
+    expect(features).toContain('clip-path: polygon(')
+    expect(features).toContain('animation: skill-queue-chevron-alternate 8s ease-in-out infinite')
+    expect(features).toContain('animation-delay: -4s')
+    expect(features).toMatch(
+      /\.skill-queue-chevron-field \{[^}]*position: absolute;[^}]*inset: 0;/s,
+    )
     expect(page).toContain('formatQueueDuration(activeQueueRemaining)')
     expect(page).toContain('formatQueueDuration(queueTotalRemaining)')
     expect(page).toContain('skill-queue-segments')
+    expect(page).toContain('queueRemainingSp(queueEntries.value, nowMs.value)')
+    expect(page).toContain('class="skill-queue-sp-summary"')
+    expect(route).toContain(':unallocated-sp="skills.unallocatedSp"')
+    expect(queue).toContain('class="skill-queue-unallocated"')
+    expect(queue).toContain('class="skill-queue-unallocated-label"')
   })
 
   it('covers every queue state including lapsed', () => {

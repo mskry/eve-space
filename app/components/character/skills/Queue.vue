@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { CharacterSkillQueue } from '../../../queries/characters'
+import { formatNumber } from '../../../utils/format'
 import {
   QUEUE_WARNING_MS,
-  entryProgress,
   entryRemainingMs,
   formatQueueDuration,
   queueRemainingMs,
+  queueRemainingSp,
   queueSegments,
   resolveSkillQueueState,
   romanLevel,
-  trainingRatePerMinute,
 } from '../../../utils/skill-queue'
 
 const props = defineProps<{
@@ -17,6 +17,7 @@ const props = defineProps<{
   status: string
   message: string
   authorizeUrl: string
+  unallocatedSp: number
 }>()
 
 const emit = defineEmits<{ retry: [] }>()
@@ -45,13 +46,11 @@ const upcomingQueueEntries = computed(() => {
   if (active === null) return queueEntries.value
   return queueEntries.value.filter((entry) => entry.queuePosition > active)
 })
-const activeQueueProgress = computed(() =>
-  activeQueueEntry.value ? entryProgress(activeQueueEntry.value, nowMs.value) : null,
-)
 const activeQueueRemaining = computed(() =>
   activeQueueEntry.value ? entryRemainingMs(activeQueueEntry.value, nowMs.value) : null,
 )
 const queueTotalRemaining = computed(() => queueRemainingMs(queueEntries.value, nowMs.value))
+const queueTotalSp = computed(() => queueRemainingSp(queueEntries.value, nowMs.value))
 const queueBarSegments = computed(() => queueSegments(queueEntries.value))
 const queueEndsSoon = computed(
   () => queueTotalRemaining.value !== null && queueTotalRemaining.value < QUEUE_WARNING_MS,
@@ -108,31 +107,30 @@ const queueIdleCopy = computed(() => {
 
     <template v-else-if="skillQueue && queueState === 'training' && activeQueueEntry">
       <div class="skill-queue-current">
+        <span class="skill-queue-chevron-field" aria-hidden="true">
+          <i v-for="chevron in 32" :key="chevron"></i>
+        </span>
         <p class="skill-queue-current-identity">
+          <span
+            class="skill-level-track skill-queue-current-levels"
+            :aria-label="`Training level ${activeQueueEntry.finishedLevel}`"
+          >
+            <i
+              v-for="level in 5"
+              :key="level"
+              :class="{
+                'is-trained': level < activeQueueEntry.finishedLevel,
+                'is-active': level === activeQueueEntry.finishedLevel,
+              }"
+              aria-hidden="true"
+            ></i>
+          </span>
           <span class="skill-queue-current-name">{{ activeQueueEntry.name }}</span>
           <span class="skill-queue-current-level">
             {{ romanLevel(activeQueueEntry.finishedLevel) }}
           </span>
           <span class="skill-queue-current-remaining">
             {{ formatQueueDuration(activeQueueRemaining) }}
-          </span>
-        </p>
-        <progress
-          class="skill-queue-progress"
-          :value="activeQueueProgress?.percent ?? 0"
-          max="100"
-          :aria-label="`${activeQueueEntry.name} level ${activeQueueEntry.finishedLevel} training progress`"
-        >
-          {{ activeQueueProgress?.percent ?? 0 }}%
-        </progress>
-        <p class="skill-queue-current-meta">
-          <span>{{ activeQueueProgress?.percent ?? 0 }}%</span>
-          <span v-if="activeQueueProgress?.currentSp !== null">
-            {{ activeQueueProgress?.currentSp?.toLocaleString('en-US') }} /
-            {{ activeQueueProgress?.targetSp?.toLocaleString('en-US') }} SP
-          </span>
-          <span v-if="trainingRatePerMinute(activeQueueEntry) !== null">
-            {{ trainingRatePerMinute(activeQueueEntry) }} SP/MIN
           </span>
         </p>
       </div>
@@ -146,25 +144,6 @@ const queueIdleCopy = computed(() => {
           </span>
         </li>
       </ul>
-
-      <div class="skill-queue-totals">
-        <div>
-          <span class="ui-eyebrow">TRAINING TIME</span>
-          <strong>{{ formatQueueDuration(queueTotalRemaining) }}</strong>
-        </div>
-        <span v-if="queueBarSegments.length" class="skill-queue-segments" aria-hidden="true">
-          <i
-            v-for="segment in queueBarSegments"
-            :key="segment.queuePosition"
-            :style="{ flex: segment.flex }"
-            :class="{ 'is-current': segment.queuePosition === queueStatus.activeQueuePosition }"
-          />
-        </span>
-        <p class="skill-queue-warning" :class="{ 'is-warning': queueEndsSoon }">
-          <template v-if="queueEndsSoon">! UNDER 3 DAYS — TOP UP THE QUEUE</template>
-          <template v-else>QUEUE RUNS {{ formatQueueDuration(queueTotalRemaining) }}</template>
-        </p>
-      </div>
     </template>
 
     <div v-else-if="skillQueue" class="skill-queue-idle">
@@ -175,6 +154,38 @@ const queueIdleCopy = computed(() => {
           <span class="skill-queue-entry-level">{{ romanLevel(entry.finishedLevel) }}</span>
         </li>
       </ul>
+    </div>
+
+    <p v-if="unallocatedSp > 0" class="skill-queue-unallocated">
+      <strong>{{ formatNumber(unallocatedSp) }}</strong>
+      <span class="skill-queue-unallocated-label">unallocated skill points.</span>
+    </p>
+
+    <div
+      v-if="skillQueue && queueState === 'training' && activeQueueEntry"
+      class="skill-queue-totals"
+    >
+      <div>
+        <span class="ui-eyebrow">TRAINING TIME</span>
+        <strong>{{ formatQueueDuration(queueTotalRemaining) }}</strong>
+      </div>
+      <span v-if="queueBarSegments.length" class="skill-queue-segments" aria-hidden="true">
+        <i
+          v-for="segment in queueBarSegments"
+          :key="segment.queuePosition"
+          :style="{ flex: segment.flex }"
+          :class="{ 'is-current': segment.queuePosition === queueStatus.activeQueuePosition }"
+        />
+      </span>
+      <p v-if="queueTotalSp !== null" class="skill-queue-sp-summary">
+        {{ formatNumber(queueTotalSp) }} skill points in queue
+      </p>
+      <p v-if="queueEndsSoon" class="skill-queue-warning is-warning">
+        ! UNDER 3 DAYS — TOP UP THE QUEUE
+      </p>
+      <p v-else-if="queueTotalSp === null" class="skill-queue-warning">
+        QUEUE RUNS {{ formatQueueDuration(queueTotalRemaining) }}
+      </p>
     </div>
   </aside>
 </template>

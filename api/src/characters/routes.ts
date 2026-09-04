@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
+import { characterAssetsRoutes } from './assets-routes.js'
 import { characterClonesRoutes } from './clones-routes.js'
 import { characterCoreRoutes } from './core-routes.js'
 import { characterFinanceRoutes } from './finance-routes.js'
@@ -8,6 +9,7 @@ import { characterProgressionRoutes } from './progression-routes.js'
 
 export const characterRoutes = new Hono<OwnedCharacterEnv>()
   .route('/', characterCoreRoutes)
+  .route('/', characterAssetsRoutes)
   .route('/', characterProgressionRoutes)
   .route('/', characterClonesRoutes)
   .route('/', characterFinanceRoutes)

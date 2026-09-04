@@ -44,6 +44,8 @@ export const PRIVATE_QUERY_KEYS = {
     [...PRIVATE_QUERY_KEYS.character(characterId), 'implants'] as const,
   characterHistory: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'history'] as const,
+  characterAssets: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.character(characterId), 'assets'] as const,
   characterFinance: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'finance'] as const,
   characterFinanceWallet: (characterId: number) =>

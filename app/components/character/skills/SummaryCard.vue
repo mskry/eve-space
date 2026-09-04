@@ -12,14 +12,6 @@ const props = defineProps<{
 const emit = defineEmits<{ retryAttributes: [] }>()
 
 const totalSpLabel = computed(() => props.skills.totalSp.toLocaleString('en-US'))
-const unallocatedSpLabel = computed(() => props.skills.unallocatedSp.toLocaleString('en-US'))
-const levelFiveCount = computed(() => {
-  let count = 0
-  for (const group of props.skills.groups) {
-    for (const skill of group.skills) if (skill.trainedLevel === 5) count += 1
-  }
-  return count
-})
 
 const attributeDefinitions = [
   { key: 'intelligence', label: 'INT' },
@@ -73,18 +65,24 @@ function formatDate(value: string) {
     <template #label>TOTAL SKILL POINTS</template>
 
     <div class="skills-hero-details">
-      <div class="skills-hero-metrics">
-        <dl class="skills-hero-stats">
-          <div>
-            <dt>UNALLOCATED</dt>
-            <dd class="is-primary">{{ unallocatedSpLabel }}</dd>
-          </div>
-          <div>
-            <dt>AT LEVEL V</dt>
-            <dd>{{ levelFiveCount }}</dd>
-          </div>
-        </dl>
-      </div>
+      <dl v-if="remapAvailability" class="character-summary-stats">
+        <div v-if="remapAvailability.kind === 'bonus'">
+          <dt>REMAPS AVAILABLE</dt>
+          <dd>{{ remapAvailability.count }}</dd>
+        </div>
+        <div v-else-if="remapAvailability.kind === 'cooldown'">
+          <dt>NEXT REMAP</dt>
+          <dd>
+            <time :datetime="remapAvailability.date">
+              {{ formatDate(remapAvailability.date) }}
+            </time>
+          </dd>
+        </div>
+        <div v-else>
+          <dt>REMAP</dt>
+          <dd>AVAILABLE</dd>
+        </div>
+      </dl>
 
       <div
         class="skills-hero-profile"
@@ -111,18 +109,6 @@ function formatDate(value: string) {
               <dd>{{ attribute.value }}</dd>
             </div>
           </dl>
-          <p v-if="remapAvailability" class="skill-attribute-remaps">
-            <template v-if="remapAvailability.kind === 'bonus'">
-              REMAPS AVAILABLE: {{ remapAvailability.count }}
-            </template>
-            <template v-else-if="remapAvailability.kind === 'cooldown'">
-              NEXT REMAP:
-              <time :datetime="remapAvailability.date">
-                {{ formatDate(remapAvailability.date) }}
-              </time>
-            </template>
-            <template v-else>REMAP: AVAILABLE</template>
-          </p>
         </template>
       </div>
     </div>

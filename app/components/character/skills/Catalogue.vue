@@ -28,10 +28,10 @@ const searchTokens = computed(() => searchTerm.value.toLowerCase().split(/\s+/).
 const searching = computed(() => searchTokens.value.length > 0)
 const levelFilter = ref<'all' | 'untrained' | 'progress' | 'v'>('all')
 const levelFilters = [
-  { id: 'all', label: 'ALL' },
-  { id: 'untrained', label: 'UNTRAINED' },
-  { id: 'progress', label: 'IN PROGRESS' },
-  { id: 'v', label: 'AT V' },
+  { value: 'all', label: 'ALL' },
+  { value: 'untrained', label: 'UNTRAINED' },
+  { value: 'progress', label: 'IN PROGRESS' },
+  { value: 'v', label: 'AT V' },
 ] as const
 const queuedOnly = ref(false)
 const revealedSkillNameId = ref<number | null>(null)
@@ -231,30 +231,20 @@ function pluralize(count: number, singular: string, plural: string) {
         {{ compactResultStatus }}
       </span>
       <div class="skills-filter-controls">
-        <fieldset class="skills-level-filter">
-          <legend class="sr-only">Filter skills by trained level</legend>
-          <button
-            v-for="filter in levelFilters"
-            :key="filter.id"
-            type="button"
-            :class="{ 'is-selected': levelFilter === filter.id }"
-            :aria-pressed="levelFilter === filter.id"
-            @click="levelFilter = filter.id"
-          >
-            {{ filter.label }}
-          </button>
-        </fieldset>
-        <button
-          type="button"
+        <UiToggleGroup
+          v-model="levelFilter"
+          class="skills-level-filter"
+          label="Filter skills by trained level"
+          :options="levelFilters"
+        />
+        <UiToggle
+          v-model="queuedOnly"
           class="skills-queued-filter"
-          :class="{ 'is-selected': queuedOnly }"
           :disabled="queuedFilterDisabled"
-          :aria-pressed="queuedOnly"
-          :aria-label="queuedFilterLabel"
-          @click="queuedOnly = !queuedOnly"
+          :label="queuedFilterLabel"
         >
           QUEUED ONLY
-        </button>
+        </UiToggle>
       </div>
       <span class="sr-only skills-result-announcement" aria-live="polite">
         {{ announcedResult }}

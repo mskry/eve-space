@@ -47,35 +47,6 @@
   outline-offset: 0.1875rem;
 }
 
-.history-summary-stats {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(3, auto);
-  gap: 1.75rem;
-}
-
-.history-summary-stats > div {
-  display: grid;
-  gap: 0.3125rem;
-}
-
-.history-summary-stats dt,
-.history-summary-stats dd {
-  margin: 0;
-  font-family: var(--ui-font-mono);
-}
-
-.history-summary-stats dt {
-  color: var(--ui-text-muted);
-  font: 700 0.5rem/1 var(--ui-font-mono);
-  letter-spacing: 0.11em;
-}
-
-.history-summary-stats dd {
-  color: var(--ui-text);
-  font: 1rem/1 var(--ui-font-mono);
-}
-
 .history-interlude-tooltip {
   display: grid;
   gap: 0.25rem;

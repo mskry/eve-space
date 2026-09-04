@@ -84,6 +84,7 @@ const shellNavigationOrder = {
     { ownerId: 'core', navigationId: 'core-character-skills' },
     { ownerId: 'core', navigationId: 'core-character-clones' },
     { ownerId: 'core', navigationId: 'core-character-finance' },
+    { ownerId: 'core', navigationId: 'core-character-assets' },
     { ownerId: 'core', navigationId: 'core-character-history' },
     { ownerId: 'core', navigationId: 'core-character-mail' },
   ],

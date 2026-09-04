@@ -200,7 +200,7 @@ function formatDuration(milliseconds: number) {
         <template #value>{{ currentCorporation?.name ?? 'NO RECORDS' }}</template>
         <template #label>CURRENT CORPORATION</template>
 
-        <dl class="history-summary-stats">
+        <dl class="character-summary-stats">
           <div>
             <dt>RECORDS</dt>
             <dd>{{ timeline.length }}</dd>

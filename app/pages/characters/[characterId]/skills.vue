@@ -133,6 +133,7 @@ function queryAuthorizeUrl(error: unknown) {
         :status="skillQueueStatus"
         :message="skillQueueMessage"
         :authorize-url="skillQueueAuthorizeUrl"
+        :unallocated-sp="skills.unallocatedSp"
         @retry="skillQueueQuery.refetch()"
       />
     </div>

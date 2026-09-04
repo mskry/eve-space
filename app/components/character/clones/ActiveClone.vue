@@ -51,49 +51,49 @@ function historicalDate(value: string | null | undefined) {
     <template #value>{{ clones ? capacityValue : '--' }}</template>
     <template #label>{{ clones ? capacityLabel : 'CAPACITY UNAVAILABLE' }}</template>
 
-    <div class="character-clones-active-content">
-      <UiStatePanel v-if="state.status === 'loading'" compact role="status">
-        <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-        <p>Resolving Home Station and jump clone records...</p>
-      </UiStatePanel>
-      <CharacterAuthorizationRequired
-        v-else-if="state.status === 'authorization'"
-        title="Clone-state authorization required"
-        :message="state.message"
-        :authorize-url="state.authorizeUrl"
-        compact
-      />
-      <UiStatePanel
-        v-else-if="state.status === 'error'"
-        code="ERR / CLONES"
-        title="Clone state unavailable"
-        compact
-        role="alert"
-        tone="error"
-      >
-        <p>{{ state.message }}</p>
-        <template #action>
-          <button class="ui-action-secondary" type="button" @click="$emit('retry')">
-            RETRY UPLINK
-          </button>
-        </template>
-      </UiStatePanel>
-      <template v-else-if="clones">
-        <div v-if="lastCloneJumpLabel" class="character-clones-jump-status">
-          <p class="character-clones-vital-label">LAST CLONE JUMP</p>
-          <p class="character-clones-activity-value">
+    <UiStatePanel v-if="state.status === 'loading'" compact role="status">
+      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
+      <p>Resolving Home Station and jump clone records...</p>
+    </UiStatePanel>
+    <CharacterAuthorizationRequired
+      v-else-if="state.status === 'authorization'"
+      title="Clone-state authorization required"
+      :message="state.message"
+      :authorize-url="state.authorizeUrl"
+      compact
+    />
+    <UiStatePanel
+      v-else-if="state.status === 'error'"
+      code="ERR / CLONES"
+      title="Clone state unavailable"
+      compact
+      role="alert"
+      tone="error"
+    >
+      <p>{{ state.message }}</p>
+      <template #action>
+        <button class="ui-action-secondary" type="button" @click="$emit('retry')">
+          RETRY UPLINK
+        </button>
+      </template>
+    </UiStatePanel>
+    <template v-else-if="clones">
+      <dl v-if="lastCloneJumpLabel" class="character-summary-stats">
+        <div>
+          <dt>LAST CLONE JUMP</dt>
+          <dd>
             <time :datetime="clones.lastCloneJumpAt ?? undefined">
               {{ lastCloneJumpLabel }}
             </time>
-          </p>
+          </dd>
         </div>
+      </dl>
 
-        <p v-if="capacityNote" class="character-clones-vital-note">{{ capacityNote }}</p>
+      <p v-if="capacityNote" class="character-clones-vital-note">{{ capacityNote }}</p>
 
-        <output v-if="clones.stale" class="character-clones-stale">
-          STALE SNAPSHOT / Last validated {{ clones.validatedAt }}
-        </output>
-      </template>
-    </div>
+      <output v-if="clones.stale" class="character-clones-stale">
+        STALE SNAPSHOT / Last validated {{ clones.validatedAt }}
+      </output>
+    </template>
   </AppSummaryCard>
 </template>

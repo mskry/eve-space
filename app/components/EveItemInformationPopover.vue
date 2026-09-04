@@ -3,6 +3,8 @@ import type { PublicTypeDetail } from '../queries/universe'
 
 const props = defineProps<{
   detailsLabel?: string
+  imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
+  imageSource?: string
   typeId: number
 }>()
 
@@ -40,6 +42,8 @@ function updateOpen(value: boolean) {
         v-if="open"
         :description-id="descriptionId"
         :details-label="props.detailsLabel"
+        :image-kind="props.imageKind"
+        :image-source="props.imageSource"
         :title-id="titleId"
         :type-id="props.typeId"
       >
