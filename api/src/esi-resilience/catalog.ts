@@ -136,6 +136,22 @@ export const coreEsiOperationCatalog = {
       reason: 'Live ship_type_id values may be null despite the SDK 2.0.0 schema.',
     },
   }),
+  'character-assets-page': defineContract('character-assets-page', {
+    identity: { kind: 'ordered', fields: ['characterId', 'page'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
+  'character-asset-names': defineContract('character-asset-names', {
+    identity: {
+      kind: 'mixed',
+      fields: [
+        { kind: 'scalar', field: 'characterId' },
+        { kind: 'set', field: 'itemIds', maximumItems: 1_000 },
+      ],
+    },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
   'wallet-balance': defineContract('wallet-balance', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: sharedPrivateCache(),

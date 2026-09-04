@@ -9,12 +9,14 @@
 }
 
 .character-clones-workspace {
+  --clones-section-gap: 0.75rem;
   display: grid;
-  gap: 0.75rem;
+  gap: var(--clones-section-gap);
 }
 
+/* The grid gap already supplies part of the shared summary spacing. */
 .character-clones-active {
-  margin-bottom: 0.625rem;
+  margin-bottom: calc(var(--character-summary-gap) - var(--clones-section-gap));
 }
 
 .character-clones-active h2 {
@@ -59,32 +61,10 @@
   flex: 1;
 }
 
-.character-clones-active-content {
-  width: 100%;
-  min-width: 0;
-  display: grid;
-  gap: 0.75rem;
-}
-
 /* The details slot is placed at the card's end, so its own text reads to that edge too. */
-.character-clones-jump-status,
-.character-clones-active-content > .character-clones-vital-note,
+.character-clones-active .character-clones-vital-note,
 .character-clones-active .character-clones-stale {
   text-align: right;
-}
-
-.character-clones-jump-status {
-  min-width: 0;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.character-clones-vital-label {
-  margin: 0;
-  color: var(--ui-text-faint);
-  font: 600 0.5rem/1 var(--ui-font-mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .character-clones-vital-note {
@@ -93,14 +73,6 @@
   overflow-wrap: anywhere;
   color: var(--ui-text-muted);
   font: 0.5625rem/1.45 var(--ui-font-mono);
-}
-
-.character-clones-activity-value {
-  margin: 0;
-  color: var(--ui-text);
-  font: 400 1.0625rem/1.2 var(--ui-font-body);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .character-clones-home-details {
@@ -260,18 +232,6 @@
   font: 700 0.5rem/1 var(--ui-font-mono);
   letter-spacing: 0.1em;
   white-space: nowrap;
-}
-
-.character-clones-implant-action {
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
-  color: var(--ui-text-faint);
-}
-
-.character-clones-implant-trigger:hover .character-clones-implant-action,
-.character-clones-implant-trigger:focus-visible .character-clones-implant-action {
-  color: var(--ui-primary);
 }
 
 .character-clones-empty-implants {

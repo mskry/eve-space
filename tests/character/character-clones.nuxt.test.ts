@@ -143,7 +143,7 @@ describe('character Clones workspace', () => {
     )
     const implantName = implantTrigger.get('.character-clones-implant-name')
     expect(implantName.text()).toContain('Memory Augmentation')
-    expect(implantName.find('.character-clones-implant-action').exists()).toBe(true)
+    expect(implantName.find('.app-information-icon').exists()).toBe(true)
 
     const emptyCard = wrapper.findAll('.character-clones-card')[1]!
     expect(emptyCard.find('button.character-clones-card-summary').exists()).toBe(false)

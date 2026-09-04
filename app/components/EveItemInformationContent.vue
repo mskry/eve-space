@@ -12,6 +12,8 @@ const props = withDefaults(
   defineProps<{
     descriptionId?: string
     detailsLabel?: string
+    imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
+    imageSource?: string
     item?: EveItemInformationItem
     status: 'loaded' | 'loading' | 'unavailable'
     titleId?: string
@@ -19,6 +21,8 @@ const props = withDefaults(
   {
     descriptionId: undefined,
     detailsLabel: undefined,
+    imageKind: 'type-icon',
+    imageSource: undefined,
     item: undefined,
     titleId: undefined,
   },
@@ -54,7 +58,15 @@ function itemClassification(item: EveItemInformationItem) {
 
     <div v-else-if="status === 'loaded' && item" class="eve-item-information-loaded">
       <header class="eve-item-information-header">
-        <UiEveImage kind="type-icon" :id="item.typeId" :dimension="64" alt="" />
+        <img
+          v-if="imageSource"
+          class="eve-item-information-image"
+          :src="imageSource"
+          alt=""
+          width="64"
+          height="64"
+        />
+        <UiEveImage v-else :kind="imageKind" :id="item.typeId" :dimension="64" alt="" />
         <div>
           <h2 :id="titleId">{{ item.name }}</h2>
           <p class="ui-eyebrow">{{ itemClassification(item) }}</p>
@@ -68,25 +80,31 @@ function itemClassification(item: EveItemInformationItem) {
         :tabs="sectionTabs"
       >
         <template #description>
-          <section class="eve-item-information-description" aria-label="Description">
+          <UiScrollArea class="eve-item-information-scroll">
+            <section class="eve-item-information-description" aria-label="Description">
+              <p v-if="item.description" :id="descriptionId">{{ item.description }}</p>
+              <p v-else :id="descriptionId" class="eve-item-information-empty">
+                No description is available for this item.
+              </p>
+            </section>
+          </UiScrollArea>
+        </template>
+        <template #details>
+          <UiScrollArea class="eve-item-information-scroll">
+            <slot name="details" :item="item" />
+          </UiScrollArea>
+        </template>
+      </UiTabs>
+
+      <template v-else>
+        <UiScrollArea class="eve-item-information-scroll">
+          <section class="eve-item-information-description is-standalone" aria-label="Description">
             <p v-if="item.description" :id="descriptionId">{{ item.description }}</p>
             <p v-else :id="descriptionId" class="eve-item-information-empty">
               No description is available for this item.
             </p>
           </section>
-        </template>
-        <template #details>
-          <slot name="details" :item="item" />
-        </template>
-      </UiTabs>
-
-      <template v-else>
-        <section class="eve-item-information-description is-standalone" aria-label="Description">
-          <p v-if="item.description" :id="descriptionId">{{ item.description }}</p>
-          <p v-else :id="descriptionId" class="eve-item-information-empty">
-            No description is available for this item.
-          </p>
-        </section>
+        </UiScrollArea>
 
         <slot name="details" :item="item" />
       </template>
@@ -128,12 +146,15 @@ function itemClassification(item: EveItemInformationItem) {
   );
 }
 
-.eve-item-information-header :deep(.ui-eve-image) {
+.eve-item-information-header :deep(.ui-eve-image),
+.eve-item-information-image {
   width: 58px;
   height: 58px;
+  display: block;
   border: 1px solid color-mix(in srgb, var(--ui-warning) 46%, var(--ui-border));
   background: color-mix(in srgb, var(--ui-surface-solid) 80%, transparent);
   box-shadow: inset 0 0 18px color-mix(in srgb, var(--ui-warning) 5%, transparent);
+  object-fit: contain;
 }
 
 .eve-item-information-header h2,
@@ -204,7 +225,8 @@ function itemClassification(item: EveItemInformationItem) {
     grid-template-columns: 52px minmax(0, 1fr);
   }
 
-  .eve-item-information-header :deep(.ui-eve-image) {
+  .eve-item-information-header :deep(.ui-eve-image),
+  .eve-item-information-image {
     width: 52px;
     height: 52px;
   }

@@ -1205,7 +1205,7 @@ describe('character mail reading', async () => {
     expect(readerBox).not.toBeNull()
     expect(headersBox!.y).toBeGreaterThan(sidebarBox!.y)
     expect(readerBox!.y).toBeGreaterThan(headersBox!.y)
-    expect(await recordNavigation.getByRole('link').count()).toBe(6)
+    expect(await recordNavigation.getByRole('link').count()).toBe(7)
     expect(navigationMetrics.scrollWidth).toBeGreaterThan(navigationMetrics.clientWidth)
     expect(focusOutline).not.toBe('0px')
     expect(hasHorizontalOverflow).toBe(false)

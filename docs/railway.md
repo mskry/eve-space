@@ -30,23 +30,6 @@ Register the exact `EVE_CALLBACK_URL` in the EVE Developer Portal. Do not change
 
 On Railway, set `NUXT_PUBLIC_API_BASE=https://${{api.RAILWAY_PUBLIC_DOMAIN}}` so the value follows the API custom domain and the project canvas displays the `web` to `api` dependency. The resolved browser value remains the public HTTPS URL; do not use the private service domain for browser requests.
 
-If no custom domain is available, add a seventh `gateway` service from `gateway/Dockerfile`. Give only the gateway a Railway-provided public domain, set its healthcheck to `/health`, and configure:
-
-```dotenv
-# gateway
-API_UPSTREAM=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080
-WEB_UPSTREAM=http://${{web.RAILWAY_PRIVATE_DOMAIN}}:8080
-
-# web
-NUXT_PUBLIC_API_BASE=https://gateway-domain.up.railway.app
-
-# api
-WEB_ORIGIN=https://gateway-domain.up.railway.app
-EVE_CALLBACK_URL=https://gateway-domain.up.railway.app/auth/eve/callback
-```
-
-The gateway routes `/api/*` and `/auth/*` to Hono and all other requests to Nuxt, making the Railway domain a single first-party origin. Remove the direct Railway-provided domains from `web` and `api` after gateway verification.
-
 ## Service configuration
 
 Build every repository service from the repository root. Set `RAILWAY_DOCKERFILE_PATH=/api/Dockerfile` on `api` and `worker`, and `/sde-ingest/Dockerfile` on the one-shot ingestion service. Keep the image default command for `api`; override `worker` with `node dist/worker.js`.
@@ -132,7 +115,7 @@ Do not roll production back to a disclosed secret. If PostgreSQL authentication 
 
 ## Continuous deployment
 
-Connect the `web`, `api`, and `worker` services to the GitHub repository's `main` branch and enable **Wait for CI** on every deployment trigger. Connect `gateway` only when the fallback gateway topology is in use. The repository CI workflow runs on pushes to `main`, so Railway deploys a commit only after all GitHub Actions checks succeed and skips it when any check fails.
+Connect the `web`, `api`, and `worker` services to the GitHub repository's `main` branch and enable **Wait for CI** on every deployment trigger. The repository CI workflow runs on pushes to `main`, so Railway deploys a commit only after all GitHub Actions checks succeed and skips it when any check fails.
 
 Set these root-relative watch paths on `web`:
 
@@ -203,7 +186,7 @@ Set this identical list on `api` and `worker` because they build the same image:
 !/**/*.spec.*
 ```
 
-Railway evaluates these as ordered gitignore-style patterns, so exclusions must remain after the inclusion rules. The web list includes `api/src` because Nuxt imports the Hono `AppType` contract directly. Root manifests, the lockfile, Docker inputs, shared packages, generated registries, and installed feature inputs remain covered, while documentation, tests, CI, gateway, and SDE-only changes do not deploy these services. Add any future production input before relying on its exclusion.
+Railway evaluates these as ordered gitignore-style patterns, so exclusions must remain after the inclusion rules. The web list includes `api/src` because Nuxt imports the Hono `AppType` contract directly. Root manifests, the lockfile, Docker inputs, shared packages, generated registries, and installed feature inputs remain covered, while documentation, tests, CI, and SDE-only changes do not deploy these services. Add any future production input before relying on its exclusion.
 
 Do not connect PostgreSQL or either Redis service to the repository, and keep SDE ingestion as a deliberate one-shot deployment.
 

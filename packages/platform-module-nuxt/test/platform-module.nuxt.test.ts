@@ -77,6 +77,7 @@ describe('platform Nuxt module fixture', async () => {
       'Clones',
       'Finance',
       'Alpha',
+      'Assets',
       'History',
       'Mail',
     ])

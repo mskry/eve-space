@@ -29,6 +29,8 @@ describe('character reauthorization transitions', () => {
     expect(navigation).toContain('mailLabelsQuery({')
     expect(navigation).toContain('mailingListsQuery({')
     expect(navigation).not.toContain('mailDetailQuery')
+    expect(navigation).not.toContain("'core-character-assets': () =>")
+    expect(navigation).not.toContain('characterAssetsQuery')
   })
 
   it('keys the nested page by route without remounting for the callback parameter', () => {

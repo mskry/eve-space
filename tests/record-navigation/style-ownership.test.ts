@@ -33,6 +33,7 @@ describe('record page style ownership', () => {
     expect(finance).toContain('responsive/finance.css')
     expect(finance).not.toContain('features/skills.css')
     expect(summaryCss).toContain('.character-summary-card')
+    expect(summaryCss).toMatch(/\.character-summary-stats \{[^}]*text-align: end;/s)
     expect(summaryCss).not.toContain('.finance-ledger')
     expect(financeCss).toContain('.finance-ledger')
     expect(financeCss).not.toContain('.character-summary-card')

@@ -124,6 +124,27 @@ describe('ESI representation identity', () => {
     ).not.toBe(identity('character-contract-items', { characterId: 1, contractId: 11 }).digest)
   })
 
+  test('isolates asset pages and canonicalizes character-bound asset name sets', () => {
+    const firstPage = identity('character-assets-page', { characterId: 1, page: 1 })
+    const secondPage = identity('character-assets-page', { characterId: 1, page: 2 })
+    const firstNames = identity('character-asset-names', {
+      characterId: 1,
+      itemIds: [30, 10, 20],
+    })
+    const reorderedNames = identity('character-asset-names', {
+      characterId: 1,
+      itemIds: [20, 30, 10],
+    })
+    const otherCharacter = identity('character-asset-names', {
+      characterId: 2,
+      itemIds: [10, 20, 30],
+    })
+
+    expect(firstPage.digest).not.toBe(secondPage.digest)
+    expect(firstNames).toEqual(reorderedNames)
+    expect(firstNames.digest).not.toBe(otherCharacter.digest)
+  })
+
   test('separates mailbox identities by resource revision', () => {
     const base = {
       operation: 'mail-message' as const,

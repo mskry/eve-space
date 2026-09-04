@@ -60,9 +60,27 @@ describe('character record navigation coordination', () => {
       ['core-character-skills', 20],
       ['core-character-clones', 30],
       ['core-character-finance', 40],
-      ['core-character-history', 50],
-      ['core-character-mail', 60],
+      ['core-character-assets', 50],
+      ['core-character-history', 60],
+      ['core-character-mail', 70],
     ])
+  })
+
+  it('registers Assets immediately after Finance in the core character contract', () => {
+    const characterEntries = platformCoreNavigation.filter(
+      (entry) => entry.placement === 'character',
+    )
+    const financeIndex = characterEntries.findIndex(
+      (entry) => entry.navigationId === 'core-character-finance',
+    )
+
+    expect(characterEntries[financeIndex + 1]).toMatchObject({
+      navigationId: 'core-character-assets',
+      label: 'Assets',
+      path: '/characters/:characterId/assets',
+      icon: 'ship',
+      order: 50,
+    })
   })
 
   it('resolves the selected character into core and contributed destinations', () => {
@@ -123,6 +141,7 @@ describe('character record navigation coordination', () => {
     ])
     expect(hasCoreCharacterDataPrefetch('core-character-skills')).toBe(true)
     expect(hasCoreCharacterDataPrefetch('core-character-clones')).toBe(true)
+    expect(hasCoreCharacterDataPrefetch('core-character-assets')).toBe(false)
     expect(hasCoreCharacterDataPrefetch('core-character-overview')).toBe(false)
     expect(hasCoreCharacterDataPrefetch('core-character-mail')).toBe(true)
     expect(hasCoreCharacterDataPrefetch('module-intel')).toBe(false)

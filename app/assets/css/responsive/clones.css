@@ -14,8 +14,7 @@
     min-width: 0;
   }
 
-  .character-clones-jump-status,
-  .character-clones-active-content > .character-clones-vital-note,
+  .character-clones-active .character-clones-vital-note,
   .character-clones-active .character-clones-stale {
     text-align: left;
   }

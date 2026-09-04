@@ -14,7 +14,8 @@
   .roster-add-card,
   .roster-card,
   .roster-add-card .add-character-icon,
-  .skill-group .ui-collapsible-content {
+  .skill-group .ui-collapsible-content,
+  .skill-queue-chevron-field > i {
     animation: none !important;
   }
   .dashboard-sidebar,

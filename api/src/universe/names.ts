@@ -15,6 +15,7 @@ import {
 
 const maximumNameResolutionSplits = 64
 const nameResolutionBatchSize = 500
+const nameResolutionWorkerConcurrency = 4
 
 const universeIdCategories = {
   agents: 'agent',
@@ -57,6 +58,17 @@ class UniverseNameResolutionLimitError extends Error {
 }
 
 export async function resolveUniverseNames(ids: readonly number[]) {
+  const result = await resolveUniverseNameResults(ids)
+  if (result.failure !== undefined) throw result.failure
+  return result.names
+}
+
+export async function resolveUniverseNamesBestEffort(ids: readonly number[]) {
+  const result = await resolveUniverseNameResults(ids)
+  return { names: result.names, complete: result.failure === undefined }
+}
+
+async function resolveUniverseNameResults(ids: readonly number[]) {
   const names = new Map<number, UniverseName>()
   const uniqueIds = [...new Set(ids)]
   const cached = await readUniverseNames(uniqueIds)
@@ -64,7 +76,7 @@ export async function resolveUniverseNames(ids: readonly number[]) {
   const unresolvedIds = uniqueIds.filter(
     (id) => !cached.fresh.has(id) && !cached.suppressed.has(id),
   )
-  if (unresolvedIds.length === 0) return names
+  if (unresolvedIds.length === 0) return { names, failure: undefined }
   const splitState: ResolutionSplitState = { count: 0 }
   const missingIds: number[] = []
 
@@ -73,17 +85,14 @@ export async function resolveUniverseNames(ids: readonly number[]) {
     (_, index) =>
       unresolvedIds.slice(index * nameResolutionBatchSize, (index + 1) * nameResolutionBatchSize),
   )
-  const results = await Promise.allSettled(
-    chunks.map((chunk) =>
-      resolveChunkWithSplitting(chunk, splitState, missingIds, (currentChunk) =>
-        loadUniverseNameChunk(currentChunk, names, missingIds),
-      ),
+  const results = await mapBoundedSettled(chunks, (chunk) =>
+    resolveChunkWithSplitting(chunk, splitState, missingIds, (currentChunk) =>
+      loadUniverseNameChunk(currentChunk, names, missingIds),
     ),
   )
   await suppressUniverseNameIds(missingIds)
   const failure = results.find((result) => result.status === 'rejected')
-  if (failure) throw failure.reason
-  return names
+  return { names, failure: failure?.reason }
 }
 
 export async function resolveUniverseIds(inputNames: readonly string[]) {
@@ -104,11 +113,9 @@ export async function resolveUniverseIds(inputNames: readonly string[]) {
     (_, index) =>
       unresolvedNames.slice(index * nameResolutionBatchSize, (index + 1) * nameResolutionBatchSize),
   )
-  const results = await Promise.allSettled(
-    chunks.map((chunk) =>
-      resolveChunkWithSplitting(chunk, splitState, missingNames, (currentChunk) =>
-        loadUniverseIdChunk(currentChunk, resolved, missingNames),
-      ),
+  const results = await mapBoundedSettled(chunks, (chunk) =>
+    resolveChunkWithSplitting(chunk, splitState, missingNames, (currentChunk) =>
+      loadUniverseIdChunk(currentChunk, resolved, missingNames),
     ),
   )
   await suppressUniverseIdNames(missingNames)
@@ -218,4 +225,29 @@ function errorStatus(error: unknown): number | undefined {
   return typeof error === 'object' && error !== null && 'status' in error
     ? Number((error as { status: unknown }).status)
     : undefined
+}
+
+async function mapBoundedSettled<Item>(
+  items: readonly Item[],
+  load: (item: Item) => Promise<void>,
+) {
+  const results = Array.from({ length: items.length }) as PromiseSettledResult<void>[]
+  let nextIndex = 0
+  const workers = Array.from(
+    { length: Math.min(nameResolutionWorkerConcurrency, items.length) },
+    async () => {
+      while (nextIndex < items.length) {
+        const index = nextIndex
+        nextIndex += 1
+        try {
+          // oxlint-disable-next-line no-await-in-loop
+          results[index] = { status: 'fulfilled', value: await load(items[index]!) }
+        } catch (reason) {
+          results[index] = { status: 'rejected', reason }
+        }
+      }
+    },
+  )
+  await Promise.all(workers)
+  return results
 }

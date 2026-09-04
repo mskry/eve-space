@@ -17,20 +17,7 @@ defineProps<{
         <UiEveImage kind="type-icon" :id="implant.typeId" :dimension="32" alt="" />
         <span class="character-clones-implant-name">
           <span>{{ implant.name }}</span>
-          <svg
-            class="character-clones-implant-action"
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 11.25v4.5" stroke-linecap="round" />
-            <path d="M12 8.25h.01" stroke-linecap="round" />
-          </svg>
+          <AppInformationIcon />
         </span>
       </CharacterClonesImplantInformationPopover>
     </li>

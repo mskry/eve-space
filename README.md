@@ -238,3 +238,7 @@ EVE Space is a third-party application and is not affiliated with, endorsed by, 
 hf. Deployments must comply with the
 [EVE Online Developer License Agreement](https://developers.eveonline.com/license-agreement) and the
 EVE Online Terms of Service.
+
+The generic SKIN icon at `public/images/eve-skin.png` is sourced from the
+[EVE University Wiki](https://wiki.eveuniversity.org/File:Icon_fit_skins.png) under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).

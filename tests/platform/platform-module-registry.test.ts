@@ -338,6 +338,12 @@ describe('platform module registry generation', () => {
     expect(first.get('api/src/generated/platform/installed-module-runtime.ts')).toContain(
       "navigationId: 'core-character-clones'",
     )
+    expectInOrder(first.get('api/src/generated/platform/installed-module-runtime.ts'), [
+      "navigationId: 'core-character-finance'",
+      "navigationId: 'core-character-assets'",
+      "navigationId: 'core-character-history'",
+      "navigationId: 'core-character-mail'",
+    ])
     expect(first.get('api/src/generated/platform/installed-module-runtime.ts')).toContain(
       "navigationId: 'core-character-mail'",
     )

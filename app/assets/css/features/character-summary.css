@@ -1,3 +1,8 @@
+:root {
+  /* Spacing from a summary card to the content beneath it, shared by every character tab. */
+  --character-summary-gap: 1.375rem;
+}
+
 .character-summary-card {
   position: relative;
   min-width: 0;
@@ -69,4 +74,37 @@
   display: grid;
   justify-items: end;
   gap: 1.125rem;
+}
+
+.character-summary-stats {
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem 1.75rem;
+  text-align: end;
+}
+
+.character-summary-stats > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.3125rem;
+}
+
+.character-summary-stats dt {
+  color: var(--ui-text-muted);
+  font: 700 0.5rem/1 var(--ui-font-mono);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.character-summary-stats dd {
+  margin: 0;
+  color: var(--ui-text);
+  font: 1rem/1 var(--ui-font-mono);
+  overflow-wrap: anywhere;
+}
+
+.character-summary-stats dd.is-primary {
+  color: var(--ui-primary);
 }

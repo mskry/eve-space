@@ -112,6 +112,20 @@ export function queueRemainingMs(entries: readonly SkillQueueEntry[], now: numbe
   return Math.max(0, Math.max(...finishes) - now)
 }
 
+export function queueRemainingSp(entries: readonly SkillQueueEntry[], now: number): number | null {
+  if (entries.length === 0) return null
+  let total = 0
+
+  for (const entry of entries) {
+    if (entry.levelEndSp === null) return null
+    const currentSp = entryProgress(entry, now).currentSp
+    if (currentSp === null) return null
+    total += Math.max(0, entry.levelEndSp - currentSp)
+  }
+
+  return total
+}
+
 export interface SkillQueueSegment {
   queuePosition: number
   flex: number
