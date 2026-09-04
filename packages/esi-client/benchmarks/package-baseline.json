@@ -1,0 +1,4573 @@
+{
+  "schemaVersion": 2,
+  "policy": {
+    "byteHeadroomPercent": 2,
+    "fileCountHeadroom": 0,
+    "description": "Byte maxima are accepted unique transitive measurements plus 2%; reachable files, external edges, file count, and packed paths have no headroom, so every graph or artifact change requires review."
+  },
+  "totals": {
+    "compressedBytes": {
+      "measured": 360614,
+      "maximum": 367827
+    },
+    "unpackedBytes": {
+      "measured": 4252127,
+      "maximum": 4337170
+    },
+    "javascriptBytes": {
+      "measured": 2276010,
+      "maximum": 2321531
+    },
+    "declarationBytes": {
+      "measured": 1958812,
+      "maximum": 1997989
+    },
+    "fileCount": {
+      "measured": 315,
+      "maximum": 315
+    }
+  },
+  "publicEntries": {
+    ".": {
+      "runtime": {
+        "target": "dist/root.js",
+        "files": [
+          "dist/access-list-id.js",
+          "dist/access-list.js",
+          "dist/access-list2.js",
+          "dist/access-list3.js",
+          "dist/activities.js",
+          "dist/activities2.js",
+          "dist/activities3.js",
+          "dist/alliance-id.js",
+          "dist/alliance.js",
+          "dist/alliance2.js",
+          "dist/alliance3.js",
+          "dist/assets.js",
+          "dist/assets2.js",
+          "dist/assets3.js",
+          "dist/calendar.js",
+          "dist/calendar2.js",
+          "dist/calendar3.js",
+          "dist/character-id.js",
+          "dist/character.js",
+          "dist/character2.js",
+          "dist/character3.js",
+          "dist/clones.js",
+          "dist/clones2.js",
+          "dist/clones3.js",
+          "dist/configuration.js",
+          "dist/contacts.js",
+          "dist/contacts2.js",
+          "dist/contacts3.js",
+          "dist/contracts.js",
+          "dist/contracts2.js",
+          "dist/contracts3.js",
+          "dist/corporation-id.js",
+          "dist/corporation-projects.js",
+          "dist/corporation-projects2.js",
+          "dist/corporation-projects3.js",
+          "dist/corporation.js",
+          "dist/corporation2.js",
+          "dist/corporation3.js",
+          "dist/cosmetics.js",
+          "dist/cosmetics2.js",
+          "dist/cosmetics3.js",
+          "dist/cursor.js",
+          "dist/dogma.js",
+          "dist/dogma2.js",
+          "dist/dogma3.js",
+          "dist/error.js",
+          "dist/execute.js",
+          "dist/faction-id.js",
+          "dist/faction-warfare.js",
+          "dist/faction-warfare2.js",
+          "dist/faction-warfare3.js",
+          "dist/fittings.js",
+          "dist/fittings2.js",
+          "dist/fittings3.js",
+          "dist/fleets.js",
+          "dist/fleets2.js",
+          "dist/fleets3.js",
+          "dist/freelance-jobs.js",
+          "dist/freelance-jobs2.js",
+          "dist/freelance-jobs3.js",
+          "dist/incursions.js",
+          "dist/incursions2.js",
+          "dist/incursions3.js",
+          "dist/industry.js",
+          "dist/industry2.js",
+          "dist/industry3.js",
+          "dist/insurance.js",
+          "dist/insurance2.js",
+          "dist/insurance3.js",
+          "dist/item-id.js",
+          "dist/killmails.js",
+          "dist/killmails2.js",
+          "dist/killmails3.js",
+          "dist/location.js",
+          "dist/location2.js",
+          "dist/location3.js",
+          "dist/loyalty.js",
+          "dist/loyalty2.js",
+          "dist/loyalty3.js",
+          "dist/mail.js",
+          "dist/mail2.js",
+          "dist/mail3.js",
+          "dist/market.js",
+          "dist/market2.js",
+          "dist/market3.js",
+          "dist/meta.js",
+          "dist/meta2.js",
+          "dist/meta3.js",
+          "dist/military-campaigns.js",
+          "dist/military-campaigns2.js",
+          "dist/military-campaigns3.js",
+          "dist/operations.js",
+          "dist/paragon-hub.js",
+          "dist/paragon-hub2.js",
+          "dist/paragon-hub3.js",
+          "dist/planet-id.js",
+          "dist/planetary-interaction.js",
+          "dist/planetary-interaction2.js",
+          "dist/planetary-interaction3.js",
+          "dist/root.js",
+          "dist/routes.js",
+          "dist/routes2.js",
+          "dist/routes3.js",
+          "dist/search.js",
+          "dist/search2.js",
+          "dist/search3.js",
+          "dist/skills.js",
+          "dist/skills2.js",
+          "dist/skills3.js",
+          "dist/solar-system-id.js",
+          "dist/sovereignty.js",
+          "dist/sovereignty2.js",
+          "dist/sovereignty3.js",
+          "dist/station-id.js",
+          "dist/status.js",
+          "dist/status2.js",
+          "dist/status3.js",
+          "dist/structures.js",
+          "dist/structures2.js",
+          "dist/structures3.js",
+          "dist/type-id.js",
+          "dist/universe.js",
+          "dist/universe2.js",
+          "dist/universe3.js",
+          "dist/user-interface.js",
+          "dist/user-interface2.js",
+          "dist/user-interface3.js",
+          "dist/uuid.js",
+          "dist/wallet.js",
+          "dist/wallet2.js",
+          "dist/wallet3.js",
+          "dist/wars.js",
+          "dist/wars2.js",
+          "dist/wars3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/activities.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/assets.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/calendar.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/dogma.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/error.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/incursions.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/insurance.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/meta.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/routes.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/status.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/universe.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/user-interface.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wars.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 2125581,
+        "maximumUniqueBytes": 2168093
+      },
+      "declaration": {
+        "target": "dist/root.d.ts",
+        "files": [
+          "dist/access-list-id.d.ts",
+          "dist/access-list.d.ts",
+          "dist/access-list2.d.ts",
+          "dist/activities.d.ts",
+          "dist/activities2.d.ts",
+          "dist/alliance-id.d.ts",
+          "dist/alliance.d.ts",
+          "dist/alliance2.d.ts",
+          "dist/assets.d.ts",
+          "dist/assets2.d.ts",
+          "dist/calendar.d.ts",
+          "dist/calendar2.d.ts",
+          "dist/character-id.d.ts",
+          "dist/character.d.ts",
+          "dist/character2.d.ts",
+          "dist/clones.d.ts",
+          "dist/clones2.d.ts",
+          "dist/contacts.d.ts",
+          "dist/contacts2.d.ts",
+          "dist/contracts.d.ts",
+          "dist/contracts2.d.ts",
+          "dist/contracts3.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/corporation-projects.d.ts",
+          "dist/corporation-projects2.d.ts",
+          "dist/corporation.d.ts",
+          "dist/corporation2.d.ts",
+          "dist/cosmetics.d.ts",
+          "dist/cosmetics2.d.ts",
+          "dist/cursor.d.ts",
+          "dist/dogma.d.ts",
+          "dist/dogma2.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/faction-warfare.d.ts",
+          "dist/faction-warfare2.d.ts",
+          "dist/fittings.d.ts",
+          "dist/fittings2.d.ts",
+          "dist/fleets.d.ts",
+          "dist/fleets2.d.ts",
+          "dist/freelance-jobs.d.ts",
+          "dist/freelance-jobs2.d.ts",
+          "dist/incursions.d.ts",
+          "dist/incursions2.d.ts",
+          "dist/index.d.ts",
+          "dist/industry.d.ts",
+          "dist/industry2.d.ts",
+          "dist/insurance.d.ts",
+          "dist/insurance2.d.ts",
+          "dist/item-id.d.ts",
+          "dist/killmails.d.ts",
+          "dist/killmails2.d.ts",
+          "dist/location.d.ts",
+          "dist/location2.d.ts",
+          "dist/loyalty.d.ts",
+          "dist/loyalty2.d.ts",
+          "dist/mail.d.ts",
+          "dist/mail2.d.ts",
+          "dist/market.d.ts",
+          "dist/market2.d.ts",
+          "dist/meta.d.ts",
+          "dist/meta2.d.ts",
+          "dist/military-campaigns.d.ts",
+          "dist/military-campaigns2.d.ts",
+          "dist/operations.d.ts",
+          "dist/options.d.ts",
+          "dist/paragon-hub.d.ts",
+          "dist/paragon-hub2.d.ts",
+          "dist/planet-id.d.ts",
+          "dist/planetary-interaction.d.ts",
+          "dist/planetary-interaction2.d.ts",
+          "dist/response.d.ts",
+          "dist/root.d.ts",
+          "dist/routes.d.ts",
+          "dist/routes2.d.ts",
+          "dist/search.d.ts",
+          "dist/search2.d.ts",
+          "dist/skills.d.ts",
+          "dist/skills2.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/sovereignty.d.ts",
+          "dist/sovereignty2.d.ts",
+          "dist/station-id.d.ts",
+          "dist/status.d.ts",
+          "dist/status2.d.ts",
+          "dist/structures.d.ts",
+          "dist/structures2.d.ts",
+          "dist/type-id.d.ts",
+          "dist/universe.d.ts",
+          "dist/universe2.d.ts",
+          "dist/user-interface.d.ts",
+          "dist/user-interface2.d.ts",
+          "dist/uuid.d.ts",
+          "dist/wallet.d.ts",
+          "dist/wallet2.d.ts",
+          "dist/wars.d.ts",
+          "dist/wars2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/activities.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/assets.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/calendar.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/dogma.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/incursions.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/index.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/insurance.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/meta.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/operations.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/routes.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/status.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/universe.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/user-interface.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wars.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 1691821,
+        "maximumUniqueBytes": 1725658
+      }
+    },
+    "./schemas": {
+      "runtime": {
+        "target": "dist/schemas.js",
+        "files": [
+          "dist/access-list-id.js",
+          "dist/access-list.js",
+          "dist/activities.js",
+          "dist/alliance-id.js",
+          "dist/alliance.js",
+          "dist/assets.js",
+          "dist/calendar.js",
+          "dist/character-id.js",
+          "dist/character.js",
+          "dist/clones.js",
+          "dist/contacts.js",
+          "dist/contracts.js",
+          "dist/corporation-id.js",
+          "dist/corporation-projects.js",
+          "dist/corporation.js",
+          "dist/cosmetics.js",
+          "dist/cursor.js",
+          "dist/dogma.js",
+          "dist/error.js",
+          "dist/faction-id.js",
+          "dist/faction-warfare.js",
+          "dist/fittings.js",
+          "dist/fleets.js",
+          "dist/freelance-jobs.js",
+          "dist/incursions.js",
+          "dist/industry.js",
+          "dist/insurance.js",
+          "dist/item-id.js",
+          "dist/killmails.js",
+          "dist/location.js",
+          "dist/loyalty.js",
+          "dist/mail.js",
+          "dist/market.js",
+          "dist/meta.js",
+          "dist/military-campaigns.js",
+          "dist/paragon-hub.js",
+          "dist/planet-id.js",
+          "dist/planetary-interaction.js",
+          "dist/routes.js",
+          "dist/schemas.js",
+          "dist/search.js",
+          "dist/skills.js",
+          "dist/solar-system-id.js",
+          "dist/sovereignty.js",
+          "dist/station-id.js",
+          "dist/status.js",
+          "dist/structures.js",
+          "dist/type-id.js",
+          "dist/universe.js",
+          "dist/user-interface.js",
+          "dist/uuid.js",
+          "dist/wallet.js",
+          "dist/wars.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/activities.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/assets.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/calendar.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/dogma.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/error.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/incursions.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/insurance.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/meta.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/routes.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/status.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/universe.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/user-interface.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wars.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 588429,
+        "maximumUniqueBytes": 600198
+      },
+      "declaration": {
+        "target": "dist/schemas.d.ts",
+        "files": [
+          "dist/access-list-id.d.ts",
+          "dist/access-list.d.ts",
+          "dist/activities.d.ts",
+          "dist/alliance-id.d.ts",
+          "dist/alliance.d.ts",
+          "dist/assets.d.ts",
+          "dist/calendar.d.ts",
+          "dist/character-id.d.ts",
+          "dist/character.d.ts",
+          "dist/clones.d.ts",
+          "dist/contacts.d.ts",
+          "dist/contracts.d.ts",
+          "dist/contracts3.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/corporation-projects.d.ts",
+          "dist/corporation.d.ts",
+          "dist/cosmetics.d.ts",
+          "dist/cursor.d.ts",
+          "dist/dogma.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/faction-warfare.d.ts",
+          "dist/fittings.d.ts",
+          "dist/fleets.d.ts",
+          "dist/freelance-jobs.d.ts",
+          "dist/incursions.d.ts",
+          "dist/index.d.ts",
+          "dist/industry.d.ts",
+          "dist/insurance.d.ts",
+          "dist/item-id.d.ts",
+          "dist/killmails.d.ts",
+          "dist/location.d.ts",
+          "dist/loyalty.d.ts",
+          "dist/mail.d.ts",
+          "dist/market.d.ts",
+          "dist/meta.d.ts",
+          "dist/military-campaigns.d.ts",
+          "dist/paragon-hub.d.ts",
+          "dist/planet-id.d.ts",
+          "dist/planetary-interaction.d.ts",
+          "dist/routes.d.ts",
+          "dist/schemas.d.ts",
+          "dist/search.d.ts",
+          "dist/skills.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/sovereignty.d.ts",
+          "dist/station-id.d.ts",
+          "dist/status.d.ts",
+          "dist/structures.d.ts",
+          "dist/type-id.d.ts",
+          "dist/universe.d.ts",
+          "dist/user-interface.d.ts",
+          "dist/uuid.d.ts",
+          "dist/wallet.d.ts",
+          "dist/wars.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/activities.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/assets.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/calendar.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/dogma.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/incursions.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/index.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/insurance.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/meta.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/routes.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/status.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/universe.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/user-interface.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wars.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 1311018,
+        "maximumUniqueBytes": 1337239
+      }
+    },
+    "./operations": {
+      "runtime": {
+        "target": "dist/operations/index.js",
+        "files": [
+          "dist/access-list-id.js",
+          "dist/access-list.js",
+          "dist/access-list2.js",
+          "dist/activities.js",
+          "dist/activities2.js",
+          "dist/alliance-id.js",
+          "dist/alliance.js",
+          "dist/alliance2.js",
+          "dist/assets.js",
+          "dist/assets2.js",
+          "dist/calendar.js",
+          "dist/calendar2.js",
+          "dist/character-id.js",
+          "dist/character.js",
+          "dist/character2.js",
+          "dist/clones.js",
+          "dist/clones2.js",
+          "dist/contacts.js",
+          "dist/contacts2.js",
+          "dist/contracts.js",
+          "dist/contracts2.js",
+          "dist/corporation-id.js",
+          "dist/corporation-projects.js",
+          "dist/corporation-projects2.js",
+          "dist/corporation.js",
+          "dist/corporation2.js",
+          "dist/cosmetics.js",
+          "dist/cosmetics2.js",
+          "dist/cursor.js",
+          "dist/dogma.js",
+          "dist/dogma2.js",
+          "dist/execute.js",
+          "dist/faction-id.js",
+          "dist/faction-warfare.js",
+          "dist/faction-warfare2.js",
+          "dist/fittings.js",
+          "dist/fittings2.js",
+          "dist/fleets.js",
+          "dist/fleets2.js",
+          "dist/freelance-jobs.js",
+          "dist/freelance-jobs2.js",
+          "dist/incursions.js",
+          "dist/incursions2.js",
+          "dist/industry.js",
+          "dist/industry2.js",
+          "dist/insurance.js",
+          "dist/insurance2.js",
+          "dist/item-id.js",
+          "dist/killmails.js",
+          "dist/killmails2.js",
+          "dist/location.js",
+          "dist/location2.js",
+          "dist/loyalty.js",
+          "dist/loyalty2.js",
+          "dist/mail.js",
+          "dist/mail2.js",
+          "dist/market.js",
+          "dist/market2.js",
+          "dist/meta.js",
+          "dist/meta2.js",
+          "dist/military-campaigns.js",
+          "dist/military-campaigns2.js",
+          "dist/operations.js",
+          "dist/operations/index.js",
+          "dist/paragon-hub.js",
+          "dist/paragon-hub2.js",
+          "dist/planet-id.js",
+          "dist/planetary-interaction.js",
+          "dist/planetary-interaction2.js",
+          "dist/routes.js",
+          "dist/routes2.js",
+          "dist/search.js",
+          "dist/search2.js",
+          "dist/skills.js",
+          "dist/skills2.js",
+          "dist/solar-system-id.js",
+          "dist/sovereignty.js",
+          "dist/sovereignty2.js",
+          "dist/station-id.js",
+          "dist/status.js",
+          "dist/status2.js",
+          "dist/structures.js",
+          "dist/structures2.js",
+          "dist/type-id.js",
+          "dist/universe.js",
+          "dist/universe2.js",
+          "dist/user-interface.js",
+          "dist/user-interface2.js",
+          "dist/uuid.js",
+          "dist/wallet.js",
+          "dist/wallet2.js",
+          "dist/wars.js",
+          "dist/wars2.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/activities.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/assets.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/calendar.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/dogma.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/incursions.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/insurance.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/meta.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/routes.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/status.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/universe.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/user-interface.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wars.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 1683001,
+        "maximumUniqueBytes": 1716662
+      },
+      "declaration": {
+        "target": "dist/operations/index.d.ts",
+        "files": [
+          "dist/access-list-id.d.ts",
+          "dist/access-list.d.ts",
+          "dist/activities.d.ts",
+          "dist/alliance-id.d.ts",
+          "dist/alliance.d.ts",
+          "dist/assets.d.ts",
+          "dist/calendar.d.ts",
+          "dist/character-id.d.ts",
+          "dist/character.d.ts",
+          "dist/clones.d.ts",
+          "dist/contacts.d.ts",
+          "dist/contracts.d.ts",
+          "dist/contracts3.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/corporation-projects.d.ts",
+          "dist/corporation.d.ts",
+          "dist/cosmetics.d.ts",
+          "dist/cursor.d.ts",
+          "dist/dogma.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/faction-warfare.d.ts",
+          "dist/fittings.d.ts",
+          "dist/fleets.d.ts",
+          "dist/freelance-jobs.d.ts",
+          "dist/incursions.d.ts",
+          "dist/industry.d.ts",
+          "dist/insurance.d.ts",
+          "dist/item-id.d.ts",
+          "dist/killmails.d.ts",
+          "dist/location.d.ts",
+          "dist/loyalty.d.ts",
+          "dist/mail.d.ts",
+          "dist/market.d.ts",
+          "dist/meta.d.ts",
+          "dist/military-campaigns.d.ts",
+          "dist/operations.d.ts",
+          "dist/operations/index.d.ts",
+          "dist/paragon-hub.d.ts",
+          "dist/planet-id.d.ts",
+          "dist/planetary-interaction.d.ts",
+          "dist/response.d.ts",
+          "dist/routes.d.ts",
+          "dist/search.d.ts",
+          "dist/skills.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/sovereignty.d.ts",
+          "dist/station-id.d.ts",
+          "dist/status.d.ts",
+          "dist/structures.d.ts",
+          "dist/type-id.d.ts",
+          "dist/universe.d.ts",
+          "dist/user-interface.d.ts",
+          "dist/uuid.d.ts",
+          "dist/wallet.d.ts",
+          "dist/wars.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/activities.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/assets.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/calendar.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/dogma.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/incursions.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/insurance.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/meta.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/operations.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/routes.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/status.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/universe.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/user-interface.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wars.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 1089086,
+        "maximumUniqueBytes": 1110868
+      }
+    },
+    "./domains/access-list": {
+      "runtime": {
+        "target": "dist/domains/access-list.js",
+        "files": [
+          "dist/access-list-id.js",
+          "dist/access-list.js",
+          "dist/access-list2.js",
+          "dist/access-list3.js",
+          "dist/alliance-id.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/access-list.js",
+          "dist/execute.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 65469,
+        "maximumUniqueBytes": 66779
+      },
+      "declaration": {
+        "target": "dist/domains/access-list.d.ts",
+        "files": [
+          "dist/access-list-id.d.ts",
+          "dist/access-list.d.ts",
+          "dist/access-list2.d.ts",
+          "dist/alliance-id.d.ts",
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/access-list.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/access-list.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 18883,
+        "maximumUniqueBytes": 19261
+      }
+    },
+    "./domains/activities": {
+      "runtime": {
+        "target": "dist/domains/activities.js",
+        "files": [
+          "dist/activities.js",
+          "dist/activities2.js",
+          "dist/activities3.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/activities.js",
+          "dist/execute.js",
+          "dist/item-id.js",
+          "dist/planet-id.js",
+          "dist/solar-system-id.js",
+          "dist/uuid.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/activities.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 68430,
+        "maximumUniqueBytes": 69799
+      },
+      "declaration": {
+        "target": "dist/domains/activities.d.ts",
+        "files": [
+          "dist/activities.d.ts",
+          "dist/activities2.d.ts",
+          "dist/character-id.d.ts",
+          "dist/domains/activities.d.ts",
+          "dist/item-id.d.ts",
+          "dist/options.d.ts",
+          "dist/planet-id.d.ts",
+          "dist/response.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/uuid.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/activities.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 22092,
+        "maximumUniqueBytes": 22534
+      }
+    },
+    "./domains/alliance": {
+      "runtime": {
+        "target": "dist/domains/alliance.js",
+        "files": [
+          "dist/alliance-id.js",
+          "dist/alliance.js",
+          "dist/alliance2.js",
+          "dist/alliance3.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/alliance.js",
+          "dist/execute.js",
+          "dist/faction-id.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 69708,
+        "maximumUniqueBytes": 71103
+      },
+      "declaration": {
+        "target": "dist/domains/alliance.d.ts",
+        "files": [
+          "dist/alliance-id.d.ts",
+          "dist/alliance.d.ts",
+          "dist/alliance2.d.ts",
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/alliance.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/alliance.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 19030,
+        "maximumUniqueBytes": 19411
+      }
+    },
+    "./domains/assets": {
+      "runtime": {
+        "target": "dist/domains/assets.js",
+        "files": [
+          "dist/assets.js",
+          "dist/assets2.js",
+          "dist/assets3.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/assets.js",
+          "dist/execute.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/assets.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 83220,
+        "maximumUniqueBytes": 84885
+      },
+      "declaration": {
+        "target": "dist/domains/assets.d.ts",
+        "files": [
+          "dist/assets.d.ts",
+          "dist/assets2.d.ts",
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/assets.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/assets.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 39271,
+        "maximumUniqueBytes": 40057
+      }
+    },
+    "./domains/calendar": {
+      "runtime": {
+        "target": "dist/domains/calendar.js",
+        "files": [
+          "dist/calendar.js",
+          "dist/calendar2.js",
+          "dist/calendar3.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/calendar.js",
+          "dist/execute.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/calendar.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 71231,
+        "maximumUniqueBytes": 72656
+      },
+      "declaration": {
+        "target": "dist/domains/calendar.d.ts",
+        "files": [
+          "dist/calendar.d.ts",
+          "dist/calendar2.d.ts",
+          "dist/character-id.d.ts",
+          "dist/domains/calendar.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/calendar.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 22405,
+        "maximumUniqueBytes": 22854
+      }
+    },
+    "./domains/character": {
+      "runtime": {
+        "target": "dist/domains/character.js",
+        "files": [
+          "dist/alliance-id.js",
+          "dist/character-id.js",
+          "dist/character.js",
+          "dist/character2.js",
+          "dist/character3.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/character.js",
+          "dist/execute.js",
+          "dist/faction-id.js",
+          "dist/uuid.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 119456,
+        "maximumUniqueBytes": 121846
+      },
+      "declaration": {
+        "target": "dist/domains/character.d.ts",
+        "files": [
+          "dist/alliance-id.d.ts",
+          "dist/character-id.d.ts",
+          "dist/character.d.ts",
+          "dist/character2.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/character.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/uuid.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 90090,
+        "maximumUniqueBytes": 91892
+      }
+    },
+    "./domains/clones": {
+      "runtime": {
+        "target": "dist/domains/clones.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/clones.js",
+          "dist/clones2.js",
+          "dist/clones3.js",
+          "dist/configuration.js",
+          "dist/domains/clones.js",
+          "dist/execute.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 62934,
+        "maximumUniqueBytes": 64193
+      },
+      "declaration": {
+        "target": "dist/domains/clones.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/clones.d.ts",
+          "dist/clones2.d.ts",
+          "dist/domains/clones.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/clones.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 12273,
+        "maximumUniqueBytes": 12519
+      }
+    },
+    "./domains/contacts": {
+      "runtime": {
+        "target": "dist/domains/contacts.js",
+        "files": [
+          "dist/alliance-id.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/contacts.js",
+          "dist/contacts2.js",
+          "dist/contacts3.js",
+          "dist/corporation-id.js",
+          "dist/domains/contacts.js",
+          "dist/execute.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 89242,
+        "maximumUniqueBytes": 91027
+      },
+      "declaration": {
+        "target": "dist/domains/contacts.d.ts",
+        "files": [
+          "dist/alliance-id.d.ts",
+          "dist/character-id.d.ts",
+          "dist/contacts.d.ts",
+          "dist/contacts2.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/contacts.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contacts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 43120,
+        "maximumUniqueBytes": 43983
+      }
+    },
+    "./domains/contracts": {
+      "runtime": {
+        "target": "dist/domains/contracts.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/contracts.js",
+          "dist/contracts2.js",
+          "dist/contracts3.js",
+          "dist/corporation-id.js",
+          "dist/domains/contracts.js",
+          "dist/execute.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 94224,
+        "maximumUniqueBytes": 96109
+      },
+      "declaration": {
+        "target": "dist/domains/contracts.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/contracts.d.ts",
+          "dist/contracts2.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/contracts.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/contracts.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 52842,
+        "maximumUniqueBytes": 53899
+      }
+    },
+    "./domains/corporation-projects": {
+      "runtime": {
+        "target": "dist/domains/corporation-projects.js",
+        "files": [
+          "dist/alliance-id.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/corporation-projects.js",
+          "dist/corporation-projects2.js",
+          "dist/corporation-projects3.js",
+          "dist/cursor.js",
+          "dist/domains/corporation-projects.js",
+          "dist/execute.js",
+          "dist/faction-id.js",
+          "dist/item-id.js",
+          "dist/solar-system-id.js",
+          "dist/station-id.js",
+          "dist/type-id.js",
+          "dist/uuid.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 93279,
+        "maximumUniqueBytes": 95145
+      },
+      "declaration": {
+        "target": "dist/domains/corporation-projects.d.ts",
+        "files": [
+          "dist/alliance-id.d.ts",
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/corporation-projects.d.ts",
+          "dist/corporation-projects2.d.ts",
+          "dist/cursor.d.ts",
+          "dist/domains/corporation-projects.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/item-id.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/station-id.d.ts",
+          "dist/type-id.d.ts",
+          "dist/uuid.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-projects.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 80811,
+        "maximumUniqueBytes": 82428
+      }
+    },
+    "./domains/corporation": {
+      "runtime": {
+        "target": "dist/domains/corporation.js",
+        "files": [
+          "dist/alliance-id.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/corporation.js",
+          "dist/corporation2.js",
+          "dist/corporation3.js",
+          "dist/domains/corporation.js",
+          "dist/execute.js",
+          "dist/faction-id.js",
+          "dist/station-id.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 169765,
+        "maximumUniqueBytes": 173161
+      },
+      "declaration": {
+        "target": "dist/domains/corporation.d.ts",
+        "files": [
+          "dist/alliance-id.d.ts",
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/corporation.d.ts",
+          "dist/corporation2.d.ts",
+          "dist/domains/corporation.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/station-id.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/station-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 161645,
+        "maximumUniqueBytes": 164878
+      }
+    },
+    "./domains/cosmetics": {
+      "runtime": {
+        "target": "dist/domains/cosmetics.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/cosmetics.js",
+          "dist/cosmetics2.js",
+          "dist/cosmetics3.js",
+          "dist/domains/cosmetics.js",
+          "dist/execute.js",
+          "dist/type-id.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 69297,
+        "maximumUniqueBytes": 70683
+      },
+      "declaration": {
+        "target": "dist/domains/cosmetics.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/cosmetics.d.ts",
+          "dist/cosmetics2.d.ts",
+          "dist/domains/cosmetics.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/type-id.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cosmetics.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 25883,
+        "maximumUniqueBytes": 26401
+      }
+    },
+    "./domains/dogma": {
+      "runtime": {
+        "target": "dist/domains/dogma.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/dogma.js",
+          "dist/dogma2.js",
+          "dist/dogma3.js",
+          "dist/domains/dogma.js",
+          "dist/execute.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/dogma.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 71666,
+        "maximumUniqueBytes": 73100
+      },
+      "declaration": {
+        "target": "dist/domains/dogma.d.ts",
+        "files": [
+          "dist/dogma.d.ts",
+          "dist/dogma2.d.ts",
+          "dist/domains/dogma.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/dogma.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 23138,
+        "maximumUniqueBytes": 23601
+      }
+    },
+    "./domains/faction-warfare": {
+      "runtime": {
+        "target": "dist/domains/faction-warfare.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/faction-warfare.js",
+          "dist/execute.js",
+          "dist/faction-warfare.js",
+          "dist/faction-warfare2.js",
+          "dist/faction-warfare3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 81552,
+        "maximumUniqueBytes": 83184
+      },
+      "declaration": {
+        "target": "dist/domains/faction-warfare.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/faction-warfare.d.ts",
+          "dist/faction-warfare.d.ts",
+          "dist/faction-warfare2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-warfare.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 37528,
+        "maximumUniqueBytes": 38279
+      }
+    },
+    "./domains/fittings": {
+      "runtime": {
+        "target": "dist/domains/fittings.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/fittings.js",
+          "dist/execute.js",
+          "dist/fittings.js",
+          "dist/fittings2.js",
+          "dist/fittings3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 67822,
+        "maximumUniqueBytes": 69179
+      },
+      "declaration": {
+        "target": "dist/domains/fittings.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/domains/fittings.d.ts",
+          "dist/fittings.d.ts",
+          "dist/fittings2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fittings.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 18610,
+        "maximumUniqueBytes": 18983
+      }
+    },
+    "./domains/fleets": {
+      "runtime": {
+        "target": "dist/domains/fleets.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/fleets.js",
+          "dist/execute.js",
+          "dist/fleets.js",
+          "dist/fleets2.js",
+          "dist/fleets3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 98871,
+        "maximumUniqueBytes": 100849
+      },
+      "declaration": {
+        "target": "dist/domains/fleets.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/domains/fleets.d.ts",
+          "dist/fleets.d.ts",
+          "dist/fleets2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/fleets.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 51225,
+        "maximumUniqueBytes": 52250
+      }
+    },
+    "./domains/freelance-jobs": {
+      "runtime": {
+        "target": "dist/domains/freelance-jobs.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/cursor.js",
+          "dist/domains/freelance-jobs.js",
+          "dist/execute.js",
+          "dist/freelance-jobs.js",
+          "dist/freelance-jobs2.js",
+          "dist/freelance-jobs3.js",
+          "dist/solar-system-id.js",
+          "dist/uuid.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 86369,
+        "maximumUniqueBytes": 88097
+      },
+      "declaration": {
+        "target": "dist/domains/freelance-jobs.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/cursor.d.ts",
+          "dist/domains/freelance-jobs.d.ts",
+          "dist/freelance-jobs.d.ts",
+          "dist/freelance-jobs2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/uuid.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/freelance-jobs.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 51382,
+        "maximumUniqueBytes": 52410
+      }
+    },
+    "./domains/incursions": {
+      "runtime": {
+        "target": "dist/domains/incursions.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/incursions.js",
+          "dist/execute.js",
+          "dist/incursions.js",
+          "dist/incursions2.js",
+          "dist/incursions3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/incursions.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 58599,
+        "maximumUniqueBytes": 59771
+      },
+      "declaration": {
+        "target": "dist/domains/incursions.d.ts",
+        "files": [
+          "dist/domains/incursions.d.ts",
+          "dist/incursions.d.ts",
+          "dist/incursions2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/incursions.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 6329,
+        "maximumUniqueBytes": 6456
+      }
+    },
+    "./domains/industry": {
+      "runtime": {
+        "target": "dist/domains/industry.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/industry.js",
+          "dist/execute.js",
+          "dist/industry.js",
+          "dist/industry2.js",
+          "dist/industry3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 87147,
+        "maximumUniqueBytes": 88890
+      },
+      "declaration": {
+        "target": "dist/domains/industry.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/industry.d.ts",
+          "dist/industry.d.ts",
+          "dist/industry2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/industry.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 43144,
+        "maximumUniqueBytes": 44007
+      }
+    },
+    "./domains/insurance": {
+      "runtime": {
+        "target": "dist/domains/insurance.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/insurance.js",
+          "dist/execute.js",
+          "dist/insurance.js",
+          "dist/insurance2.js",
+          "dist/insurance3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/insurance.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 58525,
+        "maximumUniqueBytes": 59696
+      },
+      "declaration": {
+        "target": "dist/domains/insurance.d.ts",
+        "files": [
+          "dist/domains/insurance.d.ts",
+          "dist/insurance.d.ts",
+          "dist/insurance2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/insurance.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 6330,
+        "maximumUniqueBytes": 6457
+      }
+    },
+    "./domains/killmails": {
+      "runtime": {
+        "target": "dist/domains/killmails.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/killmails.js",
+          "dist/execute.js",
+          "dist/killmails.js",
+          "dist/killmails2.js",
+          "dist/killmails3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 68634,
+        "maximumUniqueBytes": 70007
+      },
+      "declaration": {
+        "target": "dist/domains/killmails.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/killmails.d.ts",
+          "dist/killmails.d.ts",
+          "dist/killmails2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/killmails.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 20775,
+        "maximumUniqueBytes": 21191
+      }
+    },
+    "./domains/location": {
+      "runtime": {
+        "target": "dist/domains/location.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/location.js",
+          "dist/execute.js",
+          "dist/location.js",
+          "dist/location2.js",
+          "dist/location3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 65854,
+        "maximumUniqueBytes": 67172
+      },
+      "declaration": {
+        "target": "dist/domains/location.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/domains/location.d.ts",
+          "dist/location.d.ts",
+          "dist/location2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/location.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 15565,
+        "maximumUniqueBytes": 15877
+      }
+    },
+    "./domains/loyalty": {
+      "runtime": {
+        "target": "dist/domains/loyalty.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/loyalty.js",
+          "dist/execute.js",
+          "dist/loyalty.js",
+          "dist/loyalty2.js",
+          "dist/loyalty3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 63168,
+        "maximumUniqueBytes": 64432
+      },
+      "declaration": {
+        "target": "dist/domains/loyalty.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/loyalty.d.ts",
+          "dist/loyalty.d.ts",
+          "dist/loyalty2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/loyalty.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 13077,
+        "maximumUniqueBytes": 13339
+      }
+    },
+    "./domains/mail": {
+      "runtime": {
+        "target": "dist/domains/mail.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/mail.js",
+          "dist/execute.js",
+          "dist/mail.js",
+          "dist/mail2.js",
+          "dist/mail3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 89923,
+        "maximumUniqueBytes": 91722
+      },
+      "declaration": {
+        "target": "dist/domains/mail.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/domains/mail.d.ts",
+          "dist/mail.d.ts",
+          "dist/mail2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/mail.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 42043,
+        "maximumUniqueBytes": 42884
+      }
+    },
+    "./domains/market": {
+      "runtime": {
+        "target": "dist/domains/market.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/market.js",
+          "dist/execute.js",
+          "dist/market.js",
+          "dist/market2.js",
+          "dist/market3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 95382,
+        "maximumUniqueBytes": 97290
+      },
+      "declaration": {
+        "target": "dist/domains/market.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/market.d.ts",
+          "dist/market.d.ts",
+          "dist/market2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/market.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 51639,
+        "maximumUniqueBytes": 52672
+      }
+    },
+    "./domains/meta": {
+      "runtime": {
+        "target": "dist/domains/meta.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/meta.js",
+          "dist/execute.js",
+          "dist/meta.js",
+          "dist/meta2.js",
+          "dist/meta3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/meta.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 66935,
+        "maximumUniqueBytes": 68274
+      },
+      "declaration": {
+        "target": "dist/domains/meta.d.ts",
+        "files": [
+          "dist/domains/meta.d.ts",
+          "dist/meta.d.ts",
+          "dist/meta2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/meta.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 17231,
+        "maximumUniqueBytes": 17576
+      }
+    },
+    "./domains/military-campaigns": {
+      "runtime": {
+        "target": "dist/domains/military-campaigns.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/cursor.js",
+          "dist/domains/military-campaigns.js",
+          "dist/execute.js",
+          "dist/military-campaigns.js",
+          "dist/military-campaigns2.js",
+          "dist/military-campaigns3.js",
+          "dist/uuid.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 81305,
+        "maximumUniqueBytes": 82932
+      },
+      "declaration": {
+        "target": "dist/domains/military-campaigns.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/cursor.d.ts",
+          "dist/domains/military-campaigns.d.ts",
+          "dist/military-campaigns.d.ts",
+          "dist/military-campaigns2.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/uuid.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/military-campaigns.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 37800,
+        "maximumUniqueBytes": 38556
+      }
+    },
+    "./domains/paragon-hub": {
+      "runtime": {
+        "target": "dist/domains/paragon-hub.js",
+        "files": [
+          "dist/alliance-id.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/cursor.js",
+          "dist/domains/paragon-hub.js",
+          "dist/execute.js",
+          "dist/paragon-hub.js",
+          "dist/paragon-hub2.js",
+          "dist/paragon-hub3.js",
+          "dist/uuid.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 77858,
+        "maximumUniqueBytes": 79416
+      },
+      "declaration": {
+        "target": "dist/domains/paragon-hub.d.ts",
+        "files": [
+          "dist/alliance-id.d.ts",
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/cursor.d.ts",
+          "dist/domains/paragon-hub.d.ts",
+          "dist/options.d.ts",
+          "dist/paragon-hub.d.ts",
+          "dist/paragon-hub2.d.ts",
+          "dist/response.d.ts",
+          "dist/uuid.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/cursor.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/paragon-hub.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/uuid.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 30254,
+        "maximumUniqueBytes": 30860
+      }
+    },
+    "./domains/planetary-interaction": {
+      "runtime": {
+        "target": "dist/domains/planetary-interaction.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/planetary-interaction.js",
+          "dist/execute.js",
+          "dist/planetary-interaction.js",
+          "dist/planetary-interaction2.js",
+          "dist/planetary-interaction3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 72653,
+        "maximumUniqueBytes": 74107
+      },
+      "declaration": {
+        "target": "dist/domains/planetary-interaction.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/planetary-interaction.d.ts",
+          "dist/options.d.ts",
+          "dist/planetary-interaction.d.ts",
+          "dist/planetary-interaction2.d.ts",
+          "dist/response.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planetary-interaction.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 25882,
+        "maximumUniqueBytes": 26400
+      }
+    },
+    "./domains/routes": {
+      "runtime": {
+        "target": "dist/domains/routes.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/routes.js",
+          "dist/execute.js",
+          "dist/routes.js",
+          "dist/routes2.js",
+          "dist/routes3.js",
+          "dist/solar-system-id.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/routes.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 60440,
+        "maximumUniqueBytes": 61649
+      },
+      "declaration": {
+        "target": "dist/domains/routes.d.ts",
+        "files": [
+          "dist/domains/routes.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/routes.d.ts",
+          "dist/routes2.d.ts",
+          "dist/solar-system-id.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/routes.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 8314,
+        "maximumUniqueBytes": 8481
+      }
+    },
+    "./domains/search": {
+      "runtime": {
+        "target": "dist/domains/search.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/search.js",
+          "dist/execute.js",
+          "dist/search.js",
+          "dist/search2.js",
+          "dist/search3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 61216,
+        "maximumUniqueBytes": 62441
+      },
+      "declaration": {
+        "target": "dist/domains/search.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/domains/search.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/search.d.ts",
+          "dist/search2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/search.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 9186,
+        "maximumUniqueBytes": 9370
+      }
+    },
+    "./domains/skills": {
+      "runtime": {
+        "target": "dist/domains/skills.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/domains/skills.js",
+          "dist/execute.js",
+          "dist/skills.js",
+          "dist/skills2.js",
+          "dist/skills3.js",
+          "dist/type-id.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 66767,
+        "maximumUniqueBytes": 68103
+      },
+      "declaration": {
+        "target": "dist/domains/skills.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/domains/skills.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/skills.d.ts",
+          "dist/skills2.d.ts",
+          "dist/type-id.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/skills.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 17554,
+        "maximumUniqueBytes": 17906
+      }
+    },
+    "./domains/sovereignty": {
+      "runtime": {
+        "target": "dist/domains/sovereignty.js",
+        "files": [
+          "dist/alliance-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/sovereignty.js",
+          "dist/execute.js",
+          "dist/faction-id.js",
+          "dist/item-id.js",
+          "dist/solar-system-id.js",
+          "dist/sovereignty.js",
+          "dist/sovereignty2.js",
+          "dist/sovereignty3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 64888,
+        "maximumUniqueBytes": 66186
+      },
+      "declaration": {
+        "target": "dist/domains/sovereignty.d.ts",
+        "files": [
+          "dist/alliance-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/sovereignty.d.ts",
+          "dist/faction-id.d.ts",
+          "dist/item-id.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/sovereignty.d.ts",
+          "dist/sovereignty2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/alliance-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/faction-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/sovereignty.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 18903,
+        "maximumUniqueBytes": 19282
+      }
+    },
+    "./domains/status": {
+      "runtime": {
+        "target": "dist/domains/status.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/status.js",
+          "dist/execute.js",
+          "dist/status.js",
+          "dist/status2.js",
+          "dist/status3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/status.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 58168,
+        "maximumUniqueBytes": 59332
+      },
+      "declaration": {
+        "target": "dist/domains/status.d.ts",
+        "files": [
+          "dist/domains/status.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/status.d.ts",
+          "dist/status2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/status.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 5623,
+        "maximumUniqueBytes": 5736
+      }
+    },
+    "./domains/structures": {
+      "runtime": {
+        "target": "dist/domains/structures.js",
+        "files": [
+          "dist/access-list-id.js",
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/structures.js",
+          "dist/execute.js",
+          "dist/item-id.js",
+          "dist/planet-id.js",
+          "dist/solar-system-id.js",
+          "dist/structures.js",
+          "dist/structures2.js",
+          "dist/structures3.js",
+          "dist/type-id.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 91044,
+        "maximumUniqueBytes": 92865
+      },
+      "declaration": {
+        "target": "dist/domains/structures.d.ts",
+        "files": [
+          "dist/access-list-id.d.ts",
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/structures.d.ts",
+          "dist/item-id.d.ts",
+          "dist/options.d.ts",
+          "dist/planet-id.d.ts",
+          "dist/response.d.ts",
+          "dist/solar-system-id.d.ts",
+          "dist/structures.d.ts",
+          "dist/structures2.d.ts",
+          "dist/type-id.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/access-list-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/item-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/planet-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/solar-system-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/structures.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/type-id.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 70183,
+        "maximumUniqueBytes": 71587
+      }
+    },
+    "./domains/universe": {
+      "runtime": {
+        "target": "dist/domains/universe.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/universe.js",
+          "dist/execute.js",
+          "dist/universe.js",
+          "dist/universe2.js",
+          "dist/universe3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/universe.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 148773,
+        "maximumUniqueBytes": 151749
+      },
+      "declaration": {
+        "target": "dist/domains/universe.d.ts",
+        "files": [
+          "dist/domains/universe.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/universe.d.ts",
+          "dist/universe2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/universe.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 115843,
+        "maximumUniqueBytes": 118160
+      }
+    },
+    "./domains/user-interface": {
+      "runtime": {
+        "target": "dist/domains/user-interface.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/user-interface.js",
+          "dist/execute.js",
+          "dist/user-interface.js",
+          "dist/user-interface2.js",
+          "dist/user-interface3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/user-interface.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 69977,
+        "maximumUniqueBytes": 71377
+      },
+      "declaration": {
+        "target": "dist/domains/user-interface.d.ts",
+        "files": [
+          "dist/domains/user-interface.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/user-interface.d.ts",
+          "dist/user-interface2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/user-interface.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 17280,
+        "maximumUniqueBytes": 17626
+      }
+    },
+    "./domains/wallet": {
+      "runtime": {
+        "target": "dist/domains/wallet.js",
+        "files": [
+          "dist/character-id.js",
+          "dist/configuration.js",
+          "dist/corporation-id.js",
+          "dist/domains/wallet.js",
+          "dist/execute.js",
+          "dist/wallet.js",
+          "dist/wallet2.js",
+          "dist/wallet3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.js",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 89333,
+        "maximumUniqueBytes": 91120
+      },
+      "declaration": {
+        "target": "dist/domains/wallet.d.ts",
+        "files": [
+          "dist/character-id.d.ts",
+          "dist/corporation-id.d.ts",
+          "dist/domains/wallet.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/wallet.d.ts",
+          "dist/wallet2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/character-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/corporation-id.d.ts",
+            "specifier": "zod"
+          },
+          {
+            "from": "dist/wallet.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 52416,
+        "maximumUniqueBytes": 53465
+      }
+    },
+    "./domains/wars": {
+      "runtime": {
+        "target": "dist/domains/wars.js",
+        "files": [
+          "dist/configuration.js",
+          "dist/domains/wars.js",
+          "dist/execute.js",
+          "dist/wars.js",
+          "dist/wars2.js",
+          "dist/wars3.js"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/wars.js",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 64722,
+        "maximumUniqueBytes": 66017
+      },
+      "declaration": {
+        "target": "dist/domains/wars.d.ts",
+        "files": [
+          "dist/domains/wars.d.ts",
+          "dist/options.d.ts",
+          "dist/response.d.ts",
+          "dist/wars.d.ts",
+          "dist/wars2.d.ts"
+        ],
+        "externalEdges": [
+          {
+            "from": "dist/wars.d.ts",
+            "specifier": "zod"
+          }
+        ],
+        "measuredUniqueBytes": 13175,
+        "maximumUniqueBytes": 13439
+      }
+    }
+  },
+  "allowedFiles": [
+    "LICENSE",
+    "README.md",
+    "dist/access-list-id.d.ts",
+    "dist/access-list-id.js",
+    "dist/access-list.d.ts",
+    "dist/access-list.js",
+    "dist/access-list2.d.ts",
+    "dist/access-list2.js",
+    "dist/access-list3.js",
+    "dist/activities.d.ts",
+    "dist/activities.js",
+    "dist/activities2.d.ts",
+    "dist/activities2.js",
+    "dist/activities3.js",
+    "dist/alliance-id.d.ts",
+    "dist/alliance-id.js",
+    "dist/alliance.d.ts",
+    "dist/alliance.js",
+    "dist/alliance2.d.ts",
+    "dist/alliance2.js",
+    "dist/alliance3.js",
+    "dist/assets.d.ts",
+    "dist/assets.js",
+    "dist/assets2.d.ts",
+    "dist/assets2.js",
+    "dist/assets3.js",
+    "dist/calendar.d.ts",
+    "dist/calendar.js",
+    "dist/calendar2.d.ts",
+    "dist/calendar2.js",
+    "dist/calendar3.js",
+    "dist/character-id.d.ts",
+    "dist/character-id.js",
+    "dist/character.d.ts",
+    "dist/character.js",
+    "dist/character2.d.ts",
+    "dist/character2.js",
+    "dist/character3.js",
+    "dist/clones.d.ts",
+    "dist/clones.js",
+    "dist/clones2.d.ts",
+    "dist/clones2.js",
+    "dist/clones3.js",
+    "dist/configuration.js",
+    "dist/contacts.d.ts",
+    "dist/contacts.js",
+    "dist/contacts2.d.ts",
+    "dist/contacts2.js",
+    "dist/contacts3.js",
+    "dist/contracts.d.ts",
+    "dist/contracts.js",
+    "dist/contracts2.d.ts",
+    "dist/contracts2.js",
+    "dist/contracts3.d.ts",
+    "dist/contracts3.js",
+    "dist/corporation-id.d.ts",
+    "dist/corporation-id.js",
+    "dist/corporation-projects.d.ts",
+    "dist/corporation-projects.js",
+    "dist/corporation-projects2.d.ts",
+    "dist/corporation-projects2.js",
+    "dist/corporation-projects3.js",
+    "dist/corporation.d.ts",
+    "dist/corporation.js",
+    "dist/corporation2.d.ts",
+    "dist/corporation2.js",
+    "dist/corporation3.js",
+    "dist/cosmetics.d.ts",
+    "dist/cosmetics.js",
+    "dist/cosmetics2.d.ts",
+    "dist/cosmetics2.js",
+    "dist/cosmetics3.js",
+    "dist/cursor.d.ts",
+    "dist/cursor.js",
+    "dist/dogma.d.ts",
+    "dist/dogma.js",
+    "dist/dogma2.d.ts",
+    "dist/dogma2.js",
+    "dist/dogma3.js",
+    "dist/domains/access-list.d.ts",
+    "dist/domains/access-list.js",
+    "dist/domains/activities.d.ts",
+    "dist/domains/activities.js",
+    "dist/domains/alliance.d.ts",
+    "dist/domains/alliance.js",
+    "dist/domains/assets.d.ts",
+    "dist/domains/assets.js",
+    "dist/domains/calendar.d.ts",
+    "dist/domains/calendar.js",
+    "dist/domains/character.d.ts",
+    "dist/domains/character.js",
+    "dist/domains/clones.d.ts",
+    "dist/domains/clones.js",
+    "dist/domains/contacts.d.ts",
+    "dist/domains/contacts.js",
+    "dist/domains/contracts.d.ts",
+    "dist/domains/contracts.js",
+    "dist/domains/corporation-projects.d.ts",
+    "dist/domains/corporation-projects.js",
+    "dist/domains/corporation.d.ts",
+    "dist/domains/corporation.js",
+    "dist/domains/cosmetics.d.ts",
+    "dist/domains/cosmetics.js",
+    "dist/domains/dogma.d.ts",
+    "dist/domains/dogma.js",
+    "dist/domains/faction-warfare.d.ts",
+    "dist/domains/faction-warfare.js",
+    "dist/domains/fittings.d.ts",
+    "dist/domains/fittings.js",
+    "dist/domains/fleets.d.ts",
+    "dist/domains/fleets.js",
+    "dist/domains/freelance-jobs.d.ts",
+    "dist/domains/freelance-jobs.js",
+    "dist/domains/incursions.d.ts",
+    "dist/domains/incursions.js",
+    "dist/domains/industry.d.ts",
+    "dist/domains/industry.js",
+    "dist/domains/insurance.d.ts",
+    "dist/domains/insurance.js",
+    "dist/domains/killmails.d.ts",
+    "dist/domains/killmails.js",
+    "dist/domains/location.d.ts",
+    "dist/domains/location.js",
+    "dist/domains/loyalty.d.ts",
+    "dist/domains/loyalty.js",
+    "dist/domains/mail.d.ts",
+    "dist/domains/mail.js",
+    "dist/domains/market.d.ts",
+    "dist/domains/market.js",
+    "dist/domains/meta.d.ts",
+    "dist/domains/meta.js",
+    "dist/domains/military-campaigns.d.ts",
+    "dist/domains/military-campaigns.js",
+    "dist/domains/paragon-hub.d.ts",
+    "dist/domains/paragon-hub.js",
+    "dist/domains/planetary-interaction.d.ts",
+    "dist/domains/planetary-interaction.js",
+    "dist/domains/routes.d.ts",
+    "dist/domains/routes.js",
+    "dist/domains/search.d.ts",
+    "dist/domains/search.js",
+    "dist/domains/skills.d.ts",
+    "dist/domains/skills.js",
+    "dist/domains/sovereignty.d.ts",
+    "dist/domains/sovereignty.js",
+    "dist/domains/status.d.ts",
+    "dist/domains/status.js",
+    "dist/domains/structures.d.ts",
+    "dist/domains/structures.js",
+    "dist/domains/universe.d.ts",
+    "dist/domains/universe.js",
+    "dist/domains/user-interface.d.ts",
+    "dist/domains/user-interface.js",
+    "dist/domains/wallet.d.ts",
+    "dist/domains/wallet.js",
+    "dist/domains/wars.d.ts",
+    "dist/domains/wars.js",
+    "dist/error.js",
+    "dist/execute.js",
+    "dist/faction-id.d.ts",
+    "dist/faction-id.js",
+    "dist/faction-warfare.d.ts",
+    "dist/faction-warfare.js",
+    "dist/faction-warfare2.d.ts",
+    "dist/faction-warfare2.js",
+    "dist/faction-warfare3.js",
+    "dist/fittings.d.ts",
+    "dist/fittings.js",
+    "dist/fittings2.d.ts",
+    "dist/fittings2.js",
+    "dist/fittings3.js",
+    "dist/fleets.d.ts",
+    "dist/fleets.js",
+    "dist/fleets2.d.ts",
+    "dist/fleets2.js",
+    "dist/fleets3.js",
+    "dist/freelance-jobs.d.ts",
+    "dist/freelance-jobs.js",
+    "dist/freelance-jobs2.d.ts",
+    "dist/freelance-jobs2.js",
+    "dist/freelance-jobs3.js",
+    "dist/incursions.d.ts",
+    "dist/incursions.js",
+    "dist/incursions2.d.ts",
+    "dist/incursions2.js",
+    "dist/incursions3.js",
+    "dist/index.d.ts",
+    "dist/industry.d.ts",
+    "dist/industry.js",
+    "dist/industry2.d.ts",
+    "dist/industry2.js",
+    "dist/industry3.js",
+    "dist/insurance.d.ts",
+    "dist/insurance.js",
+    "dist/insurance2.d.ts",
+    "dist/insurance2.js",
+    "dist/insurance3.js",
+    "dist/item-id.d.ts",
+    "dist/item-id.js",
+    "dist/killmails.d.ts",
+    "dist/killmails.js",
+    "dist/killmails2.d.ts",
+    "dist/killmails2.js",
+    "dist/killmails3.js",
+    "dist/location.d.ts",
+    "dist/location.js",
+    "dist/location2.d.ts",
+    "dist/location2.js",
+    "dist/location3.js",
+    "dist/loyalty.d.ts",
+    "dist/loyalty.js",
+    "dist/loyalty2.d.ts",
+    "dist/loyalty2.js",
+    "dist/loyalty3.js",
+    "dist/mail.d.ts",
+    "dist/mail.js",
+    "dist/mail2.d.ts",
+    "dist/mail2.js",
+    "dist/mail3.js",
+    "dist/market.d.ts",
+    "dist/market.js",
+    "dist/market2.d.ts",
+    "dist/market2.js",
+    "dist/market3.js",
+    "dist/meta.d.ts",
+    "dist/meta.js",
+    "dist/meta2.d.ts",
+    "dist/meta2.js",
+    "dist/meta3.js",
+    "dist/military-campaigns.d.ts",
+    "dist/military-campaigns.js",
+    "dist/military-campaigns2.d.ts",
+    "dist/military-campaigns2.js",
+    "dist/military-campaigns3.js",
+    "dist/operations.d.ts",
+    "dist/operations.js",
+    "dist/operations/index.d.ts",
+    "dist/operations/index.js",
+    "dist/options.d.ts",
+    "dist/paragon-hub.d.ts",
+    "dist/paragon-hub.js",
+    "dist/paragon-hub2.d.ts",
+    "dist/paragon-hub2.js",
+    "dist/paragon-hub3.js",
+    "dist/planet-id.d.ts",
+    "dist/planet-id.js",
+    "dist/planetary-interaction.d.ts",
+    "dist/planetary-interaction.js",
+    "dist/planetary-interaction2.d.ts",
+    "dist/planetary-interaction2.js",
+    "dist/planetary-interaction3.js",
+    "dist/response.d.ts",
+    "dist/root.d.ts",
+    "dist/root.js",
+    "dist/routes.d.ts",
+    "dist/routes.js",
+    "dist/routes2.d.ts",
+    "dist/routes2.js",
+    "dist/routes3.js",
+    "dist/schemas.d.ts",
+    "dist/schemas.js",
+    "dist/search.d.ts",
+    "dist/search.js",
+    "dist/search2.d.ts",
+    "dist/search2.js",
+    "dist/search3.js",
+    "dist/skills.d.ts",
+    "dist/skills.js",
+    "dist/skills2.d.ts",
+    "dist/skills2.js",
+    "dist/skills3.js",
+    "dist/solar-system-id.d.ts",
+    "dist/solar-system-id.js",
+    "dist/sovereignty.d.ts",
+    "dist/sovereignty.js",
+    "dist/sovereignty2.d.ts",
+    "dist/sovereignty2.js",
+    "dist/sovereignty3.js",
+    "dist/station-id.d.ts",
+    "dist/station-id.js",
+    "dist/status.d.ts",
+    "dist/status.js",
+    "dist/status2.d.ts",
+    "dist/status2.js",
+    "dist/status3.js",
+    "dist/structures.d.ts",
+    "dist/structures.js",
+    "dist/structures2.d.ts",
+    "dist/structures2.js",
+    "dist/structures3.js",
+    "dist/type-id.d.ts",
+    "dist/type-id.js",
+    "dist/universe.d.ts",
+    "dist/universe.js",
+    "dist/universe2.d.ts",
+    "dist/universe2.js",
+    "dist/universe3.js",
+    "dist/user-interface.d.ts",
+    "dist/user-interface.js",
+    "dist/user-interface2.d.ts",
+    "dist/user-interface2.js",
+    "dist/user-interface3.js",
+    "dist/uuid.d.ts",
+    "dist/uuid.js",
+    "dist/wallet.d.ts",
+    "dist/wallet.js",
+    "dist/wallet2.d.ts",
+    "dist/wallet2.js",
+    "dist/wallet3.js",
+    "dist/wars.d.ts",
+    "dist/wars.js",
+    "dist/wars2.d.ts",
+    "dist/wars2.js",
+    "dist/wars3.js",
+    "package.json"
+  ]
+}
