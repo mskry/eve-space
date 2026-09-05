@@ -97,7 +97,7 @@ New behavior needs tests. The API coverage suite enforces 80% lines, functions, 
 - Say what changed and why, and note any new environment variable, migration, or ESI scope.
 - Add schema changes as new ordered migrations. Never rewrite a migration that has already been
   applied.
-- Make sure `CI` and `Coverage` are green before asking for review.
+- Make sure `CI` and `Coverage` are green before asking for review. Changes to the ESI client or its toolchain must also pass the path-scoped `ESI Client` validation and package quality gate.
 
 ## Security
 

@@ -1,5 +1,9 @@
 # @evespace/esi-client
 
+[![ESI Client](https://github.com/mskry/eve-space/actions/workflows/esi-client.yml/badge.svg)](https://github.com/mskry/eve-space/actions/workflows/esi-client.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space_esi-client&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mskry_eve-space_esi-client)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space_esi-client&metric=coverage)](https://sonarcloud.io/summary/overall?id=mskry_eve-space_esi-client)
+
 An ESM-only TypeScript SDK for EVE Online ESI, centered on `EsiClient` and generated from a pinned, corrected OpenAPI specification.
 
 ```ts
@@ -90,11 +94,22 @@ Development uses Node.js 22.18+ and pnpm 11.22.0 from the EVE Space monorepo roo
 
 Run `pnpm esi:validate` from the repository root for generation reproducibility, documentation and example checks, formatting, linting, TypeScript 7 type checking, tests, build and package validation, installed-package smoke tests, and artifact inspection. Focused commands include `pnpm esi:generate:check`, `pnpm esi:package:check`, and `pnpm esi:smoke:package`.
 
+Run `pnpm --filter @evespace/esi-client test:coverage` to produce the package-owned `coverage/lcov.info`. Local analysis uses `pnpm sonar:esi-client` with a package project token in the ignored `packages/esi-client/.env.sonar`; `pnpm quality:sonar:esi-client` generates coverage and scans together. The package has a separate Sonar project and quality gate from the application. Its GitHub workflow retains the package LCOV artifact for 14 days; fork pull requests run validation and coverage without receiving the scanner secret.
+
 ## Repository History And Releases
 
-The standalone repository `git@github.com:mskry/esi-client.git` was imported without squashing at commit `71f40ba27c63bd6e7119abce433ba84ef03fb93a`. Its source history remains reachable from the monorepo. The standalone `v2.0.0` tag points to commit `3ebda91a9a1839994c64d87066a7748928c34407`; that unqualified tag was not imported. Future package releases use annotated tags named `esi-client-v<version>`.
+The standalone repository `git@github.com:mskry/esi-client.git` was imported without squashing at commit `71f40ba27c63bd6e7119abce433ba84ef03fb93a`. Its source history remains reachable from the monorepo. The standalone `v2.0.0` tag points to commit `3ebda91a9a1839994c64d87066a7748928c34407`; that unqualified tag was not imported. Future package releases use annotated scoped tags named `@evespace/esi-client@<version>`.
 
-To release, update this package's version and changelog in a reviewed commit, install from the root frozen lockfile, and run `pnpm esi:validate`. Publish only this package with `pnpm --filter @evespace/esi-client publish --access public`, then create and push the matching `esi-client-v<version>` tag. Never publish from the monorepo root, and do not create a release tag before package validation and npm publication succeed.
+To release, update this package's version and changelog in a reviewed commit and merge it to `main` only after `CI`, root `Coverage`, and `ESI Client` checks succeed. Create an annotated tag at that exact commit and push it:
+
+```bash
+git tag -a '@evespace/esi-client@2.0.1' -m '@evespace/esi-client@2.0.1'
+git push origin '@evespace/esi-client@2.0.1'
+```
+
+The tag-triggered workflow verifies stable tag syntax, package and changelog versions, annotation, `origin/main` ancestry, and registry nonexistence. It runs the complete package validation on Node.js 22.18, transfers exactly one tested tarball and SHA-256 digest, then publishes those bytes from Node.js 24 through npm trusted publishing with automatic provenance. It never uses a long-lived npm write token or republishes a duplicate version.
+
+Before the first automated release, create the GitHub `npm` environment, restrict it to the scoped tag pattern, and configure npm trusted publishing for repository `mskry/eve-space`, workflow `esi-client-publish.yml`, environment `npm`, and direct publish permission. Protect scoped package tags so only authorized maintainers can create them. Do not push a release tag until these external settings are complete.
 
 ## License
 

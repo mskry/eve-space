@@ -183,15 +183,18 @@ pnpm stack:down
 
 ## Quality and Testing
 
-Every pull request and push to `main` runs two GitHub Actions workflows:
+Every pull request and push to `main` runs application quality workflows, with an additional path-scoped workflow for the independently published ESI client:
 
 - [`CI`](.github/workflows/ci.yml) checks linting, formatting, types, unit tests, module tests, packaging, and the production build.
-- [`Coverage`](.github/workflows/coverage.yml) runs the frontend, API, module, PostgreSQL, Redis, and registry coverage suites, retains their LCOV reports as a workflow artifact, and sends them to SonarQube Cloud.
+- [`Coverage`](.github/workflows/coverage.yml) runs application-owned frontend, API, module, PostgreSQL, Redis, and registry coverage suites, retains their LCOV reports, and sends them to the root SonarQube Cloud project.
+- [`ESI Client`](.github/workflows/esi-client.yml) validates package changes on Ubuntu and Windows, retains package LCOV from an Ubuntu analysis job, and reports to the package's separate SonarQube Cloud project and quality gate.
 
 The API coverage suite enforces minimums of 80% for lines, functions, and statements and 75% for
-branches. The badges at the top of this README show the live quality gate and combined coverage from
+branches. The badges at the top of this README show the live application quality gate and coverage from
 the default branch rather than a manually entered score. See
 [`docs/local-sonarqube.md`](docs/local-sonarqube.md) to run the same analysis locally.
+
+Secret-backed Sonar analysis is skipped for fork pull requests while validation and coverage continue. Trusted ESI events fail explicitly if the package-specific analysis token is not configured.
 
 Run the same core checks locally:
 

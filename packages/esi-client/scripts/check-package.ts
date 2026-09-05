@@ -1,10 +1,12 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { npmPack } from './lib/npm-pack.ts';
+import { packPackage } from './lib/package-pack.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const attwCli = fileURLToPath(
@@ -20,15 +22,28 @@ export const packageValidationSteps = Object.freeze([
   'pack:inspect',
 ] as const);
 
+export interface RetainedPackage {
+  readonly digestPath: string;
+  readonly sha256: string;
+  readonly tarballPath: string;
+}
+
 export async function checkPackage({
   built = false,
-}: { readonly built?: boolean } = {}): Promise<void> {
+  retainDirectory,
+}: {
+  readonly built?: boolean;
+  readonly retainDirectory?: string;
+} = {}): Promise<RetainedPackage | undefined> {
   if (!built) await run('build', process.execPath, [tsdownCli]);
 
   const temporaryDirectory = await mkdtemp(join(tmpdir(), 'esi-client-package-check-'));
   try {
     process.stdout.write('\n> package\nPacking built output once for all package checks.\n');
-    const [pack] = await npmPack(root, temporaryDirectory);
+    const packed = await packPackage(root, temporaryDirectory);
+    if (packed.length !== 1)
+      throw new Error(`Expected one package tarball, received ${packed.length}`);
+    const [pack] = packed;
     const tarball = join(temporaryDirectory, pack.filename);
     const packJson = join(temporaryDirectory, 'pack.json');
     await writeFile(packJson, JSON.stringify(pack));
@@ -53,8 +68,40 @@ export async function checkPackage({
       const [command, arguments_] = commands[name];
       await run(name, command, arguments_);
     }
+
+    if (retainDirectory !== undefined) {
+      return retainPackage(tarball, retainDirectory);
+    }
+    return undefined;
   } finally {
     await rm(temporaryDirectory, { force: true, recursive: true });
+  }
+}
+
+export async function retainPackage(
+  tarball: string,
+  destination: string,
+): Promise<RetainedPackage> {
+  await mkdir(destination, { recursive: true });
+  const tarballPath = join(destination, 'package.tgz');
+  const digestPath = `${tarballPath}.sha256`;
+  let tarballCreated = false;
+  let digestCreated = false;
+  try {
+    await copyFile(tarball, tarballPath, constants.COPYFILE_EXCL);
+    tarballCreated = true;
+    const sha256 = createHash('sha256')
+      .update(await readFile(tarballPath))
+      .digest('hex');
+    await writeFile(digestPath, `${sha256}  ${basename(tarballPath)}\n`, { flag: 'wx' });
+    digestCreated = true;
+    return { digestPath, sha256, tarballPath };
+  } catch (error) {
+    await Promise.all([
+      tarballCreated ? rm(tarballPath, { force: true }) : Promise.resolve(),
+      digestCreated ? rm(digestPath, { force: true }) : Promise.resolve(),
+    ]);
+    throw error;
   }
 }
 
@@ -90,7 +137,10 @@ function run(name: string, command: string, arguments_: readonly string[]): Prom
 const entryPath = process.argv[1];
 if (entryPath !== undefined && import.meta.url === pathToFileURL(resolve(entryPath)).href) {
   try {
-    await checkPackage({ built: process.argv.includes('--built') });
+    await checkPackage({
+      built: process.argv.includes('--built'),
+      retainDirectory: argumentValue('--retain-directory'),
+    });
   } catch (error) {
     if (process.env.GITHUB_ACTIONS === 'true') {
       const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
@@ -100,6 +150,14 @@ if (entryPath !== undefined && import.meta.url === pathToFileURL(resolve(entryPa
     }
     throw error;
   }
+}
+
+function argumentValue(name: string): string | undefined {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return undefined;
+  const value = process.argv[index + 1];
+  if (value === undefined) throw new Error(`${name} requires a value`);
+  return resolve(value);
 }
 
 function escapeWorkflowData(value: string): string {

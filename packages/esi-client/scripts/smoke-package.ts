@@ -1,11 +1,12 @@
-import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { build } from 'esbuild';
 
-import { execFileAsync, npmExecutable, npmPack } from './lib/npm-pack.ts';
+import { packPackage, execFileAsync, pnpmExecutable } from './lib/package-pack.ts';
+import { extractPackageTarball } from './lib/package-tarball.ts';
 
 interface PackageJson {
   readonly name: string;
@@ -15,30 +16,6 @@ interface PackageJson {
 const root = fileURLToPath(new URL('../', import.meta.url));
 const temporaryDirectory = await mkdtemp(join(tmpdir(), 'esi-client-smoke-'));
 const suppliedTarball = argumentValue('--tarball');
-const packageJson: PackageJson = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
-const publicCodeSpecifiers = Object.entries(packageJson.exports)
-  .filter(([, entry]) => typeof entry === 'object')
-  .map(([subpath]) =>
-    subpath === '.' ? packageJson.name : `${packageJson.name}${subpath.slice(1)}`,
-  );
-const generatedDomains = (await readdir(join(root, 'src/generated/domains')))
-  .filter((file) => file.endsWith('.ts') && file !== 'index.ts')
-  .map((file) => file.slice(0, -3))
-  .toSorted(compareText);
-const exportedDomains = Object.keys(packageJson.exports)
-  .filter((subpath) => subpath.startsWith('./domains/'))
-  .map((subpath) => subpath.slice('./domains/'.length))
-  .toSorted(compareText);
-const domainFactories = exportedDomains.map((domain) => ({
-  domain,
-  factoryName: `create${domain.split('-').map(capitalize).join('')}Client`,
-}));
-if (JSON.stringify(exportedDomains) !== JSON.stringify(generatedDomains)) {
-  throw new Error(
-    `Package domain exports do not match generated domains (${exportedDomains.length}/${generatedDomains.length})`,
-  );
-}
-
 try {
   const packDirectory = join(temporaryDirectory, 'pack');
   const consumerDirectory = join(temporaryDirectory, 'consumer');
@@ -47,19 +24,38 @@ try {
   let tarball = suppliedTarball;
   if (tarball === undefined) {
     await mkdir(packDirectory);
-    const [{ filename }] = await npmPack(root, packDirectory);
+    const [{ filename }] = await packPackage(root, packDirectory);
     tarball = join(packDirectory, filename);
   }
+
+  const metadataRoot = await extractPackageTarball(tarball, join(temporaryDirectory, 'metadata'));
+  const packageJson: PackageJson = JSON.parse(
+    await readFile(join(metadataRoot, 'package.json'), 'utf8'),
+  );
+  const publicCodeSpecifiers = Object.entries(packageJson.exports)
+    .filter(([, entry]) => typeof entry === 'object')
+    .map(([subpath]) =>
+      subpath === '.' ? packageJson.name : `${packageJson.name}${subpath.slice(1)}`,
+    );
+  const exportedDomains = Object.keys(packageJson.exports)
+    .filter((subpath) => subpath.startsWith('./domains/'))
+    .map((subpath) => subpath.slice('./domains/'.length))
+    .toSorted(compareText);
+  if (exportedDomains.length !== 39) {
+    throw new Error(`Expected 39 packed domain exports, received ${exportedDomains.length}`);
+  }
+  const domainFactories = exportedDomains.map((domain) => ({
+    domain,
+    factoryName: `create${domain.split('-').map(capitalize).join('')}Client`,
+  }));
 
   await writeFile(
     join(consumerDirectory, 'package.json'),
     JSON.stringify({ name: 'esi-client-smoke', private: true, type: 'module' }),
   );
-  await execFileAsync(
-    npmExecutable,
-    ['install', '--ignore-scripts', '--no-audit', '--no-fund', tarball],
-    { cwd: consumerDirectory },
-  );
+  await execFileAsync(pnpmExecutable, ['add', '--ignore-scripts', tarball, 'zod@4.4.3'], {
+    cwd: consumerDirectory,
+  });
 
   const standaloneRuntimeSource = `import { createStatusClient } from '@evespace/esi-client/domains/status';
 

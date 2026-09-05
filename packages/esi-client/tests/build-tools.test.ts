@@ -5,7 +5,7 @@ import {
   findUnexpectedRuntimeImports,
 } from '../scripts/check-runtime-imports.ts';
 import { packageValidationSteps } from '../scripts/check-package.ts';
-import { parseNpmPackJson, usesWindowsCommandShell } from '../scripts/lib/npm-pack.ts';
+import { parsePnpmPackJson, usesWindowsCommandShell } from '../scripts/lib/package-pack.ts';
 import packageJson from '../package.json' with { type: 'json' };
 
 describe('build gates', () => {
@@ -61,14 +61,19 @@ describe('build gates', () => {
     expect(usesWindowsCommandShell('pnpm.cmd', 'darwin')).toBe(false);
   });
 
-  it('parses npm 10 pack output after lifecycle logs', () => {
-    const output = `ℹ tsdown build output\n${JSON.stringify([{ filename: 'package.tgz' }])}\n`;
+  it('parses pnpm pack output after lifecycle logs', () => {
+    const packed = {
+      filename: 'package.tgz',
+      name: '@evespace/esi-client',
+      version: '2.0.0',
+    };
+    const output = `ℹ tsdown build output\n${JSON.stringify(packed)}\n`;
 
-    expect(parseNpmPackJson(output)).toEqual([{ filename: 'package.tgz' }]);
+    expect(parsePnpmPackJson(output)).toEqual(packed);
   });
 
-  it.each(['[warn] npm pack failed\n', '[]'])('rejects malformed pack output: %j', (output) => {
-    expect(() => parseNpmPackJson(output)).toThrow('npm pack did not produce a JSON result');
+  it.each(['[warn] pnpm pack failed\n', '{}'])('rejects malformed pack output: %j', (output) => {
+    expect(() => parsePnpmPackJson(output)).toThrow('pnpm pack did not produce a JSON result');
   });
 
   it('keeps aggregate validation complete and dependency ordered', () => {

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { npmPack } from './lib/npm-pack.ts';
+import { packPackage } from './lib/package-pack.ts';
 import { extractPackageTarball } from './lib/package-tarball.ts';
 import {
   createPackageBudgetBaseline,
@@ -28,12 +28,12 @@ const refreshBudgets = process.argv.includes('--refresh-budgets');
 const budgetPath = join(root, 'benchmarks/package-baseline.json');
 
 try {
-  if (suppliedPackJson !== undefined && suppliedTarball === undefined) {
-    throw new Error('--pack-json requires the matching --tarball');
+  if ((suppliedPackJson === undefined) !== (suppliedTarball === undefined)) {
+    throw new Error('--pack-json and --tarball must be supplied together');
   }
   const packed =
     suppliedPackJson === undefined
-      ? await npmPack(root, temporaryDirectory)
+      ? await packPackage(root, temporaryDirectory)
       : [JSON.parse(await readFile(suppliedPackJson, 'utf8'))];
   const pack = packed[0];
   const tarball = suppliedTarball ?? join(temporaryDirectory, pack.filename);
