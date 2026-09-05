@@ -42,6 +42,9 @@ jobs:
       - name: Run API coverage
         run: pnpm test:api:coverage
 
+      - name: Run ESI client coverage
+        run: pnpm --filter @evespace/esi-client test:coverage
+
       - name: Run PostgreSQL coverage
         run: pnpm --filter @eve-space/api test:postgres:coverage
 
@@ -82,5 +85,6 @@ jobs:
             api/coverage/lcov.info
             api/coverage-postgres/lcov.info
             api/coverage-redis/lcov.info
+            packages/esi-client/coverage/lcov.info
             packages/platform-module-nuxt/coverage/lcov.info
           retention-days: 14

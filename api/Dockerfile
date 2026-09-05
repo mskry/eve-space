@@ -21,7 +21,7 @@ COPY api/src ./api/src
 COPY api/migrations ./api/migrations
 COPY packages/esi-client/tsconfig.json packages/esi-client/tsdown.config.ts ./packages/esi-client/
 COPY packages/esi-client/src ./packages/esi-client/src
-COPY packages/esi-client/scripts/check-runtime-imports.mjs ./packages/esi-client/scripts/check-runtime-imports.mjs
+COPY packages/esi-client/scripts/check-runtime-imports.ts ./packages/esi-client/scripts/check-runtime-imports.ts
 COPY packages/platform-module-contract/tsconfig.json ./packages/platform-module-contract/tsconfig.json
 COPY packages/platform-module-contract/src ./packages/platform-module-contract/src
 COPY packages/platform-module-server/tsconfig.json ./packages/platform-module-server/tsconfig.json
