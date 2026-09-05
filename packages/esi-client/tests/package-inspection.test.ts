@@ -11,7 +11,7 @@ import {
   validateDomainEntryIsolation,
   validatePackageBudgets,
   validatePackedPackageBoundary,
-} from '../scripts/lib/package-inspection.mjs';
+} from '../scripts/lib/package-inspection.ts';
 
 const packageJson = {
   exports: {

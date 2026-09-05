@@ -4,7 +4,7 @@ import { gzipSync } from 'node:zlib';
 
 import { expect, it } from 'vitest';
 
-import { extractPackageTarball } from '../scripts/lib/package-tarball.mjs';
+import { extractPackageTarball } from '../scripts/lib/package-tarball.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 it('extracts package contents from the supplied tarball', async () => {

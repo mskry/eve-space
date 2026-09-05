@@ -8,7 +8,7 @@ import {
   generatedReplacementTargets,
   repositoryRoot,
   resolveGeneratedReplacementTargets,
-} from '../scripts/generate/paths.mjs';
+} from '../scripts/generate/paths.ts';
 
 describe('generation path boundaries', () => {
   it('declares a replacement boundary for every generated artifact kind', () => {
@@ -27,7 +27,7 @@ describe('generation path boundaries', () => {
   it('treats only declared generated trees and files as generated', () => {
     expect(classifyProjectPath('src/generated/models/example.ts')).toBe('generated');
     expect(classifyProjectPath('docs/llms.txt')).toBe('generated');
-    expect(classifyProjectPath('scripts/generate/paths.mjs')).toBe('maintained');
+    expect(classifyProjectPath('scripts/generate/paths.ts')).toBe('maintained');
     expect(classifyProjectPath('src/transport.ts')).toBe('maintained');
     expect(classifyProjectPath('tests/runtime.test.ts')).toBe('maintained');
     expect(classifyProjectPath('openapi/corrections/manifest.json')).toBe('maintained');

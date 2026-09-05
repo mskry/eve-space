@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   findRuntimeImports,
   findUnexpectedRuntimeImports,
-} from '../scripts/check-runtime-imports.mjs';
-import { packageValidationSteps } from '../scripts/check-package.mjs';
-import { parseNpmPackJson, usesWindowsCommandShell } from '../scripts/lib/npm-pack.mjs';
+} from '../scripts/check-runtime-imports.ts';
+import { packageValidationSteps } from '../scripts/check-package.ts';
+import { parseNpmPackJson, usesWindowsCommandShell } from '../scripts/lib/npm-pack.ts';
 import packageJson from '../package.json' with { type: 'json' };
 
 describe('build gates', () => {
@@ -89,7 +89,7 @@ describe('build gates', () => {
     ]);
     expect(packageJson.scripts.lint).toContain('--type-aware --deny-warnings');
     expect(packageJson.scripts['package:budgets:refresh']).toBe(
-      'pnpm build && node scripts/inspect-pack.mjs --refresh-budgets',
+      'pnpm build && node scripts/inspect-pack.ts --refresh-budgets',
     );
     expect(packageJson.scripts.validate).not.toContain('budgets:refresh');
     expect(Object.hasOwn(packageJson.scripts, 'preexamples:check')).toBe(false);

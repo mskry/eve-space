@@ -3031,8 +3031,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 58599,
-        "maximumUniqueBytes": 59771
+        "measuredUniqueBytes": 59782,
+        "maximumUniqueBytes": 60978
       },
       "declaration": {
         "target": "dist/domains/incursions.d.ts",
@@ -3129,8 +3129,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 58525,
-        "maximumUniqueBytes": 59696
+        "measuredUniqueBytes": 59720,
+        "maximumUniqueBytes": 60915
       },
       "declaration": {
         "target": "dist/domains/insurance.d.ts",
@@ -3945,8 +3945,8 @@
             "specifier": "zod"
           }
         ],
-        "measuredUniqueBytes": 58168,
-        "maximumUniqueBytes": 59332
+        "measuredUniqueBytes": 59398,
+        "maximumUniqueBytes": 60586
       },
       "declaration": {
         "target": "dist/domains/status.d.ts",

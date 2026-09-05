@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { normalizeOpenApiDocument, resolveLocalReference } from '../scripts/generate/normalize.mjs';
+import { normalizeOpenApiDocument, resolveLocalReference } from '../scripts/generate/normalize.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('normalized OpenAPI model', () => {

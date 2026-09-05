@@ -189,5 +189,7 @@ function compareRankedOperations(left: RankedOperation, right: RankedOperation):
   if (left.score !== right.score) return right.score - left.score;
   const leftId = left.document.entry.operationId;
   const rightId = right.document.entry.operationId;
-  return leftId < rightId ? -1 : leftId > rightId ? 1 : 0;
+  if (leftId < rightId) return -1;
+  if (leftId > rightId) return 1;
+  return 0;
 }

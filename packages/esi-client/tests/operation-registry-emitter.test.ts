@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
 
-import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.mjs';
-import { resolveOperationMetadata } from '../scripts/generate/operation-metadata.mjs';
-import { renderOperationRegistryArtifacts } from '../scripts/generate/operation-registry.mjs';
+import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.ts';
+import { resolveOperationMetadata } from '../scripts/generate/operation-metadata.ts';
+import { renderOperationRegistryArtifacts } from '../scripts/generate/operation-registry.ts';
 import {
   operationManifest,
   operationRegistry,

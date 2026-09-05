@@ -10,15 +10,15 @@ import type {
   NormalizedOpenApiModel,
   NormalizedOperation,
   NormalizedSchema,
-} from '../scripts/generate/normalize.mjs';
-import type { EmitterContext } from '../scripts/generate/orchestrate.mjs';
+} from '../scripts/generate/normalize.ts';
+import type { EmitterContext } from '../scripts/generate/orchestrate.ts';
 import {
   generatedSchemaTestsComponent,
   renderGeneratedSchemaContractTests,
-} from '../scripts/generate/schema-test-emitter.mjs';
-import { createGeneratedSourceEmitter } from '../scripts/generate/source-emitter.mjs';
-import { createGeneratedTestsEmitter } from '../scripts/generate/test-emitter.mjs';
-import { zodSchemaSourceComponent } from '../scripts/generate/zod-schema.mjs';
+} from '../scripts/generate/schema-test-emitter.ts';
+import { createGeneratedSourceEmitter } from '../scripts/generate/source-emitter.ts';
+import { createGeneratedTestsEmitter } from '../scripts/generate/test-emitter.ts';
+import { zodSchemaSourceComponent } from '../scripts/generate/zod-schema.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 const executeFile = promisify(execFile);

@@ -6,9 +6,9 @@ import {
   createProvenanceHeader,
   renderGeneratedBarrel,
   renderGeneratedJson,
-} from '../scripts/generate/artifacts.mjs';
-import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.mjs';
-import type { ResolvedOperationMetadata } from '../scripts/generate/operation-metadata.mjs';
+} from '../scripts/generate/artifacts.ts';
+import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.ts';
+import type { ResolvedOperationMetadata } from '../scripts/generate/operation-metadata.ts';
 
 const provenance = {
   compatibilityDate: '2026-08-18',

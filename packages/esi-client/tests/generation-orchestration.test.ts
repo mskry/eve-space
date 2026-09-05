@@ -10,8 +10,8 @@ import {
   type GeneratedOutputClaim,
   type GeneratedOutputEmitter,
   type OrchestrateGenerationOptions,
-} from '../scripts/generate/orchestrate.mjs';
-import { generatedReplacementTargets } from '../scripts/generate/paths.mjs';
+} from '../scripts/generate/orchestrate.ts';
+import { generatedReplacementTargets } from '../scripts/generate/paths.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 const fileTargets = new Set(['llms.txt', 'docs/llms.txt']);

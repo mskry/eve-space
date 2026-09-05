@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { compareGeneratedOutputs, generationCheckTargets } from '../scripts/generate/check.mjs';
+import { compareGeneratedOutputs, generationCheckTargets } from '../scripts/generate/check.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('non-mutating generated output check', () => {

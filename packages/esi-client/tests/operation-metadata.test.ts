@@ -7,14 +7,14 @@ import type {
   HttpMethod,
   NormalizedOpenApiModel,
   NormalizedOperation,
-} from '../scripts/generate/normalize.mjs';
+} from '../scripts/generate/normalize.ts';
 import {
   defaultDomainName,
   defaultMethodName,
   loadFacadeCatalog,
   loadSafetyOverrides,
   resolveOperationMetadata,
-} from '../scripts/generate/operation-metadata.mjs';
+} from '../scripts/generate/operation-metadata.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('operation facade naming and safety metadata', () => {

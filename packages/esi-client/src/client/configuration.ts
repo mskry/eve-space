@@ -49,31 +49,25 @@ export class EsiClientConfiguration {
     assertOptions(options);
     assertMutuallyExclusiveAuthentication(options);
 
-    this.baseUrl = normalizeBaseUrl(
-      options.baseUrl === undefined ? DEFAULT_ESI_BASE_URL : options.baseUrl,
-    );
+    this.baseUrl = normalizeBaseUrl(defaultIfUndefined(options.baseUrl, DEFAULT_ESI_BASE_URL));
     this.compatibilityDate = validateCompatibilityDate(
-      options.compatibilityDate === undefined
-        ? PINNED_ESI_COMPATIBILITY_DATE
-        : options.compatibilityDate,
+      defaultIfUndefined(options.compatibilityDate, PINNED_ESI_COMPATIBILITY_DATE),
     );
-    this.language = validateLanguage(
-      options.language === undefined ? DEFAULT_ESI_LANGUAGE : options.language,
-    );
+    this.language = validateLanguage(defaultIfUndefined(options.language, DEFAULT_ESI_LANGUAGE));
     this.#token = validateToken(options.token);
     this.#tokenProvider = validateTokenProvider(options.tokenProvider);
-    this.fetch = validateFetch(options.fetch === undefined ? globalThis.fetch : options.fetch);
+    this.fetch = validateFetch(defaultIfUndefined(options.fetch, globalThis.fetch));
     this.validateResponses = validateBoolean(
       'validateResponses',
-      options.validateResponses === undefined ? true : options.validateResponses,
+      defaultIfUndefined(options.validateResponses, true),
     );
     this.validateRequests = validateBoolean(
       'validateRequests',
-      options.validateRequests === undefined ? false : options.validateRequests,
+      defaultIfUndefined(options.validateRequests, false),
     );
     this.allowGenericMutations = validateBoolean(
       'allowGenericMutations',
-      options.allowGenericMutations === undefined ? false : options.allowGenericMutations,
+      defaultIfUndefined(options.allowGenericMutations, false),
     );
 
     Object.freeze(this);
@@ -97,6 +91,11 @@ export class EsiClientConfiguration {
       allowGenericMutations: this.allowGenericMutations,
     });
   }
+}
+
+function defaultIfUndefined<Value>(value: Value | undefined, fallback: Value): Value {
+  if (value === undefined) return fallback;
+  return value;
 }
 
 function assertOptions(options: EsiClientOptions): void {
@@ -139,7 +138,10 @@ function normalizeBaseUrl(value: string): string {
     throw new TypeError('baseUrl must not contain a query string or fragment');
   }
 
-  return url.href.replace(/\/+$/u, '');
+  const href = url.href;
+  let end = href.length;
+  while (href[end - 1] === '/') end -= 1;
+  return href.slice(0, end);
 }
 
 function validateCompatibilityDate(value: string): string {

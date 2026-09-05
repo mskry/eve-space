@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   inspectDocumentationConsistency,
   validateDocumentationConsistency,
-} from '../scripts/check-documentation.mjs';
+} from '../scripts/check-documentation.ts';
 
 describe('documentation consistency validation', () => {
   it('accepts exactly all 233 operation references and snippets and 39 domain indexes', async () => {

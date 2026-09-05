@@ -6,18 +6,18 @@ import { describe, expect, it } from 'vitest';
 import {
   emitGeneratedDocumentation,
   renderGeneratedDocumentation,
-} from '../scripts/generate/documentation-emitter.mjs';
-import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.mjs';
-import { renderNamingReviewReport } from '../scripts/generate/naming-review.mjs';
+} from '../scripts/generate/documentation-emitter.ts';
+import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.ts';
+import { renderNamingReviewReport } from '../scripts/generate/naming-review.ts';
 import {
   loadFacadeCatalog,
   resolveOperationMetadata,
-} from '../scripts/generate/operation-metadata.mjs';
+} from '../scripts/generate/operation-metadata.ts';
 import {
   createSerializableOperationManifest,
   type SerializableOperationManifest,
-} from '../scripts/generate/operation-registry.mjs';
-import type { EmitterContext, GenerationProvenance } from '../scripts/generate/orchestrate.mjs';
+} from '../scripts/generate/operation-registry.ts';
+import type { EmitterContext, GenerationProvenance } from '../scripts/generate/orchestrate.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 const operationCount = 233;
