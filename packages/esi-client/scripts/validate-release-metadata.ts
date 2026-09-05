@@ -47,7 +47,7 @@ export async function validateReleaseMetadata({
     throw new Error(`Release package must be ${releasePackageName}`);
   }
   if (typeof packageJson.version !== 'string') {
-    throw new Error('Release package version must be a string');
+    throw new TypeError('Release package version must be a string');
   }
   if (packageJson.version !== version) {
     throw new Error(
@@ -59,8 +59,9 @@ export async function validateReleaseMetadata({
     join(repositoryRoot, 'packages/esi-client/CHANGELOG.md'),
     'utf8',
   );
+  const escapedVersion = version.replaceAll('.', String.raw`\.`);
   const changelogHeading = new RegExp(
-    `^## ${version.replaceAll('.', '\\.')} - \\d{4}-\\d{2}-\\d{2}$`,
+    String.raw`^## ${escapedVersion} - \d{4}-\d{2}-\d{2}$`,
     'gmu',
   );
   if ([...changelog.matchAll(changelogHeading)].length !== 1) {

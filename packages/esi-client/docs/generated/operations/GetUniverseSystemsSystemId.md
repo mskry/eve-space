@@ -16,30 +16,32 @@ Get solar system information
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseSystemsSystemIdResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
 const systemId = 30000142;
 
-const data = await client.getSolarSystem(systemId);
+const data: GetUniverseSystemsSystemIdResponse = await client.getSolarSystem(systemId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseSystemsSystemIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const systemId = 30000142;
 
-const data = await client.universe.getSolarSystem(systemId);
+const data: GetUniverseSystemsSystemIdResponse = await client.universe.getSolarSystem(systemId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.universe.getSolarSystem(systemId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseSystemsSystemIdData, GetUniverseSystemsSystemIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const systemId = 30000142;
 const arguments_: CallOperationArguments<'GetUniverseSystemsSystemId'> = { path: { "system_id": systemId } };
 
 const response = await client.callOperation('GetUniverseSystemsSystemId', arguments_);
+const data: GetUniverseSystemsSystemIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetUniverseSystemsSystemId', argume
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseSystemsSystemIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseSystemsSystemIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseSystemsSystemIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetUniverseSystemsSystemIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseSystemsSystemIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().getSolarSystem(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseSystemsSystemIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseSystemsSystemIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

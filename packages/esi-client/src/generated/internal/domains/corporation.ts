@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCorporationsCorporationIdIconsDescriptor,
@@ -57,51 +58,51 @@ import type {
   GetCorporationsCorporationIdTitlesOptions,
 } from './corporation-contract.js';
 import type {
-  GetCorporationsCorporationIdAlliancehistoryInput,
-  GetCorporationsCorporationIdAlliancehistoryOutput,
-  GetCorporationsCorporationIdBlueprintsInput,
-  GetCorporationsCorporationIdBlueprintsOutput,
-  GetCorporationsCorporationIdContainersLogsInput,
-  GetCorporationsCorporationIdContainersLogsOutput,
-  GetCorporationsCorporationIdDivisionsInput,
-  GetCorporationsCorporationIdDivisionsOutput,
-  GetCorporationsCorporationIdFacilitiesInput,
-  GetCorporationsCorporationIdFacilitiesOutput,
-  GetCorporationsCorporationIdIconsInput,
-  GetCorporationsCorporationIdIconsOutput,
-  GetCorporationsCorporationIdInput,
-  GetCorporationsCorporationIdMedalsInput,
-  GetCorporationsCorporationIdMedalsIssuedInput,
-  GetCorporationsCorporationIdMedalsIssuedOutput,
-  GetCorporationsCorporationIdMedalsOutput,
-  GetCorporationsCorporationIdMembersInput,
-  GetCorporationsCorporationIdMembersLimitInput,
-  GetCorporationsCorporationIdMembersLimitOutput,
-  GetCorporationsCorporationIdMembersOutput,
-  GetCorporationsCorporationIdMembersTitlesInput,
-  GetCorporationsCorporationIdMembersTitlesOutput,
-  GetCorporationsCorporationIdMembertrackingInput,
-  GetCorporationsCorporationIdMembertrackingOutput,
-  GetCorporationsCorporationIdOutput,
-  GetCorporationsCorporationIdRolesHistoryInput,
-  GetCorporationsCorporationIdRolesHistoryOutput,
-  GetCorporationsCorporationIdRolesInput,
-  GetCorporationsCorporationIdRolesOutput,
-  GetCorporationsCorporationIdShareholdersInput,
-  GetCorporationsCorporationIdShareholdersOutput,
-  GetCorporationsCorporationIdStandingsInput,
-  GetCorporationsCorporationIdStandingsOutput,
-  GetCorporationsCorporationIdStarbasesInput,
-  GetCorporationsCorporationIdStarbasesOutput,
-  GetCorporationsCorporationIdStarbasesStarbaseIdInput,
-  GetCorporationsCorporationIdStarbasesStarbaseIdOutput,
-  GetCorporationsCorporationIdStructuresInput,
-  GetCorporationsCorporationIdStructuresOutput,
-  GetCorporationsCorporationIdTitlesInput,
-  GetCorporationsCorporationIdTitlesOutput,
-  GetCorporationsNpccorpsInput,
-  GetCorporationsNpccorpsOutput,
-} from '../../schemas/operations/corporation.js';
+  GetCorporationsCorporationIdAlliancehistoryData,
+  GetCorporationsCorporationIdAlliancehistoryResponse,
+  GetCorporationsCorporationIdBlueprintsData,
+  GetCorporationsCorporationIdBlueprintsResponse,
+  GetCorporationsCorporationIdContainersLogsData,
+  GetCorporationsCorporationIdContainersLogsResponse,
+  GetCorporationsCorporationIdData,
+  GetCorporationsCorporationIdDivisionsData,
+  GetCorporationsCorporationIdDivisionsResponse,
+  GetCorporationsCorporationIdFacilitiesData,
+  GetCorporationsCorporationIdFacilitiesResponse,
+  GetCorporationsCorporationIdIconsData,
+  GetCorporationsCorporationIdIconsResponse,
+  GetCorporationsCorporationIdMedalsData,
+  GetCorporationsCorporationIdMedalsIssuedData,
+  GetCorporationsCorporationIdMedalsIssuedResponse,
+  GetCorporationsCorporationIdMedalsResponse,
+  GetCorporationsCorporationIdMembersData,
+  GetCorporationsCorporationIdMembersLimitData,
+  GetCorporationsCorporationIdMembersLimitResponse,
+  GetCorporationsCorporationIdMembersResponse,
+  GetCorporationsCorporationIdMembersTitlesData,
+  GetCorporationsCorporationIdMembersTitlesResponse,
+  GetCorporationsCorporationIdMembertrackingData,
+  GetCorporationsCorporationIdMembertrackingResponse,
+  GetCorporationsCorporationIdResponse,
+  GetCorporationsCorporationIdRolesData,
+  GetCorporationsCorporationIdRolesHistoryData,
+  GetCorporationsCorporationIdRolesHistoryResponse,
+  GetCorporationsCorporationIdRolesResponse,
+  GetCorporationsCorporationIdShareholdersData,
+  GetCorporationsCorporationIdShareholdersResponse,
+  GetCorporationsCorporationIdStandingsData,
+  GetCorporationsCorporationIdStandingsResponse,
+  GetCorporationsCorporationIdStarbasesData,
+  GetCorporationsCorporationIdStarbasesResponse,
+  GetCorporationsCorporationIdStarbasesStarbaseIdData,
+  GetCorporationsCorporationIdStarbasesStarbaseIdResponse,
+  GetCorporationsCorporationIdStructuresData,
+  GetCorporationsCorporationIdStructuresResponse,
+  GetCorporationsCorporationIdTitlesData,
+  GetCorporationsCorporationIdTitlesResponse,
+  GetCorporationsNpccorpsData,
+  GetCorporationsNpccorpsResponse,
+} from '../../types.gen.js';
 
 class CorporationDomainClientWithMetadataImplementation implements CorporationDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -111,113 +112,113 @@ class CorporationDomainClientWithMetadataImplementation implements CorporationDo
     Object.freeze(this);
   }
 
-  getIcon(corporationId: NonNullable<GetCorporationsCorporationIdIconsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIconsOutput>> {
-    const arguments_: GetCorporationsCorporationIdIconsInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getIcon(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIconsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdIconsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdIconsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getMemberLimit(corporationId: NonNullable<GetCorporationsCorporationIdMembersLimitInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersLimitOutput>> {
-    const arguments_: GetCorporationsCorporationIdMembersLimitInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getMemberLimit(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersLimitResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdMembersLimitData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersLimitDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getPublicInfo(corporationId: NonNullable<GetCorporationsCorporationIdInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdOutput>> {
-    const arguments_: GetCorporationsCorporationIdInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getPublicInfo(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getStarbase(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["corporation_id"], starbaseId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesStarbaseIdOutput>> {
-    const arguments_: GetCorporationsCorporationIdStarbasesStarbaseIdInput = { path: { "corporation_id": corporationId, "starbase_id": starbaseId }, query: { "system_id": options?.["systemId"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getStarbase(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["corporation_id"], starbaseId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesStarbaseIdResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData> = { path: { "corporation_id": corporationId, "starbase_id": starbaseId }, query: { "system_id": options?.["systemId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdStarbasesStarbaseIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listAllianceHistory(corporationId: NonNullable<GetCorporationsCorporationIdAlliancehistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdAlliancehistoryOutput>> {
-    const arguments_: GetCorporationsCorporationIdAlliancehistoryInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listAllianceHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdAlliancehistoryResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdAlliancehistoryData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdAlliancehistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listAuditLogSecureContainerLogs(corporationId: NonNullable<GetCorporationsCorporationIdContainersLogsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContainersLogsOutput>> {
-    const arguments_: GetCorporationsCorporationIdContainersLogsInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listAuditLogSecureContainerLogs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContainersLogsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdContainersLogsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdContainersLogsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listBlueprints(corporationId: NonNullable<GetCorporationsCorporationIdBlueprintsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<EsiResponse<GetCorporationsCorporationIdBlueprintsOutput>> {
-    const arguments_: GetCorporationsCorporationIdBlueprintsInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listBlueprints(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<EsiResponse<GetCorporationsCorporationIdBlueprintsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdBlueprintsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdBlueprintsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listDivisions(corporationId: NonNullable<GetCorporationsCorporationIdDivisionsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdDivisionsOutput>> {
-    const arguments_: GetCorporationsCorporationIdDivisionsInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listDivisions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdDivisionsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdDivisionsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdDivisionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listFacilities(corporationId: NonNullable<GetCorporationsCorporationIdFacilitiesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<EsiResponse<GetCorporationsCorporationIdFacilitiesOutput>> {
-    const arguments_: GetCorporationsCorporationIdFacilitiesInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listFacilities(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<EsiResponse<GetCorporationsCorporationIdFacilitiesResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdFacilitiesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdFacilitiesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listIssuedMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsIssuedOutput>> {
-    const arguments_: GetCorporationsCorporationIdMedalsIssuedInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listIssuedMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsIssuedResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdMedalsIssuedData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdMedalsIssuedDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsOutput>> {
-    const arguments_: GetCorporationsCorporationIdMedalsInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdMedalsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdMedalsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMemberRoleHistory(corporationId: NonNullable<GetCorporationsCorporationIdRolesHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesHistoryOutput>> {
-    const arguments_: GetCorporationsCorporationIdRolesHistoryInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMemberRoleHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesHistoryResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdRolesHistoryData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdRolesHistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMemberRoles(corporationId: NonNullable<GetCorporationsCorporationIdRolesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesOutput>> {
-    const arguments_: GetCorporationsCorporationIdRolesInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMemberRoles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdRolesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdRolesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMemberTitles(corporationId: NonNullable<GetCorporationsCorporationIdMembersTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersTitlesOutput>> {
-    const arguments_: GetCorporationsCorporationIdMembersTitlesInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMemberTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersTitlesResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdMembersTitlesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMemberTracking(corporationId: NonNullable<GetCorporationsCorporationIdMembertrackingInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembertrackingOutput>> {
-    const arguments_: GetCorporationsCorporationIdMembertrackingInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMemberTracking(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembertrackingResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdMembertrackingData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdMembertrackingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMembers(corporationId: NonNullable<GetCorporationsCorporationIdMembersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersOutput>> {
-    const arguments_: GetCorporationsCorporationIdMembersInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMembers(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdMembersData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdMembersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<EsiResponse<GetCorporationsNpccorpsOutput>> {
-    const arguments_: GetCorporationsNpccorpsInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<EsiResponse<GetCorporationsNpccorpsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsNpccorpsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsNpccorpsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listShareholders(corporationId: NonNullable<GetCorporationsCorporationIdShareholdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdShareholdersOutput>> {
-    const arguments_: GetCorporationsCorporationIdShareholdersInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listShareholders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdShareholdersResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdShareholdersData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdShareholdersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listStandings(corporationId: NonNullable<GetCorporationsCorporationIdStandingsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<EsiResponse<GetCorporationsCorporationIdStandingsOutput>> {
-    const arguments_: GetCorporationsCorporationIdStandingsInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listStandings(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<EsiResponse<GetCorporationsCorporationIdStandingsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdStandingsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdStandingsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listStarbases(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesOutput>> {
-    const arguments_: GetCorporationsCorporationIdStarbasesInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listStarbases(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdStarbasesData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdStarbasesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listStructures(corporationId: NonNullable<GetCorporationsCorporationIdStructuresInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<EsiResponse<GetCorporationsCorporationIdStructuresOutput>> {
-    const arguments_: GetCorporationsCorporationIdStructuresInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listStructures(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<EsiResponse<GetCorporationsCorporationIdStructuresResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdStructuresData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdStructuresDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listTitles(corporationId: NonNullable<GetCorporationsCorporationIdTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdTitlesOutput>> {
-    const arguments_: GetCorporationsCorporationIdTitlesInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdTitlesResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdTitlesData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdTitlesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -230,91 +231,91 @@ class CorporationDomainClientImplementation implements CorporationDomainClient {
     Object.freeze(this);
   }
 
-  getIcon(corporationId: NonNullable<GetCorporationsCorporationIdIconsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<GetCorporationsCorporationIdIconsOutput> {
+  getIcon(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<GetCorporationsCorporationIdIconsResponse> {
     return this.#metadata.getIcon(corporationId, options).then((response) => response.data);
   }
 
-  getMemberLimit(corporationId: NonNullable<GetCorporationsCorporationIdMembersLimitInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<GetCorporationsCorporationIdMembersLimitOutput> {
+  getMemberLimit(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<GetCorporationsCorporationIdMembersLimitResponse> {
     return this.#metadata.getMemberLimit(corporationId, options).then((response) => response.data);
   }
 
-  getPublicInfo(corporationId: NonNullable<GetCorporationsCorporationIdInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<GetCorporationsCorporationIdOutput> {
+  getPublicInfo(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<GetCorporationsCorporationIdResponse> {
     return this.#metadata.getPublicInfo(corporationId, options).then((response) => response.data);
   }
 
-  getStarbase(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["corporation_id"], starbaseId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<GetCorporationsCorporationIdStarbasesStarbaseIdOutput> {
+  getStarbase(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["corporation_id"], starbaseId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<GetCorporationsCorporationIdStarbasesStarbaseIdResponse> {
     return this.#metadata.getStarbase(corporationId, starbaseId, options).then((response) => response.data);
   }
 
-  listAllianceHistory(corporationId: NonNullable<GetCorporationsCorporationIdAlliancehistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<GetCorporationsCorporationIdAlliancehistoryOutput> {
+  listAllianceHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<GetCorporationsCorporationIdAlliancehistoryResponse> {
     return this.#metadata.listAllianceHistory(corporationId, options).then((response) => response.data);
   }
 
-  listAuditLogSecureContainerLogs(corporationId: NonNullable<GetCorporationsCorporationIdContainersLogsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<GetCorporationsCorporationIdContainersLogsOutput> {
+  listAuditLogSecureContainerLogs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<GetCorporationsCorporationIdContainersLogsResponse> {
     return this.#metadata.listAuditLogSecureContainerLogs(corporationId, options).then((response) => response.data);
   }
 
-  listBlueprints(corporationId: NonNullable<GetCorporationsCorporationIdBlueprintsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<GetCorporationsCorporationIdBlueprintsOutput> {
+  listBlueprints(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<GetCorporationsCorporationIdBlueprintsResponse> {
     return this.#metadata.listBlueprints(corporationId, options).then((response) => response.data);
   }
 
-  listDivisions(corporationId: NonNullable<GetCorporationsCorporationIdDivisionsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<GetCorporationsCorporationIdDivisionsOutput> {
+  listDivisions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<GetCorporationsCorporationIdDivisionsResponse> {
     return this.#metadata.listDivisions(corporationId, options).then((response) => response.data);
   }
 
-  listFacilities(corporationId: NonNullable<GetCorporationsCorporationIdFacilitiesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<GetCorporationsCorporationIdFacilitiesOutput> {
+  listFacilities(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<GetCorporationsCorporationIdFacilitiesResponse> {
     return this.#metadata.listFacilities(corporationId, options).then((response) => response.data);
   }
 
-  listIssuedMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<GetCorporationsCorporationIdMedalsIssuedOutput> {
+  listIssuedMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<GetCorporationsCorporationIdMedalsIssuedResponse> {
     return this.#metadata.listIssuedMedals(corporationId, options).then((response) => response.data);
   }
 
-  listMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<GetCorporationsCorporationIdMedalsOutput> {
+  listMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<GetCorporationsCorporationIdMedalsResponse> {
     return this.#metadata.listMedals(corporationId, options).then((response) => response.data);
   }
 
-  listMemberRoleHistory(corporationId: NonNullable<GetCorporationsCorporationIdRolesHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<GetCorporationsCorporationIdRolesHistoryOutput> {
+  listMemberRoleHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<GetCorporationsCorporationIdRolesHistoryResponse> {
     return this.#metadata.listMemberRoleHistory(corporationId, options).then((response) => response.data);
   }
 
-  listMemberRoles(corporationId: NonNullable<GetCorporationsCorporationIdRolesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<GetCorporationsCorporationIdRolesOutput> {
+  listMemberRoles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<GetCorporationsCorporationIdRolesResponse> {
     return this.#metadata.listMemberRoles(corporationId, options).then((response) => response.data);
   }
 
-  listMemberTitles(corporationId: NonNullable<GetCorporationsCorporationIdMembersTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<GetCorporationsCorporationIdMembersTitlesOutput> {
+  listMemberTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<GetCorporationsCorporationIdMembersTitlesResponse> {
     return this.#metadata.listMemberTitles(corporationId, options).then((response) => response.data);
   }
 
-  listMemberTracking(corporationId: NonNullable<GetCorporationsCorporationIdMembertrackingInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<GetCorporationsCorporationIdMembertrackingOutput> {
+  listMemberTracking(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<GetCorporationsCorporationIdMembertrackingResponse> {
     return this.#metadata.listMemberTracking(corporationId, options).then((response) => response.data);
   }
 
-  listMembers(corporationId: NonNullable<GetCorporationsCorporationIdMembersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<GetCorporationsCorporationIdMembersOutput> {
+  listMembers(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<GetCorporationsCorporationIdMembersResponse> {
     return this.#metadata.listMembers(corporationId, options).then((response) => response.data);
   }
 
-  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<GetCorporationsNpccorpsOutput> {
+  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<GetCorporationsNpccorpsResponse> {
     return this.#metadata.listNpcCorporations(options).then((response) => response.data);
   }
 
-  listShareholders(corporationId: NonNullable<GetCorporationsCorporationIdShareholdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<GetCorporationsCorporationIdShareholdersOutput> {
+  listShareholders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<GetCorporationsCorporationIdShareholdersResponse> {
     return this.#metadata.listShareholders(corporationId, options).then((response) => response.data);
   }
 
-  listStandings(corporationId: NonNullable<GetCorporationsCorporationIdStandingsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<GetCorporationsCorporationIdStandingsOutput> {
+  listStandings(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<GetCorporationsCorporationIdStandingsResponse> {
     return this.#metadata.listStandings(corporationId, options).then((response) => response.data);
   }
 
-  listStarbases(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<GetCorporationsCorporationIdStarbasesOutput> {
+  listStarbases(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<GetCorporationsCorporationIdStarbasesResponse> {
     return this.#metadata.listStarbases(corporationId, options).then((response) => response.data);
   }
 
-  listStructures(corporationId: NonNullable<GetCorporationsCorporationIdStructuresInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<GetCorporationsCorporationIdStructuresOutput> {
+  listStructures(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<GetCorporationsCorporationIdStructuresResponse> {
     return this.#metadata.listStructures(corporationId, options).then((response) => response.data);
   }
 
-  listTitles(corporationId: NonNullable<GetCorporationsCorporationIdTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<GetCorporationsCorporationIdTitlesOutput> {
+  listTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<GetCorporationsCorporationIdTitlesResponse> {
     return this.#metadata.listTitles(corporationId, options).then((response) => response.data);
   }
 

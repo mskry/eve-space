@@ -4,122 +4,123 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdIndustryJobsInput,
-  GetCharactersCharacterIdIndustryJobsOutput,
-  GetCharactersCharacterIdMiningInput,
-  GetCharactersCharacterIdMiningOutput,
-  GetCorporationCorporationIdMiningExtractionsInput,
-  GetCorporationCorporationIdMiningExtractionsOutput,
-  GetCorporationCorporationIdMiningObserversInput,
-  GetCorporationCorporationIdMiningObserversObserverIdInput,
-  GetCorporationCorporationIdMiningObserversObserverIdOutput,
-  GetCorporationCorporationIdMiningObserversOutput,
-  GetCorporationsCorporationIdIndustryJobsInput,
-  GetCorporationsCorporationIdIndustryJobsOutput,
-  GetIndustryFacilitiesInput,
-  GetIndustryFacilitiesOutput,
-  GetIndustrySystemsInput,
-  GetIndustrySystemsOutput,
-} from '../../schemas/operations/industry.js';
+  GetCharactersCharacterIdIndustryJobsData,
+  GetCharactersCharacterIdIndustryJobsResponse,
+  GetCharactersCharacterIdMiningData,
+  GetCharactersCharacterIdMiningResponse,
+  GetCorporationCorporationIdMiningExtractionsData,
+  GetCorporationCorporationIdMiningExtractionsResponse,
+  GetCorporationCorporationIdMiningObserversData,
+  GetCorporationCorporationIdMiningObserversObserverIdData,
+  GetCorporationCorporationIdMiningObserversObserverIdResponse,
+  GetCorporationCorporationIdMiningObserversResponse,
+  GetCorporationsCorporationIdIndustryJobsData,
+  GetCorporationsCorporationIdIndustryJobsResponse,
+  GetIndustryFacilitiesData,
+  GetIndustryFacilitiesResponse,
+  GetIndustrySystemsData,
+  GetIndustrySystemsResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdIndustryJobsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdIndustryJobsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdIndustryJobsInput["header"]>["If-None-Match"];
-  readonly "includeCompleted"?: NonNullable<GetCharactersCharacterIdIndustryJobsInput["query"]>["include_completed"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdIndustryJobsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["headers"]>["If-None-Match"];
+  readonly "includeCompleted"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["query"]>["include_completed"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdMiningOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdMiningInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdMiningInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCharactersCharacterIdMiningInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdMiningInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdIndustryJobsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdIndustryJobsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdIndustryJobsInput["header"]>["If-None-Match"];
-  readonly "includeCompleted"?: NonNullable<GetCorporationsCorporationIdIndustryJobsInput["query"]>["include_completed"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdIndustryJobsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdIndustryJobsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["headers"]>["If-None-Match"];
+  readonly "includeCompleted"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["query"]>["include_completed"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetIndustryFacilitiesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetIndustryFacilitiesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetIndustryFacilitiesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetIndustryFacilitiesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetIndustryFacilitiesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetIndustryFacilitiesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetIndustryFacilitiesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationCorporationIdMiningObserversOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationCorporationIdMiningObserversInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationCorporationIdMiningObserversInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationCorporationIdMiningObserversInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationCorporationIdMiningObserversInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationCorporationIdMiningExtractionsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationCorporationIdMiningExtractionsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationCorporationIdMiningExtractionsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationCorporationIdMiningExtractionsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationCorporationIdMiningExtractionsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationCorporationIdMiningObserversObserverIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetIndustrySystemsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetIndustrySystemsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetIndustrySystemsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetIndustrySystemsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetIndustrySystemsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetIndustrySystemsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetIndustrySystemsData>["headers"]>["X-Tenant"];
 }
 
 export interface IndustryDomainClient {
-  listCharacterJobs(characterId: NonNullable<GetCharactersCharacterIdIndustryJobsInput['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<GetCharactersCharacterIdIndustryJobsOutput>;
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<GetCharactersCharacterIdIndustryJobsResponse>;
 
-  listCharacterMiningLedger(characterId: NonNullable<GetCharactersCharacterIdMiningInput['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<GetCharactersCharacterIdMiningOutput>;
+  listCharacterMiningLedger(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<GetCharactersCharacterIdMiningResponse>;
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsCorporationIdIndustryJobsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<GetCorporationsCorporationIdIndustryJobsOutput>;
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<GetCorporationsCorporationIdIndustryJobsResponse>;
 
-  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<GetIndustryFacilitiesOutput>;
+  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<GetIndustryFacilitiesResponse>;
 
-  listMiningObservers(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<GetCorporationCorporationIdMiningObserversOutput>;
+  listMiningObservers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<GetCorporationCorporationIdMiningObserversResponse>;
 
-  listMoonExtractionTimers(corporationId: NonNullable<GetCorporationCorporationIdMiningExtractionsInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<GetCorporationCorporationIdMiningExtractionsOutput>;
+  listMoonExtractionTimers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<GetCorporationCorporationIdMiningExtractionsResponse>;
 
-  listObservedMining(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["corporation_id"], observerId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<GetCorporationCorporationIdMiningObserversObserverIdOutput>;
+  listObservedMining(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["corporation_id"], observerId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<GetCorporationCorporationIdMiningObserversObserverIdResponse>;
 
-  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<GetIndustrySystemsOutput>;
+  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<GetIndustrySystemsResponse>;
 
   withMetadata(): IndustryDomainClientWithMetadata;
 }
 
 export interface IndustryDomainClientWithMetadata {
-  listCharacterJobs(characterId: NonNullable<GetCharactersCharacterIdIndustryJobsInput['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<EsiResponse<GetCharactersCharacterIdIndustryJobsOutput>>;
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<EsiResponse<GetCharactersCharacterIdIndustryJobsResponse>>;
 
-  listCharacterMiningLedger(characterId: NonNullable<GetCharactersCharacterIdMiningInput['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<EsiResponse<GetCharactersCharacterIdMiningOutput>>;
+  listCharacterMiningLedger(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<EsiResponse<GetCharactersCharacterIdMiningResponse>>;
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsCorporationIdIndustryJobsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIndustryJobsOutput>>;
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIndustryJobsResponse>>;
 
-  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<EsiResponse<GetIndustryFacilitiesOutput>>;
+  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<EsiResponse<GetIndustryFacilitiesResponse>>;
 
-  listMiningObservers(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversOutput>>;
+  listMiningObservers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversResponse>>;
 
-  listMoonExtractionTimers(corporationId: NonNullable<GetCorporationCorporationIdMiningExtractionsInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningExtractionsOutput>>;
+  listMoonExtractionTimers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningExtractionsResponse>>;
 
-  listObservedMining(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["corporation_id"], observerId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversObserverIdOutput>>;
+  listObservedMining(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["corporation_id"], observerId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversObserverIdResponse>>;
 
-  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<EsiResponse<GetIndustrySystemsOutput>>;
+  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<EsiResponse<GetIndustrySystemsResponse>>;
 }

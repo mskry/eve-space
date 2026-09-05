@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createAccessListClient } from '@evespace/esi-client/domains/access-list';
+import type { GetCharactersAccessListsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -13,4 +14,4 @@ const client = createAccessListClient({ token: accessToken });
 const characterId = 90000001;
 const accessListId = 12345;
 
-const data = await client.get(characterId, accessListId);
+const data: GetCharactersAccessListsDetailResponse = await client.get(characterId, accessListId);

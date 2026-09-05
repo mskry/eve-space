@@ -10,6 +10,7 @@ import { extractPackageTarball } from './lib/package-tarball.ts';
 
 interface PackageJson {
   readonly name: string;
+  readonly version: string;
   readonly exports: Readonly<Record<string, unknown>>;
 }
 
@@ -32,6 +33,17 @@ try {
   const packageJson: PackageJson = JSON.parse(
     await readFile(join(metadataRoot, 'package.json'), 'utf8'),
   );
+  if (packageJson.version !== '3.0.0') {
+    throw new Error(`Expected package version 3.0.0, received ${packageJson.version}`);
+  }
+  for (const subpath of ['./types', './zod']) {
+    if (!Object.hasOwn(packageJson.exports, subpath)) {
+      throw new Error(`Missing packed package export ${subpath}`);
+    }
+  }
+  if (Object.hasOwn(packageJson.exports, './schemas')) {
+    throw new Error('Legacy packed package export ./schemas remains');
+  }
   const publicCodeSpecifiers = Object.entries(packageJson.exports)
     .filter(([, entry]) => typeof entry === 'object')
     .map(([subpath]) =>
@@ -151,11 +163,12 @@ import {
 } from '@evespace/esi-client';
 import * as operations from '@evespace/esi-client/operations';
 import { describeOperation, operationManifest, operationRegistry, searchOperations } from '@evespace/esi-client/operations';
-import { GetStatusSuccessResponseSchema } from '@evespace/esi-client/schemas';
+import { zGetStatusResponse } from '@evespace/esi-client/zod';
 
 for (const specifier of ${JSON.stringify(publicCodeSpecifiers)}) await import(specifier);
 const packageMetadata = (await import('@evespace/esi-client/package.json', { with: { type: 'json' } })).default;
 if (packageMetadata.name !== '@evespace/esi-client') throw new Error('Invalid package metadata export');
+if (packageMetadata.version !== '3.0.0') throw new Error('Invalid package metadata version');
 if (Object.keys(operationRegistry).length !== 233) throw new Error('Incomplete operation registry');
 if (operationManifest.operations.length !== 233) throw new Error('Incomplete operation manifest');
 JSON.stringify(operationManifest);
@@ -213,7 +226,7 @@ if (new Headers(request.init.headers).get('x-compatibility-date') !== '2020-01-0
 if (status.players !== 42 || status.server_version !== 'smoke') {
   throw new Error('Unexpected JSON-native response');
 }
-GetStatusSuccessResponseSchema.parse(status);
+zGetStatusResponse.parse(status);
 if (typeof EsiHttpError !== 'function') throw new Error('Missing structured error export');
 if ('Configuration' in sdk || 'StatusApi' in sdk) throw new Error('Prototype exports remain');
 `,
@@ -288,9 +301,9 @@ import {
   type SearchOperationsOptions,
 } from '@evespace/esi-client/operations';
 import {
-  GetStatusSuccessResponseSchema,
-  type GetStatusOutput,
-} from '@evespace/esi-client/schemas';
+  type GetStatusResponse,
+} from '@evespace/esi-client/types';
+import { zGetStatusResponse } from '@evespace/esi-client/zod';
 import {
   createStatusClient,
   type StatusDomainClient,
@@ -302,17 +315,17 @@ const client = new EsiClient(options);
 const configuration: EsiClientConfiguration = client.configuration;
 const serializedConfiguration: SerializedEsiClientConfiguration = configuration.toJSON();
 const domain: StatusDomainClient = client.status;
-const status: Promise<GetStatusOutput> = domain.get();
+const status: Promise<GetStatusResponse> = domain.get();
 const statusOptions: GetStatusOptions = { compatibilityDate: '2026-08-18' };
 const standaloneDomain: StatusDomainClient = createStatusClient(options);
-const standaloneStatus: Promise<GetStatusOutput> = standaloneDomain.get(statusOptions);
-const parsed: GetStatusOutput = GetStatusSuccessResponseSchema.parse({
+const standaloneStatus: Promise<GetStatusResponse> = standaloneDomain.get(statusOptions);
+const parsed: GetStatusResponse = zGetStatusResponse.parse({
   players: 1,
   server_version: 'smoke',
   start_time: '2026-08-18T00:00:00Z',
   vip: false,
 });
-type StatusEnvelope = EsiResponse<GetStatusOutput>;
+type StatusEnvelope = EsiResponse<GetStatusResponse>;
 type Descriptor = OperationExecutionDescriptor;
 const registry: ExecutableOperationRegistry = operationRegistry;
 const manifest: SerializableOperationManifest = operationManifest;
@@ -359,9 +372,10 @@ ${publicCodeSpecifiers
   const browserEntry = join(consumerDirectory, 'browser-entry.mjs');
   await writeFile(
     browserEntry,
-    `import { EsiClient, GetStatusSuccessResponseSchema } from '@evespace/esi-client';
+    `import { EsiClient } from '@evespace/esi-client';
+import { zGetStatusResponse } from '@evespace/esi-client/zod';
 export const client = new EsiClient({ baseUrl: 'https://example.test' });
-export const statusSchema = GetStatusSuccessResponseSchema;
+export const statusSchema = zGetStatusResponse;
 `,
   );
   await build({

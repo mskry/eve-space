@@ -16,12 +16,13 @@ Get corporation's members' titles
 - Domain import: `@evespace/esi-client/domains/corporation`
 - Domain index: [corporation](../domains/corporation.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCorporationClient } from '@evespace/esi-client/domains/corporation';
+import type { GetCorporationsCorporationIdMembersTitlesResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createCorporationClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.listMemberTitles(corporationId);
+const data: GetCorporationsCorporationIdMembersTitlesResponse = await client.listMemberTitles(corporationId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCorporationsCorporationIdMembersTitlesResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.corporation.listMemberTitles(corporationId);
+const data: GetCorporationsCorporationIdMembersTitlesResponse = await client.corporation.listMemberTitles(corporationId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.corporation.listMemberTitles(corporationId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCorporationsCorporationIdMembersTitlesData, GetCorporationsCorporationIdMembersTitlesResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const corporationId = 98000001;
 const arguments_: CallOperationArguments<'GetCorporationsCorporationIdMembersTitles'> = { path: { "corporation_id": corporationId } };
 
 const response = await client.callOperation('GetCorporationsCorporationIdMembersTitles', arguments_);
+const data: GetCorporationsCorporationIdMembersTitlesResponse = response.data;
 ```
 
 ## Parameters
@@ -77,14 +81,16 @@ const response = await client.callOperation('GetCorporationsCorporationIdMembers
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCorporationsCorporationIdMembersTitlesRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCorporationsCorporationIdMembersTitlesData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCorporationsCorporationIdMembersTitlesHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCorporationsCorporationIdMembersTitlesPath`.
+- Response type: `@evespace/esi-client/types` export `GetCorporationsCorporationIdMembersTitlesResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.corporation.withMetadata().listMemberTitles(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCorporationsCorporationIdMembersTitlesStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCorporationsCorporationIdMembersTitlesResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +122,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

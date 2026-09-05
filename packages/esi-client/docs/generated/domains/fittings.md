@@ -23,6 +23,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createFittingsClient } from '@evespace/esi-client/domains/fittings';
+import type { DeleteCharactersCharacterIdFittingsFittingIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -33,7 +34,7 @@ const characterId = 90000001;
 const fittingId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.deleteFitting(characterId, fittingId);
+const data: DeleteCharactersCharacterIdFittingsFittingIdResponse = await client.deleteFitting(characterId, fittingId);
 ```
 
 ## Aggregate client
@@ -42,6 +43,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { DeleteCharactersCharacterIdFittingsFittingIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -52,7 +54,7 @@ const characterId = 90000001;
 const fittingId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.fittings.deleteFitting(characterId, fittingId);
+const data: DeleteCharactersCharacterIdFittingsFittingIdResponse = await client.fittings.deleteFitting(characterId, fittingId);
 ```
 
 ## Shared concepts

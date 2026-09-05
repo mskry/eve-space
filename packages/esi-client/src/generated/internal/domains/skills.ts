@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdAttributesDescriptor,
@@ -19,13 +20,13 @@ import type {
   GetCharactersCharacterIdSkillsOptions,
 } from './skills-contract.js';
 import type {
-  GetCharactersCharacterIdAttributesInput,
-  GetCharactersCharacterIdAttributesOutput,
-  GetCharactersCharacterIdSkillqueueInput,
-  GetCharactersCharacterIdSkillqueueOutput,
-  GetCharactersCharacterIdSkillsInput,
-  GetCharactersCharacterIdSkillsOutput,
-} from '../../schemas/operations/skills.js';
+  GetCharactersCharacterIdAttributesData,
+  GetCharactersCharacterIdAttributesResponse,
+  GetCharactersCharacterIdSkillqueueData,
+  GetCharactersCharacterIdSkillqueueResponse,
+  GetCharactersCharacterIdSkillsData,
+  GetCharactersCharacterIdSkillsResponse,
+} from '../../types.gen.js';
 
 class SkillsDomainClientWithMetadataImplementation implements SkillsDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -35,18 +36,18 @@ class SkillsDomainClientWithMetadataImplementation implements SkillsDomainClient
     Object.freeze(this);
   }
 
-  getAttributes(characterId: NonNullable<GetCharactersCharacterIdAttributesInput['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<EsiResponse<GetCharactersCharacterIdAttributesOutput>> {
-    const arguments_: GetCharactersCharacterIdAttributesInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getAttributes(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<EsiResponse<GetCharactersCharacterIdAttributesResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdAttributesData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdAttributesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getSkillQueue(characterId: NonNullable<GetCharactersCharacterIdSkillqueueInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillqueueOutput>> {
-    const arguments_: GetCharactersCharacterIdSkillqueueInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getSkillQueue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillqueueResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdSkillqueueData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdSkillqueueDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getSkills(characterId: NonNullable<GetCharactersCharacterIdSkillsInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillsOutput>> {
-    const arguments_: GetCharactersCharacterIdSkillsInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getSkills(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillsResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdSkillsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdSkillsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -59,15 +60,15 @@ class SkillsDomainClientImplementation implements SkillsDomainClient {
     Object.freeze(this);
   }
 
-  getAttributes(characterId: NonNullable<GetCharactersCharacterIdAttributesInput['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<GetCharactersCharacterIdAttributesOutput> {
+  getAttributes(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<GetCharactersCharacterIdAttributesResponse> {
     return this.#metadata.getAttributes(characterId, options).then((response) => response.data);
   }
 
-  getSkillQueue(characterId: NonNullable<GetCharactersCharacterIdSkillqueueInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<GetCharactersCharacterIdSkillqueueOutput> {
+  getSkillQueue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<GetCharactersCharacterIdSkillqueueResponse> {
     return this.#metadata.getSkillQueue(characterId, options).then((response) => response.data);
   }
 
-  getSkills(characterId: NonNullable<GetCharactersCharacterIdSkillsInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<GetCharactersCharacterIdSkillsOutput> {
+  getSkills(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<GetCharactersCharacterIdSkillsResponse> {
     return this.#metadata.getSkills(characterId, options).then((response) => response.data);
   }
 

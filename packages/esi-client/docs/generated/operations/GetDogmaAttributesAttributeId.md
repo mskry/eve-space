@@ -16,30 +16,32 @@ Get attribute information
 - Domain import: `@evespace/esi-client/domains/dogma`
 - Domain index: [dogma](../domains/dogma.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createDogmaClient } from '@evespace/esi-client/domains/dogma';
+import type { GetDogmaAttributesAttributeIdResponse } from '@evespace/esi-client/types';
 
 const client = createDogmaClient();
 
 const attributeId = 12345;
 
-const data = await client.getAttribute(attributeId);
+const data: GetDogmaAttributesAttributeIdResponse = await client.getAttribute(attributeId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetDogmaAttributesAttributeIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const attributeId = 12345;
 
-const data = await client.dogma.getAttribute(attributeId);
+const data: GetDogmaAttributesAttributeIdResponse = await client.dogma.getAttribute(attributeId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.dogma.getAttribute(attributeId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetDogmaAttributesAttributeIdData, GetDogmaAttributesAttributeIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const attributeId = 12345;
 const arguments_: CallOperationArguments<'GetDogmaAttributesAttributeId'> = { path: { "attribute_id": attributeId } };
 
 const response = await client.callOperation('GetDogmaAttributesAttributeId', arguments_);
+const data: GetDogmaAttributesAttributeIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetDogmaAttributesAttributeId', arg
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetDogmaAttributesAttributeIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetDogmaAttributesAttributeIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetDogmaAttributesAttributeIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetDogmaAttributesAttributeIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetDogmaAttributesAttributeIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.dogma.withMetadata().getAttribute(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetDogmaAttributesAttributeIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetDogmaAttributesAttributeIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

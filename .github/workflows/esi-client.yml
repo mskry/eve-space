@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/esi-client.yml'
       - '.github/workflows/esi-client-publish.yml'
+      - '.node-version'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -15,6 +16,7 @@ on:
     paths:
       - '.github/workflows/esi-client.yml'
       - '.github/workflows/esi-client-publish.yml'
+      - '.node-version'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -43,7 +45,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.18.0
+          node-version-file: '.node-version'
 
       - name: Enable Corepack
         run: corepack enable
@@ -71,7 +73,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.18.0
+          node-version-file: '.node-version'
 
       - name: Enable Corepack
         run: corepack enable

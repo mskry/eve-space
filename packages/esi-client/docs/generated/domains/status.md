@@ -21,10 +21,11 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createStatusClient } from '@evespace/esi-client/domains/status';
+import type { GetStatusResponse } from '@evespace/esi-client/types';
 
 const client = createStatusClient();
 
-const data = await client.get();
+const data: GetStatusResponse = await client.get();
 ```
 
 ## Aggregate client
@@ -33,10 +34,11 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetStatusResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.status.get();
+const data: GetStatusResponse = await client.status.get();
 ```
 
 ## Shared concepts

@@ -42,7 +42,7 @@ afterEach(() => {
 })
 
 describe('universe resolution cache', () => {
-  test('persists successful names independently and reuses them as fresh values', async () => {
+  test('PostUniverseNames 90666561 persists its positive result independently', async () => {
     vi.useFakeTimers()
     vi.setSystemTime('2026-08-30T09:00:00.000Z')
     const { readUniverseNames, writeUniverseNames } =
@@ -63,7 +63,7 @@ describe('universe resolution cache', () => {
     )
   })
 
-  test('keeps a positive value available when a negative marker suppresses refresh', async () => {
+  test('PostUniverseNames 90666561 keeps stale success during bounded negative suppression', async () => {
     const { readUniverseNames, suppressUniverseNameIds, writeUniverseNames } =
       await import('../../src/universe/resolution-cache.js')
     const entry = { category: 'character', id: 90_666_561, name: 'Pilot' }
@@ -84,6 +84,7 @@ describe('universe resolution cache', () => {
       'EX',
       120,
     )
+    expect(transaction.del).not.toHaveBeenCalled()
   })
 
   test('stores ID lookups by normalized input name', async () => {

@@ -16,12 +16,13 @@ Delete a mail
 - Domain import: `@evespace/esi-client/domains/mail`
 - Domain index: [mail](../domains/mail.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMailClient } from '@evespace/esi-client/domains/mail';
+import type { DeleteCharactersCharacterIdMailMailIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -32,13 +33,14 @@ const characterId = 90000001;
 const mailId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.deleteMail(characterId, mailId);
+const data: DeleteCharactersCharacterIdMailMailIdResponse = await client.deleteMail(characterId, mailId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { DeleteCharactersCharacterIdMailMailIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -49,7 +51,7 @@ const characterId = 90000001;
 const mailId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.mail.deleteMail(characterId, mailId);
+const data: DeleteCharactersCharacterIdMailMailIdResponse = await client.mail.deleteMail(characterId, mailId);
 ```
 
 ## Generic-execution snippet
@@ -57,6 +59,7 @@ const data = await client.mail.deleteMail(characterId, mailId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { DeleteCharactersCharacterIdMailMailIdData, DeleteCharactersCharacterIdMailMailIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -72,6 +75,7 @@ const arguments_: CallOperationArguments<'DeleteCharactersCharacterIdMailMailId'
 const response = await client.callOperation('DeleteCharactersCharacterIdMailMailId', arguments_, {
   confirmMutation: true,
 });
+const data: DeleteCharactersCharacterIdMailMailIdResponse = response.data;
 ```
 
 ## Parameters
@@ -86,14 +90,16 @@ const response = await client.callOperation('DeleteCharactersCharacterIdMailMail
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `DeleteCharactersCharacterIdMailMailIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `DeleteCharactersCharacterIdMailMailIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zDeleteCharactersCharacterIdMailMailIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zDeleteCharactersCharacterIdMailMailIdPath`.
+- Response type: `@evespace/esi-client/types` export `DeleteCharactersCharacterIdMailMailIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.mail.withMetadata().deleteMail(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `DeleteCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema` | Mail deleted |
+| `204` | none | `@evespace/esi-client/zod` | `zDeleteCharactersCharacterIdMailMailIdResponse` | Mail deleted |
 
 ## Authentication
 
@@ -128,6 +134,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

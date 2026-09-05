@@ -22,6 +22,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createLoyaltyClient } from '@evespace/esi-client/domains/loyalty';
+import type { GetCharactersCharacterIdLoyaltyPointsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,7 +31,7 @@ const client = createLoyaltyClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listPoints(characterId);
+const data: GetCharactersCharacterIdLoyaltyPointsResponse = await client.listPoints(characterId);
 ```
 
 ## Aggregate client
@@ -39,6 +40,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdLoyaltyPointsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.loyalty.listPoints(characterId);
+const data: GetCharactersCharacterIdLoyaltyPointsResponse = await client.loyalty.listPoints(characterId);
 ```
 
 ## Shared concepts

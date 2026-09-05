@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetInsurancePricesDescriptor,
@@ -15,9 +16,9 @@ import type {
   GetInsurancePricesOptions,
 } from './insurance-contract.js';
 import type {
-  GetInsurancePricesInput,
-  GetInsurancePricesOutput,
-} from '../../schemas/operations/insurance.js';
+  GetInsurancePricesData,
+  GetInsurancePricesResponse,
+} from '../../types.gen.js';
 
 class InsuranceDomainClientWithMetadataImplementation implements InsuranceDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -27,8 +28,8 @@ class InsuranceDomainClientWithMetadataImplementation implements InsuranceDomain
     Object.freeze(this);
   }
 
-  listPrices(options?: GetInsurancePricesOptions): Promise<EsiResponse<GetInsurancePricesOutput>> {
-    const arguments_: GetInsurancePricesInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listPrices(options?: GetInsurancePricesOptions): Promise<EsiResponse<GetInsurancePricesResponse>> {
+    const arguments_: OperationArguments<GetInsurancePricesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetInsurancePricesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -41,7 +42,7 @@ class InsuranceDomainClientImplementation implements InsuranceDomainClient {
     Object.freeze(this);
   }
 
-  listPrices(options?: GetInsurancePricesOptions): Promise<GetInsurancePricesOutput> {
+  listPrices(options?: GetInsurancePricesOptions): Promise<GetInsurancePricesResponse> {
     return this.#metadata.listPrices(options).then((response) => response.data);
   }
 

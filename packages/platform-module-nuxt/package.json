@@ -6,7 +6,7 @@
   "type": "module",
   "sideEffects": false,
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=24.20.0"
   },
   "exports": {
     ".": {
@@ -26,16 +26,19 @@
   },
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
-    "@nuxt/kit": "^4.5.2",
-    "@nuxt/schema": "^4.5.2",
-    "@pinia/colada": "^1.4.2"
+    "@nuxt/kit": "catalog:",
+    "@nuxt/schema": "catalog:"
   },
   "devDependencies": {
-    "@nuxt/test-utils": "^4.1.0",
-    "@types/node": "^24.13.3",
-    "@vitest/coverage-v8": "^4.1.11",
-    "nuxt": "^4.5.2",
-    "typescript": "~5.9.3",
-    "vitest": "^4.1.11"
+    "@nuxt/test-utils": "catalog:",
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest4",
+    "nuxt": "catalog:",
+    "typescript": "catalog:tsapi",
+    "vitest": "catalog:vitest4"
+  },
+  "peerDependencies": {
+    "@pinia/colada": "catalog:"
   }
 }

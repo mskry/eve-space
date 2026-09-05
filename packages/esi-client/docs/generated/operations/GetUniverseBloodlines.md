@@ -16,26 +16,28 @@ Get bloodlines
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseBloodlinesResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
-const data = await client.listBloodlines();
+const data: GetUniverseBloodlinesResponse = await client.listBloodlines();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseBloodlinesResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.universe.listBloodlines();
+const data: GetUniverseBloodlinesResponse = await client.universe.listBloodlines();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.universe.listBloodlines();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseBloodlinesData, GetUniverseBloodlinesResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetUniverseBloodlines'> = {};
 
 const response = await client.callOperation('GetUniverseBloodlines', arguments_);
+const data: GetUniverseBloodlinesResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetUniverseBloodlines', arguments_)
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseBloodlinesRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseBloodlinesData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseBloodlinesHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseBloodlinesResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().listBloodlines(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseBloodlinesStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseBloodlinesResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

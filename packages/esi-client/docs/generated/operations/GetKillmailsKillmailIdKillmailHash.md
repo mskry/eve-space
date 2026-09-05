@@ -16,32 +16,34 @@ Get a single killmail
 - Domain import: `@evespace/esi-client/domains/killmails`
 - Domain index: [killmails](../domains/killmails.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createKillmailsClient } from '@evespace/esi-client/domains/killmails';
+import type { GetKillmailsKillmailIdKillmailHashResponse } from '@evespace/esi-client/types';
 
 const client = createKillmailsClient();
 
 const killmailId = 12345;
 const killmailHash = "0000000000000000000000000000000000000000";
 
-const data = await client.get(killmailId, killmailHash);
+const data: GetKillmailsKillmailIdKillmailHashResponse = await client.get(killmailId, killmailHash);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetKillmailsKillmailIdKillmailHashResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const killmailId = 12345;
 const killmailHash = "0000000000000000000000000000000000000000";
 
-const data = await client.killmails.get(killmailId, killmailHash);
+const data: GetKillmailsKillmailIdKillmailHashResponse = await client.killmails.get(killmailId, killmailHash);
 ```
 
 ## Generic-execution snippet
@@ -49,6 +51,7 @@ const data = await client.killmails.get(killmailId, killmailHash);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetKillmailsKillmailIdKillmailHashData, GetKillmailsKillmailIdKillmailHashResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -58,6 +61,7 @@ const killmailHash = "0000000000000000000000000000000000000000";
 const arguments_: CallOperationArguments<'GetKillmailsKillmailIdKillmailHash'> = { path: { "killmail_id": killmailId, "killmail_hash": killmailHash } };
 
 const response = await client.callOperation('GetKillmailsKillmailIdKillmailHash', arguments_);
+const data: GetKillmailsKillmailIdKillmailHashResponse = response.data;
 ```
 
 ## Parameters
@@ -72,14 +76,16 @@ const response = await client.callOperation('GetKillmailsKillmailIdKillmailHash'
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetKillmailsKillmailIdKillmailHashRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetKillmailsKillmailIdKillmailHashData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetKillmailsKillmailIdKillmailHashHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetKillmailsKillmailIdKillmailHashPath`.
+- Response type: `@evespace/esi-client/types` export `GetKillmailsKillmailIdKillmailHashResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.killmails.withMetadata().get(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetKillmailsKillmailIdKillmailHashStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetKillmailsKillmailIdKillmailHashResponse` | OK |
 
 ## Authentication
 
@@ -110,6 +116,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

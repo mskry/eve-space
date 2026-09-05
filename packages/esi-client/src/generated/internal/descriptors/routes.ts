@@ -4,14 +4,27 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  PostRouteData,
+  PostRouteResponse,
+} from '../../types.gen.js';
 import {
-  PostRouteRequestSchema,
-  PostRouteStatus200SuccessResponseSchema,
-  type PostRouteInput,
-  type PostRouteOutput,
-} from '../../schemas/operations/routes.js';
+  zPostRouteBody,
+  zPostRouteHeaders,
+  zPostRoutePath,
+  zPostRouteResponse,
+} from '../../zod.gen.js';
 
-export const PostRouteDescriptor: OperationExecutionDescriptor<PostRouteInput, PostRouteOutput> = {
+export const PostRouteRequestSchema: z.ZodType<OperationArguments<PostRouteData>> = composeOperationRequestSchema<OperationArguments<PostRouteData>>({
+  headers: { required: false, schema: zPostRouteHeaders },
+  path: { required: true, schema: zPostRoutePath },
+  body: { required: true, schema: zPostRouteBody },
+});
+
+export const PostRouteDescriptor: OperationExecutionDescriptor<OperationArguments<PostRouteData>, PostRouteResponse> = {
   operationId: "PostRoute",
   method: "POST",
   path: "/route/{origin_system_id}/{destination_system_id}",
@@ -26,7 +39,7 @@ export const PostRouteDescriptor: OperationExecutionDescriptor<PostRouteInput, P
   requestSchema: PostRouteRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: PostRouteStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostRouteResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

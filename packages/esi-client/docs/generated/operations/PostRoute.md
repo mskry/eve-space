@@ -16,36 +16,36 @@ Get route between two systems
 - Domain import: `@evespace/esi-client/domains/routes`
 - Domain index: [routes](../domains/routes.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createRoutesClient } from '@evespace/esi-client/domains/routes';
-import type { PostRouteOptions } from '@evespace/esi-client/domains/routes';
+import type { PostRouteResponse, PostRouteData } from '@evespace/esi-client/types';
 
 const client = createRoutesClient();
 
 const originSystemId = 30000142;
 const destinationSystemId = 30000142;
-declare const requestBody: NonNullable<PostRouteOptions['body']>;
+declare const requestBody: NonNullable<PostRouteData['body']>;
 
-const data = await client.calculate(originSystemId, destinationSystemId, { body: requestBody });
+const data: PostRouteResponse = await client.calculate(originSystemId, destinationSystemId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostRouteOptions } from '@evespace/esi-client/domains/routes';
+import type { PostRouteResponse, PostRouteData } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const originSystemId = 30000142;
 const destinationSystemId = 30000142;
-declare const requestBody: NonNullable<PostRouteOptions['body']>;
+declare const requestBody: NonNullable<PostRouteData['body']>;
 
-const data = await client.routes.calculate(originSystemId, destinationSystemId, { body: requestBody });
+const data: PostRouteResponse = await client.routes.calculate(originSystemId, destinationSystemId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -53,16 +53,18 @@ const data = await client.routes.calculate(originSystemId, destinationSystemId, 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostRouteData, PostRouteResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const originSystemId = 30000142;
 const destinationSystemId = 30000142;
-declare const requestBody: NonNullable<CallOperationArguments<'PostRoute'>['body']>;
+declare const requestBody: NonNullable<PostRouteData['body']>;
 
 const arguments_: CallOperationArguments<'PostRoute'> = { path: { "origin_system_id": originSystemId, "destination_system_id": destinationSystemId }, body: requestBody };
 
 const response = await client.callOperation('PostRoute', arguments_);
+const data: PostRouteResponse = response.data;
 ```
 
 ## Parameters
@@ -78,14 +80,16 @@ const response = await client.callOperation('PostRoute', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostRouteRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostRouteData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostRouteBody`; `headers` uses `@evespace/esi-client/zod` export `zPostRouteHeaders`; `path` uses `@evespace/esi-client/zod` export `zPostRoutePath`.
+- Response type: `@evespace/esi-client/types` export `PostRouteResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.routes.withMetadata().calculate(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `PostRouteStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zPostRouteResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +120,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

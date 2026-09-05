@@ -10,8 +10,13 @@ import type {
 } from '../../client/request.js';
 
 export interface OperationSchemaReference {
-  readonly module: '@evespace/esi-client/schemas';
+  readonly module: '@evespace/esi-client/types' | '@evespace/esi-client/zod';
   readonly export: string;
+}
+
+export interface OperationRequestSchemaReference {
+  readonly group: 'body' | 'headers' | 'path' | 'query';
+  readonly schema: OperationSchemaReference;
 }
 
 export interface SerializableOperationParameter {
@@ -53,7 +58,9 @@ export interface SerializableOperationManifestEntry {
   readonly http: { readonly method: OperationHttpMethod; readonly path: string };
   readonly parameters: readonly SerializableOperationParameter[];
   readonly requestBody: SerializableOperationRequestBody | null;
-  readonly requestSchema: OperationSchemaReference;
+  readonly requestType: OperationSchemaReference;
+  readonly requestSchemas: readonly OperationRequestSchemaReference[];
+  readonly responseType: OperationSchemaReference;
   readonly responses: readonly SerializableOperationResponse[];
   readonly authentication: { readonly required: boolean; readonly scopes: readonly string[] };
   readonly pagination: {
@@ -87,7 +94,7 @@ export interface SerializableOperationManifest {
     readonly notice: string;
     readonly specificationSha256: string;
   };
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly operations: readonly SerializableOperationManifestEntry[];
 }
 
@@ -213,9 +220,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "DeleteCharactersCharacterIdContactsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdContactsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdContactsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdContactsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "DeleteCharactersCharacterIdContactsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "DeleteCharactersCharacterIdContactsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -223,8 +257,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Contacts deleted",
           "schema": {
-            "export": "DeleteCharactersCharacterIdContactsStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zDeleteCharactersCharacterIdContactsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -348,9 +382,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "DeleteCharactersCharacterIdFittingsFittingIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdFittingsFittingIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdFittingsFittingIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "DeleteCharactersCharacterIdFittingsFittingIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "DeleteCharactersCharacterIdFittingsFittingIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -358,8 +412,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Fitting deleted",
           "schema": {
-            "export": "DeleteCharactersCharacterIdFittingsFittingIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zDeleteCharactersCharacterIdFittingsFittingIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -483,9 +537,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "DeleteCharactersCharacterIdMailLabelsLabelIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdMailLabelsLabelIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdMailLabelsLabelIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "DeleteCharactersCharacterIdMailLabelsLabelIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "DeleteCharactersCharacterIdMailLabelsLabelIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -493,8 +567,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Label deleted",
           "schema": {
-            "export": "DeleteCharactersCharacterIdMailLabelsLabelIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zDeleteCharactersCharacterIdMailLabelsLabelIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -618,9 +692,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "DeleteCharactersCharacterIdMailMailIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdMailMailIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zDeleteCharactersCharacterIdMailMailIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "DeleteCharactersCharacterIdMailMailIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "DeleteCharactersCharacterIdMailMailIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -628,8 +722,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Mail deleted",
           "schema": {
-            "export": "DeleteCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zDeleteCharactersCharacterIdMailMailIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -755,9 +849,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "DeleteFleetsFleetIdMembersMemberIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zDeleteFleetsFleetIdMembersMemberIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zDeleteFleetsFleetIdMembersMemberIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "DeleteFleetsFleetIdMembersMemberIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "DeleteFleetsFleetIdMembersMemberIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -765,8 +879,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Fleet member kicked",
           "schema": {
-            "export": "DeleteFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zDeleteFleetsFleetIdMembersMemberIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -892,9 +1006,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "DeleteFleetsFleetIdSquadsSquadIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zDeleteFleetsFleetIdSquadsSquadIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zDeleteFleetsFleetIdSquadsSquadIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "DeleteFleetsFleetIdSquadsSquadIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "DeleteFleetsFleetIdSquadsSquadIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -902,8 +1036,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Squad deleted",
           "schema": {
-            "export": "DeleteFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zDeleteFleetsFleetIdSquadsSquadIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -1029,9 +1163,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "DeleteFleetsFleetIdWingsWingIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zDeleteFleetsFleetIdWingsWingIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zDeleteFleetsFleetIdWingsWingIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "DeleteFleetsFleetIdWingsWingIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "DeleteFleetsFleetIdWingsWingIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1039,8 +1193,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Wing deleted",
           "schema": {
-            "export": "DeleteFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zDeleteFleetsFleetIdWingsWingIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -1139,9 +1293,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetAlliancesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetAlliancesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetAlliancesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetAlliancesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1156,8 +1323,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetAlliancesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetAlliancesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -1271,9 +1438,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetAlliancesAllianceIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetAlliancesAllianceIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetAlliancesAllianceIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1288,8 +1475,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetAlliancesAllianceIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetAlliancesAllianceIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -1423,9 +1610,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetAlliancesAllianceIdContactsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdContactsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdContactsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdContactsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetAlliancesAllianceIdContactsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetAlliancesAllianceIdContactsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1440,8 +1654,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetAlliancesAllianceIdContactsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetAlliancesAllianceIdContactsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -1555,9 +1769,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetAlliancesAllianceIdContactsLabelsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdContactsLabelsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdContactsLabelsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetAlliancesAllianceIdContactsLabelsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetAlliancesAllianceIdContactsLabelsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1572,8 +1806,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetAlliancesAllianceIdContactsLabelsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetAlliancesAllianceIdContactsLabelsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -1685,9 +1919,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetAlliancesAllianceIdCorporationsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdCorporationsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdCorporationsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetAlliancesAllianceIdCorporationsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetAlliancesAllianceIdCorporationsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1702,8 +1956,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetAlliancesAllianceIdCorporationsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetAlliancesAllianceIdCorporationsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -1810,9 +2064,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetAlliancesAllianceIdIconsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdIconsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetAlliancesAllianceIdIconsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetAlliancesAllianceIdIconsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetAlliancesAllianceIdIconsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1827,8 +2101,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetAlliancesAllianceIdIconsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetAlliancesAllianceIdIconsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -1957,9 +2231,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersAccessListsDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersAccessListsDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersAccessListsDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersAccessListsDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersAccessListsDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -1974,8 +2268,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersAccessListsDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersAccessListsDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -2090,9 +2384,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersAccessListsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersAccessListsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersAccessListsListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersAccessListsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersAccessListsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -2107,8 +2421,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersAccessListsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersAccessListsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -2222,9 +2536,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdAgentsResearchRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdAgentsResearchHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdAgentsResearchPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdAgentsResearchData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdAgentsResearchResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -2239,8 +2573,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdAgentsResearchStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdAgentsResearchResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -2374,9 +2708,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdAssetsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdAssetsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdAssetsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdAssetsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdAssetsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdAssetsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -2391,8 +2752,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdAssetsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdAssetsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -2506,9 +2867,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdAttributesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdAttributesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdAttributesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdAttributesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdAttributesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -2523,8 +2904,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdAttributesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdAttributesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -2658,9 +3039,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdBlueprintsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdBlueprintsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdBlueprintsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdBlueprintsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdBlueprintsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdBlueprintsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -2675,8 +3083,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdBlueprintsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdBlueprintsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -2805,9 +3213,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdCalendarRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCalendarHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCalendarPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCalendarQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdCalendarData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdCalendarResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -2822,8 +3257,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdCalendarStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdCalendarResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -2952,9 +3387,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdCalendarEventIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCalendarEventIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCalendarEventIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdCalendarEventIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdCalendarEventIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -2969,8 +3424,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdCalendarEventIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdCalendarEventIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -3099,9 +3554,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdCalendarEventIdAttendeesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCalendarEventIdAttendeesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCalendarEventIdAttendeesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdCalendarEventIdAttendeesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdCalendarEventIdAttendeesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -3116,8 +3591,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdCalendarEventIdAttendeesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdCalendarEventIdAttendeesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -3231,9 +3706,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdClonesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdClonesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdClonesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdClonesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdClonesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -3248,8 +3743,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdClonesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdClonesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -3383,9 +3878,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdContactsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContactsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContactsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContactsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdContactsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdContactsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -3400,8 +3922,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdContactsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdContactsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -3515,9 +4037,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdContactsLabelsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContactsLabelsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContactsLabelsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdContactsLabelsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdContactsLabelsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -3532,8 +4074,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdContactsLabelsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdContactsLabelsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -3667,9 +4209,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdContractsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContractsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContractsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContractsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdContractsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdContractsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -3684,8 +4253,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdContractsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdContractsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -3814,9 +4383,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdContractsContractIdBidsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContractsContractIdBidsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContractsContractIdBidsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdContractsContractIdBidsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdContractsContractIdBidsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -3831,8 +4420,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdContractsContractIdBidsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdContractsContractIdBidsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -3961,9 +4550,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdContractsContractIdItemsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContractsContractIdItemsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdContractsContractIdItemsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdContractsContractIdItemsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdContractsContractIdItemsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -3978,8 +4587,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdContractsContractIdItemsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdContractsContractIdItemsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -4091,9 +4700,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdCorporationhistoryRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCorporationhistoryHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdCorporationhistoryPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdCorporationhistoryData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdCorporationhistoryResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -4108,8 +4737,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdCorporationhistoryStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdCorporationhistoryResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -4223,9 +4852,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdFatigueRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFatigueHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFatiguePath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdFatigueData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdFatigueResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -4240,8 +4889,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdFatigueStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdFatigueResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -4355,9 +5004,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdFittingsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFittingsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFittingsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdFittingsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdFittingsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -4372,8 +5041,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdFittingsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdFittingsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -4487,9 +5156,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdFleetRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFleetHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFleetPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdFleetData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdFleetResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -4504,8 +5193,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdFleetStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdFleetResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -4614,9 +5303,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdFwStatsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFwStatsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdFwStatsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdFwStatsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdFwStatsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -4631,8 +5340,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdFwStatsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdFwStatsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -4746,9 +5455,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdImplantsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdImplantsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdImplantsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdImplantsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdImplantsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -4763,8 +5492,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdImplantsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdImplantsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -4892,9 +5621,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdIndustryJobsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdIndustryJobsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdIndustryJobsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdIndustryJobsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdIndustryJobsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdIndustryJobsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -4909,8 +5665,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdIndustryJobsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdIndustryJobsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -5044,9 +5800,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdKillmailsRecentRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdKillmailsRecentHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdKillmailsRecentPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdKillmailsRecentQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdKillmailsRecentData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdKillmailsRecentResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -5061,8 +5844,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdKillmailsRecentStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdKillmailsRecentResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -5176,9 +5959,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdLocationRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdLocationHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdLocationPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdLocationData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdLocationResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -5193,8 +5996,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdLocationStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdLocationResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -5308,9 +6111,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdLoyaltyPointsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdLoyaltyPointsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdLoyaltyPointsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdLoyaltyPointsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdLoyaltyPointsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -5325,8 +6148,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdLoyaltyPointsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdLoyaltyPointsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -5476,9 +6299,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdMailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdMailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdMailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -5493,8 +6343,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdMailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdMailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -5608,9 +6458,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdMailLabelsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailLabelsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailLabelsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdMailLabelsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdMailLabelsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -5625,8 +6495,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdMailLabelsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdMailLabelsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -5740,9 +6610,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdMailListsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailListsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailListsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdMailListsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdMailListsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -5757,8 +6647,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdMailListsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdMailListsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -5887,9 +6777,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdMailMailIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailMailIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMailMailIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdMailMailIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdMailMailIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -5904,8 +6814,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdMailMailIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdMailMailIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6019,9 +6929,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdMedalsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMedalsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMedalsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdMedalsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdMedalsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -6036,8 +6966,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdMedalsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdMedalsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6171,9 +7101,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdMiningRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMiningHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMiningPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdMiningQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdMiningData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdMiningResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -6188,8 +7145,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdMiningStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdMiningResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6303,9 +7260,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdNotificationsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdNotificationsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdNotificationsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdNotificationsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdNotificationsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -6320,8 +7297,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdNotificationsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdNotificationsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6435,9 +7412,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdNotificationsContactsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdNotificationsContactsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdNotificationsContactsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdNotificationsContactsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdNotificationsContactsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -6452,8 +7449,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdNotificationsContactsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdNotificationsContactsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6567,9 +7564,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdOnlineRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdOnlineHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdOnlinePath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdOnlineData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdOnlineResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -6584,8 +7601,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdOnlineStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdOnlineResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6699,9 +7716,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdOrdersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdOrdersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdOrdersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdOrdersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdOrdersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -6716,8 +7753,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdOrdersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdOrdersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6851,9 +7888,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdOrdersHistoryRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdOrdersHistoryHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdOrdersHistoryPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdOrdersHistoryQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdOrdersHistoryData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdOrdersHistoryResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -6868,8 +7932,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdOrdersHistoryStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdOrdersHistoryResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -6983,9 +8047,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdPlanetsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdPlanetsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdPlanetsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdPlanetsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdPlanetsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -7000,8 +8084,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdPlanetsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdPlanetsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -7130,9 +8214,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdPlanetsPlanetIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdPlanetsPlanetIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdPlanetsPlanetIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdPlanetsPlanetIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdPlanetsPlanetIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -7147,8 +8251,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdPlanetsPlanetIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdPlanetsPlanetIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -7255,9 +8359,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdPortraitRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdPortraitHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdPortraitPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdPortraitData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdPortraitResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -7272,8 +8396,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdPortraitStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdPortraitResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -7387,9 +8511,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdRolesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdRolesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdRolesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdRolesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdRolesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -7404,8 +8548,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdRolesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdRolesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -7582,9 +8726,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdSearchRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdSearchHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdSearchPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdSearchQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdSearchData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdSearchResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -7599,8 +8770,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdSearchStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdSearchResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -7714,9 +8885,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdShipRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdShipHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdShipPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdShipData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdShipResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -7731,8 +8922,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdShipStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdShipResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -7847,9 +9038,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdSkillqueueRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdSkillqueueHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdSkillqueuePath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdSkillqueueData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdSkillqueueResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -7867,8 +9078,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdSkillqueueStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdSkillqueueResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -7983,9 +9194,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdSkillsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdSkillsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdSkillsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdSkillsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdSkillsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8000,8 +9231,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdSkillsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdSkillsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -8115,9 +9346,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdStandingsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdStandingsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdStandingsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdStandingsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdStandingsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8132,8 +9383,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdStandingsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdStandingsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -8247,9 +9498,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdTitlesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdTitlesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdTitlesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdTitlesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdTitlesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8264,8 +9535,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdTitlesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdTitlesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -8379,9 +9650,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdWalletRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdWalletData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdWalletResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8396,8 +9687,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdWalletStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdWalletResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -8531,9 +9822,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdWalletJournalRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletJournalHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletJournalPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletJournalQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdWalletJournalData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdWalletJournalResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8548,8 +9866,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdWalletJournalStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdWalletJournalResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -8678,9 +9996,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCharacterIdWalletTransactionsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletTransactionsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletTransactionsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersCharacterIdWalletTransactionsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCharacterIdWalletTransactionsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCharacterIdWalletTransactionsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8695,8 +10040,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCharacterIdWalletTransactionsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCharacterIdWalletTransactionsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -8811,9 +10156,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCosmeticsSkinrRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCosmeticsSkinrHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCosmeticsSkinrPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCosmeticsSkinrData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCosmeticsSkinrResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8828,8 +10193,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCosmeticsSkinrStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCosmeticsSkinrResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -8944,9 +10309,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersCosmeticsSkinrComponentsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersCosmeticsSkinrComponentsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersCosmeticsSkinrComponentsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersCosmeticsSkinrComponentsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersCosmeticsSkinrComponentsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -8961,8 +10346,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersCosmeticsSkinrComponentsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersCosmeticsSkinrComponentsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -9076,9 +10461,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -9093,8 +10498,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -9209,9 +10614,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersFreelanceJobsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersFreelanceJobsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersFreelanceJobsListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersFreelanceJobsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersFreelanceJobsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -9226,8 +10651,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersFreelanceJobsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersFreelanceJobsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -9356,9 +10781,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersFreelanceJobsParticipationRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersFreelanceJobsParticipationHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersFreelanceJobsParticipationPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersFreelanceJobsParticipationData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersFreelanceJobsParticipationResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -9373,8 +10818,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersFreelanceJobsParticipationStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersFreelanceJobsParticipationResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -9503,9 +10948,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersMercenaryTacticalOperationsDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersMercenaryTacticalOperationsDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersMercenaryTacticalOperationsDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersMercenaryTacticalOperationsDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersMercenaryTacticalOperationsDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -9520,8 +10985,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersMercenaryTacticalOperationsDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersMercenaryTacticalOperationsDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -9636,9 +11101,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersMercenaryTacticalOperationsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersMercenaryTacticalOperationsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersMercenaryTacticalOperationsListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersMercenaryTacticalOperationsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersMercenaryTacticalOperationsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -9653,8 +11138,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersMercenaryTacticalOperationsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersMercenaryTacticalOperationsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -9815,9 +11300,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersMilitaryCampaignsObjectivesListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersMilitaryCampaignsObjectivesListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersMilitaryCampaignsObjectivesListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersMilitaryCampaignsObjectivesListingQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersMilitaryCampaignsObjectivesListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersMilitaryCampaignsObjectivesListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -9832,8 +11344,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersMilitaryCampaignsObjectivesListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -9962,9 +11474,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersMilitaryCampaignsObjectivesParticipationRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersMilitaryCampaignsObjectivesParticipationHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersMilitaryCampaignsObjectivesParticipationPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersMilitaryCampaignsObjectivesParticipationData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersMilitaryCampaignsObjectivesParticipationResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -9979,8 +11511,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersMilitaryCampaignsObjectivesParticipationStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersMilitaryCampaignsObjectivesParticipationResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -10139,9 +11671,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersParagonHubSkinrRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersParagonHubSkinrHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersParagonHubSkinrPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCharactersParagonHubSkinrQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersParagonHubSkinrData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersParagonHubSkinrResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -10156,8 +11715,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersParagonHubSkinrStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersParagonHubSkinrResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -10286,9 +11845,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersStructuresMercenaryDensDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersStructuresMercenaryDensDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersStructuresMercenaryDensDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersStructuresMercenaryDensDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersStructuresMercenaryDensDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -10303,8 +11882,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersStructuresMercenaryDensDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersStructuresMercenaryDensDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -10419,9 +11998,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCharactersStructuresMercenaryDensListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCharactersStructuresMercenaryDensListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCharactersStructuresMercenaryDensListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCharactersStructuresMercenaryDensListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCharactersStructuresMercenaryDensListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -10436,8 +12035,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCharactersStructuresMercenaryDensListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCharactersStructuresMercenaryDensListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -10571,9 +12170,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetContractsPublicBidsContractIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetContractsPublicBidsContractIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetContractsPublicBidsContractIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetContractsPublicBidsContractIdQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetContractsPublicBidsContractIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetContractsPublicBidsContractIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -10588,8 +12214,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetContractsPublicBidsContractIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetContractsPublicBidsContractIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         },
@@ -10598,8 +12224,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Contract expired or recently accepted by player",
           "schema": {
-            "export": "GetContractsPublicBidsContractIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetContractsPublicBidsContractIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -10733,9 +12359,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetContractsPublicItemsContractIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetContractsPublicItemsContractIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetContractsPublicItemsContractIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetContractsPublicItemsContractIdQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetContractsPublicItemsContractIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetContractsPublicItemsContractIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -10750,8 +12403,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetContractsPublicItemsContractIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetContractsPublicItemsContractIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         },
@@ -10760,8 +12413,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Contract expired or recently accepted by player",
           "schema": {
-            "export": "GetContractsPublicItemsContractIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetContractsPublicItemsContractIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -10895,9 +12548,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetContractsPublicRegionIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetContractsPublicRegionIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetContractsPublicRegionIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetContractsPublicRegionIdQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetContractsPublicRegionIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetContractsPublicRegionIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -10912,8 +12592,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetContractsPublicRegionIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetContractsPublicRegionIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -11047,9 +12727,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationCorporationIdMiningExtractionsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningExtractionsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningExtractionsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningExtractionsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationCorporationIdMiningExtractionsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationCorporationIdMiningExtractionsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -11064,8 +12771,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationCorporationIdMiningExtractionsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationCorporationIdMiningExtractionsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -11199,9 +12906,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationCorporationIdMiningObserversRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningObserversHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningObserversPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningObserversQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationCorporationIdMiningObserversData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationCorporationIdMiningObserversResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -11216,8 +12950,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationCorporationIdMiningObserversStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationCorporationIdMiningObserversResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -11366,9 +13100,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationCorporationIdMiningObserversObserverIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningObserversObserverIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningObserversObserverIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationCorporationIdMiningObserversObserverIdQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationCorporationIdMiningObserversObserverIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationCorporationIdMiningObserversObserverIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -11383,8 +13144,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationCorporationIdMiningObserversObserverIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationCorporationIdMiningObserversObserverIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -11498,9 +13259,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -11515,8 +13296,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -11628,9 +13409,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdAlliancehistoryRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdAlliancehistoryHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdAlliancehistoryPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdAlliancehistoryData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdAlliancehistoryResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -11645,8 +13446,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdAlliancehistoryStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdAlliancehistoryResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -11780,9 +13581,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdAssetsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdAssetsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdAssetsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdAssetsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdAssetsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdAssetsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -11797,8 +13625,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdAssetsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdAssetsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -11932,9 +13760,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdBlueprintsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdBlueprintsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdBlueprintsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdBlueprintsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdBlueprintsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdBlueprintsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -11949,8 +13804,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdBlueprintsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdBlueprintsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -12084,9 +13939,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdContactsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContactsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContactsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContactsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdContactsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdContactsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -12101,8 +13983,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdContactsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdContactsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -12216,9 +14098,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdContactsLabelsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContactsLabelsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContactsLabelsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdContactsLabelsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdContactsLabelsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -12233,8 +14135,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdContactsLabelsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdContactsLabelsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -12368,9 +14270,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdContainersLogsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContainersLogsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContainersLogsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContainersLogsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdContainersLogsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdContainersLogsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -12385,8 +14314,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdContainersLogsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdContainersLogsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -12520,9 +14449,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdContractsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdContractsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdContractsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -12537,8 +14493,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdContractsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdContractsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -12687,9 +14643,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdContractsContractIdBidsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsContractIdBidsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsContractIdBidsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsContractIdBidsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdContractsContractIdBidsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdContractsContractIdBidsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -12704,8 +14687,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdContractsContractIdBidsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdContractsContractIdBidsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -12834,9 +14817,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdContractsContractIdItemsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsContractIdItemsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdContractsContractIdItemsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdContractsContractIdItemsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdContractsContractIdItemsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -12851,8 +14854,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdContractsContractIdItemsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdContractsContractIdItemsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -12986,9 +14989,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdCustomsOfficesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdCustomsOfficesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdCustomsOfficesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdCustomsOfficesQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdCustomsOfficesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdCustomsOfficesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13003,8 +15033,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdCustomsOfficesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdCustomsOfficesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -13118,9 +15148,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdDivisionsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdDivisionsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdDivisionsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdDivisionsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdDivisionsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13135,8 +15185,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdDivisionsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdDivisionsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -13250,9 +15300,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdFacilitiesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdFacilitiesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdFacilitiesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdFacilitiesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdFacilitiesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13267,8 +15337,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdFacilitiesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdFacilitiesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -13377,9 +15447,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdFwStatsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdFwStatsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdFwStatsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdFwStatsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdFwStatsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13394,8 +15484,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdFwStatsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdFwStatsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -13507,9 +15597,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdIconsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdIconsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdIconsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdIconsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdIconsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13524,8 +15634,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdIconsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdIconsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -13674,9 +15784,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdIndustryJobsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdIndustryJobsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdIndustryJobsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdIndustryJobsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdIndustryJobsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdIndustryJobsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13691,8 +15828,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdIndustryJobsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdIndustryJobsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -13826,9 +15963,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdKillmailsRecentRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdKillmailsRecentHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdKillmailsRecentPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdKillmailsRecentQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdKillmailsRecentData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdKillmailsRecentResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13843,8 +16007,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdKillmailsRecentStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdKillmailsRecentResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -13978,9 +16142,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdMedalsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMedalsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMedalsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMedalsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdMedalsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdMedalsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -13995,8 +16186,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdMedalsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdMedalsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -14130,9 +16321,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdMedalsIssuedRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMedalsIssuedHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMedalsIssuedPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMedalsIssuedQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdMedalsIssuedData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdMedalsIssuedResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -14147,8 +16365,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdMedalsIssuedStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdMedalsIssuedResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -14262,9 +16480,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdMembersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdMembersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdMembersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -14279,8 +16517,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdMembersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdMembersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -14394,9 +16632,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdMembersLimitRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembersLimitHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembersLimitPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdMembersLimitData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdMembersLimitResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -14411,8 +16669,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdMembersLimitStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdMembersLimitResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -14526,9 +16784,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdMembersTitlesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembersTitlesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembersTitlesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdMembersTitlesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdMembersTitlesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -14543,8 +16821,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdMembersTitlesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdMembersTitlesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -14658,9 +16936,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdMembertrackingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembertrackingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdMembertrackingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdMembertrackingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdMembertrackingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -14675,8 +16973,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdMembertrackingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdMembertrackingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -14810,9 +17108,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdOrdersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdOrdersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdOrdersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdOrdersQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdOrdersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdOrdersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -14827,8 +17152,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdOrdersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdOrdersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -14962,9 +17287,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdOrdersHistoryRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdOrdersHistoryHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdOrdersHistoryPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdOrdersHistoryQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdOrdersHistoryData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdOrdersHistoryResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -14979,8 +17331,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdOrdersHistoryStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdOrdersHistoryResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -15094,9 +17446,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdRolesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdRolesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdRolesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdRolesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdRolesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -15111,8 +17483,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdRolesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdRolesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -15246,9 +17618,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdRolesHistoryRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdRolesHistoryHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdRolesHistoryPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdRolesHistoryQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdRolesHistoryData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdRolesHistoryResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -15263,8 +17662,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdRolesHistoryStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdRolesHistoryResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -15398,9 +17797,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdShareholdersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdShareholdersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdShareholdersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdShareholdersQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdShareholdersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdShareholdersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -15415,8 +17841,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdShareholdersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdShareholdersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -15550,9 +17976,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdStandingsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStandingsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStandingsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStandingsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdStandingsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdStandingsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -15567,8 +18020,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdStandingsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdStandingsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -15702,9 +18155,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdStarbasesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStarbasesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStarbasesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStarbasesQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdStarbasesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdStarbasesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -15719,8 +18199,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdStarbasesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdStarbasesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -15864,9 +18344,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdStarbasesStarbaseIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStarbasesStarbaseIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStarbasesStarbaseIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStarbasesStarbaseIdQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdStarbasesStarbaseIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdStarbasesStarbaseIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -15881,8 +18388,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdStarbasesStarbaseIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdStarbasesStarbaseIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -16016,9 +18523,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdStructuresRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStructuresHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStructuresPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdStructuresQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdStructuresData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdStructuresResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -16033,8 +18567,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdStructuresStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdStructuresResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -16148,9 +18682,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdTitlesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdTitlesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdTitlesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdTitlesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdTitlesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -16165,8 +18719,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdTitlesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdTitlesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -16280,9 +18834,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdWalletsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdWalletsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdWalletsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -16297,8 +18871,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdWalletsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdWalletsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -16447,9 +19021,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdWalletsDivisionJournalRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsDivisionJournalHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsDivisionJournalPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsDivisionJournalQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdWalletsDivisionJournalData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdWalletsDivisionJournalResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -16464,8 +19065,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdWalletsDivisionJournalStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdWalletsDivisionJournalResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -16609,9 +19210,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsCorporationIdWalletsDivisionTransactionsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsDivisionTransactionsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsDivisionTransactionsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsCorporationIdWalletsDivisionTransactionsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsCorporationIdWalletsDivisionTransactionsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsCorporationIdWalletsDivisionTransactionsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -16626,8 +19254,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsCorporationIdWalletsDivisionTransactionsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsCorporationIdWalletsDivisionTransactionsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -16786,9 +19414,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsFreelanceJobsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsFreelanceJobsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsFreelanceJobsListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsFreelanceJobsListingQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsFreelanceJobsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsFreelanceJobsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -16803,8 +19458,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsFreelanceJobsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsFreelanceJobsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -16977,9 +19632,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsFreelanceJobsParticipantsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsFreelanceJobsParticipantsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsFreelanceJobsParticipantsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsFreelanceJobsParticipantsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsFreelanceJobsParticipantsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsFreelanceJobsParticipantsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -16994,8 +19676,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsFreelanceJobsParticipantsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsFreelanceJobsParticipantsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -17089,9 +19771,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsNpccorpsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsNpccorpsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsNpccorpsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsNpccorpsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -17106,8 +19801,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsNpccorpsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsNpccorpsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -17250,9 +19945,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsProjectsContributionRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsProjectsContributionHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsProjectsContributionPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsProjectsContributionData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsProjectsContributionResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -17267,8 +19982,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsProjectsContributionStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsProjectsContributionResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -17441,9 +20156,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsProjectsContributorsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsProjectsContributorsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsProjectsContributorsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsProjectsContributorsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsProjectsContributorsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsProjectsContributorsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -17458,8 +20200,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsProjectsContributorsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsProjectsContributorsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -17588,9 +20330,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsProjectsDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsProjectsDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsProjectsDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsProjectsDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsProjectsDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -17605,8 +20367,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsProjectsDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsProjectsDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -17788,9 +20550,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsProjectsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsProjectsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsProjectsListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetCorporationsProjectsListingQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsProjectsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsProjectsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -17805,8 +20594,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsProjectsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsProjectsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -17935,9 +20724,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsStructuresSkyhooksDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsStructuresSkyhooksDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsStructuresSkyhooksDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsStructuresSkyhooksDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsStructuresSkyhooksDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -17952,8 +20761,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsStructuresSkyhooksDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsStructuresSkyhooksDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18068,9 +20877,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsStructuresSkyhooksListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsStructuresSkyhooksListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsStructuresSkyhooksListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsStructuresSkyhooksListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsStructuresSkyhooksListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18085,8 +20914,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsStructuresSkyhooksListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsStructuresSkyhooksListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18215,9 +21044,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsStructuresSovereigntyHubsDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsStructuresSovereigntyHubsDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsStructuresSovereigntyHubsDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsStructuresSovereigntyHubsDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsStructuresSovereigntyHubsDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18232,8 +21081,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsStructuresSovereigntyHubsDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsStructuresSovereigntyHubsDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18348,9 +21197,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCorporationsStructuresSovereigntyHubsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCorporationsStructuresSovereigntyHubsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCorporationsStructuresSovereigntyHubsListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCorporationsStructuresSovereigntyHubsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCorporationsStructuresSovereigntyHubsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18365,8 +21234,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCorporationsStructuresSovereigntyHubsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCorporationsStructuresSovereigntyHubsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18480,9 +21349,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetCosmeticsSkinrRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetCosmeticsSkinrHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetCosmeticsSkinrPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetCosmeticsSkinrData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetCosmeticsSkinrResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18497,8 +21386,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetCosmeticsSkinrStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetCosmeticsSkinrResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18592,9 +21481,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetDogmaAttributesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetDogmaAttributesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetDogmaAttributesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetDogmaAttributesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18609,8 +21511,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetDogmaAttributesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetDogmaAttributesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18719,9 +21621,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetDogmaAttributesAttributeIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetDogmaAttributesAttributeIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetDogmaAttributesAttributeIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetDogmaAttributesAttributeIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetDogmaAttributesAttributeIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18736,8 +21658,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetDogmaAttributesAttributeIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetDogmaAttributesAttributeIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18859,9 +21781,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetDogmaDynamicItemsTypeIdItemIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetDogmaDynamicItemsTypeIdItemIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetDogmaDynamicItemsTypeIdItemIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetDogmaDynamicItemsTypeIdItemIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetDogmaDynamicItemsTypeIdItemIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18876,8 +21818,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetDogmaDynamicItemsTypeIdItemIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetDogmaDynamicItemsTypeIdItemIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -18971,9 +21913,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetDogmaEffectsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetDogmaEffectsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetDogmaEffectsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetDogmaEffectsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -18988,8 +21943,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetDogmaEffectsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetDogmaEffectsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -19098,9 +22053,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetDogmaEffectsEffectIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetDogmaEffectsEffectIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetDogmaEffectsEffectIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetDogmaEffectsEffectIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetDogmaEffectsEffectIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -19115,8 +22090,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetDogmaEffectsEffectIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetDogmaEffectsEffectIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -19232,9 +22207,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFleetsFleetIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFleetsFleetIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetFleetsFleetIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFleetsFleetIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFleetsFleetIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -19249,8 +22244,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFleetsFleetIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFleetsFleetIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -19366,9 +22361,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFleetsFleetIdMembersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFleetsFleetIdMembersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetFleetsFleetIdMembersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFleetsFleetIdMembersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFleetsFleetIdMembersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -19383,8 +22398,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFleetsFleetIdMembersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFleetsFleetIdMembersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -19500,9 +22515,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFleetsFleetIdWingsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFleetsFleetIdWingsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetFleetsFleetIdWingsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFleetsFleetIdWingsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFleetsFleetIdWingsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -19517,8 +22552,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFleetsFleetIdWingsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFleetsFleetIdWingsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -19631,9 +22666,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFreelanceJobsDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFreelanceJobsDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetFreelanceJobsDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFreelanceJobsDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFreelanceJobsDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -19648,8 +22703,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFreelanceJobsDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFreelanceJobsDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -19806,9 +22861,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFreelanceJobsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFreelanceJobsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetFreelanceJobsListingQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFreelanceJobsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFreelanceJobsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -19823,8 +22898,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFreelanceJobsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFreelanceJobsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -19918,9 +22993,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFwLeaderboardsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFwLeaderboardsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFwLeaderboardsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFwLeaderboardsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -19935,8 +23023,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFwLeaderboardsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFwLeaderboardsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20030,9 +23118,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFwLeaderboardsCharactersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFwLeaderboardsCharactersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFwLeaderboardsCharactersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFwLeaderboardsCharactersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20047,8 +23148,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFwLeaderboardsCharactersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFwLeaderboardsCharactersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20142,9 +23243,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFwLeaderboardsCorporationsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFwLeaderboardsCorporationsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFwLeaderboardsCorporationsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFwLeaderboardsCorporationsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20159,8 +23273,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFwLeaderboardsCorporationsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFwLeaderboardsCorporationsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20254,9 +23368,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFwStatsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFwStatsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFwStatsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFwStatsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20271,8 +23398,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFwStatsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFwStatsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20371,9 +23498,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFwSystemsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFwSystemsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFwSystemsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFwSystemsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20388,8 +23528,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFwSystemsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFwSystemsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20483,9 +23623,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetFwWarsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetFwWarsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetFwWarsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetFwWarsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20500,8 +23653,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetFwWarsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetFwWarsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20600,9 +23753,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetIncursionsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetIncursionsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetIncursionsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetIncursionsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20617,8 +23783,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetIncursionsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetIncursionsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20717,9 +23883,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetIndustryFacilitiesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetIndustryFacilitiesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetIndustryFacilitiesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetIndustryFacilitiesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20734,8 +23913,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetIndustryFacilitiesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetIndustryFacilitiesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20834,9 +24013,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetIndustrySystemsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetIndustrySystemsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetIndustrySystemsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetIndustrySystemsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20851,8 +24043,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetIndustrySystemsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetIndustrySystemsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -20951,9 +24143,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetInsurancePricesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetInsurancePricesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetInsurancePricesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetInsurancePricesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -20968,8 +24173,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetInsurancePricesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetInsurancePricesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -21097,9 +24302,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetKillmailsKillmailIdKillmailHashRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetKillmailsKillmailIdKillmailHashHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetKillmailsKillmailIdKillmailHashPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetKillmailsKillmailIdKillmailHashData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetKillmailsKillmailIdKillmailHashResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -21114,8 +24339,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetKillmailsKillmailIdKillmailHashStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetKillmailsKillmailIdKillmailHashResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -21222,9 +24447,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetLoyaltyStoresCorporationIdOffersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetLoyaltyStoresCorporationIdOffersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetLoyaltyStoresCorporationIdOffersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetLoyaltyStoresCorporationIdOffersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetLoyaltyStoresCorporationIdOffersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -21239,8 +24484,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetLoyaltyStoresCorporationIdOffersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetLoyaltyStoresCorporationIdOffersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -21334,9 +24579,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMarketsGroupsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMarketsGroupsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMarketsGroupsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMarketsGroupsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -21351,8 +24609,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMarketsGroupsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMarketsGroupsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -21461,9 +24719,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMarketsGroupsMarketGroupIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMarketsGroupsMarketGroupIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMarketsGroupsMarketGroupIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMarketsGroupsMarketGroupIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMarketsGroupsMarketGroupIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -21478,8 +24756,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMarketsGroupsMarketGroupIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMarketsGroupsMarketGroupIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -21578,9 +24856,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMarketsPricesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMarketsPricesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMarketsPricesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMarketsPricesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -21595,8 +24886,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMarketsPricesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMarketsPricesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -21720,9 +25011,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMarketsRegionIdHistoryRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMarketsRegionIdHistoryHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMarketsRegionIdHistoryPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetMarketsRegionIdHistoryQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMarketsRegionIdHistoryData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMarketsRegionIdHistoryResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -21737,8 +25055,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMarketsRegionIdHistoryStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMarketsRegionIdHistoryResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -21907,9 +25225,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMarketsRegionIdOrdersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMarketsRegionIdOrdersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMarketsRegionIdOrdersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetMarketsRegionIdOrdersQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMarketsRegionIdOrdersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMarketsRegionIdOrdersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -21924,8 +25269,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMarketsRegionIdOrdersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMarketsRegionIdOrdersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22059,9 +25404,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMarketsRegionIdTypesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMarketsRegionIdTypesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMarketsRegionIdTypesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetMarketsRegionIdTypesQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMarketsRegionIdTypesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMarketsRegionIdTypesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22076,8 +25448,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMarketsRegionIdTypesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMarketsRegionIdTypesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22213,9 +25585,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMarketsStructuresStructureIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMarketsStructuresStructureIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMarketsStructuresStructureIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetMarketsStructuresStructureIdQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMarketsStructuresStructureIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMarketsStructuresStructureIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22230,8 +25629,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMarketsStructuresStructureIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMarketsStructuresStructureIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22330,9 +25729,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMetaChangelogRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMetaChangelogHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMetaChangelogData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMetaChangelogResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22347,8 +25759,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMetaChangelogStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMetaChangelogResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22447,9 +25859,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMetaCompatibilityDatesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMetaCompatibilityDatesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMetaCompatibilityDatesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMetaCompatibilityDatesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22464,8 +25889,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMetaCompatibilityDatesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMetaCompatibilityDatesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22564,9 +25989,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMetaNameRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMetaNameHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMetaNameData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMetaNameResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22581,8 +26019,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMetaNameStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMetaNameResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22679,9 +26117,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMetaStatusRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMetaStatusHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMetaStatusData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMetaStatusResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22696,8 +26147,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMetaStatusStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMetaStatusResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22810,9 +26261,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMilitaryCampaignsDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMilitaryCampaignsDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMilitaryCampaignsDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMilitaryCampaignsDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMilitaryCampaignsDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22827,8 +26298,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMilitaryCampaignsDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMilitaryCampaignsDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -22927,9 +26398,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMilitaryCampaignsListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMilitaryCampaignsListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMilitaryCampaignsListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMilitaryCampaignsListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -22944,8 +26428,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMilitaryCampaignsListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMilitaryCampaignsListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -23072,9 +26556,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMilitaryCampaignsObjectivesDetailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMilitaryCampaignsObjectivesDetailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMilitaryCampaignsObjectivesDetailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMilitaryCampaignsObjectivesDetailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMilitaryCampaignsObjectivesDetailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -23089,8 +26593,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMilitaryCampaignsObjectivesDetailStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMilitaryCampaignsObjectivesDetailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -23249,9 +26753,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetMilitaryCampaignsObjectivesListingRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetMilitaryCampaignsObjectivesListingHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetMilitaryCampaignsObjectivesListingPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetMilitaryCampaignsObjectivesListingQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetMilitaryCampaignsObjectivesListingData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetMilitaryCampaignsObjectivesListingResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -23266,8 +26797,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetMilitaryCampaignsObjectivesListingResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -23410,9 +26941,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetParagonHubSkinrRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetParagonHubSkinrHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetParagonHubSkinrQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetParagonHubSkinrData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetParagonHubSkinrResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -23427,8 +26978,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetParagonHubSkinrStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetParagonHubSkinrResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -23587,9 +27138,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetParagonHubSkinrAlliancesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetParagonHubSkinrAlliancesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetParagonHubSkinrAlliancesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetParagonHubSkinrAlliancesQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetParagonHubSkinrAlliancesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetParagonHubSkinrAlliancesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -23604,8 +27182,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetParagonHubSkinrAlliancesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetParagonHubSkinrAlliancesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -23764,9 +27342,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetParagonHubSkinrCharactersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetParagonHubSkinrCharactersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetParagonHubSkinrCharactersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetParagonHubSkinrCharactersQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetParagonHubSkinrCharactersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetParagonHubSkinrCharactersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -23781,8 +27386,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetParagonHubSkinrCharactersStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetParagonHubSkinrCharactersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -23941,9 +27546,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetParagonHubSkinrCorporationsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetParagonHubSkinrCorporationsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetParagonHubSkinrCorporationsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetParagonHubSkinrCorporationsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetParagonHubSkinrCorporationsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetParagonHubSkinrCorporationsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -23958,8 +27590,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetParagonHubSkinrCorporationsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetParagonHubSkinrCorporationsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24059,9 +27691,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetSkyhooksRaidableRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetSkyhooksRaidableHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetSkyhooksRaidableData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetSkyhooksRaidableResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24076,8 +27721,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetSkyhooksRaidableStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetSkyhooksRaidableResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24176,9 +27821,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetSovereigntyCampaignsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetSovereigntyCampaignsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetSovereigntyCampaignsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetSovereigntyCampaignsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24193,8 +27851,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetSovereigntyCampaignsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetSovereigntyCampaignsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24294,9 +27952,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetSovereigntySystemsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetSovereigntySystemsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetSovereigntySystemsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetSovereigntySystemsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24311,8 +27982,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetSovereigntySystemsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetSovereigntySystemsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24412,9 +28083,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetStatusRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetStatusHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetStatusData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetStatusResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24429,8 +28113,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetStatusStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetStatusResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24524,9 +28208,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseAncestriesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseAncestriesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseAncestriesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseAncestriesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24541,8 +28238,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseAncestriesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseAncestriesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24650,9 +28347,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseAsteroidBeltsAsteroidBeltIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseAsteroidBeltsAsteroidBeltIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseAsteroidBeltsAsteroidBeltIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseAsteroidBeltsAsteroidBeltIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseAsteroidBeltsAsteroidBeltIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24667,8 +28384,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseAsteroidBeltsAsteroidBeltIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseAsteroidBeltsAsteroidBeltIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24762,9 +28479,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseBloodlinesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseBloodlinesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseBloodlinesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseBloodlinesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24779,8 +28509,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseBloodlinesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseBloodlinesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -24874,9 +28604,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseCategoriesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseCategoriesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseCategoriesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseCategoriesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -24891,8 +28634,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseCategoriesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseCategoriesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25001,9 +28744,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseCategoriesCategoryIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseCategoriesCategoryIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseCategoriesCategoryIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseCategoriesCategoryIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseCategoriesCategoryIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25018,8 +28781,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseCategoriesCategoryIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseCategoriesCategoryIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25113,9 +28876,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseConstellationsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseConstellationsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseConstellationsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseConstellationsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25130,8 +28906,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseConstellationsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseConstellationsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25239,9 +29015,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseConstellationsConstellationIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseConstellationsConstellationIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseConstellationsConstellationIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseConstellationsConstellationIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseConstellationsConstellationIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25256,8 +29052,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseConstellationsConstellationIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseConstellationsConstellationIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25351,9 +29147,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseFactionsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseFactionsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseFactionsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseFactionsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25368,8 +29177,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseFactionsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseFactionsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25463,9 +29272,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseGraphicsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseGraphicsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseGraphicsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseGraphicsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25480,8 +29302,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseGraphicsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseGraphicsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25589,9 +29411,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseGraphicsGraphicIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseGraphicsGraphicIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseGraphicsGraphicIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseGraphicsGraphicIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseGraphicsGraphicIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25606,8 +29448,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseGraphicsGraphicIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseGraphicsGraphicIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25721,9 +29563,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseGroupsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseGroupsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetUniverseGroupsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseGroupsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseGroupsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25738,8 +29600,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseGroupsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseGroupsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25848,9 +29710,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseGroupsGroupIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseGroupsGroupIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseGroupsGroupIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseGroupsGroupIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseGroupsGroupIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25865,8 +29747,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseGroupsGroupIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseGroupsGroupIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -25974,9 +29856,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseMoonsMoonIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseMoonsMoonIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseMoonsMoonIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseMoonsMoonIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseMoonsMoonIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -25991,8 +29893,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseMoonsMoonIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseMoonsMoonIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26100,9 +30002,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniversePlanetsPlanetIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniversePlanetsPlanetIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniversePlanetsPlanetIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniversePlanetsPlanetIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniversePlanetsPlanetIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26117,8 +30039,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniversePlanetsPlanetIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniversePlanetsPlanetIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26212,9 +30134,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseRacesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseRacesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseRacesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseRacesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26229,8 +30164,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseRacesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseRacesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26324,9 +30259,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseRegionsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseRegionsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseRegionsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseRegionsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26341,8 +30289,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseRegionsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseRegionsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26450,9 +30398,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseRegionsRegionIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseRegionsRegionIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseRegionsRegionIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseRegionsRegionIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseRegionsRegionIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26467,8 +30435,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseRegionsRegionIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseRegionsRegionIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26582,9 +30550,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseSchematicsSchematicIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseSchematicsSchematicIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseSchematicsSchematicIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseSchematicsSchematicIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseSchematicsSchematicIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26599,8 +30587,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseSchematicsSchematicIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseSchematicsSchematicIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26708,9 +30696,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseStargatesStargateIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseStargatesStargateIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseStargatesStargateIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseStargatesStargateIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseStargatesStargateIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26725,8 +30733,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseStargatesStargateIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseStargatesStargateIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26834,9 +30842,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseStarsStarIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseStarsStarIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseStarsStarIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseStarsStarIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseStarsStarIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26851,8 +30879,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseStarsStarIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseStarsStarIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -26960,9 +30988,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseStationsStationIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseStationsStationIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseStationsStationIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseStationsStationIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseStationsStationIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -26977,8 +31025,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseStationsStationIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseStationsStationIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27095,9 +31143,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseStructuresRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseStructuresHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetUniverseStructuresQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseStructuresData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseStructuresResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27112,8 +31180,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseStructuresStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseStructuresResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27229,9 +31297,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseStructuresStructureIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseStructuresStructureIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseStructuresStructureIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseStructuresStructureIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseStructuresStructureIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27246,8 +31334,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseStructuresStructureIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseStructuresStructureIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27346,9 +31434,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseSystemJumpsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseSystemJumpsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseSystemJumpsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseSystemJumpsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27363,8 +31464,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseSystemJumpsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseSystemJumpsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27463,9 +31564,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseSystemKillsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseSystemKillsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseSystemKillsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseSystemKillsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27480,8 +31594,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseSystemKillsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseSystemKillsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27575,9 +31689,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseSystemsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseSystemsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseSystemsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseSystemsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27592,8 +31719,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseSystemsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseSystemsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27701,9 +31828,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseSystemsSystemIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseSystemsSystemIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseSystemsSystemIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseSystemsSystemIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseSystemsSystemIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27718,8 +31865,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseSystemsSystemIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseSystemsSystemIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27833,9 +31980,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseTypesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseTypesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetUniverseTypesQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseTypesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseTypesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27850,8 +32017,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseTypesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseTypesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -27960,9 +32127,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetUniverseTypesTypeIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetUniverseTypesTypeIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetUniverseTypesTypeIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetUniverseTypesTypeIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetUniverseTypesTypeIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -27977,8 +32164,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetUniverseTypesTypeIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetUniverseTypesTypeIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -28092,9 +32279,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetWarsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetWarsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetWarsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetWarsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetWarsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -28109,8 +32316,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetWarsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetWarsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -28224,9 +32431,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetWarsWarIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetWarsWarIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetWarsWarIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetWarsWarIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetWarsWarIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -28241,8 +32468,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetWarsWarIdStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetWarsWarIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -28376,9 +32603,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "GetWarsWarIdKillmailsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zGetWarsWarIdKillmailsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zGetWarsWarIdKillmailsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zGetWarsWarIdKillmailsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "GetWarsWarIdKillmailsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "GetWarsWarIdKillmailsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -28393,8 +32647,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "GetWarsWarIdKillmailsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zGetWarsWarIdKillmailsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -28512,9 +32766,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersAffiliationRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersAffiliationBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersAffiliationHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersAffiliationData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersAffiliationResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -28529,8 +32803,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostCharactersAffiliationStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersAffiliationResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -28661,9 +32935,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersCharacterIdAssetsLocationsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersCharacterIdAssetsLocationsBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersCharacterIdAssetsLocationsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCharactersCharacterIdAssetsLocationsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersCharacterIdAssetsLocationsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersCharacterIdAssetsLocationsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -28678,8 +32979,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostCharactersCharacterIdAssetsLocationsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersCharacterIdAssetsLocationsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -28810,9 +33111,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersCharacterIdAssetsNamesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersCharacterIdAssetsNamesBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersCharacterIdAssetsNamesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCharactersCharacterIdAssetsNamesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersCharacterIdAssetsNamesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersCharacterIdAssetsNamesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -28827,8 +33155,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostCharactersCharacterIdAssetsNamesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersCharacterIdAssetsNamesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -29007,9 +33335,43 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersCharacterIdContactsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersCharacterIdContactsBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersCharacterIdContactsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCharactersCharacterIdContactsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zPostCharactersCharacterIdContactsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersCharacterIdContactsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersCharacterIdContactsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -29024,8 +33386,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "Created",
           "schema": {
-            "export": "PostCharactersCharacterIdContactsStatus201SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersCharacterIdContactsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "201"
         }
@@ -29153,9 +33515,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersCharacterIdCspaRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersCharacterIdCspaBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersCharacterIdCspaHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCharactersCharacterIdCspaPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersCharacterIdCspaData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersCharacterIdCspaResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -29170,8 +33559,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "Created",
           "schema": {
-            "export": "PostCharactersCharacterIdCspaStatus201SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersCharacterIdCspaResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "201"
         }
@@ -29388,9 +33777,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersCharacterIdFittingsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersCharacterIdFittingsBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersCharacterIdFittingsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCharactersCharacterIdFittingsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersCharacterIdFittingsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersCharacterIdFittingsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -29405,8 +33821,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "Created",
           "schema": {
-            "export": "PostCharactersCharacterIdFittingsStatus201SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersCharacterIdFittingsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "201"
         }
@@ -29574,9 +33990,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersCharacterIdMailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersCharacterIdMailBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersCharacterIdMailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCharactersCharacterIdMailPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersCharacterIdMailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersCharacterIdMailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -29591,8 +34034,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "Created",
           "schema": {
-            "export": "PostCharactersCharacterIdMailStatus201SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersCharacterIdMailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "201"
         }
@@ -29747,9 +34190,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCharactersCharacterIdMailLabelsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCharactersCharacterIdMailLabelsBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCharactersCharacterIdMailLabelsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCharactersCharacterIdMailLabelsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCharactersCharacterIdMailLabelsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCharactersCharacterIdMailLabelsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -29764,8 +34234,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "Created",
           "schema": {
-            "export": "PostCharactersCharacterIdMailLabelsStatus201SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCharactersCharacterIdMailLabelsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "201"
         }
@@ -29893,9 +34363,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCorporationsCorporationIdAssetsLocationsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCorporationsCorporationIdAssetsLocationsBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCorporationsCorporationIdAssetsLocationsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCorporationsCorporationIdAssetsLocationsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCorporationsCorporationIdAssetsLocationsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCorporationsCorporationIdAssetsLocationsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -29910,8 +34407,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostCorporationsCorporationIdAssetsLocationsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCorporationsCorporationIdAssetsLocationsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -30042,9 +34539,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostCorporationsCorporationIdAssetsNamesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostCorporationsCorporationIdAssetsNamesBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostCorporationsCorporationIdAssetsNamesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostCorporationsCorporationIdAssetsNamesPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostCorporationsCorporationIdAssetsNamesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostCorporationsCorporationIdAssetsNamesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -30059,8 +34583,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostCorporationsCorporationIdAssetsNamesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostCorporationsCorporationIdAssetsNamesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -30214,9 +34738,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostFleetsFleetIdMembersRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostFleetsFleetIdMembersBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostFleetsFleetIdMembersHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostFleetsFleetIdMembersPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostFleetsFleetIdMembersData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostFleetsFleetIdMembersResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -30224,8 +34775,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Fleet invitation sent",
           "schema": {
-            "export": "PostFleetsFleetIdMembersStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostFleetsFleetIdMembersResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -30336,9 +34887,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "PostFleetsFleetIdWingsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostFleetsFleetIdWingsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostFleetsFleetIdWingsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostFleetsFleetIdWingsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostFleetsFleetIdWingsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -30353,8 +34924,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "Created",
           "schema": {
-            "export": "PostFleetsFleetIdWingsStatus201SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostFleetsFleetIdWingsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "201"
         }
@@ -30480,9 +35051,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "PostFleetsFleetIdWingsWingIdSquadsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostFleetsFleetIdWingsWingIdSquadsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostFleetsFleetIdWingsWingIdSquadsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostFleetsFleetIdWingsWingIdSquadsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostFleetsFleetIdWingsWingIdSquadsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -30497,8 +35088,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "Created",
           "schema": {
-            "export": "PostFleetsFleetIdWingsWingIdSquadsStatus201SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostFleetsFleetIdWingsWingIdSquadsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "201"
         }
@@ -30634,9 +35225,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostRouteRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostRouteBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostRouteHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPostRoutePath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostRouteData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostRouteResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -30651,8 +35269,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostRouteStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostRouteResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -30796,9 +35414,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "PostUiAutopilotWaypointRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostUiAutopilotWaypointHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zPostUiAutopilotWaypointQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostUiAutopilotWaypointData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostUiAutopilotWaypointResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -30806,8 +35444,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Open window request received",
           "schema": {
-            "export": "PostUiAutopilotWaypointStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostUiAutopilotWaypointResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -30918,9 +35556,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "PostUiOpenwindowContractRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostUiOpenwindowContractHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zPostUiOpenwindowContractQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostUiOpenwindowContractData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostUiOpenwindowContractResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -30928,8 +35586,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Open window request received",
           "schema": {
-            "export": "PostUiOpenwindowContractStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostUiOpenwindowContractResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -31040,9 +35698,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "PostUiOpenwindowInformationRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostUiOpenwindowInformationHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zPostUiOpenwindowInformationQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostUiOpenwindowInformationData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostUiOpenwindowInformationResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -31050,8 +35728,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Open window request received",
           "schema": {
-            "export": "PostUiOpenwindowInformationStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostUiOpenwindowInformationResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -31162,9 +35840,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
-      "requestSchema": {
-        "export": "PostUiOpenwindowMarketdetailsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostUiOpenwindowMarketdetailsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zPostUiOpenwindowMarketdetailsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostUiOpenwindowMarketdetailsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostUiOpenwindowMarketdetailsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -31172,8 +35870,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Open window request received",
           "schema": {
-            "export": "PostUiOpenwindowMarketdetailsStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostUiOpenwindowMarketdetailsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -31314,9 +36012,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostUiOpenwindowNewmailRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostUiOpenwindowNewmailBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostUiOpenwindowNewmailHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostUiOpenwindowNewmailData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostUiOpenwindowNewmailResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -31324,8 +36042,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Open window request received",
           "schema": {
-            "export": "PostUiOpenwindowNewmailStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostUiOpenwindowNewmailResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -31439,9 +36157,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostUniverseIdsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostUniverseIdsBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostUniverseIdsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostUniverseIdsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostUniverseIdsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -31456,8 +36194,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostUniverseIdsStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostUniverseIdsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -31573,9 +36311,29 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PostUniverseNamesRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPostUniverseNamesBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPostUniverseNamesHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PostUniverseNamesData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PostUniverseNamesResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -31590,8 +36348,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           ],
           "description": "OK",
           "schema": {
-            "export": "PostUniverseNamesStatus200SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPostUniverseNamesResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "200"
         }
@@ -31747,9 +36505,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PutCharactersCharacterIdCalendarEventIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPutCharactersCharacterIdCalendarEventIdBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPutCharactersCharacterIdCalendarEventIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPutCharactersCharacterIdCalendarEventIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PutCharactersCharacterIdCalendarEventIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PutCharactersCharacterIdCalendarEventIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -31757,8 +36542,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Event updated",
           "schema": {
-            "export": "PutCharactersCharacterIdCalendarEventIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPutCharactersCharacterIdCalendarEventIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -31934,9 +36719,43 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PutCharactersCharacterIdContactsRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPutCharactersCharacterIdContactsBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPutCharactersCharacterIdContactsHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPutCharactersCharacterIdContactsPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "query",
+          "schema": {
+            "export": "zPutCharactersCharacterIdContactsQuery",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PutCharactersCharacterIdContactsData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PutCharactersCharacterIdContactsResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -31944,8 +36763,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Contacts updated",
           "schema": {
-            "export": "PutCharactersCharacterIdContactsStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPutCharactersCharacterIdContactsResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -32097,9 +36916,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PutCharactersCharacterIdMailMailIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPutCharactersCharacterIdMailMailIdBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPutCharactersCharacterIdMailMailIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPutCharactersCharacterIdMailMailIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PutCharactersCharacterIdMailMailIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PutCharactersCharacterIdMailMailIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -32107,8 +36953,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Mail updated",
           "schema": {
-            "export": "PutCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPutCharactersCharacterIdMailMailIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -32240,9 +37086,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PutFleetsFleetIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPutFleetsFleetIdBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPutFleetsFleetIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPutFleetsFleetIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PutFleetsFleetIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PutFleetsFleetIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -32250,8 +37123,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Fleet updated",
           "schema": {
-            "export": "PutFleetsFleetIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPutFleetsFleetIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -32411,9 +37284,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PutFleetsFleetIdMembersMemberIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPutFleetsFleetIdMembersMemberIdBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPutFleetsFleetIdMembersMemberIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPutFleetsFleetIdMembersMemberIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PutFleetsFleetIdMembersMemberIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PutFleetsFleetIdMembersMemberIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -32421,8 +37321,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Fleet invitation sent",
           "schema": {
-            "export": "PutFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPutFleetsFleetIdMembersMemberIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -32568,9 +37468,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PutFleetsFleetIdSquadsSquadIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPutFleetsFleetIdSquadsSquadIdBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPutFleetsFleetIdSquadsSquadIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPutFleetsFleetIdSquadsSquadIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PutFleetsFleetIdSquadsSquadIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PutFleetsFleetIdSquadsSquadIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -32578,8 +37505,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Squad renamed",
           "schema": {
-            "export": "PutFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPutFleetsFleetIdSquadsSquadIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -32725,9 +37652,36 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
-      "requestSchema": {
-        "export": "PutFleetsFleetIdWingsWingIdRequestSchema",
-        "module": "@evespace/esi-client/schemas"
+      "requestSchemas": [
+        {
+          "group": "body",
+          "schema": {
+            "export": "zPutFleetsFleetIdWingsWingIdBody",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "headers",
+          "schema": {
+            "export": "zPutFleetsFleetIdWingsWingIdHeaders",
+            "module": "@evespace/esi-client/zod"
+          }
+        },
+        {
+          "group": "path",
+          "schema": {
+            "export": "zPutFleetsFleetIdWingsWingIdPath",
+            "module": "@evespace/esi-client/zod"
+          }
+        }
+      ],
+      "requestType": {
+        "export": "PutFleetsFleetIdWingsWingIdData",
+        "module": "@evespace/esi-client/types"
+      },
+      "responseType": {
+        "export": "PutFleetsFleetIdWingsWingIdResponse",
+        "module": "@evespace/esi-client/types"
       },
       "responses": [
         {
@@ -32735,8 +37689,8 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "content": [],
           "description": "Wing renamed",
           "schema": {
-            "export": "PutFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema",
-            "module": "@evespace/esi-client/schemas"
+            "export": "zPutFleetsFleetIdWingsWingIdResponse",
+            "module": "@evespace/esi-client/zod"
           },
           "status": "204"
         }
@@ -32759,5 +37713,5 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
       }
     }
   ],
-  "schemaVersion": 1
+  "schemaVersion": 2
 });

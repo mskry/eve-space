@@ -6,6 +6,79 @@ packages:
 
 injectWorkspacePackages: true
 
+# Single source of truth for external dependency versions. Packages reference these with
+# `catalog:` so a version is declared once and inherited, never pinned per package.
+catalog:
+  '@arethetypeswrong/cli': 0.18.5
+  '@arethetypeswrong/core': 0.18.5
+  '@bybrave/fast-json-patch2': 4.0.0
+  '@hey-api/openapi-ts': 0.99.0
+  '@hono/node-server': ^2.1.1
+  '@hono/zod-validator': ^0.9.0
+  '@nuxt/kit': ^4.5.2
+  '@nuxt/schema': ^4.5.2
+  '@nuxt/test-utils': ^4.1.0
+  '@pinia/colada': ^1.4.2
+  '@pinia/colada-devtools': ^1.1.2
+  '@pinia/colada-nuxt': ^1.0.2
+  '@pinia/colada-plugin-retry': ^1.0.2
+  '@pinia/nuxt': ^1.0.2
+  '@playwright/test': ^1.62.1
+  '@scalar/openapi-parser': 0.28.14
+  '@sonar/scan': ^5.0.0
+  '@types/node': ^24.13.3
+  '@typescript/native': 'npm:typescript@^7.0.2'
+  '@vue/test-utils': ^2.4.11
+  bullmq: 6.2.0
+  devalue: ^5.9.0
+  drizzle-kit: ^0.31.10
+  drizzle-orm: ^0.45.2
+  es-module-lexer: 2.3.2
+  esbuild: 0.28.2
+  fuse.js: ^7.1.0
+  happy-dom: ^20.11.2
+  hono: ^4.13.3
+  ioredis: 6.0.0
+  jose: ^6.2.9
+  knip: ^6.32.2
+  lefthook: ^2.1.10
+  msw: ^2.15.0
+  nuxt: ^4.5.2
+  oxfmt: 0.66.0
+  oxlint: 1.81.0
+  oxlint-tsgolint: 7.0.2001
+  pinia: ^4.0.3
+  postgres: ^3.4.9
+  publint: 0.3.24
+  reka-ui: ^2.10.3
+  testcontainers: 11.14.0
+  tsdown: 0.23.0
+  tsx: ^4.23.12
+  vitest-environment-nuxt: 2.0.0
+  vue: ^3.5.41
+  vue-tsc: ^3.3.10
+  zod: ^4.5.4
+
+# Two dependencies cannot be a single version across the workspace.
+#
+# typescript: 7.x is the native compiler and ships no programmatic API, so Compiler API consumers
+# and Nuxt-adjacent packages must resolve TypeScript 6 through the compatibility package. Other
+# packages that only run `tsc` use `tsgo`.
+#
+# vitest: @nuxt/test-utils declares peer `vitest ^4.0.2`, so every Nuxt-adjacent package stays on
+# vitest 4. @evespace/esi-client has no Nuxt dependency and runs vitest 5.
+catalogs:
+  tsgo:
+    typescript: 7.0.2
+  tsapi:
+    typescript: 'npm:@typescript/typescript6@^6.0.2'
+  vitest4:
+    vitest: ^4.1.11
+    '@vitest/coverage-v8': ^4.1.11
+  vitest5:
+    vitest: 5.0.0
+    '@vitest/coverage-v8': 5.0.0
+
 allowBuilds:
   cpu-features: false
   esbuild: true
@@ -18,7 +91,7 @@ allowBuilds:
   vue-demi: true
 
 minimumReleaseAgeExclude:
-  - '@evespace/esi-client@2.0.0'
+  - '@evespace/esi-client@3.0.0'
   - '@oxfmt/binding-android-arm-eabi@0.64.0'
   - '@oxfmt/binding-android-arm64@0.64.0'
   - '@oxfmt/binding-darwin-arm64@0.64.0'

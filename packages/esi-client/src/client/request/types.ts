@@ -99,9 +99,11 @@ export interface OperationSchema<T = unknown> {
 export interface OperationRequestArguments {
   readonly path?: Readonly<Record<string, unknown>>;
   readonly query?: Readonly<Record<string, unknown>>;
-  readonly header?: Readonly<Record<string, unknown>>;
+  readonly headers?: Readonly<Record<string, unknown>>;
   readonly body?: unknown;
 }
+
+export type OperationArguments<TData> = Omit<TData, 'url'>;
 
 export interface ExecutableOperationDescriptor<
   TArguments extends OperationRequestArguments = OperationRequestArguments,

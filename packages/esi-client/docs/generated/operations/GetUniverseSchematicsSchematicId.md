@@ -16,30 +16,32 @@ Get schematic information
 - Domain import: `@evespace/esi-client/domains/planetary-interaction`
 - Domain index: [planetaryInteraction](../domains/planetary-interaction.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createPlanetaryInteractionClient } from '@evespace/esi-client/domains/planetary-interaction';
+import type { GetUniverseSchematicsSchematicIdResponse } from '@evespace/esi-client/types';
 
 const client = createPlanetaryInteractionClient();
 
 const schematicId = 12345;
 
-const data = await client.getSchematic(schematicId);
+const data: GetUniverseSchematicsSchematicIdResponse = await client.getSchematic(schematicId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseSchematicsSchematicIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const schematicId = 12345;
 
-const data = await client.planetaryInteraction.getSchematic(schematicId);
+const data: GetUniverseSchematicsSchematicIdResponse = await client.planetaryInteraction.getSchematic(schematicId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.planetaryInteraction.getSchematic(schematicId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseSchematicsSchematicIdData, GetUniverseSchematicsSchematicIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const schematicId = 12345;
 const arguments_: CallOperationArguments<'GetUniverseSchematicsSchematicId'> = { path: { "schematic_id": schematicId } };
 
 const response = await client.callOperation('GetUniverseSchematicsSchematicId', arguments_);
+const data: GetUniverseSchematicsSchematicIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetUniverseSchematicsSchematicId', 
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseSchematicsSchematicIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseSchematicsSchematicIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseSchematicsSchematicIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetUniverseSchematicsSchematicIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseSchematicsSchematicIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.planetaryInteraction.withMetadata().getSchematic(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseSchematicsSchematicIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseSchematicsSchematicIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

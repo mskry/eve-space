@@ -16,30 +16,32 @@ Get effect information
 - Domain import: `@evespace/esi-client/domains/dogma`
 - Domain index: [dogma](../domains/dogma.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createDogmaClient } from '@evespace/esi-client/domains/dogma';
+import type { GetDogmaEffectsEffectIdResponse } from '@evespace/esi-client/types';
 
 const client = createDogmaClient();
 
 const effectId = 12345;
 
-const data = await client.getEffect(effectId);
+const data: GetDogmaEffectsEffectIdResponse = await client.getEffect(effectId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetDogmaEffectsEffectIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const effectId = 12345;
 
-const data = await client.dogma.getEffect(effectId);
+const data: GetDogmaEffectsEffectIdResponse = await client.dogma.getEffect(effectId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.dogma.getEffect(effectId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetDogmaEffectsEffectIdData, GetDogmaEffectsEffectIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const effectId = 12345;
 const arguments_: CallOperationArguments<'GetDogmaEffectsEffectId'> = { path: { "effect_id": effectId } };
 
 const response = await client.callOperation('GetDogmaEffectsEffectId', arguments_);
+const data: GetDogmaEffectsEffectIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetDogmaEffectsEffectId', arguments
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetDogmaEffectsEffectIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetDogmaEffectsEffectIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetDogmaEffectsEffectIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetDogmaEffectsEffectIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetDogmaEffectsEffectIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.dogma.withMetadata().getEffect(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetDogmaEffectsEffectIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetDogmaEffectsEffectIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

@@ -16,13 +16,13 @@ Rename fleet squad
 - Domain import: `@evespace/esi-client/domains/fleets`
 - Domain index: [fleets](../domains/fleets.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFleetsClient } from '@evespace/esi-client/domains/fleets';
-import type { PutFleetsFleetIdSquadsSquadIdOptions } from '@evespace/esi-client/domains/fleets';
+import type { PutFleetsFleetIdSquadsSquadIdResponse, PutFleetsFleetIdSquadsSquadIdData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,17 +31,17 @@ const client = createFleetsClient({ token: accessToken });
 
 const fleetId = 12345;
 const squadId = 12345;
-declare const requestBody: NonNullable<PutFleetsFleetIdSquadsSquadIdOptions['body']>;
+declare const requestBody: NonNullable<PutFleetsFleetIdSquadsSquadIdData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.renameSquad(fleetId, squadId, { body: requestBody });
+const data: PutFleetsFleetIdSquadsSquadIdResponse = await client.renameSquad(fleetId, squadId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PutFleetsFleetIdSquadsSquadIdOptions } from '@evespace/esi-client/domains/fleets';
+import type { PutFleetsFleetIdSquadsSquadIdResponse, PutFleetsFleetIdSquadsSquadIdData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -50,10 +50,10 @@ const client = new EsiClient({ token: accessToken });
 
 const fleetId = 12345;
 const squadId = 12345;
-declare const requestBody: NonNullable<PutFleetsFleetIdSquadsSquadIdOptions['body']>;
+declare const requestBody: NonNullable<PutFleetsFleetIdSquadsSquadIdData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.fleets.renameSquad(fleetId, squadId, { body: requestBody });
+const data: PutFleetsFleetIdSquadsSquadIdResponse = await client.fleets.renameSquad(fleetId, squadId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -61,6 +61,7 @@ const data = await client.fleets.renameSquad(fleetId, squadId, { body: requestBo
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PutFleetsFleetIdSquadsSquadIdData, PutFleetsFleetIdSquadsSquadIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -69,7 +70,7 @@ const client = new EsiClient({ token: accessToken, allowGenericMutations: true }
 
 const fleetId = 12345;
 const squadId = 12345;
-declare const requestBody: NonNullable<CallOperationArguments<'PutFleetsFleetIdSquadsSquadId'>['body']>;
+declare const requestBody: NonNullable<PutFleetsFleetIdSquadsSquadIdData['body']>;
 
 const arguments_: CallOperationArguments<'PutFleetsFleetIdSquadsSquadId'> = { path: { "fleet_id": fleetId, "squad_id": squadId }, body: requestBody };
 
@@ -77,6 +78,7 @@ const arguments_: CallOperationArguments<'PutFleetsFleetIdSquadsSquadId'> = { pa
 const response = await client.callOperation('PutFleetsFleetIdSquadsSquadId', arguments_, {
   confirmMutation: true,
 });
+const data: PutFleetsFleetIdSquadsSquadIdResponse = response.data;
 ```
 
 ## Parameters
@@ -92,14 +94,16 @@ const response = await client.callOperation('PutFleetsFleetIdSquadsSquadId', arg
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PutFleetsFleetIdSquadsSquadIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PutFleetsFleetIdSquadsSquadIdData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPutFleetsFleetIdSquadsSquadIdBody`; `headers` uses `@evespace/esi-client/zod` export `zPutFleetsFleetIdSquadsSquadIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zPutFleetsFleetIdSquadsSquadIdPath`.
+- Response type: `@evespace/esi-client/types` export `PutFleetsFleetIdSquadsSquadIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.fleets.withMetadata().renameSquad(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `PutFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema` | Squad renamed |
+| `204` | none | `@evespace/esi-client/zod` | `zPutFleetsFleetIdSquadsSquadIdResponse` | Squad renamed |
 
 ## Authentication
 
@@ -134,6 +138,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

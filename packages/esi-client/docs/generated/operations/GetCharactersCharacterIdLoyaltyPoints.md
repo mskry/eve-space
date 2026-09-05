@@ -16,12 +16,13 @@ Get loyalty points
 - Domain import: `@evespace/esi-client/domains/loyalty`
 - Domain index: [loyalty](../domains/loyalty.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createLoyaltyClient } from '@evespace/esi-client/domains/loyalty';
+import type { GetCharactersCharacterIdLoyaltyPointsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createLoyaltyClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listPoints(characterId);
+const data: GetCharactersCharacterIdLoyaltyPointsResponse = await client.listPoints(characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdLoyaltyPointsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.loyalty.listPoints(characterId);
+const data: GetCharactersCharacterIdLoyaltyPointsResponse = await client.loyalty.listPoints(characterId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.loyalty.listPoints(characterId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdLoyaltyPointsData, GetCharactersCharacterIdLoyaltyPointsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdLoyaltyPoints'> = { path: { "character_id": characterId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdLoyaltyPoints', arguments_);
+const data: GetCharactersCharacterIdLoyaltyPointsResponse = response.data;
 ```
 
 ## Parameters
@@ -77,14 +81,16 @@ const response = await client.callOperation('GetCharactersCharacterIdLoyaltyPoin
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdLoyaltyPointsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdLoyaltyPointsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdLoyaltyPointsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdLoyaltyPointsPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdLoyaltyPointsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.loyalty.withMetadata().listPoints(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdLoyaltyPointsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdLoyaltyPointsResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +122,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

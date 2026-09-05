@@ -23,6 +23,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createActivitiesClient } from '@evespace/esi-client/domains/activities';
+import type { GetCharactersMercenaryTacticalOperationsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -32,7 +33,7 @@ const client = createActivitiesClient({ token: accessToken });
 const characterId = 90000001;
 const operationId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.getMercenaryTacticalOperation(characterId, operationId);
+const data: GetCharactersMercenaryTacticalOperationsDetailResponse = await client.getMercenaryTacticalOperation(characterId, operationId);
 ```
 
 ## Aggregate client
@@ -41,6 +42,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersMercenaryTacticalOperationsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -50,7 +52,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const operationId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.activities.getMercenaryTacticalOperation(characterId, operationId);
+const data: GetCharactersMercenaryTacticalOperationsDetailResponse = await client.activities.getMercenaryTacticalOperation(characterId, operationId);
 ```
 
 ## Shared concepts

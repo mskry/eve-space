@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createWalletClient } from '@evespace/esi-client/domains/wallet';
+import type { GetCharactersCharacterIdWalletResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createWalletClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.getCharacterBalance(characterId);
+const data: GetCharactersCharacterIdWalletResponse = await client.getCharacterBalance(characterId);

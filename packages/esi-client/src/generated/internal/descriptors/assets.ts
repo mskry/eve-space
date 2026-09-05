@@ -4,34 +4,57 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdAssetsData,
+  GetCharactersCharacterIdAssetsResponse,
+  GetCorporationsCorporationIdAssetsData,
+  GetCorporationsCorporationIdAssetsResponse,
+  PostCharactersCharacterIdAssetsLocationsData,
+  PostCharactersCharacterIdAssetsLocationsResponse,
+  PostCharactersCharacterIdAssetsNamesData,
+  PostCharactersCharacterIdAssetsNamesResponse,
+  PostCorporationsCorporationIdAssetsLocationsData,
+  PostCorporationsCorporationIdAssetsLocationsResponse,
+  PostCorporationsCorporationIdAssetsNamesData,
+  PostCorporationsCorporationIdAssetsNamesResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdAssetsRequestSchema,
-  GetCharactersCharacterIdAssetsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdAssetsRequestSchema,
-  GetCorporationsCorporationIdAssetsStatus200SuccessResponseSchema,
-  PostCharactersCharacterIdAssetsLocationsRequestSchema,
-  PostCharactersCharacterIdAssetsLocationsStatus200SuccessResponseSchema,
-  PostCharactersCharacterIdAssetsNamesRequestSchema,
-  PostCharactersCharacterIdAssetsNamesStatus200SuccessResponseSchema,
-  PostCorporationsCorporationIdAssetsLocationsRequestSchema,
-  PostCorporationsCorporationIdAssetsLocationsStatus200SuccessResponseSchema,
-  PostCorporationsCorporationIdAssetsNamesRequestSchema,
-  PostCorporationsCorporationIdAssetsNamesStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdAssetsInput,
-  type GetCharactersCharacterIdAssetsOutput,
-  type GetCorporationsCorporationIdAssetsInput,
-  type GetCorporationsCorporationIdAssetsOutput,
-  type PostCharactersCharacterIdAssetsLocationsInput,
-  type PostCharactersCharacterIdAssetsLocationsOutput,
-  type PostCharactersCharacterIdAssetsNamesInput,
-  type PostCharactersCharacterIdAssetsNamesOutput,
-  type PostCorporationsCorporationIdAssetsLocationsInput,
-  type PostCorporationsCorporationIdAssetsLocationsOutput,
-  type PostCorporationsCorporationIdAssetsNamesInput,
-  type PostCorporationsCorporationIdAssetsNamesOutput,
-} from '../../schemas/operations/assets.js';
+  zGetCharactersCharacterIdAssetsHeaders,
+  zGetCharactersCharacterIdAssetsPath,
+  zGetCharactersCharacterIdAssetsQuery,
+  zGetCharactersCharacterIdAssetsResponse,
+  zGetCorporationsCorporationIdAssetsHeaders,
+  zGetCorporationsCorporationIdAssetsPath,
+  zGetCorporationsCorporationIdAssetsQuery,
+  zGetCorporationsCorporationIdAssetsResponse,
+  zPostCharactersCharacterIdAssetsLocationsBody,
+  zPostCharactersCharacterIdAssetsLocationsHeaders,
+  zPostCharactersCharacterIdAssetsLocationsPath,
+  zPostCharactersCharacterIdAssetsLocationsResponse,
+  zPostCharactersCharacterIdAssetsNamesBody,
+  zPostCharactersCharacterIdAssetsNamesHeaders,
+  zPostCharactersCharacterIdAssetsNamesPath,
+  zPostCharactersCharacterIdAssetsNamesResponse,
+  zPostCorporationsCorporationIdAssetsLocationsBody,
+  zPostCorporationsCorporationIdAssetsLocationsHeaders,
+  zPostCorporationsCorporationIdAssetsLocationsPath,
+  zPostCorporationsCorporationIdAssetsLocationsResponse,
+  zPostCorporationsCorporationIdAssetsNamesBody,
+  zPostCorporationsCorporationIdAssetsNamesHeaders,
+  zPostCorporationsCorporationIdAssetsNamesPath,
+  zPostCorporationsCorporationIdAssetsNamesResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdAssetsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdAssetsInput, GetCharactersCharacterIdAssetsOutput> = {
+export const GetCharactersCharacterIdAssetsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdAssetsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdAssetsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdAssetsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdAssetsPath },
+  query: { required: false, schema: zGetCharactersCharacterIdAssetsQuery },
+});
+
+export const GetCharactersCharacterIdAssetsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdAssetsData>, GetCharactersCharacterIdAssetsResponse> = {
   operationId: "GetCharactersCharacterIdAssets",
   method: "GET",
   path: "/characters/{character_id}/assets",
@@ -46,12 +69,18 @@ export const GetCharactersCharacterIdAssetsDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdAssetsRequestSchema,
   authentication: { scopes: ["esi-assets.read_assets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdAssetsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdAssetsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdAssetsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdAssetsInput, GetCorporationsCorporationIdAssetsOutput> = {
+export const GetCorporationsCorporationIdAssetsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdAssetsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdAssetsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdAssetsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdAssetsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdAssetsQuery },
+});
+
+export const GetCorporationsCorporationIdAssetsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdAssetsData>, GetCorporationsCorporationIdAssetsResponse> = {
   operationId: "GetCorporationsCorporationIdAssets",
   method: "GET",
   path: "/corporations/{corporation_id}/assets",
@@ -66,12 +95,18 @@ export const GetCorporationsCorporationIdAssetsDescriptor: OperationExecutionDes
   requestSchema: GetCorporationsCorporationIdAssetsRequestSchema,
   authentication: { scopes: ["esi-assets.read_corporation_assets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdAssetsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdAssetsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostCharactersCharacterIdAssetsLocationsDescriptor: OperationExecutionDescriptor<PostCharactersCharacterIdAssetsLocationsInput, PostCharactersCharacterIdAssetsLocationsOutput> = {
+export const PostCharactersCharacterIdAssetsLocationsRequestSchema: z.ZodType<OperationArguments<PostCharactersCharacterIdAssetsLocationsData>> = composeOperationRequestSchema<OperationArguments<PostCharactersCharacterIdAssetsLocationsData>>({
+  headers: { required: false, schema: zPostCharactersCharacterIdAssetsLocationsHeaders },
+  path: { required: true, schema: zPostCharactersCharacterIdAssetsLocationsPath },
+  body: { required: true, schema: zPostCharactersCharacterIdAssetsLocationsBody },
+});
+
+export const PostCharactersCharacterIdAssetsLocationsDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersCharacterIdAssetsLocationsData>, PostCharactersCharacterIdAssetsLocationsResponse> = {
   operationId: "PostCharactersCharacterIdAssetsLocations",
   method: "POST",
   path: "/characters/{character_id}/assets/locations",
@@ -85,12 +120,18 @@ export const PostCharactersCharacterIdAssetsLocationsDescriptor: OperationExecut
   requestSchema: PostCharactersCharacterIdAssetsLocationsRequestSchema,
   authentication: { scopes: ["esi-assets.read_assets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: PostCharactersCharacterIdAssetsLocationsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostCharactersCharacterIdAssetsLocationsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostCharactersCharacterIdAssetsNamesDescriptor: OperationExecutionDescriptor<PostCharactersCharacterIdAssetsNamesInput, PostCharactersCharacterIdAssetsNamesOutput> = {
+export const PostCharactersCharacterIdAssetsNamesRequestSchema: z.ZodType<OperationArguments<PostCharactersCharacterIdAssetsNamesData>> = composeOperationRequestSchema<OperationArguments<PostCharactersCharacterIdAssetsNamesData>>({
+  headers: { required: false, schema: zPostCharactersCharacterIdAssetsNamesHeaders },
+  path: { required: true, schema: zPostCharactersCharacterIdAssetsNamesPath },
+  body: { required: true, schema: zPostCharactersCharacterIdAssetsNamesBody },
+});
+
+export const PostCharactersCharacterIdAssetsNamesDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersCharacterIdAssetsNamesData>, PostCharactersCharacterIdAssetsNamesResponse> = {
   operationId: "PostCharactersCharacterIdAssetsNames",
   method: "POST",
   path: "/characters/{character_id}/assets/names",
@@ -104,12 +145,18 @@ export const PostCharactersCharacterIdAssetsNamesDescriptor: OperationExecutionD
   requestSchema: PostCharactersCharacterIdAssetsNamesRequestSchema,
   authentication: { scopes: ["esi-assets.read_assets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: PostCharactersCharacterIdAssetsNamesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostCharactersCharacterIdAssetsNamesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostCorporationsCorporationIdAssetsLocationsDescriptor: OperationExecutionDescriptor<PostCorporationsCorporationIdAssetsLocationsInput, PostCorporationsCorporationIdAssetsLocationsOutput> = {
+export const PostCorporationsCorporationIdAssetsLocationsRequestSchema: z.ZodType<OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>> = composeOperationRequestSchema<OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>>({
+  headers: { required: false, schema: zPostCorporationsCorporationIdAssetsLocationsHeaders },
+  path: { required: true, schema: zPostCorporationsCorporationIdAssetsLocationsPath },
+  body: { required: true, schema: zPostCorporationsCorporationIdAssetsLocationsBody },
+});
+
+export const PostCorporationsCorporationIdAssetsLocationsDescriptor: OperationExecutionDescriptor<OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>, PostCorporationsCorporationIdAssetsLocationsResponse> = {
   operationId: "PostCorporationsCorporationIdAssetsLocations",
   method: "POST",
   path: "/corporations/{corporation_id}/assets/locations",
@@ -123,12 +170,18 @@ export const PostCorporationsCorporationIdAssetsLocationsDescriptor: OperationEx
   requestSchema: PostCorporationsCorporationIdAssetsLocationsRequestSchema,
   authentication: { scopes: ["esi-assets.read_corporation_assets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: PostCorporationsCorporationIdAssetsLocationsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostCorporationsCorporationIdAssetsLocationsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostCorporationsCorporationIdAssetsNamesDescriptor: OperationExecutionDescriptor<PostCorporationsCorporationIdAssetsNamesInput, PostCorporationsCorporationIdAssetsNamesOutput> = {
+export const PostCorporationsCorporationIdAssetsNamesRequestSchema: z.ZodType<OperationArguments<PostCorporationsCorporationIdAssetsNamesData>> = composeOperationRequestSchema<OperationArguments<PostCorporationsCorporationIdAssetsNamesData>>({
+  headers: { required: false, schema: zPostCorporationsCorporationIdAssetsNamesHeaders },
+  path: { required: true, schema: zPostCorporationsCorporationIdAssetsNamesPath },
+  body: { required: true, schema: zPostCorporationsCorporationIdAssetsNamesBody },
+});
+
+export const PostCorporationsCorporationIdAssetsNamesDescriptor: OperationExecutionDescriptor<OperationArguments<PostCorporationsCorporationIdAssetsNamesData>, PostCorporationsCorporationIdAssetsNamesResponse> = {
   operationId: "PostCorporationsCorporationIdAssetsNames",
   method: "POST",
   path: "/corporations/{corporation_id}/assets/names",
@@ -142,7 +195,7 @@ export const PostCorporationsCorporationIdAssetsNamesDescriptor: OperationExecut
   requestSchema: PostCorporationsCorporationIdAssetsNamesRequestSchema,
   authentication: { scopes: ["esi-assets.read_corporation_assets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: PostCorporationsCorporationIdAssetsNamesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostCorporationsCorporationIdAssetsNamesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

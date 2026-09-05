@@ -4,34 +4,51 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersMilitaryCampaignsObjectivesListingData,
+  GetCharactersMilitaryCampaignsObjectivesListingResponse,
+  GetCharactersMilitaryCampaignsObjectivesParticipationData,
+  GetCharactersMilitaryCampaignsObjectivesParticipationResponse,
+  GetMilitaryCampaignsDetailData,
+  GetMilitaryCampaignsDetailResponse,
+  GetMilitaryCampaignsListingData,
+  GetMilitaryCampaignsListingResponse,
+  GetMilitaryCampaignsObjectivesDetailData,
+  GetMilitaryCampaignsObjectivesDetailResponse,
+  GetMilitaryCampaignsObjectivesListingData,
+  GetMilitaryCampaignsObjectivesListingResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersMilitaryCampaignsObjectivesListingRequestSchema,
-  GetCharactersMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema,
-  GetCharactersMilitaryCampaignsObjectivesParticipationRequestSchema,
-  GetCharactersMilitaryCampaignsObjectivesParticipationStatus200SuccessResponseSchema,
-  GetMilitaryCampaignsDetailRequestSchema,
-  GetMilitaryCampaignsDetailStatus200SuccessResponseSchema,
-  GetMilitaryCampaignsListingRequestSchema,
-  GetMilitaryCampaignsListingStatus200SuccessResponseSchema,
-  GetMilitaryCampaignsObjectivesDetailRequestSchema,
-  GetMilitaryCampaignsObjectivesDetailStatus200SuccessResponseSchema,
-  GetMilitaryCampaignsObjectivesListingRequestSchema,
-  GetMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema,
-  type GetCharactersMilitaryCampaignsObjectivesListingInput,
-  type GetCharactersMilitaryCampaignsObjectivesListingOutput,
-  type GetCharactersMilitaryCampaignsObjectivesParticipationInput,
-  type GetCharactersMilitaryCampaignsObjectivesParticipationOutput,
-  type GetMilitaryCampaignsDetailInput,
-  type GetMilitaryCampaignsDetailOutput,
-  type GetMilitaryCampaignsListingInput,
-  type GetMilitaryCampaignsListingOutput,
-  type GetMilitaryCampaignsObjectivesDetailInput,
-  type GetMilitaryCampaignsObjectivesDetailOutput,
-  type GetMilitaryCampaignsObjectivesListingInput,
-  type GetMilitaryCampaignsObjectivesListingOutput,
-} from '../../schemas/operations/military-campaigns.js';
+  zGetCharactersMilitaryCampaignsObjectivesListingHeaders,
+  zGetCharactersMilitaryCampaignsObjectivesListingPath,
+  zGetCharactersMilitaryCampaignsObjectivesListingQuery,
+  zGetCharactersMilitaryCampaignsObjectivesListingResponse,
+  zGetCharactersMilitaryCampaignsObjectivesParticipationHeaders,
+  zGetCharactersMilitaryCampaignsObjectivesParticipationPath,
+  zGetCharactersMilitaryCampaignsObjectivesParticipationResponse,
+  zGetMilitaryCampaignsDetailHeaders,
+  zGetMilitaryCampaignsDetailPath,
+  zGetMilitaryCampaignsDetailResponse,
+  zGetMilitaryCampaignsListingHeaders,
+  zGetMilitaryCampaignsListingResponse,
+  zGetMilitaryCampaignsObjectivesDetailHeaders,
+  zGetMilitaryCampaignsObjectivesDetailPath,
+  zGetMilitaryCampaignsObjectivesDetailResponse,
+  zGetMilitaryCampaignsObjectivesListingHeaders,
+  zGetMilitaryCampaignsObjectivesListingPath,
+  zGetMilitaryCampaignsObjectivesListingQuery,
+  zGetMilitaryCampaignsObjectivesListingResponse,
+} from '../../zod.gen.js';
 
-export const GetMilitaryCampaignsDetailDescriptor: OperationExecutionDescriptor<GetMilitaryCampaignsDetailInput, GetMilitaryCampaignsDetailOutput> = {
+export const GetMilitaryCampaignsDetailRequestSchema: z.ZodType<OperationArguments<GetMilitaryCampaignsDetailData>> = composeOperationRequestSchema<OperationArguments<GetMilitaryCampaignsDetailData>>({
+  headers: { required: false, schema: zGetMilitaryCampaignsDetailHeaders },
+  path: { required: true, schema: zGetMilitaryCampaignsDetailPath },
+});
+
+export const GetMilitaryCampaignsDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetMilitaryCampaignsDetailData>, GetMilitaryCampaignsDetailResponse> = {
   operationId: "GetMilitaryCampaignsDetail",
   method: "GET",
   path: "/military-campaigns/{campaign_id}",
@@ -45,12 +62,17 @@ export const GetMilitaryCampaignsDetailDescriptor: OperationExecutionDescriptor<
   requestSchema: GetMilitaryCampaignsDetailRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMilitaryCampaignsDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMilitaryCampaignsDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersMilitaryCampaignsObjectivesParticipationDescriptor: OperationExecutionDescriptor<GetCharactersMilitaryCampaignsObjectivesParticipationInput, GetCharactersMilitaryCampaignsObjectivesParticipationOutput> = {
+export const GetCharactersMilitaryCampaignsObjectivesParticipationRequestSchema: z.ZodType<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>> = composeOperationRequestSchema<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>>({
+  headers: { required: false, schema: zGetCharactersMilitaryCampaignsObjectivesParticipationHeaders },
+  path: { required: true, schema: zGetCharactersMilitaryCampaignsObjectivesParticipationPath },
+});
+
+export const GetCharactersMilitaryCampaignsObjectivesParticipationDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>, GetCharactersMilitaryCampaignsObjectivesParticipationResponse> = {
   operationId: "GetCharactersMilitaryCampaignsObjectivesParticipation",
   method: "GET",
   path: "/characters/{character_id}/military-campaigns/objectives/{objective_id}",
@@ -65,12 +87,17 @@ export const GetCharactersMilitaryCampaignsObjectivesParticipationDescriptor: Op
   requestSchema: GetCharactersMilitaryCampaignsObjectivesParticipationRequestSchema,
   authentication: { scopes: ["esi.activity.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersMilitaryCampaignsObjectivesParticipationStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersMilitaryCampaignsObjectivesParticipationResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMilitaryCampaignsObjectivesDetailDescriptor: OperationExecutionDescriptor<GetMilitaryCampaignsObjectivesDetailInput, GetMilitaryCampaignsObjectivesDetailOutput> = {
+export const GetMilitaryCampaignsObjectivesDetailRequestSchema: z.ZodType<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>> = composeOperationRequestSchema<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>>({
+  headers: { required: false, schema: zGetMilitaryCampaignsObjectivesDetailHeaders },
+  path: { required: true, schema: zGetMilitaryCampaignsObjectivesDetailPath },
+});
+
+export const GetMilitaryCampaignsObjectivesDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>, GetMilitaryCampaignsObjectivesDetailResponse> = {
   operationId: "GetMilitaryCampaignsObjectivesDetail",
   method: "GET",
   path: "/military-campaigns/{campaign_id}/objectives/{objective_id}",
@@ -85,12 +112,16 @@ export const GetMilitaryCampaignsObjectivesDetailDescriptor: OperationExecutionD
   requestSchema: GetMilitaryCampaignsObjectivesDetailRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMilitaryCampaignsObjectivesDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMilitaryCampaignsObjectivesDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMilitaryCampaignsListingDescriptor: OperationExecutionDescriptor<GetMilitaryCampaignsListingInput, GetMilitaryCampaignsListingOutput> = {
+export const GetMilitaryCampaignsListingRequestSchema: z.ZodType<OperationArguments<GetMilitaryCampaignsListingData>> = composeOperationRequestSchema<OperationArguments<GetMilitaryCampaignsListingData>>({
+  headers: { required: false, schema: zGetMilitaryCampaignsListingHeaders },
+});
+
+export const GetMilitaryCampaignsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetMilitaryCampaignsListingData>, GetMilitaryCampaignsListingResponse> = {
   operationId: "GetMilitaryCampaignsListing",
   method: "GET",
   path: "/military-campaigns",
@@ -103,12 +134,18 @@ export const GetMilitaryCampaignsListingDescriptor: OperationExecutionDescriptor
   requestSchema: GetMilitaryCampaignsListingRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMilitaryCampaignsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMilitaryCampaignsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersMilitaryCampaignsObjectivesListingDescriptor: OperationExecutionDescriptor<GetCharactersMilitaryCampaignsObjectivesListingInput, GetCharactersMilitaryCampaignsObjectivesListingOutput> = {
+export const GetCharactersMilitaryCampaignsObjectivesListingRequestSchema: z.ZodType<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>> = composeOperationRequestSchema<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>>({
+  headers: { required: false, schema: zGetCharactersMilitaryCampaignsObjectivesListingHeaders },
+  path: { required: true, schema: zGetCharactersMilitaryCampaignsObjectivesListingPath },
+  query: { required: false, schema: zGetCharactersMilitaryCampaignsObjectivesListingQuery },
+});
+
+export const GetCharactersMilitaryCampaignsObjectivesListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>, GetCharactersMilitaryCampaignsObjectivesListingResponse> = {
   operationId: "GetCharactersMilitaryCampaignsObjectivesListing",
   method: "GET",
   path: "/characters/{character_id}/military-campaigns/objectives",
@@ -125,12 +162,18 @@ export const GetCharactersMilitaryCampaignsObjectivesListingDescriptor: Operatio
   requestSchema: GetCharactersMilitaryCampaignsObjectivesListingRequestSchema,
   authentication: { scopes: ["esi.activity.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersMilitaryCampaignsObjectivesListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMilitaryCampaignsObjectivesListingDescriptor: OperationExecutionDescriptor<GetMilitaryCampaignsObjectivesListingInput, GetMilitaryCampaignsObjectivesListingOutput> = {
+export const GetMilitaryCampaignsObjectivesListingRequestSchema: z.ZodType<OperationArguments<GetMilitaryCampaignsObjectivesListingData>> = composeOperationRequestSchema<OperationArguments<GetMilitaryCampaignsObjectivesListingData>>({
+  headers: { required: false, schema: zGetMilitaryCampaignsObjectivesListingHeaders },
+  path: { required: true, schema: zGetMilitaryCampaignsObjectivesListingPath },
+  query: { required: false, schema: zGetMilitaryCampaignsObjectivesListingQuery },
+});
+
+export const GetMilitaryCampaignsObjectivesListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetMilitaryCampaignsObjectivesListingData>, GetMilitaryCampaignsObjectivesListingResponse> = {
   operationId: "GetMilitaryCampaignsObjectivesListing",
   method: "GET",
   path: "/military-campaigns/{campaign_id}/objectives",
@@ -147,7 +190,7 @@ export const GetMilitaryCampaignsObjectivesListingDescriptor: OperationExecution
   requestSchema: GetMilitaryCampaignsObjectivesListingRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMilitaryCampaignsObjectivesListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -2,9 +2,11 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { validate } from '@scalar/openapi-parser';
+import { describeValue } from './internal/guards.ts';
+import { sortJsonValue } from './internal/json.ts';
+import { resolveConfigPath } from './paths.ts';
 
 export interface CompatibilityDateOptions {
   requestedDate?: string;
@@ -30,9 +32,7 @@ export interface StagedOpenApiSnapshot {
 }
 
 export const defaultSpecificationUrl = 'https://esi.evetech.net/meta/openapi.json';
-export const pinnedCompatibilityDatePath: string = fileURLToPath(
-  new URL('../../openapi/compatibility-date.txt', import.meta.url),
-);
+export const pinnedCompatibilityDatePath: string = resolveConfigPath('compatibilityDate');
 
 const compatibilityDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -137,27 +137,4 @@ export async function stageOpenApiSnapshot(
     await rm(stageDirectory, { force: true, recursive: true });
     throw error;
   }
-}
-
-function sortJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJsonValue);
-  if (value === null || typeof value !== 'object') return value;
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .toSorted(([left], [right]) => {
-        if (left < right) return -1;
-        if (left > right) return 1;
-        return 0;
-      })
-      .map(([key, entry]) => [key, sortJsonValue(entry)]),
-  );
-}
-
-function describeValue(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return String(value);
-  }
-  return 'unknown';
 }

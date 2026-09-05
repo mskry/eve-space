@@ -4,50 +4,51 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdAttributesInput,
-  GetCharactersCharacterIdAttributesOutput,
-  GetCharactersCharacterIdSkillqueueInput,
-  GetCharactersCharacterIdSkillqueueOutput,
-  GetCharactersCharacterIdSkillsInput,
-  GetCharactersCharacterIdSkillsOutput,
-} from '../../schemas/operations/skills.js';
+  GetCharactersCharacterIdAttributesData,
+  GetCharactersCharacterIdAttributesResponse,
+  GetCharactersCharacterIdSkillqueueData,
+  GetCharactersCharacterIdSkillqueueResponse,
+  GetCharactersCharacterIdSkillsData,
+  GetCharactersCharacterIdSkillsResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdAttributesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdAttributesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdAttributesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdAttributesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdSkillqueueOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdSkillqueueInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdSkillqueueInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdSkillqueueInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdSkillsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdSkillsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdSkillsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdSkillsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>["headers"]>["X-Tenant"];
 }
 
 export interface SkillsDomainClient {
-  getAttributes(characterId: NonNullable<GetCharactersCharacterIdAttributesInput['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<GetCharactersCharacterIdAttributesOutput>;
+  getAttributes(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<GetCharactersCharacterIdAttributesResponse>;
 
-  getSkillQueue(characterId: NonNullable<GetCharactersCharacterIdSkillqueueInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<GetCharactersCharacterIdSkillqueueOutput>;
+  getSkillQueue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<GetCharactersCharacterIdSkillqueueResponse>;
 
-  getSkills(characterId: NonNullable<GetCharactersCharacterIdSkillsInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<GetCharactersCharacterIdSkillsOutput>;
+  getSkills(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<GetCharactersCharacterIdSkillsResponse>;
 
   withMetadata(): SkillsDomainClientWithMetadata;
 }
 
 export interface SkillsDomainClientWithMetadata {
-  getAttributes(characterId: NonNullable<GetCharactersCharacterIdAttributesInput['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<EsiResponse<GetCharactersCharacterIdAttributesOutput>>;
+  getAttributes(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAttributesData>['path']>["character_id"], options?: GetCharactersCharacterIdAttributesOptions): Promise<EsiResponse<GetCharactersCharacterIdAttributesResponse>>;
 
-  getSkillQueue(characterId: NonNullable<GetCharactersCharacterIdSkillqueueInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillqueueOutput>>;
+  getSkillQueue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillqueueData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillqueueOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillqueueResponse>>;
 
-  getSkills(characterId: NonNullable<GetCharactersCharacterIdSkillsInput['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillsOutput>>;
+  getSkills(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSkillsData>['path']>["character_id"], options?: GetCharactersCharacterIdSkillsOptions): Promise<EsiResponse<GetCharactersCharacterIdSkillsResponse>>;
 }

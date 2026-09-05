@@ -16,30 +16,32 @@ List orders in a region
 - Domain import: `@evespace/esi-client/domains/market`
 - Domain index: [market](../domains/market.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMarketClient } from '@evespace/esi-client/domains/market';
+import type { GetMarketsRegionIdOrdersResponse } from '@evespace/esi-client/types';
 
 const client = createMarketClient();
 
 const regionId = 10000002;
 
-const data = await client.listRegionOrders(regionId, { orderType: "buy" });
+const data: GetMarketsRegionIdOrdersResponse = await client.listRegionOrders(regionId, { orderType: "buy" });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetMarketsRegionIdOrdersResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const regionId = 10000002;
 
-const data = await client.market.listRegionOrders(regionId, { orderType: "buy" });
+const data: GetMarketsRegionIdOrdersResponse = await client.market.listRegionOrders(regionId, { orderType: "buy" });
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.market.listRegionOrders(regionId, { orderType: "buy" }
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetMarketsRegionIdOrdersData, GetMarketsRegionIdOrdersResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const regionId = 10000002;
 const arguments_: CallOperationArguments<'GetMarketsRegionIdOrders'> = { path: { "region_id": regionId }, query: { "order_type": "buy" } };
 
 const response = await client.callOperation('GetMarketsRegionIdOrders', arguments_);
+const data: GetMarketsRegionIdOrdersResponse = response.data;
 ```
 
 ## Parameters
@@ -71,14 +75,16 @@ const response = await client.callOperation('GetMarketsRegionIdOrders', argument
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetMarketsRegionIdOrdersRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetMarketsRegionIdOrdersData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetMarketsRegionIdOrdersHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetMarketsRegionIdOrdersPath`; `query` uses `@evespace/esi-client/zod` export `zGetMarketsRegionIdOrdersQuery`.
+- Response type: `@evespace/esi-client/types` export `GetMarketsRegionIdOrdersResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.market.withMetadata().listRegionOrders(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetMarketsRegionIdOrdersStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetMarketsRegionIdOrdersResponse` | OK |
 
 ## Authentication
 
@@ -110,6 +116,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

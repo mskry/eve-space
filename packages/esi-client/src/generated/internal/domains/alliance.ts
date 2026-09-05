@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetAlliancesAllianceIdIconsDescriptor,
@@ -21,15 +22,15 @@ import type {
   GetAlliancesAllianceIdCorporationsOptions,
 } from './alliance-contract.js';
 import type {
-  GetAlliancesAllianceIdCorporationsInput,
-  GetAlliancesAllianceIdCorporationsOutput,
-  GetAlliancesAllianceIdIconsInput,
-  GetAlliancesAllianceIdIconsOutput,
-  GetAlliancesAllianceIdInput,
-  GetAlliancesAllianceIdOutput,
-  GetAlliancesInput,
-  GetAlliancesOutput,
-} from '../../schemas/operations/alliance.js';
+  GetAlliancesAllianceIdCorporationsData,
+  GetAlliancesAllianceIdCorporationsResponse,
+  GetAlliancesAllianceIdData,
+  GetAlliancesAllianceIdIconsData,
+  GetAlliancesAllianceIdIconsResponse,
+  GetAlliancesAllianceIdResponse,
+  GetAlliancesData,
+  GetAlliancesResponse,
+} from '../../types.gen.js';
 
 class AllianceDomainClientWithMetadataImplementation implements AllianceDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -39,23 +40,23 @@ class AllianceDomainClientWithMetadataImplementation implements AllianceDomainCl
     Object.freeze(this);
   }
 
-  getIcon(allianceId: NonNullable<GetAlliancesAllianceIdIconsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<EsiResponse<GetAlliancesAllianceIdIconsOutput>> {
-    const arguments_: GetAlliancesAllianceIdIconsInput = { path: { "alliance_id": allianceId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getIcon(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<EsiResponse<GetAlliancesAllianceIdIconsResponse>> {
+    const arguments_: OperationArguments<GetAlliancesAllianceIdIconsData> = { path: { "alliance_id": allianceId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetAlliancesAllianceIdIconsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getPublicInfo(allianceId: NonNullable<GetAlliancesAllianceIdInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<EsiResponse<GetAlliancesAllianceIdOutput>> {
-    const arguments_: GetAlliancesAllianceIdInput = { path: { "alliance_id": allianceId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getPublicInfo(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<EsiResponse<GetAlliancesAllianceIdResponse>> {
+    const arguments_: OperationArguments<GetAlliancesAllianceIdData> = { path: { "alliance_id": allianceId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetAlliancesAllianceIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  list(options?: GetAlliancesOptions): Promise<EsiResponse<GetAlliancesOutput>> {
-    const arguments_: GetAlliancesInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  list(options?: GetAlliancesOptions): Promise<EsiResponse<GetAlliancesResponse>> {
+    const arguments_: OperationArguments<GetAlliancesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetAlliancesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporations(allianceId: NonNullable<GetAlliancesAllianceIdCorporationsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<EsiResponse<GetAlliancesAllianceIdCorporationsOutput>> {
-    const arguments_: GetAlliancesAllianceIdCorporationsInput = { path: { "alliance_id": allianceId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporations(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<EsiResponse<GetAlliancesAllianceIdCorporationsResponse>> {
+    const arguments_: OperationArguments<GetAlliancesAllianceIdCorporationsData> = { path: { "alliance_id": allianceId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetAlliancesAllianceIdCorporationsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -68,19 +69,19 @@ class AllianceDomainClientImplementation implements AllianceDomainClient {
     Object.freeze(this);
   }
 
-  getIcon(allianceId: NonNullable<GetAlliancesAllianceIdIconsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<GetAlliancesAllianceIdIconsOutput> {
+  getIcon(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<GetAlliancesAllianceIdIconsResponse> {
     return this.#metadata.getIcon(allianceId, options).then((response) => response.data);
   }
 
-  getPublicInfo(allianceId: NonNullable<GetAlliancesAllianceIdInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<GetAlliancesAllianceIdOutput> {
+  getPublicInfo(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<GetAlliancesAllianceIdResponse> {
     return this.#metadata.getPublicInfo(allianceId, options).then((response) => response.data);
   }
 
-  list(options?: GetAlliancesOptions): Promise<GetAlliancesOutput> {
+  list(options?: GetAlliancesOptions): Promise<GetAlliancesResponse> {
     return this.#metadata.list(options).then((response) => response.data);
   }
 
-  listCorporations(allianceId: NonNullable<GetAlliancesAllianceIdCorporationsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<GetAlliancesAllianceIdCorporationsOutput> {
+  listCorporations(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<GetAlliancesAllianceIdCorporationsResponse> {
     return this.#metadata.listCorporations(allianceId, options).then((response) => response.data);
   }
 

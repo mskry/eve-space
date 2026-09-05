@@ -4,14 +4,23 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetInsurancePricesData,
+  GetInsurancePricesResponse,
+} from '../../types.gen.js';
 import {
-  GetInsurancePricesRequestSchema,
-  GetInsurancePricesStatus200SuccessResponseSchema,
-  type GetInsurancePricesInput,
-  type GetInsurancePricesOutput,
-} from '../../schemas/operations/insurance.js';
+  zGetInsurancePricesHeaders,
+  zGetInsurancePricesResponse,
+} from '../../zod.gen.js';
 
-export const GetInsurancePricesDescriptor: OperationExecutionDescriptor<GetInsurancePricesInput, GetInsurancePricesOutput> = {
+export const GetInsurancePricesRequestSchema: z.ZodType<OperationArguments<GetInsurancePricesData>> = composeOperationRequestSchema<OperationArguments<GetInsurancePricesData>>({
+  headers: { required: false, schema: zGetInsurancePricesHeaders },
+});
+
+export const GetInsurancePricesDescriptor: OperationExecutionDescriptor<OperationArguments<GetInsurancePricesData>, GetInsurancePricesResponse> = {
   operationId: "GetInsurancePrices",
   method: "GET",
   path: "/insurance/prices",
@@ -24,7 +33,7 @@ export const GetInsurancePricesDescriptor: OperationExecutionDescriptor<GetInsur
   requestSchema: GetInsurancePricesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetInsurancePricesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetInsurancePricesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -16,30 +16,32 @@ Get character's public information
 - Domain import: `@evespace/esi-client/domains/character`
 - Domain index: [character](../domains/character.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCharacterClient } from '@evespace/esi-client/domains/character';
+import type { GetCharactersDetailResponse } from '@evespace/esi-client/types';
 
 const client = createCharacterClient();
 
 const characterId = 90000001;
 
-const data = await client.getPublicInfo(characterId);
+const data: GetCharactersDetailResponse = await client.getPublicInfo(characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersDetailResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const characterId = 90000001;
 
-const data = await client.character.getPublicInfo(characterId);
+const data: GetCharactersDetailResponse = await client.character.getPublicInfo(characterId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.character.getPublicInfo(characterId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersDetailData, GetCharactersDetailResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCharactersDetail'> = { path: { "character_id": characterId } };
 
 const response = await client.callOperation('GetCharactersDetail', arguments_);
+const data: GetCharactersDetailResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetCharactersDetail', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersDetailRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersDetailData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersDetailHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersDetailPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersDetailResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.character.withMetadata().getPublicInfo(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersDetailStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersDetailResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

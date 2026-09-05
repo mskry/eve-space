@@ -3,6 +3,8 @@ import type {
   OperationSafetyClassification,
   ResolvedOperationMetadata,
 } from './operation-metadata.ts';
+import { deepFreeze, serializeJson } from './internal/json.ts';
+import { compareText } from './internal/text.ts';
 
 export type ProvenanceHeaderFormat = 'typescript' | 'markdown' | 'json-compatible';
 
@@ -283,32 +285,4 @@ function validateProvenance(provenance: ArtifactProvenance): void {
   ) {
     throw new Error('Invalid generation provenance');
   }
-}
-
-function serializeJson(value: Record<string, unknown>): string {
-  return `${JSON.stringify(sortJsonValue(value), null, 2)}\n`;
-}
-
-function sortJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJsonValue);
-  if (value === null || typeof value !== 'object') return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .toSorted(([left], [right]) => compareText(left, right))
-      .map(([key, entry]) => [key, sortJsonValue(entry)]),
-  );
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const entry of Object.values(value)) deepFreeze(entry);
-  }
-  return value;
 }

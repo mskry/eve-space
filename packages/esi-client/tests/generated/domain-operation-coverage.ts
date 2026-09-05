@@ -4,552 +4,544 @@
 // DO NOT EDIT.
 
 import type { EsiClientOptions } from '../../src/client/options.js';
+import type { OperationArguments } from '../../src/client/request.js';
 import type { EsiResponse } from '../../src/client/response.js';
-import type { GeneratedOperationSignatures } from '../../src/generated/schemas/contracts.js';
+import type { GeneratedOperationContractMap } from '../../src/generated/internal/operation-contracts.js';
 import type {
-  GetCharactersAccessListsDetailInput,
-  GetCharactersAccessListsDetailOutput,
-  GetCharactersAccessListsListingInput,
-  GetCharactersAccessListsListingOutput,
-} from '../../src/generated/schemas/operations/access-list.js';
+  GetCharactersAccessListsDetailData,
+  GetCharactersAccessListsDetailResponse,
+  GetCharactersAccessListsListingData,
+  GetCharactersAccessListsListingResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersMercenaryTacticalOperationsDetailInput,
-  GetCharactersMercenaryTacticalOperationsDetailOutput,
-  GetCharactersMercenaryTacticalOperationsListingInput,
-  GetCharactersMercenaryTacticalOperationsListingOutput,
-  GetSkyhooksRaidableInput,
-  GetSkyhooksRaidableOutput,
-} from '../../src/generated/schemas/operations/activities.js';
+  GetCharactersMercenaryTacticalOperationsDetailData,
+  GetCharactersMercenaryTacticalOperationsDetailResponse,
+  GetCharactersMercenaryTacticalOperationsListingData,
+  GetCharactersMercenaryTacticalOperationsListingResponse,
+  GetSkyhooksRaidableData,
+  GetSkyhooksRaidableResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetAlliancesAllianceIdCorporationsInput,
-  GetAlliancesAllianceIdCorporationsOutput,
-  GetAlliancesAllianceIdIconsInput,
-  GetAlliancesAllianceIdIconsOutput,
-  GetAlliancesAllianceIdInput,
-  GetAlliancesAllianceIdOutput,
-  GetAlliancesInput,
-  GetAlliancesOutput,
-} from '../../src/generated/schemas/operations/alliance.js';
+  GetAlliancesAllianceIdCorporationsData,
+  GetAlliancesAllianceIdCorporationsResponse,
+  GetAlliancesAllianceIdData,
+  GetAlliancesAllianceIdIconsData,
+  GetAlliancesAllianceIdIconsResponse,
+  GetAlliancesAllianceIdResponse,
+  GetAlliancesData,
+  GetAlliancesResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdAssetsInput,
-  GetCharactersCharacterIdAssetsOutput,
-  GetCorporationsCorporationIdAssetsInput,
-  GetCorporationsCorporationIdAssetsOutput,
-  PostCharactersCharacterIdAssetsLocationsInput,
-  PostCharactersCharacterIdAssetsLocationsOutput,
-  PostCharactersCharacterIdAssetsNamesInput,
-  PostCharactersCharacterIdAssetsNamesOutput,
-  PostCorporationsCorporationIdAssetsLocationsInput,
-  PostCorporationsCorporationIdAssetsLocationsOutput,
-  PostCorporationsCorporationIdAssetsNamesInput,
-  PostCorporationsCorporationIdAssetsNamesOutput,
-} from '../../src/generated/schemas/operations/assets.js';
+  GetCharactersCharacterIdAssetsData,
+  GetCharactersCharacterIdAssetsResponse,
+  GetCorporationsCorporationIdAssetsData,
+  GetCorporationsCorporationIdAssetsResponse,
+  PostCharactersCharacterIdAssetsLocationsData,
+  PostCharactersCharacterIdAssetsLocationsResponse,
+  PostCharactersCharacterIdAssetsNamesData,
+  PostCharactersCharacterIdAssetsNamesResponse,
+  PostCorporationsCorporationIdAssetsLocationsData,
+  PostCorporationsCorporationIdAssetsLocationsResponse,
+  PostCorporationsCorporationIdAssetsNamesData,
+  PostCorporationsCorporationIdAssetsNamesResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdCalendarEventIdAttendeesInput,
-  GetCharactersCharacterIdCalendarEventIdAttendeesOutput,
-  GetCharactersCharacterIdCalendarEventIdInput,
-  GetCharactersCharacterIdCalendarEventIdOutput,
-  GetCharactersCharacterIdCalendarInput,
-  GetCharactersCharacterIdCalendarOutput,
-  PutCharactersCharacterIdCalendarEventIdInput,
-  PutCharactersCharacterIdCalendarEventIdOutput,
-} from '../../src/generated/schemas/operations/calendar.js';
+  GetCharactersCharacterIdCalendarData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesResponse,
+  GetCharactersCharacterIdCalendarEventIdData,
+  GetCharactersCharacterIdCalendarEventIdResponse,
+  GetCharactersCharacterIdCalendarResponse,
+  PutCharactersCharacterIdCalendarEventIdData,
+  PutCharactersCharacterIdCalendarEventIdResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdAgentsResearchInput,
-  GetCharactersCharacterIdAgentsResearchOutput,
-  GetCharactersCharacterIdBlueprintsInput,
-  GetCharactersCharacterIdBlueprintsOutput,
-  GetCharactersCharacterIdCorporationhistoryInput,
-  GetCharactersCharacterIdCorporationhistoryOutput,
-  GetCharactersCharacterIdFatigueInput,
-  GetCharactersCharacterIdFatigueOutput,
-  GetCharactersCharacterIdMedalsInput,
-  GetCharactersCharacterIdMedalsOutput,
-  GetCharactersCharacterIdNotificationsContactsInput,
-  GetCharactersCharacterIdNotificationsContactsOutput,
-  GetCharactersCharacterIdNotificationsInput,
-  GetCharactersCharacterIdNotificationsOutput,
-  GetCharactersCharacterIdPortraitInput,
-  GetCharactersCharacterIdPortraitOutput,
-  GetCharactersCharacterIdRolesInput,
-  GetCharactersCharacterIdRolesOutput,
-  GetCharactersCharacterIdStandingsInput,
-  GetCharactersCharacterIdStandingsOutput,
-  GetCharactersCharacterIdTitlesInput,
-  GetCharactersCharacterIdTitlesOutput,
-  GetCharactersDetailInput,
-  GetCharactersDetailOutput,
-  PostCharactersAffiliationInput,
-  PostCharactersAffiliationOutput,
-  PostCharactersCharacterIdCspaInput,
-  PostCharactersCharacterIdCspaOutput,
-} from '../../src/generated/schemas/operations/character.js';
+  GetCharactersCharacterIdAgentsResearchData,
+  GetCharactersCharacterIdAgentsResearchResponse,
+  GetCharactersCharacterIdBlueprintsData,
+  GetCharactersCharacterIdBlueprintsResponse,
+  GetCharactersCharacterIdCorporationhistoryData,
+  GetCharactersCharacterIdCorporationhistoryResponse,
+  GetCharactersCharacterIdFatigueData,
+  GetCharactersCharacterIdFatigueResponse,
+  GetCharactersCharacterIdMedalsData,
+  GetCharactersCharacterIdMedalsResponse,
+  GetCharactersCharacterIdNotificationsContactsData,
+  GetCharactersCharacterIdNotificationsContactsResponse,
+  GetCharactersCharacterIdNotificationsData,
+  GetCharactersCharacterIdNotificationsResponse,
+  GetCharactersCharacterIdPortraitData,
+  GetCharactersCharacterIdPortraitResponse,
+  GetCharactersCharacterIdRolesData,
+  GetCharactersCharacterIdRolesResponse,
+  GetCharactersCharacterIdStandingsData,
+  GetCharactersCharacterIdStandingsResponse,
+  GetCharactersCharacterIdTitlesData,
+  GetCharactersCharacterIdTitlesResponse,
+  GetCharactersDetailData,
+  GetCharactersDetailResponse,
+  PostCharactersAffiliationData,
+  PostCharactersAffiliationResponse,
+  PostCharactersCharacterIdCspaData,
+  PostCharactersCharacterIdCspaResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdClonesInput,
-  GetCharactersCharacterIdClonesOutput,
-  GetCharactersCharacterIdImplantsInput,
-  GetCharactersCharacterIdImplantsOutput,
-} from '../../src/generated/schemas/operations/clones.js';
+  GetCharactersCharacterIdClonesData,
+  GetCharactersCharacterIdClonesResponse,
+  GetCharactersCharacterIdImplantsData,
+  GetCharactersCharacterIdImplantsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  DeleteCharactersCharacterIdContactsInput,
-  DeleteCharactersCharacterIdContactsOutput,
-  GetAlliancesAllianceIdContactsInput,
-  GetAlliancesAllianceIdContactsLabelsInput,
-  GetAlliancesAllianceIdContactsLabelsOutput,
-  GetAlliancesAllianceIdContactsOutput,
-  GetCharactersCharacterIdContactsInput,
-  GetCharactersCharacterIdContactsLabelsInput,
-  GetCharactersCharacterIdContactsLabelsOutput,
-  GetCharactersCharacterIdContactsOutput,
-  GetCorporationsCorporationIdContactsInput,
-  GetCorporationsCorporationIdContactsLabelsInput,
-  GetCorporationsCorporationIdContactsLabelsOutput,
-  GetCorporationsCorporationIdContactsOutput,
-  PostCharactersCharacterIdContactsInput,
-  PostCharactersCharacterIdContactsOutput,
-  PutCharactersCharacterIdContactsInput,
-  PutCharactersCharacterIdContactsOutput,
-} from '../../src/generated/schemas/operations/contacts.js';
+  DeleteCharactersCharacterIdContactsData,
+  DeleteCharactersCharacterIdContactsResponse,
+  GetAlliancesAllianceIdContactsData,
+  GetAlliancesAllianceIdContactsLabelsData,
+  GetAlliancesAllianceIdContactsLabelsResponse,
+  GetAlliancesAllianceIdContactsResponse,
+  GetCharactersCharacterIdContactsData,
+  GetCharactersCharacterIdContactsLabelsData,
+  GetCharactersCharacterIdContactsLabelsResponse,
+  GetCharactersCharacterIdContactsResponse,
+  GetCorporationsCorporationIdContactsData,
+  GetCorporationsCorporationIdContactsLabelsData,
+  GetCorporationsCorporationIdContactsLabelsResponse,
+  GetCorporationsCorporationIdContactsResponse,
+  PostCharactersCharacterIdContactsData,
+  PostCharactersCharacterIdContactsResponse,
+  PutCharactersCharacterIdContactsData,
+  PutCharactersCharacterIdContactsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdContractsContractIdBidsInput,
-  GetCharactersCharacterIdContractsContractIdBidsOutput,
-  GetCharactersCharacterIdContractsContractIdItemsInput,
-  GetCharactersCharacterIdContractsContractIdItemsOutput,
-  GetCharactersCharacterIdContractsInput,
-  GetCharactersCharacterIdContractsOutput,
-  GetContractsPublicBidsContractIdInput,
-  GetContractsPublicBidsContractIdOutput,
-  GetContractsPublicItemsContractIdInput,
-  GetContractsPublicItemsContractIdOutput,
-  GetContractsPublicRegionIdInput,
-  GetContractsPublicRegionIdOutput,
-  GetCorporationsCorporationIdContractsContractIdBidsInput,
-  GetCorporationsCorporationIdContractsContractIdBidsOutput,
-  GetCorporationsCorporationIdContractsContractIdItemsInput,
-  GetCorporationsCorporationIdContractsContractIdItemsOutput,
-  GetCorporationsCorporationIdContractsInput,
-  GetCorporationsCorporationIdContractsOutput,
-} from '../../src/generated/schemas/operations/contracts.js';
+  GetCharactersCharacterIdContractsContractIdBidsData,
+  GetCharactersCharacterIdContractsContractIdBidsResponse,
+  GetCharactersCharacterIdContractsContractIdItemsData,
+  GetCharactersCharacterIdContractsContractIdItemsResponse,
+  GetCharactersCharacterIdContractsData,
+  GetCharactersCharacterIdContractsResponse,
+  GetContractsPublicBidsContractIdData,
+  GetContractsPublicBidsContractIdResponse,
+  GetContractsPublicItemsContractIdData,
+  GetContractsPublicItemsContractIdResponse,
+  GetContractsPublicRegionIdData,
+  GetContractsPublicRegionIdResponse,
+  GetCorporationsCorporationIdContractsContractIdBidsData,
+  GetCorporationsCorporationIdContractsContractIdBidsResponse,
+  GetCorporationsCorporationIdContractsContractIdItemsData,
+  GetCorporationsCorporationIdContractsContractIdItemsResponse,
+  GetCorporationsCorporationIdContractsData,
+  GetCorporationsCorporationIdContractsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCorporationsCorporationIdAlliancehistoryInput,
-  GetCorporationsCorporationIdAlliancehistoryOutput,
-  GetCorporationsCorporationIdBlueprintsInput,
-  GetCorporationsCorporationIdBlueprintsOutput,
-  GetCorporationsCorporationIdContainersLogsInput,
-  GetCorporationsCorporationIdContainersLogsOutput,
-  GetCorporationsCorporationIdDivisionsInput,
-  GetCorporationsCorporationIdDivisionsOutput,
-  GetCorporationsCorporationIdFacilitiesInput,
-  GetCorporationsCorporationIdFacilitiesOutput,
-  GetCorporationsCorporationIdIconsInput,
-  GetCorporationsCorporationIdIconsOutput,
-  GetCorporationsCorporationIdInput,
-  GetCorporationsCorporationIdMedalsInput,
-  GetCorporationsCorporationIdMedalsIssuedInput,
-  GetCorporationsCorporationIdMedalsIssuedOutput,
-  GetCorporationsCorporationIdMedalsOutput,
-  GetCorporationsCorporationIdMembersInput,
-  GetCorporationsCorporationIdMembersLimitInput,
-  GetCorporationsCorporationIdMembersLimitOutput,
-  GetCorporationsCorporationIdMembersOutput,
-  GetCorporationsCorporationIdMembersTitlesInput,
-  GetCorporationsCorporationIdMembersTitlesOutput,
-  GetCorporationsCorporationIdMembertrackingInput,
-  GetCorporationsCorporationIdMembertrackingOutput,
-  GetCorporationsCorporationIdOutput,
-  GetCorporationsCorporationIdRolesHistoryInput,
-  GetCorporationsCorporationIdRolesHistoryOutput,
-  GetCorporationsCorporationIdRolesInput,
-  GetCorporationsCorporationIdRolesOutput,
-  GetCorporationsCorporationIdShareholdersInput,
-  GetCorporationsCorporationIdShareholdersOutput,
-  GetCorporationsCorporationIdStandingsInput,
-  GetCorporationsCorporationIdStandingsOutput,
-  GetCorporationsCorporationIdStarbasesInput,
-  GetCorporationsCorporationIdStarbasesOutput,
-  GetCorporationsCorporationIdStarbasesStarbaseIdInput,
-  GetCorporationsCorporationIdStarbasesStarbaseIdOutput,
-  GetCorporationsCorporationIdStructuresInput,
-  GetCorporationsCorporationIdStructuresOutput,
-  GetCorporationsCorporationIdTitlesInput,
-  GetCorporationsCorporationIdTitlesOutput,
-  GetCorporationsNpccorpsInput,
-  GetCorporationsNpccorpsOutput,
-} from '../../src/generated/schemas/operations/corporation.js';
+  GetCorporationsCorporationIdAlliancehistoryData,
+  GetCorporationsCorporationIdAlliancehistoryResponse,
+  GetCorporationsCorporationIdBlueprintsData,
+  GetCorporationsCorporationIdBlueprintsResponse,
+  GetCorporationsCorporationIdContainersLogsData,
+  GetCorporationsCorporationIdContainersLogsResponse,
+  GetCorporationsCorporationIdData,
+  GetCorporationsCorporationIdDivisionsData,
+  GetCorporationsCorporationIdDivisionsResponse,
+  GetCorporationsCorporationIdFacilitiesData,
+  GetCorporationsCorporationIdFacilitiesResponse,
+  GetCorporationsCorporationIdIconsData,
+  GetCorporationsCorporationIdIconsResponse,
+  GetCorporationsCorporationIdMedalsData,
+  GetCorporationsCorporationIdMedalsIssuedData,
+  GetCorporationsCorporationIdMedalsIssuedResponse,
+  GetCorporationsCorporationIdMedalsResponse,
+  GetCorporationsCorporationIdMembersData,
+  GetCorporationsCorporationIdMembersLimitData,
+  GetCorporationsCorporationIdMembersLimitResponse,
+  GetCorporationsCorporationIdMembersResponse,
+  GetCorporationsCorporationIdMembersTitlesData,
+  GetCorporationsCorporationIdMembersTitlesResponse,
+  GetCorporationsCorporationIdMembertrackingData,
+  GetCorporationsCorporationIdMembertrackingResponse,
+  GetCorporationsCorporationIdResponse,
+  GetCorporationsCorporationIdRolesData,
+  GetCorporationsCorporationIdRolesHistoryData,
+  GetCorporationsCorporationIdRolesHistoryResponse,
+  GetCorporationsCorporationIdRolesResponse,
+  GetCorporationsCorporationIdShareholdersData,
+  GetCorporationsCorporationIdShareholdersResponse,
+  GetCorporationsCorporationIdStandingsData,
+  GetCorporationsCorporationIdStandingsResponse,
+  GetCorporationsCorporationIdStarbasesData,
+  GetCorporationsCorporationIdStarbasesResponse,
+  GetCorporationsCorporationIdStarbasesStarbaseIdData,
+  GetCorporationsCorporationIdStarbasesStarbaseIdResponse,
+  GetCorporationsCorporationIdStructuresData,
+  GetCorporationsCorporationIdStructuresResponse,
+  GetCorporationsCorporationIdTitlesData,
+  GetCorporationsCorporationIdTitlesResponse,
+  GetCorporationsNpccorpsData,
+  GetCorporationsNpccorpsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCorporationsProjectsContributionInput,
-  GetCorporationsProjectsContributionOutput,
-  GetCorporationsProjectsContributorsInput,
-  GetCorporationsProjectsContributorsOutput,
-  GetCorporationsProjectsDetailInput,
-  GetCorporationsProjectsDetailOutput,
-  GetCorporationsProjectsListingInput,
-  GetCorporationsProjectsListingOutput,
-} from '../../src/generated/schemas/operations/corporation-projects.js';
+  GetCorporationsProjectsContributionData,
+  GetCorporationsProjectsContributionResponse,
+  GetCorporationsProjectsContributorsData,
+  GetCorporationsProjectsContributorsResponse,
+  GetCorporationsProjectsDetailData,
+  GetCorporationsProjectsDetailResponse,
+  GetCorporationsProjectsListingData,
+  GetCorporationsProjectsListingResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCosmeticsSkinrComponentsInput,
-  GetCharactersCosmeticsSkinrComponentsOutput,
-  GetCharactersCosmeticsSkinrInput,
-  GetCharactersCosmeticsSkinrOutput,
-  GetCosmeticsSkinrInput,
-  GetCosmeticsSkinrOutput,
-} from '../../src/generated/schemas/operations/cosmetics.js';
+  GetCharactersCosmeticsSkinrComponentsData,
+  GetCharactersCosmeticsSkinrComponentsResponse,
+  GetCharactersCosmeticsSkinrData,
+  GetCharactersCosmeticsSkinrResponse,
+  GetCosmeticsSkinrData,
+  GetCosmeticsSkinrResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetDogmaAttributesAttributeIdInput,
-  GetDogmaAttributesAttributeIdOutput,
-  GetDogmaAttributesInput,
-  GetDogmaAttributesOutput,
-  GetDogmaDynamicItemsTypeIdItemIdInput,
-  GetDogmaDynamicItemsTypeIdItemIdOutput,
-  GetDogmaEffectsEffectIdInput,
-  GetDogmaEffectsEffectIdOutput,
-  GetDogmaEffectsInput,
-  GetDogmaEffectsOutput,
-} from '../../src/generated/schemas/operations/dogma.js';
+  GetDogmaAttributesAttributeIdData,
+  GetDogmaAttributesAttributeIdResponse,
+  GetDogmaAttributesData,
+  GetDogmaAttributesResponse,
+  GetDogmaDynamicItemsTypeIdItemIdData,
+  GetDogmaDynamicItemsTypeIdItemIdResponse,
+  GetDogmaEffectsData,
+  GetDogmaEffectsEffectIdData,
+  GetDogmaEffectsEffectIdResponse,
+  GetDogmaEffectsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdFwStatsInput,
-  GetCharactersCharacterIdFwStatsOutput,
-  GetCorporationsCorporationIdFwStatsInput,
-  GetCorporationsCorporationIdFwStatsOutput,
-  GetFwLeaderboardsCharactersInput,
-  GetFwLeaderboardsCharactersOutput,
-  GetFwLeaderboardsCorporationsInput,
-  GetFwLeaderboardsCorporationsOutput,
-  GetFwLeaderboardsInput,
-  GetFwLeaderboardsOutput,
-  GetFwStatsInput,
-  GetFwStatsOutput,
-  GetFwSystemsInput,
-  GetFwSystemsOutput,
-  GetFwWarsInput,
-  GetFwWarsOutput,
-} from '../../src/generated/schemas/operations/faction-warfare.js';
+  GetCharactersCharacterIdFwStatsData,
+  GetCharactersCharacterIdFwStatsResponse,
+  GetCorporationsCorporationIdFwStatsData,
+  GetCorporationsCorporationIdFwStatsResponse,
+  GetFwLeaderboardsCharactersData,
+  GetFwLeaderboardsCharactersResponse,
+  GetFwLeaderboardsCorporationsData,
+  GetFwLeaderboardsCorporationsResponse,
+  GetFwLeaderboardsData,
+  GetFwLeaderboardsResponse,
+  GetFwStatsData,
+  GetFwStatsResponse,
+  GetFwSystemsData,
+  GetFwSystemsResponse,
+  GetFwWarsData,
+  GetFwWarsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  DeleteCharactersCharacterIdFittingsFittingIdInput,
-  DeleteCharactersCharacterIdFittingsFittingIdOutput,
-  GetCharactersCharacterIdFittingsInput,
-  GetCharactersCharacterIdFittingsOutput,
-  PostCharactersCharacterIdFittingsInput,
-  PostCharactersCharacterIdFittingsOutput,
-} from '../../src/generated/schemas/operations/fittings.js';
+  DeleteCharactersCharacterIdFittingsFittingIdData,
+  DeleteCharactersCharacterIdFittingsFittingIdResponse,
+  GetCharactersCharacterIdFittingsData,
+  GetCharactersCharacterIdFittingsResponse,
+  PostCharactersCharacterIdFittingsData,
+  PostCharactersCharacterIdFittingsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  DeleteFleetsFleetIdMembersMemberIdInput,
-  DeleteFleetsFleetIdMembersMemberIdOutput,
-  DeleteFleetsFleetIdSquadsSquadIdInput,
-  DeleteFleetsFleetIdSquadsSquadIdOutput,
-  DeleteFleetsFleetIdWingsWingIdInput,
-  DeleteFleetsFleetIdWingsWingIdOutput,
-  GetCharactersCharacterIdFleetInput,
-  GetCharactersCharacterIdFleetOutput,
-  GetFleetsFleetIdInput,
-  GetFleetsFleetIdMembersInput,
-  GetFleetsFleetIdMembersOutput,
-  GetFleetsFleetIdOutput,
-  GetFleetsFleetIdWingsInput,
-  GetFleetsFleetIdWingsOutput,
-  PostFleetsFleetIdMembersInput,
-  PostFleetsFleetIdMembersOutput,
-  PostFleetsFleetIdWingsInput,
-  PostFleetsFleetIdWingsOutput,
-  PostFleetsFleetIdWingsWingIdSquadsInput,
-  PostFleetsFleetIdWingsWingIdSquadsOutput,
-  PutFleetsFleetIdInput,
-  PutFleetsFleetIdMembersMemberIdInput,
-  PutFleetsFleetIdMembersMemberIdOutput,
-  PutFleetsFleetIdOutput,
-  PutFleetsFleetIdSquadsSquadIdInput,
-  PutFleetsFleetIdSquadsSquadIdOutput,
-  PutFleetsFleetIdWingsWingIdInput,
-  PutFleetsFleetIdWingsWingIdOutput,
-} from '../../src/generated/schemas/operations/fleets.js';
+  DeleteFleetsFleetIdMembersMemberIdData,
+  DeleteFleetsFleetIdMembersMemberIdResponse,
+  DeleteFleetsFleetIdSquadsSquadIdData,
+  DeleteFleetsFleetIdSquadsSquadIdResponse,
+  DeleteFleetsFleetIdWingsWingIdData,
+  DeleteFleetsFleetIdWingsWingIdResponse,
+  GetCharactersCharacterIdFleetData,
+  GetCharactersCharacterIdFleetResponse,
+  GetFleetsFleetIdData,
+  GetFleetsFleetIdMembersData,
+  GetFleetsFleetIdMembersResponse,
+  GetFleetsFleetIdResponse,
+  GetFleetsFleetIdWingsData,
+  GetFleetsFleetIdWingsResponse,
+  PostFleetsFleetIdMembersData,
+  PostFleetsFleetIdMembersResponse,
+  PostFleetsFleetIdWingsData,
+  PostFleetsFleetIdWingsResponse,
+  PostFleetsFleetIdWingsWingIdSquadsData,
+  PostFleetsFleetIdWingsWingIdSquadsResponse,
+  PutFleetsFleetIdData,
+  PutFleetsFleetIdMembersMemberIdData,
+  PutFleetsFleetIdMembersMemberIdResponse,
+  PutFleetsFleetIdResponse,
+  PutFleetsFleetIdSquadsSquadIdData,
+  PutFleetsFleetIdSquadsSquadIdResponse,
+  PutFleetsFleetIdWingsWingIdData,
+  PutFleetsFleetIdWingsWingIdResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersFreelanceJobsListingInput,
-  GetCharactersFreelanceJobsListingOutput,
-  GetCharactersFreelanceJobsParticipationInput,
-  GetCharactersFreelanceJobsParticipationOutput,
-  GetCorporationsFreelanceJobsListingInput,
-  GetCorporationsFreelanceJobsListingOutput,
-  GetCorporationsFreelanceJobsParticipantsInput,
-  GetCorporationsFreelanceJobsParticipantsOutput,
-  GetFreelanceJobsDetailInput,
-  GetFreelanceJobsDetailOutput,
-  GetFreelanceJobsListingInput,
-  GetFreelanceJobsListingOutput,
-} from '../../src/generated/schemas/operations/freelance-jobs.js';
+  GetCharactersFreelanceJobsListingData,
+  GetCharactersFreelanceJobsListingResponse,
+  GetCharactersFreelanceJobsParticipationData,
+  GetCharactersFreelanceJobsParticipationResponse,
+  GetCorporationsFreelanceJobsListingData,
+  GetCorporationsFreelanceJobsListingResponse,
+  GetCorporationsFreelanceJobsParticipantsData,
+  GetCorporationsFreelanceJobsParticipantsResponse,
+  GetFreelanceJobsDetailData,
+  GetFreelanceJobsDetailResponse,
+  GetFreelanceJobsListingData,
+  GetFreelanceJobsListingResponse,
+} from '../../src/generated/types.gen.js';
+import type { GetIncursionsData, GetIncursionsResponse } from '../../src/generated/types.gen.js';
 import type {
-  GetIncursionsInput,
-  GetIncursionsOutput,
-} from '../../src/generated/schemas/operations/incursions.js';
+  GetCharactersCharacterIdIndustryJobsData,
+  GetCharactersCharacterIdIndustryJobsResponse,
+  GetCharactersCharacterIdMiningData,
+  GetCharactersCharacterIdMiningResponse,
+  GetCorporationCorporationIdMiningExtractionsData,
+  GetCorporationCorporationIdMiningExtractionsResponse,
+  GetCorporationCorporationIdMiningObserversData,
+  GetCorporationCorporationIdMiningObserversObserverIdData,
+  GetCorporationCorporationIdMiningObserversObserverIdResponse,
+  GetCorporationCorporationIdMiningObserversResponse,
+  GetCorporationsCorporationIdIndustryJobsData,
+  GetCorporationsCorporationIdIndustryJobsResponse,
+  GetIndustryFacilitiesData,
+  GetIndustryFacilitiesResponse,
+  GetIndustrySystemsData,
+  GetIndustrySystemsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdIndustryJobsInput,
-  GetCharactersCharacterIdIndustryJobsOutput,
-  GetCharactersCharacterIdMiningInput,
-  GetCharactersCharacterIdMiningOutput,
-  GetCorporationCorporationIdMiningExtractionsInput,
-  GetCorporationCorporationIdMiningExtractionsOutput,
-  GetCorporationCorporationIdMiningObserversInput,
-  GetCorporationCorporationIdMiningObserversObserverIdInput,
-  GetCorporationCorporationIdMiningObserversObserverIdOutput,
-  GetCorporationCorporationIdMiningObserversOutput,
-  GetCorporationsCorporationIdIndustryJobsInput,
-  GetCorporationsCorporationIdIndustryJobsOutput,
-  GetIndustryFacilitiesInput,
-  GetIndustryFacilitiesOutput,
-  GetIndustrySystemsInput,
-  GetIndustrySystemsOutput,
-} from '../../src/generated/schemas/operations/industry.js';
+  GetInsurancePricesData,
+  GetInsurancePricesResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetInsurancePricesInput,
-  GetInsurancePricesOutput,
-} from '../../src/generated/schemas/operations/insurance.js';
+  GetCharactersCharacterIdKillmailsRecentData,
+  GetCharactersCharacterIdKillmailsRecentResponse,
+  GetCorporationsCorporationIdKillmailsRecentData,
+  GetCorporationsCorporationIdKillmailsRecentResponse,
+  GetKillmailsKillmailIdKillmailHashData,
+  GetKillmailsKillmailIdKillmailHashResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdKillmailsRecentInput,
-  GetCharactersCharacterIdKillmailsRecentOutput,
-  GetCorporationsCorporationIdKillmailsRecentInput,
-  GetCorporationsCorporationIdKillmailsRecentOutput,
-  GetKillmailsKillmailIdKillmailHashInput,
-  GetKillmailsKillmailIdKillmailHashOutput,
-} from '../../src/generated/schemas/operations/killmails.js';
+  GetCharactersCharacterIdLocationData,
+  GetCharactersCharacterIdLocationResponse,
+  GetCharactersCharacterIdOnlineData,
+  GetCharactersCharacterIdOnlineResponse,
+  GetCharactersCharacterIdShipData,
+  GetCharactersCharacterIdShipResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdLocationInput,
-  GetCharactersCharacterIdLocationOutput,
-  GetCharactersCharacterIdOnlineInput,
-  GetCharactersCharacterIdOnlineOutput,
-  GetCharactersCharacterIdShipInput,
-  GetCharactersCharacterIdShipOutput,
-} from '../../src/generated/schemas/operations/location.js';
+  GetCharactersCharacterIdLoyaltyPointsData,
+  GetCharactersCharacterIdLoyaltyPointsResponse,
+  GetLoyaltyStoresCorporationIdOffersData,
+  GetLoyaltyStoresCorporationIdOffersResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdLoyaltyPointsInput,
-  GetCharactersCharacterIdLoyaltyPointsOutput,
-  GetLoyaltyStoresCorporationIdOffersInput,
-  GetLoyaltyStoresCorporationIdOffersOutput,
-} from '../../src/generated/schemas/operations/loyalty.js';
+  DeleteCharactersCharacterIdMailLabelsLabelIdData,
+  DeleteCharactersCharacterIdMailLabelsLabelIdResponse,
+  DeleteCharactersCharacterIdMailMailIdData,
+  DeleteCharactersCharacterIdMailMailIdResponse,
+  GetCharactersCharacterIdMailData,
+  GetCharactersCharacterIdMailLabelsData,
+  GetCharactersCharacterIdMailLabelsResponse,
+  GetCharactersCharacterIdMailListsData,
+  GetCharactersCharacterIdMailListsResponse,
+  GetCharactersCharacterIdMailMailIdData,
+  GetCharactersCharacterIdMailMailIdResponse,
+  GetCharactersCharacterIdMailResponse,
+  PostCharactersCharacterIdMailData,
+  PostCharactersCharacterIdMailLabelsData,
+  PostCharactersCharacterIdMailLabelsResponse,
+  PostCharactersCharacterIdMailResponse,
+  PutCharactersCharacterIdMailMailIdData,
+  PutCharactersCharacterIdMailMailIdResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  DeleteCharactersCharacterIdMailLabelsLabelIdInput,
-  DeleteCharactersCharacterIdMailLabelsLabelIdOutput,
-  DeleteCharactersCharacterIdMailMailIdInput,
-  DeleteCharactersCharacterIdMailMailIdOutput,
-  GetCharactersCharacterIdMailInput,
-  GetCharactersCharacterIdMailLabelsInput,
-  GetCharactersCharacterIdMailLabelsOutput,
-  GetCharactersCharacterIdMailListsInput,
-  GetCharactersCharacterIdMailListsOutput,
-  GetCharactersCharacterIdMailMailIdInput,
-  GetCharactersCharacterIdMailMailIdOutput,
-  GetCharactersCharacterIdMailOutput,
-  PostCharactersCharacterIdMailInput,
-  PostCharactersCharacterIdMailLabelsInput,
-  PostCharactersCharacterIdMailLabelsOutput,
-  PostCharactersCharacterIdMailOutput,
-  PutCharactersCharacterIdMailMailIdInput,
-  PutCharactersCharacterIdMailMailIdOutput,
-} from '../../src/generated/schemas/operations/mail.js';
+  GetCharactersCharacterIdOrdersData,
+  GetCharactersCharacterIdOrdersHistoryData,
+  GetCharactersCharacterIdOrdersHistoryResponse,
+  GetCharactersCharacterIdOrdersResponse,
+  GetCorporationsCorporationIdOrdersData,
+  GetCorporationsCorporationIdOrdersHistoryData,
+  GetCorporationsCorporationIdOrdersHistoryResponse,
+  GetCorporationsCorporationIdOrdersResponse,
+  GetMarketsGroupsData,
+  GetMarketsGroupsMarketGroupIdData,
+  GetMarketsGroupsMarketGroupIdResponse,
+  GetMarketsGroupsResponse,
+  GetMarketsPricesData,
+  GetMarketsPricesResponse,
+  GetMarketsRegionIdHistoryData,
+  GetMarketsRegionIdHistoryResponse,
+  GetMarketsRegionIdOrdersData,
+  GetMarketsRegionIdOrdersResponse,
+  GetMarketsRegionIdTypesData,
+  GetMarketsRegionIdTypesResponse,
+  GetMarketsStructuresStructureIdData,
+  GetMarketsStructuresStructureIdResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdOrdersHistoryInput,
-  GetCharactersCharacterIdOrdersHistoryOutput,
-  GetCharactersCharacterIdOrdersInput,
-  GetCharactersCharacterIdOrdersOutput,
-  GetCorporationsCorporationIdOrdersHistoryInput,
-  GetCorporationsCorporationIdOrdersHistoryOutput,
-  GetCorporationsCorporationIdOrdersInput,
-  GetCorporationsCorporationIdOrdersOutput,
-  GetMarketsGroupsInput,
-  GetMarketsGroupsMarketGroupIdInput,
-  GetMarketsGroupsMarketGroupIdOutput,
-  GetMarketsGroupsOutput,
-  GetMarketsPricesInput,
-  GetMarketsPricesOutput,
-  GetMarketsRegionIdHistoryInput,
-  GetMarketsRegionIdHistoryOutput,
-  GetMarketsRegionIdOrdersInput,
-  GetMarketsRegionIdOrdersOutput,
-  GetMarketsRegionIdTypesInput,
-  GetMarketsRegionIdTypesOutput,
-  GetMarketsStructuresStructureIdInput,
-  GetMarketsStructuresStructureIdOutput,
-} from '../../src/generated/schemas/operations/market.js';
+  GetMetaChangelogData,
+  GetMetaChangelogResponse,
+  GetMetaCompatibilityDatesData,
+  GetMetaCompatibilityDatesResponse,
+  GetMetaNameData,
+  GetMetaNameResponse,
+  GetMetaStatusData,
+  GetMetaStatusResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetMetaChangelogInput,
-  GetMetaChangelogOutput,
-  GetMetaCompatibilityDatesInput,
-  GetMetaCompatibilityDatesOutput,
-  GetMetaNameInput,
-  GetMetaNameOutput,
-  GetMetaStatusInput,
-  GetMetaStatusOutput,
-} from '../../src/generated/schemas/operations/meta.js';
+  GetCharactersMilitaryCampaignsObjectivesListingData,
+  GetCharactersMilitaryCampaignsObjectivesListingResponse,
+  GetCharactersMilitaryCampaignsObjectivesParticipationData,
+  GetCharactersMilitaryCampaignsObjectivesParticipationResponse,
+  GetMilitaryCampaignsDetailData,
+  GetMilitaryCampaignsDetailResponse,
+  GetMilitaryCampaignsListingData,
+  GetMilitaryCampaignsListingResponse,
+  GetMilitaryCampaignsObjectivesDetailData,
+  GetMilitaryCampaignsObjectivesDetailResponse,
+  GetMilitaryCampaignsObjectivesListingData,
+  GetMilitaryCampaignsObjectivesListingResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersMilitaryCampaignsObjectivesListingInput,
-  GetCharactersMilitaryCampaignsObjectivesListingOutput,
-  GetCharactersMilitaryCampaignsObjectivesParticipationInput,
-  GetCharactersMilitaryCampaignsObjectivesParticipationOutput,
-  GetMilitaryCampaignsDetailInput,
-  GetMilitaryCampaignsDetailOutput,
-  GetMilitaryCampaignsListingInput,
-  GetMilitaryCampaignsListingOutput,
-  GetMilitaryCampaignsObjectivesDetailInput,
-  GetMilitaryCampaignsObjectivesDetailOutput,
-  GetMilitaryCampaignsObjectivesListingInput,
-  GetMilitaryCampaignsObjectivesListingOutput,
-} from '../../src/generated/schemas/operations/military-campaigns.js';
+  GetCharactersParagonHubSkinrData,
+  GetCharactersParagonHubSkinrResponse,
+  GetParagonHubSkinrAlliancesData,
+  GetParagonHubSkinrAlliancesResponse,
+  GetParagonHubSkinrCharactersData,
+  GetParagonHubSkinrCharactersResponse,
+  GetParagonHubSkinrCorporationsData,
+  GetParagonHubSkinrCorporationsResponse,
+  GetParagonHubSkinrData,
+  GetParagonHubSkinrResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersParagonHubSkinrInput,
-  GetCharactersParagonHubSkinrOutput,
-  GetParagonHubSkinrAlliancesInput,
-  GetParagonHubSkinrAlliancesOutput,
-  GetParagonHubSkinrCharactersInput,
-  GetParagonHubSkinrCharactersOutput,
-  GetParagonHubSkinrCorporationsInput,
-  GetParagonHubSkinrCorporationsOutput,
-  GetParagonHubSkinrInput,
-  GetParagonHubSkinrOutput,
-} from '../../src/generated/schemas/operations/paragon-hub.js';
+  GetCharactersCharacterIdPlanetsData,
+  GetCharactersCharacterIdPlanetsPlanetIdData,
+  GetCharactersCharacterIdPlanetsPlanetIdResponse,
+  GetCharactersCharacterIdPlanetsResponse,
+  GetCorporationsCorporationIdCustomsOfficesData,
+  GetCorporationsCorporationIdCustomsOfficesResponse,
+  GetUniverseSchematicsSchematicIdData,
+  GetUniverseSchematicsSchematicIdResponse,
+} from '../../src/generated/types.gen.js';
+import type { PostRouteData, PostRouteResponse } from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdPlanetsInput,
-  GetCharactersCharacterIdPlanetsOutput,
-  GetCharactersCharacterIdPlanetsPlanetIdInput,
-  GetCharactersCharacterIdPlanetsPlanetIdOutput,
-  GetCorporationsCorporationIdCustomsOfficesInput,
-  GetCorporationsCorporationIdCustomsOfficesOutput,
-  GetUniverseSchematicsSchematicIdInput,
-  GetUniverseSchematicsSchematicIdOutput,
-} from '../../src/generated/schemas/operations/planetary-interaction.js';
+  GetCharactersCharacterIdSearchData,
+  GetCharactersCharacterIdSearchResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  PostRouteInput,
-  PostRouteOutput,
-} from '../../src/generated/schemas/operations/routes.js';
+  GetCharactersCharacterIdAttributesData,
+  GetCharactersCharacterIdAttributesResponse,
+  GetCharactersCharacterIdSkillqueueData,
+  GetCharactersCharacterIdSkillqueueResponse,
+  GetCharactersCharacterIdSkillsData,
+  GetCharactersCharacterIdSkillsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdSearchInput,
-  GetCharactersCharacterIdSearchOutput,
-} from '../../src/generated/schemas/operations/search.js';
+  GetSovereigntyCampaignsData,
+  GetSovereigntyCampaignsResponse,
+  GetSovereigntySystemsData,
+  GetSovereigntySystemsResponse,
+} from '../../src/generated/types.gen.js';
+import type { GetStatusData, GetStatusResponse } from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersCharacterIdAttributesInput,
-  GetCharactersCharacterIdAttributesOutput,
-  GetCharactersCharacterIdSkillqueueInput,
-  GetCharactersCharacterIdSkillqueueOutput,
-  GetCharactersCharacterIdSkillsInput,
-  GetCharactersCharacterIdSkillsOutput,
-} from '../../src/generated/schemas/operations/skills.js';
+  GetCharactersStructuresMercenaryDensDetailData,
+  GetCharactersStructuresMercenaryDensDetailResponse,
+  GetCharactersStructuresMercenaryDensListingData,
+  GetCharactersStructuresMercenaryDensListingResponse,
+  GetCorporationsStructuresSkyhooksDetailData,
+  GetCorporationsStructuresSkyhooksDetailResponse,
+  GetCorporationsStructuresSkyhooksListingData,
+  GetCorporationsStructuresSkyhooksListingResponse,
+  GetCorporationsStructuresSovereigntyHubsDetailData,
+  GetCorporationsStructuresSovereigntyHubsDetailResponse,
+  GetCorporationsStructuresSovereigntyHubsListingData,
+  GetCorporationsStructuresSovereigntyHubsListingResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetSovereigntyCampaignsInput,
-  GetSovereigntyCampaignsOutput,
-  GetSovereigntySystemsInput,
-  GetSovereigntySystemsOutput,
-} from '../../src/generated/schemas/operations/sovereignty.js';
+  GetUniverseAncestriesData,
+  GetUniverseAncestriesResponse,
+  GetUniverseAsteroidBeltsAsteroidBeltIdData,
+  GetUniverseAsteroidBeltsAsteroidBeltIdResponse,
+  GetUniverseBloodlinesData,
+  GetUniverseBloodlinesResponse,
+  GetUniverseCategoriesCategoryIdData,
+  GetUniverseCategoriesCategoryIdResponse,
+  GetUniverseCategoriesData,
+  GetUniverseCategoriesResponse,
+  GetUniverseConstellationsConstellationIdData,
+  GetUniverseConstellationsConstellationIdResponse,
+  GetUniverseConstellationsData,
+  GetUniverseConstellationsResponse,
+  GetUniverseFactionsData,
+  GetUniverseFactionsResponse,
+  GetUniverseGraphicsData,
+  GetUniverseGraphicsGraphicIdData,
+  GetUniverseGraphicsGraphicIdResponse,
+  GetUniverseGraphicsResponse,
+  GetUniverseGroupsData,
+  GetUniverseGroupsGroupIdData,
+  GetUniverseGroupsGroupIdResponse,
+  GetUniverseGroupsResponse,
+  GetUniverseMoonsMoonIdData,
+  GetUniverseMoonsMoonIdResponse,
+  GetUniversePlanetsPlanetIdData,
+  GetUniversePlanetsPlanetIdResponse,
+  GetUniverseRacesData,
+  GetUniverseRacesResponse,
+  GetUniverseRegionsData,
+  GetUniverseRegionsRegionIdData,
+  GetUniverseRegionsRegionIdResponse,
+  GetUniverseRegionsResponse,
+  GetUniverseStargatesStargateIdData,
+  GetUniverseStargatesStargateIdResponse,
+  GetUniverseStarsStarIdData,
+  GetUniverseStarsStarIdResponse,
+  GetUniverseStationsStationIdData,
+  GetUniverseStationsStationIdResponse,
+  GetUniverseStructuresData,
+  GetUniverseStructuresResponse,
+  GetUniverseStructuresStructureIdData,
+  GetUniverseStructuresStructureIdResponse,
+  GetUniverseSystemJumpsData,
+  GetUniverseSystemJumpsResponse,
+  GetUniverseSystemKillsData,
+  GetUniverseSystemKillsResponse,
+  GetUniverseSystemsData,
+  GetUniverseSystemsResponse,
+  GetUniverseSystemsSystemIdData,
+  GetUniverseSystemsSystemIdResponse,
+  GetUniverseTypesData,
+  GetUniverseTypesResponse,
+  GetUniverseTypesTypeIdData,
+  GetUniverseTypesTypeIdResponse,
+  PostUniverseIdsData,
+  PostUniverseIdsResponse,
+  PostUniverseNamesData,
+  PostUniverseNamesResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetStatusInput,
-  GetStatusOutput,
-} from '../../src/generated/schemas/operations/status.js';
+  PostUiAutopilotWaypointData,
+  PostUiAutopilotWaypointResponse,
+  PostUiOpenwindowContractData,
+  PostUiOpenwindowContractResponse,
+  PostUiOpenwindowInformationData,
+  PostUiOpenwindowInformationResponse,
+  PostUiOpenwindowMarketdetailsData,
+  PostUiOpenwindowMarketdetailsResponse,
+  PostUiOpenwindowNewmailData,
+  PostUiOpenwindowNewmailResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetCharactersStructuresMercenaryDensDetailInput,
-  GetCharactersStructuresMercenaryDensDetailOutput,
-  GetCharactersStructuresMercenaryDensListingInput,
-  GetCharactersStructuresMercenaryDensListingOutput,
-  GetCorporationsStructuresSkyhooksDetailInput,
-  GetCorporationsStructuresSkyhooksDetailOutput,
-  GetCorporationsStructuresSkyhooksListingInput,
-  GetCorporationsStructuresSkyhooksListingOutput,
-  GetCorporationsStructuresSovereigntyHubsDetailInput,
-  GetCorporationsStructuresSovereigntyHubsDetailOutput,
-  GetCorporationsStructuresSovereigntyHubsListingInput,
-  GetCorporationsStructuresSovereigntyHubsListingOutput,
-} from '../../src/generated/schemas/operations/structures.js';
+  GetCharactersCharacterIdWalletData,
+  GetCharactersCharacterIdWalletJournalData,
+  GetCharactersCharacterIdWalletJournalResponse,
+  GetCharactersCharacterIdWalletResponse,
+  GetCharactersCharacterIdWalletTransactionsData,
+  GetCharactersCharacterIdWalletTransactionsResponse,
+  GetCorporationsCorporationIdWalletsData,
+  GetCorporationsCorporationIdWalletsDivisionJournalData,
+  GetCorporationsCorporationIdWalletsDivisionJournalResponse,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsData,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsResponse,
+  GetCorporationsCorporationIdWalletsResponse,
+} from '../../src/generated/types.gen.js';
 import type {
-  GetUniverseAncestriesInput,
-  GetUniverseAncestriesOutput,
-  GetUniverseAsteroidBeltsAsteroidBeltIdInput,
-  GetUniverseAsteroidBeltsAsteroidBeltIdOutput,
-  GetUniverseBloodlinesInput,
-  GetUniverseBloodlinesOutput,
-  GetUniverseCategoriesCategoryIdInput,
-  GetUniverseCategoriesCategoryIdOutput,
-  GetUniverseCategoriesInput,
-  GetUniverseCategoriesOutput,
-  GetUniverseConstellationsConstellationIdInput,
-  GetUniverseConstellationsConstellationIdOutput,
-  GetUniverseConstellationsInput,
-  GetUniverseConstellationsOutput,
-  GetUniverseFactionsInput,
-  GetUniverseFactionsOutput,
-  GetUniverseGraphicsGraphicIdInput,
-  GetUniverseGraphicsGraphicIdOutput,
-  GetUniverseGraphicsInput,
-  GetUniverseGraphicsOutput,
-  GetUniverseGroupsGroupIdInput,
-  GetUniverseGroupsGroupIdOutput,
-  GetUniverseGroupsInput,
-  GetUniverseGroupsOutput,
-  GetUniverseMoonsMoonIdInput,
-  GetUniverseMoonsMoonIdOutput,
-  GetUniversePlanetsPlanetIdInput,
-  GetUniversePlanetsPlanetIdOutput,
-  GetUniverseRacesInput,
-  GetUniverseRacesOutput,
-  GetUniverseRegionsInput,
-  GetUniverseRegionsOutput,
-  GetUniverseRegionsRegionIdInput,
-  GetUniverseRegionsRegionIdOutput,
-  GetUniverseStargatesStargateIdInput,
-  GetUniverseStargatesStargateIdOutput,
-  GetUniverseStarsStarIdInput,
-  GetUniverseStarsStarIdOutput,
-  GetUniverseStationsStationIdInput,
-  GetUniverseStationsStationIdOutput,
-  GetUniverseStructuresInput,
-  GetUniverseStructuresOutput,
-  GetUniverseStructuresStructureIdInput,
-  GetUniverseStructuresStructureIdOutput,
-  GetUniverseSystemJumpsInput,
-  GetUniverseSystemJumpsOutput,
-  GetUniverseSystemKillsInput,
-  GetUniverseSystemKillsOutput,
-  GetUniverseSystemsInput,
-  GetUniverseSystemsOutput,
-  GetUniverseSystemsSystemIdInput,
-  GetUniverseSystemsSystemIdOutput,
-  GetUniverseTypesInput,
-  GetUniverseTypesOutput,
-  GetUniverseTypesTypeIdInput,
-  GetUniverseTypesTypeIdOutput,
-  PostUniverseIdsInput,
-  PostUniverseIdsOutput,
-  PostUniverseNamesInput,
-  PostUniverseNamesOutput,
-} from '../../src/generated/schemas/operations/universe.js';
-import type {
-  PostUiAutopilotWaypointInput,
-  PostUiAutopilotWaypointOutput,
-  PostUiOpenwindowContractInput,
-  PostUiOpenwindowContractOutput,
-  PostUiOpenwindowInformationInput,
-  PostUiOpenwindowInformationOutput,
-  PostUiOpenwindowMarketdetailsInput,
-  PostUiOpenwindowMarketdetailsOutput,
-  PostUiOpenwindowNewmailInput,
-  PostUiOpenwindowNewmailOutput,
-} from '../../src/generated/schemas/operations/user-interface.js';
-import type {
-  GetCharactersCharacterIdWalletInput,
-  GetCharactersCharacterIdWalletJournalInput,
-  GetCharactersCharacterIdWalletJournalOutput,
-  GetCharactersCharacterIdWalletOutput,
-  GetCharactersCharacterIdWalletTransactionsInput,
-  GetCharactersCharacterIdWalletTransactionsOutput,
-  GetCorporationsCorporationIdWalletsDivisionJournalInput,
-  GetCorporationsCorporationIdWalletsDivisionJournalOutput,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsInput,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsOutput,
-  GetCorporationsCorporationIdWalletsInput,
-  GetCorporationsCorporationIdWalletsOutput,
-} from '../../src/generated/schemas/operations/wallet.js';
-import type {
-  GetWarsInput,
-  GetWarsOutput,
-  GetWarsWarIdInput,
-  GetWarsWarIdKillmailsInput,
-  GetWarsWarIdKillmailsOutput,
-  GetWarsWarIdOutput,
-} from '../../src/generated/schemas/operations/wars.js';
+  GetWarsData,
+  GetWarsResponse,
+  GetWarsWarIdData,
+  GetWarsWarIdKillmailsData,
+  GetWarsWarIdKillmailsResponse,
+  GetWarsWarIdResponse,
+} from '../../src/generated/types.gen.js';
 import {
   type AccessListDomainClient,
   type AccessListDomainClientWithMetadata,
@@ -993,1425 +985,1433 @@ interface GeneratedDomainOperationCoverage {
   readonly GetCharactersAccessListsDetail: {
     readonly domain: 'accessList';
     readonly method: 'get';
-    readonly input: GetCharactersAccessListsDetailInput;
-    readonly output: GetCharactersAccessListsDetailOutput;
+    readonly input: OperationArguments<GetCharactersAccessListsDetailData>;
+    readonly output: GetCharactersAccessListsDetailResponse;
   };
   readonly GetCharactersAccessListsListing: {
     readonly domain: 'accessList';
     readonly method: 'list';
-    readonly input: GetCharactersAccessListsListingInput;
-    readonly output: GetCharactersAccessListsListingOutput;
+    readonly input: OperationArguments<GetCharactersAccessListsListingData>;
+    readonly output: GetCharactersAccessListsListingResponse;
   };
   readonly GetCharactersMercenaryTacticalOperationsDetail: {
     readonly domain: 'activities';
     readonly method: 'getMercenaryTacticalOperation';
-    readonly input: GetCharactersMercenaryTacticalOperationsDetailInput;
-    readonly output: GetCharactersMercenaryTacticalOperationsDetailOutput;
+    readonly input: OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>;
+    readonly output: GetCharactersMercenaryTacticalOperationsDetailResponse;
   };
   readonly GetCharactersMercenaryTacticalOperationsListing: {
     readonly domain: 'activities';
     readonly method: 'listMercenaryTacticalOperations';
-    readonly input: GetCharactersMercenaryTacticalOperationsListingInput;
-    readonly output: GetCharactersMercenaryTacticalOperationsListingOutput;
+    readonly input: OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>;
+    readonly output: GetCharactersMercenaryTacticalOperationsListingResponse;
   };
   readonly GetSkyhooksRaidable: {
     readonly domain: 'activities';
     readonly method: 'listRaidableSkyhooks';
-    readonly input: GetSkyhooksRaidableInput;
-    readonly output: GetSkyhooksRaidableOutput;
+    readonly input: OperationArguments<GetSkyhooksRaidableData>;
+    readonly output: GetSkyhooksRaidableResponse;
   };
   readonly GetAlliancesAllianceIdIcons: {
     readonly domain: 'alliance';
     readonly method: 'getIcon';
-    readonly input: GetAlliancesAllianceIdIconsInput;
-    readonly output: GetAlliancesAllianceIdIconsOutput;
+    readonly input: OperationArguments<GetAlliancesAllianceIdIconsData>;
+    readonly output: GetAlliancesAllianceIdIconsResponse;
   };
   readonly GetAlliancesAllianceId: {
     readonly domain: 'alliance';
     readonly method: 'getPublicInfo';
-    readonly input: GetAlliancesAllianceIdInput;
-    readonly output: GetAlliancesAllianceIdOutput;
+    readonly input: OperationArguments<GetAlliancesAllianceIdData>;
+    readonly output: GetAlliancesAllianceIdResponse;
   };
   readonly GetAlliances: {
     readonly domain: 'alliance';
     readonly method: 'list';
-    readonly input: GetAlliancesInput;
-    readonly output: GetAlliancesOutput;
+    readonly input: OperationArguments<GetAlliancesData>;
+    readonly output: GetAlliancesResponse;
   };
   readonly GetAlliancesAllianceIdCorporations: {
     readonly domain: 'alliance';
     readonly method: 'listCorporations';
-    readonly input: GetAlliancesAllianceIdCorporationsInput;
-    readonly output: GetAlliancesAllianceIdCorporationsOutput;
+    readonly input: OperationArguments<GetAlliancesAllianceIdCorporationsData>;
+    readonly output: GetAlliancesAllianceIdCorporationsResponse;
   };
   readonly GetCharactersCharacterIdAssets: {
     readonly domain: 'assets';
     readonly method: 'listCharacterAssets';
-    readonly input: GetCharactersCharacterIdAssetsInput;
-    readonly output: GetCharactersCharacterIdAssetsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdAssetsData>;
+    readonly output: GetCharactersCharacterIdAssetsResponse;
   };
   readonly GetCorporationsCorporationIdAssets: {
     readonly domain: 'assets';
     readonly method: 'listCorporationAssets';
-    readonly input: GetCorporationsCorporationIdAssetsInput;
-    readonly output: GetCorporationsCorporationIdAssetsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdAssetsData>;
+    readonly output: GetCorporationsCorporationIdAssetsResponse;
   };
   readonly PostCharactersCharacterIdAssetsLocations: {
     readonly domain: 'assets';
     readonly method: 'lookupCharacterLocations';
-    readonly input: PostCharactersCharacterIdAssetsLocationsInput;
-    readonly output: PostCharactersCharacterIdAssetsLocationsOutput;
+    readonly input: OperationArguments<PostCharactersCharacterIdAssetsLocationsData>;
+    readonly output: PostCharactersCharacterIdAssetsLocationsResponse;
   };
   readonly PostCharactersCharacterIdAssetsNames: {
     readonly domain: 'assets';
     readonly method: 'lookupCharacterNames';
-    readonly input: PostCharactersCharacterIdAssetsNamesInput;
-    readonly output: PostCharactersCharacterIdAssetsNamesOutput;
+    readonly input: OperationArguments<PostCharactersCharacterIdAssetsNamesData>;
+    readonly output: PostCharactersCharacterIdAssetsNamesResponse;
   };
   readonly PostCorporationsCorporationIdAssetsLocations: {
     readonly domain: 'assets';
     readonly method: 'lookupCorporationLocations';
-    readonly input: PostCorporationsCorporationIdAssetsLocationsInput;
-    readonly output: PostCorporationsCorporationIdAssetsLocationsOutput;
+    readonly input: OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>;
+    readonly output: PostCorporationsCorporationIdAssetsLocationsResponse;
   };
   readonly PostCorporationsCorporationIdAssetsNames: {
     readonly domain: 'assets';
     readonly method: 'lookupCorporationNames';
-    readonly input: PostCorporationsCorporationIdAssetsNamesInput;
-    readonly output: PostCorporationsCorporationIdAssetsNamesOutput;
+    readonly input: OperationArguments<PostCorporationsCorporationIdAssetsNamesData>;
+    readonly output: PostCorporationsCorporationIdAssetsNamesResponse;
   };
   readonly GetCharactersCharacterIdCalendarEventId: {
     readonly domain: 'calendar';
     readonly method: 'getEvent';
-    readonly input: GetCharactersCharacterIdCalendarEventIdInput;
-    readonly output: GetCharactersCharacterIdCalendarEventIdOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdCalendarEventIdData>;
+    readonly output: GetCharactersCharacterIdCalendarEventIdResponse;
   };
   readonly GetCharactersCharacterIdCalendarEventIdAttendees: {
     readonly domain: 'calendar';
     readonly method: 'listEventAttendees';
-    readonly input: GetCharactersCharacterIdCalendarEventIdAttendeesInput;
-    readonly output: GetCharactersCharacterIdCalendarEventIdAttendeesOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>;
+    readonly output: GetCharactersCharacterIdCalendarEventIdAttendeesResponse;
   };
   readonly GetCharactersCharacterIdCalendar: {
     readonly domain: 'calendar';
     readonly method: 'listEvents';
-    readonly input: GetCharactersCharacterIdCalendarInput;
-    readonly output: GetCharactersCharacterIdCalendarOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdCalendarData>;
+    readonly output: GetCharactersCharacterIdCalendarResponse;
   };
   readonly PutCharactersCharacterIdCalendarEventId: {
     readonly domain: 'calendar';
     readonly method: 'respondToEvent';
-    readonly input: PutCharactersCharacterIdCalendarEventIdInput;
-    readonly output: PutCharactersCharacterIdCalendarEventIdOutput;
+    readonly input: OperationArguments<PutCharactersCharacterIdCalendarEventIdData>;
+    readonly output: PutCharactersCharacterIdCalendarEventIdResponse;
   };
   readonly GetCharactersCharacterIdAgentsResearch: {
     readonly domain: 'character';
     readonly method: 'agentsResearch';
-    readonly input: GetCharactersCharacterIdAgentsResearchInput;
-    readonly output: GetCharactersCharacterIdAgentsResearchOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdAgentsResearchData>;
+    readonly output: GetCharactersCharacterIdAgentsResearchResponse;
   };
   readonly PostCharactersCharacterIdCspa: {
     readonly domain: 'character';
     readonly method: 'calculateCspaCharge';
-    readonly input: PostCharactersCharacterIdCspaInput;
-    readonly output: PostCharactersCharacterIdCspaOutput;
+    readonly input: OperationArguments<PostCharactersCharacterIdCspaData>;
+    readonly output: PostCharactersCharacterIdCspaResponse;
   };
   readonly GetCharactersCharacterIdRoles: {
     readonly domain: 'character';
     readonly method: 'getCorporationRoles';
-    readonly input: GetCharactersCharacterIdRolesInput;
-    readonly output: GetCharactersCharacterIdRolesOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdRolesData>;
+    readonly output: GetCharactersCharacterIdRolesResponse;
   };
   readonly GetCharactersCharacterIdFatigue: {
     readonly domain: 'character';
     readonly method: 'getJumpFatigue';
-    readonly input: GetCharactersCharacterIdFatigueInput;
-    readonly output: GetCharactersCharacterIdFatigueOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdFatigueData>;
+    readonly output: GetCharactersCharacterIdFatigueResponse;
   };
   readonly GetCharactersCharacterIdPortrait: {
     readonly domain: 'character';
     readonly method: 'getPortrait';
-    readonly input: GetCharactersCharacterIdPortraitInput;
-    readonly output: GetCharactersCharacterIdPortraitOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdPortraitData>;
+    readonly output: GetCharactersCharacterIdPortraitResponse;
   };
   readonly GetCharactersDetail: {
     readonly domain: 'character';
     readonly method: 'getPublicInfo';
-    readonly input: GetCharactersDetailInput;
-    readonly output: GetCharactersDetailOutput;
+    readonly input: OperationArguments<GetCharactersDetailData>;
+    readonly output: GetCharactersDetailResponse;
   };
   readonly GetCharactersCharacterIdBlueprints: {
     readonly domain: 'character';
     readonly method: 'listBlueprints';
-    readonly input: GetCharactersCharacterIdBlueprintsInput;
-    readonly output: GetCharactersCharacterIdBlueprintsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdBlueprintsData>;
+    readonly output: GetCharactersCharacterIdBlueprintsResponse;
   };
   readonly GetCharactersCharacterIdNotificationsContacts: {
     readonly domain: 'character';
     readonly method: 'listContactNotifications';
-    readonly input: GetCharactersCharacterIdNotificationsContactsInput;
-    readonly output: GetCharactersCharacterIdNotificationsContactsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdNotificationsContactsData>;
+    readonly output: GetCharactersCharacterIdNotificationsContactsResponse;
   };
   readonly GetCharactersCharacterIdCorporationhistory: {
     readonly domain: 'character';
     readonly method: 'listCorporationHistory';
-    readonly input: GetCharactersCharacterIdCorporationhistoryInput;
-    readonly output: GetCharactersCharacterIdCorporationhistoryOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdCorporationhistoryData>;
+    readonly output: GetCharactersCharacterIdCorporationhistoryResponse;
   };
   readonly GetCharactersCharacterIdTitles: {
     readonly domain: 'character';
     readonly method: 'listCorporationTitles';
-    readonly input: GetCharactersCharacterIdTitlesInput;
-    readonly output: GetCharactersCharacterIdTitlesOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdTitlesData>;
+    readonly output: GetCharactersCharacterIdTitlesResponse;
   };
   readonly GetCharactersCharacterIdMedals: {
     readonly domain: 'character';
     readonly method: 'listMedals';
-    readonly input: GetCharactersCharacterIdMedalsInput;
-    readonly output: GetCharactersCharacterIdMedalsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdMedalsData>;
+    readonly output: GetCharactersCharacterIdMedalsResponse;
   };
   readonly GetCharactersCharacterIdNotifications: {
     readonly domain: 'character';
     readonly method: 'listNotifications';
-    readonly input: GetCharactersCharacterIdNotificationsInput;
-    readonly output: GetCharactersCharacterIdNotificationsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdNotificationsData>;
+    readonly output: GetCharactersCharacterIdNotificationsResponse;
   };
   readonly GetCharactersCharacterIdStandings: {
     readonly domain: 'character';
     readonly method: 'listStandings';
-    readonly input: GetCharactersCharacterIdStandingsInput;
-    readonly output: GetCharactersCharacterIdStandingsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdStandingsData>;
+    readonly output: GetCharactersCharacterIdStandingsResponse;
   };
   readonly PostCharactersAffiliation: {
     readonly domain: 'character';
     readonly method: 'lookupAffiliations';
-    readonly input: PostCharactersAffiliationInput;
-    readonly output: PostCharactersAffiliationOutput;
+    readonly input: OperationArguments<PostCharactersAffiliationData>;
+    readonly output: PostCharactersAffiliationResponse;
   };
   readonly GetCharactersCharacterIdClones: {
     readonly domain: 'clones';
     readonly method: 'getState';
-    readonly input: GetCharactersCharacterIdClonesInput;
-    readonly output: GetCharactersCharacterIdClonesOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdClonesData>;
+    readonly output: GetCharactersCharacterIdClonesResponse;
   };
   readonly GetCharactersCharacterIdImplants: {
     readonly domain: 'clones';
     readonly method: 'listActiveImplants';
-    readonly input: GetCharactersCharacterIdImplantsInput;
-    readonly output: GetCharactersCharacterIdImplantsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdImplantsData>;
+    readonly output: GetCharactersCharacterIdImplantsResponse;
   };
   readonly PostCharactersCharacterIdContacts: {
     readonly domain: 'contacts';
     readonly method: 'addCharacterContacts';
-    readonly input: PostCharactersCharacterIdContactsInput;
-    readonly output: PostCharactersCharacterIdContactsOutput;
+    readonly input: OperationArguments<PostCharactersCharacterIdContactsData>;
+    readonly output: PostCharactersCharacterIdContactsResponse;
   };
   readonly DeleteCharactersCharacterIdContacts: {
     readonly domain: 'contacts';
     readonly method: 'deleteCharacterContacts';
-    readonly input: DeleteCharactersCharacterIdContactsInput;
-    readonly output: DeleteCharactersCharacterIdContactsOutput;
+    readonly input: OperationArguments<DeleteCharactersCharacterIdContactsData>;
+    readonly output: DeleteCharactersCharacterIdContactsResponse;
   };
   readonly GetAlliancesAllianceIdContactsLabels: {
     readonly domain: 'contacts';
     readonly method: 'listAllianceContactLabels';
-    readonly input: GetAlliancesAllianceIdContactsLabelsInput;
-    readonly output: GetAlliancesAllianceIdContactsLabelsOutput;
+    readonly input: OperationArguments<GetAlliancesAllianceIdContactsLabelsData>;
+    readonly output: GetAlliancesAllianceIdContactsLabelsResponse;
   };
   readonly GetAlliancesAllianceIdContacts: {
     readonly domain: 'contacts';
     readonly method: 'listAllianceContacts';
-    readonly input: GetAlliancesAllianceIdContactsInput;
-    readonly output: GetAlliancesAllianceIdContactsOutput;
+    readonly input: OperationArguments<GetAlliancesAllianceIdContactsData>;
+    readonly output: GetAlliancesAllianceIdContactsResponse;
   };
   readonly GetCharactersCharacterIdContactsLabels: {
     readonly domain: 'contacts';
     readonly method: 'listCharacterContactLabels';
-    readonly input: GetCharactersCharacterIdContactsLabelsInput;
-    readonly output: GetCharactersCharacterIdContactsLabelsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdContactsLabelsData>;
+    readonly output: GetCharactersCharacterIdContactsLabelsResponse;
   };
   readonly GetCharactersCharacterIdContacts: {
     readonly domain: 'contacts';
     readonly method: 'listCharacterContacts';
-    readonly input: GetCharactersCharacterIdContactsInput;
-    readonly output: GetCharactersCharacterIdContactsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdContactsData>;
+    readonly output: GetCharactersCharacterIdContactsResponse;
   };
   readonly GetCorporationsCorporationIdContactsLabels: {
     readonly domain: 'contacts';
     readonly method: 'listCorporationContactLabels';
-    readonly input: GetCorporationsCorporationIdContactsLabelsInput;
-    readonly output: GetCorporationsCorporationIdContactsLabelsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdContactsLabelsData>;
+    readonly output: GetCorporationsCorporationIdContactsLabelsResponse;
   };
   readonly GetCorporationsCorporationIdContacts: {
     readonly domain: 'contacts';
     readonly method: 'listCorporationContacts';
-    readonly input: GetCorporationsCorporationIdContactsInput;
-    readonly output: GetCorporationsCorporationIdContactsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdContactsData>;
+    readonly output: GetCorporationsCorporationIdContactsResponse;
   };
   readonly PutCharactersCharacterIdContacts: {
     readonly domain: 'contacts';
     readonly method: 'updateCharacterContacts';
-    readonly input: PutCharactersCharacterIdContactsInput;
-    readonly output: PutCharactersCharacterIdContactsOutput;
+    readonly input: OperationArguments<PutCharactersCharacterIdContactsData>;
+    readonly output: PutCharactersCharacterIdContactsResponse;
   };
   readonly GetCharactersCharacterIdContractsContractIdBids: {
     readonly domain: 'contracts';
     readonly method: 'listCharacterContractBids';
-    readonly input: GetCharactersCharacterIdContractsContractIdBidsInput;
-    readonly output: GetCharactersCharacterIdContractsContractIdBidsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>;
+    readonly output: GetCharactersCharacterIdContractsContractIdBidsResponse;
   };
   readonly GetCharactersCharacterIdContractsContractIdItems: {
     readonly domain: 'contracts';
     readonly method: 'listCharacterContractItems';
-    readonly input: GetCharactersCharacterIdContractsContractIdItemsInput;
-    readonly output: GetCharactersCharacterIdContractsContractIdItemsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>;
+    readonly output: GetCharactersCharacterIdContractsContractIdItemsResponse;
   };
   readonly GetCharactersCharacterIdContracts: {
     readonly domain: 'contracts';
     readonly method: 'listCharacterContracts';
-    readonly input: GetCharactersCharacterIdContractsInput;
-    readonly output: GetCharactersCharacterIdContractsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdContractsData>;
+    readonly output: GetCharactersCharacterIdContractsResponse;
   };
   readonly GetCorporationsCorporationIdContractsContractIdBids: {
     readonly domain: 'contracts';
     readonly method: 'listCorporationContractBids';
-    readonly input: GetCorporationsCorporationIdContractsContractIdBidsInput;
-    readonly output: GetCorporationsCorporationIdContractsContractIdBidsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>;
+    readonly output: GetCorporationsCorporationIdContractsContractIdBidsResponse;
   };
   readonly GetCorporationsCorporationIdContractsContractIdItems: {
     readonly domain: 'contracts';
     readonly method: 'listCorporationContractItems';
-    readonly input: GetCorporationsCorporationIdContractsContractIdItemsInput;
-    readonly output: GetCorporationsCorporationIdContractsContractIdItemsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>;
+    readonly output: GetCorporationsCorporationIdContractsContractIdItemsResponse;
   };
   readonly GetCorporationsCorporationIdContracts: {
     readonly domain: 'contracts';
     readonly method: 'listCorporationContracts';
-    readonly input: GetCorporationsCorporationIdContractsInput;
-    readonly output: GetCorporationsCorporationIdContractsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdContractsData>;
+    readonly output: GetCorporationsCorporationIdContractsResponse;
   };
   readonly GetContractsPublicBidsContractId: {
     readonly domain: 'contracts';
     readonly method: 'listPublicContractBids';
-    readonly input: GetContractsPublicBidsContractIdInput;
-    readonly output: GetContractsPublicBidsContractIdOutput;
+    readonly input: OperationArguments<GetContractsPublicBidsContractIdData>;
+    readonly output: GetContractsPublicBidsContractIdResponse;
   };
   readonly GetContractsPublicItemsContractId: {
     readonly domain: 'contracts';
     readonly method: 'listPublicContractItems';
-    readonly input: GetContractsPublicItemsContractIdInput;
-    readonly output: GetContractsPublicItemsContractIdOutput;
+    readonly input: OperationArguments<GetContractsPublicItemsContractIdData>;
+    readonly output: GetContractsPublicItemsContractIdResponse;
   };
   readonly GetContractsPublicRegionId: {
     readonly domain: 'contracts';
     readonly method: 'listPublicContracts';
-    readonly input: GetContractsPublicRegionIdInput;
-    readonly output: GetContractsPublicRegionIdOutput;
+    readonly input: OperationArguments<GetContractsPublicRegionIdData>;
+    readonly output: GetContractsPublicRegionIdResponse;
   };
   readonly GetCorporationsCorporationIdIcons: {
     readonly domain: 'corporation';
     readonly method: 'getIcon';
-    readonly input: GetCorporationsCorporationIdIconsInput;
-    readonly output: GetCorporationsCorporationIdIconsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdIconsData>;
+    readonly output: GetCorporationsCorporationIdIconsResponse;
   };
   readonly GetCorporationsCorporationIdMembersLimit: {
     readonly domain: 'corporation';
     readonly method: 'getMemberLimit';
-    readonly input: GetCorporationsCorporationIdMembersLimitInput;
-    readonly output: GetCorporationsCorporationIdMembersLimitOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdMembersLimitData>;
+    readonly output: GetCorporationsCorporationIdMembersLimitResponse;
   };
   readonly GetCorporationsCorporationId: {
     readonly domain: 'corporation';
     readonly method: 'getPublicInfo';
-    readonly input: GetCorporationsCorporationIdInput;
-    readonly output: GetCorporationsCorporationIdOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdData>;
+    readonly output: GetCorporationsCorporationIdResponse;
   };
   readonly GetCorporationsCorporationIdStarbasesStarbaseId: {
     readonly domain: 'corporation';
     readonly method: 'getStarbase';
-    readonly input: GetCorporationsCorporationIdStarbasesStarbaseIdInput;
-    readonly output: GetCorporationsCorporationIdStarbasesStarbaseIdOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>;
+    readonly output: GetCorporationsCorporationIdStarbasesStarbaseIdResponse;
   };
   readonly GetCorporationsCorporationIdAlliancehistory: {
     readonly domain: 'corporation';
     readonly method: 'listAllianceHistory';
-    readonly input: GetCorporationsCorporationIdAlliancehistoryInput;
-    readonly output: GetCorporationsCorporationIdAlliancehistoryOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>;
+    readonly output: GetCorporationsCorporationIdAlliancehistoryResponse;
   };
   readonly GetCorporationsCorporationIdContainersLogs: {
     readonly domain: 'corporation';
     readonly method: 'listAuditLogSecureContainerLogs';
-    readonly input: GetCorporationsCorporationIdContainersLogsInput;
-    readonly output: GetCorporationsCorporationIdContainersLogsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdContainersLogsData>;
+    readonly output: GetCorporationsCorporationIdContainersLogsResponse;
   };
   readonly GetCorporationsCorporationIdBlueprints: {
     readonly domain: 'corporation';
     readonly method: 'listBlueprints';
-    readonly input: GetCorporationsCorporationIdBlueprintsInput;
-    readonly output: GetCorporationsCorporationIdBlueprintsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdBlueprintsData>;
+    readonly output: GetCorporationsCorporationIdBlueprintsResponse;
   };
   readonly GetCorporationsCorporationIdDivisions: {
     readonly domain: 'corporation';
     readonly method: 'listDivisions';
-    readonly input: GetCorporationsCorporationIdDivisionsInput;
-    readonly output: GetCorporationsCorporationIdDivisionsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdDivisionsData>;
+    readonly output: GetCorporationsCorporationIdDivisionsResponse;
   };
   readonly GetCorporationsCorporationIdFacilities: {
     readonly domain: 'corporation';
     readonly method: 'listFacilities';
-    readonly input: GetCorporationsCorporationIdFacilitiesInput;
-    readonly output: GetCorporationsCorporationIdFacilitiesOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdFacilitiesData>;
+    readonly output: GetCorporationsCorporationIdFacilitiesResponse;
   };
   readonly GetCorporationsCorporationIdMedalsIssued: {
     readonly domain: 'corporation';
     readonly method: 'listIssuedMedals';
-    readonly input: GetCorporationsCorporationIdMedalsIssuedInput;
-    readonly output: GetCorporationsCorporationIdMedalsIssuedOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>;
+    readonly output: GetCorporationsCorporationIdMedalsIssuedResponse;
   };
   readonly GetCorporationsCorporationIdMedals: {
     readonly domain: 'corporation';
     readonly method: 'listMedals';
-    readonly input: GetCorporationsCorporationIdMedalsInput;
-    readonly output: GetCorporationsCorporationIdMedalsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdMedalsData>;
+    readonly output: GetCorporationsCorporationIdMedalsResponse;
   };
   readonly GetCorporationsCorporationIdRolesHistory: {
     readonly domain: 'corporation';
     readonly method: 'listMemberRoleHistory';
-    readonly input: GetCorporationsCorporationIdRolesHistoryInput;
-    readonly output: GetCorporationsCorporationIdRolesHistoryOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdRolesHistoryData>;
+    readonly output: GetCorporationsCorporationIdRolesHistoryResponse;
   };
   readonly GetCorporationsCorporationIdRoles: {
     readonly domain: 'corporation';
     readonly method: 'listMemberRoles';
-    readonly input: GetCorporationsCorporationIdRolesInput;
-    readonly output: GetCorporationsCorporationIdRolesOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdRolesData>;
+    readonly output: GetCorporationsCorporationIdRolesResponse;
   };
   readonly GetCorporationsCorporationIdMembersTitles: {
     readonly domain: 'corporation';
     readonly method: 'listMemberTitles';
-    readonly input: GetCorporationsCorporationIdMembersTitlesInput;
-    readonly output: GetCorporationsCorporationIdMembersTitlesOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdMembersTitlesData>;
+    readonly output: GetCorporationsCorporationIdMembersTitlesResponse;
   };
   readonly GetCorporationsCorporationIdMembertracking: {
     readonly domain: 'corporation';
     readonly method: 'listMemberTracking';
-    readonly input: GetCorporationsCorporationIdMembertrackingInput;
-    readonly output: GetCorporationsCorporationIdMembertrackingOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdMembertrackingData>;
+    readonly output: GetCorporationsCorporationIdMembertrackingResponse;
   };
   readonly GetCorporationsCorporationIdMembers: {
     readonly domain: 'corporation';
     readonly method: 'listMembers';
-    readonly input: GetCorporationsCorporationIdMembersInput;
-    readonly output: GetCorporationsCorporationIdMembersOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdMembersData>;
+    readonly output: GetCorporationsCorporationIdMembersResponse;
   };
   readonly GetCorporationsNpccorps: {
     readonly domain: 'corporation';
     readonly method: 'listNpcCorporations';
-    readonly input: GetCorporationsNpccorpsInput;
-    readonly output: GetCorporationsNpccorpsOutput;
+    readonly input: OperationArguments<GetCorporationsNpccorpsData>;
+    readonly output: GetCorporationsNpccorpsResponse;
   };
   readonly GetCorporationsCorporationIdShareholders: {
     readonly domain: 'corporation';
     readonly method: 'listShareholders';
-    readonly input: GetCorporationsCorporationIdShareholdersInput;
-    readonly output: GetCorporationsCorporationIdShareholdersOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdShareholdersData>;
+    readonly output: GetCorporationsCorporationIdShareholdersResponse;
   };
   readonly GetCorporationsCorporationIdStandings: {
     readonly domain: 'corporation';
     readonly method: 'listStandings';
-    readonly input: GetCorporationsCorporationIdStandingsInput;
-    readonly output: GetCorporationsCorporationIdStandingsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdStandingsData>;
+    readonly output: GetCorporationsCorporationIdStandingsResponse;
   };
   readonly GetCorporationsCorporationIdStarbases: {
     readonly domain: 'corporation';
     readonly method: 'listStarbases';
-    readonly input: GetCorporationsCorporationIdStarbasesInput;
-    readonly output: GetCorporationsCorporationIdStarbasesOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdStarbasesData>;
+    readonly output: GetCorporationsCorporationIdStarbasesResponse;
   };
   readonly GetCorporationsCorporationIdStructures: {
     readonly domain: 'corporation';
     readonly method: 'listStructures';
-    readonly input: GetCorporationsCorporationIdStructuresInput;
-    readonly output: GetCorporationsCorporationIdStructuresOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdStructuresData>;
+    readonly output: GetCorporationsCorporationIdStructuresResponse;
   };
   readonly GetCorporationsCorporationIdTitles: {
     readonly domain: 'corporation';
     readonly method: 'listTitles';
-    readonly input: GetCorporationsCorporationIdTitlesInput;
-    readonly output: GetCorporationsCorporationIdTitlesOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdTitlesData>;
+    readonly output: GetCorporationsCorporationIdTitlesResponse;
   };
   readonly GetCorporationsProjectsDetail: {
     readonly domain: 'corporationProjects';
     readonly method: 'get';
-    readonly input: GetCorporationsProjectsDetailInput;
-    readonly output: GetCorporationsProjectsDetailOutput;
+    readonly input: OperationArguments<GetCorporationsProjectsDetailData>;
+    readonly output: GetCorporationsProjectsDetailResponse;
   };
   readonly GetCorporationsProjectsContribution: {
     readonly domain: 'corporationProjects';
     readonly method: 'getContribution';
-    readonly input: GetCorporationsProjectsContributionInput;
-    readonly output: GetCorporationsProjectsContributionOutput;
+    readonly input: OperationArguments<GetCorporationsProjectsContributionData>;
+    readonly output: GetCorporationsProjectsContributionResponse;
   };
   readonly GetCorporationsProjectsListing: {
     readonly domain: 'corporationProjects';
     readonly method: 'list';
-    readonly input: GetCorporationsProjectsListingInput;
-    readonly output: GetCorporationsProjectsListingOutput;
+    readonly input: OperationArguments<GetCorporationsProjectsListingData>;
+    readonly output: GetCorporationsProjectsListingResponse;
   };
   readonly GetCorporationsProjectsContributors: {
     readonly domain: 'corporationProjects';
     readonly method: 'listContributors';
-    readonly input: GetCorporationsProjectsContributorsInput;
-    readonly output: GetCorporationsProjectsContributorsOutput;
+    readonly input: OperationArguments<GetCorporationsProjectsContributorsData>;
+    readonly output: GetCorporationsProjectsContributorsResponse;
   };
   readonly GetCosmeticsSkinr: {
     readonly domain: 'cosmetics';
     readonly method: 'getSkinrLicense';
-    readonly input: GetCosmeticsSkinrInput;
-    readonly output: GetCosmeticsSkinrOutput;
+    readonly input: OperationArguments<GetCosmeticsSkinrData>;
+    readonly output: GetCosmeticsSkinrResponse;
   };
   readonly GetCharactersCosmeticsSkinrComponents: {
     readonly domain: 'cosmetics';
     readonly method: 'listSkinrComponentLicenses';
-    readonly input: GetCharactersCosmeticsSkinrComponentsInput;
-    readonly output: GetCharactersCosmeticsSkinrComponentsOutput;
+    readonly input: OperationArguments<GetCharactersCosmeticsSkinrComponentsData>;
+    readonly output: GetCharactersCosmeticsSkinrComponentsResponse;
   };
   readonly GetCharactersCosmeticsSkinr: {
     readonly domain: 'cosmetics';
     readonly method: 'listSkinrLicenses';
-    readonly input: GetCharactersCosmeticsSkinrInput;
-    readonly output: GetCharactersCosmeticsSkinrOutput;
+    readonly input: OperationArguments<GetCharactersCosmeticsSkinrData>;
+    readonly output: GetCharactersCosmeticsSkinrResponse;
   };
   readonly GetDogmaAttributesAttributeId: {
     readonly domain: 'dogma';
     readonly method: 'getAttribute';
-    readonly input: GetDogmaAttributesAttributeIdInput;
-    readonly output: GetDogmaAttributesAttributeIdOutput;
+    readonly input: OperationArguments<GetDogmaAttributesAttributeIdData>;
+    readonly output: GetDogmaAttributesAttributeIdResponse;
   };
   readonly GetDogmaDynamicItemsTypeIdItemId: {
     readonly domain: 'dogma';
     readonly method: 'getDynamicItem';
-    readonly input: GetDogmaDynamicItemsTypeIdItemIdInput;
-    readonly output: GetDogmaDynamicItemsTypeIdItemIdOutput;
+    readonly input: OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>;
+    readonly output: GetDogmaDynamicItemsTypeIdItemIdResponse;
   };
   readonly GetDogmaEffectsEffectId: {
     readonly domain: 'dogma';
     readonly method: 'getEffect';
-    readonly input: GetDogmaEffectsEffectIdInput;
-    readonly output: GetDogmaEffectsEffectIdOutput;
+    readonly input: OperationArguments<GetDogmaEffectsEffectIdData>;
+    readonly output: GetDogmaEffectsEffectIdResponse;
   };
   readonly GetDogmaAttributes: {
     readonly domain: 'dogma';
     readonly method: 'listAttributes';
-    readonly input: GetDogmaAttributesInput;
-    readonly output: GetDogmaAttributesOutput;
+    readonly input: OperationArguments<GetDogmaAttributesData>;
+    readonly output: GetDogmaAttributesResponse;
   };
   readonly GetDogmaEffects: {
     readonly domain: 'dogma';
     readonly method: 'listEffects';
-    readonly input: GetDogmaEffectsInput;
-    readonly output: GetDogmaEffectsOutput;
+    readonly input: OperationArguments<GetDogmaEffectsData>;
+    readonly output: GetDogmaEffectsResponse;
   };
   readonly GetFwLeaderboardsCharacters: {
     readonly domain: 'factionWarfare';
     readonly method: 'getCharacterLeaderboards';
-    readonly input: GetFwLeaderboardsCharactersInput;
-    readonly output: GetFwLeaderboardsCharactersOutput;
+    readonly input: OperationArguments<GetFwLeaderboardsCharactersData>;
+    readonly output: GetFwLeaderboardsCharactersResponse;
   };
   readonly GetCharactersCharacterIdFwStats: {
     readonly domain: 'factionWarfare';
     readonly method: 'getCharacterStats';
-    readonly input: GetCharactersCharacterIdFwStatsInput;
-    readonly output: GetCharactersCharacterIdFwStatsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdFwStatsData>;
+    readonly output: GetCharactersCharacterIdFwStatsResponse;
   };
   readonly GetFwLeaderboardsCorporations: {
     readonly domain: 'factionWarfare';
     readonly method: 'getCorporationLeaderboards';
-    readonly input: GetFwLeaderboardsCorporationsInput;
-    readonly output: GetFwLeaderboardsCorporationsOutput;
+    readonly input: OperationArguments<GetFwLeaderboardsCorporationsData>;
+    readonly output: GetFwLeaderboardsCorporationsResponse;
   };
   readonly GetCorporationsCorporationIdFwStats: {
     readonly domain: 'factionWarfare';
     readonly method: 'getCorporationStats';
-    readonly input: GetCorporationsCorporationIdFwStatsInput;
-    readonly output: GetCorporationsCorporationIdFwStatsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdFwStatsData>;
+    readonly output: GetCorporationsCorporationIdFwStatsResponse;
   };
   readonly GetFwLeaderboards: {
     readonly domain: 'factionWarfare';
     readonly method: 'getFactionLeaderboards';
-    readonly input: GetFwLeaderboardsInput;
-    readonly output: GetFwLeaderboardsOutput;
+    readonly input: OperationArguments<GetFwLeaderboardsData>;
+    readonly output: GetFwLeaderboardsResponse;
   };
   readonly GetFwStats: {
     readonly domain: 'factionWarfare';
     readonly method: 'listFactionStats';
-    readonly input: GetFwStatsInput;
-    readonly output: GetFwStatsOutput;
+    readonly input: OperationArguments<GetFwStatsData>;
+    readonly output: GetFwStatsResponse;
   };
   readonly GetFwSystems: {
     readonly domain: 'factionWarfare';
     readonly method: 'listSystems';
-    readonly input: GetFwSystemsInput;
-    readonly output: GetFwSystemsOutput;
+    readonly input: OperationArguments<GetFwSystemsData>;
+    readonly output: GetFwSystemsResponse;
   };
   readonly GetFwWars: {
     readonly domain: 'factionWarfare';
     readonly method: 'listWars';
-    readonly input: GetFwWarsInput;
-    readonly output: GetFwWarsOutput;
+    readonly input: OperationArguments<GetFwWarsData>;
+    readonly output: GetFwWarsResponse;
   };
   readonly PostCharactersCharacterIdFittings: {
     readonly domain: 'fittings';
     readonly method: 'create';
-    readonly input: PostCharactersCharacterIdFittingsInput;
-    readonly output: PostCharactersCharacterIdFittingsOutput;
+    readonly input: OperationArguments<PostCharactersCharacterIdFittingsData>;
+    readonly output: PostCharactersCharacterIdFittingsResponse;
   };
   readonly DeleteCharactersCharacterIdFittingsFittingId: {
     readonly domain: 'fittings';
     readonly method: 'deleteFitting';
-    readonly input: DeleteCharactersCharacterIdFittingsFittingIdInput;
-    readonly output: DeleteCharactersCharacterIdFittingsFittingIdOutput;
+    readonly input: OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>;
+    readonly output: DeleteCharactersCharacterIdFittingsFittingIdResponse;
   };
   readonly GetCharactersCharacterIdFittings: {
     readonly domain: 'fittings';
     readonly method: 'list';
-    readonly input: GetCharactersCharacterIdFittingsInput;
-    readonly output: GetCharactersCharacterIdFittingsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdFittingsData>;
+    readonly output: GetCharactersCharacterIdFittingsResponse;
   };
   readonly PostFleetsFleetIdWingsWingIdSquads: {
     readonly domain: 'fleets';
     readonly method: 'createSquad';
-    readonly input: PostFleetsFleetIdWingsWingIdSquadsInput;
-    readonly output: PostFleetsFleetIdWingsWingIdSquadsOutput;
+    readonly input: OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>;
+    readonly output: PostFleetsFleetIdWingsWingIdSquadsResponse;
   };
   readonly PostFleetsFleetIdWings: {
     readonly domain: 'fleets';
     readonly method: 'createWing';
-    readonly input: PostFleetsFleetIdWingsInput;
-    readonly output: PostFleetsFleetIdWingsOutput;
+    readonly input: OperationArguments<PostFleetsFleetIdWingsData>;
+    readonly output: PostFleetsFleetIdWingsResponse;
   };
   readonly DeleteFleetsFleetIdSquadsSquadId: {
     readonly domain: 'fleets';
     readonly method: 'deleteSquad';
-    readonly input: DeleteFleetsFleetIdSquadsSquadIdInput;
-    readonly output: DeleteFleetsFleetIdSquadsSquadIdOutput;
+    readonly input: OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>;
+    readonly output: DeleteFleetsFleetIdSquadsSquadIdResponse;
   };
   readonly DeleteFleetsFleetIdWingsWingId: {
     readonly domain: 'fleets';
     readonly method: 'deleteWing';
-    readonly input: DeleteFleetsFleetIdWingsWingIdInput;
-    readonly output: DeleteFleetsFleetIdWingsWingIdOutput;
+    readonly input: OperationArguments<DeleteFleetsFleetIdWingsWingIdData>;
+    readonly output: DeleteFleetsFleetIdWingsWingIdResponse;
   };
   readonly GetFleetsFleetId: {
     readonly domain: 'fleets';
     readonly method: 'get';
-    readonly input: GetFleetsFleetIdInput;
-    readonly output: GetFleetsFleetIdOutput;
+    readonly input: OperationArguments<GetFleetsFleetIdData>;
+    readonly output: GetFleetsFleetIdResponse;
   };
   readonly GetCharactersCharacterIdFleet: {
     readonly domain: 'fleets';
     readonly method: 'getCharacterFleet';
-    readonly input: GetCharactersCharacterIdFleetInput;
-    readonly output: GetCharactersCharacterIdFleetOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdFleetData>;
+    readonly output: GetCharactersCharacterIdFleetResponse;
   };
   readonly PostFleetsFleetIdMembers: {
     readonly domain: 'fleets';
     readonly method: 'inviteMember';
-    readonly input: PostFleetsFleetIdMembersInput;
-    readonly output: PostFleetsFleetIdMembersOutput;
+    readonly input: OperationArguments<PostFleetsFleetIdMembersData>;
+    readonly output: PostFleetsFleetIdMembersResponse;
   };
   readonly GetFleetsFleetIdMembers: {
     readonly domain: 'fleets';
     readonly method: 'listMembers';
-    readonly input: GetFleetsFleetIdMembersInput;
-    readonly output: GetFleetsFleetIdMembersOutput;
+    readonly input: OperationArguments<GetFleetsFleetIdMembersData>;
+    readonly output: GetFleetsFleetIdMembersResponse;
   };
   readonly GetFleetsFleetIdWings: {
     readonly domain: 'fleets';
     readonly method: 'listWings';
-    readonly input: GetFleetsFleetIdWingsInput;
-    readonly output: GetFleetsFleetIdWingsOutput;
+    readonly input: OperationArguments<GetFleetsFleetIdWingsData>;
+    readonly output: GetFleetsFleetIdWingsResponse;
   };
   readonly PutFleetsFleetIdMembersMemberId: {
     readonly domain: 'fleets';
     readonly method: 'moveMember';
-    readonly input: PutFleetsFleetIdMembersMemberIdInput;
-    readonly output: PutFleetsFleetIdMembersMemberIdOutput;
+    readonly input: OperationArguments<PutFleetsFleetIdMembersMemberIdData>;
+    readonly output: PutFleetsFleetIdMembersMemberIdResponse;
   };
   readonly DeleteFleetsFleetIdMembersMemberId: {
     readonly domain: 'fleets';
     readonly method: 'removeMember';
-    readonly input: DeleteFleetsFleetIdMembersMemberIdInput;
-    readonly output: DeleteFleetsFleetIdMembersMemberIdOutput;
+    readonly input: OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>;
+    readonly output: DeleteFleetsFleetIdMembersMemberIdResponse;
   };
   readonly PutFleetsFleetIdSquadsSquadId: {
     readonly domain: 'fleets';
     readonly method: 'renameSquad';
-    readonly input: PutFleetsFleetIdSquadsSquadIdInput;
-    readonly output: PutFleetsFleetIdSquadsSquadIdOutput;
+    readonly input: OperationArguments<PutFleetsFleetIdSquadsSquadIdData>;
+    readonly output: PutFleetsFleetIdSquadsSquadIdResponse;
   };
   readonly PutFleetsFleetIdWingsWingId: {
     readonly domain: 'fleets';
     readonly method: 'renameWing';
-    readonly input: PutFleetsFleetIdWingsWingIdInput;
-    readonly output: PutFleetsFleetIdWingsWingIdOutput;
+    readonly input: OperationArguments<PutFleetsFleetIdWingsWingIdData>;
+    readonly output: PutFleetsFleetIdWingsWingIdResponse;
   };
   readonly PutFleetsFleetId: {
     readonly domain: 'fleets';
     readonly method: 'update';
-    readonly input: PutFleetsFleetIdInput;
-    readonly output: PutFleetsFleetIdOutput;
+    readonly input: OperationArguments<PutFleetsFleetIdData>;
+    readonly output: PutFleetsFleetIdResponse;
   };
   readonly GetFreelanceJobsDetail: {
     readonly domain: 'freelanceJobs';
     readonly method: 'get';
-    readonly input: GetFreelanceJobsDetailInput;
-    readonly output: GetFreelanceJobsDetailOutput;
+    readonly input: OperationArguments<GetFreelanceJobsDetailData>;
+    readonly output: GetFreelanceJobsDetailResponse;
   };
   readonly GetCharactersFreelanceJobsParticipation: {
     readonly domain: 'freelanceJobs';
     readonly method: 'getCharacterParticipation';
-    readonly input: GetCharactersFreelanceJobsParticipationInput;
-    readonly output: GetCharactersFreelanceJobsParticipationOutput;
+    readonly input: OperationArguments<GetCharactersFreelanceJobsParticipationData>;
+    readonly output: GetCharactersFreelanceJobsParticipationResponse;
   };
   readonly GetCharactersFreelanceJobsListing: {
     readonly domain: 'freelanceJobs';
     readonly method: 'listCharacterJobs';
-    readonly input: GetCharactersFreelanceJobsListingInput;
-    readonly output: GetCharactersFreelanceJobsListingOutput;
+    readonly input: OperationArguments<GetCharactersFreelanceJobsListingData>;
+    readonly output: GetCharactersFreelanceJobsListingResponse;
   };
   readonly GetCorporationsFreelanceJobsListing: {
     readonly domain: 'freelanceJobs';
     readonly method: 'listCorporationJobs';
-    readonly input: GetCorporationsFreelanceJobsListingInput;
-    readonly output: GetCorporationsFreelanceJobsListingOutput;
+    readonly input: OperationArguments<GetCorporationsFreelanceJobsListingData>;
+    readonly output: GetCorporationsFreelanceJobsListingResponse;
   };
   readonly GetCorporationsFreelanceJobsParticipants: {
     readonly domain: 'freelanceJobs';
     readonly method: 'listParticipants';
-    readonly input: GetCorporationsFreelanceJobsParticipantsInput;
-    readonly output: GetCorporationsFreelanceJobsParticipantsOutput;
+    readonly input: OperationArguments<GetCorporationsFreelanceJobsParticipantsData>;
+    readonly output: GetCorporationsFreelanceJobsParticipantsResponse;
   };
   readonly GetFreelanceJobsListing: {
     readonly domain: 'freelanceJobs';
     readonly method: 'listPublic';
-    readonly input: GetFreelanceJobsListingInput;
-    readonly output: GetFreelanceJobsListingOutput;
+    readonly input: OperationArguments<GetFreelanceJobsListingData>;
+    readonly output: GetFreelanceJobsListingResponse;
   };
   readonly GetIncursions: {
     readonly domain: 'incursions';
     readonly method: 'list';
-    readonly input: GetIncursionsInput;
-    readonly output: GetIncursionsOutput;
+    readonly input: OperationArguments<GetIncursionsData>;
+    readonly output: GetIncursionsResponse;
   };
   readonly GetCharactersCharacterIdIndustryJobs: {
     readonly domain: 'industry';
     readonly method: 'listCharacterJobs';
-    readonly input: GetCharactersCharacterIdIndustryJobsInput;
-    readonly output: GetCharactersCharacterIdIndustryJobsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdIndustryJobsData>;
+    readonly output: GetCharactersCharacterIdIndustryJobsResponse;
   };
   readonly GetCharactersCharacterIdMining: {
     readonly domain: 'industry';
     readonly method: 'listCharacterMiningLedger';
-    readonly input: GetCharactersCharacterIdMiningInput;
-    readonly output: GetCharactersCharacterIdMiningOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdMiningData>;
+    readonly output: GetCharactersCharacterIdMiningResponse;
   };
   readonly GetCorporationsCorporationIdIndustryJobs: {
     readonly domain: 'industry';
     readonly method: 'listCorporationJobs';
-    readonly input: GetCorporationsCorporationIdIndustryJobsInput;
-    readonly output: GetCorporationsCorporationIdIndustryJobsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdIndustryJobsData>;
+    readonly output: GetCorporationsCorporationIdIndustryJobsResponse;
   };
   readonly GetIndustryFacilities: {
     readonly domain: 'industry';
     readonly method: 'listFacilities';
-    readonly input: GetIndustryFacilitiesInput;
-    readonly output: GetIndustryFacilitiesOutput;
+    readonly input: OperationArguments<GetIndustryFacilitiesData>;
+    readonly output: GetIndustryFacilitiesResponse;
   };
   readonly GetCorporationCorporationIdMiningObservers: {
     readonly domain: 'industry';
     readonly method: 'listMiningObservers';
-    readonly input: GetCorporationCorporationIdMiningObserversInput;
-    readonly output: GetCorporationCorporationIdMiningObserversOutput;
+    readonly input: OperationArguments<GetCorporationCorporationIdMiningObserversData>;
+    readonly output: GetCorporationCorporationIdMiningObserversResponse;
   };
   readonly GetCorporationCorporationIdMiningExtractions: {
     readonly domain: 'industry';
     readonly method: 'listMoonExtractionTimers';
-    readonly input: GetCorporationCorporationIdMiningExtractionsInput;
-    readonly output: GetCorporationCorporationIdMiningExtractionsOutput;
+    readonly input: OperationArguments<GetCorporationCorporationIdMiningExtractionsData>;
+    readonly output: GetCorporationCorporationIdMiningExtractionsResponse;
   };
   readonly GetCorporationCorporationIdMiningObserversObserverId: {
     readonly domain: 'industry';
     readonly method: 'listObservedMining';
-    readonly input: GetCorporationCorporationIdMiningObserversObserverIdInput;
-    readonly output: GetCorporationCorporationIdMiningObserversObserverIdOutput;
+    readonly input: OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>;
+    readonly output: GetCorporationCorporationIdMiningObserversObserverIdResponse;
   };
   readonly GetIndustrySystems: {
     readonly domain: 'industry';
     readonly method: 'listSystemCostIndices';
-    readonly input: GetIndustrySystemsInput;
-    readonly output: GetIndustrySystemsOutput;
+    readonly input: OperationArguments<GetIndustrySystemsData>;
+    readonly output: GetIndustrySystemsResponse;
   };
   readonly GetInsurancePrices: {
     readonly domain: 'insurance';
     readonly method: 'listPrices';
-    readonly input: GetInsurancePricesInput;
-    readonly output: GetInsurancePricesOutput;
+    readonly input: OperationArguments<GetInsurancePricesData>;
+    readonly output: GetInsurancePricesResponse;
   };
   readonly GetKillmailsKillmailIdKillmailHash: {
     readonly domain: 'killmails';
     readonly method: 'get';
-    readonly input: GetKillmailsKillmailIdKillmailHashInput;
-    readonly output: GetKillmailsKillmailIdKillmailHashOutput;
+    readonly input: OperationArguments<GetKillmailsKillmailIdKillmailHashData>;
+    readonly output: GetKillmailsKillmailIdKillmailHashResponse;
   };
   readonly GetCharactersCharacterIdKillmailsRecent: {
     readonly domain: 'killmails';
     readonly method: 'listRecentForCharacter';
-    readonly input: GetCharactersCharacterIdKillmailsRecentInput;
-    readonly output: GetCharactersCharacterIdKillmailsRecentOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdKillmailsRecentData>;
+    readonly output: GetCharactersCharacterIdKillmailsRecentResponse;
   };
   readonly GetCorporationsCorporationIdKillmailsRecent: {
     readonly domain: 'killmails';
     readonly method: 'listRecentForCorporation';
-    readonly input: GetCorporationsCorporationIdKillmailsRecentInput;
-    readonly output: GetCorporationsCorporationIdKillmailsRecentOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>;
+    readonly output: GetCorporationsCorporationIdKillmailsRecentResponse;
   };
   readonly GetCharactersCharacterIdLocation: {
     readonly domain: 'location';
     readonly method: 'get';
-    readonly input: GetCharactersCharacterIdLocationInput;
-    readonly output: GetCharactersCharacterIdLocationOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdLocationData>;
+    readonly output: GetCharactersCharacterIdLocationResponse;
   };
   readonly GetCharactersCharacterIdShip: {
     readonly domain: 'location';
     readonly method: 'getCurrentShip';
-    readonly input: GetCharactersCharacterIdShipInput;
-    readonly output: GetCharactersCharacterIdShipOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdShipData>;
+    readonly output: GetCharactersCharacterIdShipResponse;
   };
   readonly GetCharactersCharacterIdOnline: {
     readonly domain: 'location';
     readonly method: 'getOnlineStatus';
-    readonly input: GetCharactersCharacterIdOnlineInput;
-    readonly output: GetCharactersCharacterIdOnlineOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdOnlineData>;
+    readonly output: GetCharactersCharacterIdOnlineResponse;
   };
   readonly GetCharactersCharacterIdLoyaltyPoints: {
     readonly domain: 'loyalty';
     readonly method: 'listPoints';
-    readonly input: GetCharactersCharacterIdLoyaltyPointsInput;
-    readonly output: GetCharactersCharacterIdLoyaltyPointsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>;
+    readonly output: GetCharactersCharacterIdLoyaltyPointsResponse;
   };
   readonly GetLoyaltyStoresCorporationIdOffers: {
     readonly domain: 'loyalty';
     readonly method: 'listStoreOffers';
-    readonly input: GetLoyaltyStoresCorporationIdOffersInput;
-    readonly output: GetLoyaltyStoresCorporationIdOffersOutput;
+    readonly input: OperationArguments<GetLoyaltyStoresCorporationIdOffersData>;
+    readonly output: GetLoyaltyStoresCorporationIdOffersResponse;
   };
   readonly PostCharactersCharacterIdMailLabels: {
     readonly domain: 'mail';
     readonly method: 'createLabel';
-    readonly input: PostCharactersCharacterIdMailLabelsInput;
-    readonly output: PostCharactersCharacterIdMailLabelsOutput;
+    readonly input: OperationArguments<PostCharactersCharacterIdMailLabelsData>;
+    readonly output: PostCharactersCharacterIdMailLabelsResponse;
   };
   readonly DeleteCharactersCharacterIdMailLabelsLabelId: {
     readonly domain: 'mail';
     readonly method: 'deleteLabel';
-    readonly input: DeleteCharactersCharacterIdMailLabelsLabelIdInput;
-    readonly output: DeleteCharactersCharacterIdMailLabelsLabelIdOutput;
+    readonly input: OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>;
+    readonly output: DeleteCharactersCharacterIdMailLabelsLabelIdResponse;
   };
   readonly DeleteCharactersCharacterIdMailMailId: {
     readonly domain: 'mail';
     readonly method: 'deleteMail';
-    readonly input: DeleteCharactersCharacterIdMailMailIdInput;
-    readonly output: DeleteCharactersCharacterIdMailMailIdOutput;
+    readonly input: OperationArguments<DeleteCharactersCharacterIdMailMailIdData>;
+    readonly output: DeleteCharactersCharacterIdMailMailIdResponse;
   };
   readonly GetCharactersCharacterIdMailMailId: {
     readonly domain: 'mail';
     readonly method: 'get';
-    readonly input: GetCharactersCharacterIdMailMailIdInput;
-    readonly output: GetCharactersCharacterIdMailMailIdOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdMailMailIdData>;
+    readonly output: GetCharactersCharacterIdMailMailIdResponse;
   };
   readonly GetCharactersCharacterIdMail: {
     readonly domain: 'mail';
     readonly method: 'listHeaders';
-    readonly input: GetCharactersCharacterIdMailInput;
-    readonly output: GetCharactersCharacterIdMailOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdMailData>;
+    readonly output: GetCharactersCharacterIdMailResponse;
   };
   readonly GetCharactersCharacterIdMailLabels: {
     readonly domain: 'mail';
     readonly method: 'listLabels';
-    readonly input: GetCharactersCharacterIdMailLabelsInput;
-    readonly output: GetCharactersCharacterIdMailLabelsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdMailLabelsData>;
+    readonly output: GetCharactersCharacterIdMailLabelsResponse;
   };
   readonly GetCharactersCharacterIdMailLists: {
     readonly domain: 'mail';
     readonly method: 'listMailingLists';
-    readonly input: GetCharactersCharacterIdMailListsInput;
-    readonly output: GetCharactersCharacterIdMailListsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdMailListsData>;
+    readonly output: GetCharactersCharacterIdMailListsResponse;
   };
   readonly PostCharactersCharacterIdMail: {
     readonly domain: 'mail';
     readonly method: 'send';
-    readonly input: PostCharactersCharacterIdMailInput;
-    readonly output: PostCharactersCharacterIdMailOutput;
+    readonly input: OperationArguments<PostCharactersCharacterIdMailData>;
+    readonly output: PostCharactersCharacterIdMailResponse;
   };
   readonly PutCharactersCharacterIdMailMailId: {
     readonly domain: 'mail';
     readonly method: 'update';
-    readonly input: PutCharactersCharacterIdMailMailIdInput;
-    readonly output: PutCharactersCharacterIdMailMailIdOutput;
+    readonly input: OperationArguments<PutCharactersCharacterIdMailMailIdData>;
+    readonly output: PutCharactersCharacterIdMailMailIdResponse;
   };
   readonly GetMarketsGroupsMarketGroupId: {
     readonly domain: 'market';
     readonly method: 'getGroup';
-    readonly input: GetMarketsGroupsMarketGroupIdInput;
-    readonly output: GetMarketsGroupsMarketGroupIdOutput;
+    readonly input: OperationArguments<GetMarketsGroupsMarketGroupIdData>;
+    readonly output: GetMarketsGroupsMarketGroupIdResponse;
   };
   readonly GetCharactersCharacterIdOrdersHistory: {
     readonly domain: 'market';
     readonly method: 'listCharacterOrderHistory';
-    readonly input: GetCharactersCharacterIdOrdersHistoryInput;
-    readonly output: GetCharactersCharacterIdOrdersHistoryOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdOrdersHistoryData>;
+    readonly output: GetCharactersCharacterIdOrdersHistoryResponse;
   };
   readonly GetCharactersCharacterIdOrders: {
     readonly domain: 'market';
     readonly method: 'listCharacterOrders';
-    readonly input: GetCharactersCharacterIdOrdersInput;
-    readonly output: GetCharactersCharacterIdOrdersOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdOrdersData>;
+    readonly output: GetCharactersCharacterIdOrdersResponse;
   };
   readonly GetCorporationsCorporationIdOrdersHistory: {
     readonly domain: 'market';
     readonly method: 'listCorporationOrderHistory';
-    readonly input: GetCorporationsCorporationIdOrdersHistoryInput;
-    readonly output: GetCorporationsCorporationIdOrdersHistoryOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>;
+    readonly output: GetCorporationsCorporationIdOrdersHistoryResponse;
   };
   readonly GetCorporationsCorporationIdOrders: {
     readonly domain: 'market';
     readonly method: 'listCorporationOrders';
-    readonly input: GetCorporationsCorporationIdOrdersInput;
-    readonly output: GetCorporationsCorporationIdOrdersOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdOrdersData>;
+    readonly output: GetCorporationsCorporationIdOrdersResponse;
   };
   readonly GetMarketsGroups: {
     readonly domain: 'market';
     readonly method: 'listGroups';
-    readonly input: GetMarketsGroupsInput;
-    readonly output: GetMarketsGroupsOutput;
+    readonly input: OperationArguments<GetMarketsGroupsData>;
+    readonly output: GetMarketsGroupsResponse;
   };
   readonly GetMarketsPrices: {
     readonly domain: 'market';
     readonly method: 'listPrices';
-    readonly input: GetMarketsPricesInput;
-    readonly output: GetMarketsPricesOutput;
+    readonly input: OperationArguments<GetMarketsPricesData>;
+    readonly output: GetMarketsPricesResponse;
   };
   readonly GetMarketsRegionIdHistory: {
     readonly domain: 'market';
     readonly method: 'listRegionHistory';
-    readonly input: GetMarketsRegionIdHistoryInput;
-    readonly output: GetMarketsRegionIdHistoryOutput;
+    readonly input: OperationArguments<GetMarketsRegionIdHistoryData>;
+    readonly output: GetMarketsRegionIdHistoryResponse;
   };
   readonly GetMarketsRegionIdOrders: {
     readonly domain: 'market';
     readonly method: 'listRegionOrders';
-    readonly input: GetMarketsRegionIdOrdersInput;
-    readonly output: GetMarketsRegionIdOrdersOutput;
+    readonly input: OperationArguments<GetMarketsRegionIdOrdersData>;
+    readonly output: GetMarketsRegionIdOrdersResponse;
   };
   readonly GetMarketsRegionIdTypes: {
     readonly domain: 'market';
     readonly method: 'listRegionTypes';
-    readonly input: GetMarketsRegionIdTypesInput;
-    readonly output: GetMarketsRegionIdTypesOutput;
+    readonly input: OperationArguments<GetMarketsRegionIdTypesData>;
+    readonly output: GetMarketsRegionIdTypesResponse;
   };
   readonly GetMarketsStructuresStructureId: {
     readonly domain: 'market';
     readonly method: 'listStructureOrders';
-    readonly input: GetMarketsStructuresStructureIdInput;
-    readonly output: GetMarketsStructuresStructureIdOutput;
+    readonly input: OperationArguments<GetMarketsStructuresStructureIdData>;
+    readonly output: GetMarketsStructuresStructureIdResponse;
   };
   readonly GetMetaChangelog: {
     readonly domain: 'meta';
     readonly method: 'getChangelog';
-    readonly input: GetMetaChangelogInput;
-    readonly output: GetMetaChangelogOutput;
+    readonly input: OperationArguments<GetMetaChangelogData>;
+    readonly output: GetMetaChangelogResponse;
   };
   readonly GetMetaStatus: {
     readonly domain: 'meta';
     readonly method: 'getHealthStatus';
-    readonly input: GetMetaStatusInput;
-    readonly output: GetMetaStatusOutput;
+    readonly input: OperationArguments<GetMetaStatusData>;
+    readonly output: GetMetaStatusResponse;
   };
   readonly GetMetaName: {
     readonly domain: 'meta';
     readonly method: 'getName';
-    readonly input: GetMetaNameInput;
-    readonly output: GetMetaNameOutput;
+    readonly input: OperationArguments<GetMetaNameData>;
+    readonly output: GetMetaNameResponse;
   };
   readonly GetMetaCompatibilityDates: {
     readonly domain: 'meta';
     readonly method: 'listCompatibilityDates';
-    readonly input: GetMetaCompatibilityDatesInput;
-    readonly output: GetMetaCompatibilityDatesOutput;
+    readonly input: OperationArguments<GetMetaCompatibilityDatesData>;
+    readonly output: GetMetaCompatibilityDatesResponse;
   };
   readonly GetMilitaryCampaignsDetail: {
     readonly domain: 'militaryCampaigns';
     readonly method: 'getCampaign';
-    readonly input: GetMilitaryCampaignsDetailInput;
-    readonly output: GetMilitaryCampaignsDetailOutput;
+    readonly input: OperationArguments<GetMilitaryCampaignsDetailData>;
+    readonly output: GetMilitaryCampaignsDetailResponse;
   };
   readonly GetCharactersMilitaryCampaignsObjectivesParticipation: {
     readonly domain: 'militaryCampaigns';
     readonly method: 'getCharacterObjectiveParticipation';
-    readonly input: GetCharactersMilitaryCampaignsObjectivesParticipationInput;
-    readonly output: GetCharactersMilitaryCampaignsObjectivesParticipationOutput;
+    readonly input: OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>;
+    readonly output: GetCharactersMilitaryCampaignsObjectivesParticipationResponse;
   };
   readonly GetMilitaryCampaignsObjectivesDetail: {
     readonly domain: 'militaryCampaigns';
     readonly method: 'getObjective';
-    readonly input: GetMilitaryCampaignsObjectivesDetailInput;
-    readonly output: GetMilitaryCampaignsObjectivesDetailOutput;
+    readonly input: OperationArguments<GetMilitaryCampaignsObjectivesDetailData>;
+    readonly output: GetMilitaryCampaignsObjectivesDetailResponse;
   };
   readonly GetMilitaryCampaignsListing: {
     readonly domain: 'militaryCampaigns';
     readonly method: 'listCampaigns';
-    readonly input: GetMilitaryCampaignsListingInput;
-    readonly output: GetMilitaryCampaignsListingOutput;
+    readonly input: OperationArguments<GetMilitaryCampaignsListingData>;
+    readonly output: GetMilitaryCampaignsListingResponse;
   };
   readonly GetCharactersMilitaryCampaignsObjectivesListing: {
     readonly domain: 'militaryCampaigns';
     readonly method: 'listCharacterObjectiveParticipations';
-    readonly input: GetCharactersMilitaryCampaignsObjectivesListingInput;
-    readonly output: GetCharactersMilitaryCampaignsObjectivesListingOutput;
+    readonly input: OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>;
+    readonly output: GetCharactersMilitaryCampaignsObjectivesListingResponse;
   };
   readonly GetMilitaryCampaignsObjectivesListing: {
     readonly domain: 'militaryCampaigns';
     readonly method: 'listObjectives';
-    readonly input: GetMilitaryCampaignsObjectivesListingInput;
-    readonly output: GetMilitaryCampaignsObjectivesListingOutput;
+    readonly input: OperationArguments<GetMilitaryCampaignsObjectivesListingData>;
+    readonly output: GetMilitaryCampaignsObjectivesListingResponse;
   };
   readonly GetParagonHubSkinrAlliances: {
     readonly domain: 'paragonHub';
     readonly method: 'listListingsForAlliance';
-    readonly input: GetParagonHubSkinrAlliancesInput;
-    readonly output: GetParagonHubSkinrAlliancesOutput;
+    readonly input: OperationArguments<GetParagonHubSkinrAlliancesData>;
+    readonly output: GetParagonHubSkinrAlliancesResponse;
   };
   readonly GetParagonHubSkinrCharacters: {
     readonly domain: 'paragonHub';
     readonly method: 'listListingsForCharacter';
-    readonly input: GetParagonHubSkinrCharactersInput;
-    readonly output: GetParagonHubSkinrCharactersOutput;
+    readonly input: OperationArguments<GetParagonHubSkinrCharactersData>;
+    readonly output: GetParagonHubSkinrCharactersResponse;
   };
   readonly GetParagonHubSkinrCorporations: {
     readonly domain: 'paragonHub';
     readonly method: 'listListingsForCorporation';
-    readonly input: GetParagonHubSkinrCorporationsInput;
-    readonly output: GetParagonHubSkinrCorporationsOutput;
+    readonly input: OperationArguments<GetParagonHubSkinrCorporationsData>;
+    readonly output: GetParagonHubSkinrCorporationsResponse;
   };
   readonly GetCharactersParagonHubSkinr: {
     readonly domain: 'paragonHub';
     readonly method: 'listPostedListings';
-    readonly input: GetCharactersParagonHubSkinrInput;
-    readonly output: GetCharactersParagonHubSkinrOutput;
+    readonly input: OperationArguments<GetCharactersParagonHubSkinrData>;
+    readonly output: GetCharactersParagonHubSkinrResponse;
   };
   readonly GetParagonHubSkinr: {
     readonly domain: 'paragonHub';
     readonly method: 'listPublicListings';
-    readonly input: GetParagonHubSkinrInput;
-    readonly output: GetParagonHubSkinrOutput;
+    readonly input: OperationArguments<GetParagonHubSkinrData>;
+    readonly output: GetParagonHubSkinrResponse;
   };
   readonly GetCharactersCharacterIdPlanetsPlanetId: {
     readonly domain: 'planetaryInteraction';
     readonly method: 'getColonyLayout';
-    readonly input: GetCharactersCharacterIdPlanetsPlanetIdInput;
-    readonly output: GetCharactersCharacterIdPlanetsPlanetIdOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>;
+    readonly output: GetCharactersCharacterIdPlanetsPlanetIdResponse;
   };
   readonly GetUniverseSchematicsSchematicId: {
     readonly domain: 'planetaryInteraction';
     readonly method: 'getSchematic';
-    readonly input: GetUniverseSchematicsSchematicIdInput;
-    readonly output: GetUniverseSchematicsSchematicIdOutput;
+    readonly input: OperationArguments<GetUniverseSchematicsSchematicIdData>;
+    readonly output: GetUniverseSchematicsSchematicIdResponse;
   };
   readonly GetCharactersCharacterIdPlanets: {
     readonly domain: 'planetaryInteraction';
     readonly method: 'listColonies';
-    readonly input: GetCharactersCharacterIdPlanetsInput;
-    readonly output: GetCharactersCharacterIdPlanetsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdPlanetsData>;
+    readonly output: GetCharactersCharacterIdPlanetsResponse;
   };
   readonly GetCorporationsCorporationIdCustomsOffices: {
     readonly domain: 'planetaryInteraction';
     readonly method: 'listCustomsOffices';
-    readonly input: GetCorporationsCorporationIdCustomsOfficesInput;
-    readonly output: GetCorporationsCorporationIdCustomsOfficesOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>;
+    readonly output: GetCorporationsCorporationIdCustomsOfficesResponse;
   };
   readonly PostRoute: {
     readonly domain: 'routes';
     readonly method: 'calculate';
-    readonly input: PostRouteInput;
-    readonly output: PostRouteOutput;
+    readonly input: OperationArguments<PostRouteData>;
+    readonly output: PostRouteResponse;
   };
   readonly GetCharactersCharacterIdSearch: {
     readonly domain: 'search';
     readonly method: 'search';
-    readonly input: GetCharactersCharacterIdSearchInput;
-    readonly output: GetCharactersCharacterIdSearchOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdSearchData>;
+    readonly output: GetCharactersCharacterIdSearchResponse;
   };
   readonly GetCharactersCharacterIdAttributes: {
     readonly domain: 'skills';
     readonly method: 'getAttributes';
-    readonly input: GetCharactersCharacterIdAttributesInput;
-    readonly output: GetCharactersCharacterIdAttributesOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdAttributesData>;
+    readonly output: GetCharactersCharacterIdAttributesResponse;
   };
   readonly GetCharactersCharacterIdSkillqueue: {
     readonly domain: 'skills';
     readonly method: 'getSkillQueue';
-    readonly input: GetCharactersCharacterIdSkillqueueInput;
-    readonly output: GetCharactersCharacterIdSkillqueueOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdSkillqueueData>;
+    readonly output: GetCharactersCharacterIdSkillqueueResponse;
   };
   readonly GetCharactersCharacterIdSkills: {
     readonly domain: 'skills';
     readonly method: 'getSkills';
-    readonly input: GetCharactersCharacterIdSkillsInput;
-    readonly output: GetCharactersCharacterIdSkillsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdSkillsData>;
+    readonly output: GetCharactersCharacterIdSkillsResponse;
   };
   readonly GetSovereigntyCampaigns: {
     readonly domain: 'sovereignty';
     readonly method: 'listCampaigns';
-    readonly input: GetSovereigntyCampaignsInput;
-    readonly output: GetSovereigntyCampaignsOutput;
+    readonly input: OperationArguments<GetSovereigntyCampaignsData>;
+    readonly output: GetSovereigntyCampaignsResponse;
   };
   readonly GetSovereigntySystems: {
     readonly domain: 'sovereignty';
     readonly method: 'listSystems';
-    readonly input: GetSovereigntySystemsInput;
-    readonly output: GetSovereigntySystemsOutput;
+    readonly input: OperationArguments<GetSovereigntySystemsData>;
+    readonly output: GetSovereigntySystemsResponse;
   };
   readonly GetStatus: {
     readonly domain: 'status';
     readonly method: 'get';
-    readonly input: GetStatusInput;
-    readonly output: GetStatusOutput;
+    readonly input: OperationArguments<GetStatusData>;
+    readonly output: GetStatusResponse;
   };
   readonly GetCharactersStructuresMercenaryDensDetail: {
     readonly domain: 'structures';
     readonly method: 'getMercenaryDen';
-    readonly input: GetCharactersStructuresMercenaryDensDetailInput;
-    readonly output: GetCharactersStructuresMercenaryDensDetailOutput;
+    readonly input: OperationArguments<GetCharactersStructuresMercenaryDensDetailData>;
+    readonly output: GetCharactersStructuresMercenaryDensDetailResponse;
   };
   readonly GetCorporationsStructuresSkyhooksDetail: {
     readonly domain: 'structures';
     readonly method: 'getSkyhook';
-    readonly input: GetCorporationsStructuresSkyhooksDetailInput;
-    readonly output: GetCorporationsStructuresSkyhooksDetailOutput;
+    readonly input: OperationArguments<GetCorporationsStructuresSkyhooksDetailData>;
+    readonly output: GetCorporationsStructuresSkyhooksDetailResponse;
   };
   readonly GetCorporationsStructuresSovereigntyHubsDetail: {
     readonly domain: 'structures';
     readonly method: 'getSovereigntyHub';
-    readonly input: GetCorporationsStructuresSovereigntyHubsDetailInput;
-    readonly output: GetCorporationsStructuresSovereigntyHubsDetailOutput;
+    readonly input: OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>;
+    readonly output: GetCorporationsStructuresSovereigntyHubsDetailResponse;
   };
   readonly GetCharactersStructuresMercenaryDensListing: {
     readonly domain: 'structures';
     readonly method: 'listMercenaryDens';
-    readonly input: GetCharactersStructuresMercenaryDensListingInput;
-    readonly output: GetCharactersStructuresMercenaryDensListingOutput;
+    readonly input: OperationArguments<GetCharactersStructuresMercenaryDensListingData>;
+    readonly output: GetCharactersStructuresMercenaryDensListingResponse;
   };
   readonly GetCorporationsStructuresSkyhooksListing: {
     readonly domain: 'structures';
     readonly method: 'listSkyhooks';
-    readonly input: GetCorporationsStructuresSkyhooksListingInput;
-    readonly output: GetCorporationsStructuresSkyhooksListingOutput;
+    readonly input: OperationArguments<GetCorporationsStructuresSkyhooksListingData>;
+    readonly output: GetCorporationsStructuresSkyhooksListingResponse;
   };
   readonly GetCorporationsStructuresSovereigntyHubsListing: {
     readonly domain: 'structures';
     readonly method: 'listSovereigntyHubs';
-    readonly input: GetCorporationsStructuresSovereigntyHubsListingInput;
-    readonly output: GetCorporationsStructuresSovereigntyHubsListingOutput;
+    readonly input: OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>;
+    readonly output: GetCorporationsStructuresSovereigntyHubsListingResponse;
   };
   readonly GetUniverseAsteroidBeltsAsteroidBeltId: {
     readonly domain: 'universe';
     readonly method: 'getAsteroidBelt';
-    readonly input: GetUniverseAsteroidBeltsAsteroidBeltIdInput;
-    readonly output: GetUniverseAsteroidBeltsAsteroidBeltIdOutput;
+    readonly input: OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>;
+    readonly output: GetUniverseAsteroidBeltsAsteroidBeltIdResponse;
   };
   readonly GetUniverseConstellationsConstellationId: {
     readonly domain: 'universe';
     readonly method: 'getConstellation';
-    readonly input: GetUniverseConstellationsConstellationIdInput;
-    readonly output: GetUniverseConstellationsConstellationIdOutput;
+    readonly input: OperationArguments<GetUniverseConstellationsConstellationIdData>;
+    readonly output: GetUniverseConstellationsConstellationIdResponse;
   };
   readonly GetUniverseGraphicsGraphicId: {
     readonly domain: 'universe';
     readonly method: 'getGraphic';
-    readonly input: GetUniverseGraphicsGraphicIdInput;
-    readonly output: GetUniverseGraphicsGraphicIdOutput;
+    readonly input: OperationArguments<GetUniverseGraphicsGraphicIdData>;
+    readonly output: GetUniverseGraphicsGraphicIdResponse;
   };
   readonly GetUniverseCategoriesCategoryId: {
     readonly domain: 'universe';
     readonly method: 'getItemCategory';
-    readonly input: GetUniverseCategoriesCategoryIdInput;
-    readonly output: GetUniverseCategoriesCategoryIdOutput;
+    readonly input: OperationArguments<GetUniverseCategoriesCategoryIdData>;
+    readonly output: GetUniverseCategoriesCategoryIdResponse;
   };
   readonly GetUniverseGroupsGroupId: {
     readonly domain: 'universe';
     readonly method: 'getItemGroup';
-    readonly input: GetUniverseGroupsGroupIdInput;
-    readonly output: GetUniverseGroupsGroupIdOutput;
+    readonly input: OperationArguments<GetUniverseGroupsGroupIdData>;
+    readonly output: GetUniverseGroupsGroupIdResponse;
   };
   readonly GetUniverseMoonsMoonId: {
     readonly domain: 'universe';
     readonly method: 'getMoon';
-    readonly input: GetUniverseMoonsMoonIdInput;
-    readonly output: GetUniverseMoonsMoonIdOutput;
+    readonly input: OperationArguments<GetUniverseMoonsMoonIdData>;
+    readonly output: GetUniverseMoonsMoonIdResponse;
   };
   readonly GetUniversePlanetsPlanetId: {
     readonly domain: 'universe';
     readonly method: 'getPlanet';
-    readonly input: GetUniversePlanetsPlanetIdInput;
-    readonly output: GetUniversePlanetsPlanetIdOutput;
+    readonly input: OperationArguments<GetUniversePlanetsPlanetIdData>;
+    readonly output: GetUniversePlanetsPlanetIdResponse;
   };
   readonly GetUniverseRegionsRegionId: {
     readonly domain: 'universe';
     readonly method: 'getRegion';
-    readonly input: GetUniverseRegionsRegionIdInput;
-    readonly output: GetUniverseRegionsRegionIdOutput;
+    readonly input: OperationArguments<GetUniverseRegionsRegionIdData>;
+    readonly output: GetUniverseRegionsRegionIdResponse;
   };
   readonly GetUniverseSystemsSystemId: {
     readonly domain: 'universe';
     readonly method: 'getSolarSystem';
-    readonly input: GetUniverseSystemsSystemIdInput;
-    readonly output: GetUniverseSystemsSystemIdOutput;
+    readonly input: OperationArguments<GetUniverseSystemsSystemIdData>;
+    readonly output: GetUniverseSystemsSystemIdResponse;
   };
   readonly GetUniverseStarsStarId: {
     readonly domain: 'universe';
     readonly method: 'getStar';
-    readonly input: GetUniverseStarsStarIdInput;
-    readonly output: GetUniverseStarsStarIdOutput;
+    readonly input: OperationArguments<GetUniverseStarsStarIdData>;
+    readonly output: GetUniverseStarsStarIdResponse;
   };
   readonly GetUniverseStargatesStargateId: {
     readonly domain: 'universe';
     readonly method: 'getStargate';
-    readonly input: GetUniverseStargatesStargateIdInput;
-    readonly output: GetUniverseStargatesStargateIdOutput;
+    readonly input: OperationArguments<GetUniverseStargatesStargateIdData>;
+    readonly output: GetUniverseStargatesStargateIdResponse;
   };
   readonly GetUniverseStationsStationId: {
     readonly domain: 'universe';
     readonly method: 'getStation';
-    readonly input: GetUniverseStationsStationIdInput;
-    readonly output: GetUniverseStationsStationIdOutput;
+    readonly input: OperationArguments<GetUniverseStationsStationIdData>;
+    readonly output: GetUniverseStationsStationIdResponse;
   };
   readonly GetUniverseStructuresStructureId: {
     readonly domain: 'universe';
     readonly method: 'getStructure';
-    readonly input: GetUniverseStructuresStructureIdInput;
-    readonly output: GetUniverseStructuresStructureIdOutput;
+    readonly input: OperationArguments<GetUniverseStructuresStructureIdData>;
+    readonly output: GetUniverseStructuresStructureIdResponse;
   };
   readonly GetUniverseTypesTypeId: {
     readonly domain: 'universe';
     readonly method: 'getType';
-    readonly input: GetUniverseTypesTypeIdInput;
-    readonly output: GetUniverseTypesTypeIdOutput;
+    readonly input: OperationArguments<GetUniverseTypesTypeIdData>;
+    readonly output: GetUniverseTypesTypeIdResponse;
   };
   readonly GetUniverseAncestries: {
     readonly domain: 'universe';
     readonly method: 'listAncestries';
-    readonly input: GetUniverseAncestriesInput;
-    readonly output: GetUniverseAncestriesOutput;
+    readonly input: OperationArguments<GetUniverseAncestriesData>;
+    readonly output: GetUniverseAncestriesResponse;
   };
   readonly GetUniverseBloodlines: {
     readonly domain: 'universe';
     readonly method: 'listBloodlines';
-    readonly input: GetUniverseBloodlinesInput;
-    readonly output: GetUniverseBloodlinesOutput;
+    readonly input: OperationArguments<GetUniverseBloodlinesData>;
+    readonly output: GetUniverseBloodlinesResponse;
   };
   readonly GetUniverseConstellations: {
     readonly domain: 'universe';
     readonly method: 'listConstellations';
-    readonly input: GetUniverseConstellationsInput;
-    readonly output: GetUniverseConstellationsOutput;
+    readonly input: OperationArguments<GetUniverseConstellationsData>;
+    readonly output: GetUniverseConstellationsResponse;
   };
   readonly GetUniverseFactions: {
     readonly domain: 'universe';
     readonly method: 'listFactions';
-    readonly input: GetUniverseFactionsInput;
-    readonly output: GetUniverseFactionsOutput;
+    readonly input: OperationArguments<GetUniverseFactionsData>;
+    readonly output: GetUniverseFactionsResponse;
   };
   readonly GetUniverseGraphics: {
     readonly domain: 'universe';
     readonly method: 'listGraphics';
-    readonly input: GetUniverseGraphicsInput;
-    readonly output: GetUniverseGraphicsOutput;
+    readonly input: OperationArguments<GetUniverseGraphicsData>;
+    readonly output: GetUniverseGraphicsResponse;
   };
   readonly GetUniverseCategories: {
     readonly domain: 'universe';
     readonly method: 'listItemCategories';
-    readonly input: GetUniverseCategoriesInput;
-    readonly output: GetUniverseCategoriesOutput;
+    readonly input: OperationArguments<GetUniverseCategoriesData>;
+    readonly output: GetUniverseCategoriesResponse;
   };
   readonly GetUniverseGroups: {
     readonly domain: 'universe';
     readonly method: 'listItemGroups';
-    readonly input: GetUniverseGroupsInput;
-    readonly output: GetUniverseGroupsOutput;
+    readonly input: OperationArguments<GetUniverseGroupsData>;
+    readonly output: GetUniverseGroupsResponse;
   };
   readonly GetUniverseStructures: {
     readonly domain: 'universe';
     readonly method: 'listPublicStructures';
-    readonly input: GetUniverseStructuresInput;
-    readonly output: GetUniverseStructuresOutput;
+    readonly input: OperationArguments<GetUniverseStructuresData>;
+    readonly output: GetUniverseStructuresResponse;
   };
   readonly GetUniverseRaces: {
     readonly domain: 'universe';
     readonly method: 'listRaces';
-    readonly input: GetUniverseRacesInput;
-    readonly output: GetUniverseRacesOutput;
+    readonly input: OperationArguments<GetUniverseRacesData>;
+    readonly output: GetUniverseRacesResponse;
   };
   readonly GetUniverseRegions: {
     readonly domain: 'universe';
     readonly method: 'listRegions';
-    readonly input: GetUniverseRegionsInput;
-    readonly output: GetUniverseRegionsOutput;
+    readonly input: OperationArguments<GetUniverseRegionsData>;
+    readonly output: GetUniverseRegionsResponse;
   };
   readonly GetUniverseSystems: {
     readonly domain: 'universe';
     readonly method: 'listSolarSystems';
-    readonly input: GetUniverseSystemsInput;
-    readonly output: GetUniverseSystemsOutput;
+    readonly input: OperationArguments<GetUniverseSystemsData>;
+    readonly output: GetUniverseSystemsResponse;
   };
   readonly GetUniverseSystemJumps: {
     readonly domain: 'universe';
     readonly method: 'listSystemJumps';
-    readonly input: GetUniverseSystemJumpsInput;
-    readonly output: GetUniverseSystemJumpsOutput;
+    readonly input: OperationArguments<GetUniverseSystemJumpsData>;
+    readonly output: GetUniverseSystemJumpsResponse;
   };
   readonly GetUniverseSystemKills: {
     readonly domain: 'universe';
     readonly method: 'listSystemKills';
-    readonly input: GetUniverseSystemKillsInput;
-    readonly output: GetUniverseSystemKillsOutput;
+    readonly input: OperationArguments<GetUniverseSystemKillsData>;
+    readonly output: GetUniverseSystemKillsResponse;
   };
   readonly GetUniverseTypes: {
     readonly domain: 'universe';
     readonly method: 'listTypes';
-    readonly input: GetUniverseTypesInput;
-    readonly output: GetUniverseTypesOutput;
+    readonly input: OperationArguments<GetUniverseTypesData>;
+    readonly output: GetUniverseTypesResponse;
   };
   readonly PostUniverseIds: {
     readonly domain: 'universe';
     readonly method: 'resolveIds';
-    readonly input: PostUniverseIdsInput;
-    readonly output: PostUniverseIdsOutput;
+    readonly input: OperationArguments<PostUniverseIdsData>;
+    readonly output: PostUniverseIdsResponse;
   };
   readonly PostUniverseNames: {
     readonly domain: 'universe';
     readonly method: 'resolveNames';
-    readonly input: PostUniverseNamesInput;
-    readonly output: PostUniverseNamesOutput;
+    readonly input: OperationArguments<PostUniverseNamesData>;
+    readonly output: PostUniverseNamesResponse;
   };
   readonly PostUiOpenwindowContract: {
     readonly domain: 'userInterface';
     readonly method: 'openContract';
-    readonly input: PostUiOpenwindowContractInput;
-    readonly output: PostUiOpenwindowContractOutput;
+    readonly input: OperationArguments<PostUiOpenwindowContractData>;
+    readonly output: PostUiOpenwindowContractResponse;
   };
   readonly PostUiOpenwindowInformation: {
     readonly domain: 'userInterface';
     readonly method: 'openInformation';
-    readonly input: PostUiOpenwindowInformationInput;
-    readonly output: PostUiOpenwindowInformationOutput;
+    readonly input: OperationArguments<PostUiOpenwindowInformationData>;
+    readonly output: PostUiOpenwindowInformationResponse;
   };
   readonly PostUiOpenwindowMarketdetails: {
     readonly domain: 'userInterface';
     readonly method: 'openMarketDetails';
-    readonly input: PostUiOpenwindowMarketdetailsInput;
-    readonly output: PostUiOpenwindowMarketdetailsOutput;
+    readonly input: OperationArguments<PostUiOpenwindowMarketdetailsData>;
+    readonly output: PostUiOpenwindowMarketdetailsResponse;
   };
   readonly PostUiOpenwindowNewmail: {
     readonly domain: 'userInterface';
     readonly method: 'openNewMail';
-    readonly input: PostUiOpenwindowNewmailInput;
-    readonly output: PostUiOpenwindowNewmailOutput;
+    readonly input: OperationArguments<PostUiOpenwindowNewmailData>;
+    readonly output: PostUiOpenwindowNewmailResponse;
   };
   readonly PostUiAutopilotWaypoint: {
     readonly domain: 'userInterface';
     readonly method: 'setAutopilotWaypoint';
-    readonly input: PostUiAutopilotWaypointInput;
-    readonly output: PostUiAutopilotWaypointOutput;
+    readonly input: OperationArguments<PostUiAutopilotWaypointData>;
+    readonly output: PostUiAutopilotWaypointResponse;
   };
   readonly GetCharactersCharacterIdWallet: {
     readonly domain: 'wallet';
     readonly method: 'getCharacterBalance';
-    readonly input: GetCharactersCharacterIdWalletInput;
-    readonly output: GetCharactersCharacterIdWalletOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdWalletData>;
+    readonly output: GetCharactersCharacterIdWalletResponse;
   };
   readonly GetCharactersCharacterIdWalletJournal: {
     readonly domain: 'wallet';
     readonly method: 'listCharacterJournal';
-    readonly input: GetCharactersCharacterIdWalletJournalInput;
-    readonly output: GetCharactersCharacterIdWalletJournalOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdWalletJournalData>;
+    readonly output: GetCharactersCharacterIdWalletJournalResponse;
   };
   readonly GetCharactersCharacterIdWalletTransactions: {
     readonly domain: 'wallet';
     readonly method: 'listCharacterTransactions';
-    readonly input: GetCharactersCharacterIdWalletTransactionsInput;
-    readonly output: GetCharactersCharacterIdWalletTransactionsOutput;
+    readonly input: OperationArguments<GetCharactersCharacterIdWalletTransactionsData>;
+    readonly output: GetCharactersCharacterIdWalletTransactionsResponse;
   };
   readonly GetCorporationsCorporationIdWallets: {
     readonly domain: 'wallet';
     readonly method: 'listCorporationBalances';
-    readonly input: GetCorporationsCorporationIdWalletsInput;
-    readonly output: GetCorporationsCorporationIdWalletsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdWalletsData>;
+    readonly output: GetCorporationsCorporationIdWalletsResponse;
   };
   readonly GetCorporationsCorporationIdWalletsDivisionJournal: {
     readonly domain: 'wallet';
     readonly method: 'listCorporationDivisionJournal';
-    readonly input: GetCorporationsCorporationIdWalletsDivisionJournalInput;
-    readonly output: GetCorporationsCorporationIdWalletsDivisionJournalOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>;
+    readonly output: GetCorporationsCorporationIdWalletsDivisionJournalResponse;
   };
   readonly GetCorporationsCorporationIdWalletsDivisionTransactions: {
     readonly domain: 'wallet';
     readonly method: 'listCorporationDivisionTransactions';
-    readonly input: GetCorporationsCorporationIdWalletsDivisionTransactionsInput;
-    readonly output: GetCorporationsCorporationIdWalletsDivisionTransactionsOutput;
+    readonly input: OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>;
+    readonly output: GetCorporationsCorporationIdWalletsDivisionTransactionsResponse;
   };
   readonly GetWarsWarId: {
     readonly domain: 'wars';
     readonly method: 'get';
-    readonly input: GetWarsWarIdInput;
-    readonly output: GetWarsWarIdOutput;
+    readonly input: OperationArguments<GetWarsWarIdData>;
+    readonly output: GetWarsWarIdResponse;
   };
   readonly GetWars: {
     readonly domain: 'wars';
     readonly method: 'list';
-    readonly input: GetWarsInput;
-    readonly output: GetWarsOutput;
+    readonly input: OperationArguments<GetWarsData>;
+    readonly output: GetWarsResponse;
   };
   readonly GetWarsWarIdKillmails: {
     readonly domain: 'wars';
     readonly method: 'listKillmails';
-    readonly input: GetWarsWarIdKillmailsInput;
-    readonly output: GetWarsWarIdKillmailsOutput;
+    readonly input: OperationArguments<GetWarsWarIdKillmailsData>;
+    readonly output: GetWarsWarIdKillmailsResponse;
   };
 }
 
 export type GeneratedDomainOperationCoverageAssertion = Assert<
-  IsExact<keyof GeneratedDomainOperationCoverage, keyof GeneratedOperationSignatures>
+  IsExact<keyof GeneratedDomainOperationCoverage, keyof GeneratedOperationContractMap>
 >;
 
 export type GetCharactersAccessListsDetailDomainMethodAssertion = Assert<
   IsExact<
     AccessListDomainClient['get'],
     (
-      characterId: NonNullable<GetCharactersAccessListsDetailInput['path']>['character_id'],
-      accessListId: NonNullable<GetCharactersAccessListsDetailInput['path']>['access_list_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersAccessListsDetailData>['path']
+      >['character_id'],
+      accessListId: NonNullable<
+        OperationArguments<GetCharactersAccessListsDetailData>['path']
+      >['access_list_id'],
       options?: GetCharactersAccessListsDetailOptions,
-    ) => Promise<GetCharactersAccessListsDetailOutput>
+    ) => Promise<GetCharactersAccessListsDetailResponse>
   >
 >;
 export type GetCharactersAccessListsDetailMetadataMethodAssertion = Assert<
   IsExact<
     AccessListDomainClientWithMetadata['get'],
     (
-      characterId: NonNullable<GetCharactersAccessListsDetailInput['path']>['character_id'],
-      accessListId: NonNullable<GetCharactersAccessListsDetailInput['path']>['access_list_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersAccessListsDetailData>['path']
+      >['character_id'],
+      accessListId: NonNullable<
+        OperationArguments<GetCharactersAccessListsDetailData>['path']
+      >['access_list_id'],
       options?: GetCharactersAccessListsDetailOptions,
-    ) => Promise<EsiResponse<GetCharactersAccessListsDetailOutput>>
+    ) => Promise<EsiResponse<GetCharactersAccessListsDetailResponse>>
   >
 >;
 export type GetCharactersAccessListsDetailOptionsAssertion = Assert<
@@ -2420,12 +2420,14 @@ export type GetCharactersAccessListsDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersAccessListsDetailInput['header']
+        OperationArguments<GetCharactersAccessListsDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersAccessListsDetailInput['header']
+        OperationArguments<GetCharactersAccessListsDetailData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersAccessListsDetailInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersAccessListsDetailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -2433,18 +2435,22 @@ export type GetCharactersAccessListsListingDomainMethodAssertion = Assert<
   IsExact<
     AccessListDomainClient['list'],
     (
-      characterId: NonNullable<GetCharactersAccessListsListingInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersAccessListsListingData>['path']
+      >['character_id'],
       options?: GetCharactersAccessListsListingOptions,
-    ) => Promise<GetCharactersAccessListsListingOutput>
+    ) => Promise<GetCharactersAccessListsListingResponse>
   >
 >;
 export type GetCharactersAccessListsListingMetadataMethodAssertion = Assert<
   IsExact<
     AccessListDomainClientWithMetadata['list'],
     (
-      characterId: NonNullable<GetCharactersAccessListsListingInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersAccessListsListingData>['path']
+      >['character_id'],
       options?: GetCharactersAccessListsListingOptions,
-    ) => Promise<EsiResponse<GetCharactersAccessListsListingOutput>>
+    ) => Promise<EsiResponse<GetCharactersAccessListsListingResponse>>
   >
 >;
 export type GetCharactersAccessListsListingOptionsAssertion = Assert<
@@ -2453,12 +2459,14 @@ export type GetCharactersAccessListsListingOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersAccessListsListingInput['header']
+        OperationArguments<GetCharactersAccessListsListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersAccessListsListingInput['header']
+        OperationArguments<GetCharactersAccessListsListingData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersAccessListsListingInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersAccessListsListingData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -2473,13 +2481,13 @@ export type GetCharactersMercenaryTacticalOperationsDetailDomainMethodAssertion 
     ActivitiesDomainClient['getMercenaryTacticalOperation'],
     (
       characterId: NonNullable<
-        GetCharactersMercenaryTacticalOperationsDetailInput['path']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']
       >['character_id'],
       operationId: NonNullable<
-        GetCharactersMercenaryTacticalOperationsDetailInput['path']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']
       >['operation_id'],
       options?: GetCharactersMercenaryTacticalOperationsDetailOptions,
-    ) => Promise<GetCharactersMercenaryTacticalOperationsDetailOutput>
+    ) => Promise<GetCharactersMercenaryTacticalOperationsDetailResponse>
   >
 >;
 export type GetCharactersMercenaryTacticalOperationsDetailMetadataMethodAssertion = Assert<
@@ -2487,13 +2495,13 @@ export type GetCharactersMercenaryTacticalOperationsDetailMetadataMethodAssertio
     ActivitiesDomainClientWithMetadata['getMercenaryTacticalOperation'],
     (
       characterId: NonNullable<
-        GetCharactersMercenaryTacticalOperationsDetailInput['path']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']
       >['character_id'],
       operationId: NonNullable<
-        GetCharactersMercenaryTacticalOperationsDetailInput['path']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']
       >['operation_id'],
       options?: GetCharactersMercenaryTacticalOperationsDetailOptions,
-    ) => Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsDetailOutput>>
+    ) => Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsDetailResponse>>
   >
 >;
 export type GetCharactersMercenaryTacticalOperationsDetailOptionsAssertion = Assert<
@@ -2502,13 +2510,13 @@ export type GetCharactersMercenaryTacticalOperationsDetailOptionsAssertion = Ass
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersMercenaryTacticalOperationsDetailInput['header']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersMercenaryTacticalOperationsDetailInput['header']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersMercenaryTacticalOperationsDetailInput['header']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['headers']
       >['X-Tenant'];
     }
   >
@@ -2518,10 +2526,10 @@ export type GetCharactersMercenaryTacticalOperationsListingDomainMethodAssertion
     ActivitiesDomainClient['listMercenaryTacticalOperations'],
     (
       characterId: NonNullable<
-        GetCharactersMercenaryTacticalOperationsListingInput['path']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['path']
       >['character_id'],
       options?: GetCharactersMercenaryTacticalOperationsListingOptions,
-    ) => Promise<GetCharactersMercenaryTacticalOperationsListingOutput>
+    ) => Promise<GetCharactersMercenaryTacticalOperationsListingResponse>
   >
 >;
 export type GetCharactersMercenaryTacticalOperationsListingMetadataMethodAssertion = Assert<
@@ -2529,10 +2537,10 @@ export type GetCharactersMercenaryTacticalOperationsListingMetadataMethodAsserti
     ActivitiesDomainClientWithMetadata['listMercenaryTacticalOperations'],
     (
       characterId: NonNullable<
-        GetCharactersMercenaryTacticalOperationsListingInput['path']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['path']
       >['character_id'],
       options?: GetCharactersMercenaryTacticalOperationsListingOptions,
-    ) => Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsListingOutput>>
+    ) => Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsListingResponse>>
   >
 >;
 export type GetCharactersMercenaryTacticalOperationsListingOptionsAssertion = Assert<
@@ -2541,13 +2549,13 @@ export type GetCharactersMercenaryTacticalOperationsListingOptionsAssertion = As
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersMercenaryTacticalOperationsListingInput['header']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersMercenaryTacticalOperationsListingInput['header']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersMercenaryTacticalOperationsListingInput['header']
+        OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -2555,13 +2563,13 @@ export type GetCharactersMercenaryTacticalOperationsListingOptionsAssertion = As
 export type GetSkyhooksRaidableDomainMethodAssertion = Assert<
   IsExact<
     ActivitiesDomainClient['listRaidableSkyhooks'],
-    (options?: GetSkyhooksRaidableOptions) => Promise<GetSkyhooksRaidableOutput>
+    (options?: GetSkyhooksRaidableOptions) => Promise<GetSkyhooksRaidableResponse>
   >
 >;
 export type GetSkyhooksRaidableMetadataMethodAssertion = Assert<
   IsExact<
     ActivitiesDomainClientWithMetadata['listRaidableSkyhooks'],
-    (options?: GetSkyhooksRaidableOptions) => Promise<EsiResponse<GetSkyhooksRaidableOutput>>
+    (options?: GetSkyhooksRaidableOptions) => Promise<EsiResponse<GetSkyhooksRaidableResponse>>
   >
 >;
 export type GetSkyhooksRaidableOptionsAssertion = Assert<
@@ -2570,10 +2578,14 @@ export type GetSkyhooksRaidableOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetSkyhooksRaidableInput['header']
+        OperationArguments<GetSkyhooksRaidableData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetSkyhooksRaidableInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetSkyhooksRaidableInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetSkyhooksRaidableData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetSkyhooksRaidableData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -2587,18 +2599,22 @@ export type GetAlliancesAllianceIdIconsDomainMethodAssertion = Assert<
   IsExact<
     AllianceDomainClient['getIcon'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdIconsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdIconsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdIconsOptions,
-    ) => Promise<GetAlliancesAllianceIdIconsOutput>
+    ) => Promise<GetAlliancesAllianceIdIconsResponse>
   >
 >;
 export type GetAlliancesAllianceIdIconsMetadataMethodAssertion = Assert<
   IsExact<
     AllianceDomainClientWithMetadata['getIcon'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdIconsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdIconsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdIconsOptions,
-    ) => Promise<EsiResponse<GetAlliancesAllianceIdIconsOutput>>
+    ) => Promise<EsiResponse<GetAlliancesAllianceIdIconsResponse>>
   >
 >;
 export type GetAlliancesAllianceIdIconsOptionsAssertion = Assert<
@@ -2607,12 +2623,14 @@ export type GetAlliancesAllianceIdIconsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetAlliancesAllianceIdIconsInput['header']
+        OperationArguments<GetAlliancesAllianceIdIconsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetAlliancesAllianceIdIconsInput['header']
+        OperationArguments<GetAlliancesAllianceIdIconsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetAlliancesAllianceIdIconsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdIconsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -2620,18 +2638,22 @@ export type GetAlliancesAllianceIdDomainMethodAssertion = Assert<
   IsExact<
     AllianceDomainClient['getPublicInfo'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdOptions,
-    ) => Promise<GetAlliancesAllianceIdOutput>
+    ) => Promise<GetAlliancesAllianceIdResponse>
   >
 >;
 export type GetAlliancesAllianceIdMetadataMethodAssertion = Assert<
   IsExact<
     AllianceDomainClientWithMetadata['getPublicInfo'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdOptions,
-    ) => Promise<EsiResponse<GetAlliancesAllianceIdOutput>>
+    ) => Promise<EsiResponse<GetAlliancesAllianceIdResponse>>
   >
 >;
 export type GetAlliancesAllianceIdOptionsAssertion = Assert<
@@ -2640,23 +2662,27 @@ export type GetAlliancesAllianceIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetAlliancesAllianceIdInput['header']
+        OperationArguments<GetAlliancesAllianceIdData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetAlliancesAllianceIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetAlliancesAllianceIdInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetAlliancesDomainMethodAssertion = Assert<
   IsExact<
     AllianceDomainClient['list'],
-    (options?: GetAlliancesOptions) => Promise<GetAlliancesOutput>
+    (options?: GetAlliancesOptions) => Promise<GetAlliancesResponse>
   >
 >;
 export type GetAlliancesMetadataMethodAssertion = Assert<
   IsExact<
     AllianceDomainClientWithMetadata['list'],
-    (options?: GetAlliancesOptions) => Promise<EsiResponse<GetAlliancesOutput>>
+    (options?: GetAlliancesOptions) => Promise<EsiResponse<GetAlliancesResponse>>
   >
 >;
 export type GetAlliancesOptionsAssertion = Assert<
@@ -2664,9 +2690,13 @@ export type GetAlliancesOptionsAssertion = Assert<
     GetAlliancesOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetAlliancesInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetAlliancesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetAlliancesInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetAlliancesData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetAlliancesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetAlliancesData>['headers']>['X-Tenant'];
     }
   >
 >;
@@ -2674,18 +2704,22 @@ export type GetAlliancesAllianceIdCorporationsDomainMethodAssertion = Assert<
   IsExact<
     AllianceDomainClient['listCorporations'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdCorporationsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdCorporationsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdCorporationsOptions,
-    ) => Promise<GetAlliancesAllianceIdCorporationsOutput>
+    ) => Promise<GetAlliancesAllianceIdCorporationsResponse>
   >
 >;
 export type GetAlliancesAllianceIdCorporationsMetadataMethodAssertion = Assert<
   IsExact<
     AllianceDomainClientWithMetadata['listCorporations'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdCorporationsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdCorporationsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdCorporationsOptions,
-    ) => Promise<EsiResponse<GetAlliancesAllianceIdCorporationsOutput>>
+    ) => Promise<EsiResponse<GetAlliancesAllianceIdCorporationsResponse>>
   >
 >;
 export type GetAlliancesAllianceIdCorporationsOptionsAssertion = Assert<
@@ -2694,12 +2728,14 @@ export type GetAlliancesAllianceIdCorporationsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetAlliancesAllianceIdCorporationsInput['header']
+        OperationArguments<GetAlliancesAllianceIdCorporationsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetAlliancesAllianceIdCorporationsInput['header']
+        OperationArguments<GetAlliancesAllianceIdCorporationsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetAlliancesAllianceIdCorporationsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdCorporationsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -2713,18 +2749,22 @@ export type GetCharactersCharacterIdAssetsDomainMethodAssertion = Assert<
   IsExact<
     AssetsDomainClient['listCharacterAssets'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdAssetsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAssetsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdAssetsOptions,
-    ) => Promise<GetCharactersCharacterIdAssetsOutput>
+    ) => Promise<GetCharactersCharacterIdAssetsResponse>
   >
 >;
 export type GetCharactersCharacterIdAssetsMetadataMethodAssertion = Assert<
   IsExact<
     AssetsDomainClientWithMetadata['listCharacterAssets'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdAssetsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAssetsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdAssetsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdAssetsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdAssetsResponse>>
   >
 >;
 export type GetCharactersCharacterIdAssetsOptionsAssertion = Assert<
@@ -2733,13 +2773,17 @@ export type GetCharactersCharacterIdAssetsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdAssetsInput['header']
+        OperationArguments<GetCharactersCharacterIdAssetsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdAssetsInput['header']
+        OperationArguments<GetCharactersCharacterIdAssetsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdAssetsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdAssetsInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAssetsData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAssetsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -2747,18 +2791,22 @@ export type GetCorporationsCorporationIdAssetsDomainMethodAssertion = Assert<
   IsExact<
     AssetsDomainClient['listCorporationAssets'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdAssetsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdAssetsData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdAssetsOptions,
-    ) => Promise<GetCorporationsCorporationIdAssetsOutput>
+    ) => Promise<GetCorporationsCorporationIdAssetsResponse>
   >
 >;
 export type GetCorporationsCorporationIdAssetsMetadataMethodAssertion = Assert<
   IsExact<
     AssetsDomainClientWithMetadata['listCorporationAssets'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdAssetsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdAssetsData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdAssetsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdAssetsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdAssetsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdAssetsOptionsAssertion = Assert<
@@ -2767,13 +2815,17 @@ export type GetCorporationsCorporationIdAssetsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdAssetsInput['header']
+        OperationArguments<GetCorporationsCorporationIdAssetsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdAssetsInput['header']
+        OperationArguments<GetCorporationsCorporationIdAssetsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdAssetsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCorporationsCorporationIdAssetsInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdAssetsData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdAssetsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -2782,10 +2834,10 @@ export type PostCharactersCharacterIdAssetsLocationsDomainMethodAssertion = Asse
     AssetsDomainClient['lookupCharacterLocations'],
     (
       characterId: NonNullable<
-        PostCharactersCharacterIdAssetsLocationsInput['path']
+        OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['path']
       >['character_id'],
       options: PostCharactersCharacterIdAssetsLocationsOptions,
-    ) => Promise<PostCharactersCharacterIdAssetsLocationsOutput>
+    ) => Promise<PostCharactersCharacterIdAssetsLocationsResponse>
   >
 >;
 export type PostCharactersCharacterIdAssetsLocationsMetadataMethodAssertion = Assert<
@@ -2793,26 +2845,26 @@ export type PostCharactersCharacterIdAssetsLocationsMetadataMethodAssertion = As
     AssetsDomainClientWithMetadata['lookupCharacterLocations'],
     (
       characterId: NonNullable<
-        PostCharactersCharacterIdAssetsLocationsInput['path']
+        OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['path']
       >['character_id'],
       options: PostCharactersCharacterIdAssetsLocationsOptions,
-    ) => Promise<EsiResponse<PostCharactersCharacterIdAssetsLocationsOutput>>
+    ) => Promise<EsiResponse<PostCharactersCharacterIdAssetsLocationsResponse>>
   >
 >;
 export type PostCharactersCharacterIdAssetsLocationsOptionsAssertion = Assert<
   IsExact<
     PostCharactersCharacterIdAssetsLocationsOptions,
     {
-      readonly body: PostCharactersCharacterIdAssetsLocationsInput['body'];
+      readonly body: OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersCharacterIdAssetsLocationsInput['header']
+        OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCharactersCharacterIdAssetsLocationsInput['header']
+        OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        PostCharactersCharacterIdAssetsLocationsInput['header']
+        OperationArguments<PostCharactersCharacterIdAssetsLocationsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -2821,34 +2873,38 @@ export type PostCharactersCharacterIdAssetsNamesDomainMethodAssertion = Assert<
   IsExact<
     AssetsDomainClient['lookupCharacterNames'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdAssetsNamesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdAssetsNamesData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdAssetsNamesOptions,
-    ) => Promise<PostCharactersCharacterIdAssetsNamesOutput>
+    ) => Promise<PostCharactersCharacterIdAssetsNamesResponse>
   >
 >;
 export type PostCharactersCharacterIdAssetsNamesMetadataMethodAssertion = Assert<
   IsExact<
     AssetsDomainClientWithMetadata['lookupCharacterNames'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdAssetsNamesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdAssetsNamesData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdAssetsNamesOptions,
-    ) => Promise<EsiResponse<PostCharactersCharacterIdAssetsNamesOutput>>
+    ) => Promise<EsiResponse<PostCharactersCharacterIdAssetsNamesResponse>>
   >
 >;
 export type PostCharactersCharacterIdAssetsNamesOptionsAssertion = Assert<
   IsExact<
     PostCharactersCharacterIdAssetsNamesOptions,
     {
-      readonly body: PostCharactersCharacterIdAssetsNamesInput['body'];
+      readonly body: OperationArguments<PostCharactersCharacterIdAssetsNamesData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersCharacterIdAssetsNamesInput['header']
+        OperationArguments<PostCharactersCharacterIdAssetsNamesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCharactersCharacterIdAssetsNamesInput['header']
+        OperationArguments<PostCharactersCharacterIdAssetsNamesData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        PostCharactersCharacterIdAssetsNamesInput['header']
+        OperationArguments<PostCharactersCharacterIdAssetsNamesData>['headers']
       >['X-Tenant'];
     }
   >
@@ -2858,10 +2914,10 @@ export type PostCorporationsCorporationIdAssetsLocationsDomainMethodAssertion = 
     AssetsDomainClient['lookupCorporationLocations'],
     (
       corporationId: NonNullable<
-        PostCorporationsCorporationIdAssetsLocationsInput['path']
+        OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['path']
       >['corporation_id'],
       options: PostCorporationsCorporationIdAssetsLocationsOptions,
-    ) => Promise<PostCorporationsCorporationIdAssetsLocationsOutput>
+    ) => Promise<PostCorporationsCorporationIdAssetsLocationsResponse>
   >
 >;
 export type PostCorporationsCorporationIdAssetsLocationsMetadataMethodAssertion = Assert<
@@ -2869,26 +2925,26 @@ export type PostCorporationsCorporationIdAssetsLocationsMetadataMethodAssertion 
     AssetsDomainClientWithMetadata['lookupCorporationLocations'],
     (
       corporationId: NonNullable<
-        PostCorporationsCorporationIdAssetsLocationsInput['path']
+        OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['path']
       >['corporation_id'],
       options: PostCorporationsCorporationIdAssetsLocationsOptions,
-    ) => Promise<EsiResponse<PostCorporationsCorporationIdAssetsLocationsOutput>>
+    ) => Promise<EsiResponse<PostCorporationsCorporationIdAssetsLocationsResponse>>
   >
 >;
 export type PostCorporationsCorporationIdAssetsLocationsOptionsAssertion = Assert<
   IsExact<
     PostCorporationsCorporationIdAssetsLocationsOptions,
     {
-      readonly body: PostCorporationsCorporationIdAssetsLocationsInput['body'];
+      readonly body: OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCorporationsCorporationIdAssetsLocationsInput['header']
+        OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCorporationsCorporationIdAssetsLocationsInput['header']
+        OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        PostCorporationsCorporationIdAssetsLocationsInput['header']
+        OperationArguments<PostCorporationsCorporationIdAssetsLocationsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -2898,10 +2954,10 @@ export type PostCorporationsCorporationIdAssetsNamesDomainMethodAssertion = Asse
     AssetsDomainClient['lookupCorporationNames'],
     (
       corporationId: NonNullable<
-        PostCorporationsCorporationIdAssetsNamesInput['path']
+        OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['path']
       >['corporation_id'],
       options: PostCorporationsCorporationIdAssetsNamesOptions,
-    ) => Promise<PostCorporationsCorporationIdAssetsNamesOutput>
+    ) => Promise<PostCorporationsCorporationIdAssetsNamesResponse>
   >
 >;
 export type PostCorporationsCorporationIdAssetsNamesMetadataMethodAssertion = Assert<
@@ -2909,26 +2965,26 @@ export type PostCorporationsCorporationIdAssetsNamesMetadataMethodAssertion = As
     AssetsDomainClientWithMetadata['lookupCorporationNames'],
     (
       corporationId: NonNullable<
-        PostCorporationsCorporationIdAssetsNamesInput['path']
+        OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['path']
       >['corporation_id'],
       options: PostCorporationsCorporationIdAssetsNamesOptions,
-    ) => Promise<EsiResponse<PostCorporationsCorporationIdAssetsNamesOutput>>
+    ) => Promise<EsiResponse<PostCorporationsCorporationIdAssetsNamesResponse>>
   >
 >;
 export type PostCorporationsCorporationIdAssetsNamesOptionsAssertion = Assert<
   IsExact<
     PostCorporationsCorporationIdAssetsNamesOptions,
     {
-      readonly body: PostCorporationsCorporationIdAssetsNamesInput['body'];
+      readonly body: OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCorporationsCorporationIdAssetsNamesInput['header']
+        OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCorporationsCorporationIdAssetsNamesInput['header']
+        OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        PostCorporationsCorporationIdAssetsNamesInput['header']
+        OperationArguments<PostCorporationsCorporationIdAssetsNamesData>['headers']
       >['X-Tenant'];
     }
   >
@@ -2944,11 +3000,13 @@ export type GetCharactersCharacterIdCalendarEventIdDomainMethodAssertion = Asser
     CalendarDomainClient['getEvent'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdInput['path']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']
       >['character_id'],
-      eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>['event_id'],
+      eventId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']
+      >['event_id'],
       options?: GetCharactersCharacterIdCalendarEventIdOptions,
-    ) => Promise<GetCharactersCharacterIdCalendarEventIdOutput>
+    ) => Promise<GetCharactersCharacterIdCalendarEventIdResponse>
   >
 >;
 export type GetCharactersCharacterIdCalendarEventIdMetadataMethodAssertion = Assert<
@@ -2956,11 +3014,13 @@ export type GetCharactersCharacterIdCalendarEventIdMetadataMethodAssertion = Ass
     CalendarDomainClientWithMetadata['getEvent'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdInput['path']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']
       >['character_id'],
-      eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>['event_id'],
+      eventId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']
+      >['event_id'],
       options?: GetCharactersCharacterIdCalendarEventIdOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdResponse>>
   >
 >;
 export type GetCharactersCharacterIdCalendarEventIdOptionsAssertion = Assert<
@@ -2969,13 +3029,13 @@ export type GetCharactersCharacterIdCalendarEventIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -2985,13 +3045,13 @@ export type GetCharactersCharacterIdCalendarEventIdAttendeesDomainMethodAssertio
     CalendarDomainClient['listEventAttendees'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']
       >['character_id'],
       eventId: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']
       >['event_id'],
       options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions,
-    ) => Promise<GetCharactersCharacterIdCalendarEventIdAttendeesOutput>
+    ) => Promise<GetCharactersCharacterIdCalendarEventIdAttendeesResponse>
   >
 >;
 export type GetCharactersCharacterIdCalendarEventIdAttendeesMetadataMethodAssertion = Assert<
@@ -2999,13 +3059,13 @@ export type GetCharactersCharacterIdCalendarEventIdAttendeesMetadataMethodAssert
     CalendarDomainClientWithMetadata['listEventAttendees'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']
       >['character_id'],
       eventId: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']
       >['event_id'],
       options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdAttendeesOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdAttendeesResponse>>
   >
 >;
 export type GetCharactersCharacterIdCalendarEventIdAttendeesOptionsAssertion = Assert<
@@ -3014,13 +3074,13 @@ export type GetCharactersCharacterIdCalendarEventIdAttendeesOptionsAssertion = A
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdAttendeesInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdAttendeesInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdCalendarEventIdAttendeesInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3029,18 +3089,22 @@ export type GetCharactersCharacterIdCalendarDomainMethodAssertion = Assert<
   IsExact<
     CalendarDomainClient['listEvents'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdCalendarInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdCalendarData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdCalendarOptions,
-    ) => Promise<GetCharactersCharacterIdCalendarOutput>
+    ) => Promise<GetCharactersCharacterIdCalendarResponse>
   >
 >;
 export type GetCharactersCharacterIdCalendarMetadataMethodAssertion = Assert<
   IsExact<
     CalendarDomainClientWithMetadata['listEvents'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdCalendarInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdCalendarData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdCalendarOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdCalendarOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdCalendarResponse>>
   >
 >;
 export type GetCharactersCharacterIdCalendarOptionsAssertion = Assert<
@@ -3049,15 +3113,17 @@ export type GetCharactersCharacterIdCalendarOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly fromEvent?: NonNullable<
-        GetCharactersCharacterIdCalendarInput['query']
+        OperationArguments<GetCharactersCharacterIdCalendarData>['query']
       >['from_event'];
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdCalendarInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdCalendarInput['header']
+        OperationArguments<GetCharactersCharacterIdCalendarData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdCalendarInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdCalendarData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3066,11 +3132,13 @@ export type PutCharactersCharacterIdCalendarEventIdDomainMethodAssertion = Asser
     CalendarDomainClient['respondToEvent'],
     (
       characterId: NonNullable<
-        PutCharactersCharacterIdCalendarEventIdInput['path']
+        OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']
       >['character_id'],
-      eventId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>['event_id'],
+      eventId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']
+      >['event_id'],
       options: PutCharactersCharacterIdCalendarEventIdOptions,
-    ) => Promise<PutCharactersCharacterIdCalendarEventIdOutput>
+    ) => Promise<PutCharactersCharacterIdCalendarEventIdResponse>
   >
 >;
 export type PutCharactersCharacterIdCalendarEventIdMetadataMethodAssertion = Assert<
@@ -3078,27 +3146,29 @@ export type PutCharactersCharacterIdCalendarEventIdMetadataMethodAssertion = Ass
     CalendarDomainClientWithMetadata['respondToEvent'],
     (
       characterId: NonNullable<
-        PutCharactersCharacterIdCalendarEventIdInput['path']
+        OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']
       >['character_id'],
-      eventId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>['event_id'],
+      eventId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']
+      >['event_id'],
       options: PutCharactersCharacterIdCalendarEventIdOptions,
-    ) => Promise<EsiResponse<PutCharactersCharacterIdCalendarEventIdOutput>>
+    ) => Promise<EsiResponse<PutCharactersCharacterIdCalendarEventIdResponse>>
   >
 >;
 export type PutCharactersCharacterIdCalendarEventIdOptionsAssertion = Assert<
   IsExact<
     PutCharactersCharacterIdCalendarEventIdOptions,
     {
-      readonly body: PutCharactersCharacterIdCalendarEventIdInput['body'];
+      readonly body: OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PutCharactersCharacterIdCalendarEventIdInput['header']
+        OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PutCharactersCharacterIdCalendarEventIdInput['header']
+        OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        PutCharactersCharacterIdCalendarEventIdInput['header']
+        OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3113,18 +3183,22 @@ export type GetCharactersCharacterIdAgentsResearchDomainMethodAssertion = Assert
   IsExact<
     CharacterDomainClient['agentsResearch'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdAgentsResearchInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAgentsResearchData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdAgentsResearchOptions,
-    ) => Promise<GetCharactersCharacterIdAgentsResearchOutput>
+    ) => Promise<GetCharactersCharacterIdAgentsResearchResponse>
   >
 >;
 export type GetCharactersCharacterIdAgentsResearchMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['agentsResearch'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdAgentsResearchInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAgentsResearchData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdAgentsResearchOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdAgentsResearchOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdAgentsResearchResponse>>
   >
 >;
 export type GetCharactersCharacterIdAgentsResearchOptionsAssertion = Assert<
@@ -3133,13 +3207,13 @@ export type GetCharactersCharacterIdAgentsResearchOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdAgentsResearchInput['header']
+        OperationArguments<GetCharactersCharacterIdAgentsResearchData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdAgentsResearchInput['header']
+        OperationArguments<GetCharactersCharacterIdAgentsResearchData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdAgentsResearchInput['header']
+        OperationArguments<GetCharactersCharacterIdAgentsResearchData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3148,33 +3222,39 @@ export type PostCharactersCharacterIdCspaDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['calculateCspaCharge'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdCspaInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdCspaData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdCspaOptions,
-    ) => Promise<PostCharactersCharacterIdCspaOutput>
+    ) => Promise<PostCharactersCharacterIdCspaResponse>
   >
 >;
 export type PostCharactersCharacterIdCspaMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['calculateCspaCharge'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdCspaInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdCspaData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdCspaOptions,
-    ) => Promise<EsiResponse<PostCharactersCharacterIdCspaOutput>>
+    ) => Promise<EsiResponse<PostCharactersCharacterIdCspaResponse>>
   >
 >;
 export type PostCharactersCharacterIdCspaOptionsAssertion = Assert<
   IsExact<
     PostCharactersCharacterIdCspaOptions,
     {
-      readonly body: PostCharactersCharacterIdCspaInput['body'];
+      readonly body: OperationArguments<PostCharactersCharacterIdCspaData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersCharacterIdCspaInput['header']
+        OperationArguments<PostCharactersCharacterIdCspaData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCharactersCharacterIdCspaInput['header']
+        OperationArguments<PostCharactersCharacterIdCspaData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PostCharactersCharacterIdCspaInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostCharactersCharacterIdCspaData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3182,18 +3262,22 @@ export type GetCharactersCharacterIdRolesDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['getCorporationRoles'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdRolesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdRolesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdRolesOptions,
-    ) => Promise<GetCharactersCharacterIdRolesOutput>
+    ) => Promise<GetCharactersCharacterIdRolesResponse>
   >
 >;
 export type GetCharactersCharacterIdRolesMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['getCorporationRoles'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdRolesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdRolesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdRolesOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdRolesOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdRolesResponse>>
   >
 >;
 export type GetCharactersCharacterIdRolesOptionsAssertion = Assert<
@@ -3202,12 +3286,14 @@ export type GetCharactersCharacterIdRolesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdRolesInput['header']
+        OperationArguments<GetCharactersCharacterIdRolesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdRolesInput['header']
+        OperationArguments<GetCharactersCharacterIdRolesData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdRolesInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdRolesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3215,18 +3301,22 @@ export type GetCharactersCharacterIdFatigueDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['getJumpFatigue'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFatigueInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFatigueData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFatigueOptions,
-    ) => Promise<GetCharactersCharacterIdFatigueOutput>
+    ) => Promise<GetCharactersCharacterIdFatigueResponse>
   >
 >;
 export type GetCharactersCharacterIdFatigueMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['getJumpFatigue'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFatigueInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFatigueData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFatigueOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdFatigueOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdFatigueResponse>>
   >
 >;
 export type GetCharactersCharacterIdFatigueOptionsAssertion = Assert<
@@ -3235,12 +3325,14 @@ export type GetCharactersCharacterIdFatigueOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdFatigueInput['header']
+        OperationArguments<GetCharactersCharacterIdFatigueData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdFatigueInput['header']
+        OperationArguments<GetCharactersCharacterIdFatigueData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdFatigueInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFatigueData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3248,18 +3340,22 @@ export type GetCharactersCharacterIdPortraitDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['getPortrait'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdPortraitInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPortraitData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdPortraitOptions,
-    ) => Promise<GetCharactersCharacterIdPortraitOutput>
+    ) => Promise<GetCharactersCharacterIdPortraitResponse>
   >
 >;
 export type GetCharactersCharacterIdPortraitMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['getPortrait'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdPortraitInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPortraitData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdPortraitOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdPortraitOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdPortraitResponse>>
   >
 >;
 export type GetCharactersCharacterIdPortraitOptionsAssertion = Assert<
@@ -3268,12 +3364,14 @@ export type GetCharactersCharacterIdPortraitOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdPortraitInput['header']
+        OperationArguments<GetCharactersCharacterIdPortraitData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdPortraitInput['header']
+        OperationArguments<GetCharactersCharacterIdPortraitData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdPortraitInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPortraitData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3281,18 +3379,18 @@ export type GetCharactersDetailDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['getPublicInfo'],
     (
-      characterId: NonNullable<GetCharactersDetailInput['path']>['character_id'],
+      characterId: NonNullable<OperationArguments<GetCharactersDetailData>['path']>['character_id'],
       options?: GetCharactersDetailOptions,
-    ) => Promise<GetCharactersDetailOutput>
+    ) => Promise<GetCharactersDetailResponse>
   >
 >;
 export type GetCharactersDetailMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['getPublicInfo'],
     (
-      characterId: NonNullable<GetCharactersDetailInput['path']>['character_id'],
+      characterId: NonNullable<OperationArguments<GetCharactersDetailData>['path']>['character_id'],
       options?: GetCharactersDetailOptions,
-    ) => Promise<EsiResponse<GetCharactersDetailOutput>>
+    ) => Promise<EsiResponse<GetCharactersDetailResponse>>
   >
 >;
 export type GetCharactersDetailOptionsAssertion = Assert<
@@ -3301,10 +3399,14 @@ export type GetCharactersDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersDetailInput['header']
+        OperationArguments<GetCharactersDetailData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetCharactersDetailInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersDetailInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetCharactersDetailData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersDetailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3312,18 +3414,22 @@ export type GetCharactersCharacterIdBlueprintsDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['listBlueprints'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdBlueprintsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdBlueprintsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdBlueprintsOptions,
-    ) => Promise<GetCharactersCharacterIdBlueprintsOutput>
+    ) => Promise<GetCharactersCharacterIdBlueprintsResponse>
   >
 >;
 export type GetCharactersCharacterIdBlueprintsMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['listBlueprints'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdBlueprintsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdBlueprintsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdBlueprintsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdBlueprintsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdBlueprintsResponse>>
   >
 >;
 export type GetCharactersCharacterIdBlueprintsOptionsAssertion = Assert<
@@ -3332,13 +3438,17 @@ export type GetCharactersCharacterIdBlueprintsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdBlueprintsInput['header']
+        OperationArguments<GetCharactersCharacterIdBlueprintsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdBlueprintsInput['header']
+        OperationArguments<GetCharactersCharacterIdBlueprintsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdBlueprintsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdBlueprintsInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdBlueprintsData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdBlueprintsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3347,10 +3457,10 @@ export type GetCharactersCharacterIdNotificationsContactsDomainMethodAssertion =
     CharacterDomainClient['listContactNotifications'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdNotificationsContactsInput['path']
+        OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdNotificationsContactsOptions,
-    ) => Promise<GetCharactersCharacterIdNotificationsContactsOutput>
+    ) => Promise<GetCharactersCharacterIdNotificationsContactsResponse>
   >
 >;
 export type GetCharactersCharacterIdNotificationsContactsMetadataMethodAssertion = Assert<
@@ -3358,10 +3468,10 @@ export type GetCharactersCharacterIdNotificationsContactsMetadataMethodAssertion
     CharacterDomainClientWithMetadata['listContactNotifications'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdNotificationsContactsInput['path']
+        OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdNotificationsContactsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdNotificationsContactsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdNotificationsContactsResponse>>
   >
 >;
 export type GetCharactersCharacterIdNotificationsContactsOptionsAssertion = Assert<
@@ -3370,13 +3480,13 @@ export type GetCharactersCharacterIdNotificationsContactsOptionsAssertion = Asse
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdNotificationsContactsInput['header']
+        OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdNotificationsContactsInput['header']
+        OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdNotificationsContactsInput['header']
+        OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3386,10 +3496,10 @@ export type GetCharactersCharacterIdCorporationhistoryDomainMethodAssertion = As
     CharacterDomainClient['listCorporationHistory'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdCorporationhistoryInput['path']
+        OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdCorporationhistoryOptions,
-    ) => Promise<GetCharactersCharacterIdCorporationhistoryOutput>
+    ) => Promise<GetCharactersCharacterIdCorporationhistoryResponse>
   >
 >;
 export type GetCharactersCharacterIdCorporationhistoryMetadataMethodAssertion = Assert<
@@ -3397,10 +3507,10 @@ export type GetCharactersCharacterIdCorporationhistoryMetadataMethodAssertion = 
     CharacterDomainClientWithMetadata['listCorporationHistory'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdCorporationhistoryInput['path']
+        OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdCorporationhistoryOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdCorporationhistoryOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdCorporationhistoryResponse>>
   >
 >;
 export type GetCharactersCharacterIdCorporationhistoryOptionsAssertion = Assert<
@@ -3409,13 +3519,13 @@ export type GetCharactersCharacterIdCorporationhistoryOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdCorporationhistoryInput['header']
+        OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdCorporationhistoryInput['header']
+        OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdCorporationhistoryInput['header']
+        OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3424,18 +3534,22 @@ export type GetCharactersCharacterIdTitlesDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['listCorporationTitles'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdTitlesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdTitlesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdTitlesOptions,
-    ) => Promise<GetCharactersCharacterIdTitlesOutput>
+    ) => Promise<GetCharactersCharacterIdTitlesResponse>
   >
 >;
 export type GetCharactersCharacterIdTitlesMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['listCorporationTitles'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdTitlesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdTitlesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdTitlesOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdTitlesOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdTitlesResponse>>
   >
 >;
 export type GetCharactersCharacterIdTitlesOptionsAssertion = Assert<
@@ -3444,12 +3558,14 @@ export type GetCharactersCharacterIdTitlesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdTitlesInput['header']
+        OperationArguments<GetCharactersCharacterIdTitlesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdTitlesInput['header']
+        OperationArguments<GetCharactersCharacterIdTitlesData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdTitlesInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdTitlesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3457,18 +3573,22 @@ export type GetCharactersCharacterIdMedalsDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['listMedals'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMedalsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMedalsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMedalsOptions,
-    ) => Promise<GetCharactersCharacterIdMedalsOutput>
+    ) => Promise<GetCharactersCharacterIdMedalsResponse>
   >
 >;
 export type GetCharactersCharacterIdMedalsMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['listMedals'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMedalsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMedalsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMedalsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdMedalsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdMedalsResponse>>
   >
 >;
 export type GetCharactersCharacterIdMedalsOptionsAssertion = Assert<
@@ -3477,12 +3597,14 @@ export type GetCharactersCharacterIdMedalsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdMedalsInput['header']
+        OperationArguments<GetCharactersCharacterIdMedalsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdMedalsInput['header']
+        OperationArguments<GetCharactersCharacterIdMedalsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdMedalsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMedalsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3490,18 +3612,22 @@ export type GetCharactersCharacterIdNotificationsDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['listNotifications'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdNotificationsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdNotificationsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdNotificationsOptions,
-    ) => Promise<GetCharactersCharacterIdNotificationsOutput>
+    ) => Promise<GetCharactersCharacterIdNotificationsResponse>
   >
 >;
 export type GetCharactersCharacterIdNotificationsMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['listNotifications'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdNotificationsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdNotificationsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdNotificationsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdNotificationsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdNotificationsResponse>>
   >
 >;
 export type GetCharactersCharacterIdNotificationsOptionsAssertion = Assert<
@@ -3510,13 +3636,13 @@ export type GetCharactersCharacterIdNotificationsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdNotificationsInput['header']
+        OperationArguments<GetCharactersCharacterIdNotificationsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdNotificationsInput['header']
+        OperationArguments<GetCharactersCharacterIdNotificationsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdNotificationsInput['header']
+        OperationArguments<GetCharactersCharacterIdNotificationsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3525,18 +3651,22 @@ export type GetCharactersCharacterIdStandingsDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['listStandings'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdStandingsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdStandingsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdStandingsOptions,
-    ) => Promise<GetCharactersCharacterIdStandingsOutput>
+    ) => Promise<GetCharactersCharacterIdStandingsResponse>
   >
 >;
 export type GetCharactersCharacterIdStandingsMetadataMethodAssertion = Assert<
   IsExact<
     CharacterDomainClientWithMetadata['listStandings'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdStandingsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdStandingsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdStandingsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdStandingsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdStandingsResponse>>
   >
 >;
 export type GetCharactersCharacterIdStandingsOptionsAssertion = Assert<
@@ -3545,19 +3675,21 @@ export type GetCharactersCharacterIdStandingsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdStandingsInput['header']
+        OperationArguments<GetCharactersCharacterIdStandingsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdStandingsInput['header']
+        OperationArguments<GetCharactersCharacterIdStandingsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdStandingsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdStandingsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type PostCharactersAffiliationDomainMethodAssertion = Assert<
   IsExact<
     CharacterDomainClient['lookupAffiliations'],
-    (options: PostCharactersAffiliationOptions) => Promise<PostCharactersAffiliationOutput>
+    (options: PostCharactersAffiliationOptions) => Promise<PostCharactersAffiliationResponse>
   >
 >;
 export type PostCharactersAffiliationMetadataMethodAssertion = Assert<
@@ -3565,20 +3697,24 @@ export type PostCharactersAffiliationMetadataMethodAssertion = Assert<
     CharacterDomainClientWithMetadata['lookupAffiliations'],
     (
       options: PostCharactersAffiliationOptions,
-    ) => Promise<EsiResponse<PostCharactersAffiliationOutput>>
+    ) => Promise<EsiResponse<PostCharactersAffiliationResponse>>
   >
 >;
 export type PostCharactersAffiliationOptionsAssertion = Assert<
   IsExact<
     PostCharactersAffiliationOptions,
     {
-      readonly body: PostCharactersAffiliationInput['body'];
+      readonly body: OperationArguments<PostCharactersAffiliationData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersAffiliationInput['header']
+        OperationArguments<PostCharactersAffiliationData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostCharactersAffiliationInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostCharactersAffiliationInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostCharactersAffiliationData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostCharactersAffiliationData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3592,18 +3728,22 @@ export type GetCharactersCharacterIdClonesDomainMethodAssertion = Assert<
   IsExact<
     ClonesDomainClient['getState'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdClonesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdClonesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdClonesOptions,
-    ) => Promise<GetCharactersCharacterIdClonesOutput>
+    ) => Promise<GetCharactersCharacterIdClonesResponse>
   >
 >;
 export type GetCharactersCharacterIdClonesMetadataMethodAssertion = Assert<
   IsExact<
     ClonesDomainClientWithMetadata['getState'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdClonesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdClonesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdClonesOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdClonesOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdClonesResponse>>
   >
 >;
 export type GetCharactersCharacterIdClonesOptionsAssertion = Assert<
@@ -3612,12 +3752,14 @@ export type GetCharactersCharacterIdClonesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdClonesInput['header']
+        OperationArguments<GetCharactersCharacterIdClonesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdClonesInput['header']
+        OperationArguments<GetCharactersCharacterIdClonesData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdClonesInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdClonesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3625,18 +3767,22 @@ export type GetCharactersCharacterIdImplantsDomainMethodAssertion = Assert<
   IsExact<
     ClonesDomainClient['listActiveImplants'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdImplantsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdImplantsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdImplantsOptions,
-    ) => Promise<GetCharactersCharacterIdImplantsOutput>
+    ) => Promise<GetCharactersCharacterIdImplantsResponse>
   >
 >;
 export type GetCharactersCharacterIdImplantsMetadataMethodAssertion = Assert<
   IsExact<
     ClonesDomainClientWithMetadata['listActiveImplants'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdImplantsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdImplantsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdImplantsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdImplantsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdImplantsResponse>>
   >
 >;
 export type GetCharactersCharacterIdImplantsOptionsAssertion = Assert<
@@ -3645,12 +3791,14 @@ export type GetCharactersCharacterIdImplantsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdImplantsInput['header']
+        OperationArguments<GetCharactersCharacterIdImplantsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdImplantsInput['header']
+        OperationArguments<GetCharactersCharacterIdImplantsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdImplantsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdImplantsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3664,36 +3812,48 @@ export type PostCharactersCharacterIdContactsDomainMethodAssertion = Assert<
   IsExact<
     ContactsDomainClient['addCharacterContacts'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdContactsOptions,
-    ) => Promise<PostCharactersCharacterIdContactsOutput>
+    ) => Promise<PostCharactersCharacterIdContactsResponse>
   >
 >;
 export type PostCharactersCharacterIdContactsMetadataMethodAssertion = Assert<
   IsExact<
     ContactsDomainClientWithMetadata['addCharacterContacts'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdContactsOptions,
-    ) => Promise<EsiResponse<PostCharactersCharacterIdContactsOutput>>
+    ) => Promise<EsiResponse<PostCharactersCharacterIdContactsResponse>>
   >
 >;
 export type PostCharactersCharacterIdContactsOptionsAssertion = Assert<
   IsExact<
     PostCharactersCharacterIdContactsOptions,
     {
-      readonly body: PostCharactersCharacterIdContactsInput['body'];
+      readonly body: OperationArguments<PostCharactersCharacterIdContactsData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersCharacterIdContactsInput['header']
+        OperationArguments<PostCharactersCharacterIdContactsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCharactersCharacterIdContactsInput['header']
+        OperationArguments<PostCharactersCharacterIdContactsData>['headers']
       >['If-None-Match'];
-      readonly labelIds?: NonNullable<PostCharactersCharacterIdContactsInput['query']>['label_ids'];
-      readonly standing: NonNullable<PostCharactersCharacterIdContactsInput['query']>['standing'];
-      readonly watched?: NonNullable<PostCharactersCharacterIdContactsInput['query']>['watched'];
-      readonly xTenant?: NonNullable<PostCharactersCharacterIdContactsInput['header']>['X-Tenant'];
+      readonly labelIds?: NonNullable<
+        OperationArguments<PostCharactersCharacterIdContactsData>['query']
+      >['label_ids'];
+      readonly standing: NonNullable<
+        OperationArguments<PostCharactersCharacterIdContactsData>['query']
+      >['standing'];
+      readonly watched?: NonNullable<
+        OperationArguments<PostCharactersCharacterIdContactsData>['query']
+      >['watched'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostCharactersCharacterIdContactsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3701,18 +3861,22 @@ export type DeleteCharactersCharacterIdContactsDomainMethodAssertion = Assert<
   IsExact<
     ContactsDomainClient['deleteCharacterContacts'],
     (
-      characterId: NonNullable<DeleteCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options: DeleteCharactersCharacterIdContactsOptions,
-    ) => Promise<DeleteCharactersCharacterIdContactsOutput>
+    ) => Promise<DeleteCharactersCharacterIdContactsResponse>
   >
 >;
 export type DeleteCharactersCharacterIdContactsMetadataMethodAssertion = Assert<
   IsExact<
     ContactsDomainClientWithMetadata['deleteCharacterContacts'],
     (
-      characterId: NonNullable<DeleteCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options: DeleteCharactersCharacterIdContactsOptions,
-    ) => Promise<EsiResponse<DeleteCharactersCharacterIdContactsOutput>>
+    ) => Promise<EsiResponse<DeleteCharactersCharacterIdContactsResponse>>
   >
 >;
 export type DeleteCharactersCharacterIdContactsOptionsAssertion = Assert<
@@ -3721,16 +3885,16 @@ export type DeleteCharactersCharacterIdContactsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly contactIds: NonNullable<
-        DeleteCharactersCharacterIdContactsInput['query']
+        OperationArguments<DeleteCharactersCharacterIdContactsData>['query']
       >['contact_ids'];
       readonly ifModifiedSince?: NonNullable<
-        DeleteCharactersCharacterIdContactsInput['header']
+        OperationArguments<DeleteCharactersCharacterIdContactsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        DeleteCharactersCharacterIdContactsInput['header']
+        OperationArguments<DeleteCharactersCharacterIdContactsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        DeleteCharactersCharacterIdContactsInput['header']
+        OperationArguments<DeleteCharactersCharacterIdContactsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3739,18 +3903,22 @@ export type GetAlliancesAllianceIdContactsLabelsDomainMethodAssertion = Assert<
   IsExact<
     ContactsDomainClient['listAllianceContactLabels'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdContactsLabelsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdContactsLabelsOptions,
-    ) => Promise<GetAlliancesAllianceIdContactsLabelsOutput>
+    ) => Promise<GetAlliancesAllianceIdContactsLabelsResponse>
   >
 >;
 export type GetAlliancesAllianceIdContactsLabelsMetadataMethodAssertion = Assert<
   IsExact<
     ContactsDomainClientWithMetadata['listAllianceContactLabels'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdContactsLabelsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdContactsLabelsOptions,
-    ) => Promise<EsiResponse<GetAlliancesAllianceIdContactsLabelsOutput>>
+    ) => Promise<EsiResponse<GetAlliancesAllianceIdContactsLabelsResponse>>
   >
 >;
 export type GetAlliancesAllianceIdContactsLabelsOptionsAssertion = Assert<
@@ -3759,13 +3927,13 @@ export type GetAlliancesAllianceIdContactsLabelsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetAlliancesAllianceIdContactsLabelsInput['header']
+        OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetAlliancesAllianceIdContactsLabelsInput['header']
+        OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetAlliancesAllianceIdContactsLabelsInput['header']
+        OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3774,18 +3942,22 @@ export type GetAlliancesAllianceIdContactsDomainMethodAssertion = Assert<
   IsExact<
     ContactsDomainClient['listAllianceContacts'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdContactsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdContactsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdContactsOptions,
-    ) => Promise<GetAlliancesAllianceIdContactsOutput>
+    ) => Promise<GetAlliancesAllianceIdContactsResponse>
   >
 >;
 export type GetAlliancesAllianceIdContactsMetadataMethodAssertion = Assert<
   IsExact<
     ContactsDomainClientWithMetadata['listAllianceContacts'],
     (
-      allianceId: NonNullable<GetAlliancesAllianceIdContactsInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdContactsData>['path']
+      >['alliance_id'],
       options?: GetAlliancesAllianceIdContactsOptions,
-    ) => Promise<EsiResponse<GetAlliancesAllianceIdContactsOutput>>
+    ) => Promise<EsiResponse<GetAlliancesAllianceIdContactsResponse>>
   >
 >;
 export type GetAlliancesAllianceIdContactsOptionsAssertion = Assert<
@@ -3794,13 +3966,17 @@ export type GetAlliancesAllianceIdContactsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetAlliancesAllianceIdContactsInput['header']
+        OperationArguments<GetAlliancesAllianceIdContactsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetAlliancesAllianceIdContactsInput['header']
+        OperationArguments<GetAlliancesAllianceIdContactsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetAlliancesAllianceIdContactsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetAlliancesAllianceIdContactsInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdContactsData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetAlliancesAllianceIdContactsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3808,18 +3984,22 @@ export type GetCharactersCharacterIdContactsLabelsDomainMethodAssertion = Assert
   IsExact<
     ContactsDomainClient['listCharacterContactLabels'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdContactsLabelsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContactsLabelsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdContactsLabelsOptions,
-    ) => Promise<GetCharactersCharacterIdContactsLabelsOutput>
+    ) => Promise<GetCharactersCharacterIdContactsLabelsResponse>
   >
 >;
 export type GetCharactersCharacterIdContactsLabelsMetadataMethodAssertion = Assert<
   IsExact<
     ContactsDomainClientWithMetadata['listCharacterContactLabels'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdContactsLabelsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContactsLabelsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdContactsLabelsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdContactsLabelsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdContactsLabelsResponse>>
   >
 >;
 export type GetCharactersCharacterIdContactsLabelsOptionsAssertion = Assert<
@@ -3828,13 +4008,13 @@ export type GetCharactersCharacterIdContactsLabelsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdContactsLabelsInput['header']
+        OperationArguments<GetCharactersCharacterIdContactsLabelsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdContactsLabelsInput['header']
+        OperationArguments<GetCharactersCharacterIdContactsLabelsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdContactsLabelsInput['header']
+        OperationArguments<GetCharactersCharacterIdContactsLabelsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3843,18 +4023,22 @@ export type GetCharactersCharacterIdContactsDomainMethodAssertion = Assert<
   IsExact<
     ContactsDomainClient['listCharacterContacts'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdContactsOptions,
-    ) => Promise<GetCharactersCharacterIdContactsOutput>
+    ) => Promise<GetCharactersCharacterIdContactsResponse>
   >
 >;
 export type GetCharactersCharacterIdContactsMetadataMethodAssertion = Assert<
   IsExact<
     ContactsDomainClientWithMetadata['listCharacterContacts'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdContactsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdContactsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdContactsResponse>>
   >
 >;
 export type GetCharactersCharacterIdContactsOptionsAssertion = Assert<
@@ -3863,13 +4047,17 @@ export type GetCharactersCharacterIdContactsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdContactsInput['header']
+        OperationArguments<GetCharactersCharacterIdContactsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdContactsInput['header']
+        OperationArguments<GetCharactersCharacterIdContactsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdContactsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdContactsInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContactsData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContactsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -3878,10 +4066,10 @@ export type GetCorporationsCorporationIdContactsLabelsDomainMethodAssertion = As
     ContactsDomainClient['listCorporationContactLabels'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContactsLabelsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContactsLabelsOptions,
-    ) => Promise<GetCorporationsCorporationIdContactsLabelsOutput>
+    ) => Promise<GetCorporationsCorporationIdContactsLabelsResponse>
   >
 >;
 export type GetCorporationsCorporationIdContactsLabelsMetadataMethodAssertion = Assert<
@@ -3889,10 +4077,10 @@ export type GetCorporationsCorporationIdContactsLabelsMetadataMethodAssertion = 
     ContactsDomainClientWithMetadata['listCorporationContactLabels'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContactsLabelsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContactsLabelsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdContactsLabelsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdContactsLabelsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdContactsLabelsOptionsAssertion = Assert<
@@ -3901,13 +4089,13 @@ export type GetCorporationsCorporationIdContactsLabelsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdContactsLabelsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdContactsLabelsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdContactsLabelsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3917,10 +4105,10 @@ export type GetCorporationsCorporationIdContactsDomainMethodAssertion = Assert<
     ContactsDomainClient['listCorporationContacts'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContactsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContactsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContactsOptions,
-    ) => Promise<GetCorporationsCorporationIdContactsOutput>
+    ) => Promise<GetCorporationsCorporationIdContactsResponse>
   >
 >;
 export type GetCorporationsCorporationIdContactsMetadataMethodAssertion = Assert<
@@ -3928,10 +4116,10 @@ export type GetCorporationsCorporationIdContactsMetadataMethodAssertion = Assert
     ContactsDomainClientWithMetadata['listCorporationContacts'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContactsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContactsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContactsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdContactsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdContactsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdContactsOptionsAssertion = Assert<
@@ -3940,14 +4128,16 @@ export type GetCorporationsCorporationIdContactsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdContactsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContactsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdContactsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContactsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdContactsInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdContactsData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdContactsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContactsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -3956,36 +4146,48 @@ export type PutCharactersCharacterIdContactsDomainMethodAssertion = Assert<
   IsExact<
     ContactsDomainClient['updateCharacterContacts'],
     (
-      characterId: NonNullable<PutCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options: PutCharactersCharacterIdContactsOptions,
-    ) => Promise<PutCharactersCharacterIdContactsOutput>
+    ) => Promise<PutCharactersCharacterIdContactsResponse>
   >
 >;
 export type PutCharactersCharacterIdContactsMetadataMethodAssertion = Assert<
   IsExact<
     ContactsDomainClientWithMetadata['updateCharacterContacts'],
     (
-      characterId: NonNullable<PutCharactersCharacterIdContactsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdContactsData>['path']
+      >['character_id'],
       options: PutCharactersCharacterIdContactsOptions,
-    ) => Promise<EsiResponse<PutCharactersCharacterIdContactsOutput>>
+    ) => Promise<EsiResponse<PutCharactersCharacterIdContactsResponse>>
   >
 >;
 export type PutCharactersCharacterIdContactsOptionsAssertion = Assert<
   IsExact<
     PutCharactersCharacterIdContactsOptions,
     {
-      readonly body: PutCharactersCharacterIdContactsInput['body'];
+      readonly body: OperationArguments<PutCharactersCharacterIdContactsData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PutCharactersCharacterIdContactsInput['header']
+        OperationArguments<PutCharactersCharacterIdContactsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PutCharactersCharacterIdContactsInput['header']
+        OperationArguments<PutCharactersCharacterIdContactsData>['headers']
       >['If-None-Match'];
-      readonly labelIds?: NonNullable<PutCharactersCharacterIdContactsInput['query']>['label_ids'];
-      readonly standing: NonNullable<PutCharactersCharacterIdContactsInput['query']>['standing'];
-      readonly watched?: NonNullable<PutCharactersCharacterIdContactsInput['query']>['watched'];
-      readonly xTenant?: NonNullable<PutCharactersCharacterIdContactsInput['header']>['X-Tenant'];
+      readonly labelIds?: NonNullable<
+        OperationArguments<PutCharactersCharacterIdContactsData>['query']
+      >['label_ids'];
+      readonly standing: NonNullable<
+        OperationArguments<PutCharactersCharacterIdContactsData>['query']
+      >['standing'];
+      readonly watched?: NonNullable<
+        OperationArguments<PutCharactersCharacterIdContactsData>['query']
+      >['watched'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PutCharactersCharacterIdContactsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4000,13 +4202,13 @@ export type GetCharactersCharacterIdContractsContractIdBidsDomainMethodAssertion
     ContractsDomainClient['listCharacterContractBids'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']
       >['character_id'],
       contractId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']
       >['contract_id'],
       options?: GetCharactersCharacterIdContractsContractIdBidsOptions,
-    ) => Promise<GetCharactersCharacterIdContractsContractIdBidsOutput>
+    ) => Promise<GetCharactersCharacterIdContractsContractIdBidsResponse>
   >
 >;
 export type GetCharactersCharacterIdContractsContractIdBidsMetadataMethodAssertion = Assert<
@@ -4014,13 +4216,13 @@ export type GetCharactersCharacterIdContractsContractIdBidsMetadataMethodAsserti
     ContractsDomainClientWithMetadata['listCharacterContractBids'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']
       >['character_id'],
       contractId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']
       >['contract_id'],
       options?: GetCharactersCharacterIdContractsContractIdBidsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdBidsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdBidsResponse>>
   >
 >;
 export type GetCharactersCharacterIdContractsContractIdBidsOptionsAssertion = Assert<
@@ -4029,13 +4231,13 @@ export type GetCharactersCharacterIdContractsContractIdBidsOptionsAssertion = As
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdContractsContractIdBidsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdContractsContractIdBidsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdContractsContractIdBidsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4045,13 +4247,13 @@ export type GetCharactersCharacterIdContractsContractIdItemsDomainMethodAssertio
     ContractsDomainClient['listCharacterContractItems'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']
       >['character_id'],
       contractId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']
       >['contract_id'],
       options?: GetCharactersCharacterIdContractsContractIdItemsOptions,
-    ) => Promise<GetCharactersCharacterIdContractsContractIdItemsOutput>
+    ) => Promise<GetCharactersCharacterIdContractsContractIdItemsResponse>
   >
 >;
 export type GetCharactersCharacterIdContractsContractIdItemsMetadataMethodAssertion = Assert<
@@ -4059,13 +4261,13 @@ export type GetCharactersCharacterIdContractsContractIdItemsMetadataMethodAssert
     ContractsDomainClientWithMetadata['listCharacterContractItems'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']
       >['character_id'],
       contractId: NonNullable<
-        GetCharactersCharacterIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']
       >['contract_id'],
       options?: GetCharactersCharacterIdContractsContractIdItemsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdItemsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdItemsResponse>>
   >
 >;
 export type GetCharactersCharacterIdContractsContractIdItemsOptionsAssertion = Assert<
@@ -4074,13 +4276,13 @@ export type GetCharactersCharacterIdContractsContractIdItemsOptionsAssertion = A
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdContractsContractIdItemsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdContractsContractIdItemsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdContractsContractIdItemsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4089,18 +4291,22 @@ export type GetCharactersCharacterIdContractsDomainMethodAssertion = Assert<
   IsExact<
     ContractsDomainClient['listCharacterContracts'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdContractsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContractsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdContractsOptions,
-    ) => Promise<GetCharactersCharacterIdContractsOutput>
+    ) => Promise<GetCharactersCharacterIdContractsResponse>
   >
 >;
 export type GetCharactersCharacterIdContractsMetadataMethodAssertion = Assert<
   IsExact<
     ContractsDomainClientWithMetadata['listCharacterContracts'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdContractsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContractsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdContractsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdContractsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdContractsResponse>>
   >
 >;
 export type GetCharactersCharacterIdContractsOptionsAssertion = Assert<
@@ -4109,13 +4315,17 @@ export type GetCharactersCharacterIdContractsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdContractsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdContractsInput['header']
+        OperationArguments<GetCharactersCharacterIdContractsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdContractsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdContractsInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContractsData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdContractsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4124,13 +4334,13 @@ export type GetCorporationsCorporationIdContractsContractIdBidsDomainMethodAsser
     ContractsDomainClient['listCorporationContractBids'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']
       >['corporation_id'],
       contractId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']
       >['contract_id'],
       options?: GetCorporationsCorporationIdContractsContractIdBidsOptions,
-    ) => Promise<GetCorporationsCorporationIdContractsContractIdBidsOutput>
+    ) => Promise<GetCorporationsCorporationIdContractsContractIdBidsResponse>
   >
 >;
 export type GetCorporationsCorporationIdContractsContractIdBidsMetadataMethodAssertion = Assert<
@@ -4138,13 +4348,13 @@ export type GetCorporationsCorporationIdContractsContractIdBidsMetadataMethodAss
     ContractsDomainClientWithMetadata['listCorporationContractBids'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']
       >['corporation_id'],
       contractId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']
       >['contract_id'],
       options?: GetCorporationsCorporationIdContractsContractIdBidsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdBidsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdBidsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdContractsContractIdBidsOptionsAssertion = Assert<
@@ -4153,16 +4363,16 @@ export type GetCorporationsCorporationIdContractsContractIdBidsOptionsAssertion 
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['query']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['query']
       >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdBidsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4172,13 +4382,13 @@ export type GetCorporationsCorporationIdContractsContractIdItemsDomainMethodAsse
     ContractsDomainClient['listCorporationContractItems'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']
       >['corporation_id'],
       contractId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']
       >['contract_id'],
       options?: GetCorporationsCorporationIdContractsContractIdItemsOptions,
-    ) => Promise<GetCorporationsCorporationIdContractsContractIdItemsOutput>
+    ) => Promise<GetCorporationsCorporationIdContractsContractIdItemsResponse>
   >
 >;
 export type GetCorporationsCorporationIdContractsContractIdItemsMetadataMethodAssertion = Assert<
@@ -4186,13 +4396,13 @@ export type GetCorporationsCorporationIdContractsContractIdItemsMetadataMethodAs
     ContractsDomainClientWithMetadata['listCorporationContractItems'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']
       >['corporation_id'],
       contractId: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdItemsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']
       >['contract_id'],
       options?: GetCorporationsCorporationIdContractsContractIdItemsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdItemsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdItemsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdContractsContractIdItemsOptionsAssertion = Assert<
@@ -4201,13 +4411,13 @@ export type GetCorporationsCorporationIdContractsContractIdItemsOptionsAssertion
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdItemsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdItemsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdContractsContractIdItemsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4217,10 +4427,10 @@ export type GetCorporationsCorporationIdContractsDomainMethodAssertion = Assert<
     ContractsDomainClient['listCorporationContracts'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContractsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContractsOptions,
-    ) => Promise<GetCorporationsCorporationIdContractsOutput>
+    ) => Promise<GetCorporationsCorporationIdContractsResponse>
   >
 >;
 export type GetCorporationsCorporationIdContractsMetadataMethodAssertion = Assert<
@@ -4228,10 +4438,10 @@ export type GetCorporationsCorporationIdContractsMetadataMethodAssertion = Asser
     ContractsDomainClientWithMetadata['listCorporationContracts'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContractsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContractsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContractsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdContractsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdContractsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdContractsOptionsAssertion = Assert<
@@ -4240,14 +4450,16 @@ export type GetCorporationsCorporationIdContractsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdContractsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdContractsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdContractsInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdContractsData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdContractsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContractsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4256,18 +4468,22 @@ export type GetContractsPublicBidsContractIdDomainMethodAssertion = Assert<
   IsExact<
     ContractsDomainClient['listPublicContractBids'],
     (
-      contractId: NonNullable<GetContractsPublicBidsContractIdInput['path']>['contract_id'],
+      contractId: NonNullable<
+        OperationArguments<GetContractsPublicBidsContractIdData>['path']
+      >['contract_id'],
       options?: GetContractsPublicBidsContractIdOptions,
-    ) => Promise<GetContractsPublicBidsContractIdOutput>
+    ) => Promise<GetContractsPublicBidsContractIdResponse>
   >
 >;
 export type GetContractsPublicBidsContractIdMetadataMethodAssertion = Assert<
   IsExact<
     ContractsDomainClientWithMetadata['listPublicContractBids'],
     (
-      contractId: NonNullable<GetContractsPublicBidsContractIdInput['path']>['contract_id'],
+      contractId: NonNullable<
+        OperationArguments<GetContractsPublicBidsContractIdData>['path']
+      >['contract_id'],
       options?: GetContractsPublicBidsContractIdOptions,
-    ) => Promise<EsiResponse<GetContractsPublicBidsContractIdOutput>>
+    ) => Promise<EsiResponse<GetContractsPublicBidsContractIdResponse>>
   >
 >;
 export type GetContractsPublicBidsContractIdOptionsAssertion = Assert<
@@ -4276,13 +4492,17 @@ export type GetContractsPublicBidsContractIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetContractsPublicBidsContractIdInput['header']
+        OperationArguments<GetContractsPublicBidsContractIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetContractsPublicBidsContractIdInput['header']
+        OperationArguments<GetContractsPublicBidsContractIdData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetContractsPublicBidsContractIdInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetContractsPublicBidsContractIdInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetContractsPublicBidsContractIdData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetContractsPublicBidsContractIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4290,18 +4510,22 @@ export type GetContractsPublicItemsContractIdDomainMethodAssertion = Assert<
   IsExact<
     ContractsDomainClient['listPublicContractItems'],
     (
-      contractId: NonNullable<GetContractsPublicItemsContractIdInput['path']>['contract_id'],
+      contractId: NonNullable<
+        OperationArguments<GetContractsPublicItemsContractIdData>['path']
+      >['contract_id'],
       options?: GetContractsPublicItemsContractIdOptions,
-    ) => Promise<GetContractsPublicItemsContractIdOutput>
+    ) => Promise<GetContractsPublicItemsContractIdResponse>
   >
 >;
 export type GetContractsPublicItemsContractIdMetadataMethodAssertion = Assert<
   IsExact<
     ContractsDomainClientWithMetadata['listPublicContractItems'],
     (
-      contractId: NonNullable<GetContractsPublicItemsContractIdInput['path']>['contract_id'],
+      contractId: NonNullable<
+        OperationArguments<GetContractsPublicItemsContractIdData>['path']
+      >['contract_id'],
       options?: GetContractsPublicItemsContractIdOptions,
-    ) => Promise<EsiResponse<GetContractsPublicItemsContractIdOutput>>
+    ) => Promise<EsiResponse<GetContractsPublicItemsContractIdResponse>>
   >
 >;
 export type GetContractsPublicItemsContractIdOptionsAssertion = Assert<
@@ -4310,13 +4534,17 @@ export type GetContractsPublicItemsContractIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetContractsPublicItemsContractIdInput['header']
+        OperationArguments<GetContractsPublicItemsContractIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetContractsPublicItemsContractIdInput['header']
+        OperationArguments<GetContractsPublicItemsContractIdData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetContractsPublicItemsContractIdInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetContractsPublicItemsContractIdInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetContractsPublicItemsContractIdData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetContractsPublicItemsContractIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4324,18 +4552,22 @@ export type GetContractsPublicRegionIdDomainMethodAssertion = Assert<
   IsExact<
     ContractsDomainClient['listPublicContracts'],
     (
-      regionId: NonNullable<GetContractsPublicRegionIdInput['path']>['region_id'],
+      regionId: NonNullable<
+        OperationArguments<GetContractsPublicRegionIdData>['path']
+      >['region_id'],
       options?: GetContractsPublicRegionIdOptions,
-    ) => Promise<GetContractsPublicRegionIdOutput>
+    ) => Promise<GetContractsPublicRegionIdResponse>
   >
 >;
 export type GetContractsPublicRegionIdMetadataMethodAssertion = Assert<
   IsExact<
     ContractsDomainClientWithMetadata['listPublicContracts'],
     (
-      regionId: NonNullable<GetContractsPublicRegionIdInput['path']>['region_id'],
+      regionId: NonNullable<
+        OperationArguments<GetContractsPublicRegionIdData>['path']
+      >['region_id'],
       options?: GetContractsPublicRegionIdOptions,
-    ) => Promise<EsiResponse<GetContractsPublicRegionIdOutput>>
+    ) => Promise<EsiResponse<GetContractsPublicRegionIdResponse>>
   >
 >;
 export type GetContractsPublicRegionIdOptionsAssertion = Assert<
@@ -4344,13 +4576,17 @@ export type GetContractsPublicRegionIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetContractsPublicRegionIdInput['header']
+        OperationArguments<GetContractsPublicRegionIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetContractsPublicRegionIdInput['header']
+        OperationArguments<GetContractsPublicRegionIdData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetContractsPublicRegionIdInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetContractsPublicRegionIdInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetContractsPublicRegionIdData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetContractsPublicRegionIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4364,18 +4600,22 @@ export type GetCorporationsCorporationIdIconsDomainMethodAssertion = Assert<
   IsExact<
     CorporationDomainClient['getIcon'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdIconsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdIconsData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdIconsOptions,
-    ) => Promise<GetCorporationsCorporationIdIconsOutput>
+    ) => Promise<GetCorporationsCorporationIdIconsResponse>
   >
 >;
 export type GetCorporationsCorporationIdIconsMetadataMethodAssertion = Assert<
   IsExact<
     CorporationDomainClientWithMetadata['getIcon'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdIconsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdIconsData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdIconsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdIconsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdIconsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdIconsOptionsAssertion = Assert<
@@ -4384,12 +4624,14 @@ export type GetCorporationsCorporationIdIconsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdIconsInput['header']
+        OperationArguments<GetCorporationsCorporationIdIconsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdIconsInput['header']
+        OperationArguments<GetCorporationsCorporationIdIconsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCorporationsCorporationIdIconsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdIconsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4398,10 +4640,10 @@ export type GetCorporationsCorporationIdMembersLimitDomainMethodAssertion = Asse
     CorporationDomainClient['getMemberLimit'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembersLimitInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembersLimitData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembersLimitOptions,
-    ) => Promise<GetCorporationsCorporationIdMembersLimitOutput>
+    ) => Promise<GetCorporationsCorporationIdMembersLimitResponse>
   >
 >;
 export type GetCorporationsCorporationIdMembersLimitMetadataMethodAssertion = Assert<
@@ -4409,10 +4651,10 @@ export type GetCorporationsCorporationIdMembersLimitMetadataMethodAssertion = As
     CorporationDomainClientWithMetadata['getMemberLimit'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembersLimitInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembersLimitData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembersLimitOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembersLimitOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembersLimitResponse>>
   >
 >;
 export type GetCorporationsCorporationIdMembersLimitOptionsAssertion = Assert<
@@ -4421,13 +4663,13 @@ export type GetCorporationsCorporationIdMembersLimitOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdMembersLimitInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersLimitData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdMembersLimitInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersLimitData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdMembersLimitInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersLimitData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4436,18 +4678,22 @@ export type GetCorporationsCorporationIdDomainMethodAssertion = Assert<
   IsExact<
     CorporationDomainClient['getPublicInfo'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdOptions,
-    ) => Promise<GetCorporationsCorporationIdOutput>
+    ) => Promise<GetCorporationsCorporationIdResponse>
   >
 >;
 export type GetCorporationsCorporationIdMetadataMethodAssertion = Assert<
   IsExact<
     CorporationDomainClientWithMetadata['getPublicInfo'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdResponse>>
   >
 >;
 export type GetCorporationsCorporationIdOptionsAssertion = Assert<
@@ -4456,12 +4702,14 @@ export type GetCorporationsCorporationIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdInput['header']
+        OperationArguments<GetCorporationsCorporationIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdInput['header']
+        OperationArguments<GetCorporationsCorporationIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCorporationsCorporationIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4470,13 +4718,13 @@ export type GetCorporationsCorporationIdStarbasesStarbaseIdDomainMethodAssertion
     CorporationDomainClient['getStarbase'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']
       >['corporation_id'],
       starbaseId: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']
       >['starbase_id'],
       options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions,
-    ) => Promise<GetCorporationsCorporationIdStarbasesStarbaseIdOutput>
+    ) => Promise<GetCorporationsCorporationIdStarbasesStarbaseIdResponse>
   >
 >;
 export type GetCorporationsCorporationIdStarbasesStarbaseIdMetadataMethodAssertion = Assert<
@@ -4484,13 +4732,13 @@ export type GetCorporationsCorporationIdStarbasesStarbaseIdMetadataMethodAsserti
     CorporationDomainClientWithMetadata['getStarbase'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']
       >['corporation_id'],
       starbaseId: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']
       >['starbase_id'],
       options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdStarbasesStarbaseIdOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdStarbasesStarbaseIdResponse>>
   >
 >;
 export type GetCorporationsCorporationIdStarbasesStarbaseIdOptionsAssertion = Assert<
@@ -4499,16 +4747,16 @@ export type GetCorporationsCorporationIdStarbasesStarbaseIdOptionsAssertion = As
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['header']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['header']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['headers']
       >['If-None-Match'];
       readonly systemId: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['query']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['query']
       >['system_id'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdStarbasesStarbaseIdInput['header']
+        OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4518,10 +4766,10 @@ export type GetCorporationsCorporationIdAlliancehistoryDomainMethodAssertion = A
     CorporationDomainClient['listAllianceHistory'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdAlliancehistoryInput['path']
+        OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdAlliancehistoryOptions,
-    ) => Promise<GetCorporationsCorporationIdAlliancehistoryOutput>
+    ) => Promise<GetCorporationsCorporationIdAlliancehistoryResponse>
   >
 >;
 export type GetCorporationsCorporationIdAlliancehistoryMetadataMethodAssertion = Assert<
@@ -4529,10 +4777,10 @@ export type GetCorporationsCorporationIdAlliancehistoryMetadataMethodAssertion =
     CorporationDomainClientWithMetadata['listAllianceHistory'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdAlliancehistoryInput['path']
+        OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdAlliancehistoryOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdAlliancehistoryOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdAlliancehistoryResponse>>
   >
 >;
 export type GetCorporationsCorporationIdAlliancehistoryOptionsAssertion = Assert<
@@ -4541,13 +4789,13 @@ export type GetCorporationsCorporationIdAlliancehistoryOptionsAssertion = Assert
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdAlliancehistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdAlliancehistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdAlliancehistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4557,10 +4805,10 @@ export type GetCorporationsCorporationIdContainersLogsDomainMethodAssertion = As
     CorporationDomainClient['listAuditLogSecureContainerLogs'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContainersLogsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContainersLogsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContainersLogsOptions,
-    ) => Promise<GetCorporationsCorporationIdContainersLogsOutput>
+    ) => Promise<GetCorporationsCorporationIdContainersLogsResponse>
   >
 >;
 export type GetCorporationsCorporationIdContainersLogsMetadataMethodAssertion = Assert<
@@ -4568,10 +4816,10 @@ export type GetCorporationsCorporationIdContainersLogsMetadataMethodAssertion = 
     CorporationDomainClientWithMetadata['listAuditLogSecureContainerLogs'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdContainersLogsInput['path']
+        OperationArguments<GetCorporationsCorporationIdContainersLogsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdContainersLogsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdContainersLogsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdContainersLogsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdContainersLogsOptionsAssertion = Assert<
@@ -4580,14 +4828,16 @@ export type GetCorporationsCorporationIdContainersLogsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdContainersLogsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContainersLogsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdContainersLogsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContainersLogsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdContainersLogsInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdContainersLogsData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdContainersLogsInput['header']
+        OperationArguments<GetCorporationsCorporationIdContainersLogsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4597,10 +4847,10 @@ export type GetCorporationsCorporationIdBlueprintsDomainMethodAssertion = Assert
     CorporationDomainClient['listBlueprints'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdBlueprintsInput['path']
+        OperationArguments<GetCorporationsCorporationIdBlueprintsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdBlueprintsOptions,
-    ) => Promise<GetCorporationsCorporationIdBlueprintsOutput>
+    ) => Promise<GetCorporationsCorporationIdBlueprintsResponse>
   >
 >;
 export type GetCorporationsCorporationIdBlueprintsMetadataMethodAssertion = Assert<
@@ -4608,10 +4858,10 @@ export type GetCorporationsCorporationIdBlueprintsMetadataMethodAssertion = Asse
     CorporationDomainClientWithMetadata['listBlueprints'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdBlueprintsInput['path']
+        OperationArguments<GetCorporationsCorporationIdBlueprintsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdBlueprintsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdBlueprintsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdBlueprintsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdBlueprintsOptionsAssertion = Assert<
@@ -4620,14 +4870,16 @@ export type GetCorporationsCorporationIdBlueprintsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdBlueprintsInput['header']
+        OperationArguments<GetCorporationsCorporationIdBlueprintsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdBlueprintsInput['header']
+        OperationArguments<GetCorporationsCorporationIdBlueprintsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdBlueprintsInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdBlueprintsData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdBlueprintsInput['header']
+        OperationArguments<GetCorporationsCorporationIdBlueprintsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4637,10 +4889,10 @@ export type GetCorporationsCorporationIdDivisionsDomainMethodAssertion = Assert<
     CorporationDomainClient['listDivisions'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdDivisionsInput['path']
+        OperationArguments<GetCorporationsCorporationIdDivisionsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdDivisionsOptions,
-    ) => Promise<GetCorporationsCorporationIdDivisionsOutput>
+    ) => Promise<GetCorporationsCorporationIdDivisionsResponse>
   >
 >;
 export type GetCorporationsCorporationIdDivisionsMetadataMethodAssertion = Assert<
@@ -4648,10 +4900,10 @@ export type GetCorporationsCorporationIdDivisionsMetadataMethodAssertion = Asser
     CorporationDomainClientWithMetadata['listDivisions'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdDivisionsInput['path']
+        OperationArguments<GetCorporationsCorporationIdDivisionsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdDivisionsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdDivisionsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdDivisionsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdDivisionsOptionsAssertion = Assert<
@@ -4660,13 +4912,13 @@ export type GetCorporationsCorporationIdDivisionsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdDivisionsInput['header']
+        OperationArguments<GetCorporationsCorporationIdDivisionsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdDivisionsInput['header']
+        OperationArguments<GetCorporationsCorporationIdDivisionsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdDivisionsInput['header']
+        OperationArguments<GetCorporationsCorporationIdDivisionsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4676,10 +4928,10 @@ export type GetCorporationsCorporationIdFacilitiesDomainMethodAssertion = Assert
     CorporationDomainClient['listFacilities'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdFacilitiesInput['path']
+        OperationArguments<GetCorporationsCorporationIdFacilitiesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdFacilitiesOptions,
-    ) => Promise<GetCorporationsCorporationIdFacilitiesOutput>
+    ) => Promise<GetCorporationsCorporationIdFacilitiesResponse>
   >
 >;
 export type GetCorporationsCorporationIdFacilitiesMetadataMethodAssertion = Assert<
@@ -4687,10 +4939,10 @@ export type GetCorporationsCorporationIdFacilitiesMetadataMethodAssertion = Asse
     CorporationDomainClientWithMetadata['listFacilities'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdFacilitiesInput['path']
+        OperationArguments<GetCorporationsCorporationIdFacilitiesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdFacilitiesOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdFacilitiesOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdFacilitiesResponse>>
   >
 >;
 export type GetCorporationsCorporationIdFacilitiesOptionsAssertion = Assert<
@@ -4699,13 +4951,13 @@ export type GetCorporationsCorporationIdFacilitiesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdFacilitiesInput['header']
+        OperationArguments<GetCorporationsCorporationIdFacilitiesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdFacilitiesInput['header']
+        OperationArguments<GetCorporationsCorporationIdFacilitiesData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdFacilitiesInput['header']
+        OperationArguments<GetCorporationsCorporationIdFacilitiesData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4715,10 +4967,10 @@ export type GetCorporationsCorporationIdMedalsIssuedDomainMethodAssertion = Asse
     CorporationDomainClient['listIssuedMedals'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMedalsIssuedInput['path']
+        OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMedalsIssuedOptions,
-    ) => Promise<GetCorporationsCorporationIdMedalsIssuedOutput>
+    ) => Promise<GetCorporationsCorporationIdMedalsIssuedResponse>
   >
 >;
 export type GetCorporationsCorporationIdMedalsIssuedMetadataMethodAssertion = Assert<
@@ -4726,10 +4978,10 @@ export type GetCorporationsCorporationIdMedalsIssuedMetadataMethodAssertion = As
     CorporationDomainClientWithMetadata['listIssuedMedals'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMedalsIssuedInput['path']
+        OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMedalsIssuedOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdMedalsIssuedOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdMedalsIssuedResponse>>
   >
 >;
 export type GetCorporationsCorporationIdMedalsIssuedOptionsAssertion = Assert<
@@ -4738,14 +4990,16 @@ export type GetCorporationsCorporationIdMedalsIssuedOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdMedalsIssuedInput['header']
+        OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdMedalsIssuedInput['header']
+        OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdMedalsIssuedInput['header']
+        OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4754,18 +5008,22 @@ export type GetCorporationsCorporationIdMedalsDomainMethodAssertion = Assert<
   IsExact<
     CorporationDomainClient['listMedals'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdMedalsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdMedalsData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdMedalsOptions,
-    ) => Promise<GetCorporationsCorporationIdMedalsOutput>
+    ) => Promise<GetCorporationsCorporationIdMedalsResponse>
   >
 >;
 export type GetCorporationsCorporationIdMedalsMetadataMethodAssertion = Assert<
   IsExact<
     CorporationDomainClientWithMetadata['listMedals'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdMedalsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdMedalsData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdMedalsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdMedalsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdMedalsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdMedalsOptionsAssertion = Assert<
@@ -4774,13 +5032,17 @@ export type GetCorporationsCorporationIdMedalsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdMedalsInput['header']
+        OperationArguments<GetCorporationsCorporationIdMedalsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdMedalsInput['header']
+        OperationArguments<GetCorporationsCorporationIdMedalsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdMedalsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCorporationsCorporationIdMedalsInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdMedalsData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdMedalsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4789,10 +5051,10 @@ export type GetCorporationsCorporationIdRolesHistoryDomainMethodAssertion = Asse
     CorporationDomainClient['listMemberRoleHistory'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdRolesHistoryInput['path']
+        OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdRolesHistoryOptions,
-    ) => Promise<GetCorporationsCorporationIdRolesHistoryOutput>
+    ) => Promise<GetCorporationsCorporationIdRolesHistoryResponse>
   >
 >;
 export type GetCorporationsCorporationIdRolesHistoryMetadataMethodAssertion = Assert<
@@ -4800,10 +5062,10 @@ export type GetCorporationsCorporationIdRolesHistoryMetadataMethodAssertion = As
     CorporationDomainClientWithMetadata['listMemberRoleHistory'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdRolesHistoryInput['path']
+        OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdRolesHistoryOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdRolesHistoryOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdRolesHistoryResponse>>
   >
 >;
 export type GetCorporationsCorporationIdRolesHistoryOptionsAssertion = Assert<
@@ -4812,14 +5074,16 @@ export type GetCorporationsCorporationIdRolesHistoryOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdRolesHistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdRolesHistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdRolesHistoryInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdRolesHistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4828,18 +5092,22 @@ export type GetCorporationsCorporationIdRolesDomainMethodAssertion = Assert<
   IsExact<
     CorporationDomainClient['listMemberRoles'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdRolesInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdRolesData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdRolesOptions,
-    ) => Promise<GetCorporationsCorporationIdRolesOutput>
+    ) => Promise<GetCorporationsCorporationIdRolesResponse>
   >
 >;
 export type GetCorporationsCorporationIdRolesMetadataMethodAssertion = Assert<
   IsExact<
     CorporationDomainClientWithMetadata['listMemberRoles'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdRolesInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdRolesData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdRolesOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdRolesOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdRolesResponse>>
   >
 >;
 export type GetCorporationsCorporationIdRolesOptionsAssertion = Assert<
@@ -4848,12 +5116,14 @@ export type GetCorporationsCorporationIdRolesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdRolesInput['header']
+        OperationArguments<GetCorporationsCorporationIdRolesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdRolesInput['header']
+        OperationArguments<GetCorporationsCorporationIdRolesData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCorporationsCorporationIdRolesInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdRolesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -4862,10 +5132,10 @@ export type GetCorporationsCorporationIdMembersTitlesDomainMethodAssertion = Ass
     CorporationDomainClient['listMemberTitles'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembersTitlesInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembersTitlesOptions,
-    ) => Promise<GetCorporationsCorporationIdMembersTitlesOutput>
+    ) => Promise<GetCorporationsCorporationIdMembersTitlesResponse>
   >
 >;
 export type GetCorporationsCorporationIdMembersTitlesMetadataMethodAssertion = Assert<
@@ -4873,10 +5143,10 @@ export type GetCorporationsCorporationIdMembersTitlesMetadataMethodAssertion = A
     CorporationDomainClientWithMetadata['listMemberTitles'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembersTitlesInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembersTitlesOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembersTitlesOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembersTitlesResponse>>
   >
 >;
 export type GetCorporationsCorporationIdMembersTitlesOptionsAssertion = Assert<
@@ -4885,13 +5155,13 @@ export type GetCorporationsCorporationIdMembersTitlesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdMembersTitlesInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdMembersTitlesInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdMembersTitlesInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4901,10 +5171,10 @@ export type GetCorporationsCorporationIdMembertrackingDomainMethodAssertion = As
     CorporationDomainClient['listMemberTracking'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembertrackingInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembertrackingData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembertrackingOptions,
-    ) => Promise<GetCorporationsCorporationIdMembertrackingOutput>
+    ) => Promise<GetCorporationsCorporationIdMembertrackingResponse>
   >
 >;
 export type GetCorporationsCorporationIdMembertrackingMetadataMethodAssertion = Assert<
@@ -4912,10 +5182,10 @@ export type GetCorporationsCorporationIdMembertrackingMetadataMethodAssertion = 
     CorporationDomainClientWithMetadata['listMemberTracking'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembertrackingInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembertrackingData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembertrackingOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembertrackingOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembertrackingResponse>>
   >
 >;
 export type GetCorporationsCorporationIdMembertrackingOptionsAssertion = Assert<
@@ -4924,13 +5194,13 @@ export type GetCorporationsCorporationIdMembertrackingOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdMembertrackingInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembertrackingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdMembertrackingInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembertrackingData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdMembertrackingInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembertrackingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4940,10 +5210,10 @@ export type GetCorporationsCorporationIdMembersDomainMethodAssertion = Assert<
     CorporationDomainClient['listMembers'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembersInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembersData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembersOptions,
-    ) => Promise<GetCorporationsCorporationIdMembersOutput>
+    ) => Promise<GetCorporationsCorporationIdMembersResponse>
   >
 >;
 export type GetCorporationsCorporationIdMembersMetadataMethodAssertion = Assert<
@@ -4951,10 +5221,10 @@ export type GetCorporationsCorporationIdMembersMetadataMethodAssertion = Assert<
     CorporationDomainClientWithMetadata['listMembers'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdMembersInput['path']
+        OperationArguments<GetCorporationsCorporationIdMembersData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdMembersOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembersOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdMembersResponse>>
   >
 >;
 export type GetCorporationsCorporationIdMembersOptionsAssertion = Assert<
@@ -4963,13 +5233,13 @@ export type GetCorporationsCorporationIdMembersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdMembersInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdMembersInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdMembersInput['header']
+        OperationArguments<GetCorporationsCorporationIdMembersData>['headers']
       >['X-Tenant'];
     }
   >
@@ -4977,7 +5247,7 @@ export type GetCorporationsCorporationIdMembersOptionsAssertion = Assert<
 export type GetCorporationsNpccorpsDomainMethodAssertion = Assert<
   IsExact<
     CorporationDomainClient['listNpcCorporations'],
-    (options?: GetCorporationsNpccorpsOptions) => Promise<GetCorporationsNpccorpsOutput>
+    (options?: GetCorporationsNpccorpsOptions) => Promise<GetCorporationsNpccorpsResponse>
   >
 >;
 export type GetCorporationsNpccorpsMetadataMethodAssertion = Assert<
@@ -4985,7 +5255,7 @@ export type GetCorporationsNpccorpsMetadataMethodAssertion = Assert<
     CorporationDomainClientWithMetadata['listNpcCorporations'],
     (
       options?: GetCorporationsNpccorpsOptions,
-    ) => Promise<EsiResponse<GetCorporationsNpccorpsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsNpccorpsResponse>>
   >
 >;
 export type GetCorporationsNpccorpsOptionsAssertion = Assert<
@@ -4994,10 +5264,14 @@ export type GetCorporationsNpccorpsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsNpccorpsInput['header']
+        OperationArguments<GetCorporationsNpccorpsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetCorporationsNpccorpsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCorporationsNpccorpsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetCorporationsNpccorpsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsNpccorpsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5006,10 +5280,10 @@ export type GetCorporationsCorporationIdShareholdersDomainMethodAssertion = Asse
     CorporationDomainClient['listShareholders'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdShareholdersInput['path']
+        OperationArguments<GetCorporationsCorporationIdShareholdersData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdShareholdersOptions,
-    ) => Promise<GetCorporationsCorporationIdShareholdersOutput>
+    ) => Promise<GetCorporationsCorporationIdShareholdersResponse>
   >
 >;
 export type GetCorporationsCorporationIdShareholdersMetadataMethodAssertion = Assert<
@@ -5017,10 +5291,10 @@ export type GetCorporationsCorporationIdShareholdersMetadataMethodAssertion = As
     CorporationDomainClientWithMetadata['listShareholders'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdShareholdersInput['path']
+        OperationArguments<GetCorporationsCorporationIdShareholdersData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdShareholdersOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdShareholdersOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdShareholdersResponse>>
   >
 >;
 export type GetCorporationsCorporationIdShareholdersOptionsAssertion = Assert<
@@ -5029,14 +5303,16 @@ export type GetCorporationsCorporationIdShareholdersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdShareholdersInput['header']
+        OperationArguments<GetCorporationsCorporationIdShareholdersData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdShareholdersInput['header']
+        OperationArguments<GetCorporationsCorporationIdShareholdersData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdShareholdersInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdShareholdersData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdShareholdersInput['header']
+        OperationArguments<GetCorporationsCorporationIdShareholdersData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5046,10 +5322,10 @@ export type GetCorporationsCorporationIdStandingsDomainMethodAssertion = Assert<
     CorporationDomainClient['listStandings'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStandingsInput['path']
+        OperationArguments<GetCorporationsCorporationIdStandingsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdStandingsOptions,
-    ) => Promise<GetCorporationsCorporationIdStandingsOutput>
+    ) => Promise<GetCorporationsCorporationIdStandingsResponse>
   >
 >;
 export type GetCorporationsCorporationIdStandingsMetadataMethodAssertion = Assert<
@@ -5057,10 +5333,10 @@ export type GetCorporationsCorporationIdStandingsMetadataMethodAssertion = Asser
     CorporationDomainClientWithMetadata['listStandings'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStandingsInput['path']
+        OperationArguments<GetCorporationsCorporationIdStandingsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdStandingsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdStandingsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdStandingsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdStandingsOptionsAssertion = Assert<
@@ -5069,14 +5345,16 @@ export type GetCorporationsCorporationIdStandingsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdStandingsInput['header']
+        OperationArguments<GetCorporationsCorporationIdStandingsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdStandingsInput['header']
+        OperationArguments<GetCorporationsCorporationIdStandingsData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdStandingsInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdStandingsData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdStandingsInput['header']
+        OperationArguments<GetCorporationsCorporationIdStandingsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5086,10 +5364,10 @@ export type GetCorporationsCorporationIdStarbasesDomainMethodAssertion = Assert<
     CorporationDomainClient['listStarbases'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStarbasesInput['path']
+        OperationArguments<GetCorporationsCorporationIdStarbasesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdStarbasesOptions,
-    ) => Promise<GetCorporationsCorporationIdStarbasesOutput>
+    ) => Promise<GetCorporationsCorporationIdStarbasesResponse>
   >
 >;
 export type GetCorporationsCorporationIdStarbasesMetadataMethodAssertion = Assert<
@@ -5097,10 +5375,10 @@ export type GetCorporationsCorporationIdStarbasesMetadataMethodAssertion = Asser
     CorporationDomainClientWithMetadata['listStarbases'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStarbasesInput['path']
+        OperationArguments<GetCorporationsCorporationIdStarbasesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdStarbasesOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdStarbasesOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdStarbasesResponse>>
   >
 >;
 export type GetCorporationsCorporationIdStarbasesOptionsAssertion = Assert<
@@ -5109,14 +5387,16 @@ export type GetCorporationsCorporationIdStarbasesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdStarbasesInput['header']
+        OperationArguments<GetCorporationsCorporationIdStarbasesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdStarbasesInput['header']
+        OperationArguments<GetCorporationsCorporationIdStarbasesData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdStarbasesInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdStarbasesData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdStarbasesInput['header']
+        OperationArguments<GetCorporationsCorporationIdStarbasesData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5126,10 +5406,10 @@ export type GetCorporationsCorporationIdStructuresDomainMethodAssertion = Assert
     CorporationDomainClient['listStructures'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStructuresInput['path']
+        OperationArguments<GetCorporationsCorporationIdStructuresData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdStructuresOptions,
-    ) => Promise<GetCorporationsCorporationIdStructuresOutput>
+    ) => Promise<GetCorporationsCorporationIdStructuresResponse>
   >
 >;
 export type GetCorporationsCorporationIdStructuresMetadataMethodAssertion = Assert<
@@ -5137,10 +5417,10 @@ export type GetCorporationsCorporationIdStructuresMetadataMethodAssertion = Asse
     CorporationDomainClientWithMetadata['listStructures'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdStructuresInput['path']
+        OperationArguments<GetCorporationsCorporationIdStructuresData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdStructuresOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdStructuresOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdStructuresResponse>>
   >
 >;
 export type GetCorporationsCorporationIdStructuresOptionsAssertion = Assert<
@@ -5149,14 +5429,16 @@ export type GetCorporationsCorporationIdStructuresOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdStructuresInput['header']
+        OperationArguments<GetCorporationsCorporationIdStructuresData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdStructuresInput['header']
+        OperationArguments<GetCorporationsCorporationIdStructuresData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdStructuresInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdStructuresData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdStructuresInput['header']
+        OperationArguments<GetCorporationsCorporationIdStructuresData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5165,18 +5447,22 @@ export type GetCorporationsCorporationIdTitlesDomainMethodAssertion = Assert<
   IsExact<
     CorporationDomainClient['listTitles'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdTitlesInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdTitlesData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdTitlesOptions,
-    ) => Promise<GetCorporationsCorporationIdTitlesOutput>
+    ) => Promise<GetCorporationsCorporationIdTitlesResponse>
   >
 >;
 export type GetCorporationsCorporationIdTitlesMetadataMethodAssertion = Assert<
   IsExact<
     CorporationDomainClientWithMetadata['listTitles'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdTitlesInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdTitlesData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdTitlesOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdTitlesOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdTitlesResponse>>
   >
 >;
 export type GetCorporationsCorporationIdTitlesOptionsAssertion = Assert<
@@ -5185,12 +5471,14 @@ export type GetCorporationsCorporationIdTitlesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdTitlesInput['header']
+        OperationArguments<GetCorporationsCorporationIdTitlesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdTitlesInput['header']
+        OperationArguments<GetCorporationsCorporationIdTitlesData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCorporationsCorporationIdTitlesInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdTitlesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5204,20 +5492,28 @@ export type GetCorporationsProjectsDetailDomainMethodAssertion = Assert<
   IsExact<
     CorporationProjectsDomainClient['get'],
     (
-      corporationId: NonNullable<GetCorporationsProjectsDetailInput['path']>['corporation_id'],
-      projectId: NonNullable<GetCorporationsProjectsDetailInput['path']>['project_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsProjectsDetailData>['path']
+      >['corporation_id'],
+      projectId: NonNullable<
+        OperationArguments<GetCorporationsProjectsDetailData>['path']
+      >['project_id'],
       options?: GetCorporationsProjectsDetailOptions,
-    ) => Promise<GetCorporationsProjectsDetailOutput>
+    ) => Promise<GetCorporationsProjectsDetailResponse>
   >
 >;
 export type GetCorporationsProjectsDetailMetadataMethodAssertion = Assert<
   IsExact<
     CorporationProjectsDomainClientWithMetadata['get'],
     (
-      corporationId: NonNullable<GetCorporationsProjectsDetailInput['path']>['corporation_id'],
-      projectId: NonNullable<GetCorporationsProjectsDetailInput['path']>['project_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsProjectsDetailData>['path']
+      >['corporation_id'],
+      projectId: NonNullable<
+        OperationArguments<GetCorporationsProjectsDetailData>['path']
+      >['project_id'],
       options?: GetCorporationsProjectsDetailOptions,
-    ) => Promise<EsiResponse<GetCorporationsProjectsDetailOutput>>
+    ) => Promise<EsiResponse<GetCorporationsProjectsDetailResponse>>
   >
 >;
 export type GetCorporationsProjectsDetailOptionsAssertion = Assert<
@@ -5226,12 +5522,14 @@ export type GetCorporationsProjectsDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsProjectsDetailInput['header']
+        OperationArguments<GetCorporationsProjectsDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsProjectsDetailInput['header']
+        OperationArguments<GetCorporationsProjectsDetailData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCorporationsProjectsDetailInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsProjectsDetailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5240,12 +5538,16 @@ export type GetCorporationsProjectsContributionDomainMethodAssertion = Assert<
     CorporationProjectsDomainClient['getContribution'],
     (
       corporationId: NonNullable<
-        GetCorporationsProjectsContributionInput['path']
+        OperationArguments<GetCorporationsProjectsContributionData>['path']
       >['corporation_id'],
-      projectId: NonNullable<GetCorporationsProjectsContributionInput['path']>['project_id'],
-      characterId: NonNullable<GetCorporationsProjectsContributionInput['path']>['character_id'],
+      projectId: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributionData>['path']
+      >['project_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributionData>['path']
+      >['character_id'],
       options?: GetCorporationsProjectsContributionOptions,
-    ) => Promise<GetCorporationsProjectsContributionOutput>
+    ) => Promise<GetCorporationsProjectsContributionResponse>
   >
 >;
 export type GetCorporationsProjectsContributionMetadataMethodAssertion = Assert<
@@ -5253,12 +5555,16 @@ export type GetCorporationsProjectsContributionMetadataMethodAssertion = Assert<
     CorporationProjectsDomainClientWithMetadata['getContribution'],
     (
       corporationId: NonNullable<
-        GetCorporationsProjectsContributionInput['path']
+        OperationArguments<GetCorporationsProjectsContributionData>['path']
       >['corporation_id'],
-      projectId: NonNullable<GetCorporationsProjectsContributionInput['path']>['project_id'],
-      characterId: NonNullable<GetCorporationsProjectsContributionInput['path']>['character_id'],
+      projectId: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributionData>['path']
+      >['project_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributionData>['path']
+      >['character_id'],
       options?: GetCorporationsProjectsContributionOptions,
-    ) => Promise<EsiResponse<GetCorporationsProjectsContributionOutput>>
+    ) => Promise<EsiResponse<GetCorporationsProjectsContributionResponse>>
   >
 >;
 export type GetCorporationsProjectsContributionOptionsAssertion = Assert<
@@ -5267,13 +5573,13 @@ export type GetCorporationsProjectsContributionOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsProjectsContributionInput['header']
+        OperationArguments<GetCorporationsProjectsContributionData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsProjectsContributionInput['header']
+        OperationArguments<GetCorporationsProjectsContributionData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsProjectsContributionInput['header']
+        OperationArguments<GetCorporationsProjectsContributionData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5282,36 +5588,50 @@ export type GetCorporationsProjectsListingDomainMethodAssertion = Assert<
   IsExact<
     CorporationProjectsDomainClient['list'],
     (
-      corporationId: NonNullable<GetCorporationsProjectsListingInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsProjectsListingData>['path']
+      >['corporation_id'],
       options?: GetCorporationsProjectsListingOptions,
-    ) => Promise<GetCorporationsProjectsListingOutput>
+    ) => Promise<GetCorporationsProjectsListingResponse>
   >
 >;
 export type GetCorporationsProjectsListingMetadataMethodAssertion = Assert<
   IsExact<
     CorporationProjectsDomainClientWithMetadata['list'],
     (
-      corporationId: NonNullable<GetCorporationsProjectsListingInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsProjectsListingData>['path']
+      >['corporation_id'],
       options?: GetCorporationsProjectsListingOptions,
-    ) => Promise<EsiResponse<GetCorporationsProjectsListingOutput>>
+    ) => Promise<EsiResponse<GetCorporationsProjectsListingResponse>>
   >
 >;
 export type GetCorporationsProjectsListingOptionsAssertion = Assert<
   IsExact<
     GetCorporationsProjectsListingOptions,
     {
-      readonly after?: NonNullable<GetCorporationsProjectsListingInput['query']>['after'];
-      readonly before?: NonNullable<GetCorporationsProjectsListingInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetCorporationsProjectsListingData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetCorporationsProjectsListingData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsProjectsListingInput['header']
+        OperationArguments<GetCorporationsProjectsListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsProjectsListingInput['header']
+        OperationArguments<GetCorporationsProjectsListingData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetCorporationsProjectsListingInput['query']>['limit'];
-      readonly state?: NonNullable<GetCorporationsProjectsListingInput['query']>['state'];
-      readonly xTenant?: NonNullable<GetCorporationsProjectsListingInput['header']>['X-Tenant'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetCorporationsProjectsListingData>['query']
+      >['limit'];
+      readonly state?: NonNullable<
+        OperationArguments<GetCorporationsProjectsListingData>['query']
+      >['state'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsProjectsListingData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5320,11 +5640,13 @@ export type GetCorporationsProjectsContributorsDomainMethodAssertion = Assert<
     CorporationProjectsDomainClient['listContributors'],
     (
       corporationId: NonNullable<
-        GetCorporationsProjectsContributorsInput['path']
+        OperationArguments<GetCorporationsProjectsContributorsData>['path']
       >['corporation_id'],
-      projectId: NonNullable<GetCorporationsProjectsContributorsInput['path']>['project_id'],
+      projectId: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributorsData>['path']
+      >['project_id'],
       options?: GetCorporationsProjectsContributorsOptions,
-    ) => Promise<GetCorporationsProjectsContributorsOutput>
+    ) => Promise<GetCorporationsProjectsContributorsResponse>
   >
 >;
 export type GetCorporationsProjectsContributorsMetadataMethodAssertion = Assert<
@@ -5332,29 +5654,37 @@ export type GetCorporationsProjectsContributorsMetadataMethodAssertion = Assert<
     CorporationProjectsDomainClientWithMetadata['listContributors'],
     (
       corporationId: NonNullable<
-        GetCorporationsProjectsContributorsInput['path']
+        OperationArguments<GetCorporationsProjectsContributorsData>['path']
       >['corporation_id'],
-      projectId: NonNullable<GetCorporationsProjectsContributorsInput['path']>['project_id'],
+      projectId: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributorsData>['path']
+      >['project_id'],
       options?: GetCorporationsProjectsContributorsOptions,
-    ) => Promise<EsiResponse<GetCorporationsProjectsContributorsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsProjectsContributorsResponse>>
   >
 >;
 export type GetCorporationsProjectsContributorsOptionsAssertion = Assert<
   IsExact<
     GetCorporationsProjectsContributorsOptions,
     {
-      readonly after?: NonNullable<GetCorporationsProjectsContributorsInput['query']>['after'];
-      readonly before?: NonNullable<GetCorporationsProjectsContributorsInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributorsData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributorsData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsProjectsContributorsInput['header']
+        OperationArguments<GetCorporationsProjectsContributorsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsProjectsContributorsInput['header']
+        OperationArguments<GetCorporationsProjectsContributorsData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetCorporationsProjectsContributorsInput['query']>['limit'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetCorporationsProjectsContributorsData>['query']
+      >['limit'];
       readonly xTenant?: NonNullable<
-        GetCorporationsProjectsContributorsInput['header']
+        OperationArguments<GetCorporationsProjectsContributorsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5375,18 +5705,18 @@ export type GetCosmeticsSkinrDomainMethodAssertion = Assert<
   IsExact<
     CosmeticsDomainClient['getSkinrLicense'],
     (
-      skinrId: NonNullable<GetCosmeticsSkinrInput['path']>['skinr_id'],
+      skinrId: NonNullable<OperationArguments<GetCosmeticsSkinrData>['path']>['skinr_id'],
       options?: GetCosmeticsSkinrOptions,
-    ) => Promise<GetCosmeticsSkinrOutput>
+    ) => Promise<GetCosmeticsSkinrResponse>
   >
 >;
 export type GetCosmeticsSkinrMetadataMethodAssertion = Assert<
   IsExact<
     CosmeticsDomainClientWithMetadata['getSkinrLicense'],
     (
-      skinrId: NonNullable<GetCosmeticsSkinrInput['path']>['skinr_id'],
+      skinrId: NonNullable<OperationArguments<GetCosmeticsSkinrData>['path']>['skinr_id'],
       options?: GetCosmeticsSkinrOptions,
-    ) => Promise<EsiResponse<GetCosmeticsSkinrOutput>>
+    ) => Promise<EsiResponse<GetCosmeticsSkinrResponse>>
   >
 >;
 export type GetCosmeticsSkinrOptionsAssertion = Assert<
@@ -5394,9 +5724,15 @@ export type GetCosmeticsSkinrOptionsAssertion = Assert<
     GetCosmeticsSkinrOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetCosmeticsSkinrInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetCosmeticsSkinrInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCosmeticsSkinrInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetCosmeticsSkinrData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetCosmeticsSkinrData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCosmeticsSkinrData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5404,18 +5740,22 @@ export type GetCharactersCosmeticsSkinrComponentsDomainMethodAssertion = Assert<
   IsExact<
     CosmeticsDomainClient['listSkinrComponentLicenses'],
     (
-      characterId: NonNullable<GetCharactersCosmeticsSkinrComponentsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['path']
+      >['character_id'],
       options?: GetCharactersCosmeticsSkinrComponentsOptions,
-    ) => Promise<GetCharactersCosmeticsSkinrComponentsOutput>
+    ) => Promise<GetCharactersCosmeticsSkinrComponentsResponse>
   >
 >;
 export type GetCharactersCosmeticsSkinrComponentsMetadataMethodAssertion = Assert<
   IsExact<
     CosmeticsDomainClientWithMetadata['listSkinrComponentLicenses'],
     (
-      characterId: NonNullable<GetCharactersCosmeticsSkinrComponentsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['path']
+      >['character_id'],
       options?: GetCharactersCosmeticsSkinrComponentsOptions,
-    ) => Promise<EsiResponse<GetCharactersCosmeticsSkinrComponentsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCosmeticsSkinrComponentsResponse>>
   >
 >;
 export type GetCharactersCosmeticsSkinrComponentsOptionsAssertion = Assert<
@@ -5424,13 +5764,13 @@ export type GetCharactersCosmeticsSkinrComponentsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCosmeticsSkinrComponentsInput['header']
+        OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCosmeticsSkinrComponentsInput['header']
+        OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCosmeticsSkinrComponentsInput['header']
+        OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5439,18 +5779,22 @@ export type GetCharactersCosmeticsSkinrDomainMethodAssertion = Assert<
   IsExact<
     CosmeticsDomainClient['listSkinrLicenses'],
     (
-      characterId: NonNullable<GetCharactersCosmeticsSkinrInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCosmeticsSkinrData>['path']
+      >['character_id'],
       options?: GetCharactersCosmeticsSkinrOptions,
-    ) => Promise<GetCharactersCosmeticsSkinrOutput>
+    ) => Promise<GetCharactersCosmeticsSkinrResponse>
   >
 >;
 export type GetCharactersCosmeticsSkinrMetadataMethodAssertion = Assert<
   IsExact<
     CosmeticsDomainClientWithMetadata['listSkinrLicenses'],
     (
-      characterId: NonNullable<GetCharactersCosmeticsSkinrInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCosmeticsSkinrData>['path']
+      >['character_id'],
       options?: GetCharactersCosmeticsSkinrOptions,
-    ) => Promise<EsiResponse<GetCharactersCosmeticsSkinrOutput>>
+    ) => Promise<EsiResponse<GetCharactersCosmeticsSkinrResponse>>
   >
 >;
 export type GetCharactersCosmeticsSkinrOptionsAssertion = Assert<
@@ -5459,12 +5803,14 @@ export type GetCharactersCosmeticsSkinrOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCosmeticsSkinrInput['header']
+        OperationArguments<GetCharactersCosmeticsSkinrData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCosmeticsSkinrInput['header']
+        OperationArguments<GetCharactersCosmeticsSkinrData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCosmeticsSkinrInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCosmeticsSkinrData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5478,18 +5824,22 @@ export type GetDogmaAttributesAttributeIdDomainMethodAssertion = Assert<
   IsExact<
     DogmaDomainClient['getAttribute'],
     (
-      attributeId: NonNullable<GetDogmaAttributesAttributeIdInput['path']>['attribute_id'],
+      attributeId: NonNullable<
+        OperationArguments<GetDogmaAttributesAttributeIdData>['path']
+      >['attribute_id'],
       options?: GetDogmaAttributesAttributeIdOptions,
-    ) => Promise<GetDogmaAttributesAttributeIdOutput>
+    ) => Promise<GetDogmaAttributesAttributeIdResponse>
   >
 >;
 export type GetDogmaAttributesAttributeIdMetadataMethodAssertion = Assert<
   IsExact<
     DogmaDomainClientWithMetadata['getAttribute'],
     (
-      attributeId: NonNullable<GetDogmaAttributesAttributeIdInput['path']>['attribute_id'],
+      attributeId: NonNullable<
+        OperationArguments<GetDogmaAttributesAttributeIdData>['path']
+      >['attribute_id'],
       options?: GetDogmaAttributesAttributeIdOptions,
-    ) => Promise<EsiResponse<GetDogmaAttributesAttributeIdOutput>>
+    ) => Promise<EsiResponse<GetDogmaAttributesAttributeIdResponse>>
   >
 >;
 export type GetDogmaAttributesAttributeIdOptionsAssertion = Assert<
@@ -5498,12 +5848,14 @@ export type GetDogmaAttributesAttributeIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetDogmaAttributesAttributeIdInput['header']
+        OperationArguments<GetDogmaAttributesAttributeIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetDogmaAttributesAttributeIdInput['header']
+        OperationArguments<GetDogmaAttributesAttributeIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetDogmaAttributesAttributeIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetDogmaAttributesAttributeIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5511,20 +5863,28 @@ export type GetDogmaDynamicItemsTypeIdItemIdDomainMethodAssertion = Assert<
   IsExact<
     DogmaDomainClient['getDynamicItem'],
     (
-      typeId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>['type_id'],
-      itemId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>['item_id'],
+      typeId: NonNullable<
+        OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']
+      >['type_id'],
+      itemId: NonNullable<
+        OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']
+      >['item_id'],
       options?: GetDogmaDynamicItemsTypeIdItemIdOptions,
-    ) => Promise<GetDogmaDynamicItemsTypeIdItemIdOutput>
+    ) => Promise<GetDogmaDynamicItemsTypeIdItemIdResponse>
   >
 >;
 export type GetDogmaDynamicItemsTypeIdItemIdMetadataMethodAssertion = Assert<
   IsExact<
     DogmaDomainClientWithMetadata['getDynamicItem'],
     (
-      typeId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>['type_id'],
-      itemId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>['item_id'],
+      typeId: NonNullable<
+        OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']
+      >['type_id'],
+      itemId: NonNullable<
+        OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']
+      >['item_id'],
       options?: GetDogmaDynamicItemsTypeIdItemIdOptions,
-    ) => Promise<EsiResponse<GetDogmaDynamicItemsTypeIdItemIdOutput>>
+    ) => Promise<EsiResponse<GetDogmaDynamicItemsTypeIdItemIdResponse>>
   >
 >;
 export type GetDogmaDynamicItemsTypeIdItemIdOptionsAssertion = Assert<
@@ -5533,12 +5893,14 @@ export type GetDogmaDynamicItemsTypeIdItemIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetDogmaDynamicItemsTypeIdItemIdInput['header']
+        OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetDogmaDynamicItemsTypeIdItemIdInput['header']
+        OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5546,18 +5908,18 @@ export type GetDogmaEffectsEffectIdDomainMethodAssertion = Assert<
   IsExact<
     DogmaDomainClient['getEffect'],
     (
-      effectId: NonNullable<GetDogmaEffectsEffectIdInput['path']>['effect_id'],
+      effectId: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>['path']>['effect_id'],
       options?: GetDogmaEffectsEffectIdOptions,
-    ) => Promise<GetDogmaEffectsEffectIdOutput>
+    ) => Promise<GetDogmaEffectsEffectIdResponse>
   >
 >;
 export type GetDogmaEffectsEffectIdMetadataMethodAssertion = Assert<
   IsExact<
     DogmaDomainClientWithMetadata['getEffect'],
     (
-      effectId: NonNullable<GetDogmaEffectsEffectIdInput['path']>['effect_id'],
+      effectId: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>['path']>['effect_id'],
       options?: GetDogmaEffectsEffectIdOptions,
-    ) => Promise<EsiResponse<GetDogmaEffectsEffectIdOutput>>
+    ) => Promise<EsiResponse<GetDogmaEffectsEffectIdResponse>>
   >
 >;
 export type GetDogmaEffectsEffectIdOptionsAssertion = Assert<
@@ -5566,23 +5928,27 @@ export type GetDogmaEffectsEffectIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetDogmaEffectsEffectIdInput['header']
+        OperationArguments<GetDogmaEffectsEffectIdData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetDogmaEffectsEffectIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetDogmaEffectsEffectIdInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetDogmaEffectsEffectIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetDogmaEffectsEffectIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetDogmaAttributesDomainMethodAssertion = Assert<
   IsExact<
     DogmaDomainClient['listAttributes'],
-    (options?: GetDogmaAttributesOptions) => Promise<GetDogmaAttributesOutput>
+    (options?: GetDogmaAttributesOptions) => Promise<GetDogmaAttributesResponse>
   >
 >;
 export type GetDogmaAttributesMetadataMethodAssertion = Assert<
   IsExact<
     DogmaDomainClientWithMetadata['listAttributes'],
-    (options?: GetDogmaAttributesOptions) => Promise<EsiResponse<GetDogmaAttributesOutput>>
+    (options?: GetDogmaAttributesOptions) => Promise<EsiResponse<GetDogmaAttributesResponse>>
   >
 >;
 export type GetDogmaAttributesOptionsAssertion = Assert<
@@ -5591,23 +5957,27 @@ export type GetDogmaAttributesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetDogmaAttributesInput['header']
+        OperationArguments<GetDogmaAttributesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetDogmaAttributesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetDogmaAttributesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetDogmaAttributesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetDogmaAttributesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetDogmaEffectsDomainMethodAssertion = Assert<
   IsExact<
     DogmaDomainClient['listEffects'],
-    (options?: GetDogmaEffectsOptions) => Promise<GetDogmaEffectsOutput>
+    (options?: GetDogmaEffectsOptions) => Promise<GetDogmaEffectsResponse>
   >
 >;
 export type GetDogmaEffectsMetadataMethodAssertion = Assert<
   IsExact<
     DogmaDomainClientWithMetadata['listEffects'],
-    (options?: GetDogmaEffectsOptions) => Promise<EsiResponse<GetDogmaEffectsOutput>>
+    (options?: GetDogmaEffectsOptions) => Promise<EsiResponse<GetDogmaEffectsResponse>>
   >
 >;
 export type GetDogmaEffectsOptionsAssertion = Assert<
@@ -5615,9 +5985,15 @@ export type GetDogmaEffectsOptionsAssertion = Assert<
     GetDogmaEffectsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetDogmaEffectsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetDogmaEffectsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetDogmaEffectsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetDogmaEffectsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetDogmaEffectsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetDogmaEffectsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5630,7 +6006,7 @@ export type DogmaDomainClientMetadataViewAssertion = Assert<
 export type GetFwLeaderboardsCharactersDomainMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClient['getCharacterLeaderboards'],
-    (options?: GetFwLeaderboardsCharactersOptions) => Promise<GetFwLeaderboardsCharactersOutput>
+    (options?: GetFwLeaderboardsCharactersOptions) => Promise<GetFwLeaderboardsCharactersResponse>
   >
 >;
 export type GetFwLeaderboardsCharactersMetadataMethodAssertion = Assert<
@@ -5638,7 +6014,7 @@ export type GetFwLeaderboardsCharactersMetadataMethodAssertion = Assert<
     FactionWarfareDomainClientWithMetadata['getCharacterLeaderboards'],
     (
       options?: GetFwLeaderboardsCharactersOptions,
-    ) => Promise<EsiResponse<GetFwLeaderboardsCharactersOutput>>
+    ) => Promise<EsiResponse<GetFwLeaderboardsCharactersResponse>>
   >
 >;
 export type GetFwLeaderboardsCharactersOptionsAssertion = Assert<
@@ -5647,12 +6023,14 @@ export type GetFwLeaderboardsCharactersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetFwLeaderboardsCharactersInput['header']
+        OperationArguments<GetFwLeaderboardsCharactersData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetFwLeaderboardsCharactersInput['header']
+        OperationArguments<GetFwLeaderboardsCharactersData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFwLeaderboardsCharactersInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFwLeaderboardsCharactersData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5660,18 +6038,22 @@ export type GetCharactersCharacterIdFwStatsDomainMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClient['getCharacterStats'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFwStatsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFwStatsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFwStatsOptions,
-    ) => Promise<GetCharactersCharacterIdFwStatsOutput>
+    ) => Promise<GetCharactersCharacterIdFwStatsResponse>
   >
 >;
 export type GetCharactersCharacterIdFwStatsMetadataMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClientWithMetadata['getCharacterStats'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFwStatsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFwStatsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFwStatsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdFwStatsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdFwStatsResponse>>
   >
 >;
 export type GetCharactersCharacterIdFwStatsOptionsAssertion = Assert<
@@ -5680,19 +6062,23 @@ export type GetCharactersCharacterIdFwStatsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdFwStatsInput['header']
+        OperationArguments<GetCharactersCharacterIdFwStatsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdFwStatsInput['header']
+        OperationArguments<GetCharactersCharacterIdFwStatsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdFwStatsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFwStatsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetFwLeaderboardsCorporationsDomainMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClient['getCorporationLeaderboards'],
-    (options?: GetFwLeaderboardsCorporationsOptions) => Promise<GetFwLeaderboardsCorporationsOutput>
+    (
+      options?: GetFwLeaderboardsCorporationsOptions,
+    ) => Promise<GetFwLeaderboardsCorporationsResponse>
   >
 >;
 export type GetFwLeaderboardsCorporationsMetadataMethodAssertion = Assert<
@@ -5700,7 +6086,7 @@ export type GetFwLeaderboardsCorporationsMetadataMethodAssertion = Assert<
     FactionWarfareDomainClientWithMetadata['getCorporationLeaderboards'],
     (
       options?: GetFwLeaderboardsCorporationsOptions,
-    ) => Promise<EsiResponse<GetFwLeaderboardsCorporationsOutput>>
+    ) => Promise<EsiResponse<GetFwLeaderboardsCorporationsResponse>>
   >
 >;
 export type GetFwLeaderboardsCorporationsOptionsAssertion = Assert<
@@ -5709,12 +6095,14 @@ export type GetFwLeaderboardsCorporationsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetFwLeaderboardsCorporationsInput['header']
+        OperationArguments<GetFwLeaderboardsCorporationsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetFwLeaderboardsCorporationsInput['header']
+        OperationArguments<GetFwLeaderboardsCorporationsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFwLeaderboardsCorporationsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFwLeaderboardsCorporationsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5723,10 +6111,10 @@ export type GetCorporationsCorporationIdFwStatsDomainMethodAssertion = Assert<
     FactionWarfareDomainClient['getCorporationStats'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdFwStatsInput['path']
+        OperationArguments<GetCorporationsCorporationIdFwStatsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdFwStatsOptions,
-    ) => Promise<GetCorporationsCorporationIdFwStatsOutput>
+    ) => Promise<GetCorporationsCorporationIdFwStatsResponse>
   >
 >;
 export type GetCorporationsCorporationIdFwStatsMetadataMethodAssertion = Assert<
@@ -5734,10 +6122,10 @@ export type GetCorporationsCorporationIdFwStatsMetadataMethodAssertion = Assert<
     FactionWarfareDomainClientWithMetadata['getCorporationStats'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdFwStatsInput['path']
+        OperationArguments<GetCorporationsCorporationIdFwStatsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdFwStatsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdFwStatsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdFwStatsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdFwStatsOptionsAssertion = Assert<
@@ -5746,13 +6134,13 @@ export type GetCorporationsCorporationIdFwStatsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdFwStatsInput['header']
+        OperationArguments<GetCorporationsCorporationIdFwStatsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdFwStatsInput['header']
+        OperationArguments<GetCorporationsCorporationIdFwStatsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdFwStatsInput['header']
+        OperationArguments<GetCorporationsCorporationIdFwStatsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5760,13 +6148,13 @@ export type GetCorporationsCorporationIdFwStatsOptionsAssertion = Assert<
 export type GetFwLeaderboardsDomainMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClient['getFactionLeaderboards'],
-    (options?: GetFwLeaderboardsOptions) => Promise<GetFwLeaderboardsOutput>
+    (options?: GetFwLeaderboardsOptions) => Promise<GetFwLeaderboardsResponse>
   >
 >;
 export type GetFwLeaderboardsMetadataMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClientWithMetadata['getFactionLeaderboards'],
-    (options?: GetFwLeaderboardsOptions) => Promise<EsiResponse<GetFwLeaderboardsOutput>>
+    (options?: GetFwLeaderboardsOptions) => Promise<EsiResponse<GetFwLeaderboardsResponse>>
   >
 >;
 export type GetFwLeaderboardsOptionsAssertion = Assert<
@@ -5774,22 +6162,28 @@ export type GetFwLeaderboardsOptionsAssertion = Assert<
     GetFwLeaderboardsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetFwLeaderboardsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFwLeaderboardsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFwLeaderboardsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetFwLeaderboardsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFwLeaderboardsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFwLeaderboardsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetFwStatsDomainMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClient['listFactionStats'],
-    (options?: GetFwStatsOptions) => Promise<GetFwStatsOutput>
+    (options?: GetFwStatsOptions) => Promise<GetFwStatsResponse>
   >
 >;
 export type GetFwStatsMetadataMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClientWithMetadata['listFactionStats'],
-    (options?: GetFwStatsOptions) => Promise<EsiResponse<GetFwStatsOutput>>
+    (options?: GetFwStatsOptions) => Promise<EsiResponse<GetFwStatsResponse>>
   >
 >;
 export type GetFwStatsOptionsAssertion = Assert<
@@ -5797,22 +6191,26 @@ export type GetFwStatsOptionsAssertion = Assert<
     GetFwStatsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetFwStatsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFwStatsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFwStatsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetFwStatsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFwStatsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetFwStatsData>['headers']>['X-Tenant'];
     }
   >
 >;
 export type GetFwSystemsDomainMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClient['listSystems'],
-    (options?: GetFwSystemsOptions) => Promise<GetFwSystemsOutput>
+    (options?: GetFwSystemsOptions) => Promise<GetFwSystemsResponse>
   >
 >;
 export type GetFwSystemsMetadataMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClientWithMetadata['listSystems'],
-    (options?: GetFwSystemsOptions) => Promise<EsiResponse<GetFwSystemsOutput>>
+    (options?: GetFwSystemsOptions) => Promise<EsiResponse<GetFwSystemsResponse>>
   >
 >;
 export type GetFwSystemsOptionsAssertion = Assert<
@@ -5820,22 +6218,26 @@ export type GetFwSystemsOptionsAssertion = Assert<
     GetFwSystemsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetFwSystemsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFwSystemsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFwSystemsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetFwSystemsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFwSystemsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetFwSystemsData>['headers']>['X-Tenant'];
     }
   >
 >;
 export type GetFwWarsDomainMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClient['listWars'],
-    (options?: GetFwWarsOptions) => Promise<GetFwWarsOutput>
+    (options?: GetFwWarsOptions) => Promise<GetFwWarsResponse>
   >
 >;
 export type GetFwWarsMetadataMethodAssertion = Assert<
   IsExact<
     FactionWarfareDomainClientWithMetadata['listWars'],
-    (options?: GetFwWarsOptions) => Promise<EsiResponse<GetFwWarsOutput>>
+    (options?: GetFwWarsOptions) => Promise<EsiResponse<GetFwWarsResponse>>
   >
 >;
 export type GetFwWarsOptionsAssertion = Assert<
@@ -5843,9 +6245,13 @@ export type GetFwWarsOptionsAssertion = Assert<
     GetFwWarsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetFwWarsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFwWarsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFwWarsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetFwWarsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFwWarsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetFwWarsData>['headers']>['X-Tenant'];
     }
   >
 >;
@@ -5862,33 +6268,39 @@ export type PostCharactersCharacterIdFittingsDomainMethodAssertion = Assert<
   IsExact<
     FittingsDomainClient['create'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdFittingsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdFittingsData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdFittingsOptions,
-    ) => Promise<PostCharactersCharacterIdFittingsOutput>
+    ) => Promise<PostCharactersCharacterIdFittingsResponse>
   >
 >;
 export type PostCharactersCharacterIdFittingsMetadataMethodAssertion = Assert<
   IsExact<
     FittingsDomainClientWithMetadata['create'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdFittingsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdFittingsData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdFittingsOptions,
-    ) => Promise<EsiResponse<PostCharactersCharacterIdFittingsOutput>>
+    ) => Promise<EsiResponse<PostCharactersCharacterIdFittingsResponse>>
   >
 >;
 export type PostCharactersCharacterIdFittingsOptionsAssertion = Assert<
   IsExact<
     PostCharactersCharacterIdFittingsOptions,
     {
-      readonly body: PostCharactersCharacterIdFittingsInput['body'];
+      readonly body: OperationArguments<PostCharactersCharacterIdFittingsData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersCharacterIdFittingsInput['header']
+        OperationArguments<PostCharactersCharacterIdFittingsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCharactersCharacterIdFittingsInput['header']
+        OperationArguments<PostCharactersCharacterIdFittingsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PostCharactersCharacterIdFittingsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostCharactersCharacterIdFittingsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5897,13 +6309,13 @@ export type DeleteCharactersCharacterIdFittingsFittingIdDomainMethodAssertion = 
     FittingsDomainClient['deleteFitting'],
     (
       characterId: NonNullable<
-        DeleteCharactersCharacterIdFittingsFittingIdInput['path']
+        OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['path']
       >['character_id'],
       fittingId: NonNullable<
-        DeleteCharactersCharacterIdFittingsFittingIdInput['path']
+        OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['path']
       >['fitting_id'],
       options?: DeleteCharactersCharacterIdFittingsFittingIdOptions,
-    ) => Promise<DeleteCharactersCharacterIdFittingsFittingIdOutput>
+    ) => Promise<DeleteCharactersCharacterIdFittingsFittingIdResponse>
   >
 >;
 export type DeleteCharactersCharacterIdFittingsFittingIdMetadataMethodAssertion = Assert<
@@ -5911,13 +6323,13 @@ export type DeleteCharactersCharacterIdFittingsFittingIdMetadataMethodAssertion 
     FittingsDomainClientWithMetadata['deleteFitting'],
     (
       characterId: NonNullable<
-        DeleteCharactersCharacterIdFittingsFittingIdInput['path']
+        OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['path']
       >['character_id'],
       fittingId: NonNullable<
-        DeleteCharactersCharacterIdFittingsFittingIdInput['path']
+        OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['path']
       >['fitting_id'],
       options?: DeleteCharactersCharacterIdFittingsFittingIdOptions,
-    ) => Promise<EsiResponse<DeleteCharactersCharacterIdFittingsFittingIdOutput>>
+    ) => Promise<EsiResponse<DeleteCharactersCharacterIdFittingsFittingIdResponse>>
   >
 >;
 export type DeleteCharactersCharacterIdFittingsFittingIdOptionsAssertion = Assert<
@@ -5926,13 +6338,13 @@ export type DeleteCharactersCharacterIdFittingsFittingIdOptionsAssertion = Asser
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        DeleteCharactersCharacterIdFittingsFittingIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        DeleteCharactersCharacterIdFittingsFittingIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        DeleteCharactersCharacterIdFittingsFittingIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -5941,18 +6353,22 @@ export type GetCharactersCharacterIdFittingsDomainMethodAssertion = Assert<
   IsExact<
     FittingsDomainClient['list'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFittingsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFittingsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFittingsOptions,
-    ) => Promise<GetCharactersCharacterIdFittingsOutput>
+    ) => Promise<GetCharactersCharacterIdFittingsResponse>
   >
 >;
 export type GetCharactersCharacterIdFittingsMetadataMethodAssertion = Assert<
   IsExact<
     FittingsDomainClientWithMetadata['list'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFittingsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFittingsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFittingsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdFittingsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdFittingsResponse>>
   >
 >;
 export type GetCharactersCharacterIdFittingsOptionsAssertion = Assert<
@@ -5961,12 +6377,14 @@ export type GetCharactersCharacterIdFittingsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdFittingsInput['header']
+        OperationArguments<GetCharactersCharacterIdFittingsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdFittingsInput['header']
+        OperationArguments<GetCharactersCharacterIdFittingsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdFittingsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFittingsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -5980,20 +6398,28 @@ export type PostFleetsFleetIdWingsWingIdSquadsDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['createSquad'],
     (
-      fleetId: NonNullable<PostFleetsFleetIdWingsWingIdSquadsInput['path']>['fleet_id'],
-      wingId: NonNullable<PostFleetsFleetIdWingsWingIdSquadsInput['path']>['wing_id'],
+      fleetId: NonNullable<
+        OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['path']
+      >['fleet_id'],
+      wingId: NonNullable<
+        OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['path']
+      >['wing_id'],
       options?: PostFleetsFleetIdWingsWingIdSquadsOptions,
-    ) => Promise<PostFleetsFleetIdWingsWingIdSquadsOutput>
+    ) => Promise<PostFleetsFleetIdWingsWingIdSquadsResponse>
   >
 >;
 export type PostFleetsFleetIdWingsWingIdSquadsMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['createSquad'],
     (
-      fleetId: NonNullable<PostFleetsFleetIdWingsWingIdSquadsInput['path']>['fleet_id'],
-      wingId: NonNullable<PostFleetsFleetIdWingsWingIdSquadsInput['path']>['wing_id'],
+      fleetId: NonNullable<
+        OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['path']
+      >['fleet_id'],
+      wingId: NonNullable<
+        OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['path']
+      >['wing_id'],
       options?: PostFleetsFleetIdWingsWingIdSquadsOptions,
-    ) => Promise<EsiResponse<PostFleetsFleetIdWingsWingIdSquadsOutput>>
+    ) => Promise<EsiResponse<PostFleetsFleetIdWingsWingIdSquadsResponse>>
   >
 >;
 export type PostFleetsFleetIdWingsWingIdSquadsOptionsAssertion = Assert<
@@ -6002,12 +6428,14 @@ export type PostFleetsFleetIdWingsWingIdSquadsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostFleetsFleetIdWingsWingIdSquadsInput['header']
+        OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostFleetsFleetIdWingsWingIdSquadsInput['header']
+        OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PostFleetsFleetIdWingsWingIdSquadsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6015,18 +6443,18 @@ export type PostFleetsFleetIdWingsDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['createWing'],
     (
-      fleetId: NonNullable<PostFleetsFleetIdWingsInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<PostFleetsFleetIdWingsData>['path']>['fleet_id'],
       options?: PostFleetsFleetIdWingsOptions,
-    ) => Promise<PostFleetsFleetIdWingsOutput>
+    ) => Promise<PostFleetsFleetIdWingsResponse>
   >
 >;
 export type PostFleetsFleetIdWingsMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['createWing'],
     (
-      fleetId: NonNullable<PostFleetsFleetIdWingsInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<PostFleetsFleetIdWingsData>['path']>['fleet_id'],
       options?: PostFleetsFleetIdWingsOptions,
-    ) => Promise<EsiResponse<PostFleetsFleetIdWingsOutput>>
+    ) => Promise<EsiResponse<PostFleetsFleetIdWingsResponse>>
   >
 >;
 export type PostFleetsFleetIdWingsOptionsAssertion = Assert<
@@ -6035,10 +6463,14 @@ export type PostFleetsFleetIdWingsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostFleetsFleetIdWingsInput['header']
+        OperationArguments<PostFleetsFleetIdWingsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostFleetsFleetIdWingsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostFleetsFleetIdWingsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostFleetsFleetIdWingsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostFleetsFleetIdWingsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6046,20 +6478,28 @@ export type DeleteFleetsFleetIdSquadsSquadIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['deleteSquad'],
     (
-      fleetId: NonNullable<DeleteFleetsFleetIdSquadsSquadIdInput['path']>['fleet_id'],
-      squadId: NonNullable<DeleteFleetsFleetIdSquadsSquadIdInput['path']>['squad_id'],
+      fleetId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['path']
+      >['fleet_id'],
+      squadId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['path']
+      >['squad_id'],
       options?: DeleteFleetsFleetIdSquadsSquadIdOptions,
-    ) => Promise<DeleteFleetsFleetIdSquadsSquadIdOutput>
+    ) => Promise<DeleteFleetsFleetIdSquadsSquadIdResponse>
   >
 >;
 export type DeleteFleetsFleetIdSquadsSquadIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['deleteSquad'],
     (
-      fleetId: NonNullable<DeleteFleetsFleetIdSquadsSquadIdInput['path']>['fleet_id'],
-      squadId: NonNullable<DeleteFleetsFleetIdSquadsSquadIdInput['path']>['squad_id'],
+      fleetId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['path']
+      >['fleet_id'],
+      squadId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['path']
+      >['squad_id'],
       options?: DeleteFleetsFleetIdSquadsSquadIdOptions,
-    ) => Promise<EsiResponse<DeleteFleetsFleetIdSquadsSquadIdOutput>>
+    ) => Promise<EsiResponse<DeleteFleetsFleetIdSquadsSquadIdResponse>>
   >
 >;
 export type DeleteFleetsFleetIdSquadsSquadIdOptionsAssertion = Assert<
@@ -6068,12 +6508,14 @@ export type DeleteFleetsFleetIdSquadsSquadIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        DeleteFleetsFleetIdSquadsSquadIdInput['header']
+        OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        DeleteFleetsFleetIdSquadsSquadIdInput['header']
+        OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<DeleteFleetsFleetIdSquadsSquadIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6081,20 +6523,28 @@ export type DeleteFleetsFleetIdWingsWingIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['deleteWing'],
     (
-      fleetId: NonNullable<DeleteFleetsFleetIdWingsWingIdInput['path']>['fleet_id'],
-      wingId: NonNullable<DeleteFleetsFleetIdWingsWingIdInput['path']>['wing_id'],
+      fleetId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['path']
+      >['fleet_id'],
+      wingId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['path']
+      >['wing_id'],
       options?: DeleteFleetsFleetIdWingsWingIdOptions,
-    ) => Promise<DeleteFleetsFleetIdWingsWingIdOutput>
+    ) => Promise<DeleteFleetsFleetIdWingsWingIdResponse>
   >
 >;
 export type DeleteFleetsFleetIdWingsWingIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['deleteWing'],
     (
-      fleetId: NonNullable<DeleteFleetsFleetIdWingsWingIdInput['path']>['fleet_id'],
-      wingId: NonNullable<DeleteFleetsFleetIdWingsWingIdInput['path']>['wing_id'],
+      fleetId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['path']
+      >['fleet_id'],
+      wingId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['path']
+      >['wing_id'],
       options?: DeleteFleetsFleetIdWingsWingIdOptions,
-    ) => Promise<EsiResponse<DeleteFleetsFleetIdWingsWingIdOutput>>
+    ) => Promise<EsiResponse<DeleteFleetsFleetIdWingsWingIdResponse>>
   >
 >;
 export type DeleteFleetsFleetIdWingsWingIdOptionsAssertion = Assert<
@@ -6103,12 +6553,14 @@ export type DeleteFleetsFleetIdWingsWingIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        DeleteFleetsFleetIdWingsWingIdInput['header']
+        OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        DeleteFleetsFleetIdWingsWingIdInput['header']
+        OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<DeleteFleetsFleetIdWingsWingIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdWingsWingIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6116,18 +6568,18 @@ export type GetFleetsFleetIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['get'],
     (
-      fleetId: NonNullable<GetFleetsFleetIdInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<GetFleetsFleetIdData>['path']>['fleet_id'],
       options?: GetFleetsFleetIdOptions,
-    ) => Promise<GetFleetsFleetIdOutput>
+    ) => Promise<GetFleetsFleetIdResponse>
   >
 >;
 export type GetFleetsFleetIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['get'],
     (
-      fleetId: NonNullable<GetFleetsFleetIdInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<GetFleetsFleetIdData>['path']>['fleet_id'],
       options?: GetFleetsFleetIdOptions,
-    ) => Promise<EsiResponse<GetFleetsFleetIdOutput>>
+    ) => Promise<EsiResponse<GetFleetsFleetIdResponse>>
   >
 >;
 export type GetFleetsFleetIdOptionsAssertion = Assert<
@@ -6135,9 +6587,15 @@ export type GetFleetsFleetIdOptionsAssertion = Assert<
     GetFleetsFleetIdOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetFleetsFleetIdInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFleetsFleetIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFleetsFleetIdInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetFleetsFleetIdData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFleetsFleetIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFleetsFleetIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6145,18 +6603,22 @@ export type GetCharactersCharacterIdFleetDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['getCharacterFleet'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFleetInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFleetData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFleetOptions,
-    ) => Promise<GetCharactersCharacterIdFleetOutput>
+    ) => Promise<GetCharactersCharacterIdFleetResponse>
   >
 >;
 export type GetCharactersCharacterIdFleetMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['getCharacterFleet'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdFleetInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFleetData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdFleetOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdFleetOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdFleetResponse>>
   >
 >;
 export type GetCharactersCharacterIdFleetOptionsAssertion = Assert<
@@ -6165,12 +6627,14 @@ export type GetCharactersCharacterIdFleetOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdFleetInput['header']
+        OperationArguments<GetCharactersCharacterIdFleetData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdFleetInput['header']
+        OperationArguments<GetCharactersCharacterIdFleetData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdFleetInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdFleetData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6178,31 +6642,35 @@ export type PostFleetsFleetIdMembersDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['inviteMember'],
     (
-      fleetId: NonNullable<PostFleetsFleetIdMembersInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<PostFleetsFleetIdMembersData>['path']>['fleet_id'],
       options: PostFleetsFleetIdMembersOptions,
-    ) => Promise<PostFleetsFleetIdMembersOutput>
+    ) => Promise<PostFleetsFleetIdMembersResponse>
   >
 >;
 export type PostFleetsFleetIdMembersMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['inviteMember'],
     (
-      fleetId: NonNullable<PostFleetsFleetIdMembersInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<PostFleetsFleetIdMembersData>['path']>['fleet_id'],
       options: PostFleetsFleetIdMembersOptions,
-    ) => Promise<EsiResponse<PostFleetsFleetIdMembersOutput>>
+    ) => Promise<EsiResponse<PostFleetsFleetIdMembersResponse>>
   >
 >;
 export type PostFleetsFleetIdMembersOptionsAssertion = Assert<
   IsExact<
     PostFleetsFleetIdMembersOptions,
     {
-      readonly body: PostFleetsFleetIdMembersInput['body'];
+      readonly body: OperationArguments<PostFleetsFleetIdMembersData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostFleetsFleetIdMembersInput['header']
+        OperationArguments<PostFleetsFleetIdMembersData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostFleetsFleetIdMembersInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostFleetsFleetIdMembersInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostFleetsFleetIdMembersData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostFleetsFleetIdMembersData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6210,18 +6678,18 @@ export type GetFleetsFleetIdMembersDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['listMembers'],
     (
-      fleetId: NonNullable<GetFleetsFleetIdMembersInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<GetFleetsFleetIdMembersData>['path']>['fleet_id'],
       options?: GetFleetsFleetIdMembersOptions,
-    ) => Promise<GetFleetsFleetIdMembersOutput>
+    ) => Promise<GetFleetsFleetIdMembersResponse>
   >
 >;
 export type GetFleetsFleetIdMembersMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['listMembers'],
     (
-      fleetId: NonNullable<GetFleetsFleetIdMembersInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<GetFleetsFleetIdMembersData>['path']>['fleet_id'],
       options?: GetFleetsFleetIdMembersOptions,
-    ) => Promise<EsiResponse<GetFleetsFleetIdMembersOutput>>
+    ) => Promise<EsiResponse<GetFleetsFleetIdMembersResponse>>
   >
 >;
 export type GetFleetsFleetIdMembersOptionsAssertion = Assert<
@@ -6230,10 +6698,14 @@ export type GetFleetsFleetIdMembersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetFleetsFleetIdMembersInput['header']
+        OperationArguments<GetFleetsFleetIdMembersData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFleetsFleetIdMembersInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFleetsFleetIdMembersInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFleetsFleetIdMembersData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFleetsFleetIdMembersData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6241,18 +6713,18 @@ export type GetFleetsFleetIdWingsDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['listWings'],
     (
-      fleetId: NonNullable<GetFleetsFleetIdWingsInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<GetFleetsFleetIdWingsData>['path']>['fleet_id'],
       options?: GetFleetsFleetIdWingsOptions,
-    ) => Promise<GetFleetsFleetIdWingsOutput>
+    ) => Promise<GetFleetsFleetIdWingsResponse>
   >
 >;
 export type GetFleetsFleetIdWingsMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['listWings'],
     (
-      fleetId: NonNullable<GetFleetsFleetIdWingsInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<GetFleetsFleetIdWingsData>['path']>['fleet_id'],
       options?: GetFleetsFleetIdWingsOptions,
-    ) => Promise<EsiResponse<GetFleetsFleetIdWingsOutput>>
+    ) => Promise<EsiResponse<GetFleetsFleetIdWingsResponse>>
   >
 >;
 export type GetFleetsFleetIdWingsOptionsAssertion = Assert<
@@ -6261,10 +6733,14 @@ export type GetFleetsFleetIdWingsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetFleetsFleetIdWingsInput['header']
+        OperationArguments<GetFleetsFleetIdWingsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFleetsFleetIdWingsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFleetsFleetIdWingsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFleetsFleetIdWingsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFleetsFleetIdWingsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6272,35 +6748,45 @@ export type PutFleetsFleetIdMembersMemberIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['moveMember'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdMembersMemberIdInput['path']>['fleet_id'],
-      memberId: NonNullable<PutFleetsFleetIdMembersMemberIdInput['path']>['member_id'],
+      fleetId: NonNullable<
+        OperationArguments<PutFleetsFleetIdMembersMemberIdData>['path']
+      >['fleet_id'],
+      memberId: NonNullable<
+        OperationArguments<PutFleetsFleetIdMembersMemberIdData>['path']
+      >['member_id'],
       options: PutFleetsFleetIdMembersMemberIdOptions,
-    ) => Promise<PutFleetsFleetIdMembersMemberIdOutput>
+    ) => Promise<PutFleetsFleetIdMembersMemberIdResponse>
   >
 >;
 export type PutFleetsFleetIdMembersMemberIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['moveMember'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdMembersMemberIdInput['path']>['fleet_id'],
-      memberId: NonNullable<PutFleetsFleetIdMembersMemberIdInput['path']>['member_id'],
+      fleetId: NonNullable<
+        OperationArguments<PutFleetsFleetIdMembersMemberIdData>['path']
+      >['fleet_id'],
+      memberId: NonNullable<
+        OperationArguments<PutFleetsFleetIdMembersMemberIdData>['path']
+      >['member_id'],
       options: PutFleetsFleetIdMembersMemberIdOptions,
-    ) => Promise<EsiResponse<PutFleetsFleetIdMembersMemberIdOutput>>
+    ) => Promise<EsiResponse<PutFleetsFleetIdMembersMemberIdResponse>>
   >
 >;
 export type PutFleetsFleetIdMembersMemberIdOptionsAssertion = Assert<
   IsExact<
     PutFleetsFleetIdMembersMemberIdOptions,
     {
-      readonly body: PutFleetsFleetIdMembersMemberIdInput['body'];
+      readonly body: OperationArguments<PutFleetsFleetIdMembersMemberIdData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PutFleetsFleetIdMembersMemberIdInput['header']
+        OperationArguments<PutFleetsFleetIdMembersMemberIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PutFleetsFleetIdMembersMemberIdInput['header']
+        OperationArguments<PutFleetsFleetIdMembersMemberIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PutFleetsFleetIdMembersMemberIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PutFleetsFleetIdMembersMemberIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6308,20 +6794,28 @@ export type DeleteFleetsFleetIdMembersMemberIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['removeMember'],
     (
-      fleetId: NonNullable<DeleteFleetsFleetIdMembersMemberIdInput['path']>['fleet_id'],
-      memberId: NonNullable<DeleteFleetsFleetIdMembersMemberIdInput['path']>['member_id'],
+      fleetId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['path']
+      >['fleet_id'],
+      memberId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['path']
+      >['member_id'],
       options?: DeleteFleetsFleetIdMembersMemberIdOptions,
-    ) => Promise<DeleteFleetsFleetIdMembersMemberIdOutput>
+    ) => Promise<DeleteFleetsFleetIdMembersMemberIdResponse>
   >
 >;
 export type DeleteFleetsFleetIdMembersMemberIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['removeMember'],
     (
-      fleetId: NonNullable<DeleteFleetsFleetIdMembersMemberIdInput['path']>['fleet_id'],
-      memberId: NonNullable<DeleteFleetsFleetIdMembersMemberIdInput['path']>['member_id'],
+      fleetId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['path']
+      >['fleet_id'],
+      memberId: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['path']
+      >['member_id'],
       options?: DeleteFleetsFleetIdMembersMemberIdOptions,
-    ) => Promise<EsiResponse<DeleteFleetsFleetIdMembersMemberIdOutput>>
+    ) => Promise<EsiResponse<DeleteFleetsFleetIdMembersMemberIdResponse>>
   >
 >;
 export type DeleteFleetsFleetIdMembersMemberIdOptionsAssertion = Assert<
@@ -6330,12 +6824,14 @@ export type DeleteFleetsFleetIdMembersMemberIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        DeleteFleetsFleetIdMembersMemberIdInput['header']
+        OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        DeleteFleetsFleetIdMembersMemberIdInput['header']
+        OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<DeleteFleetsFleetIdMembersMemberIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6343,35 +6839,45 @@ export type PutFleetsFleetIdSquadsSquadIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['renameSquad'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdSquadsSquadIdInput['path']>['fleet_id'],
-      squadId: NonNullable<PutFleetsFleetIdSquadsSquadIdInput['path']>['squad_id'],
+      fleetId: NonNullable<
+        OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['path']
+      >['fleet_id'],
+      squadId: NonNullable<
+        OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['path']
+      >['squad_id'],
       options: PutFleetsFleetIdSquadsSquadIdOptions,
-    ) => Promise<PutFleetsFleetIdSquadsSquadIdOutput>
+    ) => Promise<PutFleetsFleetIdSquadsSquadIdResponse>
   >
 >;
 export type PutFleetsFleetIdSquadsSquadIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['renameSquad'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdSquadsSquadIdInput['path']>['fleet_id'],
-      squadId: NonNullable<PutFleetsFleetIdSquadsSquadIdInput['path']>['squad_id'],
+      fleetId: NonNullable<
+        OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['path']
+      >['fleet_id'],
+      squadId: NonNullable<
+        OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['path']
+      >['squad_id'],
       options: PutFleetsFleetIdSquadsSquadIdOptions,
-    ) => Promise<EsiResponse<PutFleetsFleetIdSquadsSquadIdOutput>>
+    ) => Promise<EsiResponse<PutFleetsFleetIdSquadsSquadIdResponse>>
   >
 >;
 export type PutFleetsFleetIdSquadsSquadIdOptionsAssertion = Assert<
   IsExact<
     PutFleetsFleetIdSquadsSquadIdOptions,
     {
-      readonly body: PutFleetsFleetIdSquadsSquadIdInput['body'];
+      readonly body: OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PutFleetsFleetIdSquadsSquadIdInput['header']
+        OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PutFleetsFleetIdSquadsSquadIdInput['header']
+        OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PutFleetsFleetIdSquadsSquadIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PutFleetsFleetIdSquadsSquadIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6379,35 +6885,37 @@ export type PutFleetsFleetIdWingsWingIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['renameWing'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdWingsWingIdInput['path']>['fleet_id'],
-      wingId: NonNullable<PutFleetsFleetIdWingsWingIdInput['path']>['wing_id'],
+      fleetId: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>['path']>['fleet_id'],
+      wingId: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>['path']>['wing_id'],
       options: PutFleetsFleetIdWingsWingIdOptions,
-    ) => Promise<PutFleetsFleetIdWingsWingIdOutput>
+    ) => Promise<PutFleetsFleetIdWingsWingIdResponse>
   >
 >;
 export type PutFleetsFleetIdWingsWingIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['renameWing'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdWingsWingIdInput['path']>['fleet_id'],
-      wingId: NonNullable<PutFleetsFleetIdWingsWingIdInput['path']>['wing_id'],
+      fleetId: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>['path']>['fleet_id'],
+      wingId: NonNullable<OperationArguments<PutFleetsFleetIdWingsWingIdData>['path']>['wing_id'],
       options: PutFleetsFleetIdWingsWingIdOptions,
-    ) => Promise<EsiResponse<PutFleetsFleetIdWingsWingIdOutput>>
+    ) => Promise<EsiResponse<PutFleetsFleetIdWingsWingIdResponse>>
   >
 >;
 export type PutFleetsFleetIdWingsWingIdOptionsAssertion = Assert<
   IsExact<
     PutFleetsFleetIdWingsWingIdOptions,
     {
-      readonly body: PutFleetsFleetIdWingsWingIdInput['body'];
+      readonly body: OperationArguments<PutFleetsFleetIdWingsWingIdData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PutFleetsFleetIdWingsWingIdInput['header']
+        OperationArguments<PutFleetsFleetIdWingsWingIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PutFleetsFleetIdWingsWingIdInput['header']
+        OperationArguments<PutFleetsFleetIdWingsWingIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PutFleetsFleetIdWingsWingIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PutFleetsFleetIdWingsWingIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6415,29 +6923,35 @@ export type PutFleetsFleetIdDomainMethodAssertion = Assert<
   IsExact<
     FleetsDomainClient['update'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<PutFleetsFleetIdData>['path']>['fleet_id'],
       options: PutFleetsFleetIdOptions,
-    ) => Promise<PutFleetsFleetIdOutput>
+    ) => Promise<PutFleetsFleetIdResponse>
   >
 >;
 export type PutFleetsFleetIdMetadataMethodAssertion = Assert<
   IsExact<
     FleetsDomainClientWithMetadata['update'],
     (
-      fleetId: NonNullable<PutFleetsFleetIdInput['path']>['fleet_id'],
+      fleetId: NonNullable<OperationArguments<PutFleetsFleetIdData>['path']>['fleet_id'],
       options: PutFleetsFleetIdOptions,
-    ) => Promise<EsiResponse<PutFleetsFleetIdOutput>>
+    ) => Promise<EsiResponse<PutFleetsFleetIdResponse>>
   >
 >;
 export type PutFleetsFleetIdOptionsAssertion = Assert<
   IsExact<
     PutFleetsFleetIdOptions,
     {
-      readonly body: PutFleetsFleetIdInput['body'];
+      readonly body: OperationArguments<PutFleetsFleetIdData>['body'];
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<PutFleetsFleetIdInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PutFleetsFleetIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PutFleetsFleetIdInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<PutFleetsFleetIdData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PutFleetsFleetIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PutFleetsFleetIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6451,18 +6965,18 @@ export type GetFreelanceJobsDetailDomainMethodAssertion = Assert<
   IsExact<
     FreelanceJobsDomainClient['get'],
     (
-      jobId: NonNullable<GetFreelanceJobsDetailInput['path']>['job_id'],
+      jobId: NonNullable<OperationArguments<GetFreelanceJobsDetailData>['path']>['job_id'],
       options?: GetFreelanceJobsDetailOptions,
-    ) => Promise<GetFreelanceJobsDetailOutput>
+    ) => Promise<GetFreelanceJobsDetailResponse>
   >
 >;
 export type GetFreelanceJobsDetailMetadataMethodAssertion = Assert<
   IsExact<
     FreelanceJobsDomainClientWithMetadata['get'],
     (
-      jobId: NonNullable<GetFreelanceJobsDetailInput['path']>['job_id'],
+      jobId: NonNullable<OperationArguments<GetFreelanceJobsDetailData>['path']>['job_id'],
       options?: GetFreelanceJobsDetailOptions,
-    ) => Promise<EsiResponse<GetFreelanceJobsDetailOutput>>
+    ) => Promise<EsiResponse<GetFreelanceJobsDetailResponse>>
   >
 >;
 export type GetFreelanceJobsDetailOptionsAssertion = Assert<
@@ -6471,10 +6985,14 @@ export type GetFreelanceJobsDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetFreelanceJobsDetailInput['header']
+        OperationArguments<GetFreelanceJobsDetailData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFreelanceJobsDetailInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetFreelanceJobsDetailInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFreelanceJobsDetailData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFreelanceJobsDetailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6483,11 +7001,13 @@ export type GetCharactersFreelanceJobsParticipationDomainMethodAssertion = Asser
     FreelanceJobsDomainClient['getCharacterParticipation'],
     (
       characterId: NonNullable<
-        GetCharactersFreelanceJobsParticipationInput['path']
+        OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']
       >['character_id'],
-      jobId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>['job_id'],
+      jobId: NonNullable<
+        OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']
+      >['job_id'],
       options?: GetCharactersFreelanceJobsParticipationOptions,
-    ) => Promise<GetCharactersFreelanceJobsParticipationOutput>
+    ) => Promise<GetCharactersFreelanceJobsParticipationResponse>
   >
 >;
 export type GetCharactersFreelanceJobsParticipationMetadataMethodAssertion = Assert<
@@ -6495,11 +7015,13 @@ export type GetCharactersFreelanceJobsParticipationMetadataMethodAssertion = Ass
     FreelanceJobsDomainClientWithMetadata['getCharacterParticipation'],
     (
       characterId: NonNullable<
-        GetCharactersFreelanceJobsParticipationInput['path']
+        OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']
       >['character_id'],
-      jobId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>['job_id'],
+      jobId: NonNullable<
+        OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']
+      >['job_id'],
       options?: GetCharactersFreelanceJobsParticipationOptions,
-    ) => Promise<EsiResponse<GetCharactersFreelanceJobsParticipationOutput>>
+    ) => Promise<EsiResponse<GetCharactersFreelanceJobsParticipationResponse>>
   >
 >;
 export type GetCharactersFreelanceJobsParticipationOptionsAssertion = Assert<
@@ -6508,13 +7030,13 @@ export type GetCharactersFreelanceJobsParticipationOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersFreelanceJobsParticipationInput['header']
+        OperationArguments<GetCharactersFreelanceJobsParticipationData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersFreelanceJobsParticipationInput['header']
+        OperationArguments<GetCharactersFreelanceJobsParticipationData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersFreelanceJobsParticipationInput['header']
+        OperationArguments<GetCharactersFreelanceJobsParticipationData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6523,18 +7045,22 @@ export type GetCharactersFreelanceJobsListingDomainMethodAssertion = Assert<
   IsExact<
     FreelanceJobsDomainClient['listCharacterJobs'],
     (
-      characterId: NonNullable<GetCharactersFreelanceJobsListingInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersFreelanceJobsListingData>['path']
+      >['character_id'],
       options?: GetCharactersFreelanceJobsListingOptions,
-    ) => Promise<GetCharactersFreelanceJobsListingOutput>
+    ) => Promise<GetCharactersFreelanceJobsListingResponse>
   >
 >;
 export type GetCharactersFreelanceJobsListingMetadataMethodAssertion = Assert<
   IsExact<
     FreelanceJobsDomainClientWithMetadata['listCharacterJobs'],
     (
-      characterId: NonNullable<GetCharactersFreelanceJobsListingInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersFreelanceJobsListingData>['path']
+      >['character_id'],
       options?: GetCharactersFreelanceJobsListingOptions,
-    ) => Promise<EsiResponse<GetCharactersFreelanceJobsListingOutput>>
+    ) => Promise<EsiResponse<GetCharactersFreelanceJobsListingResponse>>
   >
 >;
 export type GetCharactersFreelanceJobsListingOptionsAssertion = Assert<
@@ -6543,12 +7069,14 @@ export type GetCharactersFreelanceJobsListingOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersFreelanceJobsListingInput['header']
+        OperationArguments<GetCharactersFreelanceJobsListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersFreelanceJobsListingInput['header']
+        OperationArguments<GetCharactersFreelanceJobsListingData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersFreelanceJobsListingInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersFreelanceJobsListingData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6557,10 +7085,10 @@ export type GetCorporationsFreelanceJobsListingDomainMethodAssertion = Assert<
     FreelanceJobsDomainClient['listCorporationJobs'],
     (
       corporationId: NonNullable<
-        GetCorporationsFreelanceJobsListingInput['path']
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['path']
       >['corporation_id'],
       options?: GetCorporationsFreelanceJobsListingOptions,
-    ) => Promise<GetCorporationsFreelanceJobsListingOutput>
+    ) => Promise<GetCorporationsFreelanceJobsListingResponse>
   >
 >;
 export type GetCorporationsFreelanceJobsListingMetadataMethodAssertion = Assert<
@@ -6568,28 +7096,34 @@ export type GetCorporationsFreelanceJobsListingMetadataMethodAssertion = Assert<
     FreelanceJobsDomainClientWithMetadata['listCorporationJobs'],
     (
       corporationId: NonNullable<
-        GetCorporationsFreelanceJobsListingInput['path']
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['path']
       >['corporation_id'],
       options?: GetCorporationsFreelanceJobsListingOptions,
-    ) => Promise<EsiResponse<GetCorporationsFreelanceJobsListingOutput>>
+    ) => Promise<EsiResponse<GetCorporationsFreelanceJobsListingResponse>>
   >
 >;
 export type GetCorporationsFreelanceJobsListingOptionsAssertion = Assert<
   IsExact<
     GetCorporationsFreelanceJobsListingOptions,
     {
-      readonly after?: NonNullable<GetCorporationsFreelanceJobsListingInput['query']>['after'];
-      readonly before?: NonNullable<GetCorporationsFreelanceJobsListingInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsFreelanceJobsListingInput['header']
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsFreelanceJobsListingInput['header']
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetCorporationsFreelanceJobsListingInput['query']>['limit'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['query']
+      >['limit'];
       readonly xTenant?: NonNullable<
-        GetCorporationsFreelanceJobsListingInput['header']
+        OperationArguments<GetCorporationsFreelanceJobsListingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6599,11 +7133,13 @@ export type GetCorporationsFreelanceJobsParticipantsDomainMethodAssertion = Asse
     FreelanceJobsDomainClient['listParticipants'],
     (
       corporationId: NonNullable<
-        GetCorporationsFreelanceJobsParticipantsInput['path']
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']
       >['corporation_id'],
-      jobId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>['job_id'],
+      jobId: NonNullable<
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']
+      >['job_id'],
       options?: GetCorporationsFreelanceJobsParticipantsOptions,
-    ) => Promise<GetCorporationsFreelanceJobsParticipantsOutput>
+    ) => Promise<GetCorporationsFreelanceJobsParticipantsResponse>
   >
 >;
 export type GetCorporationsFreelanceJobsParticipantsMetadataMethodAssertion = Assert<
@@ -6611,31 +7147,37 @@ export type GetCorporationsFreelanceJobsParticipantsMetadataMethodAssertion = As
     FreelanceJobsDomainClientWithMetadata['listParticipants'],
     (
       corporationId: NonNullable<
-        GetCorporationsFreelanceJobsParticipantsInput['path']
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']
       >['corporation_id'],
-      jobId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>['job_id'],
+      jobId: NonNullable<
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']
+      >['job_id'],
       options?: GetCorporationsFreelanceJobsParticipantsOptions,
-    ) => Promise<EsiResponse<GetCorporationsFreelanceJobsParticipantsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsFreelanceJobsParticipantsResponse>>
   >
 >;
 export type GetCorporationsFreelanceJobsParticipantsOptionsAssertion = Assert<
   IsExact<
     GetCorporationsFreelanceJobsParticipantsOptions,
     {
-      readonly after?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['query']>['after'];
+      readonly after?: NonNullable<
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['query']
+      >['after'];
       readonly before?: NonNullable<
-        GetCorporationsFreelanceJobsParticipantsInput['query']
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['query']
       >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsFreelanceJobsParticipantsInput['header']
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsFreelanceJobsParticipantsInput['header']
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['query']>['limit'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['query']
+      >['limit'];
       readonly xTenant?: NonNullable<
-        GetCorporationsFreelanceJobsParticipantsInput['header']
+        OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6643,7 +7185,7 @@ export type GetCorporationsFreelanceJobsParticipantsOptionsAssertion = Assert<
 export type GetFreelanceJobsListingDomainMethodAssertion = Assert<
   IsExact<
     FreelanceJobsDomainClient['listPublic'],
-    (options?: GetFreelanceJobsListingOptions) => Promise<GetFreelanceJobsListingOutput>
+    (options?: GetFreelanceJobsListingOptions) => Promise<GetFreelanceJobsListingResponse>
   >
 >;
 export type GetFreelanceJobsListingMetadataMethodAssertion = Assert<
@@ -6651,23 +7193,35 @@ export type GetFreelanceJobsListingMetadataMethodAssertion = Assert<
     FreelanceJobsDomainClientWithMetadata['listPublic'],
     (
       options?: GetFreelanceJobsListingOptions,
-    ) => Promise<EsiResponse<GetFreelanceJobsListingOutput>>
+    ) => Promise<EsiResponse<GetFreelanceJobsListingResponse>>
   >
 >;
 export type GetFreelanceJobsListingOptionsAssertion = Assert<
   IsExact<
     GetFreelanceJobsListingOptions,
     {
-      readonly after?: NonNullable<GetFreelanceJobsListingInput['query']>['after'];
-      readonly before?: NonNullable<GetFreelanceJobsListingInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetFreelanceJobsListingData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetFreelanceJobsListingData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
-      readonly corporationId?: NonNullable<GetFreelanceJobsListingInput['query']>['corporation_id'];
+      readonly corporationId?: NonNullable<
+        OperationArguments<GetFreelanceJobsListingData>['query']
+      >['corporation_id'];
       readonly ifModifiedSince?: NonNullable<
-        GetFreelanceJobsListingInput['header']
+        OperationArguments<GetFreelanceJobsListingData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetFreelanceJobsListingInput['header']>['If-None-Match'];
-      readonly limit?: NonNullable<GetFreelanceJobsListingInput['query']>['limit'];
-      readonly xTenant?: NonNullable<GetFreelanceJobsListingInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetFreelanceJobsListingData>['headers']
+      >['If-None-Match'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetFreelanceJobsListingData>['query']
+      >['limit'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetFreelanceJobsListingData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6683,13 +7237,13 @@ export type FreelanceJobsDomainClientMetadataViewAssertion = Assert<
 export type GetIncursionsDomainMethodAssertion = Assert<
   IsExact<
     IncursionsDomainClient['list'],
-    (options?: GetIncursionsOptions) => Promise<GetIncursionsOutput>
+    (options?: GetIncursionsOptions) => Promise<GetIncursionsResponse>
   >
 >;
 export type GetIncursionsMetadataMethodAssertion = Assert<
   IsExact<
     IncursionsDomainClientWithMetadata['list'],
-    (options?: GetIncursionsOptions) => Promise<EsiResponse<GetIncursionsOutput>>
+    (options?: GetIncursionsOptions) => Promise<EsiResponse<GetIncursionsResponse>>
   >
 >;
 export type GetIncursionsOptionsAssertion = Assert<
@@ -6697,9 +7251,13 @@ export type GetIncursionsOptionsAssertion = Assert<
     GetIncursionsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetIncursionsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetIncursionsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetIncursionsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetIncursionsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetIncursionsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetIncursionsData>['headers']>['X-Tenant'];
     }
   >
 >;
@@ -6713,18 +7271,22 @@ export type GetCharactersCharacterIdIndustryJobsDomainMethodAssertion = Assert<
   IsExact<
     IndustryDomainClient['listCharacterJobs'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdIndustryJobsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdIndustryJobsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdIndustryJobsOptions,
-    ) => Promise<GetCharactersCharacterIdIndustryJobsOutput>
+    ) => Promise<GetCharactersCharacterIdIndustryJobsResponse>
   >
 >;
 export type GetCharactersCharacterIdIndustryJobsMetadataMethodAssertion = Assert<
   IsExact<
     IndustryDomainClientWithMetadata['listCharacterJobs'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdIndustryJobsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdIndustryJobsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdIndustryJobsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdIndustryJobsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdIndustryJobsResponse>>
   >
 >;
 export type GetCharactersCharacterIdIndustryJobsOptionsAssertion = Assert<
@@ -6733,16 +7295,16 @@ export type GetCharactersCharacterIdIndustryJobsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdIndustryJobsInput['header']
+        OperationArguments<GetCharactersCharacterIdIndustryJobsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdIndustryJobsInput['header']
+        OperationArguments<GetCharactersCharacterIdIndustryJobsData>['headers']
       >['If-None-Match'];
       readonly includeCompleted?: NonNullable<
-        GetCharactersCharacterIdIndustryJobsInput['query']
+        OperationArguments<GetCharactersCharacterIdIndustryJobsData>['query']
       >['include_completed'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdIndustryJobsInput['header']
+        OperationArguments<GetCharactersCharacterIdIndustryJobsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6751,18 +7313,22 @@ export type GetCharactersCharacterIdMiningDomainMethodAssertion = Assert<
   IsExact<
     IndustryDomainClient['listCharacterMiningLedger'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMiningInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMiningData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMiningOptions,
-    ) => Promise<GetCharactersCharacterIdMiningOutput>
+    ) => Promise<GetCharactersCharacterIdMiningResponse>
   >
 >;
 export type GetCharactersCharacterIdMiningMetadataMethodAssertion = Assert<
   IsExact<
     IndustryDomainClientWithMetadata['listCharacterMiningLedger'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMiningInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMiningData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMiningOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdMiningOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdMiningResponse>>
   >
 >;
 export type GetCharactersCharacterIdMiningOptionsAssertion = Assert<
@@ -6771,13 +7337,17 @@ export type GetCharactersCharacterIdMiningOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdMiningInput['header']
+        OperationArguments<GetCharactersCharacterIdMiningData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdMiningInput['header']
+        OperationArguments<GetCharactersCharacterIdMiningData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdMiningInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdMiningInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMiningData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMiningData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6786,10 +7356,10 @@ export type GetCorporationsCorporationIdIndustryJobsDomainMethodAssertion = Asse
     IndustryDomainClient['listCorporationJobs'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdIndustryJobsInput['path']
+        OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdIndustryJobsOptions,
-    ) => Promise<GetCorporationsCorporationIdIndustryJobsOutput>
+    ) => Promise<GetCorporationsCorporationIdIndustryJobsResponse>
   >
 >;
 export type GetCorporationsCorporationIdIndustryJobsMetadataMethodAssertion = Assert<
@@ -6797,10 +7367,10 @@ export type GetCorporationsCorporationIdIndustryJobsMetadataMethodAssertion = As
     IndustryDomainClientWithMetadata['listCorporationJobs'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdIndustryJobsInput['path']
+        OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdIndustryJobsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdIndustryJobsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdIndustryJobsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdIndustryJobsOptionsAssertion = Assert<
@@ -6809,17 +7379,19 @@ export type GetCorporationsCorporationIdIndustryJobsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdIndustryJobsInput['header']
+        OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdIndustryJobsInput['header']
+        OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['headers']
       >['If-None-Match'];
       readonly includeCompleted?: NonNullable<
-        GetCorporationsCorporationIdIndustryJobsInput['query']
+        OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['query']
       >['include_completed'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdIndustryJobsInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdIndustryJobsInput['header']
+        OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6827,13 +7399,13 @@ export type GetCorporationsCorporationIdIndustryJobsOptionsAssertion = Assert<
 export type GetIndustryFacilitiesDomainMethodAssertion = Assert<
   IsExact<
     IndustryDomainClient['listFacilities'],
-    (options?: GetIndustryFacilitiesOptions) => Promise<GetIndustryFacilitiesOutput>
+    (options?: GetIndustryFacilitiesOptions) => Promise<GetIndustryFacilitiesResponse>
   >
 >;
 export type GetIndustryFacilitiesMetadataMethodAssertion = Assert<
   IsExact<
     IndustryDomainClientWithMetadata['listFacilities'],
-    (options?: GetIndustryFacilitiesOptions) => Promise<EsiResponse<GetIndustryFacilitiesOutput>>
+    (options?: GetIndustryFacilitiesOptions) => Promise<EsiResponse<GetIndustryFacilitiesResponse>>
   >
 >;
 export type GetIndustryFacilitiesOptionsAssertion = Assert<
@@ -6842,10 +7414,14 @@ export type GetIndustryFacilitiesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetIndustryFacilitiesInput['header']
+        OperationArguments<GetIndustryFacilitiesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetIndustryFacilitiesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetIndustryFacilitiesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetIndustryFacilitiesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetIndustryFacilitiesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -6854,10 +7430,10 @@ export type GetCorporationCorporationIdMiningObserversDomainMethodAssertion = As
     IndustryDomainClient['listMiningObservers'],
     (
       corporationId: NonNullable<
-        GetCorporationCorporationIdMiningObserversInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningObserversData>['path']
       >['corporation_id'],
       options?: GetCorporationCorporationIdMiningObserversOptions,
-    ) => Promise<GetCorporationCorporationIdMiningObserversOutput>
+    ) => Promise<GetCorporationCorporationIdMiningObserversResponse>
   >
 >;
 export type GetCorporationCorporationIdMiningObserversMetadataMethodAssertion = Assert<
@@ -6865,10 +7441,10 @@ export type GetCorporationCorporationIdMiningObserversMetadataMethodAssertion = 
     IndustryDomainClientWithMetadata['listMiningObservers'],
     (
       corporationId: NonNullable<
-        GetCorporationCorporationIdMiningObserversInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningObserversData>['path']
       >['corporation_id'],
       options?: GetCorporationCorporationIdMiningObserversOptions,
-    ) => Promise<EsiResponse<GetCorporationCorporationIdMiningObserversOutput>>
+    ) => Promise<EsiResponse<GetCorporationCorporationIdMiningObserversResponse>>
   >
 >;
 export type GetCorporationCorporationIdMiningObserversOptionsAssertion = Assert<
@@ -6877,14 +7453,16 @@ export type GetCorporationCorporationIdMiningObserversOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationCorporationIdMiningObserversInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningObserversData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationCorporationIdMiningObserversInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningObserversData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationCorporationIdMiningObserversInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationCorporationIdMiningObserversData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationCorporationIdMiningObserversInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningObserversData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6894,10 +7472,10 @@ export type GetCorporationCorporationIdMiningExtractionsDomainMethodAssertion = 
     IndustryDomainClient['listMoonExtractionTimers'],
     (
       corporationId: NonNullable<
-        GetCorporationCorporationIdMiningExtractionsInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['path']
       >['corporation_id'],
       options?: GetCorporationCorporationIdMiningExtractionsOptions,
-    ) => Promise<GetCorporationCorporationIdMiningExtractionsOutput>
+    ) => Promise<GetCorporationCorporationIdMiningExtractionsResponse>
   >
 >;
 export type GetCorporationCorporationIdMiningExtractionsMetadataMethodAssertion = Assert<
@@ -6905,10 +7483,10 @@ export type GetCorporationCorporationIdMiningExtractionsMetadataMethodAssertion 
     IndustryDomainClientWithMetadata['listMoonExtractionTimers'],
     (
       corporationId: NonNullable<
-        GetCorporationCorporationIdMiningExtractionsInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['path']
       >['corporation_id'],
       options?: GetCorporationCorporationIdMiningExtractionsOptions,
-    ) => Promise<EsiResponse<GetCorporationCorporationIdMiningExtractionsOutput>>
+    ) => Promise<EsiResponse<GetCorporationCorporationIdMiningExtractionsResponse>>
   >
 >;
 export type GetCorporationCorporationIdMiningExtractionsOptionsAssertion = Assert<
@@ -6917,16 +7495,16 @@ export type GetCorporationCorporationIdMiningExtractionsOptionsAssertion = Asser
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationCorporationIdMiningExtractionsInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationCorporationIdMiningExtractionsInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<
-        GetCorporationCorporationIdMiningExtractionsInput['query']
+        OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['query']
       >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationCorporationIdMiningExtractionsInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6936,13 +7514,13 @@ export type GetCorporationCorporationIdMiningObserversObserverIdDomainMethodAsse
     IndustryDomainClient['listObservedMining'],
     (
       corporationId: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']
       >['corporation_id'],
       observerId: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']
       >['observer_id'],
       options?: GetCorporationCorporationIdMiningObserversObserverIdOptions,
-    ) => Promise<GetCorporationCorporationIdMiningObserversObserverIdOutput>
+    ) => Promise<GetCorporationCorporationIdMiningObserversObserverIdResponse>
   >
 >;
 export type GetCorporationCorporationIdMiningObserversObserverIdMetadataMethodAssertion = Assert<
@@ -6950,13 +7528,13 @@ export type GetCorporationCorporationIdMiningObserversObserverIdMetadataMethodAs
     IndustryDomainClientWithMetadata['listObservedMining'],
     (
       corporationId: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']
       >['corporation_id'],
       observerId: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['path']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']
       >['observer_id'],
       options?: GetCorporationCorporationIdMiningObserversObserverIdOptions,
-    ) => Promise<EsiResponse<GetCorporationCorporationIdMiningObserversObserverIdOutput>>
+    ) => Promise<EsiResponse<GetCorporationCorporationIdMiningObserversObserverIdResponse>>
   >
 >;
 export type GetCorporationCorporationIdMiningObserversObserverIdOptionsAssertion = Assert<
@@ -6965,16 +7543,16 @@ export type GetCorporationCorporationIdMiningObserversObserverIdOptionsAssertion
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['query']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['query']
       >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationCorporationIdMiningObserversObserverIdInput['header']
+        OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -6982,13 +7560,13 @@ export type GetCorporationCorporationIdMiningObserversObserverIdOptionsAssertion
 export type GetIndustrySystemsDomainMethodAssertion = Assert<
   IsExact<
     IndustryDomainClient['listSystemCostIndices'],
-    (options?: GetIndustrySystemsOptions) => Promise<GetIndustrySystemsOutput>
+    (options?: GetIndustrySystemsOptions) => Promise<GetIndustrySystemsResponse>
   >
 >;
 export type GetIndustrySystemsMetadataMethodAssertion = Assert<
   IsExact<
     IndustryDomainClientWithMetadata['listSystemCostIndices'],
-    (options?: GetIndustrySystemsOptions) => Promise<EsiResponse<GetIndustrySystemsOutput>>
+    (options?: GetIndustrySystemsOptions) => Promise<EsiResponse<GetIndustrySystemsResponse>>
   >
 >;
 export type GetIndustrySystemsOptionsAssertion = Assert<
@@ -6997,10 +7575,14 @@ export type GetIndustrySystemsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetIndustrySystemsInput['header']
+        OperationArguments<GetIndustrySystemsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetIndustrySystemsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetIndustrySystemsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetIndustrySystemsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetIndustrySystemsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7013,13 +7595,13 @@ export type IndustryDomainClientMetadataViewAssertion = Assert<
 export type GetInsurancePricesDomainMethodAssertion = Assert<
   IsExact<
     InsuranceDomainClient['listPrices'],
-    (options?: GetInsurancePricesOptions) => Promise<GetInsurancePricesOutput>
+    (options?: GetInsurancePricesOptions) => Promise<GetInsurancePricesResponse>
   >
 >;
 export type GetInsurancePricesMetadataMethodAssertion = Assert<
   IsExact<
     InsuranceDomainClientWithMetadata['listPrices'],
-    (options?: GetInsurancePricesOptions) => Promise<EsiResponse<GetInsurancePricesOutput>>
+    (options?: GetInsurancePricesOptions) => Promise<EsiResponse<GetInsurancePricesResponse>>
   >
 >;
 export type GetInsurancePricesOptionsAssertion = Assert<
@@ -7028,10 +7610,14 @@ export type GetInsurancePricesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetInsurancePricesInput['header']
+        OperationArguments<GetInsurancePricesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetInsurancePricesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetInsurancePricesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetInsurancePricesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetInsurancePricesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7045,20 +7631,28 @@ export type GetKillmailsKillmailIdKillmailHashDomainMethodAssertion = Assert<
   IsExact<
     KillmailsDomainClient['get'],
     (
-      killmailId: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>['killmail_id'],
-      killmailHash: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>['killmail_hash'],
+      killmailId: NonNullable<
+        OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']
+      >['killmail_id'],
+      killmailHash: NonNullable<
+        OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']
+      >['killmail_hash'],
       options?: GetKillmailsKillmailIdKillmailHashOptions,
-    ) => Promise<GetKillmailsKillmailIdKillmailHashOutput>
+    ) => Promise<GetKillmailsKillmailIdKillmailHashResponse>
   >
 >;
 export type GetKillmailsKillmailIdKillmailHashMetadataMethodAssertion = Assert<
   IsExact<
     KillmailsDomainClientWithMetadata['get'],
     (
-      killmailId: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>['killmail_id'],
-      killmailHash: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>['killmail_hash'],
+      killmailId: NonNullable<
+        OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']
+      >['killmail_id'],
+      killmailHash: NonNullable<
+        OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']
+      >['killmail_hash'],
       options?: GetKillmailsKillmailIdKillmailHashOptions,
-    ) => Promise<EsiResponse<GetKillmailsKillmailIdKillmailHashOutput>>
+    ) => Promise<EsiResponse<GetKillmailsKillmailIdKillmailHashResponse>>
   >
 >;
 export type GetKillmailsKillmailIdKillmailHashOptionsAssertion = Assert<
@@ -7067,12 +7661,14 @@ export type GetKillmailsKillmailIdKillmailHashOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetKillmailsKillmailIdKillmailHashInput['header']
+        OperationArguments<GetKillmailsKillmailIdKillmailHashData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetKillmailsKillmailIdKillmailHashInput['header']
+        OperationArguments<GetKillmailsKillmailIdKillmailHashData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetKillmailsKillmailIdKillmailHashInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetKillmailsKillmailIdKillmailHashData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7081,10 +7677,10 @@ export type GetCharactersCharacterIdKillmailsRecentDomainMethodAssertion = Asser
     KillmailsDomainClient['listRecentForCharacter'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdKillmailsRecentInput['path']
+        OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdKillmailsRecentOptions,
-    ) => Promise<GetCharactersCharacterIdKillmailsRecentOutput>
+    ) => Promise<GetCharactersCharacterIdKillmailsRecentResponse>
   >
 >;
 export type GetCharactersCharacterIdKillmailsRecentMetadataMethodAssertion = Assert<
@@ -7092,10 +7688,10 @@ export type GetCharactersCharacterIdKillmailsRecentMetadataMethodAssertion = Ass
     KillmailsDomainClientWithMetadata['listRecentForCharacter'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdKillmailsRecentInput['path']
+        OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdKillmailsRecentOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdKillmailsRecentOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdKillmailsRecentResponse>>
   >
 >;
 export type GetCharactersCharacterIdKillmailsRecentOptionsAssertion = Assert<
@@ -7104,14 +7700,16 @@ export type GetCharactersCharacterIdKillmailsRecentOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdKillmailsRecentInput['header']
+        OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdKillmailsRecentInput['header']
+        OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdKillmailsRecentInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdKillmailsRecentInput['header']
+        OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7121,10 +7719,10 @@ export type GetCorporationsCorporationIdKillmailsRecentDomainMethodAssertion = A
     KillmailsDomainClient['listRecentForCorporation'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdKillmailsRecentInput['path']
+        OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdKillmailsRecentOptions,
-    ) => Promise<GetCorporationsCorporationIdKillmailsRecentOutput>
+    ) => Promise<GetCorporationsCorporationIdKillmailsRecentResponse>
   >
 >;
 export type GetCorporationsCorporationIdKillmailsRecentMetadataMethodAssertion = Assert<
@@ -7132,10 +7730,10 @@ export type GetCorporationsCorporationIdKillmailsRecentMetadataMethodAssertion =
     KillmailsDomainClientWithMetadata['listRecentForCorporation'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdKillmailsRecentInput['path']
+        OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdKillmailsRecentOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdKillmailsRecentOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdKillmailsRecentResponse>>
   >
 >;
 export type GetCorporationsCorporationIdKillmailsRecentOptionsAssertion = Assert<
@@ -7144,16 +7742,16 @@ export type GetCorporationsCorporationIdKillmailsRecentOptionsAssertion = Assert
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdKillmailsRecentInput['header']
+        OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdKillmailsRecentInput['header']
+        OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<
-        GetCorporationsCorporationIdKillmailsRecentInput['query']
+        OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['query']
       >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdKillmailsRecentInput['header']
+        OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7168,18 +7766,22 @@ export type GetCharactersCharacterIdLocationDomainMethodAssertion = Assert<
   IsExact<
     LocationDomainClient['get'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdLocationInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdLocationData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdLocationOptions,
-    ) => Promise<GetCharactersCharacterIdLocationOutput>
+    ) => Promise<GetCharactersCharacterIdLocationResponse>
   >
 >;
 export type GetCharactersCharacterIdLocationMetadataMethodAssertion = Assert<
   IsExact<
     LocationDomainClientWithMetadata['get'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdLocationInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdLocationData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdLocationOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdLocationOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdLocationResponse>>
   >
 >;
 export type GetCharactersCharacterIdLocationOptionsAssertion = Assert<
@@ -7188,12 +7790,14 @@ export type GetCharactersCharacterIdLocationOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdLocationInput['header']
+        OperationArguments<GetCharactersCharacterIdLocationData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdLocationInput['header']
+        OperationArguments<GetCharactersCharacterIdLocationData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdLocationInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdLocationData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7201,18 +7805,22 @@ export type GetCharactersCharacterIdShipDomainMethodAssertion = Assert<
   IsExact<
     LocationDomainClient['getCurrentShip'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdShipInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdShipData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdShipOptions,
-    ) => Promise<GetCharactersCharacterIdShipOutput>
+    ) => Promise<GetCharactersCharacterIdShipResponse>
   >
 >;
 export type GetCharactersCharacterIdShipMetadataMethodAssertion = Assert<
   IsExact<
     LocationDomainClientWithMetadata['getCurrentShip'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdShipInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdShipData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdShipOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdShipOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdShipResponse>>
   >
 >;
 export type GetCharactersCharacterIdShipOptionsAssertion = Assert<
@@ -7221,12 +7829,14 @@ export type GetCharactersCharacterIdShipOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdShipInput['header']
+        OperationArguments<GetCharactersCharacterIdShipData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdShipInput['header']
+        OperationArguments<GetCharactersCharacterIdShipData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdShipInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdShipData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7234,18 +7844,22 @@ export type GetCharactersCharacterIdOnlineDomainMethodAssertion = Assert<
   IsExact<
     LocationDomainClient['getOnlineStatus'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdOnlineInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOnlineData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdOnlineOptions,
-    ) => Promise<GetCharactersCharacterIdOnlineOutput>
+    ) => Promise<GetCharactersCharacterIdOnlineResponse>
   >
 >;
 export type GetCharactersCharacterIdOnlineMetadataMethodAssertion = Assert<
   IsExact<
     LocationDomainClientWithMetadata['getOnlineStatus'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdOnlineInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOnlineData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdOnlineOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdOnlineOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdOnlineResponse>>
   >
 >;
 export type GetCharactersCharacterIdOnlineOptionsAssertion = Assert<
@@ -7254,12 +7868,14 @@ export type GetCharactersCharacterIdOnlineOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdOnlineInput['header']
+        OperationArguments<GetCharactersCharacterIdOnlineData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdOnlineInput['header']
+        OperationArguments<GetCharactersCharacterIdOnlineData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdOnlineInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOnlineData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7273,18 +7889,22 @@ export type GetCharactersCharacterIdLoyaltyPointsDomainMethodAssertion = Assert<
   IsExact<
     LoyaltyDomainClient['listPoints'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdLoyaltyPointsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdLoyaltyPointsOptions,
-    ) => Promise<GetCharactersCharacterIdLoyaltyPointsOutput>
+    ) => Promise<GetCharactersCharacterIdLoyaltyPointsResponse>
   >
 >;
 export type GetCharactersCharacterIdLoyaltyPointsMetadataMethodAssertion = Assert<
   IsExact<
     LoyaltyDomainClientWithMetadata['listPoints'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdLoyaltyPointsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdLoyaltyPointsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdLoyaltyPointsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdLoyaltyPointsResponse>>
   >
 >;
 export type GetCharactersCharacterIdLoyaltyPointsOptionsAssertion = Assert<
@@ -7293,13 +7913,13 @@ export type GetCharactersCharacterIdLoyaltyPointsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdLoyaltyPointsInput['header']
+        OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdLoyaltyPointsInput['header']
+        OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdLoyaltyPointsInput['header']
+        OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7309,10 +7929,10 @@ export type GetLoyaltyStoresCorporationIdOffersDomainMethodAssertion = Assert<
     LoyaltyDomainClient['listStoreOffers'],
     (
       corporationId: NonNullable<
-        GetLoyaltyStoresCorporationIdOffersInput['path']
+        OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['path']
       >['corporation_id'],
       options?: GetLoyaltyStoresCorporationIdOffersOptions,
-    ) => Promise<GetLoyaltyStoresCorporationIdOffersOutput>
+    ) => Promise<GetLoyaltyStoresCorporationIdOffersResponse>
   >
 >;
 export type GetLoyaltyStoresCorporationIdOffersMetadataMethodAssertion = Assert<
@@ -7320,10 +7940,10 @@ export type GetLoyaltyStoresCorporationIdOffersMetadataMethodAssertion = Assert<
     LoyaltyDomainClientWithMetadata['listStoreOffers'],
     (
       corporationId: NonNullable<
-        GetLoyaltyStoresCorporationIdOffersInput['path']
+        OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['path']
       >['corporation_id'],
       options?: GetLoyaltyStoresCorporationIdOffersOptions,
-    ) => Promise<EsiResponse<GetLoyaltyStoresCorporationIdOffersOutput>>
+    ) => Promise<EsiResponse<GetLoyaltyStoresCorporationIdOffersResponse>>
   >
 >;
 export type GetLoyaltyStoresCorporationIdOffersOptionsAssertion = Assert<
@@ -7332,13 +7952,13 @@ export type GetLoyaltyStoresCorporationIdOffersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetLoyaltyStoresCorporationIdOffersInput['header']
+        OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetLoyaltyStoresCorporationIdOffersInput['header']
+        OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetLoyaltyStoresCorporationIdOffersInput['header']
+        OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7353,34 +7973,38 @@ export type PostCharactersCharacterIdMailLabelsDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['createLabel'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdMailLabelsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdMailLabelsData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdMailLabelsOptions,
-    ) => Promise<PostCharactersCharacterIdMailLabelsOutput>
+    ) => Promise<PostCharactersCharacterIdMailLabelsResponse>
   >
 >;
 export type PostCharactersCharacterIdMailLabelsMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['createLabel'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdMailLabelsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdMailLabelsData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdMailLabelsOptions,
-    ) => Promise<EsiResponse<PostCharactersCharacterIdMailLabelsOutput>>
+    ) => Promise<EsiResponse<PostCharactersCharacterIdMailLabelsResponse>>
   >
 >;
 export type PostCharactersCharacterIdMailLabelsOptionsAssertion = Assert<
   IsExact<
     PostCharactersCharacterIdMailLabelsOptions,
     {
-      readonly body: PostCharactersCharacterIdMailLabelsInput['body'];
+      readonly body: OperationArguments<PostCharactersCharacterIdMailLabelsData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersCharacterIdMailLabelsInput['header']
+        OperationArguments<PostCharactersCharacterIdMailLabelsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCharactersCharacterIdMailLabelsInput['header']
+        OperationArguments<PostCharactersCharacterIdMailLabelsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        PostCharactersCharacterIdMailLabelsInput['header']
+        OperationArguments<PostCharactersCharacterIdMailLabelsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7390,11 +8014,13 @@ export type DeleteCharactersCharacterIdMailLabelsLabelIdDomainMethodAssertion = 
     MailDomainClient['deleteLabel'],
     (
       characterId: NonNullable<
-        DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']
+        OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']
       >['character_id'],
-      labelId: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']>['label_id'],
+      labelId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']
+      >['label_id'],
       options?: DeleteCharactersCharacterIdMailLabelsLabelIdOptions,
-    ) => Promise<DeleteCharactersCharacterIdMailLabelsLabelIdOutput>
+    ) => Promise<DeleteCharactersCharacterIdMailLabelsLabelIdResponse>
   >
 >;
 export type DeleteCharactersCharacterIdMailLabelsLabelIdMetadataMethodAssertion = Assert<
@@ -7402,11 +8028,13 @@ export type DeleteCharactersCharacterIdMailLabelsLabelIdMetadataMethodAssertion 
     MailDomainClientWithMetadata['deleteLabel'],
     (
       characterId: NonNullable<
-        DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']
+        OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']
       >['character_id'],
-      labelId: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']>['label_id'],
+      labelId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']
+      >['label_id'],
       options?: DeleteCharactersCharacterIdMailLabelsLabelIdOptions,
-    ) => Promise<EsiResponse<DeleteCharactersCharacterIdMailLabelsLabelIdOutput>>
+    ) => Promise<EsiResponse<DeleteCharactersCharacterIdMailLabelsLabelIdResponse>>
   >
 >;
 export type DeleteCharactersCharacterIdMailLabelsLabelIdOptionsAssertion = Assert<
@@ -7415,13 +8043,13 @@ export type DeleteCharactersCharacterIdMailLabelsLabelIdOptionsAssertion = Asser
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        DeleteCharactersCharacterIdMailLabelsLabelIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        DeleteCharactersCharacterIdMailLabelsLabelIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        DeleteCharactersCharacterIdMailLabelsLabelIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7430,20 +8058,28 @@ export type DeleteCharactersCharacterIdMailMailIdDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['deleteMail'],
     (
-      characterId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>['character_id'],
-      mailId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>['mail_id'],
+      characterId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']
+      >['character_id'],
+      mailId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']
+      >['mail_id'],
       options?: DeleteCharactersCharacterIdMailMailIdOptions,
-    ) => Promise<DeleteCharactersCharacterIdMailMailIdOutput>
+    ) => Promise<DeleteCharactersCharacterIdMailMailIdResponse>
   >
 >;
 export type DeleteCharactersCharacterIdMailMailIdMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['deleteMail'],
     (
-      characterId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>['character_id'],
-      mailId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>['mail_id'],
+      characterId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']
+      >['character_id'],
+      mailId: NonNullable<
+        OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']
+      >['mail_id'],
       options?: DeleteCharactersCharacterIdMailMailIdOptions,
-    ) => Promise<EsiResponse<DeleteCharactersCharacterIdMailMailIdOutput>>
+    ) => Promise<EsiResponse<DeleteCharactersCharacterIdMailMailIdResponse>>
   >
 >;
 export type DeleteCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
@@ -7452,13 +8088,13 @@ export type DeleteCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        DeleteCharactersCharacterIdMailMailIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        DeleteCharactersCharacterIdMailMailIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        DeleteCharactersCharacterIdMailMailIdInput['header']
+        OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7467,20 +8103,28 @@ export type GetCharactersCharacterIdMailMailIdDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['get'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>['character_id'],
-      mailId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>['mail_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']
+      >['character_id'],
+      mailId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']
+      >['mail_id'],
       options?: GetCharactersCharacterIdMailMailIdOptions,
-    ) => Promise<GetCharactersCharacterIdMailMailIdOutput>
+    ) => Promise<GetCharactersCharacterIdMailMailIdResponse>
   >
 >;
 export type GetCharactersCharacterIdMailMailIdMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['get'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>['character_id'],
-      mailId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>['mail_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']
+      >['character_id'],
+      mailId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']
+      >['mail_id'],
       options?: GetCharactersCharacterIdMailMailIdOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdMailMailIdOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdMailMailIdResponse>>
   >
 >;
 export type GetCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
@@ -7489,12 +8133,14 @@ export type GetCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdMailMailIdInput['header']
+        OperationArguments<GetCharactersCharacterIdMailMailIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdMailMailIdInput['header']
+        OperationArguments<GetCharactersCharacterIdMailMailIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdMailMailIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailMailIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7502,18 +8148,22 @@ export type GetCharactersCharacterIdMailDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['listHeaders'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMailOptions,
-    ) => Promise<GetCharactersCharacterIdMailOutput>
+    ) => Promise<GetCharactersCharacterIdMailResponse>
   >
 >;
 export type GetCharactersCharacterIdMailMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['listHeaders'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMailOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdMailOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdMailResponse>>
   >
 >;
 export type GetCharactersCharacterIdMailOptionsAssertion = Assert<
@@ -7522,14 +8172,20 @@ export type GetCharactersCharacterIdMailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdMailInput['header']
+        OperationArguments<GetCharactersCharacterIdMailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdMailInput['header']
+        OperationArguments<GetCharactersCharacterIdMailData>['headers']
       >['If-None-Match'];
-      readonly labels?: NonNullable<GetCharactersCharacterIdMailInput['query']>['labels'];
-      readonly lastMailId?: NonNullable<GetCharactersCharacterIdMailInput['query']>['last_mail_id'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdMailInput['header']>['X-Tenant'];
+      readonly labels?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailData>['query']
+      >['labels'];
+      readonly lastMailId?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailData>['query']
+      >['last_mail_id'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7537,18 +8193,22 @@ export type GetCharactersCharacterIdMailLabelsDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['listLabels'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailLabelsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailLabelsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMailLabelsOptions,
-    ) => Promise<GetCharactersCharacterIdMailLabelsOutput>
+    ) => Promise<GetCharactersCharacterIdMailLabelsResponse>
   >
 >;
 export type GetCharactersCharacterIdMailLabelsMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['listLabels'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailLabelsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailLabelsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMailLabelsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdMailLabelsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdMailLabelsResponse>>
   >
 >;
 export type GetCharactersCharacterIdMailLabelsOptionsAssertion = Assert<
@@ -7557,12 +8217,14 @@ export type GetCharactersCharacterIdMailLabelsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdMailLabelsInput['header']
+        OperationArguments<GetCharactersCharacterIdMailLabelsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdMailLabelsInput['header']
+        OperationArguments<GetCharactersCharacterIdMailLabelsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdMailLabelsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailLabelsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7570,18 +8232,22 @@ export type GetCharactersCharacterIdMailListsDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['listMailingLists'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailListsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailListsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMailListsOptions,
-    ) => Promise<GetCharactersCharacterIdMailListsOutput>
+    ) => Promise<GetCharactersCharacterIdMailListsResponse>
   >
 >;
 export type GetCharactersCharacterIdMailListsMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['listMailingLists'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdMailListsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailListsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdMailListsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdMailListsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdMailListsResponse>>
   >
 >;
 export type GetCharactersCharacterIdMailListsOptionsAssertion = Assert<
@@ -7590,12 +8256,14 @@ export type GetCharactersCharacterIdMailListsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdMailListsInput['header']
+        OperationArguments<GetCharactersCharacterIdMailListsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdMailListsInput['header']
+        OperationArguments<GetCharactersCharacterIdMailListsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdMailListsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdMailListsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7603,33 +8271,39 @@ export type PostCharactersCharacterIdMailDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['send'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdMailInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdMailData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdMailOptions,
-    ) => Promise<PostCharactersCharacterIdMailOutput>
+    ) => Promise<PostCharactersCharacterIdMailResponse>
   >
 >;
 export type PostCharactersCharacterIdMailMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['send'],
     (
-      characterId: NonNullable<PostCharactersCharacterIdMailInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<PostCharactersCharacterIdMailData>['path']
+      >['character_id'],
       options: PostCharactersCharacterIdMailOptions,
-    ) => Promise<EsiResponse<PostCharactersCharacterIdMailOutput>>
+    ) => Promise<EsiResponse<PostCharactersCharacterIdMailResponse>>
   >
 >;
 export type PostCharactersCharacterIdMailOptionsAssertion = Assert<
   IsExact<
     PostCharactersCharacterIdMailOptions,
     {
-      readonly body: PostCharactersCharacterIdMailInput['body'];
+      readonly body: OperationArguments<PostCharactersCharacterIdMailData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostCharactersCharacterIdMailInput['header']
+        OperationArguments<PostCharactersCharacterIdMailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostCharactersCharacterIdMailInput['header']
+        OperationArguments<PostCharactersCharacterIdMailData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PostCharactersCharacterIdMailInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostCharactersCharacterIdMailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7637,35 +8311,45 @@ export type PutCharactersCharacterIdMailMailIdDomainMethodAssertion = Assert<
   IsExact<
     MailDomainClient['update'],
     (
-      characterId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>['character_id'],
-      mailId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>['mail_id'],
+      characterId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']
+      >['character_id'],
+      mailId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']
+      >['mail_id'],
       options: PutCharactersCharacterIdMailMailIdOptions,
-    ) => Promise<PutCharactersCharacterIdMailMailIdOutput>
+    ) => Promise<PutCharactersCharacterIdMailMailIdResponse>
   >
 >;
 export type PutCharactersCharacterIdMailMailIdMetadataMethodAssertion = Assert<
   IsExact<
     MailDomainClientWithMetadata['update'],
     (
-      characterId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>['character_id'],
-      mailId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>['mail_id'],
+      characterId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']
+      >['character_id'],
+      mailId: NonNullable<
+        OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']
+      >['mail_id'],
       options: PutCharactersCharacterIdMailMailIdOptions,
-    ) => Promise<EsiResponse<PutCharactersCharacterIdMailMailIdOutput>>
+    ) => Promise<EsiResponse<PutCharactersCharacterIdMailMailIdResponse>>
   >
 >;
 export type PutCharactersCharacterIdMailMailIdOptionsAssertion = Assert<
   IsExact<
     PutCharactersCharacterIdMailMailIdOptions,
     {
-      readonly body: PutCharactersCharacterIdMailMailIdInput['body'];
+      readonly body: OperationArguments<PutCharactersCharacterIdMailMailIdData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PutCharactersCharacterIdMailMailIdInput['header']
+        OperationArguments<PutCharactersCharacterIdMailMailIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PutCharactersCharacterIdMailMailIdInput['header']
+        OperationArguments<PutCharactersCharacterIdMailMailIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<PutCharactersCharacterIdMailMailIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PutCharactersCharacterIdMailMailIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7679,18 +8363,22 @@ export type GetMarketsGroupsMarketGroupIdDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['getGroup'],
     (
-      marketGroupId: NonNullable<GetMarketsGroupsMarketGroupIdInput['path']>['market_group_id'],
+      marketGroupId: NonNullable<
+        OperationArguments<GetMarketsGroupsMarketGroupIdData>['path']
+      >['market_group_id'],
       options?: GetMarketsGroupsMarketGroupIdOptions,
-    ) => Promise<GetMarketsGroupsMarketGroupIdOutput>
+    ) => Promise<GetMarketsGroupsMarketGroupIdResponse>
   >
 >;
 export type GetMarketsGroupsMarketGroupIdMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['getGroup'],
     (
-      marketGroupId: NonNullable<GetMarketsGroupsMarketGroupIdInput['path']>['market_group_id'],
+      marketGroupId: NonNullable<
+        OperationArguments<GetMarketsGroupsMarketGroupIdData>['path']
+      >['market_group_id'],
       options?: GetMarketsGroupsMarketGroupIdOptions,
-    ) => Promise<EsiResponse<GetMarketsGroupsMarketGroupIdOutput>>
+    ) => Promise<EsiResponse<GetMarketsGroupsMarketGroupIdResponse>>
   >
 >;
 export type GetMarketsGroupsMarketGroupIdOptionsAssertion = Assert<
@@ -7699,12 +8387,14 @@ export type GetMarketsGroupsMarketGroupIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMarketsGroupsMarketGroupIdInput['header']
+        OperationArguments<GetMarketsGroupsMarketGroupIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetMarketsGroupsMarketGroupIdInput['header']
+        OperationArguments<GetMarketsGroupsMarketGroupIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMarketsGroupsMarketGroupIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMarketsGroupsMarketGroupIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7712,18 +8402,22 @@ export type GetCharactersCharacterIdOrdersHistoryDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listCharacterOrderHistory'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdOrdersHistoryInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdOrdersHistoryOptions,
-    ) => Promise<GetCharactersCharacterIdOrdersHistoryOutput>
+    ) => Promise<GetCharactersCharacterIdOrdersHistoryResponse>
   >
 >;
 export type GetCharactersCharacterIdOrdersHistoryMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listCharacterOrderHistory'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdOrdersHistoryInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdOrdersHistoryOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdOrdersHistoryOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdOrdersHistoryResponse>>
   >
 >;
 export type GetCharactersCharacterIdOrdersHistoryOptionsAssertion = Assert<
@@ -7732,14 +8426,16 @@ export type GetCharactersCharacterIdOrdersHistoryOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdOrdersHistoryInput['header']
+        OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdOrdersHistoryInput['header']
+        OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdOrdersHistoryInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdOrdersHistoryInput['header']
+        OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7748,18 +8444,22 @@ export type GetCharactersCharacterIdOrdersDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listCharacterOrders'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdOrdersInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOrdersData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdOrdersOptions,
-    ) => Promise<GetCharactersCharacterIdOrdersOutput>
+    ) => Promise<GetCharactersCharacterIdOrdersResponse>
   >
 >;
 export type GetCharactersCharacterIdOrdersMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listCharacterOrders'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdOrdersInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOrdersData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdOrdersOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdOrdersOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdOrdersResponse>>
   >
 >;
 export type GetCharactersCharacterIdOrdersOptionsAssertion = Assert<
@@ -7768,12 +8468,14 @@ export type GetCharactersCharacterIdOrdersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdOrdersInput['header']
+        OperationArguments<GetCharactersCharacterIdOrdersData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdOrdersInput['header']
+        OperationArguments<GetCharactersCharacterIdOrdersData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdOrdersInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdOrdersData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7782,10 +8484,10 @@ export type GetCorporationsCorporationIdOrdersHistoryDomainMethodAssertion = Ass
     MarketDomainClient['listCorporationOrderHistory'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdOrdersHistoryInput['path']
+        OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdOrdersHistoryOptions,
-    ) => Promise<GetCorporationsCorporationIdOrdersHistoryOutput>
+    ) => Promise<GetCorporationsCorporationIdOrdersHistoryResponse>
   >
 >;
 export type GetCorporationsCorporationIdOrdersHistoryMetadataMethodAssertion = Assert<
@@ -7793,10 +8495,10 @@ export type GetCorporationsCorporationIdOrdersHistoryMetadataMethodAssertion = A
     MarketDomainClientWithMetadata['listCorporationOrderHistory'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdOrdersHistoryInput['path']
+        OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdOrdersHistoryOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdOrdersHistoryOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdOrdersHistoryResponse>>
   >
 >;
 export type GetCorporationsCorporationIdOrdersHistoryOptionsAssertion = Assert<
@@ -7805,14 +8507,16 @@ export type GetCorporationsCorporationIdOrdersHistoryOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdOrdersHistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdOrdersHistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdOrdersHistoryInput['header']
+        OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['headers']
       >['X-Tenant'];
     }
   >
@@ -7821,18 +8525,22 @@ export type GetCorporationsCorporationIdOrdersDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listCorporationOrders'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdOrdersInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdOrdersData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdOrdersOptions,
-    ) => Promise<GetCorporationsCorporationIdOrdersOutput>
+    ) => Promise<GetCorporationsCorporationIdOrdersResponse>
   >
 >;
 export type GetCorporationsCorporationIdOrdersMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listCorporationOrders'],
     (
-      corporationId: NonNullable<GetCorporationsCorporationIdOrdersInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdOrdersData>['path']
+      >['corporation_id'],
       options?: GetCorporationsCorporationIdOrdersOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdOrdersOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdOrdersResponse>>
   >
 >;
 export type GetCorporationsCorporationIdOrdersOptionsAssertion = Assert<
@@ -7841,26 +8549,30 @@ export type GetCorporationsCorporationIdOrdersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdOrdersInput['header']
+        OperationArguments<GetCorporationsCorporationIdOrdersData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdOrdersInput['header']
+        OperationArguments<GetCorporationsCorporationIdOrdersData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdOrdersInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetCorporationsCorporationIdOrdersInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdOrdersData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdOrdersData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetMarketsGroupsDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listGroups'],
-    (options?: GetMarketsGroupsOptions) => Promise<GetMarketsGroupsOutput>
+    (options?: GetMarketsGroupsOptions) => Promise<GetMarketsGroupsResponse>
   >
 >;
 export type GetMarketsGroupsMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listGroups'],
-    (options?: GetMarketsGroupsOptions) => Promise<EsiResponse<GetMarketsGroupsOutput>>
+    (options?: GetMarketsGroupsOptions) => Promise<EsiResponse<GetMarketsGroupsResponse>>
   >
 >;
 export type GetMarketsGroupsOptionsAssertion = Assert<
@@ -7868,22 +8580,28 @@ export type GetMarketsGroupsOptionsAssertion = Assert<
     GetMarketsGroupsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetMarketsGroupsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMarketsGroupsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMarketsGroupsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetMarketsGroupsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMarketsGroupsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMarketsGroupsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetMarketsPricesDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listPrices'],
-    (options?: GetMarketsPricesOptions) => Promise<GetMarketsPricesOutput>
+    (options?: GetMarketsPricesOptions) => Promise<GetMarketsPricesResponse>
   >
 >;
 export type GetMarketsPricesMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listPrices'],
-    (options?: GetMarketsPricesOptions) => Promise<EsiResponse<GetMarketsPricesOutput>>
+    (options?: GetMarketsPricesOptions) => Promise<EsiResponse<GetMarketsPricesResponse>>
   >
 >;
 export type GetMarketsPricesOptionsAssertion = Assert<
@@ -7891,9 +8609,15 @@ export type GetMarketsPricesOptionsAssertion = Assert<
     GetMarketsPricesOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetMarketsPricesInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMarketsPricesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMarketsPricesInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetMarketsPricesData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMarketsPricesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMarketsPricesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7901,18 +8625,18 @@ export type GetMarketsRegionIdHistoryDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listRegionHistory'],
     (
-      regionId: NonNullable<GetMarketsRegionIdHistoryInput['path']>['region_id'],
+      regionId: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>['path']>['region_id'],
       options: GetMarketsRegionIdHistoryOptions,
-    ) => Promise<GetMarketsRegionIdHistoryOutput>
+    ) => Promise<GetMarketsRegionIdHistoryResponse>
   >
 >;
 export type GetMarketsRegionIdHistoryMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listRegionHistory'],
     (
-      regionId: NonNullable<GetMarketsRegionIdHistoryInput['path']>['region_id'],
+      regionId: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>['path']>['region_id'],
       options: GetMarketsRegionIdHistoryOptions,
-    ) => Promise<EsiResponse<GetMarketsRegionIdHistoryOutput>>
+    ) => Promise<EsiResponse<GetMarketsRegionIdHistoryResponse>>
   >
 >;
 export type GetMarketsRegionIdHistoryOptionsAssertion = Assert<
@@ -7921,11 +8645,17 @@ export type GetMarketsRegionIdHistoryOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMarketsRegionIdHistoryInput['header']
+        OperationArguments<GetMarketsRegionIdHistoryData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMarketsRegionIdHistoryInput['header']>['If-None-Match'];
-      readonly typeId: NonNullable<GetMarketsRegionIdHistoryInput['query']>['type_id'];
-      readonly xTenant?: NonNullable<GetMarketsRegionIdHistoryInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMarketsRegionIdHistoryData>['headers']
+      >['If-None-Match'];
+      readonly typeId: NonNullable<
+        OperationArguments<GetMarketsRegionIdHistoryData>['query']
+      >['type_id'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMarketsRegionIdHistoryData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7933,18 +8663,18 @@ export type GetMarketsRegionIdOrdersDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listRegionOrders'],
     (
-      regionId: NonNullable<GetMarketsRegionIdOrdersInput['path']>['region_id'],
+      regionId: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>['path']>['region_id'],
       options: GetMarketsRegionIdOrdersOptions,
-    ) => Promise<GetMarketsRegionIdOrdersOutput>
+    ) => Promise<GetMarketsRegionIdOrdersResponse>
   >
 >;
 export type GetMarketsRegionIdOrdersMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listRegionOrders'],
     (
-      regionId: NonNullable<GetMarketsRegionIdOrdersInput['path']>['region_id'],
+      regionId: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>['path']>['region_id'],
       options: GetMarketsRegionIdOrdersOptions,
-    ) => Promise<EsiResponse<GetMarketsRegionIdOrdersOutput>>
+    ) => Promise<EsiResponse<GetMarketsRegionIdOrdersResponse>>
   >
 >;
 export type GetMarketsRegionIdOrdersOptionsAssertion = Assert<
@@ -7953,13 +8683,23 @@ export type GetMarketsRegionIdOrdersOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMarketsRegionIdOrdersInput['header']
+        OperationArguments<GetMarketsRegionIdOrdersData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMarketsRegionIdOrdersInput['header']>['If-None-Match'];
-      readonly orderType: NonNullable<GetMarketsRegionIdOrdersInput['query']>['order_type'];
-      readonly page?: NonNullable<GetMarketsRegionIdOrdersInput['query']>['page'];
-      readonly typeId?: NonNullable<GetMarketsRegionIdOrdersInput['query']>['type_id'];
-      readonly xTenant?: NonNullable<GetMarketsRegionIdOrdersInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMarketsRegionIdOrdersData>['headers']
+      >['If-None-Match'];
+      readonly orderType: NonNullable<
+        OperationArguments<GetMarketsRegionIdOrdersData>['query']
+      >['order_type'];
+      readonly page?: NonNullable<
+        OperationArguments<GetMarketsRegionIdOrdersData>['query']
+      >['page'];
+      readonly typeId?: NonNullable<
+        OperationArguments<GetMarketsRegionIdOrdersData>['query']
+      >['type_id'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMarketsRegionIdOrdersData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7967,18 +8707,18 @@ export type GetMarketsRegionIdTypesDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listRegionTypes'],
     (
-      regionId: NonNullable<GetMarketsRegionIdTypesInput['path']>['region_id'],
+      regionId: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['path']>['region_id'],
       options?: GetMarketsRegionIdTypesOptions,
-    ) => Promise<GetMarketsRegionIdTypesOutput>
+    ) => Promise<GetMarketsRegionIdTypesResponse>
   >
 >;
 export type GetMarketsRegionIdTypesMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listRegionTypes'],
     (
-      regionId: NonNullable<GetMarketsRegionIdTypesInput['path']>['region_id'],
+      regionId: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['path']>['region_id'],
       options?: GetMarketsRegionIdTypesOptions,
-    ) => Promise<EsiResponse<GetMarketsRegionIdTypesOutput>>
+    ) => Promise<EsiResponse<GetMarketsRegionIdTypesResponse>>
   >
 >;
 export type GetMarketsRegionIdTypesOptionsAssertion = Assert<
@@ -7987,11 +8727,15 @@ export type GetMarketsRegionIdTypesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMarketsRegionIdTypesInput['header']
+        OperationArguments<GetMarketsRegionIdTypesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMarketsRegionIdTypesInput['header']>['If-None-Match'];
-      readonly page?: NonNullable<GetMarketsRegionIdTypesInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetMarketsRegionIdTypesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMarketsRegionIdTypesData>['headers']
+      >['If-None-Match'];
+      readonly page?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['query']>['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMarketsRegionIdTypesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -7999,18 +8743,22 @@ export type GetMarketsStructuresStructureIdDomainMethodAssertion = Assert<
   IsExact<
     MarketDomainClient['listStructureOrders'],
     (
-      structureId: NonNullable<GetMarketsStructuresStructureIdInput['path']>['structure_id'],
+      structureId: NonNullable<
+        OperationArguments<GetMarketsStructuresStructureIdData>['path']
+      >['structure_id'],
       options?: GetMarketsStructuresStructureIdOptions,
-    ) => Promise<GetMarketsStructuresStructureIdOutput>
+    ) => Promise<GetMarketsStructuresStructureIdResponse>
   >
 >;
 export type GetMarketsStructuresStructureIdMetadataMethodAssertion = Assert<
   IsExact<
     MarketDomainClientWithMetadata['listStructureOrders'],
     (
-      structureId: NonNullable<GetMarketsStructuresStructureIdInput['path']>['structure_id'],
+      structureId: NonNullable<
+        OperationArguments<GetMarketsStructuresStructureIdData>['path']
+      >['structure_id'],
       options?: GetMarketsStructuresStructureIdOptions,
-    ) => Promise<EsiResponse<GetMarketsStructuresStructureIdOutput>>
+    ) => Promise<EsiResponse<GetMarketsStructuresStructureIdResponse>>
   >
 >;
 export type GetMarketsStructuresStructureIdOptionsAssertion = Assert<
@@ -8019,13 +8767,17 @@ export type GetMarketsStructuresStructureIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMarketsStructuresStructureIdInput['header']
+        OperationArguments<GetMarketsStructuresStructureIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetMarketsStructuresStructureIdInput['header']
+        OperationArguments<GetMarketsStructuresStructureIdData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetMarketsStructuresStructureIdInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetMarketsStructuresStructureIdInput['header']>['X-Tenant'];
+      readonly page?: NonNullable<
+        OperationArguments<GetMarketsStructuresStructureIdData>['query']
+      >['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMarketsStructuresStructureIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8038,13 +8790,13 @@ export type MarketDomainClientMetadataViewAssertion = Assert<
 export type GetMetaChangelogDomainMethodAssertion = Assert<
   IsExact<
     MetaDomainClient['getChangelog'],
-    (options?: GetMetaChangelogOptions) => Promise<GetMetaChangelogOutput>
+    (options?: GetMetaChangelogOptions) => Promise<GetMetaChangelogResponse>
   >
 >;
 export type GetMetaChangelogMetadataMethodAssertion = Assert<
   IsExact<
     MetaDomainClientWithMetadata['getChangelog'],
-    (options?: GetMetaChangelogOptions) => Promise<EsiResponse<GetMetaChangelogOutput>>
+    (options?: GetMetaChangelogOptions) => Promise<EsiResponse<GetMetaChangelogResponse>>
   >
 >;
 export type GetMetaChangelogOptionsAssertion = Assert<
@@ -8052,22 +8804,28 @@ export type GetMetaChangelogOptionsAssertion = Assert<
     GetMetaChangelogOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetMetaChangelogInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMetaChangelogInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMetaChangelogInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetMetaChangelogData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMetaChangelogData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMetaChangelogData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetMetaStatusDomainMethodAssertion = Assert<
   IsExact<
     MetaDomainClient['getHealthStatus'],
-    (options?: GetMetaStatusOptions) => Promise<GetMetaStatusOutput>
+    (options?: GetMetaStatusOptions) => Promise<GetMetaStatusResponse>
   >
 >;
 export type GetMetaStatusMetadataMethodAssertion = Assert<
   IsExact<
     MetaDomainClientWithMetadata['getHealthStatus'],
-    (options?: GetMetaStatusOptions) => Promise<EsiResponse<GetMetaStatusOutput>>
+    (options?: GetMetaStatusOptions) => Promise<EsiResponse<GetMetaStatusResponse>>
   >
 >;
 export type GetMetaStatusOptionsAssertion = Assert<
@@ -8075,19 +8833,26 @@ export type GetMetaStatusOptionsAssertion = Assert<
     GetMetaStatusOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetMetaStatusInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMetaStatusInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMetaStatusInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetMetaStatusData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMetaStatusData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetMetaStatusData>['headers']>['X-Tenant'];
     }
   >
 >;
 export type GetMetaNameDomainMethodAssertion = Assert<
-  IsExact<MetaDomainClient['getName'], (options?: GetMetaNameOptions) => Promise<GetMetaNameOutput>>
+  IsExact<
+    MetaDomainClient['getName'],
+    (options?: GetMetaNameOptions) => Promise<GetMetaNameResponse>
+  >
 >;
 export type GetMetaNameMetadataMethodAssertion = Assert<
   IsExact<
     MetaDomainClientWithMetadata['getName'],
-    (options?: GetMetaNameOptions) => Promise<EsiResponse<GetMetaNameOutput>>
+    (options?: GetMetaNameOptions) => Promise<EsiResponse<GetMetaNameResponse>>
   >
 >;
 export type GetMetaNameOptionsAssertion = Assert<
@@ -8095,16 +8860,20 @@ export type GetMetaNameOptionsAssertion = Assert<
     GetMetaNameOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetMetaNameInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMetaNameInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMetaNameInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetMetaNameData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMetaNameData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetMetaNameData>['headers']>['X-Tenant'];
     }
   >
 >;
 export type GetMetaCompatibilityDatesDomainMethodAssertion = Assert<
   IsExact<
     MetaDomainClient['listCompatibilityDates'],
-    (options?: GetMetaCompatibilityDatesOptions) => Promise<GetMetaCompatibilityDatesOutput>
+    (options?: GetMetaCompatibilityDatesOptions) => Promise<GetMetaCompatibilityDatesResponse>
   >
 >;
 export type GetMetaCompatibilityDatesMetadataMethodAssertion = Assert<
@@ -8112,7 +8881,7 @@ export type GetMetaCompatibilityDatesMetadataMethodAssertion = Assert<
     MetaDomainClientWithMetadata['listCompatibilityDates'],
     (
       options?: GetMetaCompatibilityDatesOptions,
-    ) => Promise<EsiResponse<GetMetaCompatibilityDatesOutput>>
+    ) => Promise<EsiResponse<GetMetaCompatibilityDatesResponse>>
   >
 >;
 export type GetMetaCompatibilityDatesOptionsAssertion = Assert<
@@ -8121,10 +8890,14 @@ export type GetMetaCompatibilityDatesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMetaCompatibilityDatesInput['header']
+        OperationArguments<GetMetaCompatibilityDatesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetMetaCompatibilityDatesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMetaCompatibilityDatesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetMetaCompatibilityDatesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMetaCompatibilityDatesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8138,18 +8911,22 @@ export type GetMilitaryCampaignsDetailDomainMethodAssertion = Assert<
   IsExact<
     MilitaryCampaignsDomainClient['getCampaign'],
     (
-      campaignId: NonNullable<GetMilitaryCampaignsDetailInput['path']>['campaign_id'],
+      campaignId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsDetailData>['path']
+      >['campaign_id'],
       options?: GetMilitaryCampaignsDetailOptions,
-    ) => Promise<GetMilitaryCampaignsDetailOutput>
+    ) => Promise<GetMilitaryCampaignsDetailResponse>
   >
 >;
 export type GetMilitaryCampaignsDetailMetadataMethodAssertion = Assert<
   IsExact<
     MilitaryCampaignsDomainClientWithMetadata['getCampaign'],
     (
-      campaignId: NonNullable<GetMilitaryCampaignsDetailInput['path']>['campaign_id'],
+      campaignId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsDetailData>['path']
+      >['campaign_id'],
       options?: GetMilitaryCampaignsDetailOptions,
-    ) => Promise<EsiResponse<GetMilitaryCampaignsDetailOutput>>
+    ) => Promise<EsiResponse<GetMilitaryCampaignsDetailResponse>>
   >
 >;
 export type GetMilitaryCampaignsDetailOptionsAssertion = Assert<
@@ -8158,12 +8935,14 @@ export type GetMilitaryCampaignsDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMilitaryCampaignsDetailInput['header']
+        OperationArguments<GetMilitaryCampaignsDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetMilitaryCampaignsDetailInput['header']
+        OperationArguments<GetMilitaryCampaignsDetailData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMilitaryCampaignsDetailInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMilitaryCampaignsDetailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8172,13 +8951,13 @@ export type GetCharactersMilitaryCampaignsObjectivesParticipationDomainMethodAss
     MilitaryCampaignsDomainClient['getCharacterObjectiveParticipation'],
     (
       characterId: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']
       >['character_id'],
       objectiveId: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']
       >['objective_id'],
       options?: GetCharactersMilitaryCampaignsObjectivesParticipationOptions,
-    ) => Promise<GetCharactersMilitaryCampaignsObjectivesParticipationOutput>
+    ) => Promise<GetCharactersMilitaryCampaignsObjectivesParticipationResponse>
   >
 >;
 export type GetCharactersMilitaryCampaignsObjectivesParticipationMetadataMethodAssertion = Assert<
@@ -8186,13 +8965,13 @@ export type GetCharactersMilitaryCampaignsObjectivesParticipationMetadataMethodA
     MilitaryCampaignsDomainClientWithMetadata['getCharacterObjectiveParticipation'],
     (
       characterId: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']
       >['character_id'],
       objectiveId: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']
       >['objective_id'],
       options?: GetCharactersMilitaryCampaignsObjectivesParticipationOptions,
-    ) => Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesParticipationOutput>>
+    ) => Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesParticipationResponse>>
   >
 >;
 export type GetCharactersMilitaryCampaignsObjectivesParticipationOptionsAssertion = Assert<
@@ -8201,13 +8980,13 @@ export type GetCharactersMilitaryCampaignsObjectivesParticipationOptionsAssertio
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesParticipationInput['header']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesParticipationInput['header']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesParticipationInput['header']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['headers']
       >['X-Tenant'];
     }
   >
@@ -8216,20 +8995,28 @@ export type GetMilitaryCampaignsObjectivesDetailDomainMethodAssertion = Assert<
   IsExact<
     MilitaryCampaignsDomainClient['getObjective'],
     (
-      campaignId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>['campaign_id'],
-      objectiveId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>['objective_id'],
+      campaignId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']
+      >['campaign_id'],
+      objectiveId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']
+      >['objective_id'],
       options?: GetMilitaryCampaignsObjectivesDetailOptions,
-    ) => Promise<GetMilitaryCampaignsObjectivesDetailOutput>
+    ) => Promise<GetMilitaryCampaignsObjectivesDetailResponse>
   >
 >;
 export type GetMilitaryCampaignsObjectivesDetailMetadataMethodAssertion = Assert<
   IsExact<
     MilitaryCampaignsDomainClientWithMetadata['getObjective'],
     (
-      campaignId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>['campaign_id'],
-      objectiveId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>['objective_id'],
+      campaignId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']
+      >['campaign_id'],
+      objectiveId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']
+      >['objective_id'],
       options?: GetMilitaryCampaignsObjectivesDetailOptions,
-    ) => Promise<EsiResponse<GetMilitaryCampaignsObjectivesDetailOutput>>
+    ) => Promise<EsiResponse<GetMilitaryCampaignsObjectivesDetailResponse>>
   >
 >;
 export type GetMilitaryCampaignsObjectivesDetailOptionsAssertion = Assert<
@@ -8238,13 +9025,13 @@ export type GetMilitaryCampaignsObjectivesDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMilitaryCampaignsObjectivesDetailInput['header']
+        OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetMilitaryCampaignsObjectivesDetailInput['header']
+        OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetMilitaryCampaignsObjectivesDetailInput['header']
+        OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['headers']
       >['X-Tenant'];
     }
   >
@@ -8252,7 +9039,7 @@ export type GetMilitaryCampaignsObjectivesDetailOptionsAssertion = Assert<
 export type GetMilitaryCampaignsListingDomainMethodAssertion = Assert<
   IsExact<
     MilitaryCampaignsDomainClient['listCampaigns'],
-    (options?: GetMilitaryCampaignsListingOptions) => Promise<GetMilitaryCampaignsListingOutput>
+    (options?: GetMilitaryCampaignsListingOptions) => Promise<GetMilitaryCampaignsListingResponse>
   >
 >;
 export type GetMilitaryCampaignsListingMetadataMethodAssertion = Assert<
@@ -8260,7 +9047,7 @@ export type GetMilitaryCampaignsListingMetadataMethodAssertion = Assert<
     MilitaryCampaignsDomainClientWithMetadata['listCampaigns'],
     (
       options?: GetMilitaryCampaignsListingOptions,
-    ) => Promise<EsiResponse<GetMilitaryCampaignsListingOutput>>
+    ) => Promise<EsiResponse<GetMilitaryCampaignsListingResponse>>
   >
 >;
 export type GetMilitaryCampaignsListingOptionsAssertion = Assert<
@@ -8269,12 +9056,14 @@ export type GetMilitaryCampaignsListingOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMilitaryCampaignsListingInput['header']
+        OperationArguments<GetMilitaryCampaignsListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetMilitaryCampaignsListingInput['header']
+        OperationArguments<GetMilitaryCampaignsListingData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetMilitaryCampaignsListingInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetMilitaryCampaignsListingData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8283,10 +9072,10 @@ export type GetCharactersMilitaryCampaignsObjectivesListingDomainMethodAssertion
     MilitaryCampaignsDomainClient['listCharacterObjectiveParticipations'],
     (
       characterId: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['path']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['path']
       >['character_id'],
       options?: GetCharactersMilitaryCampaignsObjectivesListingOptions,
-    ) => Promise<GetCharactersMilitaryCampaignsObjectivesListingOutput>
+    ) => Promise<GetCharactersMilitaryCampaignsObjectivesListingResponse>
   >
 >;
 export type GetCharactersMilitaryCampaignsObjectivesListingMetadataMethodAssertion = Assert<
@@ -8294,10 +9083,10 @@ export type GetCharactersMilitaryCampaignsObjectivesListingMetadataMethodAsserti
     MilitaryCampaignsDomainClientWithMetadata['listCharacterObjectiveParticipations'],
     (
       characterId: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['path']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['path']
       >['character_id'],
       options?: GetCharactersMilitaryCampaignsObjectivesListingOptions,
-    ) => Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesListingOutput>>
+    ) => Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesListingResponse>>
   >
 >;
 export type GetCharactersMilitaryCampaignsObjectivesListingOptionsAssertion = Assert<
@@ -8305,23 +9094,23 @@ export type GetCharactersMilitaryCampaignsObjectivesListingOptionsAssertion = As
     GetCharactersMilitaryCampaignsObjectivesListingOptions,
     {
       readonly after?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['query']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['query']
       >['after'];
       readonly before?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['query']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['query']
       >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['header']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['header']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['headers']
       >['If-None-Match'];
       readonly limit?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['query']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['query']
       >['limit'];
       readonly xTenant?: NonNullable<
-        GetCharactersMilitaryCampaignsObjectivesListingInput['header']
+        OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -8330,36 +9119,46 @@ export type GetMilitaryCampaignsObjectivesListingDomainMethodAssertion = Assert<
   IsExact<
     MilitaryCampaignsDomainClient['listObjectives'],
     (
-      campaignId: NonNullable<GetMilitaryCampaignsObjectivesListingInput['path']>['campaign_id'],
+      campaignId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['path']
+      >['campaign_id'],
       options?: GetMilitaryCampaignsObjectivesListingOptions,
-    ) => Promise<GetMilitaryCampaignsObjectivesListingOutput>
+    ) => Promise<GetMilitaryCampaignsObjectivesListingResponse>
   >
 >;
 export type GetMilitaryCampaignsObjectivesListingMetadataMethodAssertion = Assert<
   IsExact<
     MilitaryCampaignsDomainClientWithMetadata['listObjectives'],
     (
-      campaignId: NonNullable<GetMilitaryCampaignsObjectivesListingInput['path']>['campaign_id'],
+      campaignId: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['path']
+      >['campaign_id'],
       options?: GetMilitaryCampaignsObjectivesListingOptions,
-    ) => Promise<EsiResponse<GetMilitaryCampaignsObjectivesListingOutput>>
+    ) => Promise<EsiResponse<GetMilitaryCampaignsObjectivesListingResponse>>
   >
 >;
 export type GetMilitaryCampaignsObjectivesListingOptionsAssertion = Assert<
   IsExact<
     GetMilitaryCampaignsObjectivesListingOptions,
     {
-      readonly after?: NonNullable<GetMilitaryCampaignsObjectivesListingInput['query']>['after'];
-      readonly before?: NonNullable<GetMilitaryCampaignsObjectivesListingInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetMilitaryCampaignsObjectivesListingInput['header']
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetMilitaryCampaignsObjectivesListingInput['header']
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetMilitaryCampaignsObjectivesListingInput['query']>['limit'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['query']
+      >['limit'];
       readonly xTenant?: NonNullable<
-        GetMilitaryCampaignsObjectivesListingInput['header']
+        OperationArguments<GetMilitaryCampaignsObjectivesListingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -8380,35 +9179,47 @@ export type GetParagonHubSkinrAlliancesDomainMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClient['listListingsForAlliance'],
     (
-      allianceId: NonNullable<GetParagonHubSkinrAlliancesInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetParagonHubSkinrAlliancesData>['path']
+      >['alliance_id'],
       options?: GetParagonHubSkinrAlliancesOptions,
-    ) => Promise<GetParagonHubSkinrAlliancesOutput>
+    ) => Promise<GetParagonHubSkinrAlliancesResponse>
   >
 >;
 export type GetParagonHubSkinrAlliancesMetadataMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClientWithMetadata['listListingsForAlliance'],
     (
-      allianceId: NonNullable<GetParagonHubSkinrAlliancesInput['path']>['alliance_id'],
+      allianceId: NonNullable<
+        OperationArguments<GetParagonHubSkinrAlliancesData>['path']
+      >['alliance_id'],
       options?: GetParagonHubSkinrAlliancesOptions,
-    ) => Promise<EsiResponse<GetParagonHubSkinrAlliancesOutput>>
+    ) => Promise<EsiResponse<GetParagonHubSkinrAlliancesResponse>>
   >
 >;
 export type GetParagonHubSkinrAlliancesOptionsAssertion = Assert<
   IsExact<
     GetParagonHubSkinrAlliancesOptions,
     {
-      readonly after?: NonNullable<GetParagonHubSkinrAlliancesInput['query']>['after'];
-      readonly before?: NonNullable<GetParagonHubSkinrAlliancesInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetParagonHubSkinrAlliancesData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetParagonHubSkinrAlliancesData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetParagonHubSkinrAlliancesInput['header']
+        OperationArguments<GetParagonHubSkinrAlliancesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetParagonHubSkinrAlliancesInput['header']
+        OperationArguments<GetParagonHubSkinrAlliancesData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetParagonHubSkinrAlliancesInput['query']>['limit'];
-      readonly xTenant?: NonNullable<GetParagonHubSkinrAlliancesInput['header']>['X-Tenant'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetParagonHubSkinrAlliancesData>['query']
+      >['limit'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetParagonHubSkinrAlliancesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8416,35 +9227,47 @@ export type GetParagonHubSkinrCharactersDomainMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClient['listListingsForCharacter'],
     (
-      characterId: NonNullable<GetParagonHubSkinrCharactersInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetParagonHubSkinrCharactersData>['path']
+      >['character_id'],
       options?: GetParagonHubSkinrCharactersOptions,
-    ) => Promise<GetParagonHubSkinrCharactersOutput>
+    ) => Promise<GetParagonHubSkinrCharactersResponse>
   >
 >;
 export type GetParagonHubSkinrCharactersMetadataMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClientWithMetadata['listListingsForCharacter'],
     (
-      characterId: NonNullable<GetParagonHubSkinrCharactersInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetParagonHubSkinrCharactersData>['path']
+      >['character_id'],
       options?: GetParagonHubSkinrCharactersOptions,
-    ) => Promise<EsiResponse<GetParagonHubSkinrCharactersOutput>>
+    ) => Promise<EsiResponse<GetParagonHubSkinrCharactersResponse>>
   >
 >;
 export type GetParagonHubSkinrCharactersOptionsAssertion = Assert<
   IsExact<
     GetParagonHubSkinrCharactersOptions,
     {
-      readonly after?: NonNullable<GetParagonHubSkinrCharactersInput['query']>['after'];
-      readonly before?: NonNullable<GetParagonHubSkinrCharactersInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCharactersData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCharactersData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetParagonHubSkinrCharactersInput['header']
+        OperationArguments<GetParagonHubSkinrCharactersData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetParagonHubSkinrCharactersInput['header']
+        OperationArguments<GetParagonHubSkinrCharactersData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetParagonHubSkinrCharactersInput['query']>['limit'];
-      readonly xTenant?: NonNullable<GetParagonHubSkinrCharactersInput['header']>['X-Tenant'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCharactersData>['query']
+      >['limit'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCharactersData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8452,35 +9275,47 @@ export type GetParagonHubSkinrCorporationsDomainMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClient['listListingsForCorporation'],
     (
-      corporationId: NonNullable<GetParagonHubSkinrCorporationsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetParagonHubSkinrCorporationsData>['path']
+      >['corporation_id'],
       options?: GetParagonHubSkinrCorporationsOptions,
-    ) => Promise<GetParagonHubSkinrCorporationsOutput>
+    ) => Promise<GetParagonHubSkinrCorporationsResponse>
   >
 >;
 export type GetParagonHubSkinrCorporationsMetadataMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClientWithMetadata['listListingsForCorporation'],
     (
-      corporationId: NonNullable<GetParagonHubSkinrCorporationsInput['path']>['corporation_id'],
+      corporationId: NonNullable<
+        OperationArguments<GetParagonHubSkinrCorporationsData>['path']
+      >['corporation_id'],
       options?: GetParagonHubSkinrCorporationsOptions,
-    ) => Promise<EsiResponse<GetParagonHubSkinrCorporationsOutput>>
+    ) => Promise<EsiResponse<GetParagonHubSkinrCorporationsResponse>>
   >
 >;
 export type GetParagonHubSkinrCorporationsOptionsAssertion = Assert<
   IsExact<
     GetParagonHubSkinrCorporationsOptions,
     {
-      readonly after?: NonNullable<GetParagonHubSkinrCorporationsInput['query']>['after'];
-      readonly before?: NonNullable<GetParagonHubSkinrCorporationsInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCorporationsData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCorporationsData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetParagonHubSkinrCorporationsInput['header']
+        OperationArguments<GetParagonHubSkinrCorporationsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetParagonHubSkinrCorporationsInput['header']
+        OperationArguments<GetParagonHubSkinrCorporationsData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetParagonHubSkinrCorporationsInput['query']>['limit'];
-      readonly xTenant?: NonNullable<GetParagonHubSkinrCorporationsInput['header']>['X-Tenant'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCorporationsData>['query']
+      >['limit'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetParagonHubSkinrCorporationsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8488,63 +9323,79 @@ export type GetCharactersParagonHubSkinrDomainMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClient['listPostedListings'],
     (
-      characterId: NonNullable<GetCharactersParagonHubSkinrInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersParagonHubSkinrData>['path']
+      >['character_id'],
       options?: GetCharactersParagonHubSkinrOptions,
-    ) => Promise<GetCharactersParagonHubSkinrOutput>
+    ) => Promise<GetCharactersParagonHubSkinrResponse>
   >
 >;
 export type GetCharactersParagonHubSkinrMetadataMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClientWithMetadata['listPostedListings'],
     (
-      characterId: NonNullable<GetCharactersParagonHubSkinrInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersParagonHubSkinrData>['path']
+      >['character_id'],
       options?: GetCharactersParagonHubSkinrOptions,
-    ) => Promise<EsiResponse<GetCharactersParagonHubSkinrOutput>>
+    ) => Promise<EsiResponse<GetCharactersParagonHubSkinrResponse>>
   >
 >;
 export type GetCharactersParagonHubSkinrOptionsAssertion = Assert<
   IsExact<
     GetCharactersParagonHubSkinrOptions,
     {
-      readonly after?: NonNullable<GetCharactersParagonHubSkinrInput['query']>['after'];
-      readonly before?: NonNullable<GetCharactersParagonHubSkinrInput['query']>['before'];
+      readonly after?: NonNullable<
+        OperationArguments<GetCharactersParagonHubSkinrData>['query']
+      >['after'];
+      readonly before?: NonNullable<
+        OperationArguments<GetCharactersParagonHubSkinrData>['query']
+      >['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersParagonHubSkinrInput['header']
+        OperationArguments<GetCharactersParagonHubSkinrData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersParagonHubSkinrInput['header']
+        OperationArguments<GetCharactersParagonHubSkinrData>['headers']
       >['If-None-Match'];
-      readonly limit?: NonNullable<GetCharactersParagonHubSkinrInput['query']>['limit'];
-      readonly xTenant?: NonNullable<GetCharactersParagonHubSkinrInput['header']>['X-Tenant'];
+      readonly limit?: NonNullable<
+        OperationArguments<GetCharactersParagonHubSkinrData>['query']
+      >['limit'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersParagonHubSkinrData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetParagonHubSkinrDomainMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClient['listPublicListings'],
-    (options?: GetParagonHubSkinrOptions) => Promise<GetParagonHubSkinrOutput>
+    (options?: GetParagonHubSkinrOptions) => Promise<GetParagonHubSkinrResponse>
   >
 >;
 export type GetParagonHubSkinrMetadataMethodAssertion = Assert<
   IsExact<
     ParagonHubDomainClientWithMetadata['listPublicListings'],
-    (options?: GetParagonHubSkinrOptions) => Promise<EsiResponse<GetParagonHubSkinrOutput>>
+    (options?: GetParagonHubSkinrOptions) => Promise<EsiResponse<GetParagonHubSkinrResponse>>
   >
 >;
 export type GetParagonHubSkinrOptionsAssertion = Assert<
   IsExact<
     GetParagonHubSkinrOptions,
     {
-      readonly after?: NonNullable<GetParagonHubSkinrInput['query']>['after'];
-      readonly before?: NonNullable<GetParagonHubSkinrInput['query']>['before'];
+      readonly after?: NonNullable<OperationArguments<GetParagonHubSkinrData>['query']>['after'];
+      readonly before?: NonNullable<OperationArguments<GetParagonHubSkinrData>['query']>['before'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetParagonHubSkinrInput['header']
+        OperationArguments<GetParagonHubSkinrData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetParagonHubSkinrInput['header']>['If-None-Match'];
-      readonly limit?: NonNullable<GetParagonHubSkinrInput['query']>['limit'];
-      readonly xTenant?: NonNullable<GetParagonHubSkinrInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetParagonHubSkinrData>['headers']
+      >['If-None-Match'];
+      readonly limit?: NonNullable<OperationArguments<GetParagonHubSkinrData>['query']>['limit'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetParagonHubSkinrData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8559,11 +9410,13 @@ export type GetCharactersCharacterIdPlanetsPlanetIdDomainMethodAssertion = Asser
     PlanetaryInteractionDomainClient['getColonyLayout'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdPlanetsPlanetIdInput['path']
+        OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']
       >['character_id'],
-      planetId: NonNullable<GetCharactersCharacterIdPlanetsPlanetIdInput['path']>['planet_id'],
+      planetId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']
+      >['planet_id'],
       options?: GetCharactersCharacterIdPlanetsPlanetIdOptions,
-    ) => Promise<GetCharactersCharacterIdPlanetsPlanetIdOutput>
+    ) => Promise<GetCharactersCharacterIdPlanetsPlanetIdResponse>
   >
 >;
 export type GetCharactersCharacterIdPlanetsPlanetIdMetadataMethodAssertion = Assert<
@@ -8571,11 +9424,13 @@ export type GetCharactersCharacterIdPlanetsPlanetIdMetadataMethodAssertion = Ass
     PlanetaryInteractionDomainClientWithMetadata['getColonyLayout'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdPlanetsPlanetIdInput['path']
+        OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']
       >['character_id'],
-      planetId: NonNullable<GetCharactersCharacterIdPlanetsPlanetIdInput['path']>['planet_id'],
+      planetId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']
+      >['planet_id'],
       options?: GetCharactersCharacterIdPlanetsPlanetIdOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdPlanetsPlanetIdOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdPlanetsPlanetIdResponse>>
   >
 >;
 export type GetCharactersCharacterIdPlanetsPlanetIdOptionsAssertion = Assert<
@@ -8584,13 +9439,13 @@ export type GetCharactersCharacterIdPlanetsPlanetIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdPlanetsPlanetIdInput['header']
+        OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdPlanetsPlanetIdInput['header']
+        OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdPlanetsPlanetIdInput['header']
+        OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -8599,18 +9454,22 @@ export type GetUniverseSchematicsSchematicIdDomainMethodAssertion = Assert<
   IsExact<
     PlanetaryInteractionDomainClient['getSchematic'],
     (
-      schematicId: NonNullable<GetUniverseSchematicsSchematicIdInput['path']>['schematic_id'],
+      schematicId: NonNullable<
+        OperationArguments<GetUniverseSchematicsSchematicIdData>['path']
+      >['schematic_id'],
       options?: GetUniverseSchematicsSchematicIdOptions,
-    ) => Promise<GetUniverseSchematicsSchematicIdOutput>
+    ) => Promise<GetUniverseSchematicsSchematicIdResponse>
   >
 >;
 export type GetUniverseSchematicsSchematicIdMetadataMethodAssertion = Assert<
   IsExact<
     PlanetaryInteractionDomainClientWithMetadata['getSchematic'],
     (
-      schematicId: NonNullable<GetUniverseSchematicsSchematicIdInput['path']>['schematic_id'],
+      schematicId: NonNullable<
+        OperationArguments<GetUniverseSchematicsSchematicIdData>['path']
+      >['schematic_id'],
       options?: GetUniverseSchematicsSchematicIdOptions,
-    ) => Promise<EsiResponse<GetUniverseSchematicsSchematicIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseSchematicsSchematicIdResponse>>
   >
 >;
 export type GetUniverseSchematicsSchematicIdOptionsAssertion = Assert<
@@ -8619,12 +9478,14 @@ export type GetUniverseSchematicsSchematicIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseSchematicsSchematicIdInput['header']
+        OperationArguments<GetUniverseSchematicsSchematicIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseSchematicsSchematicIdInput['header']
+        OperationArguments<GetUniverseSchematicsSchematicIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseSchematicsSchematicIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseSchematicsSchematicIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8632,18 +9493,22 @@ export type GetCharactersCharacterIdPlanetsDomainMethodAssertion = Assert<
   IsExact<
     PlanetaryInteractionDomainClient['listColonies'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdPlanetsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPlanetsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdPlanetsOptions,
-    ) => Promise<GetCharactersCharacterIdPlanetsOutput>
+    ) => Promise<GetCharactersCharacterIdPlanetsResponse>
   >
 >;
 export type GetCharactersCharacterIdPlanetsMetadataMethodAssertion = Assert<
   IsExact<
     PlanetaryInteractionDomainClientWithMetadata['listColonies'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdPlanetsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPlanetsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdPlanetsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdPlanetsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdPlanetsResponse>>
   >
 >;
 export type GetCharactersCharacterIdPlanetsOptionsAssertion = Assert<
@@ -8652,12 +9517,14 @@ export type GetCharactersCharacterIdPlanetsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdPlanetsInput['header']
+        OperationArguments<GetCharactersCharacterIdPlanetsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdPlanetsInput['header']
+        OperationArguments<GetCharactersCharacterIdPlanetsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdPlanetsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdPlanetsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8666,10 +9533,10 @@ export type GetCorporationsCorporationIdCustomsOfficesDomainMethodAssertion = As
     PlanetaryInteractionDomainClient['listCustomsOffices'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdCustomsOfficesInput['path']
+        OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdCustomsOfficesOptions,
-    ) => Promise<GetCorporationsCorporationIdCustomsOfficesOutput>
+    ) => Promise<GetCorporationsCorporationIdCustomsOfficesResponse>
   >
 >;
 export type GetCorporationsCorporationIdCustomsOfficesMetadataMethodAssertion = Assert<
@@ -8677,10 +9544,10 @@ export type GetCorporationsCorporationIdCustomsOfficesMetadataMethodAssertion = 
     PlanetaryInteractionDomainClientWithMetadata['listCustomsOffices'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdCustomsOfficesInput['path']
+        OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdCustomsOfficesOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdCustomsOfficesOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdCustomsOfficesResponse>>
   >
 >;
 export type GetCorporationsCorporationIdCustomsOfficesOptionsAssertion = Assert<
@@ -8689,14 +9556,16 @@ export type GetCorporationsCorporationIdCustomsOfficesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdCustomsOfficesInput['header']
+        OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdCustomsOfficesInput['header']
+        OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCorporationsCorporationIdCustomsOfficesInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdCustomsOfficesInput['header']
+        OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['headers']
       >['X-Tenant'];
     }
   >
@@ -8717,31 +9586,39 @@ export type PostRouteDomainMethodAssertion = Assert<
   IsExact<
     RoutesDomainClient['calculate'],
     (
-      originSystemId: NonNullable<PostRouteInput['path']>['origin_system_id'],
-      destinationSystemId: NonNullable<PostRouteInput['path']>['destination_system_id'],
+      originSystemId: NonNullable<OperationArguments<PostRouteData>['path']>['origin_system_id'],
+      destinationSystemId: NonNullable<
+        OperationArguments<PostRouteData>['path']
+      >['destination_system_id'],
       options: PostRouteOptions,
-    ) => Promise<PostRouteOutput>
+    ) => Promise<PostRouteResponse>
   >
 >;
 export type PostRouteMetadataMethodAssertion = Assert<
   IsExact<
     RoutesDomainClientWithMetadata['calculate'],
     (
-      originSystemId: NonNullable<PostRouteInput['path']>['origin_system_id'],
-      destinationSystemId: NonNullable<PostRouteInput['path']>['destination_system_id'],
+      originSystemId: NonNullable<OperationArguments<PostRouteData>['path']>['origin_system_id'],
+      destinationSystemId: NonNullable<
+        OperationArguments<PostRouteData>['path']
+      >['destination_system_id'],
       options: PostRouteOptions,
-    ) => Promise<EsiResponse<PostRouteOutput>>
+    ) => Promise<EsiResponse<PostRouteResponse>>
   >
 >;
 export type PostRouteOptionsAssertion = Assert<
   IsExact<
     PostRouteOptions,
     {
-      readonly body: PostRouteInput['body'];
+      readonly body: OperationArguments<PostRouteData>['body'];
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<PostRouteInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostRouteInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostRouteInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<PostRouteData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostRouteData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<PostRouteData>['headers']>['X-Tenant'];
     }
   >
 >;
@@ -8755,35 +9632,47 @@ export type GetCharactersCharacterIdSearchDomainMethodAssertion = Assert<
   IsExact<
     SearchDomainClient['search'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdSearchInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSearchData>['path']
+      >['character_id'],
       options: GetCharactersCharacterIdSearchOptions,
-    ) => Promise<GetCharactersCharacterIdSearchOutput>
+    ) => Promise<GetCharactersCharacterIdSearchResponse>
   >
 >;
 export type GetCharactersCharacterIdSearchMetadataMethodAssertion = Assert<
   IsExact<
     SearchDomainClientWithMetadata['search'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdSearchInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSearchData>['path']
+      >['character_id'],
       options: GetCharactersCharacterIdSearchOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdSearchOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdSearchResponse>>
   >
 >;
 export type GetCharactersCharacterIdSearchOptionsAssertion = Assert<
   IsExact<
     GetCharactersCharacterIdSearchOptions,
     {
-      readonly categories: NonNullable<GetCharactersCharacterIdSearchInput['query']>['categories'];
+      readonly categories: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSearchData>['query']
+      >['categories'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdSearchInput['header']
+        OperationArguments<GetCharactersCharacterIdSearchData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdSearchInput['header']
+        OperationArguments<GetCharactersCharacterIdSearchData>['headers']
       >['If-None-Match'];
-      readonly search: NonNullable<GetCharactersCharacterIdSearchInput['query']>['search'];
-      readonly strict?: NonNullable<GetCharactersCharacterIdSearchInput['query']>['strict'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdSearchInput['header']>['X-Tenant'];
+      readonly search: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSearchData>['query']
+      >['search'];
+      readonly strict?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSearchData>['query']
+      >['strict'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSearchData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8797,18 +9686,22 @@ export type GetCharactersCharacterIdAttributesDomainMethodAssertion = Assert<
   IsExact<
     SkillsDomainClient['getAttributes'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdAttributesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAttributesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdAttributesOptions,
-    ) => Promise<GetCharactersCharacterIdAttributesOutput>
+    ) => Promise<GetCharactersCharacterIdAttributesResponse>
   >
 >;
 export type GetCharactersCharacterIdAttributesMetadataMethodAssertion = Assert<
   IsExact<
     SkillsDomainClientWithMetadata['getAttributes'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdAttributesInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAttributesData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdAttributesOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdAttributesOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdAttributesResponse>>
   >
 >;
 export type GetCharactersCharacterIdAttributesOptionsAssertion = Assert<
@@ -8817,12 +9710,14 @@ export type GetCharactersCharacterIdAttributesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdAttributesInput['header']
+        OperationArguments<GetCharactersCharacterIdAttributesData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdAttributesInput['header']
+        OperationArguments<GetCharactersCharacterIdAttributesData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdAttributesInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdAttributesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8830,18 +9725,22 @@ export type GetCharactersCharacterIdSkillqueueDomainMethodAssertion = Assert<
   IsExact<
     SkillsDomainClient['getSkillQueue'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdSkillqueueInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSkillqueueData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdSkillqueueOptions,
-    ) => Promise<GetCharactersCharacterIdSkillqueueOutput>
+    ) => Promise<GetCharactersCharacterIdSkillqueueResponse>
   >
 >;
 export type GetCharactersCharacterIdSkillqueueMetadataMethodAssertion = Assert<
   IsExact<
     SkillsDomainClientWithMetadata['getSkillQueue'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdSkillqueueInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSkillqueueData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdSkillqueueOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdSkillqueueOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdSkillqueueResponse>>
   >
 >;
 export type GetCharactersCharacterIdSkillqueueOptionsAssertion = Assert<
@@ -8850,12 +9749,14 @@ export type GetCharactersCharacterIdSkillqueueOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdSkillqueueInput['header']
+        OperationArguments<GetCharactersCharacterIdSkillqueueData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdSkillqueueInput['header']
+        OperationArguments<GetCharactersCharacterIdSkillqueueData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdSkillqueueInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSkillqueueData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8863,18 +9764,22 @@ export type GetCharactersCharacterIdSkillsDomainMethodAssertion = Assert<
   IsExact<
     SkillsDomainClient['getSkills'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdSkillsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSkillsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdSkillsOptions,
-    ) => Promise<GetCharactersCharacterIdSkillsOutput>
+    ) => Promise<GetCharactersCharacterIdSkillsResponse>
   >
 >;
 export type GetCharactersCharacterIdSkillsMetadataMethodAssertion = Assert<
   IsExact<
     SkillsDomainClientWithMetadata['getSkills'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdSkillsInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSkillsData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdSkillsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdSkillsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdSkillsResponse>>
   >
 >;
 export type GetCharactersCharacterIdSkillsOptionsAssertion = Assert<
@@ -8883,12 +9788,14 @@ export type GetCharactersCharacterIdSkillsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdSkillsInput['header']
+        OperationArguments<GetCharactersCharacterIdSkillsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdSkillsInput['header']
+        OperationArguments<GetCharactersCharacterIdSkillsData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdSkillsInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdSkillsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8901,7 +9808,7 @@ export type SkillsDomainClientMetadataViewAssertion = Assert<
 export type GetSovereigntyCampaignsDomainMethodAssertion = Assert<
   IsExact<
     SovereigntyDomainClient['listCampaigns'],
-    (options?: GetSovereigntyCampaignsOptions) => Promise<GetSovereigntyCampaignsOutput>
+    (options?: GetSovereigntyCampaignsOptions) => Promise<GetSovereigntyCampaignsResponse>
   >
 >;
 export type GetSovereigntyCampaignsMetadataMethodAssertion = Assert<
@@ -8909,7 +9816,7 @@ export type GetSovereigntyCampaignsMetadataMethodAssertion = Assert<
     SovereigntyDomainClientWithMetadata['listCampaigns'],
     (
       options?: GetSovereigntyCampaignsOptions,
-    ) => Promise<EsiResponse<GetSovereigntyCampaignsOutput>>
+    ) => Promise<EsiResponse<GetSovereigntyCampaignsResponse>>
   >
 >;
 export type GetSovereigntyCampaignsOptionsAssertion = Assert<
@@ -8918,23 +9825,27 @@ export type GetSovereigntyCampaignsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetSovereigntyCampaignsInput['header']
+        OperationArguments<GetSovereigntyCampaignsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetSovereigntyCampaignsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetSovereigntyCampaignsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetSovereigntyCampaignsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetSovereigntyCampaignsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetSovereigntySystemsDomainMethodAssertion = Assert<
   IsExact<
     SovereigntyDomainClient['listSystems'],
-    (options?: GetSovereigntySystemsOptions) => Promise<GetSovereigntySystemsOutput>
+    (options?: GetSovereigntySystemsOptions) => Promise<GetSovereigntySystemsResponse>
   >
 >;
 export type GetSovereigntySystemsMetadataMethodAssertion = Assert<
   IsExact<
     SovereigntyDomainClientWithMetadata['listSystems'],
-    (options?: GetSovereigntySystemsOptions) => Promise<EsiResponse<GetSovereigntySystemsOutput>>
+    (options?: GetSovereigntySystemsOptions) => Promise<EsiResponse<GetSovereigntySystemsResponse>>
   >
 >;
 export type GetSovereigntySystemsOptionsAssertion = Assert<
@@ -8943,10 +9854,14 @@ export type GetSovereigntySystemsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetSovereigntySystemsInput['header']
+        OperationArguments<GetSovereigntySystemsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetSovereigntySystemsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetSovereigntySystemsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetSovereigntySystemsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetSovereigntySystemsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -8957,12 +9872,12 @@ export type SovereigntyDomainClientMetadataViewAssertion = Assert<
   IsExact<SovereigntyDomainClient['withMetadata'], () => SovereigntyDomainClientWithMetadata>
 >;
 export type GetStatusDomainMethodAssertion = Assert<
-  IsExact<StatusDomainClient['get'], (options?: GetStatusOptions) => Promise<GetStatusOutput>>
+  IsExact<StatusDomainClient['get'], (options?: GetStatusOptions) => Promise<GetStatusResponse>>
 >;
 export type GetStatusMetadataMethodAssertion = Assert<
   IsExact<
     StatusDomainClientWithMetadata['get'],
-    (options?: GetStatusOptions) => Promise<EsiResponse<GetStatusOutput>>
+    (options?: GetStatusOptions) => Promise<EsiResponse<GetStatusResponse>>
   >
 >;
 export type GetStatusOptionsAssertion = Assert<
@@ -8970,9 +9885,13 @@ export type GetStatusOptionsAssertion = Assert<
     GetStatusOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetStatusInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetStatusInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetStatusInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetStatusData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetStatusData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetStatusData>['headers']>['X-Tenant'];
     }
   >
 >;
@@ -8987,13 +9906,13 @@ export type GetCharactersStructuresMercenaryDensDetailDomainMethodAssertion = As
     StructuresDomainClient['getMercenaryDen'],
     (
       characterId: NonNullable<
-        GetCharactersStructuresMercenaryDensDetailInput['path']
+        OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']
       >['character_id'],
       mercenaryDenId: NonNullable<
-        GetCharactersStructuresMercenaryDensDetailInput['path']
+        OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']
       >['mercenary_den_id'],
       options?: GetCharactersStructuresMercenaryDensDetailOptions,
-    ) => Promise<GetCharactersStructuresMercenaryDensDetailOutput>
+    ) => Promise<GetCharactersStructuresMercenaryDensDetailResponse>
   >
 >;
 export type GetCharactersStructuresMercenaryDensDetailMetadataMethodAssertion = Assert<
@@ -9001,13 +9920,13 @@ export type GetCharactersStructuresMercenaryDensDetailMetadataMethodAssertion = 
     StructuresDomainClientWithMetadata['getMercenaryDen'],
     (
       characterId: NonNullable<
-        GetCharactersStructuresMercenaryDensDetailInput['path']
+        OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']
       >['character_id'],
       mercenaryDenId: NonNullable<
-        GetCharactersStructuresMercenaryDensDetailInput['path']
+        OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']
       >['mercenary_den_id'],
       options?: GetCharactersStructuresMercenaryDensDetailOptions,
-    ) => Promise<EsiResponse<GetCharactersStructuresMercenaryDensDetailOutput>>
+    ) => Promise<EsiResponse<GetCharactersStructuresMercenaryDensDetailResponse>>
   >
 >;
 export type GetCharactersStructuresMercenaryDensDetailOptionsAssertion = Assert<
@@ -9016,13 +9935,13 @@ export type GetCharactersStructuresMercenaryDensDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersStructuresMercenaryDensDetailInput['header']
+        OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersStructuresMercenaryDensDetailInput['header']
+        OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersStructuresMercenaryDensDetailInput['header']
+        OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9032,11 +9951,13 @@ export type GetCorporationsStructuresSkyhooksDetailDomainMethodAssertion = Asser
     StructuresDomainClient['getSkyhook'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSkyhooksDetailInput['path']
+        OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']
       >['corporation_id'],
-      skyhookId: NonNullable<GetCorporationsStructuresSkyhooksDetailInput['path']>['skyhook_id'],
+      skyhookId: NonNullable<
+        OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']
+      >['skyhook_id'],
       options?: GetCorporationsStructuresSkyhooksDetailOptions,
-    ) => Promise<GetCorporationsStructuresSkyhooksDetailOutput>
+    ) => Promise<GetCorporationsStructuresSkyhooksDetailResponse>
   >
 >;
 export type GetCorporationsStructuresSkyhooksDetailMetadataMethodAssertion = Assert<
@@ -9044,11 +9965,13 @@ export type GetCorporationsStructuresSkyhooksDetailMetadataMethodAssertion = Ass
     StructuresDomainClientWithMetadata['getSkyhook'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSkyhooksDetailInput['path']
+        OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']
       >['corporation_id'],
-      skyhookId: NonNullable<GetCorporationsStructuresSkyhooksDetailInput['path']>['skyhook_id'],
+      skyhookId: NonNullable<
+        OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']
+      >['skyhook_id'],
       options?: GetCorporationsStructuresSkyhooksDetailOptions,
-    ) => Promise<EsiResponse<GetCorporationsStructuresSkyhooksDetailOutput>>
+    ) => Promise<EsiResponse<GetCorporationsStructuresSkyhooksDetailResponse>>
   >
 >;
 export type GetCorporationsStructuresSkyhooksDetailOptionsAssertion = Assert<
@@ -9057,13 +9980,13 @@ export type GetCorporationsStructuresSkyhooksDetailOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsStructuresSkyhooksDetailInput['header']
+        OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsStructuresSkyhooksDetailInput['header']
+        OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsStructuresSkyhooksDetailInput['header']
+        OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9073,13 +9996,13 @@ export type GetCorporationsStructuresSovereigntyHubsDetailDomainMethodAssertion 
     StructuresDomainClient['getSovereigntyHub'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsDetailInput['path']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']
       >['corporation_id'],
       sovereigntyHubId: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsDetailInput['path']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']
       >['sovereignty_hub_id'],
       options?: GetCorporationsStructuresSovereigntyHubsDetailOptions,
-    ) => Promise<GetCorporationsStructuresSovereigntyHubsDetailOutput>
+    ) => Promise<GetCorporationsStructuresSovereigntyHubsDetailResponse>
   >
 >;
 export type GetCorporationsStructuresSovereigntyHubsDetailMetadataMethodAssertion = Assert<
@@ -9087,13 +10010,13 @@ export type GetCorporationsStructuresSovereigntyHubsDetailMetadataMethodAssertio
     StructuresDomainClientWithMetadata['getSovereigntyHub'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsDetailInput['path']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']
       >['corporation_id'],
       sovereigntyHubId: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsDetailInput['path']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']
       >['sovereignty_hub_id'],
       options?: GetCorporationsStructuresSovereigntyHubsDetailOptions,
-    ) => Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsDetailOutput>>
+    ) => Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsDetailResponse>>
   >
 >;
 export type GetCorporationsStructuresSovereigntyHubsDetailOptionsAssertion = Assert<
@@ -9102,13 +10025,13 @@ export type GetCorporationsStructuresSovereigntyHubsDetailOptionsAssertion = Ass
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsDetailInput['header']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsDetailInput['header']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsDetailInput['header']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9118,10 +10041,10 @@ export type GetCharactersStructuresMercenaryDensListingDomainMethodAssertion = A
     StructuresDomainClient['listMercenaryDens'],
     (
       characterId: NonNullable<
-        GetCharactersStructuresMercenaryDensListingInput['path']
+        OperationArguments<GetCharactersStructuresMercenaryDensListingData>['path']
       >['character_id'],
       options?: GetCharactersStructuresMercenaryDensListingOptions,
-    ) => Promise<GetCharactersStructuresMercenaryDensListingOutput>
+    ) => Promise<GetCharactersStructuresMercenaryDensListingResponse>
   >
 >;
 export type GetCharactersStructuresMercenaryDensListingMetadataMethodAssertion = Assert<
@@ -9129,10 +10052,10 @@ export type GetCharactersStructuresMercenaryDensListingMetadataMethodAssertion =
     StructuresDomainClientWithMetadata['listMercenaryDens'],
     (
       characterId: NonNullable<
-        GetCharactersStructuresMercenaryDensListingInput['path']
+        OperationArguments<GetCharactersStructuresMercenaryDensListingData>['path']
       >['character_id'],
       options?: GetCharactersStructuresMercenaryDensListingOptions,
-    ) => Promise<EsiResponse<GetCharactersStructuresMercenaryDensListingOutput>>
+    ) => Promise<EsiResponse<GetCharactersStructuresMercenaryDensListingResponse>>
   >
 >;
 export type GetCharactersStructuresMercenaryDensListingOptionsAssertion = Assert<
@@ -9141,13 +10064,13 @@ export type GetCharactersStructuresMercenaryDensListingOptionsAssertion = Assert
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersStructuresMercenaryDensListingInput['header']
+        OperationArguments<GetCharactersStructuresMercenaryDensListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersStructuresMercenaryDensListingInput['header']
+        OperationArguments<GetCharactersStructuresMercenaryDensListingData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersStructuresMercenaryDensListingInput['header']
+        OperationArguments<GetCharactersStructuresMercenaryDensListingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9157,10 +10080,10 @@ export type GetCorporationsStructuresSkyhooksListingDomainMethodAssertion = Asse
     StructuresDomainClient['listSkyhooks'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSkyhooksListingInput['path']
+        OperationArguments<GetCorporationsStructuresSkyhooksListingData>['path']
       >['corporation_id'],
       options?: GetCorporationsStructuresSkyhooksListingOptions,
-    ) => Promise<GetCorporationsStructuresSkyhooksListingOutput>
+    ) => Promise<GetCorporationsStructuresSkyhooksListingResponse>
   >
 >;
 export type GetCorporationsStructuresSkyhooksListingMetadataMethodAssertion = Assert<
@@ -9168,10 +10091,10 @@ export type GetCorporationsStructuresSkyhooksListingMetadataMethodAssertion = As
     StructuresDomainClientWithMetadata['listSkyhooks'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSkyhooksListingInput['path']
+        OperationArguments<GetCorporationsStructuresSkyhooksListingData>['path']
       >['corporation_id'],
       options?: GetCorporationsStructuresSkyhooksListingOptions,
-    ) => Promise<EsiResponse<GetCorporationsStructuresSkyhooksListingOutput>>
+    ) => Promise<EsiResponse<GetCorporationsStructuresSkyhooksListingResponse>>
   >
 >;
 export type GetCorporationsStructuresSkyhooksListingOptionsAssertion = Assert<
@@ -9180,13 +10103,13 @@ export type GetCorporationsStructuresSkyhooksListingOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsStructuresSkyhooksListingInput['header']
+        OperationArguments<GetCorporationsStructuresSkyhooksListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsStructuresSkyhooksListingInput['header']
+        OperationArguments<GetCorporationsStructuresSkyhooksListingData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsStructuresSkyhooksListingInput['header']
+        OperationArguments<GetCorporationsStructuresSkyhooksListingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9196,10 +10119,10 @@ export type GetCorporationsStructuresSovereigntyHubsListingDomainMethodAssertion
     StructuresDomainClient['listSovereigntyHubs'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsListingInput['path']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['path']
       >['corporation_id'],
       options?: GetCorporationsStructuresSovereigntyHubsListingOptions,
-    ) => Promise<GetCorporationsStructuresSovereigntyHubsListingOutput>
+    ) => Promise<GetCorporationsStructuresSovereigntyHubsListingResponse>
   >
 >;
 export type GetCorporationsStructuresSovereigntyHubsListingMetadataMethodAssertion = Assert<
@@ -9207,10 +10130,10 @@ export type GetCorporationsStructuresSovereigntyHubsListingMetadataMethodAsserti
     StructuresDomainClientWithMetadata['listSovereigntyHubs'],
     (
       corporationId: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsListingInput['path']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['path']
       >['corporation_id'],
       options?: GetCorporationsStructuresSovereigntyHubsListingOptions,
-    ) => Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsListingOutput>>
+    ) => Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsListingResponse>>
   >
 >;
 export type GetCorporationsStructuresSovereigntyHubsListingOptionsAssertion = Assert<
@@ -9219,13 +10142,13 @@ export type GetCorporationsStructuresSovereigntyHubsListingOptionsAssertion = As
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsListingInput['header']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsListingInput['header']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsStructuresSovereigntyHubsListingInput['header']
+        OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9241,10 +10164,10 @@ export type GetUniverseAsteroidBeltsAsteroidBeltIdDomainMethodAssertion = Assert
     UniverseDomainClient['getAsteroidBelt'],
     (
       asteroidBeltId: NonNullable<
-        GetUniverseAsteroidBeltsAsteroidBeltIdInput['path']
+        OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['path']
       >['asteroid_belt_id'],
       options?: GetUniverseAsteroidBeltsAsteroidBeltIdOptions,
-    ) => Promise<GetUniverseAsteroidBeltsAsteroidBeltIdOutput>
+    ) => Promise<GetUniverseAsteroidBeltsAsteroidBeltIdResponse>
   >
 >;
 export type GetUniverseAsteroidBeltsAsteroidBeltIdMetadataMethodAssertion = Assert<
@@ -9252,10 +10175,10 @@ export type GetUniverseAsteroidBeltsAsteroidBeltIdMetadataMethodAssertion = Asse
     UniverseDomainClientWithMetadata['getAsteroidBelt'],
     (
       asteroidBeltId: NonNullable<
-        GetUniverseAsteroidBeltsAsteroidBeltIdInput['path']
+        OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['path']
       >['asteroid_belt_id'],
       options?: GetUniverseAsteroidBeltsAsteroidBeltIdOptions,
-    ) => Promise<EsiResponse<GetUniverseAsteroidBeltsAsteroidBeltIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseAsteroidBeltsAsteroidBeltIdResponse>>
   >
 >;
 export type GetUniverseAsteroidBeltsAsteroidBeltIdOptionsAssertion = Assert<
@@ -9264,13 +10187,13 @@ export type GetUniverseAsteroidBeltsAsteroidBeltIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseAsteroidBeltsAsteroidBeltIdInput['header']
+        OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseAsteroidBeltsAsteroidBeltIdInput['header']
+        OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetUniverseAsteroidBeltsAsteroidBeltIdInput['header']
+        OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9280,10 +10203,10 @@ export type GetUniverseConstellationsConstellationIdDomainMethodAssertion = Asse
     UniverseDomainClient['getConstellation'],
     (
       constellationId: NonNullable<
-        GetUniverseConstellationsConstellationIdInput['path']
+        OperationArguments<GetUniverseConstellationsConstellationIdData>['path']
       >['constellation_id'],
       options?: GetUniverseConstellationsConstellationIdOptions,
-    ) => Promise<GetUniverseConstellationsConstellationIdOutput>
+    ) => Promise<GetUniverseConstellationsConstellationIdResponse>
   >
 >;
 export type GetUniverseConstellationsConstellationIdMetadataMethodAssertion = Assert<
@@ -9291,10 +10214,10 @@ export type GetUniverseConstellationsConstellationIdMetadataMethodAssertion = As
     UniverseDomainClientWithMetadata['getConstellation'],
     (
       constellationId: NonNullable<
-        GetUniverseConstellationsConstellationIdInput['path']
+        OperationArguments<GetUniverseConstellationsConstellationIdData>['path']
       >['constellation_id'],
       options?: GetUniverseConstellationsConstellationIdOptions,
-    ) => Promise<EsiResponse<GetUniverseConstellationsConstellationIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseConstellationsConstellationIdResponse>>
   >
 >;
 export type GetUniverseConstellationsConstellationIdOptionsAssertion = Assert<
@@ -9303,13 +10226,13 @@ export type GetUniverseConstellationsConstellationIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseConstellationsConstellationIdInput['header']
+        OperationArguments<GetUniverseConstellationsConstellationIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseConstellationsConstellationIdInput['header']
+        OperationArguments<GetUniverseConstellationsConstellationIdData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetUniverseConstellationsConstellationIdInput['header']
+        OperationArguments<GetUniverseConstellationsConstellationIdData>['headers']
       >['X-Tenant'];
     }
   >
@@ -9318,18 +10241,22 @@ export type GetUniverseGraphicsGraphicIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getGraphic'],
     (
-      graphicId: NonNullable<GetUniverseGraphicsGraphicIdInput['path']>['graphic_id'],
+      graphicId: NonNullable<
+        OperationArguments<GetUniverseGraphicsGraphicIdData>['path']
+      >['graphic_id'],
       options?: GetUniverseGraphicsGraphicIdOptions,
-    ) => Promise<GetUniverseGraphicsGraphicIdOutput>
+    ) => Promise<GetUniverseGraphicsGraphicIdResponse>
   >
 >;
 export type GetUniverseGraphicsGraphicIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getGraphic'],
     (
-      graphicId: NonNullable<GetUniverseGraphicsGraphicIdInput['path']>['graphic_id'],
+      graphicId: NonNullable<
+        OperationArguments<GetUniverseGraphicsGraphicIdData>['path']
+      >['graphic_id'],
       options?: GetUniverseGraphicsGraphicIdOptions,
-    ) => Promise<EsiResponse<GetUniverseGraphicsGraphicIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseGraphicsGraphicIdResponse>>
   >
 >;
 export type GetUniverseGraphicsGraphicIdOptionsAssertion = Assert<
@@ -9338,12 +10265,14 @@ export type GetUniverseGraphicsGraphicIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseGraphicsGraphicIdInput['header']
+        OperationArguments<GetUniverseGraphicsGraphicIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseGraphicsGraphicIdInput['header']
+        OperationArguments<GetUniverseGraphicsGraphicIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseGraphicsGraphicIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseGraphicsGraphicIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9351,18 +10280,22 @@ export type GetUniverseCategoriesCategoryIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getItemCategory'],
     (
-      categoryId: NonNullable<GetUniverseCategoriesCategoryIdInput['path']>['category_id'],
+      categoryId: NonNullable<
+        OperationArguments<GetUniverseCategoriesCategoryIdData>['path']
+      >['category_id'],
       options?: GetUniverseCategoriesCategoryIdOptions,
-    ) => Promise<GetUniverseCategoriesCategoryIdOutput>
+    ) => Promise<GetUniverseCategoriesCategoryIdResponse>
   >
 >;
 export type GetUniverseCategoriesCategoryIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getItemCategory'],
     (
-      categoryId: NonNullable<GetUniverseCategoriesCategoryIdInput['path']>['category_id'],
+      categoryId: NonNullable<
+        OperationArguments<GetUniverseCategoriesCategoryIdData>['path']
+      >['category_id'],
       options?: GetUniverseCategoriesCategoryIdOptions,
-    ) => Promise<EsiResponse<GetUniverseCategoriesCategoryIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseCategoriesCategoryIdResponse>>
   >
 >;
 export type GetUniverseCategoriesCategoryIdOptionsAssertion = Assert<
@@ -9371,12 +10304,14 @@ export type GetUniverseCategoriesCategoryIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseCategoriesCategoryIdInput['header']
+        OperationArguments<GetUniverseCategoriesCategoryIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseCategoriesCategoryIdInput['header']
+        OperationArguments<GetUniverseCategoriesCategoryIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseCategoriesCategoryIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseCategoriesCategoryIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9384,18 +10319,18 @@ export type GetUniverseGroupsGroupIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getItemGroup'],
     (
-      groupId: NonNullable<GetUniverseGroupsGroupIdInput['path']>['group_id'],
+      groupId: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>['path']>['group_id'],
       options?: GetUniverseGroupsGroupIdOptions,
-    ) => Promise<GetUniverseGroupsGroupIdOutput>
+    ) => Promise<GetUniverseGroupsGroupIdResponse>
   >
 >;
 export type GetUniverseGroupsGroupIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getItemGroup'],
     (
-      groupId: NonNullable<GetUniverseGroupsGroupIdInput['path']>['group_id'],
+      groupId: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>['path']>['group_id'],
       options?: GetUniverseGroupsGroupIdOptions,
-    ) => Promise<EsiResponse<GetUniverseGroupsGroupIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseGroupsGroupIdResponse>>
   >
 >;
 export type GetUniverseGroupsGroupIdOptionsAssertion = Assert<
@@ -9404,10 +10339,14 @@ export type GetUniverseGroupsGroupIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseGroupsGroupIdInput['header']
+        OperationArguments<GetUniverseGroupsGroupIdData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseGroupsGroupIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseGroupsGroupIdInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseGroupsGroupIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseGroupsGroupIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9415,18 +10354,18 @@ export type GetUniverseMoonsMoonIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getMoon'],
     (
-      moonId: NonNullable<GetUniverseMoonsMoonIdInput['path']>['moon_id'],
+      moonId: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>['path']>['moon_id'],
       options?: GetUniverseMoonsMoonIdOptions,
-    ) => Promise<GetUniverseMoonsMoonIdOutput>
+    ) => Promise<GetUniverseMoonsMoonIdResponse>
   >
 >;
 export type GetUniverseMoonsMoonIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getMoon'],
     (
-      moonId: NonNullable<GetUniverseMoonsMoonIdInput['path']>['moon_id'],
+      moonId: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>['path']>['moon_id'],
       options?: GetUniverseMoonsMoonIdOptions,
-    ) => Promise<EsiResponse<GetUniverseMoonsMoonIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseMoonsMoonIdResponse>>
   >
 >;
 export type GetUniverseMoonsMoonIdOptionsAssertion = Assert<
@@ -9435,10 +10374,14 @@ export type GetUniverseMoonsMoonIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseMoonsMoonIdInput['header']
+        OperationArguments<GetUniverseMoonsMoonIdData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseMoonsMoonIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseMoonsMoonIdInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseMoonsMoonIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseMoonsMoonIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9446,18 +10389,22 @@ export type GetUniversePlanetsPlanetIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getPlanet'],
     (
-      planetId: NonNullable<GetUniversePlanetsPlanetIdInput['path']>['planet_id'],
+      planetId: NonNullable<
+        OperationArguments<GetUniversePlanetsPlanetIdData>['path']
+      >['planet_id'],
       options?: GetUniversePlanetsPlanetIdOptions,
-    ) => Promise<GetUniversePlanetsPlanetIdOutput>
+    ) => Promise<GetUniversePlanetsPlanetIdResponse>
   >
 >;
 export type GetUniversePlanetsPlanetIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getPlanet'],
     (
-      planetId: NonNullable<GetUniversePlanetsPlanetIdInput['path']>['planet_id'],
+      planetId: NonNullable<
+        OperationArguments<GetUniversePlanetsPlanetIdData>['path']
+      >['planet_id'],
       options?: GetUniversePlanetsPlanetIdOptions,
-    ) => Promise<EsiResponse<GetUniversePlanetsPlanetIdOutput>>
+    ) => Promise<EsiResponse<GetUniversePlanetsPlanetIdResponse>>
   >
 >;
 export type GetUniversePlanetsPlanetIdOptionsAssertion = Assert<
@@ -9466,12 +10413,14 @@ export type GetUniversePlanetsPlanetIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniversePlanetsPlanetIdInput['header']
+        OperationArguments<GetUniversePlanetsPlanetIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniversePlanetsPlanetIdInput['header']
+        OperationArguments<GetUniversePlanetsPlanetIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniversePlanetsPlanetIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniversePlanetsPlanetIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9479,18 +10428,22 @@ export type GetUniverseRegionsRegionIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getRegion'],
     (
-      regionId: NonNullable<GetUniverseRegionsRegionIdInput['path']>['region_id'],
+      regionId: NonNullable<
+        OperationArguments<GetUniverseRegionsRegionIdData>['path']
+      >['region_id'],
       options?: GetUniverseRegionsRegionIdOptions,
-    ) => Promise<GetUniverseRegionsRegionIdOutput>
+    ) => Promise<GetUniverseRegionsRegionIdResponse>
   >
 >;
 export type GetUniverseRegionsRegionIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getRegion'],
     (
-      regionId: NonNullable<GetUniverseRegionsRegionIdInput['path']>['region_id'],
+      regionId: NonNullable<
+        OperationArguments<GetUniverseRegionsRegionIdData>['path']
+      >['region_id'],
       options?: GetUniverseRegionsRegionIdOptions,
-    ) => Promise<EsiResponse<GetUniverseRegionsRegionIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseRegionsRegionIdResponse>>
   >
 >;
 export type GetUniverseRegionsRegionIdOptionsAssertion = Assert<
@@ -9499,12 +10452,14 @@ export type GetUniverseRegionsRegionIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseRegionsRegionIdInput['header']
+        OperationArguments<GetUniverseRegionsRegionIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseRegionsRegionIdInput['header']
+        OperationArguments<GetUniverseRegionsRegionIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseRegionsRegionIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseRegionsRegionIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9512,18 +10467,22 @@ export type GetUniverseSystemsSystemIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getSolarSystem'],
     (
-      systemId: NonNullable<GetUniverseSystemsSystemIdInput['path']>['system_id'],
+      systemId: NonNullable<
+        OperationArguments<GetUniverseSystemsSystemIdData>['path']
+      >['system_id'],
       options?: GetUniverseSystemsSystemIdOptions,
-    ) => Promise<GetUniverseSystemsSystemIdOutput>
+    ) => Promise<GetUniverseSystemsSystemIdResponse>
   >
 >;
 export type GetUniverseSystemsSystemIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getSolarSystem'],
     (
-      systemId: NonNullable<GetUniverseSystemsSystemIdInput['path']>['system_id'],
+      systemId: NonNullable<
+        OperationArguments<GetUniverseSystemsSystemIdData>['path']
+      >['system_id'],
       options?: GetUniverseSystemsSystemIdOptions,
-    ) => Promise<EsiResponse<GetUniverseSystemsSystemIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseSystemsSystemIdResponse>>
   >
 >;
 export type GetUniverseSystemsSystemIdOptionsAssertion = Assert<
@@ -9532,12 +10491,14 @@ export type GetUniverseSystemsSystemIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseSystemsSystemIdInput['header']
+        OperationArguments<GetUniverseSystemsSystemIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseSystemsSystemIdInput['header']
+        OperationArguments<GetUniverseSystemsSystemIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseSystemsSystemIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseSystemsSystemIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9545,18 +10506,18 @@ export type GetUniverseStarsStarIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getStar'],
     (
-      starId: NonNullable<GetUniverseStarsStarIdInput['path']>['star_id'],
+      starId: NonNullable<OperationArguments<GetUniverseStarsStarIdData>['path']>['star_id'],
       options?: GetUniverseStarsStarIdOptions,
-    ) => Promise<GetUniverseStarsStarIdOutput>
+    ) => Promise<GetUniverseStarsStarIdResponse>
   >
 >;
 export type GetUniverseStarsStarIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getStar'],
     (
-      starId: NonNullable<GetUniverseStarsStarIdInput['path']>['star_id'],
+      starId: NonNullable<OperationArguments<GetUniverseStarsStarIdData>['path']>['star_id'],
       options?: GetUniverseStarsStarIdOptions,
-    ) => Promise<EsiResponse<GetUniverseStarsStarIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseStarsStarIdResponse>>
   >
 >;
 export type GetUniverseStarsStarIdOptionsAssertion = Assert<
@@ -9565,10 +10526,14 @@ export type GetUniverseStarsStarIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseStarsStarIdInput['header']
+        OperationArguments<GetUniverseStarsStarIdData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseStarsStarIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseStarsStarIdInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseStarsStarIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseStarsStarIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9576,18 +10541,22 @@ export type GetUniverseStargatesStargateIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getStargate'],
     (
-      stargateId: NonNullable<GetUniverseStargatesStargateIdInput['path']>['stargate_id'],
+      stargateId: NonNullable<
+        OperationArguments<GetUniverseStargatesStargateIdData>['path']
+      >['stargate_id'],
       options?: GetUniverseStargatesStargateIdOptions,
-    ) => Promise<GetUniverseStargatesStargateIdOutput>
+    ) => Promise<GetUniverseStargatesStargateIdResponse>
   >
 >;
 export type GetUniverseStargatesStargateIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getStargate'],
     (
-      stargateId: NonNullable<GetUniverseStargatesStargateIdInput['path']>['stargate_id'],
+      stargateId: NonNullable<
+        OperationArguments<GetUniverseStargatesStargateIdData>['path']
+      >['stargate_id'],
       options?: GetUniverseStargatesStargateIdOptions,
-    ) => Promise<EsiResponse<GetUniverseStargatesStargateIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseStargatesStargateIdResponse>>
   >
 >;
 export type GetUniverseStargatesStargateIdOptionsAssertion = Assert<
@@ -9596,12 +10565,14 @@ export type GetUniverseStargatesStargateIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseStargatesStargateIdInput['header']
+        OperationArguments<GetUniverseStargatesStargateIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseStargatesStargateIdInput['header']
+        OperationArguments<GetUniverseStargatesStargateIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseStargatesStargateIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseStargatesStargateIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9609,18 +10580,22 @@ export type GetUniverseStationsStationIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getStation'],
     (
-      stationId: NonNullable<GetUniverseStationsStationIdInput['path']>['station_id'],
+      stationId: NonNullable<
+        OperationArguments<GetUniverseStationsStationIdData>['path']
+      >['station_id'],
       options?: GetUniverseStationsStationIdOptions,
-    ) => Promise<GetUniverseStationsStationIdOutput>
+    ) => Promise<GetUniverseStationsStationIdResponse>
   >
 >;
 export type GetUniverseStationsStationIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getStation'],
     (
-      stationId: NonNullable<GetUniverseStationsStationIdInput['path']>['station_id'],
+      stationId: NonNullable<
+        OperationArguments<GetUniverseStationsStationIdData>['path']
+      >['station_id'],
       options?: GetUniverseStationsStationIdOptions,
-    ) => Promise<EsiResponse<GetUniverseStationsStationIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseStationsStationIdResponse>>
   >
 >;
 export type GetUniverseStationsStationIdOptionsAssertion = Assert<
@@ -9629,12 +10604,14 @@ export type GetUniverseStationsStationIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseStationsStationIdInput['header']
+        OperationArguments<GetUniverseStationsStationIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseStationsStationIdInput['header']
+        OperationArguments<GetUniverseStationsStationIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseStationsStationIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseStationsStationIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9642,18 +10619,22 @@ export type GetUniverseStructuresStructureIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getStructure'],
     (
-      structureId: NonNullable<GetUniverseStructuresStructureIdInput['path']>['structure_id'],
+      structureId: NonNullable<
+        OperationArguments<GetUniverseStructuresStructureIdData>['path']
+      >['structure_id'],
       options?: GetUniverseStructuresStructureIdOptions,
-    ) => Promise<GetUniverseStructuresStructureIdOutput>
+    ) => Promise<GetUniverseStructuresStructureIdResponse>
   >
 >;
 export type GetUniverseStructuresStructureIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getStructure'],
     (
-      structureId: NonNullable<GetUniverseStructuresStructureIdInput['path']>['structure_id'],
+      structureId: NonNullable<
+        OperationArguments<GetUniverseStructuresStructureIdData>['path']
+      >['structure_id'],
       options?: GetUniverseStructuresStructureIdOptions,
-    ) => Promise<EsiResponse<GetUniverseStructuresStructureIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseStructuresStructureIdResponse>>
   >
 >;
 export type GetUniverseStructuresStructureIdOptionsAssertion = Assert<
@@ -9662,12 +10643,14 @@ export type GetUniverseStructuresStructureIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseStructuresStructureIdInput['header']
+        OperationArguments<GetUniverseStructuresStructureIdData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetUniverseStructuresStructureIdInput['header']
+        OperationArguments<GetUniverseStructuresStructureIdData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseStructuresStructureIdInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseStructuresStructureIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -9675,18 +10658,18 @@ export type GetUniverseTypesTypeIdDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['getType'],
     (
-      typeId: NonNullable<GetUniverseTypesTypeIdInput['path']>['type_id'],
+      typeId: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>['path']>['type_id'],
       options?: GetUniverseTypesTypeIdOptions,
-    ) => Promise<GetUniverseTypesTypeIdOutput>
+    ) => Promise<GetUniverseTypesTypeIdResponse>
   >
 >;
 export type GetUniverseTypesTypeIdMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['getType'],
     (
-      typeId: NonNullable<GetUniverseTypesTypeIdInput['path']>['type_id'],
+      typeId: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>['path']>['type_id'],
       options?: GetUniverseTypesTypeIdOptions,
-    ) => Promise<EsiResponse<GetUniverseTypesTypeIdOutput>>
+    ) => Promise<EsiResponse<GetUniverseTypesTypeIdResponse>>
   >
 >;
 export type GetUniverseTypesTypeIdOptionsAssertion = Assert<
@@ -9695,23 +10678,27 @@ export type GetUniverseTypesTypeIdOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseTypesTypeIdInput['header']
+        OperationArguments<GetUniverseTypesTypeIdData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseTypesTypeIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseTypesTypeIdInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseTypesTypeIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseTypesTypeIdData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseAncestriesDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listAncestries'],
-    (options?: GetUniverseAncestriesOptions) => Promise<GetUniverseAncestriesOutput>
+    (options?: GetUniverseAncestriesOptions) => Promise<GetUniverseAncestriesResponse>
   >
 >;
 export type GetUniverseAncestriesMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listAncestries'],
-    (options?: GetUniverseAncestriesOptions) => Promise<EsiResponse<GetUniverseAncestriesOutput>>
+    (options?: GetUniverseAncestriesOptions) => Promise<EsiResponse<GetUniverseAncestriesResponse>>
   >
 >;
 export type GetUniverseAncestriesOptionsAssertion = Assert<
@@ -9720,23 +10707,27 @@ export type GetUniverseAncestriesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseAncestriesInput['header']
+        OperationArguments<GetUniverseAncestriesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseAncestriesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseAncestriesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseAncestriesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseAncestriesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseBloodlinesDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listBloodlines'],
-    (options?: GetUniverseBloodlinesOptions) => Promise<GetUniverseBloodlinesOutput>
+    (options?: GetUniverseBloodlinesOptions) => Promise<GetUniverseBloodlinesResponse>
   >
 >;
 export type GetUniverseBloodlinesMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listBloodlines'],
-    (options?: GetUniverseBloodlinesOptions) => Promise<EsiResponse<GetUniverseBloodlinesOutput>>
+    (options?: GetUniverseBloodlinesOptions) => Promise<EsiResponse<GetUniverseBloodlinesResponse>>
   >
 >;
 export type GetUniverseBloodlinesOptionsAssertion = Assert<
@@ -9745,17 +10736,21 @@ export type GetUniverseBloodlinesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseBloodlinesInput['header']
+        OperationArguments<GetUniverseBloodlinesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseBloodlinesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseBloodlinesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseBloodlinesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseBloodlinesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseConstellationsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listConstellations'],
-    (options?: GetUniverseConstellationsOptions) => Promise<GetUniverseConstellationsOutput>
+    (options?: GetUniverseConstellationsOptions) => Promise<GetUniverseConstellationsResponse>
   >
 >;
 export type GetUniverseConstellationsMetadataMethodAssertion = Assert<
@@ -9763,7 +10758,7 @@ export type GetUniverseConstellationsMetadataMethodAssertion = Assert<
     UniverseDomainClientWithMetadata['listConstellations'],
     (
       options?: GetUniverseConstellationsOptions,
-    ) => Promise<EsiResponse<GetUniverseConstellationsOutput>>
+    ) => Promise<EsiResponse<GetUniverseConstellationsResponse>>
   >
 >;
 export type GetUniverseConstellationsOptionsAssertion = Assert<
@@ -9772,23 +10767,27 @@ export type GetUniverseConstellationsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseConstellationsInput['header']
+        OperationArguments<GetUniverseConstellationsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseConstellationsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseConstellationsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseConstellationsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseConstellationsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseFactionsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listFactions'],
-    (options?: GetUniverseFactionsOptions) => Promise<GetUniverseFactionsOutput>
+    (options?: GetUniverseFactionsOptions) => Promise<GetUniverseFactionsResponse>
   >
 >;
 export type GetUniverseFactionsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listFactions'],
-    (options?: GetUniverseFactionsOptions) => Promise<EsiResponse<GetUniverseFactionsOutput>>
+    (options?: GetUniverseFactionsOptions) => Promise<EsiResponse<GetUniverseFactionsResponse>>
   >
 >;
 export type GetUniverseFactionsOptionsAssertion = Assert<
@@ -9797,23 +10796,27 @@ export type GetUniverseFactionsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseFactionsInput['header']
+        OperationArguments<GetUniverseFactionsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseFactionsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseFactionsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseFactionsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseFactionsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseGraphicsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listGraphics'],
-    (options?: GetUniverseGraphicsOptions) => Promise<GetUniverseGraphicsOutput>
+    (options?: GetUniverseGraphicsOptions) => Promise<GetUniverseGraphicsResponse>
   >
 >;
 export type GetUniverseGraphicsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listGraphics'],
-    (options?: GetUniverseGraphicsOptions) => Promise<EsiResponse<GetUniverseGraphicsOutput>>
+    (options?: GetUniverseGraphicsOptions) => Promise<EsiResponse<GetUniverseGraphicsResponse>>
   >
 >;
 export type GetUniverseGraphicsOptionsAssertion = Assert<
@@ -9822,23 +10825,27 @@ export type GetUniverseGraphicsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseGraphicsInput['header']
+        OperationArguments<GetUniverseGraphicsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseGraphicsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseGraphicsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseGraphicsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseGraphicsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseCategoriesDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listItemCategories'],
-    (options?: GetUniverseCategoriesOptions) => Promise<GetUniverseCategoriesOutput>
+    (options?: GetUniverseCategoriesOptions) => Promise<GetUniverseCategoriesResponse>
   >
 >;
 export type GetUniverseCategoriesMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listItemCategories'],
-    (options?: GetUniverseCategoriesOptions) => Promise<EsiResponse<GetUniverseCategoriesOutput>>
+    (options?: GetUniverseCategoriesOptions) => Promise<EsiResponse<GetUniverseCategoriesResponse>>
   >
 >;
 export type GetUniverseCategoriesOptionsAssertion = Assert<
@@ -9847,23 +10854,27 @@ export type GetUniverseCategoriesOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseCategoriesInput['header']
+        OperationArguments<GetUniverseCategoriesData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseCategoriesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseCategoriesInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseCategoriesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseCategoriesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseGroupsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listItemGroups'],
-    (options?: GetUniverseGroupsOptions) => Promise<GetUniverseGroupsOutput>
+    (options?: GetUniverseGroupsOptions) => Promise<GetUniverseGroupsResponse>
   >
 >;
 export type GetUniverseGroupsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listItemGroups'],
-    (options?: GetUniverseGroupsOptions) => Promise<EsiResponse<GetUniverseGroupsOutput>>
+    (options?: GetUniverseGroupsOptions) => Promise<EsiResponse<GetUniverseGroupsResponse>>
   >
 >;
 export type GetUniverseGroupsOptionsAssertion = Assert<
@@ -9871,23 +10882,29 @@ export type GetUniverseGroupsOptionsAssertion = Assert<
     GetUniverseGroupsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetUniverseGroupsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseGroupsInput['header']>['If-None-Match'];
-      readonly page?: NonNullable<GetUniverseGroupsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetUniverseGroupsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetUniverseGroupsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseGroupsData>['headers']
+      >['If-None-Match'];
+      readonly page?: NonNullable<OperationArguments<GetUniverseGroupsData>['query']>['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseGroupsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseStructuresDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listPublicStructures'],
-    (options?: GetUniverseStructuresOptions) => Promise<GetUniverseStructuresOutput>
+    (options?: GetUniverseStructuresOptions) => Promise<GetUniverseStructuresResponse>
   >
 >;
 export type GetUniverseStructuresMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listPublicStructures'],
-    (options?: GetUniverseStructuresOptions) => Promise<EsiResponse<GetUniverseStructuresOutput>>
+    (options?: GetUniverseStructuresOptions) => Promise<EsiResponse<GetUniverseStructuresResponse>>
   >
 >;
 export type GetUniverseStructuresOptionsAssertion = Assert<
@@ -9895,25 +10912,31 @@ export type GetUniverseStructuresOptionsAssertion = Assert<
     GetUniverseStructuresOptions,
     {
       readonly compatibilityDate?: string;
-      readonly filter?: NonNullable<GetUniverseStructuresInput['query']>['filter'];
+      readonly filter?: NonNullable<
+        OperationArguments<GetUniverseStructuresData>['query']
+      >['filter'];
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseStructuresInput['header']
+        OperationArguments<GetUniverseStructuresData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseStructuresInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseStructuresInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseStructuresData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseStructuresData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseRacesDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listRaces'],
-    (options?: GetUniverseRacesOptions) => Promise<GetUniverseRacesOutput>
+    (options?: GetUniverseRacesOptions) => Promise<GetUniverseRacesResponse>
   >
 >;
 export type GetUniverseRacesMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listRaces'],
-    (options?: GetUniverseRacesOptions) => Promise<EsiResponse<GetUniverseRacesOutput>>
+    (options?: GetUniverseRacesOptions) => Promise<EsiResponse<GetUniverseRacesResponse>>
   >
 >;
 export type GetUniverseRacesOptionsAssertion = Assert<
@@ -9921,22 +10944,28 @@ export type GetUniverseRacesOptionsAssertion = Assert<
     GetUniverseRacesOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetUniverseRacesInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseRacesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseRacesInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetUniverseRacesData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseRacesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseRacesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseRegionsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listRegions'],
-    (options?: GetUniverseRegionsOptions) => Promise<GetUniverseRegionsOutput>
+    (options?: GetUniverseRegionsOptions) => Promise<GetUniverseRegionsResponse>
   >
 >;
 export type GetUniverseRegionsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listRegions'],
-    (options?: GetUniverseRegionsOptions) => Promise<EsiResponse<GetUniverseRegionsOutput>>
+    (options?: GetUniverseRegionsOptions) => Promise<EsiResponse<GetUniverseRegionsResponse>>
   >
 >;
 export type GetUniverseRegionsOptionsAssertion = Assert<
@@ -9945,23 +10974,27 @@ export type GetUniverseRegionsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseRegionsInput['header']
+        OperationArguments<GetUniverseRegionsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseRegionsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseRegionsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseRegionsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseRegionsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseSystemsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listSolarSystems'],
-    (options?: GetUniverseSystemsOptions) => Promise<GetUniverseSystemsOutput>
+    (options?: GetUniverseSystemsOptions) => Promise<GetUniverseSystemsResponse>
   >
 >;
 export type GetUniverseSystemsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listSolarSystems'],
-    (options?: GetUniverseSystemsOptions) => Promise<EsiResponse<GetUniverseSystemsOutput>>
+    (options?: GetUniverseSystemsOptions) => Promise<EsiResponse<GetUniverseSystemsResponse>>
   >
 >;
 export type GetUniverseSystemsOptionsAssertion = Assert<
@@ -9970,23 +11003,29 @@ export type GetUniverseSystemsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseSystemsInput['header']
+        OperationArguments<GetUniverseSystemsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseSystemsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseSystemsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseSystemsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseSystemsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseSystemJumpsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listSystemJumps'],
-    (options?: GetUniverseSystemJumpsOptions) => Promise<GetUniverseSystemJumpsOutput>
+    (options?: GetUniverseSystemJumpsOptions) => Promise<GetUniverseSystemJumpsResponse>
   >
 >;
 export type GetUniverseSystemJumpsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listSystemJumps'],
-    (options?: GetUniverseSystemJumpsOptions) => Promise<EsiResponse<GetUniverseSystemJumpsOutput>>
+    (
+      options?: GetUniverseSystemJumpsOptions,
+    ) => Promise<EsiResponse<GetUniverseSystemJumpsResponse>>
   >
 >;
 export type GetUniverseSystemJumpsOptionsAssertion = Assert<
@@ -9995,23 +11034,29 @@ export type GetUniverseSystemJumpsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseSystemJumpsInput['header']
+        OperationArguments<GetUniverseSystemJumpsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseSystemJumpsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseSystemJumpsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseSystemJumpsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseSystemJumpsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseSystemKillsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listSystemKills'],
-    (options?: GetUniverseSystemKillsOptions) => Promise<GetUniverseSystemKillsOutput>
+    (options?: GetUniverseSystemKillsOptions) => Promise<GetUniverseSystemKillsResponse>
   >
 >;
 export type GetUniverseSystemKillsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listSystemKills'],
-    (options?: GetUniverseSystemKillsOptions) => Promise<EsiResponse<GetUniverseSystemKillsOutput>>
+    (
+      options?: GetUniverseSystemKillsOptions,
+    ) => Promise<EsiResponse<GetUniverseSystemKillsResponse>>
   >
 >;
 export type GetUniverseSystemKillsOptionsAssertion = Assert<
@@ -10020,23 +11065,27 @@ export type GetUniverseSystemKillsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetUniverseSystemKillsInput['header']
+        OperationArguments<GetUniverseSystemKillsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseSystemKillsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetUniverseSystemKillsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseSystemKillsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseSystemKillsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type GetUniverseTypesDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['listTypes'],
-    (options?: GetUniverseTypesOptions) => Promise<GetUniverseTypesOutput>
+    (options?: GetUniverseTypesOptions) => Promise<GetUniverseTypesResponse>
   >
 >;
 export type GetUniverseTypesMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['listTypes'],
-    (options?: GetUniverseTypesOptions) => Promise<EsiResponse<GetUniverseTypesOutput>>
+    (options?: GetUniverseTypesOptions) => Promise<EsiResponse<GetUniverseTypesResponse>>
   >
 >;
 export type GetUniverseTypesOptionsAssertion = Assert<
@@ -10044,58 +11093,76 @@ export type GetUniverseTypesOptionsAssertion = Assert<
     GetUniverseTypesOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetUniverseTypesInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetUniverseTypesInput['header']>['If-None-Match'];
-      readonly page?: NonNullable<GetUniverseTypesInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetUniverseTypesInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetUniverseTypesData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetUniverseTypesData>['headers']
+      >['If-None-Match'];
+      readonly page?: NonNullable<OperationArguments<GetUniverseTypesData>['query']>['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetUniverseTypesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type PostUniverseIdsDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['resolveIds'],
-    (options: PostUniverseIdsOptions) => Promise<PostUniverseIdsOutput>
+    (options: PostUniverseIdsOptions) => Promise<PostUniverseIdsResponse>
   >
 >;
 export type PostUniverseIdsMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['resolveIds'],
-    (options: PostUniverseIdsOptions) => Promise<EsiResponse<PostUniverseIdsOutput>>
+    (options: PostUniverseIdsOptions) => Promise<EsiResponse<PostUniverseIdsResponse>>
   >
 >;
 export type PostUniverseIdsOptionsAssertion = Assert<
   IsExact<
     PostUniverseIdsOptions,
     {
-      readonly body: PostUniverseIdsInput['body'];
+      readonly body: OperationArguments<PostUniverseIdsData>['body'];
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<PostUniverseIdsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostUniverseIdsInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostUniverseIdsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<PostUniverseIdsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostUniverseIdsData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostUniverseIdsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type PostUniverseNamesDomainMethodAssertion = Assert<
   IsExact<
     UniverseDomainClient['resolveNames'],
-    (options: PostUniverseNamesOptions) => Promise<PostUniverseNamesOutput>
+    (options: PostUniverseNamesOptions) => Promise<PostUniverseNamesResponse>
   >
 >;
 export type PostUniverseNamesMetadataMethodAssertion = Assert<
   IsExact<
     UniverseDomainClientWithMetadata['resolveNames'],
-    (options: PostUniverseNamesOptions) => Promise<EsiResponse<PostUniverseNamesOutput>>
+    (options: PostUniverseNamesOptions) => Promise<EsiResponse<PostUniverseNamesResponse>>
   >
 >;
 export type PostUniverseNamesOptionsAssertion = Assert<
   IsExact<
     PostUniverseNamesOptions,
     {
-      readonly body: PostUniverseNamesInput['body'];
+      readonly body: OperationArguments<PostUniverseNamesData>['body'];
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<PostUniverseNamesInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostUniverseNamesInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostUniverseNamesInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<PostUniverseNamesData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostUniverseNamesData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostUniverseNamesData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -10108,7 +11175,7 @@ export type UniverseDomainClientMetadataViewAssertion = Assert<
 export type PostUiOpenwindowContractDomainMethodAssertion = Assert<
   IsExact<
     UserInterfaceDomainClient['openContract'],
-    (options: PostUiOpenwindowContractOptions) => Promise<PostUiOpenwindowContractOutput>
+    (options: PostUiOpenwindowContractOptions) => Promise<PostUiOpenwindowContractResponse>
   >
 >;
 export type PostUiOpenwindowContractMetadataMethodAssertion = Assert<
@@ -10116,7 +11183,7 @@ export type PostUiOpenwindowContractMetadataMethodAssertion = Assert<
     UserInterfaceDomainClientWithMetadata['openContract'],
     (
       options: PostUiOpenwindowContractOptions,
-    ) => Promise<EsiResponse<PostUiOpenwindowContractOutput>>
+    ) => Promise<EsiResponse<PostUiOpenwindowContractResponse>>
   >
 >;
 export type PostUiOpenwindowContractOptionsAssertion = Assert<
@@ -10124,19 +11191,25 @@ export type PostUiOpenwindowContractOptionsAssertion = Assert<
     PostUiOpenwindowContractOptions,
     {
       readonly compatibilityDate?: string;
-      readonly contractId: NonNullable<PostUiOpenwindowContractInput['query']>['contract_id'];
+      readonly contractId: NonNullable<
+        OperationArguments<PostUiOpenwindowContractData>['query']
+      >['contract_id'];
       readonly ifModifiedSince?: NonNullable<
-        PostUiOpenwindowContractInput['header']
+        OperationArguments<PostUiOpenwindowContractData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostUiOpenwindowContractInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostUiOpenwindowContractInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostUiOpenwindowContractData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostUiOpenwindowContractData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type PostUiOpenwindowInformationDomainMethodAssertion = Assert<
   IsExact<
     UserInterfaceDomainClient['openInformation'],
-    (options: PostUiOpenwindowInformationOptions) => Promise<PostUiOpenwindowInformationOutput>
+    (options: PostUiOpenwindowInformationOptions) => Promise<PostUiOpenwindowInformationResponse>
   >
 >;
 export type PostUiOpenwindowInformationMetadataMethodAssertion = Assert<
@@ -10144,7 +11217,7 @@ export type PostUiOpenwindowInformationMetadataMethodAssertion = Assert<
     UserInterfaceDomainClientWithMetadata['openInformation'],
     (
       options: PostUiOpenwindowInformationOptions,
-    ) => Promise<EsiResponse<PostUiOpenwindowInformationOutput>>
+    ) => Promise<EsiResponse<PostUiOpenwindowInformationResponse>>
   >
 >;
 export type PostUiOpenwindowInformationOptionsAssertion = Assert<
@@ -10153,20 +11226,26 @@ export type PostUiOpenwindowInformationOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostUiOpenwindowInformationInput['header']
+        OperationArguments<PostUiOpenwindowInformationData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostUiOpenwindowInformationInput['header']
+        OperationArguments<PostUiOpenwindowInformationData>['headers']
       >['If-None-Match'];
-      readonly targetId: NonNullable<PostUiOpenwindowInformationInput['query']>['target_id'];
-      readonly xTenant?: NonNullable<PostUiOpenwindowInformationInput['header']>['X-Tenant'];
+      readonly targetId: NonNullable<
+        OperationArguments<PostUiOpenwindowInformationData>['query']
+      >['target_id'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostUiOpenwindowInformationData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type PostUiOpenwindowMarketdetailsDomainMethodAssertion = Assert<
   IsExact<
     UserInterfaceDomainClient['openMarketDetails'],
-    (options: PostUiOpenwindowMarketdetailsOptions) => Promise<PostUiOpenwindowMarketdetailsOutput>
+    (
+      options: PostUiOpenwindowMarketdetailsOptions,
+    ) => Promise<PostUiOpenwindowMarketdetailsResponse>
   >
 >;
 export type PostUiOpenwindowMarketdetailsMetadataMethodAssertion = Assert<
@@ -10174,7 +11253,7 @@ export type PostUiOpenwindowMarketdetailsMetadataMethodAssertion = Assert<
     UserInterfaceDomainClientWithMetadata['openMarketDetails'],
     (
       options: PostUiOpenwindowMarketdetailsOptions,
-    ) => Promise<EsiResponse<PostUiOpenwindowMarketdetailsOutput>>
+    ) => Promise<EsiResponse<PostUiOpenwindowMarketdetailsResponse>>
   >
 >;
 export type PostUiOpenwindowMarketdetailsOptionsAssertion = Assert<
@@ -10183,52 +11262,64 @@ export type PostUiOpenwindowMarketdetailsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostUiOpenwindowMarketdetailsInput['header']
+        OperationArguments<PostUiOpenwindowMarketdetailsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        PostUiOpenwindowMarketdetailsInput['header']
+        OperationArguments<PostUiOpenwindowMarketdetailsData>['headers']
       >['If-None-Match'];
-      readonly typeId: NonNullable<PostUiOpenwindowMarketdetailsInput['query']>['type_id'];
-      readonly xTenant?: NonNullable<PostUiOpenwindowMarketdetailsInput['header']>['X-Tenant'];
+      readonly typeId: NonNullable<
+        OperationArguments<PostUiOpenwindowMarketdetailsData>['query']
+      >['type_id'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostUiOpenwindowMarketdetailsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type PostUiOpenwindowNewmailDomainMethodAssertion = Assert<
   IsExact<
     UserInterfaceDomainClient['openNewMail'],
-    (options: PostUiOpenwindowNewmailOptions) => Promise<PostUiOpenwindowNewmailOutput>
+    (options: PostUiOpenwindowNewmailOptions) => Promise<PostUiOpenwindowNewmailResponse>
   >
 >;
 export type PostUiOpenwindowNewmailMetadataMethodAssertion = Assert<
   IsExact<
     UserInterfaceDomainClientWithMetadata['openNewMail'],
-    (options: PostUiOpenwindowNewmailOptions) => Promise<EsiResponse<PostUiOpenwindowNewmailOutput>>
+    (
+      options: PostUiOpenwindowNewmailOptions,
+    ) => Promise<EsiResponse<PostUiOpenwindowNewmailResponse>>
   >
 >;
 export type PostUiOpenwindowNewmailOptionsAssertion = Assert<
   IsExact<
     PostUiOpenwindowNewmailOptions,
     {
-      readonly body: PostUiOpenwindowNewmailInput['body'];
+      readonly body: OperationArguments<PostUiOpenwindowNewmailData>['body'];
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        PostUiOpenwindowNewmailInput['header']
+        OperationArguments<PostUiOpenwindowNewmailData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostUiOpenwindowNewmailInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostUiOpenwindowNewmailInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostUiOpenwindowNewmailData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostUiOpenwindowNewmailData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
 export type PostUiAutopilotWaypointDomainMethodAssertion = Assert<
   IsExact<
     UserInterfaceDomainClient['setAutopilotWaypoint'],
-    (options: PostUiAutopilotWaypointOptions) => Promise<PostUiAutopilotWaypointOutput>
+    (options: PostUiAutopilotWaypointOptions) => Promise<PostUiAutopilotWaypointResponse>
   >
 >;
 export type PostUiAutopilotWaypointMetadataMethodAssertion = Assert<
   IsExact<
     UserInterfaceDomainClientWithMetadata['setAutopilotWaypoint'],
-    (options: PostUiAutopilotWaypointOptions) => Promise<EsiResponse<PostUiAutopilotWaypointOutput>>
+    (
+      options: PostUiAutopilotWaypointOptions,
+    ) => Promise<EsiResponse<PostUiAutopilotWaypointResponse>>
   >
 >;
 export type PostUiAutopilotWaypointOptionsAssertion = Assert<
@@ -10236,18 +11327,24 @@ export type PostUiAutopilotWaypointOptionsAssertion = Assert<
     PostUiAutopilotWaypointOptions,
     {
       readonly addToBeginning: NonNullable<
-        PostUiAutopilotWaypointInput['query']
+        OperationArguments<PostUiAutopilotWaypointData>['query']
       >['add_to_beginning'];
       readonly clearOtherWaypoints: NonNullable<
-        PostUiAutopilotWaypointInput['query']
+        OperationArguments<PostUiAutopilotWaypointData>['query']
       >['clear_other_waypoints'];
       readonly compatibilityDate?: string;
-      readonly destinationId: NonNullable<PostUiAutopilotWaypointInput['query']>['destination_id'];
+      readonly destinationId: NonNullable<
+        OperationArguments<PostUiAutopilotWaypointData>['query']
+      >['destination_id'];
       readonly ifModifiedSince?: NonNullable<
-        PostUiAutopilotWaypointInput['header']
+        OperationArguments<PostUiAutopilotWaypointData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<PostUiAutopilotWaypointInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<PostUiAutopilotWaypointInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<PostUiAutopilotWaypointData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<PostUiAutopilotWaypointData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -10264,18 +11361,22 @@ export type GetCharactersCharacterIdWalletDomainMethodAssertion = Assert<
   IsExact<
     WalletDomainClient['getCharacterBalance'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdWalletInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdWalletData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdWalletOptions,
-    ) => Promise<GetCharactersCharacterIdWalletOutput>
+    ) => Promise<GetCharactersCharacterIdWalletResponse>
   >
 >;
 export type GetCharactersCharacterIdWalletMetadataMethodAssertion = Assert<
   IsExact<
     WalletDomainClientWithMetadata['getCharacterBalance'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdWalletInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdWalletData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdWalletOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdWalletOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdWalletResponse>>
   >
 >;
 export type GetCharactersCharacterIdWalletOptionsAssertion = Assert<
@@ -10284,12 +11385,14 @@ export type GetCharactersCharacterIdWalletOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdWalletInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdWalletInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletData>['headers']
       >['If-None-Match'];
-      readonly xTenant?: NonNullable<GetCharactersCharacterIdWalletInput['header']>['X-Tenant'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdWalletData>['headers']
+      >['X-Tenant'];
     }
   >
 >;
@@ -10297,18 +11400,22 @@ export type GetCharactersCharacterIdWalletJournalDomainMethodAssertion = Assert<
   IsExact<
     WalletDomainClient['listCharacterJournal'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdWalletJournalInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdWalletJournalData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdWalletJournalOptions,
-    ) => Promise<GetCharactersCharacterIdWalletJournalOutput>
+    ) => Promise<GetCharactersCharacterIdWalletJournalResponse>
   >
 >;
 export type GetCharactersCharacterIdWalletJournalMetadataMethodAssertion = Assert<
   IsExact<
     WalletDomainClientWithMetadata['listCharacterJournal'],
     (
-      characterId: NonNullable<GetCharactersCharacterIdWalletJournalInput['path']>['character_id'],
+      characterId: NonNullable<
+        OperationArguments<GetCharactersCharacterIdWalletJournalData>['path']
+      >['character_id'],
       options?: GetCharactersCharacterIdWalletJournalOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdWalletJournalOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdWalletJournalResponse>>
   >
 >;
 export type GetCharactersCharacterIdWalletJournalOptionsAssertion = Assert<
@@ -10317,14 +11424,16 @@ export type GetCharactersCharacterIdWalletJournalOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdWalletJournalInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletJournalData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdWalletJournalInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletJournalData>['headers']
       >['If-None-Match'];
-      readonly page?: NonNullable<GetCharactersCharacterIdWalletJournalInput['query']>['page'];
+      readonly page?: NonNullable<
+        OperationArguments<GetCharactersCharacterIdWalletJournalData>['query']
+      >['page'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdWalletJournalInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletJournalData>['headers']
       >['X-Tenant'];
     }
   >
@@ -10334,10 +11443,10 @@ export type GetCharactersCharacterIdWalletTransactionsDomainMethodAssertion = As
     WalletDomainClient['listCharacterTransactions'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdWalletTransactionsInput['path']
+        OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdWalletTransactionsOptions,
-    ) => Promise<GetCharactersCharacterIdWalletTransactionsOutput>
+    ) => Promise<GetCharactersCharacterIdWalletTransactionsResponse>
   >
 >;
 export type GetCharactersCharacterIdWalletTransactionsMetadataMethodAssertion = Assert<
@@ -10345,10 +11454,10 @@ export type GetCharactersCharacterIdWalletTransactionsMetadataMethodAssertion = 
     WalletDomainClientWithMetadata['listCharacterTransactions'],
     (
       characterId: NonNullable<
-        GetCharactersCharacterIdWalletTransactionsInput['path']
+        OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['path']
       >['character_id'],
       options?: GetCharactersCharacterIdWalletTransactionsOptions,
-    ) => Promise<EsiResponse<GetCharactersCharacterIdWalletTransactionsOutput>>
+    ) => Promise<EsiResponse<GetCharactersCharacterIdWalletTransactionsResponse>>
   >
 >;
 export type GetCharactersCharacterIdWalletTransactionsOptionsAssertion = Assert<
@@ -10357,16 +11466,16 @@ export type GetCharactersCharacterIdWalletTransactionsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly fromId?: NonNullable<
-        GetCharactersCharacterIdWalletTransactionsInput['query']
+        OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['query']
       >['from_id'];
       readonly ifModifiedSince?: NonNullable<
-        GetCharactersCharacterIdWalletTransactionsInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCharactersCharacterIdWalletTransactionsInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCharactersCharacterIdWalletTransactionsInput['header']
+        OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -10376,10 +11485,10 @@ export type GetCorporationsCorporationIdWalletsDomainMethodAssertion = Assert<
     WalletDomainClient['listCorporationBalances'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdWalletsInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdWalletsOptions,
-    ) => Promise<GetCorporationsCorporationIdWalletsOutput>
+    ) => Promise<GetCorporationsCorporationIdWalletsResponse>
   >
 >;
 export type GetCorporationsCorporationIdWalletsMetadataMethodAssertion = Assert<
@@ -10387,10 +11496,10 @@ export type GetCorporationsCorporationIdWalletsMetadataMethodAssertion = Assert<
     WalletDomainClientWithMetadata['listCorporationBalances'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdWalletsInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsData>['path']
       >['corporation_id'],
       options?: GetCorporationsCorporationIdWalletsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdWalletsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdWalletsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdWalletsOptionsAssertion = Assert<
@@ -10399,13 +11508,13 @@ export type GetCorporationsCorporationIdWalletsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdWalletsInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdWalletsInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdWalletsInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -10415,13 +11524,13 @@ export type GetCorporationsCorporationIdWalletsDivisionJournalDomainMethodAssert
     WalletDomainClient['listCorporationDivisionJournal'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']
       >['corporation_id'],
       division: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']
       >['division'],
       options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions,
-    ) => Promise<GetCorporationsCorporationIdWalletsDivisionJournalOutput>
+    ) => Promise<GetCorporationsCorporationIdWalletsDivisionJournalResponse>
   >
 >;
 export type GetCorporationsCorporationIdWalletsDivisionJournalMetadataMethodAssertion = Assert<
@@ -10429,13 +11538,13 @@ export type GetCorporationsCorporationIdWalletsDivisionJournalMetadataMethodAsse
     WalletDomainClientWithMetadata['listCorporationDivisionJournal'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']
       >['corporation_id'],
       division: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']
       >['division'],
       options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionJournalOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionJournalResponse>>
   >
 >;
 export type GetCorporationsCorporationIdWalletsDivisionJournalOptionsAssertion = Assert<
@@ -10444,16 +11553,16 @@ export type GetCorporationsCorporationIdWalletsDivisionJournalOptionsAssertion =
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['headers']
       >['If-None-Match'];
       readonly page?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['query']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['query']
       >['page'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionJournalInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['headers']
       >['X-Tenant'];
     }
   >
@@ -10463,13 +11572,13 @@ export type GetCorporationsCorporationIdWalletsDivisionTransactionsDomainMethodA
     WalletDomainClient['listCorporationDivisionTransactions'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']
       >['corporation_id'],
       division: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']
       >['division'],
       options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions,
-    ) => Promise<GetCorporationsCorporationIdWalletsDivisionTransactionsOutput>
+    ) => Promise<GetCorporationsCorporationIdWalletsDivisionTransactionsResponse>
   >
 >;
 export type GetCorporationsCorporationIdWalletsDivisionTransactionsMetadataMethodAssertion = Assert<
@@ -10477,13 +11586,13 @@ export type GetCorporationsCorporationIdWalletsDivisionTransactionsMetadataMetho
     WalletDomainClientWithMetadata['listCorporationDivisionTransactions'],
     (
       corporationId: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']
       >['corporation_id'],
       division: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']
       >['division'],
       options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions,
-    ) => Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionTransactionsOutput>>
+    ) => Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionTransactionsResponse>>
   >
 >;
 export type GetCorporationsCorporationIdWalletsDivisionTransactionsOptionsAssertion = Assert<
@@ -10492,16 +11601,16 @@ export type GetCorporationsCorporationIdWalletsDivisionTransactionsOptionsAssert
     {
       readonly compatibilityDate?: string;
       readonly fromId?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['query']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['query']
       >['from_id'];
       readonly ifModifiedSince?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['headers']
       >['If-Modified-Since'];
       readonly ifNoneMatch?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['headers']
       >['If-None-Match'];
       readonly xTenant?: NonNullable<
-        GetCorporationsCorporationIdWalletsDivisionTransactionsInput['header']
+        OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['headers']
       >['X-Tenant'];
     }
   >
@@ -10516,18 +11625,18 @@ export type GetWarsWarIdDomainMethodAssertion = Assert<
   IsExact<
     WarsDomainClient['get'],
     (
-      warId: NonNullable<GetWarsWarIdInput['path']>['war_id'],
+      warId: NonNullable<OperationArguments<GetWarsWarIdData>['path']>['war_id'],
       options?: GetWarsWarIdOptions,
-    ) => Promise<GetWarsWarIdOutput>
+    ) => Promise<GetWarsWarIdResponse>
   >
 >;
 export type GetWarsWarIdMetadataMethodAssertion = Assert<
   IsExact<
     WarsDomainClientWithMetadata['get'],
     (
-      warId: NonNullable<GetWarsWarIdInput['path']>['war_id'],
+      warId: NonNullable<OperationArguments<GetWarsWarIdData>['path']>['war_id'],
       options?: GetWarsWarIdOptions,
-    ) => Promise<EsiResponse<GetWarsWarIdOutput>>
+    ) => Promise<EsiResponse<GetWarsWarIdResponse>>
   >
 >;
 export type GetWarsWarIdOptionsAssertion = Assert<
@@ -10535,19 +11644,23 @@ export type GetWarsWarIdOptionsAssertion = Assert<
     GetWarsWarIdOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetWarsWarIdInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetWarsWarIdInput['header']>['If-None-Match'];
-      readonly xTenant?: NonNullable<GetWarsWarIdInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetWarsWarIdData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetWarsWarIdData>['headers']
+      >['If-None-Match'];
+      readonly xTenant?: NonNullable<OperationArguments<GetWarsWarIdData>['headers']>['X-Tenant'];
     }
   >
 >;
 export type GetWarsDomainMethodAssertion = Assert<
-  IsExact<WarsDomainClient['list'], (options?: GetWarsOptions) => Promise<GetWarsOutput>>
+  IsExact<WarsDomainClient['list'], (options?: GetWarsOptions) => Promise<GetWarsResponse>>
 >;
 export type GetWarsMetadataMethodAssertion = Assert<
   IsExact<
     WarsDomainClientWithMetadata['list'],
-    (options?: GetWarsOptions) => Promise<EsiResponse<GetWarsOutput>>
+    (options?: GetWarsOptions) => Promise<EsiResponse<GetWarsResponse>>
   >
 >;
 export type GetWarsOptionsAssertion = Assert<
@@ -10555,10 +11668,14 @@ export type GetWarsOptionsAssertion = Assert<
     GetWarsOptions,
     {
       readonly compatibilityDate?: string;
-      readonly ifModifiedSince?: NonNullable<GetWarsInput['header']>['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetWarsInput['header']>['If-None-Match'];
-      readonly maxWarId?: NonNullable<GetWarsInput['query']>['max_war_id'];
-      readonly xTenant?: NonNullable<GetWarsInput['header']>['X-Tenant'];
+      readonly ifModifiedSince?: NonNullable<
+        OperationArguments<GetWarsData>['headers']
+      >['If-Modified-Since'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetWarsData>['headers']
+      >['If-None-Match'];
+      readonly maxWarId?: NonNullable<OperationArguments<GetWarsData>['query']>['max_war_id'];
+      readonly xTenant?: NonNullable<OperationArguments<GetWarsData>['headers']>['X-Tenant'];
     }
   >
 >;
@@ -10566,18 +11683,18 @@ export type GetWarsWarIdKillmailsDomainMethodAssertion = Assert<
   IsExact<
     WarsDomainClient['listKillmails'],
     (
-      warId: NonNullable<GetWarsWarIdKillmailsInput['path']>['war_id'],
+      warId: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>['path']>['war_id'],
       options?: GetWarsWarIdKillmailsOptions,
-    ) => Promise<GetWarsWarIdKillmailsOutput>
+    ) => Promise<GetWarsWarIdKillmailsResponse>
   >
 >;
 export type GetWarsWarIdKillmailsMetadataMethodAssertion = Assert<
   IsExact<
     WarsDomainClientWithMetadata['listKillmails'],
     (
-      warId: NonNullable<GetWarsWarIdKillmailsInput['path']>['war_id'],
+      warId: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>['path']>['war_id'],
       options?: GetWarsWarIdKillmailsOptions,
-    ) => Promise<EsiResponse<GetWarsWarIdKillmailsOutput>>
+    ) => Promise<EsiResponse<GetWarsWarIdKillmailsResponse>>
   >
 >;
 export type GetWarsWarIdKillmailsOptionsAssertion = Assert<
@@ -10586,11 +11703,15 @@ export type GetWarsWarIdKillmailsOptionsAssertion = Assert<
     {
       readonly compatibilityDate?: string;
       readonly ifModifiedSince?: NonNullable<
-        GetWarsWarIdKillmailsInput['header']
+        OperationArguments<GetWarsWarIdKillmailsData>['headers']
       >['If-Modified-Since'];
-      readonly ifNoneMatch?: NonNullable<GetWarsWarIdKillmailsInput['header']>['If-None-Match'];
-      readonly page?: NonNullable<GetWarsWarIdKillmailsInput['query']>['page'];
-      readonly xTenant?: NonNullable<GetWarsWarIdKillmailsInput['header']>['X-Tenant'];
+      readonly ifNoneMatch?: NonNullable<
+        OperationArguments<GetWarsWarIdKillmailsData>['headers']
+      >['If-None-Match'];
+      readonly page?: NonNullable<OperationArguments<GetWarsWarIdKillmailsData>['query']>['page'];
+      readonly xTenant?: NonNullable<
+        OperationArguments<GetWarsWarIdKillmailsData>['headers']
+      >['X-Tenant'];
     }
   >
 >;

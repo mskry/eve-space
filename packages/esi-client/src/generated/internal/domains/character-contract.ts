@@ -4,196 +4,197 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdAgentsResearchInput,
-  GetCharactersCharacterIdAgentsResearchOutput,
-  GetCharactersCharacterIdBlueprintsInput,
-  GetCharactersCharacterIdBlueprintsOutput,
-  GetCharactersCharacterIdCorporationhistoryInput,
-  GetCharactersCharacterIdCorporationhistoryOutput,
-  GetCharactersCharacterIdFatigueInput,
-  GetCharactersCharacterIdFatigueOutput,
-  GetCharactersCharacterIdMedalsInput,
-  GetCharactersCharacterIdMedalsOutput,
-  GetCharactersCharacterIdNotificationsContactsInput,
-  GetCharactersCharacterIdNotificationsContactsOutput,
-  GetCharactersCharacterIdNotificationsInput,
-  GetCharactersCharacterIdNotificationsOutput,
-  GetCharactersCharacterIdPortraitInput,
-  GetCharactersCharacterIdPortraitOutput,
-  GetCharactersCharacterIdRolesInput,
-  GetCharactersCharacterIdRolesOutput,
-  GetCharactersCharacterIdStandingsInput,
-  GetCharactersCharacterIdStandingsOutput,
-  GetCharactersCharacterIdTitlesInput,
-  GetCharactersCharacterIdTitlesOutput,
-  GetCharactersDetailInput,
-  GetCharactersDetailOutput,
-  PostCharactersAffiliationInput,
-  PostCharactersAffiliationOutput,
-  PostCharactersCharacterIdCspaInput,
-  PostCharactersCharacterIdCspaOutput,
-} from '../../schemas/operations/character.js';
+  GetCharactersCharacterIdAgentsResearchData,
+  GetCharactersCharacterIdAgentsResearchResponse,
+  GetCharactersCharacterIdBlueprintsData,
+  GetCharactersCharacterIdBlueprintsResponse,
+  GetCharactersCharacterIdCorporationhistoryData,
+  GetCharactersCharacterIdCorporationhistoryResponse,
+  GetCharactersCharacterIdFatigueData,
+  GetCharactersCharacterIdFatigueResponse,
+  GetCharactersCharacterIdMedalsData,
+  GetCharactersCharacterIdMedalsResponse,
+  GetCharactersCharacterIdNotificationsContactsData,
+  GetCharactersCharacterIdNotificationsContactsResponse,
+  GetCharactersCharacterIdNotificationsData,
+  GetCharactersCharacterIdNotificationsResponse,
+  GetCharactersCharacterIdPortraitData,
+  GetCharactersCharacterIdPortraitResponse,
+  GetCharactersCharacterIdRolesData,
+  GetCharactersCharacterIdRolesResponse,
+  GetCharactersCharacterIdStandingsData,
+  GetCharactersCharacterIdStandingsResponse,
+  GetCharactersCharacterIdTitlesData,
+  GetCharactersCharacterIdTitlesResponse,
+  GetCharactersDetailData,
+  GetCharactersDetailResponse,
+  PostCharactersAffiliationData,
+  PostCharactersAffiliationResponse,
+  PostCharactersCharacterIdCspaData,
+  PostCharactersCharacterIdCspaResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdAgentsResearchOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdAgentsResearchInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdAgentsResearchInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdAgentsResearchInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdAgentsResearchData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdAgentsResearchData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdAgentsResearchData>["headers"]>["X-Tenant"];
 }
 
 export interface PostCharactersCharacterIdCspaOptions {
-  readonly "body": PostCharactersCharacterIdCspaInput['body'];
+  readonly "body": OperationArguments<PostCharactersCharacterIdCspaData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostCharactersCharacterIdCspaInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostCharactersCharacterIdCspaInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostCharactersCharacterIdCspaInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdCspaData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdCspaData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdCspaData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdRolesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdRolesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdRolesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdRolesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdRolesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdRolesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdRolesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdFatigueOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdFatigueInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdFatigueInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdFatigueInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdFatigueData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdFatigueData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdFatigueData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdPortraitOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdPortraitInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdPortraitInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdPortraitInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdPortraitData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdPortraitData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdPortraitData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdBlueprintsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdBlueprintsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdBlueprintsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCharactersCharacterIdBlueprintsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdBlueprintsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdBlueprintsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdBlueprintsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdBlueprintsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdBlueprintsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdNotificationsContactsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdNotificationsContactsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdNotificationsContactsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdNotificationsContactsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdCorporationhistoryOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdCorporationhistoryInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdCorporationhistoryInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdCorporationhistoryInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdTitlesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdTitlesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdTitlesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdTitlesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdTitlesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdTitlesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdTitlesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdMedalsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdMedalsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdMedalsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdMedalsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMedalsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMedalsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMedalsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdNotificationsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdNotificationsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdNotificationsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdNotificationsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdStandingsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdStandingsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdStandingsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdStandingsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdStandingsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdStandingsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdStandingsData>["headers"]>["X-Tenant"];
 }
 
 export interface PostCharactersAffiliationOptions {
-  readonly "body": PostCharactersAffiliationInput['body'];
+  readonly "body": OperationArguments<PostCharactersAffiliationData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostCharactersAffiliationInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostCharactersAffiliationInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostCharactersAffiliationInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersAffiliationData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersAffiliationData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersAffiliationData>["headers"]>["X-Tenant"];
 }
 
 export interface CharacterDomainClient {
-  agentsResearch(characterId: NonNullable<GetCharactersCharacterIdAgentsResearchInput['path']>["character_id"], options?: GetCharactersCharacterIdAgentsResearchOptions): Promise<GetCharactersCharacterIdAgentsResearchOutput>;
+  agentsResearch(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAgentsResearchData>['path']>["character_id"], options?: GetCharactersCharacterIdAgentsResearchOptions): Promise<GetCharactersCharacterIdAgentsResearchResponse>;
 
-  calculateCspaCharge(characterId: NonNullable<PostCharactersCharacterIdCspaInput['path']>["character_id"], options: PostCharactersCharacterIdCspaOptions): Promise<PostCharactersCharacterIdCspaOutput>;
+  calculateCspaCharge(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdCspaData>['path']>["character_id"], options: PostCharactersCharacterIdCspaOptions): Promise<PostCharactersCharacterIdCspaResponse>;
 
-  getCorporationRoles(characterId: NonNullable<GetCharactersCharacterIdRolesInput['path']>["character_id"], options?: GetCharactersCharacterIdRolesOptions): Promise<GetCharactersCharacterIdRolesOutput>;
+  getCorporationRoles(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdRolesData>['path']>["character_id"], options?: GetCharactersCharacterIdRolesOptions): Promise<GetCharactersCharacterIdRolesResponse>;
 
-  getJumpFatigue(characterId: NonNullable<GetCharactersCharacterIdFatigueInput['path']>["character_id"], options?: GetCharactersCharacterIdFatigueOptions): Promise<GetCharactersCharacterIdFatigueOutput>;
+  getJumpFatigue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFatigueData>['path']>["character_id"], options?: GetCharactersCharacterIdFatigueOptions): Promise<GetCharactersCharacterIdFatigueResponse>;
 
-  getPortrait(characterId: NonNullable<GetCharactersCharacterIdPortraitInput['path']>["character_id"], options?: GetCharactersCharacterIdPortraitOptions): Promise<GetCharactersCharacterIdPortraitOutput>;
+  getPortrait(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdPortraitData>['path']>["character_id"], options?: GetCharactersCharacterIdPortraitOptions): Promise<GetCharactersCharacterIdPortraitResponse>;
 
-  getPublicInfo(characterId: NonNullable<GetCharactersDetailInput['path']>["character_id"], options?: GetCharactersDetailOptions): Promise<GetCharactersDetailOutput>;
+  getPublicInfo(characterId: NonNullable<OperationArguments<GetCharactersDetailData>['path']>["character_id"], options?: GetCharactersDetailOptions): Promise<GetCharactersDetailResponse>;
 
-  listBlueprints(characterId: NonNullable<GetCharactersCharacterIdBlueprintsInput['path']>["character_id"], options?: GetCharactersCharacterIdBlueprintsOptions): Promise<GetCharactersCharacterIdBlueprintsOutput>;
+  listBlueprints(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdBlueprintsData>['path']>["character_id"], options?: GetCharactersCharacterIdBlueprintsOptions): Promise<GetCharactersCharacterIdBlueprintsResponse>;
 
-  listContactNotifications(characterId: NonNullable<GetCharactersCharacterIdNotificationsContactsInput['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsContactsOptions): Promise<GetCharactersCharacterIdNotificationsContactsOutput>;
+  listContactNotifications(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsContactsOptions): Promise<GetCharactersCharacterIdNotificationsContactsResponse>;
 
-  listCorporationHistory(characterId: NonNullable<GetCharactersCharacterIdCorporationhistoryInput['path']>["character_id"], options?: GetCharactersCharacterIdCorporationhistoryOptions): Promise<GetCharactersCharacterIdCorporationhistoryOutput>;
+  listCorporationHistory(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['path']>["character_id"], options?: GetCharactersCharacterIdCorporationhistoryOptions): Promise<GetCharactersCharacterIdCorporationhistoryResponse>;
 
-  listCorporationTitles(characterId: NonNullable<GetCharactersCharacterIdTitlesInput['path']>["character_id"], options?: GetCharactersCharacterIdTitlesOptions): Promise<GetCharactersCharacterIdTitlesOutput>;
+  listCorporationTitles(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdTitlesData>['path']>["character_id"], options?: GetCharactersCharacterIdTitlesOptions): Promise<GetCharactersCharacterIdTitlesResponse>;
 
-  listMedals(characterId: NonNullable<GetCharactersCharacterIdMedalsInput['path']>["character_id"], options?: GetCharactersCharacterIdMedalsOptions): Promise<GetCharactersCharacterIdMedalsOutput>;
+  listMedals(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMedalsData>['path']>["character_id"], options?: GetCharactersCharacterIdMedalsOptions): Promise<GetCharactersCharacterIdMedalsResponse>;
 
-  listNotifications(characterId: NonNullable<GetCharactersCharacterIdNotificationsInput['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsOptions): Promise<GetCharactersCharacterIdNotificationsOutput>;
+  listNotifications(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsData>['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsOptions): Promise<GetCharactersCharacterIdNotificationsResponse>;
 
-  listStandings(characterId: NonNullable<GetCharactersCharacterIdStandingsInput['path']>["character_id"], options?: GetCharactersCharacterIdStandingsOptions): Promise<GetCharactersCharacterIdStandingsOutput>;
+  listStandings(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdStandingsData>['path']>["character_id"], options?: GetCharactersCharacterIdStandingsOptions): Promise<GetCharactersCharacterIdStandingsResponse>;
 
-  lookupAffiliations(options: PostCharactersAffiliationOptions): Promise<PostCharactersAffiliationOutput>;
+  lookupAffiliations(options: PostCharactersAffiliationOptions): Promise<PostCharactersAffiliationResponse>;
 
   withMetadata(): CharacterDomainClientWithMetadata;
 }
 
 export interface CharacterDomainClientWithMetadata {
-  agentsResearch(characterId: NonNullable<GetCharactersCharacterIdAgentsResearchInput['path']>["character_id"], options?: GetCharactersCharacterIdAgentsResearchOptions): Promise<EsiResponse<GetCharactersCharacterIdAgentsResearchOutput>>;
+  agentsResearch(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdAgentsResearchData>['path']>["character_id"], options?: GetCharactersCharacterIdAgentsResearchOptions): Promise<EsiResponse<GetCharactersCharacterIdAgentsResearchResponse>>;
 
-  calculateCspaCharge(characterId: NonNullable<PostCharactersCharacterIdCspaInput['path']>["character_id"], options: PostCharactersCharacterIdCspaOptions): Promise<EsiResponse<PostCharactersCharacterIdCspaOutput>>;
+  calculateCspaCharge(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdCspaData>['path']>["character_id"], options: PostCharactersCharacterIdCspaOptions): Promise<EsiResponse<PostCharactersCharacterIdCspaResponse>>;
 
-  getCorporationRoles(characterId: NonNullable<GetCharactersCharacterIdRolesInput['path']>["character_id"], options?: GetCharactersCharacterIdRolesOptions): Promise<EsiResponse<GetCharactersCharacterIdRolesOutput>>;
+  getCorporationRoles(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdRolesData>['path']>["character_id"], options?: GetCharactersCharacterIdRolesOptions): Promise<EsiResponse<GetCharactersCharacterIdRolesResponse>>;
 
-  getJumpFatigue(characterId: NonNullable<GetCharactersCharacterIdFatigueInput['path']>["character_id"], options?: GetCharactersCharacterIdFatigueOptions): Promise<EsiResponse<GetCharactersCharacterIdFatigueOutput>>;
+  getJumpFatigue(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFatigueData>['path']>["character_id"], options?: GetCharactersCharacterIdFatigueOptions): Promise<EsiResponse<GetCharactersCharacterIdFatigueResponse>>;
 
-  getPortrait(characterId: NonNullable<GetCharactersCharacterIdPortraitInput['path']>["character_id"], options?: GetCharactersCharacterIdPortraitOptions): Promise<EsiResponse<GetCharactersCharacterIdPortraitOutput>>;
+  getPortrait(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdPortraitData>['path']>["character_id"], options?: GetCharactersCharacterIdPortraitOptions): Promise<EsiResponse<GetCharactersCharacterIdPortraitResponse>>;
 
-  getPublicInfo(characterId: NonNullable<GetCharactersDetailInput['path']>["character_id"], options?: GetCharactersDetailOptions): Promise<EsiResponse<GetCharactersDetailOutput>>;
+  getPublicInfo(characterId: NonNullable<OperationArguments<GetCharactersDetailData>['path']>["character_id"], options?: GetCharactersDetailOptions): Promise<EsiResponse<GetCharactersDetailResponse>>;
 
-  listBlueprints(characterId: NonNullable<GetCharactersCharacterIdBlueprintsInput['path']>["character_id"], options?: GetCharactersCharacterIdBlueprintsOptions): Promise<EsiResponse<GetCharactersCharacterIdBlueprintsOutput>>;
+  listBlueprints(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdBlueprintsData>['path']>["character_id"], options?: GetCharactersCharacterIdBlueprintsOptions): Promise<EsiResponse<GetCharactersCharacterIdBlueprintsResponse>>;
 
-  listContactNotifications(characterId: NonNullable<GetCharactersCharacterIdNotificationsContactsInput['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsContactsOptions): Promise<EsiResponse<GetCharactersCharacterIdNotificationsContactsOutput>>;
+  listContactNotifications(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsContactsOptions): Promise<EsiResponse<GetCharactersCharacterIdNotificationsContactsResponse>>;
 
-  listCorporationHistory(characterId: NonNullable<GetCharactersCharacterIdCorporationhistoryInput['path']>["character_id"], options?: GetCharactersCharacterIdCorporationhistoryOptions): Promise<EsiResponse<GetCharactersCharacterIdCorporationhistoryOutput>>;
+  listCorporationHistory(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>['path']>["character_id"], options?: GetCharactersCharacterIdCorporationhistoryOptions): Promise<EsiResponse<GetCharactersCharacterIdCorporationhistoryResponse>>;
 
-  listCorporationTitles(characterId: NonNullable<GetCharactersCharacterIdTitlesInput['path']>["character_id"], options?: GetCharactersCharacterIdTitlesOptions): Promise<EsiResponse<GetCharactersCharacterIdTitlesOutput>>;
+  listCorporationTitles(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdTitlesData>['path']>["character_id"], options?: GetCharactersCharacterIdTitlesOptions): Promise<EsiResponse<GetCharactersCharacterIdTitlesResponse>>;
 
-  listMedals(characterId: NonNullable<GetCharactersCharacterIdMedalsInput['path']>["character_id"], options?: GetCharactersCharacterIdMedalsOptions): Promise<EsiResponse<GetCharactersCharacterIdMedalsOutput>>;
+  listMedals(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMedalsData>['path']>["character_id"], options?: GetCharactersCharacterIdMedalsOptions): Promise<EsiResponse<GetCharactersCharacterIdMedalsResponse>>;
 
-  listNotifications(characterId: NonNullable<GetCharactersCharacterIdNotificationsInput['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsOptions): Promise<EsiResponse<GetCharactersCharacterIdNotificationsOutput>>;
+  listNotifications(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdNotificationsData>['path']>["character_id"], options?: GetCharactersCharacterIdNotificationsOptions): Promise<EsiResponse<GetCharactersCharacterIdNotificationsResponse>>;
 
-  listStandings(characterId: NonNullable<GetCharactersCharacterIdStandingsInput['path']>["character_id"], options?: GetCharactersCharacterIdStandingsOptions): Promise<EsiResponse<GetCharactersCharacterIdStandingsOutput>>;
+  listStandings(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdStandingsData>['path']>["character_id"], options?: GetCharactersCharacterIdStandingsOptions): Promise<EsiResponse<GetCharactersCharacterIdStandingsResponse>>;
 
-  lookupAffiliations(options: PostCharactersAffiliationOptions): Promise<EsiResponse<PostCharactersAffiliationOutput>>;
+  lookupAffiliations(options: PostCharactersAffiliationOptions): Promise<EsiResponse<PostCharactersAffiliationResponse>>;
 }

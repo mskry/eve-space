@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createPlanetaryInteractionClient } from '@evespace/esi-client/domains/planetary-interaction';
+import type { GetCharactersCharacterIdPlanetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createPlanetaryInteractionClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listColonies(characterId);
+const data: GetCharactersCharacterIdPlanetsResponse = await client.listColonies(characterId);

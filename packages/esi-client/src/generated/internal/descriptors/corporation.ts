@@ -4,98 +4,139 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCorporationsCorporationIdAlliancehistoryData,
+  GetCorporationsCorporationIdAlliancehistoryResponse,
+  GetCorporationsCorporationIdBlueprintsData,
+  GetCorporationsCorporationIdBlueprintsResponse,
+  GetCorporationsCorporationIdContainersLogsData,
+  GetCorporationsCorporationIdContainersLogsResponse,
+  GetCorporationsCorporationIdData,
+  GetCorporationsCorporationIdDivisionsData,
+  GetCorporationsCorporationIdDivisionsResponse,
+  GetCorporationsCorporationIdFacilitiesData,
+  GetCorporationsCorporationIdFacilitiesResponse,
+  GetCorporationsCorporationIdIconsData,
+  GetCorporationsCorporationIdIconsResponse,
+  GetCorporationsCorporationIdMedalsData,
+  GetCorporationsCorporationIdMedalsIssuedData,
+  GetCorporationsCorporationIdMedalsIssuedResponse,
+  GetCorporationsCorporationIdMedalsResponse,
+  GetCorporationsCorporationIdMembersData,
+  GetCorporationsCorporationIdMembersLimitData,
+  GetCorporationsCorporationIdMembersLimitResponse,
+  GetCorporationsCorporationIdMembersResponse,
+  GetCorporationsCorporationIdMembersTitlesData,
+  GetCorporationsCorporationIdMembersTitlesResponse,
+  GetCorporationsCorporationIdMembertrackingData,
+  GetCorporationsCorporationIdMembertrackingResponse,
+  GetCorporationsCorporationIdResponse,
+  GetCorporationsCorporationIdRolesData,
+  GetCorporationsCorporationIdRolesHistoryData,
+  GetCorporationsCorporationIdRolesHistoryResponse,
+  GetCorporationsCorporationIdRolesResponse,
+  GetCorporationsCorporationIdShareholdersData,
+  GetCorporationsCorporationIdShareholdersResponse,
+  GetCorporationsCorporationIdStandingsData,
+  GetCorporationsCorporationIdStandingsResponse,
+  GetCorporationsCorporationIdStarbasesData,
+  GetCorporationsCorporationIdStarbasesResponse,
+  GetCorporationsCorporationIdStarbasesStarbaseIdData,
+  GetCorporationsCorporationIdStarbasesStarbaseIdResponse,
+  GetCorporationsCorporationIdStructuresData,
+  GetCorporationsCorporationIdStructuresResponse,
+  GetCorporationsCorporationIdTitlesData,
+  GetCorporationsCorporationIdTitlesResponse,
+  GetCorporationsNpccorpsData,
+  GetCorporationsNpccorpsResponse,
+} from '../../types.gen.js';
 import {
-  GetCorporationsCorporationIdAlliancehistoryRequestSchema,
-  GetCorporationsCorporationIdAlliancehistoryStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdBlueprintsRequestSchema,
-  GetCorporationsCorporationIdBlueprintsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdContainersLogsRequestSchema,
-  GetCorporationsCorporationIdContainersLogsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdDivisionsRequestSchema,
-  GetCorporationsCorporationIdDivisionsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdFacilitiesRequestSchema,
-  GetCorporationsCorporationIdFacilitiesStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdIconsRequestSchema,
-  GetCorporationsCorporationIdIconsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdMedalsIssuedRequestSchema,
-  GetCorporationsCorporationIdMedalsIssuedStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdMedalsRequestSchema,
-  GetCorporationsCorporationIdMedalsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdMembersLimitRequestSchema,
-  GetCorporationsCorporationIdMembersLimitStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdMembersRequestSchema,
-  GetCorporationsCorporationIdMembersStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdMembersTitlesRequestSchema,
-  GetCorporationsCorporationIdMembersTitlesStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdMembertrackingRequestSchema,
-  GetCorporationsCorporationIdMembertrackingStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdRequestSchema,
-  GetCorporationsCorporationIdRolesHistoryRequestSchema,
-  GetCorporationsCorporationIdRolesHistoryStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdRolesRequestSchema,
-  GetCorporationsCorporationIdRolesStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdShareholdersRequestSchema,
-  GetCorporationsCorporationIdShareholdersStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdStandingsRequestSchema,
-  GetCorporationsCorporationIdStandingsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdStarbasesRequestSchema,
-  GetCorporationsCorporationIdStarbasesStarbaseIdRequestSchema,
-  GetCorporationsCorporationIdStarbasesStarbaseIdStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdStarbasesStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdStructuresRequestSchema,
-  GetCorporationsCorporationIdStructuresStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdTitlesRequestSchema,
-  GetCorporationsCorporationIdTitlesStatus200SuccessResponseSchema,
-  GetCorporationsNpccorpsRequestSchema,
-  GetCorporationsNpccorpsStatus200SuccessResponseSchema,
-  type GetCorporationsCorporationIdAlliancehistoryInput,
-  type GetCorporationsCorporationIdAlliancehistoryOutput,
-  type GetCorporationsCorporationIdBlueprintsInput,
-  type GetCorporationsCorporationIdBlueprintsOutput,
-  type GetCorporationsCorporationIdContainersLogsInput,
-  type GetCorporationsCorporationIdContainersLogsOutput,
-  type GetCorporationsCorporationIdDivisionsInput,
-  type GetCorporationsCorporationIdDivisionsOutput,
-  type GetCorporationsCorporationIdFacilitiesInput,
-  type GetCorporationsCorporationIdFacilitiesOutput,
-  type GetCorporationsCorporationIdIconsInput,
-  type GetCorporationsCorporationIdIconsOutput,
-  type GetCorporationsCorporationIdInput,
-  type GetCorporationsCorporationIdMedalsInput,
-  type GetCorporationsCorporationIdMedalsIssuedInput,
-  type GetCorporationsCorporationIdMedalsIssuedOutput,
-  type GetCorporationsCorporationIdMedalsOutput,
-  type GetCorporationsCorporationIdMembersInput,
-  type GetCorporationsCorporationIdMembersLimitInput,
-  type GetCorporationsCorporationIdMembersLimitOutput,
-  type GetCorporationsCorporationIdMembersOutput,
-  type GetCorporationsCorporationIdMembersTitlesInput,
-  type GetCorporationsCorporationIdMembersTitlesOutput,
-  type GetCorporationsCorporationIdMembertrackingInput,
-  type GetCorporationsCorporationIdMembertrackingOutput,
-  type GetCorporationsCorporationIdOutput,
-  type GetCorporationsCorporationIdRolesHistoryInput,
-  type GetCorporationsCorporationIdRolesHistoryOutput,
-  type GetCorporationsCorporationIdRolesInput,
-  type GetCorporationsCorporationIdRolesOutput,
-  type GetCorporationsCorporationIdShareholdersInput,
-  type GetCorporationsCorporationIdShareholdersOutput,
-  type GetCorporationsCorporationIdStandingsInput,
-  type GetCorporationsCorporationIdStandingsOutput,
-  type GetCorporationsCorporationIdStarbasesInput,
-  type GetCorporationsCorporationIdStarbasesOutput,
-  type GetCorporationsCorporationIdStarbasesStarbaseIdInput,
-  type GetCorporationsCorporationIdStarbasesStarbaseIdOutput,
-  type GetCorporationsCorporationIdStructuresInput,
-  type GetCorporationsCorporationIdStructuresOutput,
-  type GetCorporationsCorporationIdTitlesInput,
-  type GetCorporationsCorporationIdTitlesOutput,
-  type GetCorporationsNpccorpsInput,
-  type GetCorporationsNpccorpsOutput,
-} from '../../schemas/operations/corporation.js';
+  zGetCorporationsCorporationIdAlliancehistoryHeaders,
+  zGetCorporationsCorporationIdAlliancehistoryPath,
+  zGetCorporationsCorporationIdAlliancehistoryResponse,
+  zGetCorporationsCorporationIdBlueprintsHeaders,
+  zGetCorporationsCorporationIdBlueprintsPath,
+  zGetCorporationsCorporationIdBlueprintsQuery,
+  zGetCorporationsCorporationIdBlueprintsResponse,
+  zGetCorporationsCorporationIdContainersLogsHeaders,
+  zGetCorporationsCorporationIdContainersLogsPath,
+  zGetCorporationsCorporationIdContainersLogsQuery,
+  zGetCorporationsCorporationIdContainersLogsResponse,
+  zGetCorporationsCorporationIdDivisionsHeaders,
+  zGetCorporationsCorporationIdDivisionsPath,
+  zGetCorporationsCorporationIdDivisionsResponse,
+  zGetCorporationsCorporationIdFacilitiesHeaders,
+  zGetCorporationsCorporationIdFacilitiesPath,
+  zGetCorporationsCorporationIdFacilitiesResponse,
+  zGetCorporationsCorporationIdHeaders,
+  zGetCorporationsCorporationIdIconsHeaders,
+  zGetCorporationsCorporationIdIconsPath,
+  zGetCorporationsCorporationIdIconsResponse,
+  zGetCorporationsCorporationIdMedalsHeaders,
+  zGetCorporationsCorporationIdMedalsIssuedHeaders,
+  zGetCorporationsCorporationIdMedalsIssuedPath,
+  zGetCorporationsCorporationIdMedalsIssuedQuery,
+  zGetCorporationsCorporationIdMedalsIssuedResponse,
+  zGetCorporationsCorporationIdMedalsPath,
+  zGetCorporationsCorporationIdMedalsQuery,
+  zGetCorporationsCorporationIdMedalsResponse,
+  zGetCorporationsCorporationIdMembersHeaders,
+  zGetCorporationsCorporationIdMembersLimitHeaders,
+  zGetCorporationsCorporationIdMembersLimitPath,
+  zGetCorporationsCorporationIdMembersLimitResponse,
+  zGetCorporationsCorporationIdMembersPath,
+  zGetCorporationsCorporationIdMembersResponse,
+  zGetCorporationsCorporationIdMembersTitlesHeaders,
+  zGetCorporationsCorporationIdMembersTitlesPath,
+  zGetCorporationsCorporationIdMembersTitlesResponse,
+  zGetCorporationsCorporationIdMembertrackingHeaders,
+  zGetCorporationsCorporationIdMembertrackingPath,
+  zGetCorporationsCorporationIdMembertrackingResponse,
+  zGetCorporationsCorporationIdPath,
+  zGetCorporationsCorporationIdResponse,
+  zGetCorporationsCorporationIdRolesHeaders,
+  zGetCorporationsCorporationIdRolesHistoryHeaders,
+  zGetCorporationsCorporationIdRolesHistoryPath,
+  zGetCorporationsCorporationIdRolesHistoryQuery,
+  zGetCorporationsCorporationIdRolesHistoryResponse,
+  zGetCorporationsCorporationIdRolesPath,
+  zGetCorporationsCorporationIdRolesResponse,
+  zGetCorporationsCorporationIdShareholdersHeaders,
+  zGetCorporationsCorporationIdShareholdersPath,
+  zGetCorporationsCorporationIdShareholdersQuery,
+  zGetCorporationsCorporationIdShareholdersResponse,
+  zGetCorporationsCorporationIdStandingsHeaders,
+  zGetCorporationsCorporationIdStandingsPath,
+  zGetCorporationsCorporationIdStandingsQuery,
+  zGetCorporationsCorporationIdStandingsResponse,
+  zGetCorporationsCorporationIdStarbasesHeaders,
+  zGetCorporationsCorporationIdStarbasesPath,
+  zGetCorporationsCorporationIdStarbasesQuery,
+  zGetCorporationsCorporationIdStarbasesResponse,
+  zGetCorporationsCorporationIdStarbasesStarbaseIdHeaders,
+  zGetCorporationsCorporationIdStarbasesStarbaseIdPath,
+  zGetCorporationsCorporationIdStarbasesStarbaseIdQuery,
+  zGetCorporationsCorporationIdStarbasesStarbaseIdResponse,
+  zGetCorporationsCorporationIdStructuresHeaders,
+  zGetCorporationsCorporationIdStructuresPath,
+  zGetCorporationsCorporationIdStructuresQuery,
+  zGetCorporationsCorporationIdStructuresResponse,
+  zGetCorporationsCorporationIdTitlesHeaders,
+  zGetCorporationsCorporationIdTitlesPath,
+  zGetCorporationsCorporationIdTitlesResponse,
+  zGetCorporationsNpccorpsHeaders,
+  zGetCorporationsNpccorpsResponse,
+} from '../../zod.gen.js';
 
-export const GetCorporationsCorporationIdIconsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdIconsInput, GetCorporationsCorporationIdIconsOutput> = {
+export const GetCorporationsCorporationIdIconsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdIconsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdIconsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdIconsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdIconsPath },
+});
+
+export const GetCorporationsCorporationIdIconsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdIconsData>, GetCorporationsCorporationIdIconsResponse> = {
   operationId: "GetCorporationsCorporationIdIcons",
   method: "GET",
   path: "/corporations/{corporation_id}/icons",
@@ -109,12 +150,17 @@ export const GetCorporationsCorporationIdIconsDescriptor: OperationExecutionDesc
   requestSchema: GetCorporationsCorporationIdIconsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdIconsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdIconsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdMembersLimitDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdMembersLimitInput, GetCorporationsCorporationIdMembersLimitOutput> = {
+export const GetCorporationsCorporationIdMembersLimitRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdMembersLimitData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdMembersLimitData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdMembersLimitHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdMembersLimitPath },
+});
+
+export const GetCorporationsCorporationIdMembersLimitDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdMembersLimitData>, GetCorporationsCorporationIdMembersLimitResponse> = {
   operationId: "GetCorporationsCorporationIdMembersLimit",
   method: "GET",
   path: "/corporations/{corporation_id}/members/limit",
@@ -128,12 +174,17 @@ export const GetCorporationsCorporationIdMembersLimitDescriptor: OperationExecut
   requestSchema: GetCorporationsCorporationIdMembersLimitRequestSchema,
   authentication: { scopes: ["esi-corporations.track_members.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdMembersLimitStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembersLimitResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdInput, GetCorporationsCorporationIdOutput> = {
+export const GetCorporationsCorporationIdRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdPath },
+});
+
+export const GetCorporationsCorporationIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdData>, GetCorporationsCorporationIdResponse> = {
   operationId: "GetCorporationsCorporationId",
   method: "GET",
   path: "/corporations/{corporation_id}",
@@ -147,12 +198,18 @@ export const GetCorporationsCorporationIdDescriptor: OperationExecutionDescripto
   requestSchema: GetCorporationsCorporationIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdStarbasesStarbaseIdDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdStarbasesStarbaseIdInput, GetCorporationsCorporationIdStarbasesStarbaseIdOutput> = {
+export const GetCorporationsCorporationIdStarbasesStarbaseIdRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdStarbasesStarbaseIdHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdStarbasesStarbaseIdPath },
+  query: { required: true, schema: zGetCorporationsCorporationIdStarbasesStarbaseIdQuery },
+});
+
+export const GetCorporationsCorporationIdStarbasesStarbaseIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>, GetCorporationsCorporationIdStarbasesStarbaseIdResponse> = {
   operationId: "GetCorporationsCorporationIdStarbasesStarbaseId",
   method: "GET",
   path: "/corporations/{corporation_id}/starbases/{starbase_id}",
@@ -168,12 +225,17 @@ export const GetCorporationsCorporationIdStarbasesStarbaseIdDescriptor: Operatio
   requestSchema: GetCorporationsCorporationIdStarbasesStarbaseIdRequestSchema,
   authentication: { scopes: ["esi-corporations.read_starbases.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdStarbasesStarbaseIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStarbasesStarbaseIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdAlliancehistoryDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdAlliancehistoryInput, GetCorporationsCorporationIdAlliancehistoryOutput> = {
+export const GetCorporationsCorporationIdAlliancehistoryRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdAlliancehistoryHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdAlliancehistoryPath },
+});
+
+export const GetCorporationsCorporationIdAlliancehistoryDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>, GetCorporationsCorporationIdAlliancehistoryResponse> = {
   operationId: "GetCorporationsCorporationIdAlliancehistory",
   method: "GET",
   path: "/corporations/{corporation_id}/alliancehistory",
@@ -187,12 +249,18 @@ export const GetCorporationsCorporationIdAlliancehistoryDescriptor: OperationExe
   requestSchema: GetCorporationsCorporationIdAlliancehistoryRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdAlliancehistoryStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdAlliancehistoryResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdContainersLogsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdContainersLogsInput, GetCorporationsCorporationIdContainersLogsOutput> = {
+export const GetCorporationsCorporationIdContainersLogsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdContainersLogsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdContainersLogsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdContainersLogsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdContainersLogsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdContainersLogsQuery },
+});
+
+export const GetCorporationsCorporationIdContainersLogsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdContainersLogsData>, GetCorporationsCorporationIdContainersLogsResponse> = {
   operationId: "GetCorporationsCorporationIdContainersLogs",
   method: "GET",
   path: "/corporations/{corporation_id}/containers/logs",
@@ -207,12 +275,18 @@ export const GetCorporationsCorporationIdContainersLogsDescriptor: OperationExec
   requestSchema: GetCorporationsCorporationIdContainersLogsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_container_logs.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdContainersLogsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContainersLogsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdBlueprintsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdBlueprintsInput, GetCorporationsCorporationIdBlueprintsOutput> = {
+export const GetCorporationsCorporationIdBlueprintsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdBlueprintsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdBlueprintsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdBlueprintsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdBlueprintsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdBlueprintsQuery },
+});
+
+export const GetCorporationsCorporationIdBlueprintsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdBlueprintsData>, GetCorporationsCorporationIdBlueprintsResponse> = {
   operationId: "GetCorporationsCorporationIdBlueprints",
   method: "GET",
   path: "/corporations/{corporation_id}/blueprints",
@@ -227,12 +301,17 @@ export const GetCorporationsCorporationIdBlueprintsDescriptor: OperationExecutio
   requestSchema: GetCorporationsCorporationIdBlueprintsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_blueprints.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdBlueprintsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdBlueprintsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdDivisionsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdDivisionsInput, GetCorporationsCorporationIdDivisionsOutput> = {
+export const GetCorporationsCorporationIdDivisionsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdDivisionsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdDivisionsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdDivisionsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdDivisionsPath },
+});
+
+export const GetCorporationsCorporationIdDivisionsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdDivisionsData>, GetCorporationsCorporationIdDivisionsResponse> = {
   operationId: "GetCorporationsCorporationIdDivisions",
   method: "GET",
   path: "/corporations/{corporation_id}/divisions",
@@ -246,12 +325,17 @@ export const GetCorporationsCorporationIdDivisionsDescriptor: OperationExecution
   requestSchema: GetCorporationsCorporationIdDivisionsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_divisions.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdDivisionsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdDivisionsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdFacilitiesDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdFacilitiesInput, GetCorporationsCorporationIdFacilitiesOutput> = {
+export const GetCorporationsCorporationIdFacilitiesRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdFacilitiesData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdFacilitiesData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdFacilitiesHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdFacilitiesPath },
+});
+
+export const GetCorporationsCorporationIdFacilitiesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdFacilitiesData>, GetCorporationsCorporationIdFacilitiesResponse> = {
   operationId: "GetCorporationsCorporationIdFacilities",
   method: "GET",
   path: "/corporations/{corporation_id}/facilities",
@@ -265,12 +349,18 @@ export const GetCorporationsCorporationIdFacilitiesDescriptor: OperationExecutio
   requestSchema: GetCorporationsCorporationIdFacilitiesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_facilities.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdFacilitiesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdFacilitiesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdMedalsIssuedDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdMedalsIssuedInput, GetCorporationsCorporationIdMedalsIssuedOutput> = {
+export const GetCorporationsCorporationIdMedalsIssuedRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdMedalsIssuedHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdMedalsIssuedPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdMedalsIssuedQuery },
+});
+
+export const GetCorporationsCorporationIdMedalsIssuedDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>, GetCorporationsCorporationIdMedalsIssuedResponse> = {
   operationId: "GetCorporationsCorporationIdMedalsIssued",
   method: "GET",
   path: "/corporations/{corporation_id}/medals/issued",
@@ -285,12 +375,18 @@ export const GetCorporationsCorporationIdMedalsIssuedDescriptor: OperationExecut
   requestSchema: GetCorporationsCorporationIdMedalsIssuedRequestSchema,
   authentication: { scopes: ["esi-corporations.read_medals.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdMedalsIssuedStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMedalsIssuedResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdMedalsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdMedalsInput, GetCorporationsCorporationIdMedalsOutput> = {
+export const GetCorporationsCorporationIdMedalsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdMedalsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdMedalsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdMedalsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdMedalsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdMedalsQuery },
+});
+
+export const GetCorporationsCorporationIdMedalsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdMedalsData>, GetCorporationsCorporationIdMedalsResponse> = {
   operationId: "GetCorporationsCorporationIdMedals",
   method: "GET",
   path: "/corporations/{corporation_id}/medals",
@@ -305,12 +401,18 @@ export const GetCorporationsCorporationIdMedalsDescriptor: OperationExecutionDes
   requestSchema: GetCorporationsCorporationIdMedalsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_medals.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdMedalsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMedalsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdRolesHistoryDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdRolesHistoryInput, GetCorporationsCorporationIdRolesHistoryOutput> = {
+export const GetCorporationsCorporationIdRolesHistoryRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdRolesHistoryHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdRolesHistoryPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdRolesHistoryQuery },
+});
+
+export const GetCorporationsCorporationIdRolesHistoryDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>, GetCorporationsCorporationIdRolesHistoryResponse> = {
   operationId: "GetCorporationsCorporationIdRolesHistory",
   method: "GET",
   path: "/corporations/{corporation_id}/roles/history",
@@ -325,12 +427,17 @@ export const GetCorporationsCorporationIdRolesHistoryDescriptor: OperationExecut
   requestSchema: GetCorporationsCorporationIdRolesHistoryRequestSchema,
   authentication: { scopes: ["esi-corporations.read_corporation_membership.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdRolesHistoryStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdRolesHistoryResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdRolesDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdRolesInput, GetCorporationsCorporationIdRolesOutput> = {
+export const GetCorporationsCorporationIdRolesRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdRolesData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdRolesData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdRolesHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdRolesPath },
+});
+
+export const GetCorporationsCorporationIdRolesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdRolesData>, GetCorporationsCorporationIdRolesResponse> = {
   operationId: "GetCorporationsCorporationIdRoles",
   method: "GET",
   path: "/corporations/{corporation_id}/roles",
@@ -344,12 +451,17 @@ export const GetCorporationsCorporationIdRolesDescriptor: OperationExecutionDesc
   requestSchema: GetCorporationsCorporationIdRolesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_corporation_membership.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdRolesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdRolesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdMembersTitlesDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdMembersTitlesInput, GetCorporationsCorporationIdMembersTitlesOutput> = {
+export const GetCorporationsCorporationIdMembersTitlesRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdMembersTitlesHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdMembersTitlesPath },
+});
+
+export const GetCorporationsCorporationIdMembersTitlesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>, GetCorporationsCorporationIdMembersTitlesResponse> = {
   operationId: "GetCorporationsCorporationIdMembersTitles",
   method: "GET",
   path: "/corporations/{corporation_id}/members/titles",
@@ -363,12 +475,17 @@ export const GetCorporationsCorporationIdMembersTitlesDescriptor: OperationExecu
   requestSchema: GetCorporationsCorporationIdMembersTitlesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_titles.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdMembersTitlesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembersTitlesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdMembertrackingDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdMembertrackingInput, GetCorporationsCorporationIdMembertrackingOutput> = {
+export const GetCorporationsCorporationIdMembertrackingRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdMembertrackingData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdMembertrackingData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdMembertrackingHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdMembertrackingPath },
+});
+
+export const GetCorporationsCorporationIdMembertrackingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdMembertrackingData>, GetCorporationsCorporationIdMembertrackingResponse> = {
   operationId: "GetCorporationsCorporationIdMembertracking",
   method: "GET",
   path: "/corporations/{corporation_id}/membertracking",
@@ -382,12 +499,17 @@ export const GetCorporationsCorporationIdMembertrackingDescriptor: OperationExec
   requestSchema: GetCorporationsCorporationIdMembertrackingRequestSchema,
   authentication: { scopes: ["esi-corporations.track_members.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdMembertrackingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembertrackingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdMembersDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdMembersInput, GetCorporationsCorporationIdMembersOutput> = {
+export const GetCorporationsCorporationIdMembersRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdMembersData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdMembersData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdMembersHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdMembersPath },
+});
+
+export const GetCorporationsCorporationIdMembersDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdMembersData>, GetCorporationsCorporationIdMembersResponse> = {
   operationId: "GetCorporationsCorporationIdMembers",
   method: "GET",
   path: "/corporations/{corporation_id}/members",
@@ -401,12 +523,16 @@ export const GetCorporationsCorporationIdMembersDescriptor: OperationExecutionDe
   requestSchema: GetCorporationsCorporationIdMembersRequestSchema,
   authentication: { scopes: ["esi-corporations.read_corporation_membership.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdMembersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdMembersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsNpccorpsDescriptor: OperationExecutionDescriptor<GetCorporationsNpccorpsInput, GetCorporationsNpccorpsOutput> = {
+export const GetCorporationsNpccorpsRequestSchema: z.ZodType<OperationArguments<GetCorporationsNpccorpsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsNpccorpsData>>({
+  headers: { required: false, schema: zGetCorporationsNpccorpsHeaders },
+});
+
+export const GetCorporationsNpccorpsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsNpccorpsData>, GetCorporationsNpccorpsResponse> = {
   operationId: "GetCorporationsNpccorps",
   method: "GET",
   path: "/corporations/npccorps",
@@ -419,12 +545,18 @@ export const GetCorporationsNpccorpsDescriptor: OperationExecutionDescriptor<Get
   requestSchema: GetCorporationsNpccorpsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsNpccorpsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsNpccorpsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdShareholdersDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdShareholdersInput, GetCorporationsCorporationIdShareholdersOutput> = {
+export const GetCorporationsCorporationIdShareholdersRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdShareholdersData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdShareholdersData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdShareholdersHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdShareholdersPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdShareholdersQuery },
+});
+
+export const GetCorporationsCorporationIdShareholdersDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdShareholdersData>, GetCorporationsCorporationIdShareholdersResponse> = {
   operationId: "GetCorporationsCorporationIdShareholders",
   method: "GET",
   path: "/corporations/{corporation_id}/shareholders",
@@ -439,12 +571,18 @@ export const GetCorporationsCorporationIdShareholdersDescriptor: OperationExecut
   requestSchema: GetCorporationsCorporationIdShareholdersRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdShareholdersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdShareholdersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdStandingsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdStandingsInput, GetCorporationsCorporationIdStandingsOutput> = {
+export const GetCorporationsCorporationIdStandingsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdStandingsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdStandingsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdStandingsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdStandingsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdStandingsQuery },
+});
+
+export const GetCorporationsCorporationIdStandingsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdStandingsData>, GetCorporationsCorporationIdStandingsResponse> = {
   operationId: "GetCorporationsCorporationIdStandings",
   method: "GET",
   path: "/corporations/{corporation_id}/standings",
@@ -459,12 +597,18 @@ export const GetCorporationsCorporationIdStandingsDescriptor: OperationExecution
   requestSchema: GetCorporationsCorporationIdStandingsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_standings.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdStandingsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStandingsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdStarbasesDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdStarbasesInput, GetCorporationsCorporationIdStarbasesOutput> = {
+export const GetCorporationsCorporationIdStarbasesRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdStarbasesData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdStarbasesData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdStarbasesHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdStarbasesPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdStarbasesQuery },
+});
+
+export const GetCorporationsCorporationIdStarbasesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdStarbasesData>, GetCorporationsCorporationIdStarbasesResponse> = {
   operationId: "GetCorporationsCorporationIdStarbases",
   method: "GET",
   path: "/corporations/{corporation_id}/starbases",
@@ -479,12 +623,18 @@ export const GetCorporationsCorporationIdStarbasesDescriptor: OperationExecution
   requestSchema: GetCorporationsCorporationIdStarbasesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_starbases.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdStarbasesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStarbasesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdStructuresDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdStructuresInput, GetCorporationsCorporationIdStructuresOutput> = {
+export const GetCorporationsCorporationIdStructuresRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdStructuresData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdStructuresData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdStructuresHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdStructuresPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdStructuresQuery },
+});
+
+export const GetCorporationsCorporationIdStructuresDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdStructuresData>, GetCorporationsCorporationIdStructuresResponse> = {
   operationId: "GetCorporationsCorporationIdStructures",
   method: "GET",
   path: "/corporations/{corporation_id}/structures",
@@ -499,12 +649,17 @@ export const GetCorporationsCorporationIdStructuresDescriptor: OperationExecutio
   requestSchema: GetCorporationsCorporationIdStructuresRequestSchema,
   authentication: { scopes: ["esi-corporations.read_structures.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdStructuresStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdStructuresResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdTitlesDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdTitlesInput, GetCorporationsCorporationIdTitlesOutput> = {
+export const GetCorporationsCorporationIdTitlesRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdTitlesData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdTitlesData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdTitlesHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdTitlesPath },
+});
+
+export const GetCorporationsCorporationIdTitlesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdTitlesData>, GetCorporationsCorporationIdTitlesResponse> = {
   operationId: "GetCorporationsCorporationIdTitles",
   method: "GET",
   path: "/corporations/{corporation_id}/titles",
@@ -518,7 +673,7 @@ export const GetCorporationsCorporationIdTitlesDescriptor: OperationExecutionDes
   requestSchema: GetCorporationsCorporationIdTitlesRequestSchema,
   authentication: { scopes: ["esi-corporations.read_titles.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdTitlesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdTitlesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -4,54 +4,80 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdOrdersData,
+  GetCharactersCharacterIdOrdersHistoryData,
+  GetCharactersCharacterIdOrdersHistoryResponse,
+  GetCharactersCharacterIdOrdersResponse,
+  GetCorporationsCorporationIdOrdersData,
+  GetCorporationsCorporationIdOrdersHistoryData,
+  GetCorporationsCorporationIdOrdersHistoryResponse,
+  GetCorporationsCorporationIdOrdersResponse,
+  GetMarketsGroupsData,
+  GetMarketsGroupsMarketGroupIdData,
+  GetMarketsGroupsMarketGroupIdResponse,
+  GetMarketsGroupsResponse,
+  GetMarketsPricesData,
+  GetMarketsPricesResponse,
+  GetMarketsRegionIdHistoryData,
+  GetMarketsRegionIdHistoryResponse,
+  GetMarketsRegionIdOrdersData,
+  GetMarketsRegionIdOrdersResponse,
+  GetMarketsRegionIdTypesData,
+  GetMarketsRegionIdTypesResponse,
+  GetMarketsStructuresStructureIdData,
+  GetMarketsStructuresStructureIdResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdOrdersHistoryRequestSchema,
-  GetCharactersCharacterIdOrdersHistoryStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdOrdersRequestSchema,
-  GetCharactersCharacterIdOrdersStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdOrdersHistoryRequestSchema,
-  GetCorporationsCorporationIdOrdersHistoryStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdOrdersRequestSchema,
-  GetCorporationsCorporationIdOrdersStatus200SuccessResponseSchema,
-  GetMarketsGroupsMarketGroupIdRequestSchema,
-  GetMarketsGroupsMarketGroupIdStatus200SuccessResponseSchema,
-  GetMarketsGroupsRequestSchema,
-  GetMarketsGroupsStatus200SuccessResponseSchema,
-  GetMarketsPricesRequestSchema,
-  GetMarketsPricesStatus200SuccessResponseSchema,
-  GetMarketsRegionIdHistoryRequestSchema,
-  GetMarketsRegionIdHistoryStatus200SuccessResponseSchema,
-  GetMarketsRegionIdOrdersRequestSchema,
-  GetMarketsRegionIdOrdersStatus200SuccessResponseSchema,
-  GetMarketsRegionIdTypesRequestSchema,
-  GetMarketsRegionIdTypesStatus200SuccessResponseSchema,
-  GetMarketsStructuresStructureIdRequestSchema,
-  GetMarketsStructuresStructureIdStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdOrdersHistoryInput,
-  type GetCharactersCharacterIdOrdersHistoryOutput,
-  type GetCharactersCharacterIdOrdersInput,
-  type GetCharactersCharacterIdOrdersOutput,
-  type GetCorporationsCorporationIdOrdersHistoryInput,
-  type GetCorporationsCorporationIdOrdersHistoryOutput,
-  type GetCorporationsCorporationIdOrdersInput,
-  type GetCorporationsCorporationIdOrdersOutput,
-  type GetMarketsGroupsInput,
-  type GetMarketsGroupsMarketGroupIdInput,
-  type GetMarketsGroupsMarketGroupIdOutput,
-  type GetMarketsGroupsOutput,
-  type GetMarketsPricesInput,
-  type GetMarketsPricesOutput,
-  type GetMarketsRegionIdHistoryInput,
-  type GetMarketsRegionIdHistoryOutput,
-  type GetMarketsRegionIdOrdersInput,
-  type GetMarketsRegionIdOrdersOutput,
-  type GetMarketsRegionIdTypesInput,
-  type GetMarketsRegionIdTypesOutput,
-  type GetMarketsStructuresStructureIdInput,
-  type GetMarketsStructuresStructureIdOutput,
-} from '../../schemas/operations/market.js';
+  zGetCharactersCharacterIdOrdersHeaders,
+  zGetCharactersCharacterIdOrdersHistoryHeaders,
+  zGetCharactersCharacterIdOrdersHistoryPath,
+  zGetCharactersCharacterIdOrdersHistoryQuery,
+  zGetCharactersCharacterIdOrdersHistoryResponse,
+  zGetCharactersCharacterIdOrdersPath,
+  zGetCharactersCharacterIdOrdersResponse,
+  zGetCorporationsCorporationIdOrdersHeaders,
+  zGetCorporationsCorporationIdOrdersHistoryHeaders,
+  zGetCorporationsCorporationIdOrdersHistoryPath,
+  zGetCorporationsCorporationIdOrdersHistoryQuery,
+  zGetCorporationsCorporationIdOrdersHistoryResponse,
+  zGetCorporationsCorporationIdOrdersPath,
+  zGetCorporationsCorporationIdOrdersQuery,
+  zGetCorporationsCorporationIdOrdersResponse,
+  zGetMarketsGroupsHeaders,
+  zGetMarketsGroupsMarketGroupIdHeaders,
+  zGetMarketsGroupsMarketGroupIdPath,
+  zGetMarketsGroupsMarketGroupIdResponse,
+  zGetMarketsGroupsResponse,
+  zGetMarketsPricesHeaders,
+  zGetMarketsPricesResponse,
+  zGetMarketsRegionIdHistoryHeaders,
+  zGetMarketsRegionIdHistoryPath,
+  zGetMarketsRegionIdHistoryQuery,
+  zGetMarketsRegionIdHistoryResponse,
+  zGetMarketsRegionIdOrdersHeaders,
+  zGetMarketsRegionIdOrdersPath,
+  zGetMarketsRegionIdOrdersQuery,
+  zGetMarketsRegionIdOrdersResponse,
+  zGetMarketsRegionIdTypesHeaders,
+  zGetMarketsRegionIdTypesPath,
+  zGetMarketsRegionIdTypesQuery,
+  zGetMarketsRegionIdTypesResponse,
+  zGetMarketsStructuresStructureIdHeaders,
+  zGetMarketsStructuresStructureIdPath,
+  zGetMarketsStructuresStructureIdQuery,
+  zGetMarketsStructuresStructureIdResponse,
+} from '../../zod.gen.js';
 
-export const GetMarketsGroupsMarketGroupIdDescriptor: OperationExecutionDescriptor<GetMarketsGroupsMarketGroupIdInput, GetMarketsGroupsMarketGroupIdOutput> = {
+export const GetMarketsGroupsMarketGroupIdRequestSchema: z.ZodType<OperationArguments<GetMarketsGroupsMarketGroupIdData>> = composeOperationRequestSchema<OperationArguments<GetMarketsGroupsMarketGroupIdData>>({
+  headers: { required: false, schema: zGetMarketsGroupsMarketGroupIdHeaders },
+  path: { required: true, schema: zGetMarketsGroupsMarketGroupIdPath },
+});
+
+export const GetMarketsGroupsMarketGroupIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetMarketsGroupsMarketGroupIdData>, GetMarketsGroupsMarketGroupIdResponse> = {
   operationId: "GetMarketsGroupsMarketGroupId",
   method: "GET",
   path: "/markets/groups/{market_group_id}",
@@ -65,12 +91,18 @@ export const GetMarketsGroupsMarketGroupIdDescriptor: OperationExecutionDescript
   requestSchema: GetMarketsGroupsMarketGroupIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMarketsGroupsMarketGroupIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMarketsGroupsMarketGroupIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdOrdersHistoryDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdOrdersHistoryInput, GetCharactersCharacterIdOrdersHistoryOutput> = {
+export const GetCharactersCharacterIdOrdersHistoryRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdOrdersHistoryHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdOrdersHistoryPath },
+  query: { required: false, schema: zGetCharactersCharacterIdOrdersHistoryQuery },
+});
+
+export const GetCharactersCharacterIdOrdersHistoryDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>, GetCharactersCharacterIdOrdersHistoryResponse> = {
   operationId: "GetCharactersCharacterIdOrdersHistory",
   method: "GET",
   path: "/characters/{character_id}/orders/history",
@@ -85,12 +117,17 @@ export const GetCharactersCharacterIdOrdersHistoryDescriptor: OperationExecution
   requestSchema: GetCharactersCharacterIdOrdersHistoryRequestSchema,
   authentication: { scopes: ["esi-markets.read_character_orders.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdOrdersHistoryStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdOrdersHistoryResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdOrdersDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdOrdersInput, GetCharactersCharacterIdOrdersOutput> = {
+export const GetCharactersCharacterIdOrdersRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdOrdersData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdOrdersData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdOrdersHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdOrdersPath },
+});
+
+export const GetCharactersCharacterIdOrdersDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdOrdersData>, GetCharactersCharacterIdOrdersResponse> = {
   operationId: "GetCharactersCharacterIdOrders",
   method: "GET",
   path: "/characters/{character_id}/orders",
@@ -104,12 +141,18 @@ export const GetCharactersCharacterIdOrdersDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdOrdersRequestSchema,
   authentication: { scopes: ["esi-markets.read_character_orders.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdOrdersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdOrdersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdOrdersHistoryDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdOrdersHistoryInput, GetCorporationsCorporationIdOrdersHistoryOutput> = {
+export const GetCorporationsCorporationIdOrdersHistoryRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdOrdersHistoryHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdOrdersHistoryPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdOrdersHistoryQuery },
+});
+
+export const GetCorporationsCorporationIdOrdersHistoryDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>, GetCorporationsCorporationIdOrdersHistoryResponse> = {
   operationId: "GetCorporationsCorporationIdOrdersHistory",
   method: "GET",
   path: "/corporations/{corporation_id}/orders/history",
@@ -124,12 +167,18 @@ export const GetCorporationsCorporationIdOrdersHistoryDescriptor: OperationExecu
   requestSchema: GetCorporationsCorporationIdOrdersHistoryRequestSchema,
   authentication: { scopes: ["esi-markets.read_corporation_orders.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdOrdersHistoryStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdOrdersHistoryResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdOrdersDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdOrdersInput, GetCorporationsCorporationIdOrdersOutput> = {
+export const GetCorporationsCorporationIdOrdersRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdOrdersData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdOrdersData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdOrdersHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdOrdersPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdOrdersQuery },
+});
+
+export const GetCorporationsCorporationIdOrdersDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdOrdersData>, GetCorporationsCorporationIdOrdersResponse> = {
   operationId: "GetCorporationsCorporationIdOrders",
   method: "GET",
   path: "/corporations/{corporation_id}/orders",
@@ -144,12 +193,16 @@ export const GetCorporationsCorporationIdOrdersDescriptor: OperationExecutionDes
   requestSchema: GetCorporationsCorporationIdOrdersRequestSchema,
   authentication: { scopes: ["esi-markets.read_corporation_orders.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdOrdersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdOrdersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMarketsGroupsDescriptor: OperationExecutionDescriptor<GetMarketsGroupsInput, GetMarketsGroupsOutput> = {
+export const GetMarketsGroupsRequestSchema: z.ZodType<OperationArguments<GetMarketsGroupsData>> = composeOperationRequestSchema<OperationArguments<GetMarketsGroupsData>>({
+  headers: { required: false, schema: zGetMarketsGroupsHeaders },
+});
+
+export const GetMarketsGroupsDescriptor: OperationExecutionDescriptor<OperationArguments<GetMarketsGroupsData>, GetMarketsGroupsResponse> = {
   operationId: "GetMarketsGroups",
   method: "GET",
   path: "/markets/groups",
@@ -162,12 +215,16 @@ export const GetMarketsGroupsDescriptor: OperationExecutionDescriptor<GetMarkets
   requestSchema: GetMarketsGroupsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMarketsGroupsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMarketsGroupsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMarketsPricesDescriptor: OperationExecutionDescriptor<GetMarketsPricesInput, GetMarketsPricesOutput> = {
+export const GetMarketsPricesRequestSchema: z.ZodType<OperationArguments<GetMarketsPricesData>> = composeOperationRequestSchema<OperationArguments<GetMarketsPricesData>>({
+  headers: { required: false, schema: zGetMarketsPricesHeaders },
+});
+
+export const GetMarketsPricesDescriptor: OperationExecutionDescriptor<OperationArguments<GetMarketsPricesData>, GetMarketsPricesResponse> = {
   operationId: "GetMarketsPrices",
   method: "GET",
   path: "/markets/prices",
@@ -180,12 +237,18 @@ export const GetMarketsPricesDescriptor: OperationExecutionDescriptor<GetMarkets
   requestSchema: GetMarketsPricesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMarketsPricesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMarketsPricesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMarketsRegionIdHistoryDescriptor: OperationExecutionDescriptor<GetMarketsRegionIdHistoryInput, GetMarketsRegionIdHistoryOutput> = {
+export const GetMarketsRegionIdHistoryRequestSchema: z.ZodType<OperationArguments<GetMarketsRegionIdHistoryData>> = composeOperationRequestSchema<OperationArguments<GetMarketsRegionIdHistoryData>>({
+  headers: { required: false, schema: zGetMarketsRegionIdHistoryHeaders },
+  path: { required: true, schema: zGetMarketsRegionIdHistoryPath },
+  query: { required: true, schema: zGetMarketsRegionIdHistoryQuery },
+});
+
+export const GetMarketsRegionIdHistoryDescriptor: OperationExecutionDescriptor<OperationArguments<GetMarketsRegionIdHistoryData>, GetMarketsRegionIdHistoryResponse> = {
   operationId: "GetMarketsRegionIdHistory",
   method: "GET",
   path: "/markets/{region_id}/history",
@@ -200,12 +263,18 @@ export const GetMarketsRegionIdHistoryDescriptor: OperationExecutionDescriptor<G
   requestSchema: GetMarketsRegionIdHistoryRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMarketsRegionIdHistoryStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMarketsRegionIdHistoryResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMarketsRegionIdOrdersDescriptor: OperationExecutionDescriptor<GetMarketsRegionIdOrdersInput, GetMarketsRegionIdOrdersOutput> = {
+export const GetMarketsRegionIdOrdersRequestSchema: z.ZodType<OperationArguments<GetMarketsRegionIdOrdersData>> = composeOperationRequestSchema<OperationArguments<GetMarketsRegionIdOrdersData>>({
+  headers: { required: false, schema: zGetMarketsRegionIdOrdersHeaders },
+  path: { required: true, schema: zGetMarketsRegionIdOrdersPath },
+  query: { required: true, schema: zGetMarketsRegionIdOrdersQuery },
+});
+
+export const GetMarketsRegionIdOrdersDescriptor: OperationExecutionDescriptor<OperationArguments<GetMarketsRegionIdOrdersData>, GetMarketsRegionIdOrdersResponse> = {
   operationId: "GetMarketsRegionIdOrders",
   method: "GET",
   path: "/markets/{region_id}/orders",
@@ -222,12 +291,18 @@ export const GetMarketsRegionIdOrdersDescriptor: OperationExecutionDescriptor<Ge
   requestSchema: GetMarketsRegionIdOrdersRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMarketsRegionIdOrdersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMarketsRegionIdOrdersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMarketsRegionIdTypesDescriptor: OperationExecutionDescriptor<GetMarketsRegionIdTypesInput, GetMarketsRegionIdTypesOutput> = {
+export const GetMarketsRegionIdTypesRequestSchema: z.ZodType<OperationArguments<GetMarketsRegionIdTypesData>> = composeOperationRequestSchema<OperationArguments<GetMarketsRegionIdTypesData>>({
+  headers: { required: false, schema: zGetMarketsRegionIdTypesHeaders },
+  path: { required: true, schema: zGetMarketsRegionIdTypesPath },
+  query: { required: false, schema: zGetMarketsRegionIdTypesQuery },
+});
+
+export const GetMarketsRegionIdTypesDescriptor: OperationExecutionDescriptor<OperationArguments<GetMarketsRegionIdTypesData>, GetMarketsRegionIdTypesResponse> = {
   operationId: "GetMarketsRegionIdTypes",
   method: "GET",
   path: "/markets/{region_id}/types",
@@ -242,12 +317,18 @@ export const GetMarketsRegionIdTypesDescriptor: OperationExecutionDescriptor<Get
   requestSchema: GetMarketsRegionIdTypesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMarketsRegionIdTypesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMarketsRegionIdTypesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMarketsStructuresStructureIdDescriptor: OperationExecutionDescriptor<GetMarketsStructuresStructureIdInput, GetMarketsStructuresStructureIdOutput> = {
+export const GetMarketsStructuresStructureIdRequestSchema: z.ZodType<OperationArguments<GetMarketsStructuresStructureIdData>> = composeOperationRequestSchema<OperationArguments<GetMarketsStructuresStructureIdData>>({
+  headers: { required: false, schema: zGetMarketsStructuresStructureIdHeaders },
+  path: { required: true, schema: zGetMarketsStructuresStructureIdPath },
+  query: { required: false, schema: zGetMarketsStructuresStructureIdQuery },
+});
+
+export const GetMarketsStructuresStructureIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetMarketsStructuresStructureIdData>, GetMarketsStructuresStructureIdResponse> = {
   operationId: "GetMarketsStructuresStructureId",
   method: "GET",
   path: "/markets/structures/{structure_id}",
@@ -262,7 +343,7 @@ export const GetMarketsStructuresStructureIdDescriptor: OperationExecutionDescri
   requestSchema: GetMarketsStructuresStructureIdRequestSchema,
   authentication: { scopes: ["esi-markets.structure_markets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetMarketsStructuresStructureIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMarketsStructuresStructureIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetMetaChangelogDescriptor,
@@ -21,15 +22,15 @@ import type {
   GetMetaCompatibilityDatesOptions,
 } from './meta-contract.js';
 import type {
-  GetMetaChangelogInput,
-  GetMetaChangelogOutput,
-  GetMetaCompatibilityDatesInput,
-  GetMetaCompatibilityDatesOutput,
-  GetMetaNameInput,
-  GetMetaNameOutput,
-  GetMetaStatusInput,
-  GetMetaStatusOutput,
-} from '../../schemas/operations/meta.js';
+  GetMetaChangelogData,
+  GetMetaChangelogResponse,
+  GetMetaCompatibilityDatesData,
+  GetMetaCompatibilityDatesResponse,
+  GetMetaNameData,
+  GetMetaNameResponse,
+  GetMetaStatusData,
+  GetMetaStatusResponse,
+} from '../../types.gen.js';
 
 class MetaDomainClientWithMetadataImplementation implements MetaDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -39,23 +40,23 @@ class MetaDomainClientWithMetadataImplementation implements MetaDomainClientWith
     Object.freeze(this);
   }
 
-  getChangelog(options?: GetMetaChangelogOptions): Promise<EsiResponse<GetMetaChangelogOutput>> {
-    const arguments_: GetMetaChangelogInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getChangelog(options?: GetMetaChangelogOptions): Promise<EsiResponse<GetMetaChangelogResponse>> {
+    const arguments_: OperationArguments<GetMetaChangelogData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMetaChangelogDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getHealthStatus(options?: GetMetaStatusOptions): Promise<EsiResponse<GetMetaStatusOutput>> {
-    const arguments_: GetMetaStatusInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getHealthStatus(options?: GetMetaStatusOptions): Promise<EsiResponse<GetMetaStatusResponse>> {
+    const arguments_: OperationArguments<GetMetaStatusData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMetaStatusDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getName(options?: GetMetaNameOptions): Promise<EsiResponse<GetMetaNameOutput>> {
-    const arguments_: GetMetaNameInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getName(options?: GetMetaNameOptions): Promise<EsiResponse<GetMetaNameResponse>> {
+    const arguments_: OperationArguments<GetMetaNameData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMetaNameDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<EsiResponse<GetMetaCompatibilityDatesOutput>> {
-    const arguments_: GetMetaCompatibilityDatesInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<EsiResponse<GetMetaCompatibilityDatesResponse>> {
+    const arguments_: OperationArguments<GetMetaCompatibilityDatesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMetaCompatibilityDatesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -68,19 +69,19 @@ class MetaDomainClientImplementation implements MetaDomainClient {
     Object.freeze(this);
   }
 
-  getChangelog(options?: GetMetaChangelogOptions): Promise<GetMetaChangelogOutput> {
+  getChangelog(options?: GetMetaChangelogOptions): Promise<GetMetaChangelogResponse> {
     return this.#metadata.getChangelog(options).then((response) => response.data);
   }
 
-  getHealthStatus(options?: GetMetaStatusOptions): Promise<GetMetaStatusOutput> {
+  getHealthStatus(options?: GetMetaStatusOptions): Promise<GetMetaStatusResponse> {
     return this.#metadata.getHealthStatus(options).then((response) => response.data);
   }
 
-  getName(options?: GetMetaNameOptions): Promise<GetMetaNameOutput> {
+  getName(options?: GetMetaNameOptions): Promise<GetMetaNameResponse> {
     return this.#metadata.getName(options).then((response) => response.data);
   }
 
-  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<GetMetaCompatibilityDatesOutput> {
+  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<GetMetaCompatibilityDatesResponse> {
     return this.#metadata.listCompatibilityDates(options).then((response) => response.data);
   }
 

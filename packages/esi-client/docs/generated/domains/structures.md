@@ -26,6 +26,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createStructuresClient } from '@evespace/esi-client/domains/structures';
+import type { GetCharactersStructuresMercenaryDensDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -35,7 +36,7 @@ const client = createStructuresClient({ token: accessToken });
 const characterId = 90000001;
 const mercenaryDenId = 1000000000001;
 
-const data = await client.getMercenaryDen(characterId, mercenaryDenId);
+const data: GetCharactersStructuresMercenaryDensDetailResponse = await client.getMercenaryDen(characterId, mercenaryDenId);
 ```
 
 ## Aggregate client
@@ -44,6 +45,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersStructuresMercenaryDensDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -53,7 +55,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const mercenaryDenId = 1000000000001;
 
-const data = await client.structures.getMercenaryDen(characterId, mercenaryDenId);
+const data: GetCharactersStructuresMercenaryDensDetailResponse = await client.structures.getMercenaryDen(characterId, mercenaryDenId);
 ```
 
 ## Shared concepts

@@ -16,32 +16,32 @@ Character affiliation
 - Domain import: `@evespace/esi-client/domains/character`
 - Domain index: [character](../domains/character.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCharacterClient } from '@evespace/esi-client/domains/character';
-import type { PostCharactersAffiliationOptions } from '@evespace/esi-client/domains/character';
+import type { PostCharactersAffiliationResponse, PostCharactersAffiliationData } from '@evespace/esi-client/types';
 
 const client = createCharacterClient();
 
-declare const requestBody: NonNullable<PostCharactersAffiliationOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersAffiliationData['body']>;
 
-const data = await client.lookupAffiliations({ body: requestBody });
+const data: PostCharactersAffiliationResponse = await client.lookupAffiliations({ body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostCharactersAffiliationOptions } from '@evespace/esi-client/domains/character';
+import type { PostCharactersAffiliationResponse, PostCharactersAffiliationData } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-declare const requestBody: NonNullable<PostCharactersAffiliationOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersAffiliationData['body']>;
 
-const data = await client.character.lookupAffiliations({ body: requestBody });
+const data: PostCharactersAffiliationResponse = await client.character.lookupAffiliations({ body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -49,14 +49,16 @@ const data = await client.character.lookupAffiliations({ body: requestBody });
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostCharactersAffiliationData, PostCharactersAffiliationResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-declare const requestBody: NonNullable<CallOperationArguments<'PostCharactersAffiliation'>['body']>;
+declare const requestBody: NonNullable<PostCharactersAffiliationData['body']>;
 
 const arguments_: CallOperationArguments<'PostCharactersAffiliation'> = { body: requestBody };
 
 const response = await client.callOperation('PostCharactersAffiliation', arguments_);
+const data: PostCharactersAffiliationResponse = response.data;
 ```
 
 ## Parameters
@@ -70,14 +72,16 @@ const response = await client.callOperation('PostCharactersAffiliation', argumen
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostCharactersAffiliationRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostCharactersAffiliationData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostCharactersAffiliationBody`; `headers` uses `@evespace/esi-client/zod` export `zPostCharactersAffiliationHeaders`.
+- Response type: `@evespace/esi-client/types` export `PostCharactersAffiliationResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.character.withMetadata().lookupAffiliations(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `PostCharactersAffiliationStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zPostCharactersAffiliationResponse` | OK |
 
 ## Authentication
 
@@ -108,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

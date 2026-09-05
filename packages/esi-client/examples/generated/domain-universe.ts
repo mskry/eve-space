@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseAncestriesResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
-const data = await client.listAncestries();
+const data: GetUniverseAncestriesResponse = await client.listAncestries();

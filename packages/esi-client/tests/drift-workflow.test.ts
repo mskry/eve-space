@@ -17,7 +17,7 @@ describe('scheduled specification drift workflow', () => {
   it('runs on a schedule and by explicit dispatch using the supported frozen toolchain', () => {
     expect(workflow).toMatch(/^  schedule:\n    - cron: ['"][^'"\n]+['"]$/m);
     expect(workflow).toMatch(/^  workflow_dispatch:\s*$/m);
-    expect(workflow).toMatch(/^\s+node-version: 22\.18\.0$/m);
+    expect(workflow).toMatch(/^\s+node-version-file: '\.node-version'$/m);
     expect(workflow).toMatch(/^\s+run: pnpm install --frozen-lockfile$/m);
   });
 

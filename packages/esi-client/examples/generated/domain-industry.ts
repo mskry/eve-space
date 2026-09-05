@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createIndustryClient } from '@evespace/esi-client/domains/industry';
+import type { GetCharactersCharacterIdIndustryJobsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createIndustryClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listCharacterJobs(characterId);
+const data: GetCharactersCharacterIdIndustryJobsResponse = await client.listCharacterJobs(characterId);

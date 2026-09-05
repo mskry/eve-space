@@ -13,5 +13,6 @@ These generated examples use fixed placeholder identifiers and read credentials 
 - [Authenticated operation](./authenticated.md) - Read a token from the environment and call an authenticated typed method.
 - [Single-page pagination](./paginated.md) - Request one page explicitly and inspect metadata before choosing another page.
 - [Response metadata](./metadata.md) - Use a metadata-enabled domain view while preserving typed response data.
+- [Natural generated schemas](./schema-validation.md) - Validate unknown data with a natural Zod export and its matching response type.
 - [Validation-error handling](./validation-error.md) - Handle structured validation failures for untrusted generic arguments.
 - [Mutation safety](./mutation-safety.md) - Require authorization for a typed mutation and both safety gates for generic execution.

@@ -16,30 +16,32 @@ Get planet information
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniversePlanetsPlanetIdResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
 const planetId = 12345;
 
-const data = await client.getPlanet(planetId);
+const data: GetUniversePlanetsPlanetIdResponse = await client.getPlanet(planetId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniversePlanetsPlanetIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const planetId = 12345;
 
-const data = await client.universe.getPlanet(planetId);
+const data: GetUniversePlanetsPlanetIdResponse = await client.universe.getPlanet(planetId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.universe.getPlanet(planetId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniversePlanetsPlanetIdData, GetUniversePlanetsPlanetIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const planetId = 12345;
 const arguments_: CallOperationArguments<'GetUniversePlanetsPlanetId'> = { path: { "planet_id": planetId } };
 
 const response = await client.callOperation('GetUniversePlanetsPlanetId', arguments_);
+const data: GetUniversePlanetsPlanetIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetUniversePlanetsPlanetId', argume
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniversePlanetsPlanetIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniversePlanetsPlanetIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniversePlanetsPlanetIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetUniversePlanetsPlanetIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetUniversePlanetsPlanetIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().getPlanet(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniversePlanetsPlanetIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniversePlanetsPlanetIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

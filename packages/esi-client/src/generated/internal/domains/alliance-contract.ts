@@ -4,63 +4,64 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetAlliancesAllianceIdCorporationsInput,
-  GetAlliancesAllianceIdCorporationsOutput,
-  GetAlliancesAllianceIdIconsInput,
-  GetAlliancesAllianceIdIconsOutput,
-  GetAlliancesAllianceIdInput,
-  GetAlliancesAllianceIdOutput,
-  GetAlliancesInput,
-  GetAlliancesOutput,
-} from '../../schemas/operations/alliance.js';
+  GetAlliancesAllianceIdCorporationsData,
+  GetAlliancesAllianceIdCorporationsResponse,
+  GetAlliancesAllianceIdData,
+  GetAlliancesAllianceIdIconsData,
+  GetAlliancesAllianceIdIconsResponse,
+  GetAlliancesAllianceIdResponse,
+  GetAlliancesData,
+  GetAlliancesResponse,
+} from '../../types.gen.js';
 
 export interface GetAlliancesAllianceIdIconsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetAlliancesAllianceIdIconsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetAlliancesAllianceIdIconsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetAlliancesAllianceIdIconsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetAlliancesAllianceIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetAlliancesAllianceIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetAlliancesAllianceIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetAlliancesAllianceIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetAlliancesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetAlliancesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetAlliancesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetAlliancesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetAlliancesAllianceIdCorporationsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetAlliancesAllianceIdCorporationsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetAlliancesAllianceIdCorporationsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetAlliancesAllianceIdCorporationsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>["headers"]>["X-Tenant"];
 }
 
 export interface AllianceDomainClient {
-  getIcon(allianceId: NonNullable<GetAlliancesAllianceIdIconsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<GetAlliancesAllianceIdIconsOutput>;
+  getIcon(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<GetAlliancesAllianceIdIconsResponse>;
 
-  getPublicInfo(allianceId: NonNullable<GetAlliancesAllianceIdInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<GetAlliancesAllianceIdOutput>;
+  getPublicInfo(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<GetAlliancesAllianceIdResponse>;
 
-  list(options?: GetAlliancesOptions): Promise<GetAlliancesOutput>;
+  list(options?: GetAlliancesOptions): Promise<GetAlliancesResponse>;
 
-  listCorporations(allianceId: NonNullable<GetAlliancesAllianceIdCorporationsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<GetAlliancesAllianceIdCorporationsOutput>;
+  listCorporations(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<GetAlliancesAllianceIdCorporationsResponse>;
 
   withMetadata(): AllianceDomainClientWithMetadata;
 }
 
 export interface AllianceDomainClientWithMetadata {
-  getIcon(allianceId: NonNullable<GetAlliancesAllianceIdIconsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<EsiResponse<GetAlliancesAllianceIdIconsOutput>>;
+  getIcon(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdIconsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdIconsOptions): Promise<EsiResponse<GetAlliancesAllianceIdIconsResponse>>;
 
-  getPublicInfo(allianceId: NonNullable<GetAlliancesAllianceIdInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<EsiResponse<GetAlliancesAllianceIdOutput>>;
+  getPublicInfo(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdOptions): Promise<EsiResponse<GetAlliancesAllianceIdResponse>>;
 
-  list(options?: GetAlliancesOptions): Promise<EsiResponse<GetAlliancesOutput>>;
+  list(options?: GetAlliancesOptions): Promise<EsiResponse<GetAlliancesResponse>>;
 
-  listCorporations(allianceId: NonNullable<GetAlliancesAllianceIdCorporationsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<EsiResponse<GetAlliancesAllianceIdCorporationsOutput>>;
+  listCorporations(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdCorporationsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdCorporationsOptions): Promise<EsiResponse<GetAlliancesAllianceIdCorporationsResponse>>;
 }

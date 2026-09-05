@@ -4,26 +4,41 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdPlanetsData,
+  GetCharactersCharacterIdPlanetsPlanetIdData,
+  GetCharactersCharacterIdPlanetsPlanetIdResponse,
+  GetCharactersCharacterIdPlanetsResponse,
+  GetCorporationsCorporationIdCustomsOfficesData,
+  GetCorporationsCorporationIdCustomsOfficesResponse,
+  GetUniverseSchematicsSchematicIdData,
+  GetUniverseSchematicsSchematicIdResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdPlanetsPlanetIdRequestSchema,
-  GetCharactersCharacterIdPlanetsPlanetIdStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdPlanetsRequestSchema,
-  GetCharactersCharacterIdPlanetsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdCustomsOfficesRequestSchema,
-  GetCorporationsCorporationIdCustomsOfficesStatus200SuccessResponseSchema,
-  GetUniverseSchematicsSchematicIdRequestSchema,
-  GetUniverseSchematicsSchematicIdStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdPlanetsInput,
-  type GetCharactersCharacterIdPlanetsOutput,
-  type GetCharactersCharacterIdPlanetsPlanetIdInput,
-  type GetCharactersCharacterIdPlanetsPlanetIdOutput,
-  type GetCorporationsCorporationIdCustomsOfficesInput,
-  type GetCorporationsCorporationIdCustomsOfficesOutput,
-  type GetUniverseSchematicsSchematicIdInput,
-  type GetUniverseSchematicsSchematicIdOutput,
-} from '../../schemas/operations/planetary-interaction.js';
+  zGetCharactersCharacterIdPlanetsHeaders,
+  zGetCharactersCharacterIdPlanetsPath,
+  zGetCharactersCharacterIdPlanetsPlanetIdHeaders,
+  zGetCharactersCharacterIdPlanetsPlanetIdPath,
+  zGetCharactersCharacterIdPlanetsPlanetIdResponse,
+  zGetCharactersCharacterIdPlanetsResponse,
+  zGetCorporationsCorporationIdCustomsOfficesHeaders,
+  zGetCorporationsCorporationIdCustomsOfficesPath,
+  zGetCorporationsCorporationIdCustomsOfficesQuery,
+  zGetCorporationsCorporationIdCustomsOfficesResponse,
+  zGetUniverseSchematicsSchematicIdHeaders,
+  zGetUniverseSchematicsSchematicIdPath,
+  zGetUniverseSchematicsSchematicIdResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdPlanetsPlanetIdDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdPlanetsPlanetIdInput, GetCharactersCharacterIdPlanetsPlanetIdOutput> = {
+export const GetCharactersCharacterIdPlanetsPlanetIdRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdPlanetsPlanetIdHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdPlanetsPlanetIdPath },
+});
+
+export const GetCharactersCharacterIdPlanetsPlanetIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>, GetCharactersCharacterIdPlanetsPlanetIdResponse> = {
   operationId: "GetCharactersCharacterIdPlanetsPlanetId",
   method: "GET",
   path: "/characters/{character_id}/planets/{planet_id}",
@@ -38,12 +53,17 @@ export const GetCharactersCharacterIdPlanetsPlanetIdDescriptor: OperationExecuti
   requestSchema: GetCharactersCharacterIdPlanetsPlanetIdRequestSchema,
   authentication: { scopes: ["esi-planets.manage_planets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdPlanetsPlanetIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdPlanetsPlanetIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseSchematicsSchematicIdDescriptor: OperationExecutionDescriptor<GetUniverseSchematicsSchematicIdInput, GetUniverseSchematicsSchematicIdOutput> = {
+export const GetUniverseSchematicsSchematicIdRequestSchema: z.ZodType<OperationArguments<GetUniverseSchematicsSchematicIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseSchematicsSchematicIdData>>({
+  headers: { required: false, schema: zGetUniverseSchematicsSchematicIdHeaders },
+  path: { required: true, schema: zGetUniverseSchematicsSchematicIdPath },
+});
+
+export const GetUniverseSchematicsSchematicIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseSchematicsSchematicIdData>, GetUniverseSchematicsSchematicIdResponse> = {
   operationId: "GetUniverseSchematicsSchematicId",
   method: "GET",
   path: "/universe/schematics/{schematic_id}",
@@ -57,12 +77,17 @@ export const GetUniverseSchematicsSchematicIdDescriptor: OperationExecutionDescr
   requestSchema: GetUniverseSchematicsSchematicIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseSchematicsSchematicIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseSchematicsSchematicIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdPlanetsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdPlanetsInput, GetCharactersCharacterIdPlanetsOutput> = {
+export const GetCharactersCharacterIdPlanetsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdPlanetsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdPlanetsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdPlanetsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdPlanetsPath },
+});
+
+export const GetCharactersCharacterIdPlanetsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdPlanetsData>, GetCharactersCharacterIdPlanetsResponse> = {
   operationId: "GetCharactersCharacterIdPlanets",
   method: "GET",
   path: "/characters/{character_id}/planets",
@@ -76,12 +101,18 @@ export const GetCharactersCharacterIdPlanetsDescriptor: OperationExecutionDescri
   requestSchema: GetCharactersCharacterIdPlanetsRequestSchema,
   authentication: { scopes: ["esi-planets.manage_planets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdPlanetsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdPlanetsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdCustomsOfficesDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdCustomsOfficesInput, GetCorporationsCorporationIdCustomsOfficesOutput> = {
+export const GetCorporationsCorporationIdCustomsOfficesRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdCustomsOfficesHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdCustomsOfficesPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdCustomsOfficesQuery },
+});
+
+export const GetCorporationsCorporationIdCustomsOfficesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>, GetCorporationsCorporationIdCustomsOfficesResponse> = {
   operationId: "GetCorporationsCorporationIdCustomsOffices",
   method: "GET",
   path: "/corporations/{corporation_id}/customs_offices",
@@ -96,7 +127,7 @@ export const GetCorporationsCorporationIdCustomsOfficesDescriptor: OperationExec
   requestSchema: GetCorporationsCorporationIdCustomsOfficesRequestSchema,
   authentication: { scopes: ["esi-planets.read_customs_offices.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdCustomsOfficesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdCustomsOfficesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

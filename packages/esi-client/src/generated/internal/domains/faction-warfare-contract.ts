@@ -4,115 +4,116 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdFwStatsInput,
-  GetCharactersCharacterIdFwStatsOutput,
-  GetCorporationsCorporationIdFwStatsInput,
-  GetCorporationsCorporationIdFwStatsOutput,
-  GetFwLeaderboardsCharactersInput,
-  GetFwLeaderboardsCharactersOutput,
-  GetFwLeaderboardsCorporationsInput,
-  GetFwLeaderboardsCorporationsOutput,
-  GetFwLeaderboardsInput,
-  GetFwLeaderboardsOutput,
-  GetFwStatsInput,
-  GetFwStatsOutput,
-  GetFwSystemsInput,
-  GetFwSystemsOutput,
-  GetFwWarsInput,
-  GetFwWarsOutput,
-} from '../../schemas/operations/faction-warfare.js';
+  GetCharactersCharacterIdFwStatsData,
+  GetCharactersCharacterIdFwStatsResponse,
+  GetCorporationsCorporationIdFwStatsData,
+  GetCorporationsCorporationIdFwStatsResponse,
+  GetFwLeaderboardsCharactersData,
+  GetFwLeaderboardsCharactersResponse,
+  GetFwLeaderboardsCorporationsData,
+  GetFwLeaderboardsCorporationsResponse,
+  GetFwLeaderboardsData,
+  GetFwLeaderboardsResponse,
+  GetFwStatsData,
+  GetFwStatsResponse,
+  GetFwSystemsData,
+  GetFwSystemsResponse,
+  GetFwWarsData,
+  GetFwWarsResponse,
+} from '../../types.gen.js';
 
 export interface GetFwLeaderboardsCharactersOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetFwLeaderboardsCharactersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFwLeaderboardsCharactersInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetFwLeaderboardsCharactersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwLeaderboardsCharactersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwLeaderboardsCharactersData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFwLeaderboardsCharactersData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdFwStatsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdFwStatsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdFwStatsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdFwStatsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetFwLeaderboardsCorporationsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetFwLeaderboardsCorporationsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFwLeaderboardsCorporationsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetFwLeaderboardsCorporationsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwLeaderboardsCorporationsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwLeaderboardsCorporationsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFwLeaderboardsCorporationsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdFwStatsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdFwStatsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdFwStatsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdFwStatsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetFwLeaderboardsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetFwLeaderboardsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFwLeaderboardsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetFwLeaderboardsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwLeaderboardsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwLeaderboardsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFwLeaderboardsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetFwStatsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetFwStatsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFwStatsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetFwStatsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwStatsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwStatsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFwStatsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetFwSystemsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetFwSystemsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFwSystemsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetFwSystemsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwSystemsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwSystemsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFwSystemsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetFwWarsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetFwWarsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFwWarsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetFwWarsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFwWarsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFwWarsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFwWarsData>["headers"]>["X-Tenant"];
 }
 
 export interface FactionWarfareDomainClient {
-  getCharacterLeaderboards(options?: GetFwLeaderboardsCharactersOptions): Promise<GetFwLeaderboardsCharactersOutput>;
+  getCharacterLeaderboards(options?: GetFwLeaderboardsCharactersOptions): Promise<GetFwLeaderboardsCharactersResponse>;
 
-  getCharacterStats(characterId: NonNullable<GetCharactersCharacterIdFwStatsInput['path']>["character_id"], options?: GetCharactersCharacterIdFwStatsOptions): Promise<GetCharactersCharacterIdFwStatsOutput>;
+  getCharacterStats(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>['path']>["character_id"], options?: GetCharactersCharacterIdFwStatsOptions): Promise<GetCharactersCharacterIdFwStatsResponse>;
 
-  getCorporationLeaderboards(options?: GetFwLeaderboardsCorporationsOptions): Promise<GetFwLeaderboardsCorporationsOutput>;
+  getCorporationLeaderboards(options?: GetFwLeaderboardsCorporationsOptions): Promise<GetFwLeaderboardsCorporationsResponse>;
 
-  getCorporationStats(corporationId: NonNullable<GetCorporationsCorporationIdFwStatsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdFwStatsOptions): Promise<GetCorporationsCorporationIdFwStatsOutput>;
+  getCorporationStats(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFwStatsOptions): Promise<GetCorporationsCorporationIdFwStatsResponse>;
 
-  getFactionLeaderboards(options?: GetFwLeaderboardsOptions): Promise<GetFwLeaderboardsOutput>;
+  getFactionLeaderboards(options?: GetFwLeaderboardsOptions): Promise<GetFwLeaderboardsResponse>;
 
-  listFactionStats(options?: GetFwStatsOptions): Promise<GetFwStatsOutput>;
+  listFactionStats(options?: GetFwStatsOptions): Promise<GetFwStatsResponse>;
 
-  listSystems(options?: GetFwSystemsOptions): Promise<GetFwSystemsOutput>;
+  listSystems(options?: GetFwSystemsOptions): Promise<GetFwSystemsResponse>;
 
-  listWars(options?: GetFwWarsOptions): Promise<GetFwWarsOutput>;
+  listWars(options?: GetFwWarsOptions): Promise<GetFwWarsResponse>;
 
   withMetadata(): FactionWarfareDomainClientWithMetadata;
 }
 
 export interface FactionWarfareDomainClientWithMetadata {
-  getCharacterLeaderboards(options?: GetFwLeaderboardsCharactersOptions): Promise<EsiResponse<GetFwLeaderboardsCharactersOutput>>;
+  getCharacterLeaderboards(options?: GetFwLeaderboardsCharactersOptions): Promise<EsiResponse<GetFwLeaderboardsCharactersResponse>>;
 
-  getCharacterStats(characterId: NonNullable<GetCharactersCharacterIdFwStatsInput['path']>["character_id"], options?: GetCharactersCharacterIdFwStatsOptions): Promise<EsiResponse<GetCharactersCharacterIdFwStatsOutput>>;
+  getCharacterStats(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdFwStatsData>['path']>["character_id"], options?: GetCharactersCharacterIdFwStatsOptions): Promise<EsiResponse<GetCharactersCharacterIdFwStatsResponse>>;
 
-  getCorporationLeaderboards(options?: GetFwLeaderboardsCorporationsOptions): Promise<EsiResponse<GetFwLeaderboardsCorporationsOutput>>;
+  getCorporationLeaderboards(options?: GetFwLeaderboardsCorporationsOptions): Promise<EsiResponse<GetFwLeaderboardsCorporationsResponse>>;
 
-  getCorporationStats(corporationId: NonNullable<GetCorporationsCorporationIdFwStatsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdFwStatsOptions): Promise<EsiResponse<GetCorporationsCorporationIdFwStatsOutput>>;
+  getCorporationStats(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFwStatsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFwStatsOptions): Promise<EsiResponse<GetCorporationsCorporationIdFwStatsResponse>>;
 
-  getFactionLeaderboards(options?: GetFwLeaderboardsOptions): Promise<EsiResponse<GetFwLeaderboardsOutput>>;
+  getFactionLeaderboards(options?: GetFwLeaderboardsOptions): Promise<EsiResponse<GetFwLeaderboardsResponse>>;
 
-  listFactionStats(options?: GetFwStatsOptions): Promise<EsiResponse<GetFwStatsOutput>>;
+  listFactionStats(options?: GetFwStatsOptions): Promise<EsiResponse<GetFwStatsResponse>>;
 
-  listSystems(options?: GetFwSystemsOptions): Promise<EsiResponse<GetFwSystemsOutput>>;
+  listSystems(options?: GetFwSystemsOptions): Promise<EsiResponse<GetFwSystemsResponse>>;
 
-  listWars(options?: GetFwWarsOptions): Promise<EsiResponse<GetFwWarsOutput>>;
+  listWars(options?: GetFwWarsOptions): Promise<EsiResponse<GetFwWarsResponse>>;
 }

@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createIncursionsClient } from '@evespace/esi-client/domains/incursions';
+import type { GetIncursionsResponse } from '@evespace/esi-client/types';
 
 const client = createIncursionsClient();
 
-const data = await client.list();
+const data: GetIncursionsResponse = await client.list();

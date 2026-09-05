@@ -16,30 +16,32 @@ Get station information
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseStationsStationIdResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
 const stationId = 60003760;
 
-const data = await client.getStation(stationId);
+const data: GetUniverseStationsStationIdResponse = await client.getStation(stationId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseStationsStationIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const stationId = 60003760;
 
-const data = await client.universe.getStation(stationId);
+const data: GetUniverseStationsStationIdResponse = await client.universe.getStation(stationId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.universe.getStation(stationId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseStationsStationIdData, GetUniverseStationsStationIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const stationId = 60003760;
 const arguments_: CallOperationArguments<'GetUniverseStationsStationId'> = { path: { "station_id": stationId } };
 
 const response = await client.callOperation('GetUniverseStationsStationId', arguments_);
+const data: GetUniverseStationsStationIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetUniverseStationsStationId', argu
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseStationsStationIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseStationsStationIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseStationsStationIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetUniverseStationsStationIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseStationsStationIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().getStation(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseStationsStationIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseStationsStationIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

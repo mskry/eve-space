@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createLoyaltyClient } from '@evespace/esi-client/domains/loyalty';
+import type { GetCharactersCharacterIdLoyaltyPointsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createLoyaltyClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listPoints(characterId);
+const data: GetCharactersCharacterIdLoyaltyPointsResponse = await client.listPoints(characterId);

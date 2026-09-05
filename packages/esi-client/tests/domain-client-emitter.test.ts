@@ -15,16 +15,16 @@ import {
   renderDomainClientArtifacts,
   validateDomainClientArtifacts,
 } from '../scripts/generate/domain-client.ts';
+import { heyApiSourceComponent } from '../scripts/generate/hey-api.ts';
 import type {
   NormalizedOpenApiModel,
   NormalizedOperation,
   NormalizedParameter,
 } from '../scripts/generate/normalize.ts';
 import type { ResolvedOperationMetadata } from '../scripts/generate/operation-metadata.ts';
-import type { EmitterContext } from '../scripts/generate/orchestrate.ts';
+import type { EmitterContext } from '../scripts/generate/generation-contracts.ts';
 import { createGeneratedSourceEmitter } from '../scripts/generate/source-emitter.ts';
 import { operationRegistrySourceComponent } from '../scripts/generate/operation-registry.ts';
-import { zodSchemaSourceComponent } from '../scripts/generate/zod-schema.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 import { expectIsolatedDeclarationsCompilation } from './helpers/typescript.js';
 
@@ -48,7 +48,7 @@ describe('generated domain clients', () => {
     expect(first.domains).toHaveLength(1);
     expect(first.rootIndexSource).toContain("export * from './esi-client.js';");
     expect(first.rootIndexSource).toContain("export * from './domains/index.js';");
-    expect(first.rootIndexSource).toContain("export * from './schemas/index.js';");
+    expect(first.rootIndexSource).not.toContain("export * from './schemas/index.js';");
     expect(first.clientSource).toContain('export class EsiClient extends EsiClientBase');
     expect(first.clientSource).toContain('/** Operations for the ESI `items` domain. */');
     expect(first.clientSource).toContain('readonly items: ItemsDomainClient;');
@@ -57,14 +57,14 @@ describe('generated domain clients', () => {
     expect(first.indexSource).not.toContain('operation-coverage');
     expect(first.domains[0]?.contractSource).toContain('export interface ItemsDomainClient');
     expect(first.domains[0]?.contractSource).toContain(
-      'getItem(itemId: NonNullable<GetItemInput[\'path\']>["item_id"], options?: GetItemOptions)',
+      'getItem(itemId: NonNullable<OperationArguments<GetItemData>[\'path\']>["item_id"], options?: GetItemOptions)',
     );
     expect(first.domains[0]?.contractSource).toContain('readonly "page"?:');
     expect(first.domains[0]?.contractSource).toContain('readonly "ifNoneMatch"?:');
     expect(first.domains[0]?.contractSource).toContain('readonly "compatibilityDate"?: string;');
     expect(first.domains[0]?.contractSource).not.toContain('acceptLanguage');
     expect(first.domains[0]?.contractSource).toContain(
-      'createItem(options: CreateItemOptions): Promise<CreateItemOutput>',
+      'createItem(options: CreateItemOptions): Promise<CreateItemResponse>',
     );
     expect(first.domains[0]?.contractSource).toContain(
       'withMetadata(): ItemsDomainClientWithMetadata',
@@ -83,13 +83,16 @@ describe('generated domain clients', () => {
     expect(first.domains[0]?.implementationSource).toContain(
       'return this.#metadata.getItem(itemId, options).then((response) => response.data);',
     );
+    expect(first.domains[0]?.implementationSource).toContain(
+      'headers: { "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }',
+    );
     expect(first.domains[0]?.descriptorSource).toContain(
       'transport: { compatibilityDateOverride: true }',
     );
     expect(first.domains[0]?.descriptorSource).not.toContain('X-Compatibility-Date');
     expect(first.contractsSource.match(/^  readonly "(?:Create|Get)Item": \{$/gmu)).toHaveLength(2);
     expect(first.contractsSource).toContain(
-      'IsExact<keyof GeneratedDomainOperationCoverage, keyof GeneratedOperationSignatures>',
+      'IsExact<keyof GeneratedDomainOperationCoverage, keyof GeneratedOperationContractMap>',
     );
     const sources = [
       first.clientSource,
@@ -115,7 +118,7 @@ describe('generated domain clients', () => {
     const model = representativeModel();
     const context = emitterContext(outputDirectory, model);
     const emitter = createGeneratedSourceEmitter([
-      zodSchemaSourceComponent,
+      heyApiSourceComponent,
       domainClientSourceComponent,
       operationRegistrySourceComponent,
     ]);
@@ -267,8 +270,8 @@ describe('generated domain clients', () => {
           {
             ...domain,
             descriptorSource: domain.descriptorSource.replace(
-              '../../schemas/operations/items.js',
-              '../../schemas/operations/other.js',
+              '../../zod.gen.js',
+              '../../other-zod.gen.js',
             ),
           },
         ],
@@ -476,7 +479,7 @@ function emitterContext(
 ): EmitterContext {
   return {
     compatibilityDate: provenance.compatibilityDate,
-    correctedDocument: {},
+    correctedDocument: representativeOpenApiDocument(),
     normalizedModel,
     namingReviewReport: 'test naming review\n',
     operationMetadata: representativeMetadata(),
@@ -492,6 +495,87 @@ function emitterContext(
       },
       sourceSha256: 'e'.repeat(64),
       specificationUrl: 'https://example.test/openapi.json',
+    },
+  };
+}
+
+function representativeOpenApiDocument(): Record<string, unknown> {
+  const commonParameters = [
+    {
+      name: 'Accept-Language',
+      in: 'header',
+      schema: { type: 'string', default: 'en' },
+    },
+    {
+      name: 'X-Compatibility-Date',
+      in: 'header',
+      required: true,
+      schema: { type: 'string', enum: ['2026-08-18'] },
+    },
+  ];
+  return {
+    openapi: '3.1.0',
+    info: { title: 'Domain fixture', version: '1.0.0' },
+    components: {
+      schemas: {
+        Item: {
+          type: 'object',
+          required: ['id'],
+          properties: { id: { type: 'integer' }, name: { type: 'string' } },
+        },
+      },
+    },
+    paths: {
+      '/items': {
+        post: {
+          operationId: 'CreateItem',
+          parameters: commonParameters,
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['name'],
+                  properties: { name: { type: 'string' } },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Success',
+              content: {
+                'application/json': { schema: { $ref: '#/components/schemas/Item' } },
+              },
+            },
+          },
+        },
+      },
+      '/items/{item_id}': {
+        get: {
+          operationId: 'GetItem',
+          parameters: [
+            ...commonParameters,
+            { name: 'item_id', in: 'path', required: true, schema: { type: 'integer' } },
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'If-None-Match', in: 'header', schema: { type: 'string' } },
+            {
+              name: 'X-Tenant',
+              in: 'header',
+              schema: { type: 'string', default: 'tranquility' },
+            },
+          ],
+          responses: {
+            200: {
+              description: 'Success',
+              content: {
+                'application/json': { schema: { $ref: '#/components/schemas/Item' } },
+              },
+            },
+          },
+        },
+      },
     },
   };
 }

@@ -1,5 +1,5 @@
 import { createWalletClient } from '@evespace/esi-client/domains/wallet'
-import type { GetCharactersCharacterIdWalletJournalOutput } from '@evespace/esi-client/schemas'
+import type { GetCharactersCharacterIdWalletJournalResponse } from '@evespace/esi-client/types'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
 import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
@@ -53,7 +53,7 @@ const safeJournalContextTypes = [
 
 type WalletJournalContextType = (typeof safeJournalContextTypes)[number]
 const safeJournalContextTypeSet = new Set<string>(safeJournalContextTypes)
-type EsiWalletJournalEntry = GetCharactersCharacterIdWalletJournalOutput[number]
+type EsiWalletJournalEntry = GetCharactersCharacterIdWalletJournalResponse[number]
 
 interface WalletJournalData {
   entries: Array<{

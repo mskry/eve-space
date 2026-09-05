@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createInsuranceClient } from '@evespace/esi-client/domains/insurance';
+import type { GetInsurancePricesResponse } from '@evespace/esi-client/types';
 
 const client = createInsuranceClient();
 
-const data = await client.listPrices();
+const data: GetInsurancePricesResponse = await client.listPrices();

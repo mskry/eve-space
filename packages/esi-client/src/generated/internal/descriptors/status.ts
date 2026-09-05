@@ -4,14 +4,23 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetStatusData,
+  GetStatusResponse,
+} from '../../types.gen.js';
 import {
-  GetStatusRequestSchema,
-  GetStatusStatus200SuccessResponseSchema,
-  type GetStatusInput,
-  type GetStatusOutput,
-} from '../../schemas/operations/status.js';
+  zGetStatusHeaders,
+  zGetStatusResponse,
+} from '../../zod.gen.js';
 
-export const GetStatusDescriptor: OperationExecutionDescriptor<GetStatusInput, GetStatusOutput> = {
+export const GetStatusRequestSchema: z.ZodType<OperationArguments<GetStatusData>> = composeOperationRequestSchema<OperationArguments<GetStatusData>>({
+  headers: { required: false, schema: zGetStatusHeaders },
+});
+
+export const GetStatusDescriptor: OperationExecutionDescriptor<OperationArguments<GetStatusData>, GetStatusResponse> = {
   operationId: "GetStatus",
   method: "GET",
   path: "/status",
@@ -24,7 +33,7 @@ export const GetStatusDescriptor: OperationExecutionDescriptor<GetStatusInput, G
   requestSchema: GetStatusRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetStatusStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetStatusResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

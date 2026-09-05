@@ -24,6 +24,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createPlanetaryInteractionClient } from '@evespace/esi-client/domains/planetary-interaction';
+import type { GetCharactersCharacterIdPlanetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -32,7 +33,7 @@ const client = createPlanetaryInteractionClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listColonies(characterId);
+const data: GetCharactersCharacterIdPlanetsResponse = await client.listColonies(characterId);
 ```
 
 ## Aggregate client
@@ -41,6 +42,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdPlanetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -49,7 +51,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.planetaryInteraction.listColonies(characterId);
+const data: GetCharactersCharacterIdPlanetsResponse = await client.planetaryInteraction.listColonies(characterId);
 ```
 
 ## Shared concepts

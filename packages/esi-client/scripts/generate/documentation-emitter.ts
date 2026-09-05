@@ -2,7 +2,6 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, posix } from 'node:path';
 
 import { createProvenanceHeader, type ArtifactProvenance } from './artifacts.ts';
-import { domainFileName } from './domain-client.ts';
 import {
   renderOperationSnippets,
   renderStandaloneExampleDocumentation,
@@ -13,7 +12,14 @@ import type {
   SerializableOperationManifest,
   SerializableOperationManifestEntry,
 } from './operation-registry.ts';
-import type { EmitterContext, GeneratedOutputEmitter } from './orchestrate.ts';
+import type {
+  EmitterContext,
+  GeneratedOutputClaim,
+  GeneratedOutputEmitter,
+} from './generation-contracts.ts';
+import { generatedTargetFor, normalizeGeneratedPath } from './paths.ts';
+import { domainFileName, facadeParameterName } from './internal/facade-naming.ts';
+import { compareText } from './internal/text.ts';
 
 export interface RenderedGeneratedDocumentation {
   readonly generatedFiles: ReadonlyMap<string, string>;
@@ -27,9 +33,11 @@ interface DocumentationDomain {
 }
 
 const documentationTargets = Object.freeze({
-  generated: 'docs/generated',
-  repositoryLlms: 'llms.txt',
-  siteLlms: 'docs/llms.txt',
+  generated: generatedTargetFor('documentation').path,
+  llms: Object.freeze([
+    generatedTargetFor('repositoryLlms').path,
+    generatedTargetFor('siteLlms').path,
+  ]),
 });
 const conceptPages: readonly (readonly [string, string])[] = Object.freeze([
   ['installation', 'Installation'],
@@ -97,13 +105,7 @@ export function renderGeneratedDocumentation(
 
 export async function emitGeneratedDocumentation(
   context: EmitterContext,
-): Promise<
-  readonly [
-    { readonly target: 'docs/generated'; readonly kind: 'directory' },
-    { readonly target: 'llms.txt'; readonly kind: 'file' },
-    { readonly target: 'docs/llms.txt'; readonly kind: 'file' },
-  ]
-> {
+): Promise<readonly GeneratedOutputClaim[]> {
   if (context === null || typeof context !== 'object') {
     throw new TypeError('Documentation emitter context must be an object');
   }
@@ -127,7 +129,7 @@ export async function emitGeneratedDocumentation(
       mkdir(dirname(outputPath), { recursive: true }).then(() => writeFile(outputPath, content)),
     );
   }
-  for (const target of [documentationTargets.repositoryLlms, documentationTargets.siteLlms]) {
+  for (const target of documentationTargets.llms) {
     const outputPath = context.outputPath(target);
     writes.push(
       mkdir(dirname(outputPath), { recursive: true }).then(() =>
@@ -139,8 +141,7 @@ export async function emitGeneratedDocumentation(
 
   return [
     { target: documentationTargets.generated, kind: 'directory' },
-    { target: documentationTargets.repositoryLlms, kind: 'file' },
-    { target: documentationTargets.siteLlms, kind: 'file' },
+    ...documentationTargets.llms.map((target) => ({ target, kind: 'file' as const })),
   ];
 }
 
@@ -172,9 +173,9 @@ function renderLlmsText(
     provenance,
     `# @evespace/esi-client
 
-> ESM-only TypeScript SDK for EVE Online ESI. Requires Node.js 22.18+ and Zod 4.
+> ESM-only TypeScript SDK for EVE Online ESI. Requires Node.js 24.20+ and Zod 4.
 
-Use narrow domain, schema, and operation imports when possible. The generated references are derived from the pinned ESI registry; this entry document intentionally does not embed the complete API.
+Use narrow domain, type, Zod, and operation imports when possible. The generated references are derived from the pinned ESI registry; this entry document intentionally does not embed the complete API.
 
 ## Start
 
@@ -184,7 +185,8 @@ ${concepts}
 ## Imports
 
 - Client: \`import { EsiClient } from '@evespace/esi-client';\`
-- Schemas: \`@evespace/esi-client/schemas\`
+- Types: \`@evespace/esi-client/types\`
+- Zod schemas: \`@evespace/esi-client/zod\`
 - Discovery and generic execution: \`@evespace/esi-client/operations\`
 - One domain: \`@evespace/esi-client/domains/<domain>\`
 
@@ -206,14 +208,14 @@ function renderConceptPage(slug: string, title: string, provenance: ArtifactProv
 
 \`pnpm add @evespace/esi-client zod\`
 
-The package is ESM-only and requires Node.js 22.18 or newer. Import \`EsiClient\` from the package root, or use a documented domain, schema, or operations subpath for a narrower dependency surface.`,
+The package is ESM-only and requires Node.js 24.20 or newer. Import \`EsiClient\` from the package root, or use a documented domain, \`types\`, \`zod\`, or \`operations\` subpath for a narrower dependency surface.`,
     client: `Create a public client with \`new EsiClient()\`. The pinned compatibility date, standard ESI base URL, English language, response validation, and the global \`fetch\` implementation are defaults.
 
 Constructor options include \`baseUrl\`, \`compatibilityDate\`, \`language\`, \`token\` or \`tokenProvider\`, \`fetch\`, \`validateResponses\`, \`validateRequests\`, and \`allowGenericMutations\`. Configuration is immutable. Operation options can override the compatibility date where the registry declares support.`,
     auth: `Public operations need no authentication. Authenticated operation references list every required OAuth scope.
 
 Configure either \`token\` or an asynchronous \`tokenProvider\`; do not configure both. Token providers are resolved only for authenticated requests. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.`,
-    validation: `Successful JSON responses are validated by generated Zod 4 schemas by default. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
+    validation: `Successful JSON responses are validated by generated Zod 4 schemas by default. Natural TypeScript exports are available from \`@evespace/esi-client/types\`; matching natural Zod exports are available from \`@evespace/esi-client/zod\`. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
 
 Typed request validation is opt-in with \`validateRequests: true\`. Generic \`callOperation\` arguments are always validated before network activity. Response validation can be disabled explicitly with \`validateResponses: false\`.`,
     'metadata-pagination': `Normal domain methods return validated bare data. Call \`client.<domain>.withMetadata().<method>(...)\` for an \`EsiResponse<T>\` envelope containing status, all response headers, request ID, pagination, cache validators, and ESI error-limit metadata. Generic execution always returns this envelope.
@@ -320,7 +322,7 @@ ${markdownText(operation.summary ?? 'No summary is available for this operation.
 - Domain import: \`@evespace/esi-client/domains/${domainFile(operation.facade.domain)}\`
 - Domain index: [${markdownText(operation.facade.domain)}](../domains/${domainFile(operation.facade.domain)}.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use \`path\`, \`query\`, \`header\`, and \`body\` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use \`path\`, \`query\`, \`headers\`, and \`body\` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
@@ -346,7 +348,9 @@ ${renderParameters(operation)}
 
 ## Result and schemas
 
-- Request schema: \`${operation.requestSchema.module}\` export \`${operation.requestSchema.export}\`
+- Request type: \`${operation.requestType.module}\` export \`${operation.requestType.export}\`
+- Request-layer schemas: ${renderRequestSchemas(operation)}
+- Response type: \`${operation.responseType.module}\` export \`${operation.responseType.export}\`
 - Domain result: bare validated success data; a no-content response resolves to \`undefined\`.
 - Metadata result: \`client.${operation.facade.domain}.withMetadata().${operation.facade.method}(...)\` returns \`EsiResponse<T>\`.
 - Generic result: \`callOperation\` returns one serializable \`EsiResponse<T>\` envelope.
@@ -413,6 +417,15 @@ function renderResponses(operation: SerializableOperationManifestEntry): string 
     )
     .join('\n');
   return `| Status | Body | Schema module | Schema export | Description |\n| --- | --- | --- | --- | --- |\n${rows}`;
+}
+
+function renderRequestSchemas(operation: SerializableOperationManifestEntry): string {
+  if (operation.requestSchemas.length === 0) return 'none.';
+  return `${operation.requestSchemas
+    .map(
+      ({ group, schema }) => `\`${group}\` uses \`${schema.module}\` export \`${schema.export}\``,
+    )
+    .join('; ')}.`;
 }
 
 function renderPagination(operation: SerializableOperationManifestEntry): string {
@@ -516,15 +529,6 @@ function domainMethodArguments(operation: SerializableOperationManifestEntry): s
   return signatureArguments.join(', ');
 }
 
-function facadeParameterName(value: string): string {
-  const words = value.split(/[^A-Za-z0-9]+/u).filter(Boolean);
-  if (words.length === 0) return 'identifier';
-  return `${words[0].toLowerCase()}${words
-    .slice(1)
-    .map((word) => `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`)
-    .join('')}`;
-}
-
 function schemaSummary(schema: unknown): string {
   if (schema === true) return 'any JSON value';
   if (schema === false) return 'no value';
@@ -584,7 +588,7 @@ function validateManifest(
   if (
     manifest === null ||
     typeof manifest !== 'object' ||
-    manifest.schemaVersion !== 1 ||
+    manifest.schemaVersion !== 2 ||
     !Array.isArray(manifest.operations) ||
     generatedProvenance?.compatibilityDate !== provenance?.compatibilityDate ||
     generatedProvenance?.specificationSha256 !== provenance?.sha256
@@ -638,7 +642,7 @@ function validateRelativeDocumentationPath(path: string): string {
   if (typeof path !== 'string' || posix.isAbsolute(path)) {
     throw new Error(`Invalid generated documentation path: ${path}`);
   }
-  const normalized = posix.normalize(path);
+  const normalized = posix.normalize(normalizeGeneratedPath(path));
   if (normalized === '.' || normalized === '..' || normalized.startsWith('../')) {
     throw new Error(`Unsafe generated documentation path: ${path}`);
   }
@@ -682,10 +686,4 @@ function standaloneExampleTitle(fileName: string): string {
       index === 0 ? `${word.slice(0, 1).toUpperCase()}${word.slice(1)}` : word,
     )
     .join(' ');
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
 }

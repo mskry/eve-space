@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createCosmeticsClient } from '@evespace/esi-client/domains/cosmetics';
+import type { GetCharactersCosmeticsSkinrResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createCosmeticsClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listSkinrLicenses(characterId);
+const data: GetCharactersCosmeticsSkinrResponse = await client.listSkinrLicenses(characterId);

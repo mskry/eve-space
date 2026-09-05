@@ -4,24 +4,25 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetStatusInput,
-  GetStatusOutput,
-} from '../../schemas/operations/status.js';
+  GetStatusData,
+  GetStatusResponse,
+} from '../../types.gen.js';
 
 export interface GetStatusOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetStatusInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetStatusInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetStatusInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetStatusData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetStatusData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetStatusData>["headers"]>["X-Tenant"];
 }
 
 export interface StatusDomainClient {
-  get(options?: GetStatusOptions): Promise<GetStatusOutput>;
+  get(options?: GetStatusOptions): Promise<GetStatusResponse>;
 
   withMetadata(): StatusDomainClientWithMetadata;
 }
 
 export interface StatusDomainClientWithMetadata {
-  get(options?: GetStatusOptions): Promise<EsiResponse<GetStatusOutput>>;
+  get(options?: GetStatusOptions): Promise<EsiResponse<GetStatusResponse>>;
 }

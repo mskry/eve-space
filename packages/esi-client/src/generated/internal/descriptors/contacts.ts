@@ -4,46 +4,75 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  DeleteCharactersCharacterIdContactsData,
+  DeleteCharactersCharacterIdContactsResponse,
+  GetAlliancesAllianceIdContactsData,
+  GetAlliancesAllianceIdContactsLabelsData,
+  GetAlliancesAllianceIdContactsLabelsResponse,
+  GetAlliancesAllianceIdContactsResponse,
+  GetCharactersCharacterIdContactsData,
+  GetCharactersCharacterIdContactsLabelsData,
+  GetCharactersCharacterIdContactsLabelsResponse,
+  GetCharactersCharacterIdContactsResponse,
+  GetCorporationsCorporationIdContactsData,
+  GetCorporationsCorporationIdContactsLabelsData,
+  GetCorporationsCorporationIdContactsLabelsResponse,
+  GetCorporationsCorporationIdContactsResponse,
+  PostCharactersCharacterIdContactsData,
+  PostCharactersCharacterIdContactsResponse,
+  PutCharactersCharacterIdContactsData,
+  PutCharactersCharacterIdContactsResponse,
+} from '../../types.gen.js';
 import {
-  DeleteCharactersCharacterIdContactsRequestSchema,
-  DeleteCharactersCharacterIdContactsStatus204SuccessResponseSchema,
-  GetAlliancesAllianceIdContactsLabelsRequestSchema,
-  GetAlliancesAllianceIdContactsLabelsStatus200SuccessResponseSchema,
-  GetAlliancesAllianceIdContactsRequestSchema,
-  GetAlliancesAllianceIdContactsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdContactsLabelsRequestSchema,
-  GetCharactersCharacterIdContactsLabelsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdContactsRequestSchema,
-  GetCharactersCharacterIdContactsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdContactsLabelsRequestSchema,
-  GetCorporationsCorporationIdContactsLabelsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdContactsRequestSchema,
-  GetCorporationsCorporationIdContactsStatus200SuccessResponseSchema,
-  PostCharactersCharacterIdContactsRequestSchema,
-  PostCharactersCharacterIdContactsStatus201SuccessResponseSchema,
-  PutCharactersCharacterIdContactsRequestSchema,
-  PutCharactersCharacterIdContactsStatus204SuccessResponseSchema,
-  type DeleteCharactersCharacterIdContactsInput,
-  type DeleteCharactersCharacterIdContactsOutput,
-  type GetAlliancesAllianceIdContactsInput,
-  type GetAlliancesAllianceIdContactsLabelsInput,
-  type GetAlliancesAllianceIdContactsLabelsOutput,
-  type GetAlliancesAllianceIdContactsOutput,
-  type GetCharactersCharacterIdContactsInput,
-  type GetCharactersCharacterIdContactsLabelsInput,
-  type GetCharactersCharacterIdContactsLabelsOutput,
-  type GetCharactersCharacterIdContactsOutput,
-  type GetCorporationsCorporationIdContactsInput,
-  type GetCorporationsCorporationIdContactsLabelsInput,
-  type GetCorporationsCorporationIdContactsLabelsOutput,
-  type GetCorporationsCorporationIdContactsOutput,
-  type PostCharactersCharacterIdContactsInput,
-  type PostCharactersCharacterIdContactsOutput,
-  type PutCharactersCharacterIdContactsInput,
-  type PutCharactersCharacterIdContactsOutput,
-} from '../../schemas/operations/contacts.js';
+  zDeleteCharactersCharacterIdContactsHeaders,
+  zDeleteCharactersCharacterIdContactsPath,
+  zDeleteCharactersCharacterIdContactsQuery,
+  zDeleteCharactersCharacterIdContactsResponse,
+  zGetAlliancesAllianceIdContactsHeaders,
+  zGetAlliancesAllianceIdContactsLabelsHeaders,
+  zGetAlliancesAllianceIdContactsLabelsPath,
+  zGetAlliancesAllianceIdContactsLabelsResponse,
+  zGetAlliancesAllianceIdContactsPath,
+  zGetAlliancesAllianceIdContactsQuery,
+  zGetAlliancesAllianceIdContactsResponse,
+  zGetCharactersCharacterIdContactsHeaders,
+  zGetCharactersCharacterIdContactsLabelsHeaders,
+  zGetCharactersCharacterIdContactsLabelsPath,
+  zGetCharactersCharacterIdContactsLabelsResponse,
+  zGetCharactersCharacterIdContactsPath,
+  zGetCharactersCharacterIdContactsQuery,
+  zGetCharactersCharacterIdContactsResponse,
+  zGetCorporationsCorporationIdContactsHeaders,
+  zGetCorporationsCorporationIdContactsLabelsHeaders,
+  zGetCorporationsCorporationIdContactsLabelsPath,
+  zGetCorporationsCorporationIdContactsLabelsResponse,
+  zGetCorporationsCorporationIdContactsPath,
+  zGetCorporationsCorporationIdContactsQuery,
+  zGetCorporationsCorporationIdContactsResponse,
+  zPostCharactersCharacterIdContactsBody,
+  zPostCharactersCharacterIdContactsHeaders,
+  zPostCharactersCharacterIdContactsPath,
+  zPostCharactersCharacterIdContactsQuery,
+  zPostCharactersCharacterIdContactsResponse,
+  zPutCharactersCharacterIdContactsBody,
+  zPutCharactersCharacterIdContactsHeaders,
+  zPutCharactersCharacterIdContactsPath,
+  zPutCharactersCharacterIdContactsQuery,
+  zPutCharactersCharacterIdContactsResponse,
+} from '../../zod.gen.js';
 
-export const PostCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<PostCharactersCharacterIdContactsInput, PostCharactersCharacterIdContactsOutput> = {
+export const PostCharactersCharacterIdContactsRequestSchema: z.ZodType<OperationArguments<PostCharactersCharacterIdContactsData>> = composeOperationRequestSchema<OperationArguments<PostCharactersCharacterIdContactsData>>({
+  headers: { required: false, schema: zPostCharactersCharacterIdContactsHeaders },
+  path: { required: true, schema: zPostCharactersCharacterIdContactsPath },
+  query: { required: true, schema: zPostCharactersCharacterIdContactsQuery },
+  body: { required: true, schema: zPostCharactersCharacterIdContactsBody },
+});
+
+export const PostCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersCharacterIdContactsData>, PostCharactersCharacterIdContactsResponse> = {
   operationId: "PostCharactersCharacterIdContacts",
   method: "POST",
   path: "/characters/{character_id}/contacts",
@@ -60,12 +89,18 @@ export const PostCharactersCharacterIdContactsDescriptor: OperationExecutionDesc
   requestSchema: PostCharactersCharacterIdContactsRequestSchema,
   authentication: { scopes: ["esi-characters.write_contacts.v1"] },
   successResponses: [
-    { status: 201, body: 'json', schema: PostCharactersCharacterIdContactsStatus201SuccessResponseSchema },
+    { status: 201, body: 'json', schema: zPostCharactersCharacterIdContactsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const DeleteCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<DeleteCharactersCharacterIdContactsInput, DeleteCharactersCharacterIdContactsOutput> = {
+export const DeleteCharactersCharacterIdContactsRequestSchema: z.ZodType<OperationArguments<DeleteCharactersCharacterIdContactsData>> = composeOperationRequestSchema<OperationArguments<DeleteCharactersCharacterIdContactsData>>({
+  headers: { required: false, schema: zDeleteCharactersCharacterIdContactsHeaders },
+  path: { required: true, schema: zDeleteCharactersCharacterIdContactsPath },
+  query: { required: true, schema: zDeleteCharactersCharacterIdContactsQuery },
+});
+
+export const DeleteCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<OperationArguments<DeleteCharactersCharacterIdContactsData>, DeleteCharactersCharacterIdContactsResponse> = {
   operationId: "DeleteCharactersCharacterIdContacts",
   method: "DELETE",
   path: "/characters/{character_id}/contacts",
@@ -85,7 +120,12 @@ export const DeleteCharactersCharacterIdContactsDescriptor: OperationExecutionDe
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetAlliancesAllianceIdContactsLabelsDescriptor: OperationExecutionDescriptor<GetAlliancesAllianceIdContactsLabelsInput, GetAlliancesAllianceIdContactsLabelsOutput> = {
+export const GetAlliancesAllianceIdContactsLabelsRequestSchema: z.ZodType<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>> = composeOperationRequestSchema<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>>({
+  headers: { required: false, schema: zGetAlliancesAllianceIdContactsLabelsHeaders },
+  path: { required: true, schema: zGetAlliancesAllianceIdContactsLabelsPath },
+});
+
+export const GetAlliancesAllianceIdContactsLabelsDescriptor: OperationExecutionDescriptor<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>, GetAlliancesAllianceIdContactsLabelsResponse> = {
   operationId: "GetAlliancesAllianceIdContactsLabels",
   method: "GET",
   path: "/alliances/{alliance_id}/contacts/labels",
@@ -99,12 +139,18 @@ export const GetAlliancesAllianceIdContactsLabelsDescriptor: OperationExecutionD
   requestSchema: GetAlliancesAllianceIdContactsLabelsRequestSchema,
   authentication: { scopes: ["esi-alliances.read_contacts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetAlliancesAllianceIdContactsLabelsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetAlliancesAllianceIdContactsLabelsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetAlliancesAllianceIdContactsDescriptor: OperationExecutionDescriptor<GetAlliancesAllianceIdContactsInput, GetAlliancesAllianceIdContactsOutput> = {
+export const GetAlliancesAllianceIdContactsRequestSchema: z.ZodType<OperationArguments<GetAlliancesAllianceIdContactsData>> = composeOperationRequestSchema<OperationArguments<GetAlliancesAllianceIdContactsData>>({
+  headers: { required: false, schema: zGetAlliancesAllianceIdContactsHeaders },
+  path: { required: true, schema: zGetAlliancesAllianceIdContactsPath },
+  query: { required: false, schema: zGetAlliancesAllianceIdContactsQuery },
+});
+
+export const GetAlliancesAllianceIdContactsDescriptor: OperationExecutionDescriptor<OperationArguments<GetAlliancesAllianceIdContactsData>, GetAlliancesAllianceIdContactsResponse> = {
   operationId: "GetAlliancesAllianceIdContacts",
   method: "GET",
   path: "/alliances/{alliance_id}/contacts",
@@ -119,12 +165,17 @@ export const GetAlliancesAllianceIdContactsDescriptor: OperationExecutionDescrip
   requestSchema: GetAlliancesAllianceIdContactsRequestSchema,
   authentication: { scopes: ["esi-alliances.read_contacts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetAlliancesAllianceIdContactsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetAlliancesAllianceIdContactsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdContactsLabelsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdContactsLabelsInput, GetCharactersCharacterIdContactsLabelsOutput> = {
+export const GetCharactersCharacterIdContactsLabelsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdContactsLabelsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdContactsLabelsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdContactsLabelsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdContactsLabelsPath },
+});
+
+export const GetCharactersCharacterIdContactsLabelsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdContactsLabelsData>, GetCharactersCharacterIdContactsLabelsResponse> = {
   operationId: "GetCharactersCharacterIdContactsLabels",
   method: "GET",
   path: "/characters/{character_id}/contacts/labels",
@@ -138,12 +189,18 @@ export const GetCharactersCharacterIdContactsLabelsDescriptor: OperationExecutio
   requestSchema: GetCharactersCharacterIdContactsLabelsRequestSchema,
   authentication: { scopes: ["esi-characters.read_contacts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdContactsLabelsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdContactsLabelsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdContactsInput, GetCharactersCharacterIdContactsOutput> = {
+export const GetCharactersCharacterIdContactsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdContactsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdContactsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdContactsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdContactsPath },
+  query: { required: false, schema: zGetCharactersCharacterIdContactsQuery },
+});
+
+export const GetCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdContactsData>, GetCharactersCharacterIdContactsResponse> = {
   operationId: "GetCharactersCharacterIdContacts",
   method: "GET",
   path: "/characters/{character_id}/contacts",
@@ -158,12 +215,17 @@ export const GetCharactersCharacterIdContactsDescriptor: OperationExecutionDescr
   requestSchema: GetCharactersCharacterIdContactsRequestSchema,
   authentication: { scopes: ["esi-characters.read_contacts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdContactsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdContactsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdContactsLabelsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdContactsLabelsInput, GetCorporationsCorporationIdContactsLabelsOutput> = {
+export const GetCorporationsCorporationIdContactsLabelsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdContactsLabelsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdContactsLabelsPath },
+});
+
+export const GetCorporationsCorporationIdContactsLabelsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>, GetCorporationsCorporationIdContactsLabelsResponse> = {
   operationId: "GetCorporationsCorporationIdContactsLabels",
   method: "GET",
   path: "/corporations/{corporation_id}/contacts/labels",
@@ -177,12 +239,18 @@ export const GetCorporationsCorporationIdContactsLabelsDescriptor: OperationExec
   requestSchema: GetCorporationsCorporationIdContactsLabelsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_contacts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdContactsLabelsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContactsLabelsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdContactsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdContactsInput, GetCorporationsCorporationIdContactsOutput> = {
+export const GetCorporationsCorporationIdContactsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdContactsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdContactsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdContactsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdContactsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdContactsQuery },
+});
+
+export const GetCorporationsCorporationIdContactsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdContactsData>, GetCorporationsCorporationIdContactsResponse> = {
   operationId: "GetCorporationsCorporationIdContacts",
   method: "GET",
   path: "/corporations/{corporation_id}/contacts",
@@ -197,12 +265,19 @@ export const GetCorporationsCorporationIdContactsDescriptor: OperationExecutionD
   requestSchema: GetCorporationsCorporationIdContactsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_contacts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdContactsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContactsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PutCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<PutCharactersCharacterIdContactsInput, PutCharactersCharacterIdContactsOutput> = {
+export const PutCharactersCharacterIdContactsRequestSchema: z.ZodType<OperationArguments<PutCharactersCharacterIdContactsData>> = composeOperationRequestSchema<OperationArguments<PutCharactersCharacterIdContactsData>>({
+  headers: { required: false, schema: zPutCharactersCharacterIdContactsHeaders },
+  path: { required: true, schema: zPutCharactersCharacterIdContactsPath },
+  query: { required: true, schema: zPutCharactersCharacterIdContactsQuery },
+  body: { required: true, schema: zPutCharactersCharacterIdContactsBody },
+});
+
+export const PutCharactersCharacterIdContactsDescriptor: OperationExecutionDescriptor<OperationArguments<PutCharactersCharacterIdContactsData>, PutCharactersCharacterIdContactsResponse> = {
   operationId: "PutCharactersCharacterIdContacts",
   method: "PUT",
   path: "/characters/{character_id}/contacts",

@@ -12,14 +12,22 @@ import type {
   NormalizedParameter,
 } from './normalize.ts';
 import type { ResolvedOperationMetadata } from './operation-metadata.ts';
+import { operationSchemaName } from './operation-names.ts';
 import {
   isTransportManagedParameter,
   operationAllowsCompatibilityDateOverride,
 } from './operation-parameters.ts';
-import type { EmitterContext } from './orchestrate.ts';
+import type { EmitterContext } from './generation-contracts.ts';
 import type { GeneratedSourceComponent } from './source-emitter.ts';
 import type { GeneratedTestComponent } from './test-emitter.ts';
-import { operationSchemaName, operationStatusResponseSchemaName } from './zod-schema.ts';
+import {
+  assignPathIdentifier,
+  domainFileName,
+  domainSymbolNames,
+  facadeParameterName,
+} from './internal/facade-naming.ts';
+import { isObject, isRecordLike } from './internal/guards.ts';
+import { capitalize, compareText } from './internal/text.ts';
 
 export interface OptionField {
   readonly kind: 'query' | 'header' | 'body' | 'compatibilityDate';
@@ -34,6 +42,7 @@ export interface PathParameterEntry {
 }
 
 export interface OperationEntry {
+  readonly argumentsTypeName: string;
   readonly compatibilityDateOverride: boolean;
   readonly descriptorName: string;
   readonly metadata: ResolvedOperationMetadata;
@@ -75,56 +84,6 @@ interface IndexedOperations {
   readonly modelsByPointer: Map<string, { readonly name: string; readonly schema: unknown }>;
 }
 
-const identifierPattern = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
-const reservedIdentifiers = new Set([
-  'await',
-  'break',
-  'case',
-  'catch',
-  'class',
-  'const',
-  'continue',
-  'debugger',
-  'default',
-  'delete',
-  'do',
-  'else',
-  'enum',
-  'export',
-  'extends',
-  'false',
-  'finally',
-  'for',
-  'function',
-  'if',
-  'implements',
-  'import',
-  'in',
-  'instanceof',
-  'interface',
-  'let',
-  'new',
-  'null',
-  'package',
-  'private',
-  'protected',
-  'public',
-  'return',
-  'static',
-  'super',
-  'switch',
-  'this',
-  'throw',
-  'true',
-  'try',
-  'typeof',
-  'var',
-  'void',
-  'while',
-  'with',
-  'yield',
-]);
-
 export function renderDomainClientArtifacts(
   model: NormalizedOpenApiModel,
   operationMetadata: readonly ResolvedOperationMetadata[],
@@ -133,16 +92,14 @@ export function renderDomainClientArtifacts(
   const indexed = indexOperations(model, operationMetadata);
   const domains: RenderedDomainClientArtifact[] = [];
   for (const [domain, entries] of indexed.domains) {
-    const fileName = domainFileName(domain);
-    const className = `${capitalize(domain)}DomainClient`;
-    const metadataClassName = `${className}WithMetadata`;
+    const { className, factoryName, fileName, metadataClassName } = domainSymbolNames(domain);
     domains.push({
       binderName: `bind${className}`,
       className,
       descriptorSource: renderDescriptorModule(entries, indexed.modelsByPointer, provenance),
       domain,
       entries,
-      factoryName: `create${capitalize(domain)}Client`,
+      factoryName,
       fileName,
       metadataClassName,
       contractSource: renderDomainContractModule(
@@ -172,10 +129,7 @@ export function renderDomainClientArtifacts(
       domains.map(({ fileName }) => `./${fileName}.js`),
       provenance,
     ),
-    rootIndexSource: renderGeneratedBarrel(
-      ['./domains/index.js', './esi-client.js', './schemas/index.js'],
-      provenance,
-    ),
+    rootIndexSource: renderGeneratedBarrel(['./domains/index.js', './esi-client.js'], provenance),
   });
   validateDomainClientArtifacts(artifacts);
   return artifacts;
@@ -341,6 +295,7 @@ function createOperationEntry(
   const requiredOptions = optionFields.some(({ required }) => required);
   const schemaName = operationSchemaName(operation.operationId);
   return {
+    argumentsTypeName: `OperationArguments<${operation.operationId}Data>`,
     compatibilityDateOverride,
     descriptorName: operationDescriptorName(operation.operationId),
     metadata,
@@ -349,9 +304,9 @@ function createOperationEntry(
     optionsName: `${schemaName}Options`,
     parameters,
     pathParameters,
-    requestTypeName: `${schemaName}Input`,
+    requestTypeName: `${operation.operationId}Data`,
     requiredOptions,
-    responseTypeName: `${schemaName}Output`,
+    responseTypeName: `${operation.operationId}Response`,
     schemaName,
   };
 }
@@ -441,17 +396,7 @@ function pathParametersInOrder(
     if (!parameter?.required) {
       throw new Error(`Missing required path parameter ${wireName} for ${operation.operationId}`);
     }
-    let identifier = facadeParameterName(wireName);
-    if (reservedIdentifiers.has(identifier) || usedIdentifiers.has(identifier)) {
-      identifier = `${identifier}Value`;
-    }
-    let suffix = 2;
-    const base = identifier;
-    while (usedIdentifiers.has(identifier)) {
-      identifier = `${base}${suffix}`;
-      suffix += 1;
-    }
-    usedIdentifiers.add(identifier);
+    const identifier = assignPathIdentifier(wireName, usedIdentifiers);
     ordered.push({ identifier, parameter });
     byName.delete(wireName);
   }
@@ -468,26 +413,41 @@ function renderDescriptorModule(
   modelsByPointer: Map<string, { readonly name: string; readonly schema: unknown }>,
   provenance: ArtifactProvenance,
 ): string {
-  const schemaImports = new Set<string>();
+  const typeImports = new Set<string>();
+  const zodImports = new Set<string>();
   const declarations: string[] = [];
   for (const entry of entries) {
-    schemaImports.add(`${entry.schemaName}RequestSchema`);
-    schemaImports.add(`type ${entry.requestTypeName}`);
-    schemaImports.add(`type ${entry.responseTypeName}`);
-    for (const response of entry.operation.successResponses) {
-      schemaImports.add(
-        operationStatusResponseSchemaName(entry.operation.operationId, response.status),
-      );
+    typeImports.add(entry.requestTypeName);
+    typeImports.add(entry.responseTypeName);
+    zodImports.add(`z${entry.operation.operationId}Response`);
+    if (entry.operation.requestBody !== null) zodImports.add(`z${entry.operation.operationId}Body`);
+    for (const [placement, suffix] of [
+      ['header', 'Headers'],
+      ['path', 'Path'],
+      ['query', 'Query'],
+    ] as const) {
+      if (entry.parameters.some((parameter) => parameter.placement === placement)) {
+        zodImports.add(`z${entry.operation.operationId}${suffix}`);
+      }
     }
     declarations.push(renderDescriptor(entry, modelsByPointer));
   }
   const imports = `import type { OperationExecutionDescriptor } from '../../../client/execute.js';
-import {
-${[...schemaImports]
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+${[...typeImports]
   .toSorted(compareText)
   .map((name) => `  ${name},`)
   .join('\n')}
-} from '../../schemas/operations/${domainFileName(entries[0].metadata.domain)}.js';`;
+} from '../../types.gen.js';
+import {
+${[...zodImports]
+  .toSorted(compareText)
+  .map((name) => `  ${name},`)
+  .join('\n')}
+} from '../../zod.gen.js';`;
   return `${createProvenanceHeader(provenance, 'typescript')}\n${imports}\n\n${declarations.join('\n\n')}\n`;
 }
 
@@ -501,17 +461,17 @@ function renderDescriptor(
   const responses = entry.operation.successResponses.map((response) => {
     const status = response.status === '2XX' ? "'2XX'" : String(Number(response.status));
     if (response.noContent) return `    { status: ${status}, body: 'none' },`;
-    const schemaName = operationStatusResponseSchemaName(
-      entry.operation.operationId,
-      response.status,
-    );
-    return `    { status: ${status}, body: 'json', schema: ${schemaName} },`;
+    return `    { status: ${status}, body: 'json', schema: z${entry.operation.operationId}Response },`;
   });
   const authentication = renderAuthentication(entry.operation);
   const body = entry.operation.requestBody;
   const requestBody =
     body === null ? 'null' : `{ required: ${body.required}, mediaType: 'application/json' }`;
-  return `export const ${entry.descriptorName}: OperationExecutionDescriptor<${entry.requestTypeName}, ${entry.responseTypeName}> = {
+  return `export const ${entry.schemaName}RequestSchema: z.ZodType<${entry.argumentsTypeName}> = composeOperationRequestSchema<${entry.argumentsTypeName}>({
+${renderRequestSchemaLayers(entry)}
+});
+
+export const ${entry.descriptorName}: OperationExecutionDescriptor<${entry.argumentsTypeName}, ${entry.responseTypeName}> = {
   operationId: ${JSON.stringify(entry.operation.operationId)},
   method: ${JSON.stringify(entry.operation.method)},
   path: ${JSON.stringify(entry.operation.path)},
@@ -523,6 +483,27 @@ function renderDescriptor(
 ${responses.join('\n')}
   ],${entry.compatibilityDateOverride ? '\n  transport: { compatibilityDateOverride: true },' : ''}
 };`;
+}
+
+function renderRequestSchemaLayers(entry: OperationEntry): string {
+  const layers: string[] = [];
+  for (const [placement, group, suffix] of [
+    ['header', 'headers', 'Headers'],
+    ['path', 'path', 'Path'],
+    ['query', 'query', 'Query'],
+  ] as const) {
+    const parameters = entry.parameters.filter((parameter) => parameter.placement === placement);
+    if (parameters.length === 0) continue;
+    layers.push(
+      `  ${group}: { required: ${parameters.some(({ required }) => required)}, schema: z${entry.operation.operationId}${suffix} },`,
+    );
+  }
+  if (entry.operation.requestBody !== null) {
+    layers.push(
+      `  body: { required: ${entry.operation.requestBody.required}, schema: z${entry.operation.operationId}Body },`,
+    );
+  }
+  return layers.join('\n');
 }
 
 function renderParameterDescriptor(
@@ -637,12 +618,13 @@ function renderDomainContractModule(
   const regularMethods = entries.map((entry) => renderContractMethod(entry, false));
   const metadataMethods = entries.map((entry) => renderContractMethod(entry, true));
   const source = `import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
 ${[...new Set(schemaTypeNames)]
   .toSorted(compareText)
   .map((name) => `  ${name},`)
   .join('\n')}
-} from '../../schemas/operations/${domainFileName(domain)}.js';
+} from '../../types.gen.js';
 
 ${options.join('\n\n')}${options.length > 0 ? '\n\n' : ''}export interface ${className} {
 ${indent(regularMethods.join('\n\n'), 2)}
@@ -699,6 +681,7 @@ function renderDomainImplementationModule(
   const binderName = `bind${className}`;
   const source = `import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
 ${descriptorNames.map((name) => `  ${name},`).join('\n')}
@@ -716,7 +699,7 @@ ${[...new Set(schemaTypeNames)]
   .toSorted(compareText)
   .map((name) => `  ${name},`)
   .join('\n')}
-} from '../../schemas/operations/${fileName}.js';
+} from '../../types.gen.js';
 
 class ${metadataImplementationName} implements ${metadataClassName} {
   readonly #configuration: EsiClientConfiguration;
@@ -761,14 +744,15 @@ function renderOptionsInterface(entry: OperationEntry): string {
 
 function optionFieldType(entry: OperationEntry, field: OptionField): string {
   if (field.kind === 'compatibilityDate') return 'string';
-  if (field.kind === 'body') return `${entry.requestTypeName}['body']`;
-  return `NonNullable<${entry.requestTypeName}[${JSON.stringify(field.kind)}]>[${JSON.stringify(field.wireName)}]`;
+  if (field.kind === 'body') return `${entry.argumentsTypeName}['body']`;
+  const group = field.kind === 'header' ? 'headers' : field.kind;
+  return `NonNullable<${entry.argumentsTypeName}[${JSON.stringify(group)}]>[${JSON.stringify(field.wireName)}]`;
 }
 
 function renderMethodParameters(entry: OperationEntry): string[] {
   const parameters = entry.pathParameters.map(
     ({ identifier, parameter }) =>
-      `${identifier}: NonNullable<${entry.requestTypeName}['path']>[${JSON.stringify(parameter.name)}]`,
+      `${identifier}: NonNullable<${entry.argumentsTypeName}['path']>[${JSON.stringify(parameter.name)}]`,
   );
   if (entry.optionFields.length > 0) {
     parameters.push(`options${entry.requiredOptions ? '' : '?'}: ${entry.optionsName}`);
@@ -794,7 +778,7 @@ function renderMetadataMethod(entry: OperationEntry): string {
   const parameters = renderMethodParameters(entry);
   const lines = [
     `${entry.metadata.method}(${parameters.join(', ')}): Promise<EsiResponse<${entry.responseTypeName}>> {`,
-    `  const arguments_: ${entry.requestTypeName} = ${renderRequestArguments(entry)};`,
+    `  const arguments_: ${entry.argumentsTypeName} = ${renderRequestArguments(entry)};`,
   ];
   const executionOptions = entry.compatibilityDateOverride
     ? ', { compatibilityDate: options?.compatibilityDate }'
@@ -819,7 +803,7 @@ function renderRequestArguments(entry: OperationEntry): string {
     const fields = entry.optionFields.filter(({ kind }) => kind === placement);
     if (fields.length === 0) continue;
     groups.push(
-      `${placement}: { ${fields
+      `${placement === 'header' ? 'headers' : placement}: { ${fields
         .map(
           (field) => `${JSON.stringify(field.wireName)}: options?.[${JSON.stringify(field.name)}]`,
         )
@@ -850,8 +834,9 @@ function renderContractsModule(
     ({ assertions: renderedAssertions }) => renderedAssertions,
   );
   const source = `import type { EsiClientOptions } from '../../src/client/options.js';
+import type { OperationArguments } from '../../src/client/request.js';
 import type { EsiResponse } from '../../src/client/response.js';
-import type { GeneratedOperationSignatures } from '../../src/generated/schemas/contracts.js';
+import type { GeneratedOperationContractMap } from '../../src/generated/internal/operation-contracts.js';
 ${operationImports.join('\n')}
 ${domainImports.join('\n')}
 
@@ -870,7 +855,7 @@ ${coverage.join('\n')}
 }
 
 export type GeneratedDomainOperationCoverageAssertion = Assert<
-  IsExact<keyof GeneratedDomainOperationCoverage, keyof GeneratedOperationSignatures>
+  IsExact<keyof GeneratedDomainOperationCoverage, keyof GeneratedOperationContractMap>
 >;
 
 ${assertions.join('\n')}
@@ -891,7 +876,7 @@ function renderContractDomain(domain: RenderedDomainClientArtifact): RenderedCon
     coverage.push(`  readonly ${JSON.stringify(entry.operation.operationId)}: {
     readonly domain: ${JSON.stringify(domain.domain)};
     readonly method: ${JSON.stringify(entry.metadata.method)};
-    readonly input: ${entry.requestTypeName};
+    readonly input: ${entry.argumentsTypeName};
     readonly output: ${entry.responseTypeName};
   };`);
   }
@@ -913,7 +898,7 @@ ${[...operationImports]
   .toSorted(compareText)
   .map((name) => `  ${name},`)
   .join('\n')}
-} from '../../src/generated/schemas/operations/${domain.fileName}.js';`,
+} from '../../src/generated/types.gen.js';`,
   };
 }
 
@@ -923,7 +908,7 @@ function renderContractAssertions(
 ): string[] {
   const parameters = entry.pathParameters.map(
     ({ identifier, parameter }) =>
-      `${identifier}: NonNullable<${entry.requestTypeName}['path']>[${JSON.stringify(parameter.name)}]`,
+      `${identifier}: NonNullable<${entry.argumentsTypeName}['path']>[${JSON.stringify(parameter.name)}]`,
   );
   if (entry.optionFields.length > 0) {
     parameters.push(`options${entry.requiredOptions ? '' : '?'}: ${entry.optionsName}`);
@@ -1011,10 +996,10 @@ function validateDomainClientArtifact(domain: RenderedDomainClientArtifact): voi
   }
   validateDomainContractMethods(domain);
 
-  const expectedSchemaModule = `../../schemas/operations/${domain.fileName}.js`;
-  const imports = [
-    ...domain.descriptorSource.matchAll(/from ['"]([^'"]*schemas\/operations\/[^'"]+)['"]/gu),
-  ].map((match) => match[1]);
+  const expectedSchemaModule = '../../zod.gen.js';
+  const imports = [...domain.descriptorSource.matchAll(/from ['"]([^'"]*zod\.gen\.js)['"]/gu)].map(
+    (match) => match[1],
+  );
   if (imports.length !== 1 || imports[0] !== expectedSchemaModule) {
     throw new Error(
       `Descriptor for ${domain.domain} imports an operation-schema module outside its domain`,
@@ -1063,37 +1048,8 @@ function validateGeneratedNames(domains: readonly RenderedDomainClientArtifact[]
   }
 }
 
-function facadeParameterName(value: string): string {
-  const words = value
-    .replaceAll(/([a-z0-9])([A-Z])/gu, '$1 $2')
-    .replaceAll(/([A-Z])(?=[A-Z][a-z])/gu, '$1 ')
-    .split(/[^A-Za-z0-9]+/u)
-    .filter(Boolean);
-  if (words.length === 0) throw new Error(`Cannot derive facade parameter name from ${value}`);
-  let identifier = `${words[0].toLowerCase()}${words
-    .slice(1)
-    .map((word) => capitalize(word.toLowerCase()))
-    .join('')}`;
-  if (!/^[A-Za-z_$]/u.test(identifier)) identifier = `value${capitalize(identifier)}`;
-  if (!identifierPattern.test(identifier)) {
-    throw new Error(`Invalid generated facade parameter identifier: ${identifier}`);
-  }
-  return identifier;
-}
-
 export function operationDescriptorName(operationId: string): string {
   return `${operationSchemaName(operationId)}Descriptor`;
-}
-
-export function domainFileName(domain: string): string {
-  return domain
-    .replaceAll(/([a-z0-9])([A-Z])/gu, '$1-$2')
-    .replaceAll(/([A-Z])(?=[A-Z][a-z])/gu, '$1-')
-    .toLowerCase();
-}
-
-function capitalize(value: string): string {
-  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
 }
 
 function indent(value: string, spaces: number): string {
@@ -1104,19 +1060,6 @@ function indent(value: string, spaces: number): string {
     .join('\n');
 }
 
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
 // Same runtime check as isObject, but without a type predicate: some call sites validate a
 // value whose static type is already concrete, and a predicate there would incorrectly widen
 // (rather than preserve) that type after narrowing.
-function isRecordLike(value: unknown): boolean {
-  return isObject(value);
-}

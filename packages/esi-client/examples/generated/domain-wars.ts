@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createWarsClient } from '@evespace/esi-client/domains/wars';
+import type { GetWarsResponse } from '@evespace/esi-client/types';
 
 const client = createWarsClient();
 
-const data = await client.list();
+const data: GetWarsResponse = await client.list();

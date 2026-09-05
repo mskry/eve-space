@@ -16,12 +16,13 @@ Get character freelance job participation
 - Domain import: `@evespace/esi-client/domains/freelance-jobs`
 - Domain index: [freelanceJobs](../domains/freelance-jobs.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFreelanceJobsClient } from '@evespace/esi-client/domains/freelance-jobs';
+import type { GetCharactersFreelanceJobsParticipationResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,13 +32,14 @@ const client = createFreelanceJobsClient({ token: accessToken });
 const characterId = 90000001;
 const jobId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.getCharacterParticipation(characterId, jobId);
+const data: GetCharactersFreelanceJobsParticipationResponse = await client.getCharacterParticipation(characterId, jobId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersFreelanceJobsParticipationResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const jobId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.freelanceJobs.getCharacterParticipation(characterId, jobId);
+const data: GetCharactersFreelanceJobsParticipationResponse = await client.freelanceJobs.getCharacterParticipation(characterId, jobId);
 ```
 
 ## Generic-execution snippet
@@ -55,6 +57,7 @@ const data = await client.freelanceJobs.getCharacterParticipation(characterId, j
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersFreelanceJobsParticipationData, GetCharactersFreelanceJobsParticipationResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -67,6 +70,7 @@ const jobId = "00000000-0000-4000-8000-000000000000";
 const arguments_: CallOperationArguments<'GetCharactersFreelanceJobsParticipation'> = { path: { "character_id": characterId, "job_id": jobId } };
 
 const response = await client.callOperation('GetCharactersFreelanceJobsParticipation', arguments_);
+const data: GetCharactersFreelanceJobsParticipationResponse = response.data;
 ```
 
 ## Parameters
@@ -81,14 +85,16 @@ const response = await client.callOperation('GetCharactersFreelanceJobsParticipa
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersFreelanceJobsParticipationRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersFreelanceJobsParticipationData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersFreelanceJobsParticipationHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersFreelanceJobsParticipationPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersFreelanceJobsParticipationResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.freelanceJobs.withMetadata().getCharacterParticipation(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersFreelanceJobsParticipationStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersFreelanceJobsParticipationResponse` | OK |
 
 ## Authentication
 
@@ -120,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

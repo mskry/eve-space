@@ -1,5 +1,8 @@
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { assertRecord, describeValue, isObject, rejectUnknownKeys } from './internal/guards.ts';
+import { deepFreeze, sortJsonValue } from './internal/json.ts';
+import { compareText } from './internal/text.ts';
+import { resolveConfigPath } from './paths.ts';
 
 export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
@@ -135,9 +138,7 @@ interface SourceOperation {
   readonly pathItem: Record<string, unknown>;
 }
 
-export const defaultExclusionsPath: string = fileURLToPath(
-  new URL('../../openapi/config/exclusions.json', import.meta.url),
-);
+export const defaultExclusionsPath: string = resolveConfigPath('exclusions');
 
 const httpMethods: ReadonlySet<Lowercase<HttpMethod>> = new Set([
   'delete',
@@ -886,16 +887,6 @@ function extractExtensions(value: Record<string, unknown>): JsonObject {
   return Object.fromEntries(entries) as JsonObject;
 }
 
-function sortJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJsonValue);
-  if (!isObject(value)) return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .toSorted(([left], [right]) => compareText(left, right))
-      .map(([key, entry]) => [key, sortJsonValue(entry)]),
-  );
-}
-
 function normalizeStringArray(value: unknown, context: string): string[] {
   if (
     !Array.isArray(value) ||
@@ -935,12 +926,6 @@ function paginationKind(
   return 'none';
 }
 
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
 function requiredString(value: unknown, context: string): string {
   if (typeof value !== 'string' || value.length === 0)
     throw new Error(`${context} must be a non-empty string`);
@@ -959,41 +944,6 @@ function optionalBoolean(value: unknown, context: string): boolean | null {
   return value;
 }
 
-function rejectUnknownKeys(
-  value: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
-  context: string,
-): void {
-  const unknown = Object.keys(value).filter((key) => !allowed.has(key));
-  if (unknown.length > 0) {
-    throw new Error(`Unknown ${context} field: ${unknown.toSorted(compareText).join(', ')}`);
-  }
-}
-
-function assertRecord(value: unknown, context: string): asserts value is Record<string, unknown> {
-  if (!isObject(value)) throw new Error(`${context} must be an object`);
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
 function escapePointerSegment(value: string): string {
   return value.replaceAll('~', '~0').replaceAll('/', '~1');
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const entry of Object.values(value)) deepFreeze(entry);
-  }
-  return value;
-}
-
-function describeValue(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return String(value);
-  }
-  return 'unknown';
 }

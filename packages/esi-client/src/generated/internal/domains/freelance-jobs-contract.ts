@@ -4,99 +4,100 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersFreelanceJobsListingInput,
-  GetCharactersFreelanceJobsListingOutput,
-  GetCharactersFreelanceJobsParticipationInput,
-  GetCharactersFreelanceJobsParticipationOutput,
-  GetCorporationsFreelanceJobsListingInput,
-  GetCorporationsFreelanceJobsListingOutput,
-  GetCorporationsFreelanceJobsParticipantsInput,
-  GetCorporationsFreelanceJobsParticipantsOutput,
-  GetFreelanceJobsDetailInput,
-  GetFreelanceJobsDetailOutput,
-  GetFreelanceJobsListingInput,
-  GetFreelanceJobsListingOutput,
-} from '../../schemas/operations/freelance-jobs.js';
+  GetCharactersFreelanceJobsListingData,
+  GetCharactersFreelanceJobsListingResponse,
+  GetCharactersFreelanceJobsParticipationData,
+  GetCharactersFreelanceJobsParticipationResponse,
+  GetCorporationsFreelanceJobsListingData,
+  GetCorporationsFreelanceJobsListingResponse,
+  GetCorporationsFreelanceJobsParticipantsData,
+  GetCorporationsFreelanceJobsParticipantsResponse,
+  GetFreelanceJobsDetailData,
+  GetFreelanceJobsDetailResponse,
+  GetFreelanceJobsListingData,
+  GetFreelanceJobsListingResponse,
+} from '../../types.gen.js';
 
 export interface GetFreelanceJobsDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetFreelanceJobsDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFreelanceJobsDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetFreelanceJobsDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFreelanceJobsDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFreelanceJobsDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFreelanceJobsDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersFreelanceJobsParticipationOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersFreelanceJobsParticipationInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersFreelanceJobsParticipationInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersFreelanceJobsParticipationInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersFreelanceJobsListingOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersFreelanceJobsListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersFreelanceJobsListingInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersFreelanceJobsListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsFreelanceJobsListingOptions {
-  readonly "after"?: NonNullable<GetCorporationsFreelanceJobsListingInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetCorporationsFreelanceJobsListingInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsFreelanceJobsListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsFreelanceJobsListingInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetCorporationsFreelanceJobsListingInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetCorporationsFreelanceJobsListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsFreelanceJobsParticipantsOptions {
-  readonly "after"?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetCorporationsFreelanceJobsParticipantsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetFreelanceJobsListingOptions {
-  readonly "after"?: NonNullable<GetFreelanceJobsListingInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetFreelanceJobsListingInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "corporationId"?: NonNullable<GetFreelanceJobsListingInput["query"]>["corporation_id"];
-  readonly "ifModifiedSince"?: NonNullable<GetFreelanceJobsListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetFreelanceJobsListingInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetFreelanceJobsListingInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetFreelanceJobsListingInput["header"]>["X-Tenant"];
+  readonly "corporationId"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["query"]>["corporation_id"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetFreelanceJobsListingData>["headers"]>["X-Tenant"];
 }
 
 export interface FreelanceJobsDomainClient {
-  get(jobId: NonNullable<GetFreelanceJobsDetailInput['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<GetFreelanceJobsDetailOutput>;
+  get(jobId: NonNullable<OperationArguments<GetFreelanceJobsDetailData>['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<GetFreelanceJobsDetailResponse>;
 
-  getCharacterParticipation(characterId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["character_id"], jobId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<GetCharactersFreelanceJobsParticipationOutput>;
+  getCharacterParticipation(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["character_id"], jobId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<GetCharactersFreelanceJobsParticipationResponse>;
 
-  listCharacterJobs(characterId: NonNullable<GetCharactersFreelanceJobsListingInput['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<GetCharactersFreelanceJobsListingOutput>;
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<GetCharactersFreelanceJobsListingResponse>;
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsFreelanceJobsListingInput['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<GetCorporationsFreelanceJobsListingOutput>;
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<GetCorporationsFreelanceJobsListingResponse>;
 
-  listParticipants(corporationId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["corporation_id"], jobId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<GetCorporationsFreelanceJobsParticipantsOutput>;
+  listParticipants(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["corporation_id"], jobId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<GetCorporationsFreelanceJobsParticipantsResponse>;
 
-  listPublic(options?: GetFreelanceJobsListingOptions): Promise<GetFreelanceJobsListingOutput>;
+  listPublic(options?: GetFreelanceJobsListingOptions): Promise<GetFreelanceJobsListingResponse>;
 
   withMetadata(): FreelanceJobsDomainClientWithMetadata;
 }
 
 export interface FreelanceJobsDomainClientWithMetadata {
-  get(jobId: NonNullable<GetFreelanceJobsDetailInput['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<EsiResponse<GetFreelanceJobsDetailOutput>>;
+  get(jobId: NonNullable<OperationArguments<GetFreelanceJobsDetailData>['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<EsiResponse<GetFreelanceJobsDetailResponse>>;
 
-  getCharacterParticipation(characterId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["character_id"], jobId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<EsiResponse<GetCharactersFreelanceJobsParticipationOutput>>;
+  getCharacterParticipation(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["character_id"], jobId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<EsiResponse<GetCharactersFreelanceJobsParticipationResponse>>;
 
-  listCharacterJobs(characterId: NonNullable<GetCharactersFreelanceJobsListingInput['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<EsiResponse<GetCharactersFreelanceJobsListingOutput>>;
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<EsiResponse<GetCharactersFreelanceJobsListingResponse>>;
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsFreelanceJobsListingInput['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsListingOutput>>;
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsListingResponse>>;
 
-  listParticipants(corporationId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["corporation_id"], jobId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsParticipantsOutput>>;
+  listParticipants(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["corporation_id"], jobId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsParticipantsResponse>>;
 
-  listPublic(options?: GetFreelanceJobsListingOptions): Promise<EsiResponse<GetFreelanceJobsListingOutput>>;
+  listPublic(options?: GetFreelanceJobsListingOptions): Promise<EsiResponse<GetFreelanceJobsListingResponse>>;
 }

@@ -10,6 +10,7 @@ import {
   validateDomainDeclarationSurface,
   validateDomainEntryIsolation,
   validatePackageBudgets,
+  validatePackedArtifactIntegrity,
   validatePackedPackageBoundary,
 } from '../scripts/lib/package-inspection.ts';
 
@@ -239,6 +240,55 @@ describe('npm package budgets', () => {
 });
 
 describe('packed artifact graph tracing', () => {
+  it('rejects raw source trees and generated Hey API client artifacts', () => {
+    for (const path of [
+      'src/index.ts',
+      'dist/src/index.js',
+      'dist/generated/types.js',
+      'dist/sdk.gen.js',
+      'dist/client.gen.d.ts',
+    ]) {
+      expect(() => validatePackedArtifactIntegrity([{ path, size: 0 }], {})).toThrow(
+        'Packed source or generated client artifacts are forbidden',
+      );
+    }
+  });
+
+  it.each([
+    ['//#region src/generated/sdk.gen.ts', 'generated Hey API SDK/client source marker'],
+    ["import '@hey-api/openapi-ts';", 'generator package reference'],
+    ["import '@evespace/esi-client-codegen';", 'generator package reference'],
+    ["export const generatedAt = '2026-09-05T12:34:56.000Z';", 'generation timestamp'],
+    [
+      "export const source = '/var/folders/ab/generation/output.ts';",
+      'absolute or temporary machine path',
+    ],
+  ])('rejects packed artifact content %j', (source, expected) => {
+    expect(() =>
+      validatePackedArtifactIntegrity(
+        [{ path: 'dist/orphan.js', size: Buffer.byteLength(source), source }],
+        {},
+      ),
+    ).toThrow(expected);
+  });
+
+  it('validates imports in orphaned packed artifacts', () => {
+    const files = graphFiles({
+      'dist/root.js': '',
+      'dist/orphan.js': "import 'left-pad';",
+    });
+
+    expect(() => validatePackedArtifactIntegrity(files, {})).toThrow(
+      'undeclared external edge from dist/orphan.js: left-pad',
+    );
+    files[1].source = "import 'zod';";
+    expect(validatePackedArtifactIntegrity(files, { peerDependencies: { zod: '^4.0.0' } })).toEqual(
+      {
+        analyzedArtifactCount: 2,
+      },
+    );
+  });
+
   it('traces cycles, normalized duplicate paths, re-exports, and literal dynamic imports once', () => {
     const files = graphFiles({
       'dist/root.js': [

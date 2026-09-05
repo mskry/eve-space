@@ -4,37 +4,38 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdClonesInput,
-  GetCharactersCharacterIdClonesOutput,
-  GetCharactersCharacterIdImplantsInput,
-  GetCharactersCharacterIdImplantsOutput,
-} from '../../schemas/operations/clones.js';
+  GetCharactersCharacterIdClonesData,
+  GetCharactersCharacterIdClonesResponse,
+  GetCharactersCharacterIdImplantsData,
+  GetCharactersCharacterIdImplantsResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdClonesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdClonesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdClonesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdClonesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdImplantsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdImplantsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdImplantsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdImplantsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>["headers"]>["X-Tenant"];
 }
 
 export interface ClonesDomainClient {
-  getState(characterId: NonNullable<GetCharactersCharacterIdClonesInput['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<GetCharactersCharacterIdClonesOutput>;
+  getState(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<GetCharactersCharacterIdClonesResponse>;
 
-  listActiveImplants(characterId: NonNullable<GetCharactersCharacterIdImplantsInput['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<GetCharactersCharacterIdImplantsOutput>;
+  listActiveImplants(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<GetCharactersCharacterIdImplantsResponse>;
 
   withMetadata(): ClonesDomainClientWithMetadata;
 }
 
 export interface ClonesDomainClientWithMetadata {
-  getState(characterId: NonNullable<GetCharactersCharacterIdClonesInput['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<EsiResponse<GetCharactersCharacterIdClonesOutput>>;
+  getState(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<EsiResponse<GetCharactersCharacterIdClonesResponse>>;
 
-  listActiveImplants(characterId: NonNullable<GetCharactersCharacterIdImplantsInput['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<EsiResponse<GetCharactersCharacterIdImplantsOutput>>;
+  listActiveImplants(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<EsiResponse<GetCharactersCharacterIdImplantsResponse>>;
 }

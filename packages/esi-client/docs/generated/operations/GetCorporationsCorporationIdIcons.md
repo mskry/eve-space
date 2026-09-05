@@ -16,30 +16,32 @@ Get corporation icon
 - Domain import: `@evespace/esi-client/domains/corporation`
 - Domain index: [corporation](../domains/corporation.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCorporationClient } from '@evespace/esi-client/domains/corporation';
+import type { GetCorporationsCorporationIdIconsResponse } from '@evespace/esi-client/types';
 
 const client = createCorporationClient();
 
 const corporationId = 98000001;
 
-const data = await client.getIcon(corporationId);
+const data: GetCorporationsCorporationIdIconsResponse = await client.getIcon(corporationId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCorporationsCorporationIdIconsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const corporationId = 98000001;
 
-const data = await client.corporation.getIcon(corporationId);
+const data: GetCorporationsCorporationIdIconsResponse = await client.corporation.getIcon(corporationId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.corporation.getIcon(corporationId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCorporationsCorporationIdIconsData, GetCorporationsCorporationIdIconsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const corporationId = 98000001;
 const arguments_: CallOperationArguments<'GetCorporationsCorporationIdIcons'> = { path: { "corporation_id": corporationId } };
 
 const response = await client.callOperation('GetCorporationsCorporationIdIcons', arguments_);
+const data: GetCorporationsCorporationIdIconsResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetCorporationsCorporationIdIcons',
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCorporationsCorporationIdIconsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCorporationsCorporationIdIconsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCorporationsCorporationIdIconsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCorporationsCorporationIdIconsPath`.
+- Response type: `@evespace/esi-client/types` export `GetCorporationsCorporationIdIconsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.corporation.withMetadata().getIcon(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCorporationsCorporationIdIconsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCorporationsCorporationIdIconsResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

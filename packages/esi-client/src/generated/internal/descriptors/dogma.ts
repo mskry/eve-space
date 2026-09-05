@@ -4,30 +4,43 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetDogmaAttributesAttributeIdData,
+  GetDogmaAttributesAttributeIdResponse,
+  GetDogmaAttributesData,
+  GetDogmaAttributesResponse,
+  GetDogmaDynamicItemsTypeIdItemIdData,
+  GetDogmaDynamicItemsTypeIdItemIdResponse,
+  GetDogmaEffectsData,
+  GetDogmaEffectsEffectIdData,
+  GetDogmaEffectsEffectIdResponse,
+  GetDogmaEffectsResponse,
+} from '../../types.gen.js';
 import {
-  GetDogmaAttributesAttributeIdRequestSchema,
-  GetDogmaAttributesAttributeIdStatus200SuccessResponseSchema,
-  GetDogmaAttributesRequestSchema,
-  GetDogmaAttributesStatus200SuccessResponseSchema,
-  GetDogmaDynamicItemsTypeIdItemIdRequestSchema,
-  GetDogmaDynamicItemsTypeIdItemIdStatus200SuccessResponseSchema,
-  GetDogmaEffectsEffectIdRequestSchema,
-  GetDogmaEffectsEffectIdStatus200SuccessResponseSchema,
-  GetDogmaEffectsRequestSchema,
-  GetDogmaEffectsStatus200SuccessResponseSchema,
-  type GetDogmaAttributesAttributeIdInput,
-  type GetDogmaAttributesAttributeIdOutput,
-  type GetDogmaAttributesInput,
-  type GetDogmaAttributesOutput,
-  type GetDogmaDynamicItemsTypeIdItemIdInput,
-  type GetDogmaDynamicItemsTypeIdItemIdOutput,
-  type GetDogmaEffectsEffectIdInput,
-  type GetDogmaEffectsEffectIdOutput,
-  type GetDogmaEffectsInput,
-  type GetDogmaEffectsOutput,
-} from '../../schemas/operations/dogma.js';
+  zGetDogmaAttributesAttributeIdHeaders,
+  zGetDogmaAttributesAttributeIdPath,
+  zGetDogmaAttributesAttributeIdResponse,
+  zGetDogmaAttributesHeaders,
+  zGetDogmaAttributesResponse,
+  zGetDogmaDynamicItemsTypeIdItemIdHeaders,
+  zGetDogmaDynamicItemsTypeIdItemIdPath,
+  zGetDogmaDynamicItemsTypeIdItemIdResponse,
+  zGetDogmaEffectsEffectIdHeaders,
+  zGetDogmaEffectsEffectIdPath,
+  zGetDogmaEffectsEffectIdResponse,
+  zGetDogmaEffectsHeaders,
+  zGetDogmaEffectsResponse,
+} from '../../zod.gen.js';
 
-export const GetDogmaAttributesAttributeIdDescriptor: OperationExecutionDescriptor<GetDogmaAttributesAttributeIdInput, GetDogmaAttributesAttributeIdOutput> = {
+export const GetDogmaAttributesAttributeIdRequestSchema: z.ZodType<OperationArguments<GetDogmaAttributesAttributeIdData>> = composeOperationRequestSchema<OperationArguments<GetDogmaAttributesAttributeIdData>>({
+  headers: { required: false, schema: zGetDogmaAttributesAttributeIdHeaders },
+  path: { required: true, schema: zGetDogmaAttributesAttributeIdPath },
+});
+
+export const GetDogmaAttributesAttributeIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetDogmaAttributesAttributeIdData>, GetDogmaAttributesAttributeIdResponse> = {
   operationId: "GetDogmaAttributesAttributeId",
   method: "GET",
   path: "/dogma/attributes/{attribute_id}",
@@ -41,12 +54,17 @@ export const GetDogmaAttributesAttributeIdDescriptor: OperationExecutionDescript
   requestSchema: GetDogmaAttributesAttributeIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetDogmaAttributesAttributeIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetDogmaAttributesAttributeIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetDogmaDynamicItemsTypeIdItemIdDescriptor: OperationExecutionDescriptor<GetDogmaDynamicItemsTypeIdItemIdInput, GetDogmaDynamicItemsTypeIdItemIdOutput> = {
+export const GetDogmaDynamicItemsTypeIdItemIdRequestSchema: z.ZodType<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>> = composeOperationRequestSchema<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>>({
+  headers: { required: false, schema: zGetDogmaDynamicItemsTypeIdItemIdHeaders },
+  path: { required: true, schema: zGetDogmaDynamicItemsTypeIdItemIdPath },
+});
+
+export const GetDogmaDynamicItemsTypeIdItemIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>, GetDogmaDynamicItemsTypeIdItemIdResponse> = {
   operationId: "GetDogmaDynamicItemsTypeIdItemId",
   method: "GET",
   path: "/dogma/dynamic/items/{type_id}/{item_id}",
@@ -61,12 +79,17 @@ export const GetDogmaDynamicItemsTypeIdItemIdDescriptor: OperationExecutionDescr
   requestSchema: GetDogmaDynamicItemsTypeIdItemIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetDogmaDynamicItemsTypeIdItemIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetDogmaDynamicItemsTypeIdItemIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetDogmaEffectsEffectIdDescriptor: OperationExecutionDescriptor<GetDogmaEffectsEffectIdInput, GetDogmaEffectsEffectIdOutput> = {
+export const GetDogmaEffectsEffectIdRequestSchema: z.ZodType<OperationArguments<GetDogmaEffectsEffectIdData>> = composeOperationRequestSchema<OperationArguments<GetDogmaEffectsEffectIdData>>({
+  headers: { required: false, schema: zGetDogmaEffectsEffectIdHeaders },
+  path: { required: true, schema: zGetDogmaEffectsEffectIdPath },
+});
+
+export const GetDogmaEffectsEffectIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetDogmaEffectsEffectIdData>, GetDogmaEffectsEffectIdResponse> = {
   operationId: "GetDogmaEffectsEffectId",
   method: "GET",
   path: "/dogma/effects/{effect_id}",
@@ -80,12 +103,16 @@ export const GetDogmaEffectsEffectIdDescriptor: OperationExecutionDescriptor<Get
   requestSchema: GetDogmaEffectsEffectIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetDogmaEffectsEffectIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetDogmaEffectsEffectIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetDogmaAttributesDescriptor: OperationExecutionDescriptor<GetDogmaAttributesInput, GetDogmaAttributesOutput> = {
+export const GetDogmaAttributesRequestSchema: z.ZodType<OperationArguments<GetDogmaAttributesData>> = composeOperationRequestSchema<OperationArguments<GetDogmaAttributesData>>({
+  headers: { required: false, schema: zGetDogmaAttributesHeaders },
+});
+
+export const GetDogmaAttributesDescriptor: OperationExecutionDescriptor<OperationArguments<GetDogmaAttributesData>, GetDogmaAttributesResponse> = {
   operationId: "GetDogmaAttributes",
   method: "GET",
   path: "/dogma/attributes",
@@ -98,12 +125,16 @@ export const GetDogmaAttributesDescriptor: OperationExecutionDescriptor<GetDogma
   requestSchema: GetDogmaAttributesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetDogmaAttributesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetDogmaAttributesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetDogmaEffectsDescriptor: OperationExecutionDescriptor<GetDogmaEffectsInput, GetDogmaEffectsOutput> = {
+export const GetDogmaEffectsRequestSchema: z.ZodType<OperationArguments<GetDogmaEffectsData>> = composeOperationRequestSchema<OperationArguments<GetDogmaEffectsData>>({
+  headers: { required: false, schema: zGetDogmaEffectsHeaders },
+});
+
+export const GetDogmaEffectsDescriptor: OperationExecutionDescriptor<OperationArguments<GetDogmaEffectsData>, GetDogmaEffectsResponse> = {
   operationId: "GetDogmaEffects",
   method: "GET",
   path: "/dogma/effects",
@@ -116,7 +147,7 @@ export const GetDogmaEffectsDescriptor: OperationExecutionDescriptor<GetDogmaEff
   requestSchema: GetDogmaEffectsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetDogmaEffectsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetDogmaEffectsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

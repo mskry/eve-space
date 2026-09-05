@@ -16,30 +16,32 @@ Get corporation history
 - Domain import: `@evespace/esi-client/domains/character`
 - Domain index: [character](../domains/character.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCharacterClient } from '@evespace/esi-client/domains/character';
+import type { GetCharactersCharacterIdCorporationhistoryResponse } from '@evespace/esi-client/types';
 
 const client = createCharacterClient();
 
 const characterId = 90000001;
 
-const data = await client.listCorporationHistory(characterId);
+const data: GetCharactersCharacterIdCorporationhistoryResponse = await client.listCorporationHistory(characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdCorporationhistoryResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const characterId = 90000001;
 
-const data = await client.character.listCorporationHistory(characterId);
+const data: GetCharactersCharacterIdCorporationhistoryResponse = await client.character.listCorporationHistory(characterId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.character.listCorporationHistory(characterId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdCorporationhistoryData, GetCharactersCharacterIdCorporationhistoryResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdCorporationhistory'> = { path: { "character_id": characterId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdCorporationhistory', arguments_);
+const data: GetCharactersCharacterIdCorporationhistoryResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetCharactersCharacterIdCorporation
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdCorporationhistoryRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdCorporationhistoryData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdCorporationhistoryHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdCorporationhistoryPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdCorporationhistoryResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.character.withMetadata().listCorporationHistory(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdCorporationhistoryStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdCorporationhistoryResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

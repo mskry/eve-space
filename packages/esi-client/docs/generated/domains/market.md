@@ -31,6 +31,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createMarketClient } from '@evespace/esi-client/domains/market';
+import type { GetCharactersCharacterIdOrdersResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -39,7 +40,7 @@ const client = createMarketClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listCharacterOrders(characterId);
+const data: GetCharactersCharacterIdOrdersResponse = await client.listCharacterOrders(characterId);
 ```
 
 ## Aggregate client
@@ -48,6 +49,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdOrdersResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -56,7 +58,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.market.listCharacterOrders(characterId);
+const data: GetCharactersCharacterIdOrdersResponse = await client.market.listCharacterOrders(characterId);
 ```
 
 ## Shared concepts

@@ -11,7 +11,7 @@ Install the SDK and its required Zod 4 peer with your package manager:
 
 `pnpm add @evespace/esi-client zod`
 
-The package is ESM-only and requires Node.js 22.18 or newer. Import `EsiClient` from the package root, or use a documented domain, schema, or operations subpath for a narrower dependency surface.
+The package is ESM-only and requires Node.js 24.20 or newer. Import `EsiClient` from the package root, or use a documented domain, `types`, `zod`, or `operations` subpath for a narrower dependency surface.
 
 ## Related
 

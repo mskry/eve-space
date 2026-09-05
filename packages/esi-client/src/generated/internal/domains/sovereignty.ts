@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetSovereigntyCampaignsDescriptor,
@@ -17,11 +18,11 @@ import type {
   GetSovereigntySystemsOptions,
 } from './sovereignty-contract.js';
 import type {
-  GetSovereigntyCampaignsInput,
-  GetSovereigntyCampaignsOutput,
-  GetSovereigntySystemsInput,
-  GetSovereigntySystemsOutput,
-} from '../../schemas/operations/sovereignty.js';
+  GetSovereigntyCampaignsData,
+  GetSovereigntyCampaignsResponse,
+  GetSovereigntySystemsData,
+  GetSovereigntySystemsResponse,
+} from '../../types.gen.js';
 
 class SovereigntyDomainClientWithMetadataImplementation implements SovereigntyDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -31,13 +32,13 @@ class SovereigntyDomainClientWithMetadataImplementation implements SovereigntyDo
     Object.freeze(this);
   }
 
-  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<EsiResponse<GetSovereigntyCampaignsOutput>> {
-    const arguments_: GetSovereigntyCampaignsInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<EsiResponse<GetSovereigntyCampaignsResponse>> {
+    const arguments_: OperationArguments<GetSovereigntyCampaignsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetSovereigntyCampaignsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listSystems(options?: GetSovereigntySystemsOptions): Promise<EsiResponse<GetSovereigntySystemsOutput>> {
-    const arguments_: GetSovereigntySystemsInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listSystems(options?: GetSovereigntySystemsOptions): Promise<EsiResponse<GetSovereigntySystemsResponse>> {
+    const arguments_: OperationArguments<GetSovereigntySystemsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetSovereigntySystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -50,11 +51,11 @@ class SovereigntyDomainClientImplementation implements SovereigntyDomainClient {
     Object.freeze(this);
   }
 
-  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<GetSovereigntyCampaignsOutput> {
+  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<GetSovereigntyCampaignsResponse> {
     return this.#metadata.listCampaigns(options).then((response) => response.data);
   }
 
-  listSystems(options?: GetSovereigntySystemsOptions): Promise<GetSovereigntySystemsOutput> {
+  listSystems(options?: GetSovereigntySystemsOptions): Promise<GetSovereigntySystemsResponse> {
     return this.#metadata.listSystems(options).then((response) => response.data);
   }
 

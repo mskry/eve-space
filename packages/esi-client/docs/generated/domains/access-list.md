@@ -22,6 +22,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createAccessListClient } from '@evespace/esi-client/domains/access-list';
+import type { GetCharactersAccessListsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,7 +32,7 @@ const client = createAccessListClient({ token: accessToken });
 const characterId = 90000001;
 const accessListId = 12345;
 
-const data = await client.get(characterId, accessListId);
+const data: GetCharactersAccessListsDetailResponse = await client.get(characterId, accessListId);
 ```
 
 ## Aggregate client
@@ -40,6 +41,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersAccessListsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -49,7 +51,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const accessListId = 12345;
 
-const data = await client.accessList.get(characterId, accessListId);
+const data: GetCharactersAccessListsDetailResponse = await client.accessList.get(characterId, accessListId);
 ```
 
 ## Shared concepts

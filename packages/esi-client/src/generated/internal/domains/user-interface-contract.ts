@@ -4,83 +4,84 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  PostUiAutopilotWaypointInput,
-  PostUiAutopilotWaypointOutput,
-  PostUiOpenwindowContractInput,
-  PostUiOpenwindowContractOutput,
-  PostUiOpenwindowInformationInput,
-  PostUiOpenwindowInformationOutput,
-  PostUiOpenwindowMarketdetailsInput,
-  PostUiOpenwindowMarketdetailsOutput,
-  PostUiOpenwindowNewmailInput,
-  PostUiOpenwindowNewmailOutput,
-} from '../../schemas/operations/user-interface.js';
+  PostUiAutopilotWaypointData,
+  PostUiAutopilotWaypointResponse,
+  PostUiOpenwindowContractData,
+  PostUiOpenwindowContractResponse,
+  PostUiOpenwindowInformationData,
+  PostUiOpenwindowInformationResponse,
+  PostUiOpenwindowMarketdetailsData,
+  PostUiOpenwindowMarketdetailsResponse,
+  PostUiOpenwindowNewmailData,
+  PostUiOpenwindowNewmailResponse,
+} from '../../types.gen.js';
 
 export interface PostUiOpenwindowContractOptions {
   readonly "compatibilityDate"?: string;
-  readonly "contractId": NonNullable<PostUiOpenwindowContractInput["query"]>["contract_id"];
-  readonly "ifModifiedSince"?: NonNullable<PostUiOpenwindowContractInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostUiOpenwindowContractInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostUiOpenwindowContractInput["header"]>["X-Tenant"];
+  readonly "contractId": NonNullable<OperationArguments<PostUiOpenwindowContractData>["query"]>["contract_id"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowContractData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowContractData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowContractData>["headers"]>["X-Tenant"];
 }
 
 export interface PostUiOpenwindowInformationOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostUiOpenwindowInformationInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostUiOpenwindowInformationInput["header"]>["If-None-Match"];
-  readonly "targetId": NonNullable<PostUiOpenwindowInformationInput["query"]>["target_id"];
-  readonly "xTenant"?: NonNullable<PostUiOpenwindowInformationInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowInformationData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowInformationData>["headers"]>["If-None-Match"];
+  readonly "targetId": NonNullable<OperationArguments<PostUiOpenwindowInformationData>["query"]>["target_id"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowInformationData>["headers"]>["X-Tenant"];
 }
 
 export interface PostUiOpenwindowMarketdetailsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostUiOpenwindowMarketdetailsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostUiOpenwindowMarketdetailsInput["header"]>["If-None-Match"];
-  readonly "typeId": NonNullable<PostUiOpenwindowMarketdetailsInput["query"]>["type_id"];
-  readonly "xTenant"?: NonNullable<PostUiOpenwindowMarketdetailsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["headers"]>["If-None-Match"];
+  readonly "typeId": NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["query"]>["type_id"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowMarketdetailsData>["headers"]>["X-Tenant"];
 }
 
 export interface PostUiOpenwindowNewmailOptions {
-  readonly "body": PostUiOpenwindowNewmailInput['body'];
+  readonly "body": OperationArguments<PostUiOpenwindowNewmailData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostUiOpenwindowNewmailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostUiOpenwindowNewmailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostUiOpenwindowNewmailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiOpenwindowNewmailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiOpenwindowNewmailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostUiOpenwindowNewmailData>["headers"]>["X-Tenant"];
 }
 
 export interface PostUiAutopilotWaypointOptions {
-  readonly "addToBeginning": NonNullable<PostUiAutopilotWaypointInput["query"]>["add_to_beginning"];
-  readonly "clearOtherWaypoints": NonNullable<PostUiAutopilotWaypointInput["query"]>["clear_other_waypoints"];
+  readonly "addToBeginning": NonNullable<OperationArguments<PostUiAutopilotWaypointData>["query"]>["add_to_beginning"];
+  readonly "clearOtherWaypoints": NonNullable<OperationArguments<PostUiAutopilotWaypointData>["query"]>["clear_other_waypoints"];
   readonly "compatibilityDate"?: string;
-  readonly "destinationId": NonNullable<PostUiAutopilotWaypointInput["query"]>["destination_id"];
-  readonly "ifModifiedSince"?: NonNullable<PostUiAutopilotWaypointInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostUiAutopilotWaypointInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostUiAutopilotWaypointInput["header"]>["X-Tenant"];
+  readonly "destinationId": NonNullable<OperationArguments<PostUiAutopilotWaypointData>["query"]>["destination_id"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUiAutopilotWaypointData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUiAutopilotWaypointData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostUiAutopilotWaypointData>["headers"]>["X-Tenant"];
 }
 
 export interface UserInterfaceDomainClient {
-  openContract(options: PostUiOpenwindowContractOptions): Promise<PostUiOpenwindowContractOutput>;
+  openContract(options: PostUiOpenwindowContractOptions): Promise<PostUiOpenwindowContractResponse>;
 
-  openInformation(options: PostUiOpenwindowInformationOptions): Promise<PostUiOpenwindowInformationOutput>;
+  openInformation(options: PostUiOpenwindowInformationOptions): Promise<PostUiOpenwindowInformationResponse>;
 
-  openMarketDetails(options: PostUiOpenwindowMarketdetailsOptions): Promise<PostUiOpenwindowMarketdetailsOutput>;
+  openMarketDetails(options: PostUiOpenwindowMarketdetailsOptions): Promise<PostUiOpenwindowMarketdetailsResponse>;
 
-  openNewMail(options: PostUiOpenwindowNewmailOptions): Promise<PostUiOpenwindowNewmailOutput>;
+  openNewMail(options: PostUiOpenwindowNewmailOptions): Promise<PostUiOpenwindowNewmailResponse>;
 
-  setAutopilotWaypoint(options: PostUiAutopilotWaypointOptions): Promise<PostUiAutopilotWaypointOutput>;
+  setAutopilotWaypoint(options: PostUiAutopilotWaypointOptions): Promise<PostUiAutopilotWaypointResponse>;
 
   withMetadata(): UserInterfaceDomainClientWithMetadata;
 }
 
 export interface UserInterfaceDomainClientWithMetadata {
-  openContract(options: PostUiOpenwindowContractOptions): Promise<EsiResponse<PostUiOpenwindowContractOutput>>;
+  openContract(options: PostUiOpenwindowContractOptions): Promise<EsiResponse<PostUiOpenwindowContractResponse>>;
 
-  openInformation(options: PostUiOpenwindowInformationOptions): Promise<EsiResponse<PostUiOpenwindowInformationOutput>>;
+  openInformation(options: PostUiOpenwindowInformationOptions): Promise<EsiResponse<PostUiOpenwindowInformationResponse>>;
 
-  openMarketDetails(options: PostUiOpenwindowMarketdetailsOptions): Promise<EsiResponse<PostUiOpenwindowMarketdetailsOutput>>;
+  openMarketDetails(options: PostUiOpenwindowMarketdetailsOptions): Promise<EsiResponse<PostUiOpenwindowMarketdetailsResponse>>;
 
-  openNewMail(options: PostUiOpenwindowNewmailOptions): Promise<EsiResponse<PostUiOpenwindowNewmailOutput>>;
+  openNewMail(options: PostUiOpenwindowNewmailOptions): Promise<EsiResponse<PostUiOpenwindowNewmailResponse>>;
 
-  setAutopilotWaypoint(options: PostUiAutopilotWaypointOptions): Promise<EsiResponse<PostUiAutopilotWaypointOutput>>;
+  setAutopilotWaypoint(options: PostUiAutopilotWaypointOptions): Promise<EsiResponse<PostUiAutopilotWaypointResponse>>;
 }

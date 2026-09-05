@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createFreelanceJobsClient } from '@evespace/esi-client/domains/freelance-jobs';
+import type { GetCharactersFreelanceJobsListingResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createFreelanceJobsClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listCharacterJobs(characterId);
+const data: GetCharactersFreelanceJobsListingResponse = await client.listCharacterJobs(characterId);

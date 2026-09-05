@@ -11,10 +11,11 @@ import type {
   NormalizedSchema,
 } from './normalize.ts';
 import { isTransportManagedParameter } from './operation-parameters.ts';
-import type { EmitterContext } from './orchestrate.ts';
-import { createSchemaContractFixture } from './schema-test-emitter.ts';
+import type { EmitterContext } from './generation-contracts.ts';
+import { createSchemaContractFixture } from './schema-fixture.ts';
 import type { GeneratedTestComponent } from './test-emitter.ts';
-import { operationSchemaName, operationStatusResponseSchemaName } from './zod-schema.ts';
+import { isObject } from './internal/guards.ts';
+import { compareText } from './internal/text.ts';
 
 interface ParameterDescriptor {
   readonly name: string;
@@ -51,7 +52,9 @@ interface OperationContract {
   readonly parameters: readonly ParameterDescriptor[];
   readonly authentication: { readonly required: boolean; readonly scopes: readonly string[] };
   readonly requestBody: OperationRequestBodyContract | null;
-  readonly requestSchemaExport: string;
+  readonly requestSchemaExports: readonly string[];
+  readonly requestTypeExport: string;
+  readonly responseTypeExport: string;
   readonly arguments: Record<string, unknown>;
   readonly expectedRequest: ExpectedRequest;
   readonly responses: readonly OperationResponseContract[];
@@ -121,10 +124,18 @@ describe('generated operation contracts', () => {
     expect(manifest.authentication).toEqual(contract.authentication);
     expect(manifest.requestBody === null).toBe(contract.requestBody === null);
     expect(manifest.requestBody?.required).toBe(contract.requestBody?.required);
-    expect(manifest.requestSchema.export).toBe(contract.requestSchemaExport);
+    expect(manifest.requestType.export).toBe(contract.requestTypeExport);
+    expect(manifest.requestType.module).toBe('@evespace/esi-client/types');
+    expect(manifest.requestSchemas.map(({ schema }) => schema.export)).toEqual(
+      contract.requestSchemaExports,
+    );
+    expect(manifest.requestSchemas.every(({ schema }) => schema.module === '@evespace/esi-client/zod')).toBe(true);
+    expect(manifest.responseType.export).toBe(contract.responseTypeExport);
+    expect(manifest.responseType.module).toBe('@evespace/esi-client/types');
 
     expect(runtime.requestSchema.parse(contract.arguments)).toEqual(contract.arguments);
-    expect(constructOperationRequest(runtime.transport, contract.arguments)).toEqual(
+    const transport = { ...runtime.transport, requestSchema: undefined };
+    expect(constructOperationRequest(transport, contract.arguments)).toEqual(
       contract.expectedRequest,
     );
 
@@ -136,6 +147,7 @@ describe('generated operation contracts', () => {
       body,
       schemaExport: schema.export,
     }))).toEqual(contract.responses);
+    expect(manifest.responses.every(({ schema }) => schema.module === '@evespace/esi-client/zod')).toBe(true);
 
     for (const response of contract.responses) {
       const transportResponse = runtime.transport.successResponses.find(
@@ -177,7 +189,7 @@ describe('generated operation contracts', () => {
       expect(response.body).toBe('none');
       expect(schema.parse(undefined)).toBeUndefined();
       expect(schema.safeParse(null).success).toBe(false);
-      expect(runtime.responseSchema.parse(undefined)).toBeUndefined();
+      expect(runtime.responseSchema).toBe(schema);
     },
   );
 });
@@ -234,7 +246,9 @@ function createOperationContract(
       scopes: authentication?.scopes ?? [],
     },
     requestBody,
-    requestSchemaExport: `${operationSchemaName(operation.operationId)}RequestSchema`,
+    requestSchemaExports: createRequestSchemaExports(operation, parameters),
+    requestTypeExport: `${operation.operationId}Data`,
+    responseTypeExport: `${operation.operationId}Response`,
     arguments: fixtureArguments,
     expectedRequest: constructExpectedRequest(
       operation,
@@ -245,9 +259,27 @@ function createOperationContract(
     responses: operation.successResponses.map((response) => ({
       status: response.status,
       body: response.noContent ? ('none' as const) : ('json' as const),
-      schemaExport: operationStatusResponseSchemaName(operation.operationId, response.status),
+      schemaExport: `z${operation.operationId}Response`,
     })),
   };
+}
+
+function createRequestSchemaExports(
+  operation: NormalizedOperation,
+  parameters: readonly NormalizedParameter[],
+): string[] {
+  const exports: string[] = [];
+  if (operation.requestBody !== null) exports.push(`z${operation.operationId}Body`);
+  for (const [placement, suffix] of [
+    ['header', 'Headers'],
+    ['path', 'Path'],
+    ['query', 'Query'],
+  ] as const) {
+    if (parameters.some((parameter) => parameter.placement === placement)) {
+      exports.push(`z${operation.operationId}${suffix}`);
+    }
+  }
+  return exports;
 }
 
 function createOperationParameters(
@@ -270,10 +302,11 @@ function createOperationParameters(
     );
     descriptorParameters.push(contract.descriptor);
     if (!contract.hasFixture) continue;
+    const groupName = parameter.placement === 'header' ? 'headers' : parameter.placement;
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fixtureArguments groups by placement are always plain records
-    const group = (fixtureArguments[parameter.placement] ?? {}) as Record<string, unknown>;
+    const group = (fixtureArguments[groupName] ?? {}) as Record<string, unknown>;
     group[parameter.name] = contract.fixture;
-    fixtureArguments[parameter.placement] = group;
+    fixtureArguments[groupName] = group;
   }
   return { descriptorParameters, fixtureArguments };
 }
@@ -417,8 +450,9 @@ function constructExpectedRequest(
   const headers: Record<string, string> = {};
   const query: string[] = [];
   for (const parameter of parameters) {
+    const groupName = parameter.placement === 'header' ? 'headers' : parameter.placement;
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fixtureArguments groups by placement are always plain records
-    const group = fixtureArguments[parameter.placement] as Record<string, unknown> | undefined;
+    const group = fixtureArguments[groupName] as Record<string, unknown> | undefined;
     const value = group?.[parameter.name];
     if (value === undefined) continue;
     switch (parameter.placement) {
@@ -558,16 +592,6 @@ function encodeRfc3986(value: string): string {
 
 function encodePath(value: string): string {
   return encodeRfc3986(value).replaceAll('.', '%2E');
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 function serializeScalar(value: unknown): string {

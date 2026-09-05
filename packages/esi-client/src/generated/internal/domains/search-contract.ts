@@ -4,27 +4,28 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdSearchInput,
-  GetCharactersCharacterIdSearchOutput,
-} from '../../schemas/operations/search.js';
+  GetCharactersCharacterIdSearchData,
+  GetCharactersCharacterIdSearchResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdSearchOptions {
-  readonly "categories": NonNullable<GetCharactersCharacterIdSearchInput["query"]>["categories"];
+  readonly "categories": NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["query"]>["categories"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdSearchInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdSearchInput["header"]>["If-None-Match"];
-  readonly "search": NonNullable<GetCharactersCharacterIdSearchInput["query"]>["search"];
-  readonly "strict"?: NonNullable<GetCharactersCharacterIdSearchInput["query"]>["strict"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdSearchInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["headers"]>["If-None-Match"];
+  readonly "search": NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["query"]>["search"];
+  readonly "strict"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["query"]>["strict"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>["headers"]>["X-Tenant"];
 }
 
 export interface SearchDomainClient {
-  search(characterId: NonNullable<GetCharactersCharacterIdSearchInput['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<GetCharactersCharacterIdSearchOutput>;
+  search(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<GetCharactersCharacterIdSearchResponse>;
 
   withMetadata(): SearchDomainClientWithMetadata;
 }
 
 export interface SearchDomainClientWithMetadata {
-  search(characterId: NonNullable<GetCharactersCharacterIdSearchInput['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<EsiResponse<GetCharactersCharacterIdSearchOutput>>;
+  search(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<EsiResponse<GetCharactersCharacterIdSearchResponse>>;
 }

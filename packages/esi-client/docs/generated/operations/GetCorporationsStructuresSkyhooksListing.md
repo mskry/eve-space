@@ -16,12 +16,13 @@ List Skyhooks
 - Domain import: `@evespace/esi-client/domains/structures`
 - Domain index: [structures](../domains/structures.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createStructuresClient } from '@evespace/esi-client/domains/structures';
+import type { GetCorporationsStructuresSkyhooksListingResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createStructuresClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.listSkyhooks(corporationId);
+const data: GetCorporationsStructuresSkyhooksListingResponse = await client.listSkyhooks(corporationId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCorporationsStructuresSkyhooksListingResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.structures.listSkyhooks(corporationId);
+const data: GetCorporationsStructuresSkyhooksListingResponse = await client.structures.listSkyhooks(corporationId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.structures.listSkyhooks(corporationId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCorporationsStructuresSkyhooksListingData, GetCorporationsStructuresSkyhooksListingResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const corporationId = 98000001;
 const arguments_: CallOperationArguments<'GetCorporationsStructuresSkyhooksListing'> = { path: { "corporation_id": corporationId } };
 
 const response = await client.callOperation('GetCorporationsStructuresSkyhooksListing', arguments_);
+const data: GetCorporationsStructuresSkyhooksListingResponse = response.data;
 ```
 
 ## Parameters
@@ -77,14 +81,16 @@ const response = await client.callOperation('GetCorporationsStructuresSkyhooksLi
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCorporationsStructuresSkyhooksListingRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCorporationsStructuresSkyhooksListingData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCorporationsStructuresSkyhooksListingHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCorporationsStructuresSkyhooksListingPath`.
+- Response type: `@evespace/esi-client/types` export `GetCorporationsStructuresSkyhooksListingResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.structures.withMetadata().listSkyhooks(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCorporationsStructuresSkyhooksListingStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCorporationsStructuresSkyhooksListingResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +122,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

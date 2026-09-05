@@ -16,13 +16,13 @@ Move fleet member
 - Domain import: `@evespace/esi-client/domains/fleets`
 - Domain index: [fleets](../domains/fleets.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFleetsClient } from '@evespace/esi-client/domains/fleets';
-import type { PutFleetsFleetIdMembersMemberIdOptions } from '@evespace/esi-client/domains/fleets';
+import type { PutFleetsFleetIdMembersMemberIdResponse, PutFleetsFleetIdMembersMemberIdData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,17 +31,17 @@ const client = createFleetsClient({ token: accessToken });
 
 const fleetId = 12345;
 const memberId = 12345;
-declare const requestBody: NonNullable<PutFleetsFleetIdMembersMemberIdOptions['body']>;
+declare const requestBody: NonNullable<PutFleetsFleetIdMembersMemberIdData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.moveMember(fleetId, memberId, { body: requestBody });
+const data: PutFleetsFleetIdMembersMemberIdResponse = await client.moveMember(fleetId, memberId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PutFleetsFleetIdMembersMemberIdOptions } from '@evespace/esi-client/domains/fleets';
+import type { PutFleetsFleetIdMembersMemberIdResponse, PutFleetsFleetIdMembersMemberIdData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -50,10 +50,10 @@ const client = new EsiClient({ token: accessToken });
 
 const fleetId = 12345;
 const memberId = 12345;
-declare const requestBody: NonNullable<PutFleetsFleetIdMembersMemberIdOptions['body']>;
+declare const requestBody: NonNullable<PutFleetsFleetIdMembersMemberIdData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.fleets.moveMember(fleetId, memberId, { body: requestBody });
+const data: PutFleetsFleetIdMembersMemberIdResponse = await client.fleets.moveMember(fleetId, memberId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -61,6 +61,7 @@ const data = await client.fleets.moveMember(fleetId, memberId, { body: requestBo
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PutFleetsFleetIdMembersMemberIdData, PutFleetsFleetIdMembersMemberIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -69,7 +70,7 @@ const client = new EsiClient({ token: accessToken, allowGenericMutations: true }
 
 const fleetId = 12345;
 const memberId = 12345;
-declare const requestBody: NonNullable<CallOperationArguments<'PutFleetsFleetIdMembersMemberId'>['body']>;
+declare const requestBody: NonNullable<PutFleetsFleetIdMembersMemberIdData['body']>;
 
 const arguments_: CallOperationArguments<'PutFleetsFleetIdMembersMemberId'> = { path: { "fleet_id": fleetId, "member_id": memberId }, body: requestBody };
 
@@ -77,6 +78,7 @@ const arguments_: CallOperationArguments<'PutFleetsFleetIdMembersMemberId'> = { 
 const response = await client.callOperation('PutFleetsFleetIdMembersMemberId', arguments_, {
   confirmMutation: true,
 });
+const data: PutFleetsFleetIdMembersMemberIdResponse = response.data;
 ```
 
 ## Parameters
@@ -92,14 +94,16 @@ const response = await client.callOperation('PutFleetsFleetIdMembersMemberId', a
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PutFleetsFleetIdMembersMemberIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PutFleetsFleetIdMembersMemberIdData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPutFleetsFleetIdMembersMemberIdBody`; `headers` uses `@evespace/esi-client/zod` export `zPutFleetsFleetIdMembersMemberIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zPutFleetsFleetIdMembersMemberIdPath`.
+- Response type: `@evespace/esi-client/types` export `PutFleetsFleetIdMembersMemberIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.fleets.withMetadata().moveMember(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `PutFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema` | Fleet invitation sent |
+| `204` | none | `@evespace/esi-client/zod` | `zPutFleetsFleetIdMembersMemberIdResponse` | Fleet invitation sent |
 
 ## Authentication
 
@@ -134,6 +138,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

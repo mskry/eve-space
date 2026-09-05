@@ -4,70 +4,71 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCorporationsProjectsContributionInput,
-  GetCorporationsProjectsContributionOutput,
-  GetCorporationsProjectsContributorsInput,
-  GetCorporationsProjectsContributorsOutput,
-  GetCorporationsProjectsDetailInput,
-  GetCorporationsProjectsDetailOutput,
-  GetCorporationsProjectsListingInput,
-  GetCorporationsProjectsListingOutput,
-} from '../../schemas/operations/corporation-projects.js';
+  GetCorporationsProjectsContributionData,
+  GetCorporationsProjectsContributionResponse,
+  GetCorporationsProjectsContributorsData,
+  GetCorporationsProjectsContributorsResponse,
+  GetCorporationsProjectsDetailData,
+  GetCorporationsProjectsDetailResponse,
+  GetCorporationsProjectsListingData,
+  GetCorporationsProjectsListingResponse,
+} from '../../types.gen.js';
 
 export interface GetCorporationsProjectsDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsProjectsDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsProjectsDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsProjectsDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsProjectsContributionOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsProjectsContributionInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsProjectsContributionInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsProjectsContributionInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsProjectsListingOptions {
-  readonly "after"?: NonNullable<GetCorporationsProjectsListingInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetCorporationsProjectsListingInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsProjectsListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsProjectsListingInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetCorporationsProjectsListingInput["query"]>["limit"];
-  readonly "state"?: NonNullable<GetCorporationsProjectsListingInput["query"]>["state"];
-  readonly "xTenant"?: NonNullable<GetCorporationsProjectsListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["query"]>["limit"];
+  readonly "state"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["query"]>["state"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsListingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsProjectsContributorsOptions {
-  readonly "after"?: NonNullable<GetCorporationsProjectsContributorsInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetCorporationsProjectsContributorsInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsProjectsContributorsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsProjectsContributorsInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetCorporationsProjectsContributorsInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetCorporationsProjectsContributorsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>["headers"]>["X-Tenant"];
 }
 
 export interface CorporationProjectsDomainClient {
-  get(corporationId: NonNullable<GetCorporationsProjectsDetailInput['path']>["corporation_id"], projectId: NonNullable<GetCorporationsProjectsDetailInput['path']>["project_id"], options?: GetCorporationsProjectsDetailOptions): Promise<GetCorporationsProjectsDetailOutput>;
+  get(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>['path']>["project_id"], options?: GetCorporationsProjectsDetailOptions): Promise<GetCorporationsProjectsDetailResponse>;
 
-  getContribution(corporationId: NonNullable<GetCorporationsProjectsContributionInput['path']>["corporation_id"], projectId: NonNullable<GetCorporationsProjectsContributionInput['path']>["project_id"], characterId: NonNullable<GetCorporationsProjectsContributionInput['path']>["character_id"], options?: GetCorporationsProjectsContributionOptions): Promise<GetCorporationsProjectsContributionOutput>;
+  getContribution(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["project_id"], characterId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["character_id"], options?: GetCorporationsProjectsContributionOptions): Promise<GetCorporationsProjectsContributionResponse>;
 
-  list(corporationId: NonNullable<GetCorporationsProjectsListingInput['path']>["corporation_id"], options?: GetCorporationsProjectsListingOptions): Promise<GetCorporationsProjectsListingOutput>;
+  list(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsListingData>['path']>["corporation_id"], options?: GetCorporationsProjectsListingOptions): Promise<GetCorporationsProjectsListingResponse>;
 
-  listContributors(corporationId: NonNullable<GetCorporationsProjectsContributorsInput['path']>["corporation_id"], projectId: NonNullable<GetCorporationsProjectsContributorsInput['path']>["project_id"], options?: GetCorporationsProjectsContributorsOptions): Promise<GetCorporationsProjectsContributorsOutput>;
+  listContributors(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>['path']>["project_id"], options?: GetCorporationsProjectsContributorsOptions): Promise<GetCorporationsProjectsContributorsResponse>;
 
   withMetadata(): CorporationProjectsDomainClientWithMetadata;
 }
 
 export interface CorporationProjectsDomainClientWithMetadata {
-  get(corporationId: NonNullable<GetCorporationsProjectsDetailInput['path']>["corporation_id"], projectId: NonNullable<GetCorporationsProjectsDetailInput['path']>["project_id"], options?: GetCorporationsProjectsDetailOptions): Promise<EsiResponse<GetCorporationsProjectsDetailOutput>>;
+  get(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsDetailData>['path']>["project_id"], options?: GetCorporationsProjectsDetailOptions): Promise<EsiResponse<GetCorporationsProjectsDetailResponse>>;
 
-  getContribution(corporationId: NonNullable<GetCorporationsProjectsContributionInput['path']>["corporation_id"], projectId: NonNullable<GetCorporationsProjectsContributionInput['path']>["project_id"], characterId: NonNullable<GetCorporationsProjectsContributionInput['path']>["character_id"], options?: GetCorporationsProjectsContributionOptions): Promise<EsiResponse<GetCorporationsProjectsContributionOutput>>;
+  getContribution(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["project_id"], characterId: NonNullable<OperationArguments<GetCorporationsProjectsContributionData>['path']>["character_id"], options?: GetCorporationsProjectsContributionOptions): Promise<EsiResponse<GetCorporationsProjectsContributionResponse>>;
 
-  list(corporationId: NonNullable<GetCorporationsProjectsListingInput['path']>["corporation_id"], options?: GetCorporationsProjectsListingOptions): Promise<EsiResponse<GetCorporationsProjectsListingOutput>>;
+  list(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsListingData>['path']>["corporation_id"], options?: GetCorporationsProjectsListingOptions): Promise<EsiResponse<GetCorporationsProjectsListingResponse>>;
 
-  listContributors(corporationId: NonNullable<GetCorporationsProjectsContributorsInput['path']>["corporation_id"], projectId: NonNullable<GetCorporationsProjectsContributorsInput['path']>["project_id"], options?: GetCorporationsProjectsContributorsOptions): Promise<EsiResponse<GetCorporationsProjectsContributorsOutput>>;
+  listContributors(corporationId: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>['path']>["corporation_id"], projectId: NonNullable<OperationArguments<GetCorporationsProjectsContributorsData>['path']>["project_id"], options?: GetCorporationsProjectsContributorsOptions): Promise<EsiResponse<GetCorporationsProjectsContributorsResponse>>;
 }

@@ -16,30 +16,32 @@ Get war information
 - Domain import: `@evespace/esi-client/domains/wars`
 - Domain index: [wars](../domains/wars.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createWarsClient } from '@evespace/esi-client/domains/wars';
+import type { GetWarsWarIdResponse } from '@evespace/esi-client/types';
 
 const client = createWarsClient();
 
 const warId = 12345;
 
-const data = await client.get(warId);
+const data: GetWarsWarIdResponse = await client.get(warId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetWarsWarIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const warId = 12345;
 
-const data = await client.wars.get(warId);
+const data: GetWarsWarIdResponse = await client.wars.get(warId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.wars.get(warId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetWarsWarIdData, GetWarsWarIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const warId = 12345;
 const arguments_: CallOperationArguments<'GetWarsWarId'> = { path: { "war_id": warId } };
 
 const response = await client.callOperation('GetWarsWarId', arguments_);
+const data: GetWarsWarIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetWarsWarId', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetWarsWarIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetWarsWarIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetWarsWarIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetWarsWarIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetWarsWarIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.wars.withMetadata().get(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetWarsWarIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetWarsWarIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

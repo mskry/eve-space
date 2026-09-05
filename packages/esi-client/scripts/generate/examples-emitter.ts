@@ -1,16 +1,22 @@
-import { lstat, mkdir, writeFile } from 'node:fs/promises';
-import { isAbsolute, join, normalize } from 'node:path';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { createProvenanceHeader, type ArtifactProvenance } from './artifacts.ts';
-import { domainFileName } from './domain-client.ts';
+import { createComponentEmitter, type GeneratedOutputComponent } from './component-emitter.ts';
 import { createSerializableOperationManifest } from './operation-registry.ts';
 import type {
   SerializableOperationManifest,
   SerializableOperationManifestEntry,
   SerializableOperationParameter,
 } from './operation-registry.ts';
-import type { EmitterContext, GeneratedOutputEmitter } from './orchestrate.ts';
-import { operationSchemaName } from './zod-schema.ts';
+import type { EmitterContext, GeneratedOutputEmitter } from './generation-contracts.ts';
+import { generatedTargetFor } from './paths.ts';
+import {
+  assignPathIdentifier,
+  domainFileName,
+  facadeParameterName,
+} from './internal/facade-naming.ts';
+import { capitalize, compareText } from './internal/text.ts';
 
 export interface OperationSnippets {
   readonly domainMethod: string;
@@ -19,10 +25,7 @@ export interface OperationSnippets {
   readonly standaloneExamples: readonly string[];
 }
 
-export interface GeneratedExamplesComponent {
-  readonly name: string;
-  emit(context: EmitterContext, examplesDirectory: string): Promise<readonly string[]>;
-}
+export type GeneratedExamplesComponent = GeneratedOutputComponent;
 
 interface FacadePathParameter {
   readonly identifier: string;
@@ -47,56 +50,7 @@ interface StandaloneExampleDefinition {
   readonly source: string;
 }
 
-const examplesTarget = 'examples/generated';
-const identifierPattern = /^[A-Za-z_$][A-Za-z0-9_$]*$/u;
-const reservedIdentifiers = new Set([
-  'await',
-  'break',
-  'case',
-  'catch',
-  'class',
-  'const',
-  'continue',
-  'debugger',
-  'default',
-  'delete',
-  'do',
-  'else',
-  'enum',
-  'export',
-  'extends',
-  'false',
-  'finally',
-  'for',
-  'function',
-  'if',
-  'implements',
-  'import',
-  'in',
-  'instanceof',
-  'interface',
-  'let',
-  'new',
-  'null',
-  'package',
-  'private',
-  'protected',
-  'public',
-  'return',
-  'static',
-  'super',
-  'switch',
-  'this',
-  'throw',
-  'true',
-  'try',
-  'typeof',
-  'var',
-  'void',
-  'while',
-  'with',
-  'yield',
-]);
+const examplesTarget = generatedTargetFor('examples').path;
 
 const standaloneExamples: readonly StandaloneExampleDefinition[] = Object.freeze([
   {
@@ -168,6 +122,18 @@ export async function getMarketPricesWithMetadata() {
     cache: response.meta.cache,
     errorLimit: response.meta.errorLimit,
   };
+}`,
+  },
+  {
+    fileName: 'schema-validation.ts',
+    operationId: 'GetStatus',
+    title: 'Natural generated schemas',
+    description: 'Validate unknown data with a natural Zod export and its matching response type.',
+    source: `import type { GetStatusResponse } from '@evespace/esi-client/types';
+import { zGetStatusResponse } from '@evespace/esi-client/zod';
+
+export function parseStatus(value: unknown): GetStatusResponse {
+  return zGetStatusResponse.parse(value);
 }`,
   },
   {
@@ -346,54 +312,11 @@ ${example.source.trim()}
 export function createGeneratedExamplesEmitter(
   components: readonly GeneratedExamplesComponent[],
 ): GeneratedOutputEmitter {
-  if (!Array.isArray(components) || components.length === 0) {
-    throw new TypeError('Generated example components must be a non-empty array');
-  }
-  const exampleComponents = [...components];
-  const names = new Set<string>();
-  for (const component of exampleComponents) {
-    if (
-      component === null ||
-      typeof component !== 'object' ||
-      typeof component.name !== 'string' ||
-      component.name.length === 0 ||
-      typeof component.emit !== 'function'
-    ) {
-      throw new TypeError('Invalid generated example component');
-    }
-    if (names.has(component.name)) {
-      throw new Error(`Duplicate generated example component name: ${component.name}`);
-    }
-    names.add(component.name);
-  }
-
-  return Object.freeze({
-    name: 'generated-examples',
-    async emit(context: EmitterContext) {
-      const examplesDirectory = context.outputPath(examplesTarget);
-      await mkdir(examplesDirectory, { recursive: true });
-      const outputs = new Set<string>();
-      for (const component of exampleComponents) {
-        const componentOutputs = await component.emit(context, examplesDirectory);
-        if (!Array.isArray(componentOutputs)) {
-          throw new TypeError(
-            `Generated example component ${component.name} did not return output paths`,
-          );
-        }
-        for (const output of componentOutputs) {
-          const relativePath = validateRelativeOutputPath(output, component.name);
-          if (outputs.has(relativePath)) {
-            throw new Error(`Duplicate generated example output: ${relativePath}`);
-          }
-          outputs.add(relativePath);
-          const status = await lstat(join(examplesDirectory, relativePath));
-          if (!status.isFile() || status.isSymbolicLink()) {
-            throw new Error(`Generated example output must be a regular file: ${relativePath}`);
-          }
-        }
-      }
-      return [{ target: examplesTarget, kind: 'directory' as const }];
-    },
+  return createComponentEmitter({
+    components,
+    emitterName: 'generated-examples',
+    noun: 'example',
+    target: examplesTarget,
   });
 }
 
@@ -429,15 +352,14 @@ function renderDomainMethodSnippet(
   shape: FacadeShape,
 ): string {
   const imports = ["import { EsiClient } from '@evespace/esi-client';"];
+  imports.push(renderOperationTypeImport(operation));
   const declarations = renderPathDeclarations(shape.pathParameters);
   let bodyName;
   if (operation.requestBody?.required === true) {
-    const optionsName = `${operationSchemaName(operation.operationId)}Options`;
-    imports.push(
-      `import type { ${optionsName} } from '@evespace/esi-client/domains/${domainFileName(operation.facade.domain)}';`,
-    );
     bodyName = 'requestBody';
-    declarations.push(`declare const requestBody: NonNullable<${optionsName}['body']>;`);
+    declarations.push(
+      `declare const requestBody: NonNullable<${operation.requestType.export}['body']>;`,
+    );
   }
   const options = renderDomainRequiredOptions(shape.requiredOptions, bodyName);
   const callArguments = [
@@ -457,7 +379,7 @@ function renderDomainMethodSnippet(
     );
   }
   lines.push(
-    `const data = await client.${operation.facade.domain}.${operation.facade.method}(${callArguments.join(', ')});`,
+    `const data: ${operation.responseType.export} = await client.${operation.facade.domain}.${operation.facade.method}(${callArguments.join(', ')});`,
   );
   return `${lines.join('\n')}\n`;
 }
@@ -469,13 +391,14 @@ function renderStandaloneDomainMethodSnippet(
   const factoryName = `create${capitalize(operation.facade.domain)}Client`;
   const domainSubpath = `@evespace/esi-client/domains/${domainFileName(operation.facade.domain)}`;
   const imports = [`import { ${factoryName} } from '${domainSubpath}';`];
+  imports.push(renderOperationTypeImport(operation));
   const declarations = renderPathDeclarations(shape.pathParameters);
   let bodyName;
   if (operation.requestBody?.required === true) {
-    const optionsName = `${operationSchemaName(operation.operationId)}Options`;
-    imports.push(`import type { ${optionsName} } from '${domainSubpath}';`);
     bodyName = 'requestBody';
-    declarations.push(`declare const requestBody: NonNullable<${optionsName}['body']>;`);
+    declarations.push(
+      `declare const requestBody: NonNullable<${operation.requestType.export}['body']>;`,
+    );
   }
   const options = renderDomainRequiredOptions(shape.requiredOptions, bodyName);
   const callArguments = [
@@ -494,8 +417,18 @@ function renderStandaloneDomainMethodSnippet(
       '// This named typed mutation expresses explicit intent. Verify authorization before calling it.',
     );
   }
-  lines.push(`const data = await client.${operation.facade.method}(${callArguments.join(', ')});`);
+  lines.push(
+    `const data: ${operation.responseType.export} = await client.${operation.facade.method}(${callArguments.join(', ')});`,
+  );
   return `${lines.join('\n')}\n`;
+}
+
+function renderOperationTypeImport(operation: SerializableOperationManifestEntry): string {
+  const exports = [operation.responseType.export];
+  if (operation.requestBody?.required === true) {
+    exports.push(operation.requestType.export);
+  }
+  return `import type { ${exports.join(', ')} } from '${operation.responseType.module}';`;
 }
 
 function renderGenericExecutionSnippet(
@@ -505,13 +438,14 @@ function renderGenericExecutionSnippet(
   const lines = [
     "import { EsiClient } from '@evespace/esi-client';",
     "import type { CallOperationArguments } from '@evespace/esi-client/operations';",
+    `import type { ${operation.requestType.export}, ${operation.responseType.export} } from '${operation.requestType.module}';`,
     '',
     ...renderClientSetup(operation, operation.classification === 'mutation'),
   ];
   const declarations = renderPathDeclarations(shape.pathParameters);
   if (operation.requestBody?.required === true) {
     declarations.push(
-      `declare const requestBody: NonNullable<CallOperationArguments<'${operation.operationId}'>['body']>;`,
+      `declare const requestBody: NonNullable<${operation.requestType.export}['body']>;`,
     );
   }
   if (declarations.length > 0) lines.push('', ...declarations);
@@ -533,6 +467,7 @@ function renderGenericExecutionSnippet(
       `const response = await client.callOperation('${operation.operationId}', arguments_);`,
     );
   }
+  lines.push(`const data: ${operation.responseType.export} = response.data;`);
   return `${lines.join('\n')}\n`;
 }
 
@@ -584,17 +519,7 @@ function createFacadeShape(operation: SerializableOperationManifestEntry): Facad
     if (!parameter?.required) {
       throw new Error(`Missing required path parameter ${match[1]} for ${operation.operationId}`);
     }
-    let identifier = facadeParameterName(parameter.name);
-    if (reservedIdentifiers.has(identifier) || usedIdentifiers.has(identifier)) {
-      identifier = `${identifier}Value`;
-    }
-    const base = identifier;
-    let suffix = 2;
-    while (usedIdentifiers.has(identifier)) {
-      identifier = `${base}${suffix}`;
-      suffix += 1;
-    }
-    usedIdentifiers.add(identifier);
+    const identifier = assignPathIdentifier(parameter.name, usedIdentifiers);
     pathParameters.push({ identifier, parameter });
     pathByName.delete(parameter.name);
   }
@@ -729,40 +654,12 @@ function relatedStandaloneExamples(operation: SerializableOperationManifestEntry
   const fileNames = new Set([
     operation.authentication.required ? 'authenticated.md' : 'public.md',
     'metadata.md',
+    'schema-validation.md',
     'validation-error.md',
   ]);
   if (operation.pagination.kind !== 'none') fileNames.add('paginated.md');
   if (operation.classification === 'mutation') fileNames.add('mutation-safety.md');
   return [...fileNames].toSorted(compareText);
-}
-
-function facadeParameterName(value: string): string {
-  const words = value
-    .replaceAll(/([a-z0-9])([A-Z])/gu, '$1 $2')
-    .replaceAll(/([A-Z])(?=[A-Z][a-z])/gu, '$1 ')
-    .split(/[^A-Za-z0-9]+/u)
-    .filter(Boolean);
-  if (words.length === 0) throw new Error(`Cannot derive facade parameter name from ${value}`);
-  let identifier = `${words[0].toLowerCase()}${words
-    .slice(1)
-    .map((word) => capitalize(word.toLowerCase()))
-    .join('')}`;
-  if (!/^[A-Za-z_$]/u.test(identifier)) identifier = `value${capitalize(identifier)}`;
-  if (!identifierPattern.test(identifier)) {
-    throw new Error(`Invalid generated facade parameter identifier: ${identifier}`);
-  }
-  return identifier;
-}
-
-function validateRelativeOutputPath(path: string, componentName: string): string {
-  if (typeof path !== 'string' || path.length === 0 || isAbsolute(path)) {
-    throw new Error(`Generated example component ${componentName} returned an invalid output path`);
-  }
-  const normalized = normalize(path).replaceAll('\\', '/');
-  if (normalized === '..' || normalized.startsWith('../') || normalized === '.') {
-    throw new Error(`Generated example component ${componentName} returned an unsafe output path`);
-  }
-  return normalized;
 }
 
 function markdownDocument(provenance: ArtifactProvenance, body: string): string {
@@ -771,14 +668,4 @@ function markdownDocument(provenance: ArtifactProvenance, body: string): string 
 
 function singular(value: string): string {
   return value.endsWith('s') ? value.slice(0, -1) : value;
-}
-
-function capitalize(value: string): string {
-  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
 }

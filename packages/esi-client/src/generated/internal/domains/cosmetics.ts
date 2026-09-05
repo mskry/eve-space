@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCosmeticsSkinrDescriptor,
@@ -19,13 +20,13 @@ import type {
   GetCharactersCosmeticsSkinrOptions,
 } from './cosmetics-contract.js';
 import type {
-  GetCharactersCosmeticsSkinrComponentsInput,
-  GetCharactersCosmeticsSkinrComponentsOutput,
-  GetCharactersCosmeticsSkinrInput,
-  GetCharactersCosmeticsSkinrOutput,
-  GetCosmeticsSkinrInput,
-  GetCosmeticsSkinrOutput,
-} from '../../schemas/operations/cosmetics.js';
+  GetCharactersCosmeticsSkinrComponentsData,
+  GetCharactersCosmeticsSkinrComponentsResponse,
+  GetCharactersCosmeticsSkinrData,
+  GetCharactersCosmeticsSkinrResponse,
+  GetCosmeticsSkinrData,
+  GetCosmeticsSkinrResponse,
+} from '../../types.gen.js';
 
 class CosmeticsDomainClientWithMetadataImplementation implements CosmeticsDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -35,18 +36,18 @@ class CosmeticsDomainClientWithMetadataImplementation implements CosmeticsDomain
     Object.freeze(this);
   }
 
-  getSkinrLicense(skinrId: NonNullable<GetCosmeticsSkinrInput['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<EsiResponse<GetCosmeticsSkinrOutput>> {
-    const arguments_: GetCosmeticsSkinrInput = { path: { "skinr_id": skinrId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getSkinrLicense(skinrId: NonNullable<OperationArguments<GetCosmeticsSkinrData>['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<EsiResponse<GetCosmeticsSkinrResponse>> {
+    const arguments_: OperationArguments<GetCosmeticsSkinrData> = { path: { "skinr_id": skinrId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCosmeticsSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listSkinrComponentLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrComponentsInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrComponentsOutput>> {
-    const arguments_: GetCharactersCosmeticsSkinrComponentsInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listSkinrComponentLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrComponentsResponse>> {
+    const arguments_: OperationArguments<GetCharactersCosmeticsSkinrComponentsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCosmeticsSkinrComponentsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listSkinrLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrOutput>> {
-    const arguments_: GetCharactersCosmeticsSkinrInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listSkinrLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrResponse>> {
+    const arguments_: OperationArguments<GetCharactersCosmeticsSkinrData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCosmeticsSkinrDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -59,15 +60,15 @@ class CosmeticsDomainClientImplementation implements CosmeticsDomainClient {
     Object.freeze(this);
   }
 
-  getSkinrLicense(skinrId: NonNullable<GetCosmeticsSkinrInput['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<GetCosmeticsSkinrOutput> {
+  getSkinrLicense(skinrId: NonNullable<OperationArguments<GetCosmeticsSkinrData>['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<GetCosmeticsSkinrResponse> {
     return this.#metadata.getSkinrLicense(skinrId, options).then((response) => response.data);
   }
 
-  listSkinrComponentLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrComponentsInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<GetCharactersCosmeticsSkinrComponentsOutput> {
+  listSkinrComponentLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<GetCharactersCosmeticsSkinrComponentsResponse> {
     return this.#metadata.listSkinrComponentLicenses(characterId, options).then((response) => response.data);
   }
 
-  listSkinrLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<GetCharactersCosmeticsSkinrOutput> {
+  listSkinrLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<GetCharactersCosmeticsSkinrResponse> {
     return this.#metadata.listSkinrLicenses(characterId, options).then((response) => response.data);
   }
 

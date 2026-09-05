@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createSkillsClient } from '@evespace/esi-client/domains/skills';
+import type { GetCharactersCharacterIdAttributesResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createSkillsClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.getAttributes(characterId);
+const data: GetCharactersCharacterIdAttributesResponse = await client.getAttributes(characterId);

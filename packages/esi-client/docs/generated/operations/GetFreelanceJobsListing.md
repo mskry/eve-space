@@ -16,26 +16,28 @@ List freelance jobs
 - Domain import: `@evespace/esi-client/domains/freelance-jobs`
 - Domain index: [freelanceJobs](../domains/freelance-jobs.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFreelanceJobsClient } from '@evespace/esi-client/domains/freelance-jobs';
+import type { GetFreelanceJobsListingResponse } from '@evespace/esi-client/types';
 
 const client = createFreelanceJobsClient();
 
-const data = await client.listPublic();
+const data: GetFreelanceJobsListingResponse = await client.listPublic();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetFreelanceJobsListingResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.freelanceJobs.listPublic();
+const data: GetFreelanceJobsListingResponse = await client.freelanceJobs.listPublic();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.freelanceJobs.listPublic();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetFreelanceJobsListingData, GetFreelanceJobsListingResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetFreelanceJobsListing'> = {};
 
 const response = await client.callOperation('GetFreelanceJobsListing', arguments_);
+const data: GetFreelanceJobsListingResponse = response.data;
 ```
 
 ## Parameters
@@ -65,14 +69,16 @@ const response = await client.callOperation('GetFreelanceJobsListing', arguments
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetFreelanceJobsListingRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetFreelanceJobsListingData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetFreelanceJobsListingHeaders`; `query` uses `@evespace/esi-client/zod` export `zGetFreelanceJobsListingQuery`.
+- Response type: `@evespace/esi-client/types` export `GetFreelanceJobsListingResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.freelanceJobs.withMetadata().listPublic(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetFreelanceJobsListingStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetFreelanceJobsListingResponse` | OK |
 
 ## Authentication
 
@@ -103,6 +109,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

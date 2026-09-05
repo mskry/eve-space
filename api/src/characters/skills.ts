@@ -1,5 +1,5 @@
 import { createSkillsClient } from '@evespace/esi-client/domains/skills'
-import type { GetCharactersCharacterIdSkillsOutput } from '@evespace/esi-client/schemas'
+import type { GetCharactersCharacterIdSkillsResponse } from '@evespace/esi-client/types'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypes } from '../db/schema.js'
@@ -87,7 +87,7 @@ export async function getCharacterSkills(characterId: number): Promise<Character
 }
 
 function mapCharacterSkillsSnapshot(
-  result: GetCharactersCharacterIdSkillsOutput,
+  result: GetCharactersCharacterIdSkillsResponse,
 ): CharacterSkillsSnapshot {
   return {
     totalSp: result.total_sp,

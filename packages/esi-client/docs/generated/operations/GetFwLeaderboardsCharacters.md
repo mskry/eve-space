@@ -16,26 +16,28 @@ List of the top pilots in faction warfare
 - Domain import: `@evespace/esi-client/domains/faction-warfare`
 - Domain index: [factionWarfare](../domains/faction-warfare.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFactionWarfareClient } from '@evespace/esi-client/domains/faction-warfare';
+import type { GetFwLeaderboardsCharactersResponse } from '@evespace/esi-client/types';
 
 const client = createFactionWarfareClient();
 
-const data = await client.getCharacterLeaderboards();
+const data: GetFwLeaderboardsCharactersResponse = await client.getCharacterLeaderboards();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetFwLeaderboardsCharactersResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.factionWarfare.getCharacterLeaderboards();
+const data: GetFwLeaderboardsCharactersResponse = await client.factionWarfare.getCharacterLeaderboards();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.factionWarfare.getCharacterLeaderboards();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetFwLeaderboardsCharactersData, GetFwLeaderboardsCharactersResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetFwLeaderboardsCharacters'> = {};
 
 const response = await client.callOperation('GetFwLeaderboardsCharacters', arguments_);
+const data: GetFwLeaderboardsCharactersResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetFwLeaderboardsCharacters', argum
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetFwLeaderboardsCharactersRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetFwLeaderboardsCharactersData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetFwLeaderboardsCharactersHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetFwLeaderboardsCharactersResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.factionWarfare.withMetadata().getCharacterLeaderboards(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetFwLeaderboardsCharactersStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetFwLeaderboardsCharactersResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

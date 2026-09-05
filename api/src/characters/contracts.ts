@@ -1,5 +1,5 @@
 import { createContractsClient } from '@evespace/esi-client/domains/contracts'
-import type { GetCharactersCharacterIdContractsOutput } from '@evespace/esi-client/schemas'
+import type { GetCharactersCharacterIdContractsResponse } from '@evespace/esi-client/types'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
 import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
@@ -10,7 +10,7 @@ import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 
 export const characterContractsScope = getCharacterEsiScope('character-contracts')
 
-type EsiCharacterContract = GetCharactersCharacterIdContractsOutput[number]
+type EsiCharacterContract = GetCharactersCharacterIdContractsResponse[number]
 
 interface CharacterContract {
   contractId: number

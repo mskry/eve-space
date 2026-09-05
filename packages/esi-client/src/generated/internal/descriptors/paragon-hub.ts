@@ -4,30 +4,50 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersParagonHubSkinrData,
+  GetCharactersParagonHubSkinrResponse,
+  GetParagonHubSkinrAlliancesData,
+  GetParagonHubSkinrAlliancesResponse,
+  GetParagonHubSkinrCharactersData,
+  GetParagonHubSkinrCharactersResponse,
+  GetParagonHubSkinrCorporationsData,
+  GetParagonHubSkinrCorporationsResponse,
+  GetParagonHubSkinrData,
+  GetParagonHubSkinrResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersParagonHubSkinrRequestSchema,
-  GetCharactersParagonHubSkinrStatus200SuccessResponseSchema,
-  GetParagonHubSkinrAlliancesRequestSchema,
-  GetParagonHubSkinrAlliancesStatus200SuccessResponseSchema,
-  GetParagonHubSkinrCharactersRequestSchema,
-  GetParagonHubSkinrCharactersStatus200SuccessResponseSchema,
-  GetParagonHubSkinrCorporationsRequestSchema,
-  GetParagonHubSkinrCorporationsStatus200SuccessResponseSchema,
-  GetParagonHubSkinrRequestSchema,
-  GetParagonHubSkinrStatus200SuccessResponseSchema,
-  type GetCharactersParagonHubSkinrInput,
-  type GetCharactersParagonHubSkinrOutput,
-  type GetParagonHubSkinrAlliancesInput,
-  type GetParagonHubSkinrAlliancesOutput,
-  type GetParagonHubSkinrCharactersInput,
-  type GetParagonHubSkinrCharactersOutput,
-  type GetParagonHubSkinrCorporationsInput,
-  type GetParagonHubSkinrCorporationsOutput,
-  type GetParagonHubSkinrInput,
-  type GetParagonHubSkinrOutput,
-} from '../../schemas/operations/paragon-hub.js';
+  zGetCharactersParagonHubSkinrHeaders,
+  zGetCharactersParagonHubSkinrPath,
+  zGetCharactersParagonHubSkinrQuery,
+  zGetCharactersParagonHubSkinrResponse,
+  zGetParagonHubSkinrAlliancesHeaders,
+  zGetParagonHubSkinrAlliancesPath,
+  zGetParagonHubSkinrAlliancesQuery,
+  zGetParagonHubSkinrAlliancesResponse,
+  zGetParagonHubSkinrCharactersHeaders,
+  zGetParagonHubSkinrCharactersPath,
+  zGetParagonHubSkinrCharactersQuery,
+  zGetParagonHubSkinrCharactersResponse,
+  zGetParagonHubSkinrCorporationsHeaders,
+  zGetParagonHubSkinrCorporationsPath,
+  zGetParagonHubSkinrCorporationsQuery,
+  zGetParagonHubSkinrCorporationsResponse,
+  zGetParagonHubSkinrHeaders,
+  zGetParagonHubSkinrQuery,
+  zGetParagonHubSkinrResponse,
+} from '../../zod.gen.js';
 
-export const GetParagonHubSkinrAlliancesDescriptor: OperationExecutionDescriptor<GetParagonHubSkinrAlliancesInput, GetParagonHubSkinrAlliancesOutput> = {
+export const GetParagonHubSkinrAlliancesRequestSchema: z.ZodType<OperationArguments<GetParagonHubSkinrAlliancesData>> = composeOperationRequestSchema<OperationArguments<GetParagonHubSkinrAlliancesData>>({
+  headers: { required: false, schema: zGetParagonHubSkinrAlliancesHeaders },
+  path: { required: true, schema: zGetParagonHubSkinrAlliancesPath },
+  query: { required: false, schema: zGetParagonHubSkinrAlliancesQuery },
+});
+
+export const GetParagonHubSkinrAlliancesDescriptor: OperationExecutionDescriptor<OperationArguments<GetParagonHubSkinrAlliancesData>, GetParagonHubSkinrAlliancesResponse> = {
   operationId: "GetParagonHubSkinrAlliances",
   method: "GET",
   path: "/paragon-hub/skinr/alliances/{alliance_id}",
@@ -44,12 +64,18 @@ export const GetParagonHubSkinrAlliancesDescriptor: OperationExecutionDescriptor
   requestSchema: GetParagonHubSkinrAlliancesRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetParagonHubSkinrAlliancesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetParagonHubSkinrAlliancesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetParagonHubSkinrCharactersDescriptor: OperationExecutionDescriptor<GetParagonHubSkinrCharactersInput, GetParagonHubSkinrCharactersOutput> = {
+export const GetParagonHubSkinrCharactersRequestSchema: z.ZodType<OperationArguments<GetParagonHubSkinrCharactersData>> = composeOperationRequestSchema<OperationArguments<GetParagonHubSkinrCharactersData>>({
+  headers: { required: false, schema: zGetParagonHubSkinrCharactersHeaders },
+  path: { required: true, schema: zGetParagonHubSkinrCharactersPath },
+  query: { required: false, schema: zGetParagonHubSkinrCharactersQuery },
+});
+
+export const GetParagonHubSkinrCharactersDescriptor: OperationExecutionDescriptor<OperationArguments<GetParagonHubSkinrCharactersData>, GetParagonHubSkinrCharactersResponse> = {
   operationId: "GetParagonHubSkinrCharacters",
   method: "GET",
   path: "/paragon-hub/skinr/characters/{character_id}",
@@ -66,12 +92,18 @@ export const GetParagonHubSkinrCharactersDescriptor: OperationExecutionDescripto
   requestSchema: GetParagonHubSkinrCharactersRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetParagonHubSkinrCharactersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetParagonHubSkinrCharactersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetParagonHubSkinrCorporationsDescriptor: OperationExecutionDescriptor<GetParagonHubSkinrCorporationsInput, GetParagonHubSkinrCorporationsOutput> = {
+export const GetParagonHubSkinrCorporationsRequestSchema: z.ZodType<OperationArguments<GetParagonHubSkinrCorporationsData>> = composeOperationRequestSchema<OperationArguments<GetParagonHubSkinrCorporationsData>>({
+  headers: { required: false, schema: zGetParagonHubSkinrCorporationsHeaders },
+  path: { required: true, schema: zGetParagonHubSkinrCorporationsPath },
+  query: { required: false, schema: zGetParagonHubSkinrCorporationsQuery },
+});
+
+export const GetParagonHubSkinrCorporationsDescriptor: OperationExecutionDescriptor<OperationArguments<GetParagonHubSkinrCorporationsData>, GetParagonHubSkinrCorporationsResponse> = {
   operationId: "GetParagonHubSkinrCorporations",
   method: "GET",
   path: "/paragon-hub/skinr/corporations/{corporation_id}",
@@ -88,12 +120,18 @@ export const GetParagonHubSkinrCorporationsDescriptor: OperationExecutionDescrip
   requestSchema: GetParagonHubSkinrCorporationsRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetParagonHubSkinrCorporationsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetParagonHubSkinrCorporationsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersParagonHubSkinrDescriptor: OperationExecutionDescriptor<GetCharactersParagonHubSkinrInput, GetCharactersParagonHubSkinrOutput> = {
+export const GetCharactersParagonHubSkinrRequestSchema: z.ZodType<OperationArguments<GetCharactersParagonHubSkinrData>> = composeOperationRequestSchema<OperationArguments<GetCharactersParagonHubSkinrData>>({
+  headers: { required: false, schema: zGetCharactersParagonHubSkinrHeaders },
+  path: { required: true, schema: zGetCharactersParagonHubSkinrPath },
+  query: { required: false, schema: zGetCharactersParagonHubSkinrQuery },
+});
+
+export const GetCharactersParagonHubSkinrDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersParagonHubSkinrData>, GetCharactersParagonHubSkinrResponse> = {
   operationId: "GetCharactersParagonHubSkinr",
   method: "GET",
   path: "/characters/{character_id}/paragon-hub/skinr",
@@ -110,12 +148,17 @@ export const GetCharactersParagonHubSkinrDescriptor: OperationExecutionDescripto
   requestSchema: GetCharactersParagonHubSkinrRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersParagonHubSkinrStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersParagonHubSkinrResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetParagonHubSkinrDescriptor: OperationExecutionDescriptor<GetParagonHubSkinrInput, GetParagonHubSkinrOutput> = {
+export const GetParagonHubSkinrRequestSchema: z.ZodType<OperationArguments<GetParagonHubSkinrData>> = composeOperationRequestSchema<OperationArguments<GetParagonHubSkinrData>>({
+  headers: { required: false, schema: zGetParagonHubSkinrHeaders },
+  query: { required: false, schema: zGetParagonHubSkinrQuery },
+});
+
+export const GetParagonHubSkinrDescriptor: OperationExecutionDescriptor<OperationArguments<GetParagonHubSkinrData>, GetParagonHubSkinrResponse> = {
   operationId: "GetParagonHubSkinr",
   method: "GET",
   path: "/paragon-hub/skinr",
@@ -131,7 +174,7 @@ export const GetParagonHubSkinrDescriptor: OperationExecutionDescriptor<GetParag
   requestSchema: GetParagonHubSkinrRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetParagonHubSkinrStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetParagonHubSkinrResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

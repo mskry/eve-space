@@ -12,6 +12,7 @@ import {
   validateDomainDeclarationSurface,
   validateDomainEntryIsolation,
   validatePackageBudgets,
+  validatePackedArtifactIntegrity,
   validatePackedPackageBoundary,
 } from './lib/package-inspection.ts';
 import type {
@@ -65,6 +66,7 @@ try {
     readonly dependencies?: Readonly<Record<string, string>>;
     readonly peerDependencies?: Readonly<Record<string, string>>;
   } = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'));
+  validatePackedArtifactIntegrity(analyzedFiles, packageJson);
   await installRuntimePackages(packageRoot, packageJson);
   const packedPaths = new Set(pack.files.map(({ path }: PackedFile) => path));
   const packageBoundary = validatePackedPackageBoundary(pack.files, packageJson);

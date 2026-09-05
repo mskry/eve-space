@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createStructuresClient } from '@evespace/esi-client/domains/structures';
+import type { GetCharactersStructuresMercenaryDensDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -13,4 +14,4 @@ const client = createStructuresClient({ token: accessToken });
 const characterId = 90000001;
 const mercenaryDenId = 1000000000001;
 
-const data = await client.getMercenaryDen(characterId, mercenaryDenId);
+const data: GetCharactersStructuresMercenaryDensDetailResponse = await client.getMercenaryDen(characterId, mercenaryDenId);

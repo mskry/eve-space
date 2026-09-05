@@ -4,130 +4,159 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetUniverseAncestriesData,
+  GetUniverseAncestriesResponse,
+  GetUniverseAsteroidBeltsAsteroidBeltIdData,
+  GetUniverseAsteroidBeltsAsteroidBeltIdResponse,
+  GetUniverseBloodlinesData,
+  GetUniverseBloodlinesResponse,
+  GetUniverseCategoriesCategoryIdData,
+  GetUniverseCategoriesCategoryIdResponse,
+  GetUniverseCategoriesData,
+  GetUniverseCategoriesResponse,
+  GetUniverseConstellationsConstellationIdData,
+  GetUniverseConstellationsConstellationIdResponse,
+  GetUniverseConstellationsData,
+  GetUniverseConstellationsResponse,
+  GetUniverseFactionsData,
+  GetUniverseFactionsResponse,
+  GetUniverseGraphicsData,
+  GetUniverseGraphicsGraphicIdData,
+  GetUniverseGraphicsGraphicIdResponse,
+  GetUniverseGraphicsResponse,
+  GetUniverseGroupsData,
+  GetUniverseGroupsGroupIdData,
+  GetUniverseGroupsGroupIdResponse,
+  GetUniverseGroupsResponse,
+  GetUniverseMoonsMoonIdData,
+  GetUniverseMoonsMoonIdResponse,
+  GetUniversePlanetsPlanetIdData,
+  GetUniversePlanetsPlanetIdResponse,
+  GetUniverseRacesData,
+  GetUniverseRacesResponse,
+  GetUniverseRegionsData,
+  GetUniverseRegionsRegionIdData,
+  GetUniverseRegionsRegionIdResponse,
+  GetUniverseRegionsResponse,
+  GetUniverseStargatesStargateIdData,
+  GetUniverseStargatesStargateIdResponse,
+  GetUniverseStarsStarIdData,
+  GetUniverseStarsStarIdResponse,
+  GetUniverseStationsStationIdData,
+  GetUniverseStationsStationIdResponse,
+  GetUniverseStructuresData,
+  GetUniverseStructuresResponse,
+  GetUniverseStructuresStructureIdData,
+  GetUniverseStructuresStructureIdResponse,
+  GetUniverseSystemJumpsData,
+  GetUniverseSystemJumpsResponse,
+  GetUniverseSystemKillsData,
+  GetUniverseSystemKillsResponse,
+  GetUniverseSystemsData,
+  GetUniverseSystemsResponse,
+  GetUniverseSystemsSystemIdData,
+  GetUniverseSystemsSystemIdResponse,
+  GetUniverseTypesData,
+  GetUniverseTypesResponse,
+  GetUniverseTypesTypeIdData,
+  GetUniverseTypesTypeIdResponse,
+  PostUniverseIdsData,
+  PostUniverseIdsResponse,
+  PostUniverseNamesData,
+  PostUniverseNamesResponse,
+} from '../../types.gen.js';
 import {
-  GetUniverseAncestriesRequestSchema,
-  GetUniverseAncestriesStatus200SuccessResponseSchema,
-  GetUniverseAsteroidBeltsAsteroidBeltIdRequestSchema,
-  GetUniverseAsteroidBeltsAsteroidBeltIdStatus200SuccessResponseSchema,
-  GetUniverseBloodlinesRequestSchema,
-  GetUniverseBloodlinesStatus200SuccessResponseSchema,
-  GetUniverseCategoriesCategoryIdRequestSchema,
-  GetUniverseCategoriesCategoryIdStatus200SuccessResponseSchema,
-  GetUniverseCategoriesRequestSchema,
-  GetUniverseCategoriesStatus200SuccessResponseSchema,
-  GetUniverseConstellationsConstellationIdRequestSchema,
-  GetUniverseConstellationsConstellationIdStatus200SuccessResponseSchema,
-  GetUniverseConstellationsRequestSchema,
-  GetUniverseConstellationsStatus200SuccessResponseSchema,
-  GetUniverseFactionsRequestSchema,
-  GetUniverseFactionsStatus200SuccessResponseSchema,
-  GetUniverseGraphicsGraphicIdRequestSchema,
-  GetUniverseGraphicsGraphicIdStatus200SuccessResponseSchema,
-  GetUniverseGraphicsRequestSchema,
-  GetUniverseGraphicsStatus200SuccessResponseSchema,
-  GetUniverseGroupsGroupIdRequestSchema,
-  GetUniverseGroupsGroupIdStatus200SuccessResponseSchema,
-  GetUniverseGroupsRequestSchema,
-  GetUniverseGroupsStatus200SuccessResponseSchema,
-  GetUniverseMoonsMoonIdRequestSchema,
-  GetUniverseMoonsMoonIdStatus200SuccessResponseSchema,
-  GetUniversePlanetsPlanetIdRequestSchema,
-  GetUniversePlanetsPlanetIdStatus200SuccessResponseSchema,
-  GetUniverseRacesRequestSchema,
-  GetUniverseRacesStatus200SuccessResponseSchema,
-  GetUniverseRegionsRegionIdRequestSchema,
-  GetUniverseRegionsRegionIdStatus200SuccessResponseSchema,
-  GetUniverseRegionsRequestSchema,
-  GetUniverseRegionsStatus200SuccessResponseSchema,
-  GetUniverseStargatesStargateIdRequestSchema,
-  GetUniverseStargatesStargateIdStatus200SuccessResponseSchema,
-  GetUniverseStarsStarIdRequestSchema,
-  GetUniverseStarsStarIdStatus200SuccessResponseSchema,
-  GetUniverseStationsStationIdRequestSchema,
-  GetUniverseStationsStationIdStatus200SuccessResponseSchema,
-  GetUniverseStructuresRequestSchema,
-  GetUniverseStructuresStatus200SuccessResponseSchema,
-  GetUniverseStructuresStructureIdRequestSchema,
-  GetUniverseStructuresStructureIdStatus200SuccessResponseSchema,
-  GetUniverseSystemJumpsRequestSchema,
-  GetUniverseSystemJumpsStatus200SuccessResponseSchema,
-  GetUniverseSystemKillsRequestSchema,
-  GetUniverseSystemKillsStatus200SuccessResponseSchema,
-  GetUniverseSystemsRequestSchema,
-  GetUniverseSystemsStatus200SuccessResponseSchema,
-  GetUniverseSystemsSystemIdRequestSchema,
-  GetUniverseSystemsSystemIdStatus200SuccessResponseSchema,
-  GetUniverseTypesRequestSchema,
-  GetUniverseTypesStatus200SuccessResponseSchema,
-  GetUniverseTypesTypeIdRequestSchema,
-  GetUniverseTypesTypeIdStatus200SuccessResponseSchema,
-  PostUniverseIdsRequestSchema,
-  PostUniverseIdsStatus200SuccessResponseSchema,
-  PostUniverseNamesRequestSchema,
-  PostUniverseNamesStatus200SuccessResponseSchema,
-  type GetUniverseAncestriesInput,
-  type GetUniverseAncestriesOutput,
-  type GetUniverseAsteroidBeltsAsteroidBeltIdInput,
-  type GetUniverseAsteroidBeltsAsteroidBeltIdOutput,
-  type GetUniverseBloodlinesInput,
-  type GetUniverseBloodlinesOutput,
-  type GetUniverseCategoriesCategoryIdInput,
-  type GetUniverseCategoriesCategoryIdOutput,
-  type GetUniverseCategoriesInput,
-  type GetUniverseCategoriesOutput,
-  type GetUniverseConstellationsConstellationIdInput,
-  type GetUniverseConstellationsConstellationIdOutput,
-  type GetUniverseConstellationsInput,
-  type GetUniverseConstellationsOutput,
-  type GetUniverseFactionsInput,
-  type GetUniverseFactionsOutput,
-  type GetUniverseGraphicsGraphicIdInput,
-  type GetUniverseGraphicsGraphicIdOutput,
-  type GetUniverseGraphicsInput,
-  type GetUniverseGraphicsOutput,
-  type GetUniverseGroupsGroupIdInput,
-  type GetUniverseGroupsGroupIdOutput,
-  type GetUniverseGroupsInput,
-  type GetUniverseGroupsOutput,
-  type GetUniverseMoonsMoonIdInput,
-  type GetUniverseMoonsMoonIdOutput,
-  type GetUniversePlanetsPlanetIdInput,
-  type GetUniversePlanetsPlanetIdOutput,
-  type GetUniverseRacesInput,
-  type GetUniverseRacesOutput,
-  type GetUniverseRegionsInput,
-  type GetUniverseRegionsOutput,
-  type GetUniverseRegionsRegionIdInput,
-  type GetUniverseRegionsRegionIdOutput,
-  type GetUniverseStargatesStargateIdInput,
-  type GetUniverseStargatesStargateIdOutput,
-  type GetUniverseStarsStarIdInput,
-  type GetUniverseStarsStarIdOutput,
-  type GetUniverseStationsStationIdInput,
-  type GetUniverseStationsStationIdOutput,
-  type GetUniverseStructuresInput,
-  type GetUniverseStructuresOutput,
-  type GetUniverseStructuresStructureIdInput,
-  type GetUniverseStructuresStructureIdOutput,
-  type GetUniverseSystemJumpsInput,
-  type GetUniverseSystemJumpsOutput,
-  type GetUniverseSystemKillsInput,
-  type GetUniverseSystemKillsOutput,
-  type GetUniverseSystemsInput,
-  type GetUniverseSystemsOutput,
-  type GetUniverseSystemsSystemIdInput,
-  type GetUniverseSystemsSystemIdOutput,
-  type GetUniverseTypesInput,
-  type GetUniverseTypesOutput,
-  type GetUniverseTypesTypeIdInput,
-  type GetUniverseTypesTypeIdOutput,
-  type PostUniverseIdsInput,
-  type PostUniverseIdsOutput,
-  type PostUniverseNamesInput,
-  type PostUniverseNamesOutput,
-} from '../../schemas/operations/universe.js';
+  zGetUniverseAncestriesHeaders,
+  zGetUniverseAncestriesResponse,
+  zGetUniverseAsteroidBeltsAsteroidBeltIdHeaders,
+  zGetUniverseAsteroidBeltsAsteroidBeltIdPath,
+  zGetUniverseAsteroidBeltsAsteroidBeltIdResponse,
+  zGetUniverseBloodlinesHeaders,
+  zGetUniverseBloodlinesResponse,
+  zGetUniverseCategoriesCategoryIdHeaders,
+  zGetUniverseCategoriesCategoryIdPath,
+  zGetUniverseCategoriesCategoryIdResponse,
+  zGetUniverseCategoriesHeaders,
+  zGetUniverseCategoriesResponse,
+  zGetUniverseConstellationsConstellationIdHeaders,
+  zGetUniverseConstellationsConstellationIdPath,
+  zGetUniverseConstellationsConstellationIdResponse,
+  zGetUniverseConstellationsHeaders,
+  zGetUniverseConstellationsResponse,
+  zGetUniverseFactionsHeaders,
+  zGetUniverseFactionsResponse,
+  zGetUniverseGraphicsGraphicIdHeaders,
+  zGetUniverseGraphicsGraphicIdPath,
+  zGetUniverseGraphicsGraphicIdResponse,
+  zGetUniverseGraphicsHeaders,
+  zGetUniverseGraphicsResponse,
+  zGetUniverseGroupsGroupIdHeaders,
+  zGetUniverseGroupsGroupIdPath,
+  zGetUniverseGroupsGroupIdResponse,
+  zGetUniverseGroupsHeaders,
+  zGetUniverseGroupsQuery,
+  zGetUniverseGroupsResponse,
+  zGetUniverseMoonsMoonIdHeaders,
+  zGetUniverseMoonsMoonIdPath,
+  zGetUniverseMoonsMoonIdResponse,
+  zGetUniversePlanetsPlanetIdHeaders,
+  zGetUniversePlanetsPlanetIdPath,
+  zGetUniversePlanetsPlanetIdResponse,
+  zGetUniverseRacesHeaders,
+  zGetUniverseRacesResponse,
+  zGetUniverseRegionsHeaders,
+  zGetUniverseRegionsRegionIdHeaders,
+  zGetUniverseRegionsRegionIdPath,
+  zGetUniverseRegionsRegionIdResponse,
+  zGetUniverseRegionsResponse,
+  zGetUniverseStargatesStargateIdHeaders,
+  zGetUniverseStargatesStargateIdPath,
+  zGetUniverseStargatesStargateIdResponse,
+  zGetUniverseStarsStarIdHeaders,
+  zGetUniverseStarsStarIdPath,
+  zGetUniverseStarsStarIdResponse,
+  zGetUniverseStationsStationIdHeaders,
+  zGetUniverseStationsStationIdPath,
+  zGetUniverseStationsStationIdResponse,
+  zGetUniverseStructuresHeaders,
+  zGetUniverseStructuresQuery,
+  zGetUniverseStructuresResponse,
+  zGetUniverseStructuresStructureIdHeaders,
+  zGetUniverseStructuresStructureIdPath,
+  zGetUniverseStructuresStructureIdResponse,
+  zGetUniverseSystemJumpsHeaders,
+  zGetUniverseSystemJumpsResponse,
+  zGetUniverseSystemKillsHeaders,
+  zGetUniverseSystemKillsResponse,
+  zGetUniverseSystemsHeaders,
+  zGetUniverseSystemsResponse,
+  zGetUniverseSystemsSystemIdHeaders,
+  zGetUniverseSystemsSystemIdPath,
+  zGetUniverseSystemsSystemIdResponse,
+  zGetUniverseTypesHeaders,
+  zGetUniverseTypesQuery,
+  zGetUniverseTypesResponse,
+  zGetUniverseTypesTypeIdHeaders,
+  zGetUniverseTypesTypeIdPath,
+  zGetUniverseTypesTypeIdResponse,
+  zPostUniverseIdsBody,
+  zPostUniverseIdsHeaders,
+  zPostUniverseIdsResponse,
+  zPostUniverseNamesBody,
+  zPostUniverseNamesHeaders,
+  zPostUniverseNamesResponse,
+} from '../../zod.gen.js';
 
-export const GetUniverseAsteroidBeltsAsteroidBeltIdDescriptor: OperationExecutionDescriptor<GetUniverseAsteroidBeltsAsteroidBeltIdInput, GetUniverseAsteroidBeltsAsteroidBeltIdOutput> = {
+export const GetUniverseAsteroidBeltsAsteroidBeltIdRequestSchema: z.ZodType<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>>({
+  headers: { required: false, schema: zGetUniverseAsteroidBeltsAsteroidBeltIdHeaders },
+  path: { required: true, schema: zGetUniverseAsteroidBeltsAsteroidBeltIdPath },
+});
+
+export const GetUniverseAsteroidBeltsAsteroidBeltIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>, GetUniverseAsteroidBeltsAsteroidBeltIdResponse> = {
   operationId: "GetUniverseAsteroidBeltsAsteroidBeltId",
   method: "GET",
   path: "/universe/asteroid_belts/{asteroid_belt_id}",
@@ -141,12 +170,17 @@ export const GetUniverseAsteroidBeltsAsteroidBeltIdDescriptor: OperationExecutio
   requestSchema: GetUniverseAsteroidBeltsAsteroidBeltIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseAsteroidBeltsAsteroidBeltIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseAsteroidBeltsAsteroidBeltIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseConstellationsConstellationIdDescriptor: OperationExecutionDescriptor<GetUniverseConstellationsConstellationIdInput, GetUniverseConstellationsConstellationIdOutput> = {
+export const GetUniverseConstellationsConstellationIdRequestSchema: z.ZodType<OperationArguments<GetUniverseConstellationsConstellationIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseConstellationsConstellationIdData>>({
+  headers: { required: false, schema: zGetUniverseConstellationsConstellationIdHeaders },
+  path: { required: true, schema: zGetUniverseConstellationsConstellationIdPath },
+});
+
+export const GetUniverseConstellationsConstellationIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseConstellationsConstellationIdData>, GetUniverseConstellationsConstellationIdResponse> = {
   operationId: "GetUniverseConstellationsConstellationId",
   method: "GET",
   path: "/universe/constellations/{constellation_id}",
@@ -160,12 +194,17 @@ export const GetUniverseConstellationsConstellationIdDescriptor: OperationExecut
   requestSchema: GetUniverseConstellationsConstellationIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseConstellationsConstellationIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseConstellationsConstellationIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseGraphicsGraphicIdDescriptor: OperationExecutionDescriptor<GetUniverseGraphicsGraphicIdInput, GetUniverseGraphicsGraphicIdOutput> = {
+export const GetUniverseGraphicsGraphicIdRequestSchema: z.ZodType<OperationArguments<GetUniverseGraphicsGraphicIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseGraphicsGraphicIdData>>({
+  headers: { required: false, schema: zGetUniverseGraphicsGraphicIdHeaders },
+  path: { required: true, schema: zGetUniverseGraphicsGraphicIdPath },
+});
+
+export const GetUniverseGraphicsGraphicIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseGraphicsGraphicIdData>, GetUniverseGraphicsGraphicIdResponse> = {
   operationId: "GetUniverseGraphicsGraphicId",
   method: "GET",
   path: "/universe/graphics/{graphic_id}",
@@ -179,12 +218,17 @@ export const GetUniverseGraphicsGraphicIdDescriptor: OperationExecutionDescripto
   requestSchema: GetUniverseGraphicsGraphicIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseGraphicsGraphicIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseGraphicsGraphicIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseCategoriesCategoryIdDescriptor: OperationExecutionDescriptor<GetUniverseCategoriesCategoryIdInput, GetUniverseCategoriesCategoryIdOutput> = {
+export const GetUniverseCategoriesCategoryIdRequestSchema: z.ZodType<OperationArguments<GetUniverseCategoriesCategoryIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseCategoriesCategoryIdData>>({
+  headers: { required: false, schema: zGetUniverseCategoriesCategoryIdHeaders },
+  path: { required: true, schema: zGetUniverseCategoriesCategoryIdPath },
+});
+
+export const GetUniverseCategoriesCategoryIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseCategoriesCategoryIdData>, GetUniverseCategoriesCategoryIdResponse> = {
   operationId: "GetUniverseCategoriesCategoryId",
   method: "GET",
   path: "/universe/categories/{category_id}",
@@ -198,12 +242,17 @@ export const GetUniverseCategoriesCategoryIdDescriptor: OperationExecutionDescri
   requestSchema: GetUniverseCategoriesCategoryIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseCategoriesCategoryIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseCategoriesCategoryIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseGroupsGroupIdDescriptor: OperationExecutionDescriptor<GetUniverseGroupsGroupIdInput, GetUniverseGroupsGroupIdOutput> = {
+export const GetUniverseGroupsGroupIdRequestSchema: z.ZodType<OperationArguments<GetUniverseGroupsGroupIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseGroupsGroupIdData>>({
+  headers: { required: false, schema: zGetUniverseGroupsGroupIdHeaders },
+  path: { required: true, schema: zGetUniverseGroupsGroupIdPath },
+});
+
+export const GetUniverseGroupsGroupIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseGroupsGroupIdData>, GetUniverseGroupsGroupIdResponse> = {
   operationId: "GetUniverseGroupsGroupId",
   method: "GET",
   path: "/universe/groups/{group_id}",
@@ -217,12 +266,17 @@ export const GetUniverseGroupsGroupIdDescriptor: OperationExecutionDescriptor<Ge
   requestSchema: GetUniverseGroupsGroupIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseGroupsGroupIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseGroupsGroupIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseMoonsMoonIdDescriptor: OperationExecutionDescriptor<GetUniverseMoonsMoonIdInput, GetUniverseMoonsMoonIdOutput> = {
+export const GetUniverseMoonsMoonIdRequestSchema: z.ZodType<OperationArguments<GetUniverseMoonsMoonIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseMoonsMoonIdData>>({
+  headers: { required: false, schema: zGetUniverseMoonsMoonIdHeaders },
+  path: { required: true, schema: zGetUniverseMoonsMoonIdPath },
+});
+
+export const GetUniverseMoonsMoonIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseMoonsMoonIdData>, GetUniverseMoonsMoonIdResponse> = {
   operationId: "GetUniverseMoonsMoonId",
   method: "GET",
   path: "/universe/moons/{moon_id}",
@@ -236,12 +290,17 @@ export const GetUniverseMoonsMoonIdDescriptor: OperationExecutionDescriptor<GetU
   requestSchema: GetUniverseMoonsMoonIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseMoonsMoonIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseMoonsMoonIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniversePlanetsPlanetIdDescriptor: OperationExecutionDescriptor<GetUniversePlanetsPlanetIdInput, GetUniversePlanetsPlanetIdOutput> = {
+export const GetUniversePlanetsPlanetIdRequestSchema: z.ZodType<OperationArguments<GetUniversePlanetsPlanetIdData>> = composeOperationRequestSchema<OperationArguments<GetUniversePlanetsPlanetIdData>>({
+  headers: { required: false, schema: zGetUniversePlanetsPlanetIdHeaders },
+  path: { required: true, schema: zGetUniversePlanetsPlanetIdPath },
+});
+
+export const GetUniversePlanetsPlanetIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniversePlanetsPlanetIdData>, GetUniversePlanetsPlanetIdResponse> = {
   operationId: "GetUniversePlanetsPlanetId",
   method: "GET",
   path: "/universe/planets/{planet_id}",
@@ -255,12 +314,17 @@ export const GetUniversePlanetsPlanetIdDescriptor: OperationExecutionDescriptor<
   requestSchema: GetUniversePlanetsPlanetIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniversePlanetsPlanetIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniversePlanetsPlanetIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseRegionsRegionIdDescriptor: OperationExecutionDescriptor<GetUniverseRegionsRegionIdInput, GetUniverseRegionsRegionIdOutput> = {
+export const GetUniverseRegionsRegionIdRequestSchema: z.ZodType<OperationArguments<GetUniverseRegionsRegionIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseRegionsRegionIdData>>({
+  headers: { required: false, schema: zGetUniverseRegionsRegionIdHeaders },
+  path: { required: true, schema: zGetUniverseRegionsRegionIdPath },
+});
+
+export const GetUniverseRegionsRegionIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseRegionsRegionIdData>, GetUniverseRegionsRegionIdResponse> = {
   operationId: "GetUniverseRegionsRegionId",
   method: "GET",
   path: "/universe/regions/{region_id}",
@@ -274,12 +338,17 @@ export const GetUniverseRegionsRegionIdDescriptor: OperationExecutionDescriptor<
   requestSchema: GetUniverseRegionsRegionIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseRegionsRegionIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseRegionsRegionIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseSystemsSystemIdDescriptor: OperationExecutionDescriptor<GetUniverseSystemsSystemIdInput, GetUniverseSystemsSystemIdOutput> = {
+export const GetUniverseSystemsSystemIdRequestSchema: z.ZodType<OperationArguments<GetUniverseSystemsSystemIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseSystemsSystemIdData>>({
+  headers: { required: false, schema: zGetUniverseSystemsSystemIdHeaders },
+  path: { required: true, schema: zGetUniverseSystemsSystemIdPath },
+});
+
+export const GetUniverseSystemsSystemIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseSystemsSystemIdData>, GetUniverseSystemsSystemIdResponse> = {
   operationId: "GetUniverseSystemsSystemId",
   method: "GET",
   path: "/universe/systems/{system_id}",
@@ -293,12 +362,17 @@ export const GetUniverseSystemsSystemIdDescriptor: OperationExecutionDescriptor<
   requestSchema: GetUniverseSystemsSystemIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseSystemsSystemIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseSystemsSystemIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseStarsStarIdDescriptor: OperationExecutionDescriptor<GetUniverseStarsStarIdInput, GetUniverseStarsStarIdOutput> = {
+export const GetUniverseStarsStarIdRequestSchema: z.ZodType<OperationArguments<GetUniverseStarsStarIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseStarsStarIdData>>({
+  headers: { required: false, schema: zGetUniverseStarsStarIdHeaders },
+  path: { required: true, schema: zGetUniverseStarsStarIdPath },
+});
+
+export const GetUniverseStarsStarIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseStarsStarIdData>, GetUniverseStarsStarIdResponse> = {
   operationId: "GetUniverseStarsStarId",
   method: "GET",
   path: "/universe/stars/{star_id}",
@@ -312,12 +386,17 @@ export const GetUniverseStarsStarIdDescriptor: OperationExecutionDescriptor<GetU
   requestSchema: GetUniverseStarsStarIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseStarsStarIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseStarsStarIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseStargatesStargateIdDescriptor: OperationExecutionDescriptor<GetUniverseStargatesStargateIdInput, GetUniverseStargatesStargateIdOutput> = {
+export const GetUniverseStargatesStargateIdRequestSchema: z.ZodType<OperationArguments<GetUniverseStargatesStargateIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseStargatesStargateIdData>>({
+  headers: { required: false, schema: zGetUniverseStargatesStargateIdHeaders },
+  path: { required: true, schema: zGetUniverseStargatesStargateIdPath },
+});
+
+export const GetUniverseStargatesStargateIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseStargatesStargateIdData>, GetUniverseStargatesStargateIdResponse> = {
   operationId: "GetUniverseStargatesStargateId",
   method: "GET",
   path: "/universe/stargates/{stargate_id}",
@@ -331,12 +410,17 @@ export const GetUniverseStargatesStargateIdDescriptor: OperationExecutionDescrip
   requestSchema: GetUniverseStargatesStargateIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseStargatesStargateIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseStargatesStargateIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseStationsStationIdDescriptor: OperationExecutionDescriptor<GetUniverseStationsStationIdInput, GetUniverseStationsStationIdOutput> = {
+export const GetUniverseStationsStationIdRequestSchema: z.ZodType<OperationArguments<GetUniverseStationsStationIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseStationsStationIdData>>({
+  headers: { required: false, schema: zGetUniverseStationsStationIdHeaders },
+  path: { required: true, schema: zGetUniverseStationsStationIdPath },
+});
+
+export const GetUniverseStationsStationIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseStationsStationIdData>, GetUniverseStationsStationIdResponse> = {
   operationId: "GetUniverseStationsStationId",
   method: "GET",
   path: "/universe/stations/{station_id}",
@@ -350,12 +434,17 @@ export const GetUniverseStationsStationIdDescriptor: OperationExecutionDescripto
   requestSchema: GetUniverseStationsStationIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseStationsStationIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseStationsStationIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseStructuresStructureIdDescriptor: OperationExecutionDescriptor<GetUniverseStructuresStructureIdInput, GetUniverseStructuresStructureIdOutput> = {
+export const GetUniverseStructuresStructureIdRequestSchema: z.ZodType<OperationArguments<GetUniverseStructuresStructureIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseStructuresStructureIdData>>({
+  headers: { required: false, schema: zGetUniverseStructuresStructureIdHeaders },
+  path: { required: true, schema: zGetUniverseStructuresStructureIdPath },
+});
+
+export const GetUniverseStructuresStructureIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseStructuresStructureIdData>, GetUniverseStructuresStructureIdResponse> = {
   operationId: "GetUniverseStructuresStructureId",
   method: "GET",
   path: "/universe/structures/{structure_id}",
@@ -369,12 +458,17 @@ export const GetUniverseStructuresStructureIdDescriptor: OperationExecutionDescr
   requestSchema: GetUniverseStructuresStructureIdRequestSchema,
   authentication: { scopes: ["esi-universe.read_structures.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseStructuresStructureIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseStructuresStructureIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseTypesTypeIdDescriptor: OperationExecutionDescriptor<GetUniverseTypesTypeIdInput, GetUniverseTypesTypeIdOutput> = {
+export const GetUniverseTypesTypeIdRequestSchema: z.ZodType<OperationArguments<GetUniverseTypesTypeIdData>> = composeOperationRequestSchema<OperationArguments<GetUniverseTypesTypeIdData>>({
+  headers: { required: false, schema: zGetUniverseTypesTypeIdHeaders },
+  path: { required: true, schema: zGetUniverseTypesTypeIdPath },
+});
+
+export const GetUniverseTypesTypeIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseTypesTypeIdData>, GetUniverseTypesTypeIdResponse> = {
   operationId: "GetUniverseTypesTypeId",
   method: "GET",
   path: "/universe/types/{type_id}",
@@ -388,12 +482,16 @@ export const GetUniverseTypesTypeIdDescriptor: OperationExecutionDescriptor<GetU
   requestSchema: GetUniverseTypesTypeIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseTypesTypeIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseTypesTypeIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseAncestriesDescriptor: OperationExecutionDescriptor<GetUniverseAncestriesInput, GetUniverseAncestriesOutput> = {
+export const GetUniverseAncestriesRequestSchema: z.ZodType<OperationArguments<GetUniverseAncestriesData>> = composeOperationRequestSchema<OperationArguments<GetUniverseAncestriesData>>({
+  headers: { required: false, schema: zGetUniverseAncestriesHeaders },
+});
+
+export const GetUniverseAncestriesDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseAncestriesData>, GetUniverseAncestriesResponse> = {
   operationId: "GetUniverseAncestries",
   method: "GET",
   path: "/universe/ancestries",
@@ -406,12 +504,16 @@ export const GetUniverseAncestriesDescriptor: OperationExecutionDescriptor<GetUn
   requestSchema: GetUniverseAncestriesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseAncestriesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseAncestriesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseBloodlinesDescriptor: OperationExecutionDescriptor<GetUniverseBloodlinesInput, GetUniverseBloodlinesOutput> = {
+export const GetUniverseBloodlinesRequestSchema: z.ZodType<OperationArguments<GetUniverseBloodlinesData>> = composeOperationRequestSchema<OperationArguments<GetUniverseBloodlinesData>>({
+  headers: { required: false, schema: zGetUniverseBloodlinesHeaders },
+});
+
+export const GetUniverseBloodlinesDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseBloodlinesData>, GetUniverseBloodlinesResponse> = {
   operationId: "GetUniverseBloodlines",
   method: "GET",
   path: "/universe/bloodlines",
@@ -424,12 +526,16 @@ export const GetUniverseBloodlinesDescriptor: OperationExecutionDescriptor<GetUn
   requestSchema: GetUniverseBloodlinesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseBloodlinesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseBloodlinesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseConstellationsDescriptor: OperationExecutionDescriptor<GetUniverseConstellationsInput, GetUniverseConstellationsOutput> = {
+export const GetUniverseConstellationsRequestSchema: z.ZodType<OperationArguments<GetUniverseConstellationsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseConstellationsData>>({
+  headers: { required: false, schema: zGetUniverseConstellationsHeaders },
+});
+
+export const GetUniverseConstellationsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseConstellationsData>, GetUniverseConstellationsResponse> = {
   operationId: "GetUniverseConstellations",
   method: "GET",
   path: "/universe/constellations",
@@ -442,12 +548,16 @@ export const GetUniverseConstellationsDescriptor: OperationExecutionDescriptor<G
   requestSchema: GetUniverseConstellationsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseConstellationsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseConstellationsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseFactionsDescriptor: OperationExecutionDescriptor<GetUniverseFactionsInput, GetUniverseFactionsOutput> = {
+export const GetUniverseFactionsRequestSchema: z.ZodType<OperationArguments<GetUniverseFactionsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseFactionsData>>({
+  headers: { required: false, schema: zGetUniverseFactionsHeaders },
+});
+
+export const GetUniverseFactionsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseFactionsData>, GetUniverseFactionsResponse> = {
   operationId: "GetUniverseFactions",
   method: "GET",
   path: "/universe/factions",
@@ -460,12 +570,16 @@ export const GetUniverseFactionsDescriptor: OperationExecutionDescriptor<GetUniv
   requestSchema: GetUniverseFactionsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseFactionsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseFactionsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseGraphicsDescriptor: OperationExecutionDescriptor<GetUniverseGraphicsInput, GetUniverseGraphicsOutput> = {
+export const GetUniverseGraphicsRequestSchema: z.ZodType<OperationArguments<GetUniverseGraphicsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseGraphicsData>>({
+  headers: { required: false, schema: zGetUniverseGraphicsHeaders },
+});
+
+export const GetUniverseGraphicsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseGraphicsData>, GetUniverseGraphicsResponse> = {
   operationId: "GetUniverseGraphics",
   method: "GET",
   path: "/universe/graphics",
@@ -478,12 +592,16 @@ export const GetUniverseGraphicsDescriptor: OperationExecutionDescriptor<GetUniv
   requestSchema: GetUniverseGraphicsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseGraphicsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseGraphicsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseCategoriesDescriptor: OperationExecutionDescriptor<GetUniverseCategoriesInput, GetUniverseCategoriesOutput> = {
+export const GetUniverseCategoriesRequestSchema: z.ZodType<OperationArguments<GetUniverseCategoriesData>> = composeOperationRequestSchema<OperationArguments<GetUniverseCategoriesData>>({
+  headers: { required: false, schema: zGetUniverseCategoriesHeaders },
+});
+
+export const GetUniverseCategoriesDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseCategoriesData>, GetUniverseCategoriesResponse> = {
   operationId: "GetUniverseCategories",
   method: "GET",
   path: "/universe/categories",
@@ -496,12 +614,17 @@ export const GetUniverseCategoriesDescriptor: OperationExecutionDescriptor<GetUn
   requestSchema: GetUniverseCategoriesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseCategoriesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseCategoriesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseGroupsDescriptor: OperationExecutionDescriptor<GetUniverseGroupsInput, GetUniverseGroupsOutput> = {
+export const GetUniverseGroupsRequestSchema: z.ZodType<OperationArguments<GetUniverseGroupsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseGroupsData>>({
+  headers: { required: false, schema: zGetUniverseGroupsHeaders },
+  query: { required: false, schema: zGetUniverseGroupsQuery },
+});
+
+export const GetUniverseGroupsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseGroupsData>, GetUniverseGroupsResponse> = {
   operationId: "GetUniverseGroups",
   method: "GET",
   path: "/universe/groups",
@@ -515,12 +638,17 @@ export const GetUniverseGroupsDescriptor: OperationExecutionDescriptor<GetUniver
   requestSchema: GetUniverseGroupsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseGroupsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseGroupsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseStructuresDescriptor: OperationExecutionDescriptor<GetUniverseStructuresInput, GetUniverseStructuresOutput> = {
+export const GetUniverseStructuresRequestSchema: z.ZodType<OperationArguments<GetUniverseStructuresData>> = composeOperationRequestSchema<OperationArguments<GetUniverseStructuresData>>({
+  headers: { required: false, schema: zGetUniverseStructuresHeaders },
+  query: { required: false, schema: zGetUniverseStructuresQuery },
+});
+
+export const GetUniverseStructuresDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseStructuresData>, GetUniverseStructuresResponse> = {
   operationId: "GetUniverseStructures",
   method: "GET",
   path: "/universe/structures",
@@ -534,12 +662,16 @@ export const GetUniverseStructuresDescriptor: OperationExecutionDescriptor<GetUn
   requestSchema: GetUniverseStructuresRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseStructuresStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseStructuresResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseRacesDescriptor: OperationExecutionDescriptor<GetUniverseRacesInput, GetUniverseRacesOutput> = {
+export const GetUniverseRacesRequestSchema: z.ZodType<OperationArguments<GetUniverseRacesData>> = composeOperationRequestSchema<OperationArguments<GetUniverseRacesData>>({
+  headers: { required: false, schema: zGetUniverseRacesHeaders },
+});
+
+export const GetUniverseRacesDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseRacesData>, GetUniverseRacesResponse> = {
   operationId: "GetUniverseRaces",
   method: "GET",
   path: "/universe/races",
@@ -552,12 +684,16 @@ export const GetUniverseRacesDescriptor: OperationExecutionDescriptor<GetUnivers
   requestSchema: GetUniverseRacesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseRacesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseRacesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseRegionsDescriptor: OperationExecutionDescriptor<GetUniverseRegionsInput, GetUniverseRegionsOutput> = {
+export const GetUniverseRegionsRequestSchema: z.ZodType<OperationArguments<GetUniverseRegionsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseRegionsData>>({
+  headers: { required: false, schema: zGetUniverseRegionsHeaders },
+});
+
+export const GetUniverseRegionsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseRegionsData>, GetUniverseRegionsResponse> = {
   operationId: "GetUniverseRegions",
   method: "GET",
   path: "/universe/regions",
@@ -570,12 +706,16 @@ export const GetUniverseRegionsDescriptor: OperationExecutionDescriptor<GetUnive
   requestSchema: GetUniverseRegionsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseRegionsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseRegionsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseSystemsDescriptor: OperationExecutionDescriptor<GetUniverseSystemsInput, GetUniverseSystemsOutput> = {
+export const GetUniverseSystemsRequestSchema: z.ZodType<OperationArguments<GetUniverseSystemsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseSystemsData>>({
+  headers: { required: false, schema: zGetUniverseSystemsHeaders },
+});
+
+export const GetUniverseSystemsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseSystemsData>, GetUniverseSystemsResponse> = {
   operationId: "GetUniverseSystems",
   method: "GET",
   path: "/universe/systems",
@@ -588,12 +728,16 @@ export const GetUniverseSystemsDescriptor: OperationExecutionDescriptor<GetUnive
   requestSchema: GetUniverseSystemsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseSystemsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseSystemsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseSystemJumpsDescriptor: OperationExecutionDescriptor<GetUniverseSystemJumpsInput, GetUniverseSystemJumpsOutput> = {
+export const GetUniverseSystemJumpsRequestSchema: z.ZodType<OperationArguments<GetUniverseSystemJumpsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseSystemJumpsData>>({
+  headers: { required: false, schema: zGetUniverseSystemJumpsHeaders },
+});
+
+export const GetUniverseSystemJumpsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseSystemJumpsData>, GetUniverseSystemJumpsResponse> = {
   operationId: "GetUniverseSystemJumps",
   method: "GET",
   path: "/universe/system_jumps",
@@ -606,12 +750,16 @@ export const GetUniverseSystemJumpsDescriptor: OperationExecutionDescriptor<GetU
   requestSchema: GetUniverseSystemJumpsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseSystemJumpsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseSystemJumpsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseSystemKillsDescriptor: OperationExecutionDescriptor<GetUniverseSystemKillsInput, GetUniverseSystemKillsOutput> = {
+export const GetUniverseSystemKillsRequestSchema: z.ZodType<OperationArguments<GetUniverseSystemKillsData>> = composeOperationRequestSchema<OperationArguments<GetUniverseSystemKillsData>>({
+  headers: { required: false, schema: zGetUniverseSystemKillsHeaders },
+});
+
+export const GetUniverseSystemKillsDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseSystemKillsData>, GetUniverseSystemKillsResponse> = {
   operationId: "GetUniverseSystemKills",
   method: "GET",
   path: "/universe/system_kills",
@@ -624,12 +772,17 @@ export const GetUniverseSystemKillsDescriptor: OperationExecutionDescriptor<GetU
   requestSchema: GetUniverseSystemKillsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseSystemKillsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseSystemKillsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetUniverseTypesDescriptor: OperationExecutionDescriptor<GetUniverseTypesInput, GetUniverseTypesOutput> = {
+export const GetUniverseTypesRequestSchema: z.ZodType<OperationArguments<GetUniverseTypesData>> = composeOperationRequestSchema<OperationArguments<GetUniverseTypesData>>({
+  headers: { required: false, schema: zGetUniverseTypesHeaders },
+  query: { required: false, schema: zGetUniverseTypesQuery },
+});
+
+export const GetUniverseTypesDescriptor: OperationExecutionDescriptor<OperationArguments<GetUniverseTypesData>, GetUniverseTypesResponse> = {
   operationId: "GetUniverseTypes",
   method: "GET",
   path: "/universe/types",
@@ -643,12 +796,17 @@ export const GetUniverseTypesDescriptor: OperationExecutionDescriptor<GetUnivers
   requestSchema: GetUniverseTypesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetUniverseTypesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetUniverseTypesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostUniverseIdsDescriptor: OperationExecutionDescriptor<PostUniverseIdsInput, PostUniverseIdsOutput> = {
+export const PostUniverseIdsRequestSchema: z.ZodType<OperationArguments<PostUniverseIdsData>> = composeOperationRequestSchema<OperationArguments<PostUniverseIdsData>>({
+  headers: { required: false, schema: zPostUniverseIdsHeaders },
+  body: { required: true, schema: zPostUniverseIdsBody },
+});
+
+export const PostUniverseIdsDescriptor: OperationExecutionDescriptor<OperationArguments<PostUniverseIdsData>, PostUniverseIdsResponse> = {
   operationId: "PostUniverseIds",
   method: "POST",
   path: "/universe/ids",
@@ -661,12 +819,17 @@ export const PostUniverseIdsDescriptor: OperationExecutionDescriptor<PostUnivers
   requestSchema: PostUniverseIdsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: PostUniverseIdsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostUniverseIdsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostUniverseNamesDescriptor: OperationExecutionDescriptor<PostUniverseNamesInput, PostUniverseNamesOutput> = {
+export const PostUniverseNamesRequestSchema: z.ZodType<OperationArguments<PostUniverseNamesData>> = composeOperationRequestSchema<OperationArguments<PostUniverseNamesData>>({
+  headers: { required: false, schema: zPostUniverseNamesHeaders },
+  body: { required: true, schema: zPostUniverseNamesBody },
+});
+
+export const PostUniverseNamesDescriptor: OperationExecutionDescriptor<OperationArguments<PostUniverseNamesData>, PostUniverseNamesResponse> = {
   operationId: "PostUniverseNames",
   method: "POST",
   path: "/universe/names",
@@ -679,7 +842,7 @@ export const PostUniverseNamesDescriptor: OperationExecutionDescriptor<PostUnive
   requestSchema: PostUniverseNamesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: PostUniverseNamesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostUniverseNamesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

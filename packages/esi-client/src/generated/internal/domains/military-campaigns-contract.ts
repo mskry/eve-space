@@ -4,95 +4,96 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersMilitaryCampaignsObjectivesListingInput,
-  GetCharactersMilitaryCampaignsObjectivesListingOutput,
-  GetCharactersMilitaryCampaignsObjectivesParticipationInput,
-  GetCharactersMilitaryCampaignsObjectivesParticipationOutput,
-  GetMilitaryCampaignsDetailInput,
-  GetMilitaryCampaignsDetailOutput,
-  GetMilitaryCampaignsListingInput,
-  GetMilitaryCampaignsListingOutput,
-  GetMilitaryCampaignsObjectivesDetailInput,
-  GetMilitaryCampaignsObjectivesDetailOutput,
-  GetMilitaryCampaignsObjectivesListingInput,
-  GetMilitaryCampaignsObjectivesListingOutput,
-} from '../../schemas/operations/military-campaigns.js';
+  GetCharactersMilitaryCampaignsObjectivesListingData,
+  GetCharactersMilitaryCampaignsObjectivesListingResponse,
+  GetCharactersMilitaryCampaignsObjectivesParticipationData,
+  GetCharactersMilitaryCampaignsObjectivesParticipationResponse,
+  GetMilitaryCampaignsDetailData,
+  GetMilitaryCampaignsDetailResponse,
+  GetMilitaryCampaignsListingData,
+  GetMilitaryCampaignsListingResponse,
+  GetMilitaryCampaignsObjectivesDetailData,
+  GetMilitaryCampaignsObjectivesDetailResponse,
+  GetMilitaryCampaignsObjectivesListingData,
+  GetMilitaryCampaignsObjectivesListingResponse,
+} from '../../types.gen.js';
 
 export interface GetMilitaryCampaignsDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMilitaryCampaignsDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMilitaryCampaignsDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMilitaryCampaignsDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersMilitaryCampaignsObjectivesParticipationOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesParticipationInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesParticipationInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesParticipationInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMilitaryCampaignsObjectivesDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMilitaryCampaignsObjectivesDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMilitaryCampaignsObjectivesDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMilitaryCampaignsObjectivesDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMilitaryCampaignsListingOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMilitaryCampaignsListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMilitaryCampaignsListingInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMilitaryCampaignsListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsListingData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsListingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersMilitaryCampaignsObjectivesListingOptions {
-  readonly "after"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMilitaryCampaignsObjectivesListingOptions {
-  readonly "after"?: NonNullable<GetMilitaryCampaignsObjectivesListingInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetMilitaryCampaignsObjectivesListingInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMilitaryCampaignsObjectivesListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMilitaryCampaignsObjectivesListingInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetMilitaryCampaignsObjectivesListingInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetMilitaryCampaignsObjectivesListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>["headers"]>["X-Tenant"];
 }
 
 export interface MilitaryCampaignsDomainClient {
-  getCampaign(campaignId: NonNullable<GetMilitaryCampaignsDetailInput['path']>["campaign_id"], options?: GetMilitaryCampaignsDetailOptions): Promise<GetMilitaryCampaignsDetailOutput>;
+  getCampaign(campaignId: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>['path']>["campaign_id"], options?: GetMilitaryCampaignsDetailOptions): Promise<GetMilitaryCampaignsDetailResponse>;
 
-  getCharacterObjectiveParticipation(characterId: NonNullable<GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']>["character_id"], objectiveId: NonNullable<GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']>["objective_id"], options?: GetCharactersMilitaryCampaignsObjectivesParticipationOptions): Promise<GetCharactersMilitaryCampaignsObjectivesParticipationOutput>;
+  getCharacterObjectiveParticipation(characterId: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']>["character_id"], objectiveId: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']>["objective_id"], options?: GetCharactersMilitaryCampaignsObjectivesParticipationOptions): Promise<GetCharactersMilitaryCampaignsObjectivesParticipationResponse>;
 
-  getObjective(campaignId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>["campaign_id"], objectiveId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>["objective_id"], options?: GetMilitaryCampaignsObjectivesDetailOptions): Promise<GetMilitaryCampaignsObjectivesDetailOutput>;
+  getObjective(campaignId: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']>["campaign_id"], objectiveId: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']>["objective_id"], options?: GetMilitaryCampaignsObjectivesDetailOptions): Promise<GetMilitaryCampaignsObjectivesDetailResponse>;
 
-  listCampaigns(options?: GetMilitaryCampaignsListingOptions): Promise<GetMilitaryCampaignsListingOutput>;
+  listCampaigns(options?: GetMilitaryCampaignsListingOptions): Promise<GetMilitaryCampaignsListingResponse>;
 
-  listCharacterObjectiveParticipations(characterId: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput['path']>["character_id"], options?: GetCharactersMilitaryCampaignsObjectivesListingOptions): Promise<GetCharactersMilitaryCampaignsObjectivesListingOutput>;
+  listCharacterObjectiveParticipations(characterId: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['path']>["character_id"], options?: GetCharactersMilitaryCampaignsObjectivesListingOptions): Promise<GetCharactersMilitaryCampaignsObjectivesListingResponse>;
 
-  listObjectives(campaignId: NonNullable<GetMilitaryCampaignsObjectivesListingInput['path']>["campaign_id"], options?: GetMilitaryCampaignsObjectivesListingOptions): Promise<GetMilitaryCampaignsObjectivesListingOutput>;
+  listObjectives(campaignId: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>['path']>["campaign_id"], options?: GetMilitaryCampaignsObjectivesListingOptions): Promise<GetMilitaryCampaignsObjectivesListingResponse>;
 
   withMetadata(): MilitaryCampaignsDomainClientWithMetadata;
 }
 
 export interface MilitaryCampaignsDomainClientWithMetadata {
-  getCampaign(campaignId: NonNullable<GetMilitaryCampaignsDetailInput['path']>["campaign_id"], options?: GetMilitaryCampaignsDetailOptions): Promise<EsiResponse<GetMilitaryCampaignsDetailOutput>>;
+  getCampaign(campaignId: NonNullable<OperationArguments<GetMilitaryCampaignsDetailData>['path']>["campaign_id"], options?: GetMilitaryCampaignsDetailOptions): Promise<EsiResponse<GetMilitaryCampaignsDetailResponse>>;
 
-  getCharacterObjectiveParticipation(characterId: NonNullable<GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']>["character_id"], objectiveId: NonNullable<GetCharactersMilitaryCampaignsObjectivesParticipationInput['path']>["objective_id"], options?: GetCharactersMilitaryCampaignsObjectivesParticipationOptions): Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesParticipationOutput>>;
+  getCharacterObjectiveParticipation(characterId: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']>["character_id"], objectiveId: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesParticipationData>['path']>["objective_id"], options?: GetCharactersMilitaryCampaignsObjectivesParticipationOptions): Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesParticipationResponse>>;
 
-  getObjective(campaignId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>["campaign_id"], objectiveId: NonNullable<GetMilitaryCampaignsObjectivesDetailInput['path']>["objective_id"], options?: GetMilitaryCampaignsObjectivesDetailOptions): Promise<EsiResponse<GetMilitaryCampaignsObjectivesDetailOutput>>;
+  getObjective(campaignId: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']>["campaign_id"], objectiveId: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesDetailData>['path']>["objective_id"], options?: GetMilitaryCampaignsObjectivesDetailOptions): Promise<EsiResponse<GetMilitaryCampaignsObjectivesDetailResponse>>;
 
-  listCampaigns(options?: GetMilitaryCampaignsListingOptions): Promise<EsiResponse<GetMilitaryCampaignsListingOutput>>;
+  listCampaigns(options?: GetMilitaryCampaignsListingOptions): Promise<EsiResponse<GetMilitaryCampaignsListingResponse>>;
 
-  listCharacterObjectiveParticipations(characterId: NonNullable<GetCharactersMilitaryCampaignsObjectivesListingInput['path']>["character_id"], options?: GetCharactersMilitaryCampaignsObjectivesListingOptions): Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesListingOutput>>;
+  listCharacterObjectiveParticipations(characterId: NonNullable<OperationArguments<GetCharactersMilitaryCampaignsObjectivesListingData>['path']>["character_id"], options?: GetCharactersMilitaryCampaignsObjectivesListingOptions): Promise<EsiResponse<GetCharactersMilitaryCampaignsObjectivesListingResponse>>;
 
-  listObjectives(campaignId: NonNullable<GetMilitaryCampaignsObjectivesListingInput['path']>["campaign_id"], options?: GetMilitaryCampaignsObjectivesListingOptions): Promise<EsiResponse<GetMilitaryCampaignsObjectivesListingOutput>>;
+  listObjectives(campaignId: NonNullable<OperationArguments<GetMilitaryCampaignsObjectivesListingData>['path']>["campaign_id"], options?: GetMilitaryCampaignsObjectivesListingOptions): Promise<EsiResponse<GetMilitaryCampaignsObjectivesListingResponse>>;
 }

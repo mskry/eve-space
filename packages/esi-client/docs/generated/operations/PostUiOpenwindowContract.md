@@ -16,12 +16,13 @@ Open Contract Window
 - Domain import: `@evespace/esi-client/domains/user-interface`
 - Domain index: [userInterface](../domains/user-interface.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUserInterfaceClient } from '@evespace/esi-client/domains/user-interface';
+import type { PostUiOpenwindowContractResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -29,13 +30,14 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createUserInterfaceClient({ token: accessToken });
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.openContract({ contractId: 12345 });
+const data: PostUiOpenwindowContractResponse = await client.openContract({ contractId: 12345 });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { PostUiOpenwindowContractResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -43,7 +45,7 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.userInterface.openContract({ contractId: 12345 });
+const data: PostUiOpenwindowContractResponse = await client.userInterface.openContract({ contractId: 12345 });
 ```
 
 ## Generic-execution snippet
@@ -51,6 +53,7 @@ const data = await client.userInterface.openContract({ contractId: 12345 });
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostUiOpenwindowContractData, PostUiOpenwindowContractResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -63,6 +66,7 @@ const arguments_: CallOperationArguments<'PostUiOpenwindowContract'> = { query: 
 const response = await client.callOperation('PostUiOpenwindowContract', arguments_, {
   confirmMutation: true,
 });
+const data: PostUiOpenwindowContractResponse = response.data;
 ```
 
 ## Parameters
@@ -76,14 +80,16 @@ const response = await client.callOperation('PostUiOpenwindowContract', argument
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostUiOpenwindowContractRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostUiOpenwindowContractData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zPostUiOpenwindowContractHeaders`; `query` uses `@evespace/esi-client/zod` export `zPostUiOpenwindowContractQuery`.
+- Response type: `@evespace/esi-client/types` export `PostUiOpenwindowContractResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.userInterface.withMetadata().openContract(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `PostUiOpenwindowContractStatus204SuccessResponseSchema` | Open window request received |
+| `204` | none | `@evespace/esi-client/zod` | `zPostUiOpenwindowContractResponse` | Open window request received |
 
 ## Authentication
 
@@ -118,6 +124,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

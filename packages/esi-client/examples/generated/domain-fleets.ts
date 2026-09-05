@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createFleetsClient } from '@evespace/esi-client/domains/fleets';
+import type { DeleteFleetsFleetIdMembersMemberIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -14,4 +15,4 @@ const fleetId = 12345;
 const memberId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.removeMember(fleetId, memberId);
+const data: DeleteFleetsFleetIdMembersMemberIdResponse = await client.removeMember(fleetId, memberId);

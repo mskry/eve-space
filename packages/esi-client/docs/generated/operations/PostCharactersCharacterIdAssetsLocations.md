@@ -16,13 +16,13 @@ Get character asset locations
 - Domain import: `@evespace/esi-client/domains/assets`
 - Domain index: [assets](../domains/assets.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createAssetsClient } from '@evespace/esi-client/domains/assets';
-import type { PostCharactersCharacterIdAssetsLocationsOptions } from '@evespace/esi-client/domains/assets';
+import type { PostCharactersCharacterIdAssetsLocationsResponse, PostCharactersCharacterIdAssetsLocationsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,16 +30,16 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createAssetsClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdAssetsLocationsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdAssetsLocationsData['body']>;
 
-const data = await client.lookupCharacterLocations(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdAssetsLocationsResponse = await client.lookupCharacterLocations(characterId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostCharactersCharacterIdAssetsLocationsOptions } from '@evespace/esi-client/domains/assets';
+import type { PostCharactersCharacterIdAssetsLocationsResponse, PostCharactersCharacterIdAssetsLocationsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,9 +47,9 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdAssetsLocationsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdAssetsLocationsData['body']>;
 
-const data = await client.assets.lookupCharacterLocations(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdAssetsLocationsResponse = await client.assets.lookupCharacterLocations(characterId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -57,6 +57,7 @@ const data = await client.assets.lookupCharacterLocations(characterId, { body: r
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostCharactersCharacterIdAssetsLocationsData, PostCharactersCharacterIdAssetsLocationsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,11 +65,12 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<CallOperationArguments<'PostCharactersCharacterIdAssetsLocations'>['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdAssetsLocationsData['body']>;
 
 const arguments_: CallOperationArguments<'PostCharactersCharacterIdAssetsLocations'> = { path: { "character_id": characterId }, body: requestBody };
 
 const response = await client.callOperation('PostCharactersCharacterIdAssetsLocations', arguments_);
+const data: PostCharactersCharacterIdAssetsLocationsResponse = response.data;
 ```
 
 ## Parameters
@@ -83,14 +85,16 @@ const response = await client.callOperation('PostCharactersCharacterIdAssetsLoca
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostCharactersCharacterIdAssetsLocationsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostCharactersCharacterIdAssetsLocationsData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdAssetsLocationsBody`; `headers` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdAssetsLocationsHeaders`; `path` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdAssetsLocationsPath`.
+- Response type: `@evespace/esi-client/types` export `PostCharactersCharacterIdAssetsLocationsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.assets.withMetadata().lookupCharacterLocations(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `PostCharactersCharacterIdAssetsLocationsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zPostCharactersCharacterIdAssetsLocationsResponse` | OK |
 
 ## Authentication
 
@@ -122,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

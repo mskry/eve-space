@@ -1,8 +1,8 @@
 import { createAssetsClient } from '@evespace/esi-client/domains/assets'
 import type {
-  GetCharactersCharacterIdAssetsOutput,
-  PostCharactersCharacterIdAssetsNamesOutput,
-} from '@evespace/esi-client/schemas'
+  GetCharactersCharacterIdAssetsResponse,
+  PostCharactersCharacterIdAssetsNamesResponse,
+} from '@evespace/esi-client/types'
 import { eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeCategories, sdeGroups, sdeTypes } from '../db/schema.js'
@@ -22,7 +22,7 @@ export const characterAssetWorkerConcurrency = 4
 
 type AssetLocationType = 'station' | 'solar_system' | 'item' | 'other'
 type EnrichmentStatus = 'complete' | 'partial' | 'unavailable'
-type EsiAsset = GetCharactersCharacterIdAssetsOutput[number]
+type EsiAsset = GetCharactersCharacterIdAssetsResponse[number]
 
 interface CharacterAssetSnapshot {
   itemId: number
@@ -280,7 +280,7 @@ async function loadAssetNames(characterId: number, assets: readonly CharacterAss
 function loadCharacterAssetNameBatch(characterId: number, itemIds: readonly number[]) {
   const normalizedItemIds = normalizeCharacterAssetNameBatch(itemIds)
   return getEsiResilienceLayer()
-    .getCharacter<PostCharactersCharacterIdAssetsNamesOutput>({
+    .getCharacter<PostCharactersCharacterIdAssetsNamesResponse>({
       operation: 'character-asset-names',
       inputs: { characterId, itemIds: normalizedItemIds },
       load: (authority, revalidation) =>

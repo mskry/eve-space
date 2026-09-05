@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=24.20.0"
   },
   "scripts": {
     "build": "pnpm build:dependencies && tsc",
@@ -32,23 +32,23 @@
     "@eve-space/platform-module-contract": "workspace:*",
     "@eve-space/platform-module-server": "workspace:*",
     "@evespace/esi-client": "workspace:*",
-    "@hono/node-server": "^2.1.1",
-    "@hono/zod-validator": "^0.9.0",
-    "bullmq": "6.2.0",
-    "drizzle-orm": "^0.45.2",
-    "hono": "^4.13.3",
-    "ioredis": "6.0.0",
-    "jose": "^6.2.9",
-    "postgres": "^3.4.9",
-    "zod": "^4.4.3"
+    "@hono/node-server": "catalog:",
+    "@hono/zod-validator": "catalog:",
+    "bullmq": "catalog:",
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:",
+    "ioredis": "catalog:",
+    "jose": "catalog:",
+    "postgres": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^24.3.0",
-    "@vitest/coverage-v8": "^4.1.11",
-    "drizzle-kit": "^0.31.10",
-    "testcontainers": "11.14.0",
-    "tsx": "^4.23.12",
-    "typescript": "~5.9.3",
-    "vitest": "^4.1.11"
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest4",
+    "drizzle-kit": "catalog:",
+    "testcontainers": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:tsgo",
+    "vitest": "catalog:vitest4"
   }
 }

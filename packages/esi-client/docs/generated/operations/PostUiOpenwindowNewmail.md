@@ -16,40 +16,40 @@ Open New Mail Window
 - Domain import: `@evespace/esi-client/domains/user-interface`
 - Domain index: [userInterface](../domains/user-interface.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUserInterfaceClient } from '@evespace/esi-client/domains/user-interface';
-import type { PostUiOpenwindowNewmailOptions } from '@evespace/esi-client/domains/user-interface';
+import type { PostUiOpenwindowNewmailResponse, PostUiOpenwindowNewmailData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
 
 const client = createUserInterfaceClient({ token: accessToken });
 
-declare const requestBody: NonNullable<PostUiOpenwindowNewmailOptions['body']>;
+declare const requestBody: NonNullable<PostUiOpenwindowNewmailData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.openNewMail({ body: requestBody });
+const data: PostUiOpenwindowNewmailResponse = await client.openNewMail({ body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostUiOpenwindowNewmailOptions } from '@evespace/esi-client/domains/user-interface';
+import type { PostUiOpenwindowNewmailResponse, PostUiOpenwindowNewmailData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
 
 const client = new EsiClient({ token: accessToken });
 
-declare const requestBody: NonNullable<PostUiOpenwindowNewmailOptions['body']>;
+declare const requestBody: NonNullable<PostUiOpenwindowNewmailData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.userInterface.openNewMail({ body: requestBody });
+const data: PostUiOpenwindowNewmailResponse = await client.userInterface.openNewMail({ body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -57,13 +57,14 @@ const data = await client.userInterface.openNewMail({ body: requestBody });
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostUiOpenwindowNewmailData, PostUiOpenwindowNewmailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
 
 const client = new EsiClient({ token: accessToken, allowGenericMutations: true });
 
-declare const requestBody: NonNullable<CallOperationArguments<'PostUiOpenwindowNewmail'>['body']>;
+declare const requestBody: NonNullable<PostUiOpenwindowNewmailData['body']>;
 
 const arguments_: CallOperationArguments<'PostUiOpenwindowNewmail'> = { body: requestBody };
 
@@ -71,6 +72,7 @@ const arguments_: CallOperationArguments<'PostUiOpenwindowNewmail'> = { body: re
 const response = await client.callOperation('PostUiOpenwindowNewmail', arguments_, {
   confirmMutation: true,
 });
+const data: PostUiOpenwindowNewmailResponse = response.data;
 ```
 
 ## Parameters
@@ -84,14 +86,16 @@ const response = await client.callOperation('PostUiOpenwindowNewmail', arguments
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostUiOpenwindowNewmailRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostUiOpenwindowNewmailData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostUiOpenwindowNewmailBody`; `headers` uses `@evespace/esi-client/zod` export `zPostUiOpenwindowNewmailHeaders`.
+- Response type: `@evespace/esi-client/types` export `PostUiOpenwindowNewmailResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.userInterface.withMetadata().openNewMail(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `PostUiOpenwindowNewmailStatus204SuccessResponseSchema` | Open window request received |
+| `204` | none | `@evespace/esi-client/zod` | `zPostUiOpenwindowNewmailResponse` | Open window request received |
 
 ## Authentication
 
@@ -126,6 +130,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

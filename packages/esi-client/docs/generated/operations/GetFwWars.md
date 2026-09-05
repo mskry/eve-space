@@ -16,26 +16,28 @@ Data about which NPC factions are at war
 - Domain import: `@evespace/esi-client/domains/faction-warfare`
 - Domain index: [factionWarfare](../domains/faction-warfare.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFactionWarfareClient } from '@evespace/esi-client/domains/faction-warfare';
+import type { GetFwWarsResponse } from '@evespace/esi-client/types';
 
 const client = createFactionWarfareClient();
 
-const data = await client.listWars();
+const data: GetFwWarsResponse = await client.listWars();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetFwWarsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.factionWarfare.listWars();
+const data: GetFwWarsResponse = await client.factionWarfare.listWars();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.factionWarfare.listWars();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetFwWarsData, GetFwWarsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetFwWars'> = {};
 
 const response = await client.callOperation('GetFwWars', arguments_);
+const data: GetFwWarsResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetFwWars', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetFwWarsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetFwWarsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetFwWarsHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetFwWarsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.factionWarfare.withMetadata().listWars(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetFwWarsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetFwWarsResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createMetaClient } from '@evespace/esi-client/domains/meta';
+import type { GetMetaChangelogResponse } from '@evespace/esi-client/types';
 
 const client = createMetaClient();
 
-const data = await client.getChangelog();
+const data: GetMetaChangelogResponse = await client.getChangelog();

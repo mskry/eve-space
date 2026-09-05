@@ -4,22 +4,36 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetWarsData,
+  GetWarsResponse,
+  GetWarsWarIdData,
+  GetWarsWarIdKillmailsData,
+  GetWarsWarIdKillmailsResponse,
+  GetWarsWarIdResponse,
+} from '../../types.gen.js';
 import {
-  GetWarsRequestSchema,
-  GetWarsStatus200SuccessResponseSchema,
-  GetWarsWarIdKillmailsRequestSchema,
-  GetWarsWarIdKillmailsStatus200SuccessResponseSchema,
-  GetWarsWarIdRequestSchema,
-  GetWarsWarIdStatus200SuccessResponseSchema,
-  type GetWarsInput,
-  type GetWarsOutput,
-  type GetWarsWarIdInput,
-  type GetWarsWarIdKillmailsInput,
-  type GetWarsWarIdKillmailsOutput,
-  type GetWarsWarIdOutput,
-} from '../../schemas/operations/wars.js';
+  zGetWarsHeaders,
+  zGetWarsQuery,
+  zGetWarsResponse,
+  zGetWarsWarIdHeaders,
+  zGetWarsWarIdKillmailsHeaders,
+  zGetWarsWarIdKillmailsPath,
+  zGetWarsWarIdKillmailsQuery,
+  zGetWarsWarIdKillmailsResponse,
+  zGetWarsWarIdPath,
+  zGetWarsWarIdResponse,
+} from '../../zod.gen.js';
 
-export const GetWarsWarIdDescriptor: OperationExecutionDescriptor<GetWarsWarIdInput, GetWarsWarIdOutput> = {
+export const GetWarsWarIdRequestSchema: z.ZodType<OperationArguments<GetWarsWarIdData>> = composeOperationRequestSchema<OperationArguments<GetWarsWarIdData>>({
+  headers: { required: false, schema: zGetWarsWarIdHeaders },
+  path: { required: true, schema: zGetWarsWarIdPath },
+});
+
+export const GetWarsWarIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetWarsWarIdData>, GetWarsWarIdResponse> = {
   operationId: "GetWarsWarId",
   method: "GET",
   path: "/wars/{war_id}",
@@ -33,12 +47,17 @@ export const GetWarsWarIdDescriptor: OperationExecutionDescriptor<GetWarsWarIdIn
   requestSchema: GetWarsWarIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetWarsWarIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetWarsWarIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetWarsDescriptor: OperationExecutionDescriptor<GetWarsInput, GetWarsOutput> = {
+export const GetWarsRequestSchema: z.ZodType<OperationArguments<GetWarsData>> = composeOperationRequestSchema<OperationArguments<GetWarsData>>({
+  headers: { required: false, schema: zGetWarsHeaders },
+  query: { required: false, schema: zGetWarsQuery },
+});
+
+export const GetWarsDescriptor: OperationExecutionDescriptor<OperationArguments<GetWarsData>, GetWarsResponse> = {
   operationId: "GetWars",
   method: "GET",
   path: "/wars",
@@ -52,12 +71,18 @@ export const GetWarsDescriptor: OperationExecutionDescriptor<GetWarsInput, GetWa
   requestSchema: GetWarsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetWarsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetWarsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetWarsWarIdKillmailsDescriptor: OperationExecutionDescriptor<GetWarsWarIdKillmailsInput, GetWarsWarIdKillmailsOutput> = {
+export const GetWarsWarIdKillmailsRequestSchema: z.ZodType<OperationArguments<GetWarsWarIdKillmailsData>> = composeOperationRequestSchema<OperationArguments<GetWarsWarIdKillmailsData>>({
+  headers: { required: false, schema: zGetWarsWarIdKillmailsHeaders },
+  path: { required: true, schema: zGetWarsWarIdKillmailsPath },
+  query: { required: false, schema: zGetWarsWarIdKillmailsQuery },
+});
+
+export const GetWarsWarIdKillmailsDescriptor: OperationExecutionDescriptor<OperationArguments<GetWarsWarIdKillmailsData>, GetWarsWarIdKillmailsResponse> = {
   operationId: "GetWarsWarIdKillmails",
   method: "GET",
   path: "/wars/{war_id}/killmails",
@@ -72,7 +97,7 @@ export const GetWarsWarIdKillmailsDescriptor: OperationExecutionDescriptor<GetWa
   requestSchema: GetWarsWarIdKillmailsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetWarsWarIdKillmailsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetWarsWarIdKillmailsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

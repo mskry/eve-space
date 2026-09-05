@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createSovereigntyClient } from '@evespace/esi-client/domains/sovereignty';
+import type { GetSovereigntyCampaignsResponse } from '@evespace/esi-client/types';
 
 const client = createSovereigntyClient();
 
-const data = await client.listCampaigns();
+const data: GetSovereigntyCampaignsResponse = await client.listCampaigns();

@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createMarketClient } from '@evespace/esi-client/domains/market';
+import type { GetCharactersCharacterIdOrdersResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createMarketClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listCharacterOrders(characterId);
+const data: GetCharactersCharacterIdOrdersResponse = await client.listCharacterOrders(characterId);

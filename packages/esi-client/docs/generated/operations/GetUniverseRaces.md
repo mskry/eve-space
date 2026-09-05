@@ -16,26 +16,28 @@ Get character races
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseRacesResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
-const data = await client.listRaces();
+const data: GetUniverseRacesResponse = await client.listRaces();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseRacesResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.universe.listRaces();
+const data: GetUniverseRacesResponse = await client.universe.listRaces();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.universe.listRaces();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseRacesData, GetUniverseRacesResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetUniverseRaces'> = {};
 
 const response = await client.callOperation('GetUniverseRaces', arguments_);
+const data: GetUniverseRacesResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetUniverseRaces', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseRacesRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseRacesData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseRacesHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseRacesResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().listRaces(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseRacesStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseRacesResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

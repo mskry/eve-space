@@ -16,12 +16,13 @@ Get contract items
 - Domain import: `@evespace/esi-client/domains/contracts`
 - Domain index: [contracts](../domains/contracts.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createContractsClient } from '@evespace/esi-client/domains/contracts';
+import type { GetCharactersCharacterIdContractsContractIdItemsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,13 +32,14 @@ const client = createContractsClient({ token: accessToken });
 const characterId = 90000001;
 const contractId = 12345;
 
-const data = await client.listCharacterContractItems(characterId, contractId);
+const data: GetCharactersCharacterIdContractsContractIdItemsResponse = await client.listCharacterContractItems(characterId, contractId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdContractsContractIdItemsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const contractId = 12345;
 
-const data = await client.contracts.listCharacterContractItems(characterId, contractId);
+const data: GetCharactersCharacterIdContractsContractIdItemsResponse = await client.contracts.listCharacterContractItems(characterId, contractId);
 ```
 
 ## Generic-execution snippet
@@ -55,6 +57,7 @@ const data = await client.contracts.listCharacterContractItems(characterId, cont
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdContractsContractIdItemsData, GetCharactersCharacterIdContractsContractIdItemsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -67,6 +70,7 @@ const contractId = 12345;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdContractsContractIdItems'> = { path: { "character_id": characterId, "contract_id": contractId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdContractsContractIdItems', arguments_);
+const data: GetCharactersCharacterIdContractsContractIdItemsResponse = response.data;
 ```
 
 ## Parameters
@@ -81,14 +85,16 @@ const response = await client.callOperation('GetCharactersCharacterIdContractsCo
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdContractsContractIdItemsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdContractsContractIdItemsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdContractsContractIdItemsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdContractsContractIdItemsPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdContractsContractIdItemsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.contracts.withMetadata().listCharacterContractItems(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdContractsContractIdItemsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdContractsContractIdItemsResponse` | OK |
 
 ## Authentication
 
@@ -120,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

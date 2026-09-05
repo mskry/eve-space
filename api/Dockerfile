@@ -1,4 +1,4 @@
-FROM node:22.18-alpine AS base
+FROM node:24.20-alpine AS base
 
 ENV PNPM_HOME=/pnpm
 ENV COREPACK_HOME=/corepack
@@ -30,7 +30,7 @@ COPY scripts/run-installed-module-package-script.ts ./scripts/run-installed-modu
 RUN pnpm --filter @eve-space/api build
 RUN pnpm --filter @eve-space/api --prod deploy /prod/api
 
-FROM node:22.18-alpine AS runtime
+FROM node:24.20-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV PNPM_HOME=/pnpm

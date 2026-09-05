@@ -16,26 +16,28 @@ Get system kills
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseSystemKillsResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
-const data = await client.listSystemKills();
+const data: GetUniverseSystemKillsResponse = await client.listSystemKills();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseSystemKillsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.universe.listSystemKills();
+const data: GetUniverseSystemKillsResponse = await client.universe.listSystemKills();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.universe.listSystemKills();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseSystemKillsData, GetUniverseSystemKillsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetUniverseSystemKills'> = {};
 
 const response = await client.callOperation('GetUniverseSystemKills', arguments_);
+const data: GetUniverseSystemKillsResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetUniverseSystemKills', arguments_
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseSystemKillsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseSystemKillsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseSystemKillsHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseSystemKillsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().listSystemKills(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseSystemKillsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseSystemKillsResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

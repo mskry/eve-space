@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createDogmaClient } from '@evespace/esi-client/domains/dogma';
+import type { GetDogmaAttributesResponse } from '@evespace/esi-client/types';
 
 const client = createDogmaClient();
 
-const data = await client.listAttributes();
+const data: GetDogmaAttributesResponse = await client.listAttributes();

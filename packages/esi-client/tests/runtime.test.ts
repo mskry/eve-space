@@ -1,15 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import {
-  EsiClient,
-  EsiHttpError,
-  GetStatusSuccessResponseSchema,
-  createStatusClient,
-} from '../src/index';
+import { EsiClient, EsiHttpError, createStatusClient } from '../src/index';
 import * as sdk from '../src/index';
+import { zGetStatusResponse } from '../src/generated/zod.gen.js';
 
 describe('root client surface', () => {
-  it('exports the generated client, domain, and schema behavior', async () => {
+  it('exports generated client and domain behavior', async () => {
     const fetchApi = vi.fn<typeof fetch>(
       async () =>
         new Response(
@@ -43,7 +39,7 @@ describe('root client surface', () => {
       start_time: '2026-08-18T00:00:00Z',
       vip: false,
     });
-    expect(GetStatusSuccessResponseSchema.parse(status)).toEqual(status);
+    expect(zGetStatusResponse.parse(status)).toEqual(status);
   });
 
   it('exports structured HTTP errors without prototype exports', async () => {

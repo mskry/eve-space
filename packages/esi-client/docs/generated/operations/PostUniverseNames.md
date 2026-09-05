@@ -16,32 +16,32 @@ Get names and categories for a set of IDs
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
-import type { PostUniverseNamesOptions } from '@evespace/esi-client/domains/universe';
+import type { PostUniverseNamesResponse, PostUniverseNamesData } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
-declare const requestBody: NonNullable<PostUniverseNamesOptions['body']>;
+declare const requestBody: NonNullable<PostUniverseNamesData['body']>;
 
-const data = await client.resolveNames({ body: requestBody });
+const data: PostUniverseNamesResponse = await client.resolveNames({ body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostUniverseNamesOptions } from '@evespace/esi-client/domains/universe';
+import type { PostUniverseNamesResponse, PostUniverseNamesData } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-declare const requestBody: NonNullable<PostUniverseNamesOptions['body']>;
+declare const requestBody: NonNullable<PostUniverseNamesData['body']>;
 
-const data = await client.universe.resolveNames({ body: requestBody });
+const data: PostUniverseNamesResponse = await client.universe.resolveNames({ body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -49,14 +49,16 @@ const data = await client.universe.resolveNames({ body: requestBody });
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostUniverseNamesData, PostUniverseNamesResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-declare const requestBody: NonNullable<CallOperationArguments<'PostUniverseNames'>['body']>;
+declare const requestBody: NonNullable<PostUniverseNamesData['body']>;
 
 const arguments_: CallOperationArguments<'PostUniverseNames'> = { body: requestBody };
 
 const response = await client.callOperation('PostUniverseNames', arguments_);
+const data: PostUniverseNamesResponse = response.data;
 ```
 
 ## Parameters
@@ -70,14 +72,16 @@ const response = await client.callOperation('PostUniverseNames', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostUniverseNamesRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostUniverseNamesData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostUniverseNamesBody`; `headers` uses `@evespace/esi-client/zod` export `zPostUniverseNamesHeaders`.
+- Response type: `@evespace/esi-client/types` export `PostUniverseNamesResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().resolveNames(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `PostUniverseNamesStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zPostUniverseNamesResponse` | OK |
 
 ## Authentication
 
@@ -108,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

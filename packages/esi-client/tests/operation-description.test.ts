@@ -32,9 +32,22 @@ describe('operation descriptions', () => {
       operationId: 'GetStatus',
       facade: { domain: 'status', method: 'get' },
       http: { method: 'GET', path: '/status' },
-      requestSchema: {
-        module: '@evespace/esi-client/schemas',
-        export: 'GetStatusRequestSchema',
+      requestSchemas: [
+        {
+          group: 'headers',
+          schema: {
+            export: 'zGetStatusHeaders',
+            module: '@evespace/esi-client/zod',
+          },
+        },
+      ],
+      requestType: {
+        export: 'GetStatusData',
+        module: '@evespace/esi-client/types',
+      },
+      responseType: {
+        export: 'GetStatusResponse',
+        module: '@evespace/esi-client/types',
       },
       authentication: { required: false, scopes: [] },
       pagination: { kind: 'none' },
@@ -52,8 +65,8 @@ describe('operation descriptions', () => {
         ],
         description: 'OK',
         schema: {
-          export: 'GetStatusStatus200SuccessResponseSchema',
-          module: '@evespace/esi-client/schemas',
+          export: 'zGetStatusResponse',
+          module: '@evespace/esi-client/zod',
         },
         status: '200',
       },

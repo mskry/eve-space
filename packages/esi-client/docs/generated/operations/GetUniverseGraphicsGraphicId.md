@@ -16,30 +16,32 @@ Get graphic information
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseGraphicsGraphicIdResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
 const graphicId = 12345;
 
-const data = await client.getGraphic(graphicId);
+const data: GetUniverseGraphicsGraphicIdResponse = await client.getGraphic(graphicId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseGraphicsGraphicIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const graphicId = 12345;
 
-const data = await client.universe.getGraphic(graphicId);
+const data: GetUniverseGraphicsGraphicIdResponse = await client.universe.getGraphic(graphicId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.universe.getGraphic(graphicId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseGraphicsGraphicIdData, GetUniverseGraphicsGraphicIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const graphicId = 12345;
 const arguments_: CallOperationArguments<'GetUniverseGraphicsGraphicId'> = { path: { "graphic_id": graphicId } };
 
 const response = await client.callOperation('GetUniverseGraphicsGraphicId', arguments_);
+const data: GetUniverseGraphicsGraphicIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetUniverseGraphicsGraphicId', argu
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseGraphicsGraphicIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseGraphicsGraphicIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseGraphicsGraphicIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetUniverseGraphicsGraphicIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseGraphicsGraphicIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().getGraphic(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseGraphicsGraphicIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseGraphicsGraphicIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

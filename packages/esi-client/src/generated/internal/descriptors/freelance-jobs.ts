@@ -4,34 +4,52 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersFreelanceJobsListingData,
+  GetCharactersFreelanceJobsListingResponse,
+  GetCharactersFreelanceJobsParticipationData,
+  GetCharactersFreelanceJobsParticipationResponse,
+  GetCorporationsFreelanceJobsListingData,
+  GetCorporationsFreelanceJobsListingResponse,
+  GetCorporationsFreelanceJobsParticipantsData,
+  GetCorporationsFreelanceJobsParticipantsResponse,
+  GetFreelanceJobsDetailData,
+  GetFreelanceJobsDetailResponse,
+  GetFreelanceJobsListingData,
+  GetFreelanceJobsListingResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersFreelanceJobsListingRequestSchema,
-  GetCharactersFreelanceJobsListingStatus200SuccessResponseSchema,
-  GetCharactersFreelanceJobsParticipationRequestSchema,
-  GetCharactersFreelanceJobsParticipationStatus200SuccessResponseSchema,
-  GetCorporationsFreelanceJobsListingRequestSchema,
-  GetCorporationsFreelanceJobsListingStatus200SuccessResponseSchema,
-  GetCorporationsFreelanceJobsParticipantsRequestSchema,
-  GetCorporationsFreelanceJobsParticipantsStatus200SuccessResponseSchema,
-  GetFreelanceJobsDetailRequestSchema,
-  GetFreelanceJobsDetailStatus200SuccessResponseSchema,
-  GetFreelanceJobsListingRequestSchema,
-  GetFreelanceJobsListingStatus200SuccessResponseSchema,
-  type GetCharactersFreelanceJobsListingInput,
-  type GetCharactersFreelanceJobsListingOutput,
-  type GetCharactersFreelanceJobsParticipationInput,
-  type GetCharactersFreelanceJobsParticipationOutput,
-  type GetCorporationsFreelanceJobsListingInput,
-  type GetCorporationsFreelanceJobsListingOutput,
-  type GetCorporationsFreelanceJobsParticipantsInput,
-  type GetCorporationsFreelanceJobsParticipantsOutput,
-  type GetFreelanceJobsDetailInput,
-  type GetFreelanceJobsDetailOutput,
-  type GetFreelanceJobsListingInput,
-  type GetFreelanceJobsListingOutput,
-} from '../../schemas/operations/freelance-jobs.js';
+  zGetCharactersFreelanceJobsListingHeaders,
+  zGetCharactersFreelanceJobsListingPath,
+  zGetCharactersFreelanceJobsListingResponse,
+  zGetCharactersFreelanceJobsParticipationHeaders,
+  zGetCharactersFreelanceJobsParticipationPath,
+  zGetCharactersFreelanceJobsParticipationResponse,
+  zGetCorporationsFreelanceJobsListingHeaders,
+  zGetCorporationsFreelanceJobsListingPath,
+  zGetCorporationsFreelanceJobsListingQuery,
+  zGetCorporationsFreelanceJobsListingResponse,
+  zGetCorporationsFreelanceJobsParticipantsHeaders,
+  zGetCorporationsFreelanceJobsParticipantsPath,
+  zGetCorporationsFreelanceJobsParticipantsQuery,
+  zGetCorporationsFreelanceJobsParticipantsResponse,
+  zGetFreelanceJobsDetailHeaders,
+  zGetFreelanceJobsDetailPath,
+  zGetFreelanceJobsDetailResponse,
+  zGetFreelanceJobsListingHeaders,
+  zGetFreelanceJobsListingQuery,
+  zGetFreelanceJobsListingResponse,
+} from '../../zod.gen.js';
 
-export const GetFreelanceJobsDetailDescriptor: OperationExecutionDescriptor<GetFreelanceJobsDetailInput, GetFreelanceJobsDetailOutput> = {
+export const GetFreelanceJobsDetailRequestSchema: z.ZodType<OperationArguments<GetFreelanceJobsDetailData>> = composeOperationRequestSchema<OperationArguments<GetFreelanceJobsDetailData>>({
+  headers: { required: false, schema: zGetFreelanceJobsDetailHeaders },
+  path: { required: true, schema: zGetFreelanceJobsDetailPath },
+});
+
+export const GetFreelanceJobsDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetFreelanceJobsDetailData>, GetFreelanceJobsDetailResponse> = {
   operationId: "GetFreelanceJobsDetail",
   method: "GET",
   path: "/freelance-jobs/{job_id}",
@@ -45,12 +63,17 @@ export const GetFreelanceJobsDetailDescriptor: OperationExecutionDescriptor<GetF
   requestSchema: GetFreelanceJobsDetailRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFreelanceJobsDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFreelanceJobsDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersFreelanceJobsParticipationDescriptor: OperationExecutionDescriptor<GetCharactersFreelanceJobsParticipationInput, GetCharactersFreelanceJobsParticipationOutput> = {
+export const GetCharactersFreelanceJobsParticipationRequestSchema: z.ZodType<OperationArguments<GetCharactersFreelanceJobsParticipationData>> = composeOperationRequestSchema<OperationArguments<GetCharactersFreelanceJobsParticipationData>>({
+  headers: { required: false, schema: zGetCharactersFreelanceJobsParticipationHeaders },
+  path: { required: true, schema: zGetCharactersFreelanceJobsParticipationPath },
+});
+
+export const GetCharactersFreelanceJobsParticipationDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersFreelanceJobsParticipationData>, GetCharactersFreelanceJobsParticipationResponse> = {
   operationId: "GetCharactersFreelanceJobsParticipation",
   method: "GET",
   path: "/characters/{character_id}/freelance-jobs/{job_id}/participation",
@@ -65,12 +88,17 @@ export const GetCharactersFreelanceJobsParticipationDescriptor: OperationExecuti
   requestSchema: GetCharactersFreelanceJobsParticipationRequestSchema,
   authentication: { scopes: ["esi-characters.read_freelance_jobs.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersFreelanceJobsParticipationStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersFreelanceJobsParticipationResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersFreelanceJobsListingDescriptor: OperationExecutionDescriptor<GetCharactersFreelanceJobsListingInput, GetCharactersFreelanceJobsListingOutput> = {
+export const GetCharactersFreelanceJobsListingRequestSchema: z.ZodType<OperationArguments<GetCharactersFreelanceJobsListingData>> = composeOperationRequestSchema<OperationArguments<GetCharactersFreelanceJobsListingData>>({
+  headers: { required: false, schema: zGetCharactersFreelanceJobsListingHeaders },
+  path: { required: true, schema: zGetCharactersFreelanceJobsListingPath },
+});
+
+export const GetCharactersFreelanceJobsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersFreelanceJobsListingData>, GetCharactersFreelanceJobsListingResponse> = {
   operationId: "GetCharactersFreelanceJobsListing",
   method: "GET",
   path: "/characters/{character_id}/freelance-jobs",
@@ -84,12 +112,18 @@ export const GetCharactersFreelanceJobsListingDescriptor: OperationExecutionDesc
   requestSchema: GetCharactersFreelanceJobsListingRequestSchema,
   authentication: { scopes: ["esi-characters.read_freelance_jobs.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersFreelanceJobsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersFreelanceJobsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsFreelanceJobsListingDescriptor: OperationExecutionDescriptor<GetCorporationsFreelanceJobsListingInput, GetCorporationsFreelanceJobsListingOutput> = {
+export const GetCorporationsFreelanceJobsListingRequestSchema: z.ZodType<OperationArguments<GetCorporationsFreelanceJobsListingData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsFreelanceJobsListingData>>({
+  headers: { required: false, schema: zGetCorporationsFreelanceJobsListingHeaders },
+  path: { required: true, schema: zGetCorporationsFreelanceJobsListingPath },
+  query: { required: false, schema: zGetCorporationsFreelanceJobsListingQuery },
+});
+
+export const GetCorporationsFreelanceJobsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsFreelanceJobsListingData>, GetCorporationsFreelanceJobsListingResponse> = {
   operationId: "GetCorporationsFreelanceJobsListing",
   method: "GET",
   path: "/corporations/{corporation_id}/freelance-jobs",
@@ -106,12 +140,18 @@ export const GetCorporationsFreelanceJobsListingDescriptor: OperationExecutionDe
   requestSchema: GetCorporationsFreelanceJobsListingRequestSchema,
   authentication: { scopes: ["esi-corporations.read_freelance_jobs.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsFreelanceJobsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsFreelanceJobsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsFreelanceJobsParticipantsDescriptor: OperationExecutionDescriptor<GetCorporationsFreelanceJobsParticipantsInput, GetCorporationsFreelanceJobsParticipantsOutput> = {
+export const GetCorporationsFreelanceJobsParticipantsRequestSchema: z.ZodType<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>>({
+  headers: { required: false, schema: zGetCorporationsFreelanceJobsParticipantsHeaders },
+  path: { required: true, schema: zGetCorporationsFreelanceJobsParticipantsPath },
+  query: { required: false, schema: zGetCorporationsFreelanceJobsParticipantsQuery },
+});
+
+export const GetCorporationsFreelanceJobsParticipantsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>, GetCorporationsFreelanceJobsParticipantsResponse> = {
   operationId: "GetCorporationsFreelanceJobsParticipants",
   method: "GET",
   path: "/corporations/{corporation_id}/freelance-jobs/{job_id}/participants",
@@ -129,12 +169,17 @@ export const GetCorporationsFreelanceJobsParticipantsDescriptor: OperationExecut
   requestSchema: GetCorporationsFreelanceJobsParticipantsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_freelance_jobs.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsFreelanceJobsParticipantsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsFreelanceJobsParticipantsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFreelanceJobsListingDescriptor: OperationExecutionDescriptor<GetFreelanceJobsListingInput, GetFreelanceJobsListingOutput> = {
+export const GetFreelanceJobsListingRequestSchema: z.ZodType<OperationArguments<GetFreelanceJobsListingData>> = composeOperationRequestSchema<OperationArguments<GetFreelanceJobsListingData>>({
+  headers: { required: false, schema: zGetFreelanceJobsListingHeaders },
+  query: { required: false, schema: zGetFreelanceJobsListingQuery },
+});
+
+export const GetFreelanceJobsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetFreelanceJobsListingData>, GetFreelanceJobsListingResponse> = {
   operationId: "GetFreelanceJobsListing",
   method: "GET",
   path: "/freelance-jobs",
@@ -151,7 +196,7 @@ export const GetFreelanceJobsListingDescriptor: OperationExecutionDescriptor<Get
   requestSchema: GetFreelanceJobsListingRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFreelanceJobsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFreelanceJobsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -4,24 +4,25 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetIncursionsInput,
-  GetIncursionsOutput,
-} from '../../schemas/operations/incursions.js';
+  GetIncursionsData,
+  GetIncursionsResponse,
+} from '../../types.gen.js';
 
 export interface GetIncursionsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetIncursionsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetIncursionsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetIncursionsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetIncursionsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetIncursionsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetIncursionsData>["headers"]>["X-Tenant"];
 }
 
 export interface IncursionsDomainClient {
-  list(options?: GetIncursionsOptions): Promise<GetIncursionsOutput>;
+  list(options?: GetIncursionsOptions): Promise<GetIncursionsResponse>;
 
   withMetadata(): IncursionsDomainClientWithMetadata;
 }
 
 export interface IncursionsDomainClientWithMetadata {
-  list(options?: GetIncursionsOptions): Promise<EsiResponse<GetIncursionsOutput>>;
+  list(options?: GetIncursionsOptions): Promise<EsiResponse<GetIncursionsResponse>>;
 }

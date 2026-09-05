@@ -16,26 +16,28 @@ List public Paragon Hub SKINR listings
 - Domain import: `@evespace/esi-client/domains/paragon-hub`
 - Domain index: [paragonHub](../domains/paragon-hub.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createParagonHubClient } from '@evespace/esi-client/domains/paragon-hub';
+import type { GetParagonHubSkinrResponse } from '@evespace/esi-client/types';
 
 const client = createParagonHubClient();
 
-const data = await client.listPublicListings();
+const data: GetParagonHubSkinrResponse = await client.listPublicListings();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetParagonHubSkinrResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.paragonHub.listPublicListings();
+const data: GetParagonHubSkinrResponse = await client.paragonHub.listPublicListings();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.paragonHub.listPublicListings();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetParagonHubSkinrData, GetParagonHubSkinrResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetParagonHubSkinr'> = {};
 
 const response = await client.callOperation('GetParagonHubSkinr', arguments_);
+const data: GetParagonHubSkinrResponse = response.data;
 ```
 
 ## Parameters
@@ -64,14 +68,16 @@ const response = await client.callOperation('GetParagonHubSkinr', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetParagonHubSkinrRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetParagonHubSkinrData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetParagonHubSkinrHeaders`; `query` uses `@evespace/esi-client/zod` export `zGetParagonHubSkinrQuery`.
+- Response type: `@evespace/esi-client/types` export `GetParagonHubSkinrResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.paragonHub.withMetadata().listPublicListings(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetParagonHubSkinrStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetParagonHubSkinrResponse` | OK |
 
 ## Authentication
 
@@ -102,6 +108,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

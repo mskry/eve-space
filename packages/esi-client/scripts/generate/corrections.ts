@@ -1,9 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import type { Operation } from '@bybrave/fast-json-patch2';
 import { applyPatch } from '@bybrave/fast-json-patch2';
+import { resolveConfigPath } from './paths.ts';
 
 export interface SpecificationCorrectionOptions {
   manifestPath?: string;
@@ -28,9 +28,7 @@ interface CorrectionManifest {
   readonly corrections: readonly CorrectionManifestEntry[];
 }
 
-export const defaultCorrectionManifestPath: string = fileURLToPath(
-  new URL('../../openapi/corrections/manifest.json', import.meta.url),
-);
+export const defaultCorrectionManifestPath: string = resolveConfigPath('correctionManifest');
 
 export async function applySpecificationCorrections<T>(
   document: T,

@@ -4,66 +4,95 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  DeleteFleetsFleetIdMembersMemberIdData,
+  DeleteFleetsFleetIdMembersMemberIdResponse,
+  DeleteFleetsFleetIdSquadsSquadIdData,
+  DeleteFleetsFleetIdSquadsSquadIdResponse,
+  DeleteFleetsFleetIdWingsWingIdData,
+  DeleteFleetsFleetIdWingsWingIdResponse,
+  GetCharactersCharacterIdFleetData,
+  GetCharactersCharacterIdFleetResponse,
+  GetFleetsFleetIdData,
+  GetFleetsFleetIdMembersData,
+  GetFleetsFleetIdMembersResponse,
+  GetFleetsFleetIdResponse,
+  GetFleetsFleetIdWingsData,
+  GetFleetsFleetIdWingsResponse,
+  PostFleetsFleetIdMembersData,
+  PostFleetsFleetIdMembersResponse,
+  PostFleetsFleetIdWingsData,
+  PostFleetsFleetIdWingsResponse,
+  PostFleetsFleetIdWingsWingIdSquadsData,
+  PostFleetsFleetIdWingsWingIdSquadsResponse,
+  PutFleetsFleetIdData,
+  PutFleetsFleetIdMembersMemberIdData,
+  PutFleetsFleetIdMembersMemberIdResponse,
+  PutFleetsFleetIdResponse,
+  PutFleetsFleetIdSquadsSquadIdData,
+  PutFleetsFleetIdSquadsSquadIdResponse,
+  PutFleetsFleetIdWingsWingIdData,
+  PutFleetsFleetIdWingsWingIdResponse,
+} from '../../types.gen.js';
 import {
-  DeleteFleetsFleetIdMembersMemberIdRequestSchema,
-  DeleteFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema,
-  DeleteFleetsFleetIdSquadsSquadIdRequestSchema,
-  DeleteFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema,
-  DeleteFleetsFleetIdWingsWingIdRequestSchema,
-  DeleteFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema,
-  GetCharactersCharacterIdFleetRequestSchema,
-  GetCharactersCharacterIdFleetStatus200SuccessResponseSchema,
-  GetFleetsFleetIdMembersRequestSchema,
-  GetFleetsFleetIdMembersStatus200SuccessResponseSchema,
-  GetFleetsFleetIdRequestSchema,
-  GetFleetsFleetIdStatus200SuccessResponseSchema,
-  GetFleetsFleetIdWingsRequestSchema,
-  GetFleetsFleetIdWingsStatus200SuccessResponseSchema,
-  PostFleetsFleetIdMembersRequestSchema,
-  PostFleetsFleetIdMembersStatus204SuccessResponseSchema,
-  PostFleetsFleetIdWingsRequestSchema,
-  PostFleetsFleetIdWingsStatus201SuccessResponseSchema,
-  PostFleetsFleetIdWingsWingIdSquadsRequestSchema,
-  PostFleetsFleetIdWingsWingIdSquadsStatus201SuccessResponseSchema,
-  PutFleetsFleetIdMembersMemberIdRequestSchema,
-  PutFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema,
-  PutFleetsFleetIdRequestSchema,
-  PutFleetsFleetIdSquadsSquadIdRequestSchema,
-  PutFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema,
-  PutFleetsFleetIdStatus204SuccessResponseSchema,
-  PutFleetsFleetIdWingsWingIdRequestSchema,
-  PutFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema,
-  type DeleteFleetsFleetIdMembersMemberIdInput,
-  type DeleteFleetsFleetIdMembersMemberIdOutput,
-  type DeleteFleetsFleetIdSquadsSquadIdInput,
-  type DeleteFleetsFleetIdSquadsSquadIdOutput,
-  type DeleteFleetsFleetIdWingsWingIdInput,
-  type DeleteFleetsFleetIdWingsWingIdOutput,
-  type GetCharactersCharacterIdFleetInput,
-  type GetCharactersCharacterIdFleetOutput,
-  type GetFleetsFleetIdInput,
-  type GetFleetsFleetIdMembersInput,
-  type GetFleetsFleetIdMembersOutput,
-  type GetFleetsFleetIdOutput,
-  type GetFleetsFleetIdWingsInput,
-  type GetFleetsFleetIdWingsOutput,
-  type PostFleetsFleetIdMembersInput,
-  type PostFleetsFleetIdMembersOutput,
-  type PostFleetsFleetIdWingsInput,
-  type PostFleetsFleetIdWingsOutput,
-  type PostFleetsFleetIdWingsWingIdSquadsInput,
-  type PostFleetsFleetIdWingsWingIdSquadsOutput,
-  type PutFleetsFleetIdInput,
-  type PutFleetsFleetIdMembersMemberIdInput,
-  type PutFleetsFleetIdMembersMemberIdOutput,
-  type PutFleetsFleetIdOutput,
-  type PutFleetsFleetIdSquadsSquadIdInput,
-  type PutFleetsFleetIdSquadsSquadIdOutput,
-  type PutFleetsFleetIdWingsWingIdInput,
-  type PutFleetsFleetIdWingsWingIdOutput,
-} from '../../schemas/operations/fleets.js';
+  zDeleteFleetsFleetIdMembersMemberIdHeaders,
+  zDeleteFleetsFleetIdMembersMemberIdPath,
+  zDeleteFleetsFleetIdMembersMemberIdResponse,
+  zDeleteFleetsFleetIdSquadsSquadIdHeaders,
+  zDeleteFleetsFleetIdSquadsSquadIdPath,
+  zDeleteFleetsFleetIdSquadsSquadIdResponse,
+  zDeleteFleetsFleetIdWingsWingIdHeaders,
+  zDeleteFleetsFleetIdWingsWingIdPath,
+  zDeleteFleetsFleetIdWingsWingIdResponse,
+  zGetCharactersCharacterIdFleetHeaders,
+  zGetCharactersCharacterIdFleetPath,
+  zGetCharactersCharacterIdFleetResponse,
+  zGetFleetsFleetIdHeaders,
+  zGetFleetsFleetIdMembersHeaders,
+  zGetFleetsFleetIdMembersPath,
+  zGetFleetsFleetIdMembersResponse,
+  zGetFleetsFleetIdPath,
+  zGetFleetsFleetIdResponse,
+  zGetFleetsFleetIdWingsHeaders,
+  zGetFleetsFleetIdWingsPath,
+  zGetFleetsFleetIdWingsResponse,
+  zPostFleetsFleetIdMembersBody,
+  zPostFleetsFleetIdMembersHeaders,
+  zPostFleetsFleetIdMembersPath,
+  zPostFleetsFleetIdMembersResponse,
+  zPostFleetsFleetIdWingsHeaders,
+  zPostFleetsFleetIdWingsPath,
+  zPostFleetsFleetIdWingsResponse,
+  zPostFleetsFleetIdWingsWingIdSquadsHeaders,
+  zPostFleetsFleetIdWingsWingIdSquadsPath,
+  zPostFleetsFleetIdWingsWingIdSquadsResponse,
+  zPutFleetsFleetIdBody,
+  zPutFleetsFleetIdHeaders,
+  zPutFleetsFleetIdMembersMemberIdBody,
+  zPutFleetsFleetIdMembersMemberIdHeaders,
+  zPutFleetsFleetIdMembersMemberIdPath,
+  zPutFleetsFleetIdMembersMemberIdResponse,
+  zPutFleetsFleetIdPath,
+  zPutFleetsFleetIdResponse,
+  zPutFleetsFleetIdSquadsSquadIdBody,
+  zPutFleetsFleetIdSquadsSquadIdHeaders,
+  zPutFleetsFleetIdSquadsSquadIdPath,
+  zPutFleetsFleetIdSquadsSquadIdResponse,
+  zPutFleetsFleetIdWingsWingIdBody,
+  zPutFleetsFleetIdWingsWingIdHeaders,
+  zPutFleetsFleetIdWingsWingIdPath,
+  zPutFleetsFleetIdWingsWingIdResponse,
+} from '../../zod.gen.js';
 
-export const PostFleetsFleetIdWingsWingIdSquadsDescriptor: OperationExecutionDescriptor<PostFleetsFleetIdWingsWingIdSquadsInput, PostFleetsFleetIdWingsWingIdSquadsOutput> = {
+export const PostFleetsFleetIdWingsWingIdSquadsRequestSchema: z.ZodType<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>> = composeOperationRequestSchema<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>>({
+  headers: { required: false, schema: zPostFleetsFleetIdWingsWingIdSquadsHeaders },
+  path: { required: true, schema: zPostFleetsFleetIdWingsWingIdSquadsPath },
+});
+
+export const PostFleetsFleetIdWingsWingIdSquadsDescriptor: OperationExecutionDescriptor<OperationArguments<PostFleetsFleetIdWingsWingIdSquadsData>, PostFleetsFleetIdWingsWingIdSquadsResponse> = {
   operationId: "PostFleetsFleetIdWingsWingIdSquads",
   method: "POST",
   path: "/fleets/{fleet_id}/wings/{wing_id}/squads",
@@ -78,12 +107,17 @@ export const PostFleetsFleetIdWingsWingIdSquadsDescriptor: OperationExecutionDes
   requestSchema: PostFleetsFleetIdWingsWingIdSquadsRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
   successResponses: [
-    { status: 201, body: 'json', schema: PostFleetsFleetIdWingsWingIdSquadsStatus201SuccessResponseSchema },
+    { status: 201, body: 'json', schema: zPostFleetsFleetIdWingsWingIdSquadsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<PostFleetsFleetIdWingsInput, PostFleetsFleetIdWingsOutput> = {
+export const PostFleetsFleetIdWingsRequestSchema: z.ZodType<OperationArguments<PostFleetsFleetIdWingsData>> = composeOperationRequestSchema<OperationArguments<PostFleetsFleetIdWingsData>>({
+  headers: { required: false, schema: zPostFleetsFleetIdWingsHeaders },
+  path: { required: true, schema: zPostFleetsFleetIdWingsPath },
+});
+
+export const PostFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<OperationArguments<PostFleetsFleetIdWingsData>, PostFleetsFleetIdWingsResponse> = {
   operationId: "PostFleetsFleetIdWings",
   method: "POST",
   path: "/fleets/{fleet_id}/wings",
@@ -97,12 +131,17 @@ export const PostFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<Post
   requestSchema: PostFleetsFleetIdWingsRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
   successResponses: [
-    { status: 201, body: 'json', schema: PostFleetsFleetIdWingsStatus201SuccessResponseSchema },
+    { status: 201, body: 'json', schema: zPostFleetsFleetIdWingsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const DeleteFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescriptor<DeleteFleetsFleetIdSquadsSquadIdInput, DeleteFleetsFleetIdSquadsSquadIdOutput> = {
+export const DeleteFleetsFleetIdSquadsSquadIdRequestSchema: z.ZodType<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>> = composeOperationRequestSchema<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>>({
+  headers: { required: false, schema: zDeleteFleetsFleetIdSquadsSquadIdHeaders },
+  path: { required: true, schema: zDeleteFleetsFleetIdSquadsSquadIdPath },
+});
+
+export const DeleteFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescriptor<OperationArguments<DeleteFleetsFleetIdSquadsSquadIdData>, DeleteFleetsFleetIdSquadsSquadIdResponse> = {
   operationId: "DeleteFleetsFleetIdSquadsSquadId",
   method: "DELETE",
   path: "/fleets/{fleet_id}/squads/{squad_id}",
@@ -122,7 +161,12 @@ export const DeleteFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescr
   transport: { compatibilityDateOverride: true },
 };
 
-export const DeleteFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescriptor<DeleteFleetsFleetIdWingsWingIdInput, DeleteFleetsFleetIdWingsWingIdOutput> = {
+export const DeleteFleetsFleetIdWingsWingIdRequestSchema: z.ZodType<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>> = composeOperationRequestSchema<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>>({
+  headers: { required: false, schema: zDeleteFleetsFleetIdWingsWingIdHeaders },
+  path: { required: true, schema: zDeleteFleetsFleetIdWingsWingIdPath },
+});
+
+export const DeleteFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescriptor<OperationArguments<DeleteFleetsFleetIdWingsWingIdData>, DeleteFleetsFleetIdWingsWingIdResponse> = {
   operationId: "DeleteFleetsFleetIdWingsWingId",
   method: "DELETE",
   path: "/fleets/{fleet_id}/wings/{wing_id}",
@@ -142,7 +186,12 @@ export const DeleteFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescrip
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFleetsFleetIdDescriptor: OperationExecutionDescriptor<GetFleetsFleetIdInput, GetFleetsFleetIdOutput> = {
+export const GetFleetsFleetIdRequestSchema: z.ZodType<OperationArguments<GetFleetsFleetIdData>> = composeOperationRequestSchema<OperationArguments<GetFleetsFleetIdData>>({
+  headers: { required: false, schema: zGetFleetsFleetIdHeaders },
+  path: { required: true, schema: zGetFleetsFleetIdPath },
+});
+
+export const GetFleetsFleetIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetFleetsFleetIdData>, GetFleetsFleetIdResponse> = {
   operationId: "GetFleetsFleetId",
   method: "GET",
   path: "/fleets/{fleet_id}",
@@ -156,12 +205,17 @@ export const GetFleetsFleetIdDescriptor: OperationExecutionDescriptor<GetFleetsF
   requestSchema: GetFleetsFleetIdRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetFleetsFleetIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFleetsFleetIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdFleetDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdFleetInput, GetCharactersCharacterIdFleetOutput> = {
+export const GetCharactersCharacterIdFleetRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdFleetData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdFleetData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdFleetHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdFleetPath },
+});
+
+export const GetCharactersCharacterIdFleetDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdFleetData>, GetCharactersCharacterIdFleetResponse> = {
   operationId: "GetCharactersCharacterIdFleet",
   method: "GET",
   path: "/characters/{character_id}/fleet",
@@ -175,12 +229,18 @@ export const GetCharactersCharacterIdFleetDescriptor: OperationExecutionDescript
   requestSchema: GetCharactersCharacterIdFleetRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdFleetStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdFleetResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<PostFleetsFleetIdMembersInput, PostFleetsFleetIdMembersOutput> = {
+export const PostFleetsFleetIdMembersRequestSchema: z.ZodType<OperationArguments<PostFleetsFleetIdMembersData>> = composeOperationRequestSchema<OperationArguments<PostFleetsFleetIdMembersData>>({
+  headers: { required: false, schema: zPostFleetsFleetIdMembersHeaders },
+  path: { required: true, schema: zPostFleetsFleetIdMembersPath },
+  body: { required: true, schema: zPostFleetsFleetIdMembersBody },
+});
+
+export const PostFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<OperationArguments<PostFleetsFleetIdMembersData>, PostFleetsFleetIdMembersResponse> = {
   operationId: "PostFleetsFleetIdMembers",
   method: "POST",
   path: "/fleets/{fleet_id}/members",
@@ -199,7 +259,12 @@ export const PostFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<Po
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<GetFleetsFleetIdMembersInput, GetFleetsFleetIdMembersOutput> = {
+export const GetFleetsFleetIdMembersRequestSchema: z.ZodType<OperationArguments<GetFleetsFleetIdMembersData>> = composeOperationRequestSchema<OperationArguments<GetFleetsFleetIdMembersData>>({
+  headers: { required: false, schema: zGetFleetsFleetIdMembersHeaders },
+  path: { required: true, schema: zGetFleetsFleetIdMembersPath },
+});
+
+export const GetFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<OperationArguments<GetFleetsFleetIdMembersData>, GetFleetsFleetIdMembersResponse> = {
   operationId: "GetFleetsFleetIdMembers",
   method: "GET",
   path: "/fleets/{fleet_id}/members",
@@ -213,12 +278,17 @@ export const GetFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<Get
   requestSchema: GetFleetsFleetIdMembersRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetFleetsFleetIdMembersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFleetsFleetIdMembersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<GetFleetsFleetIdWingsInput, GetFleetsFleetIdWingsOutput> = {
+export const GetFleetsFleetIdWingsRequestSchema: z.ZodType<OperationArguments<GetFleetsFleetIdWingsData>> = composeOperationRequestSchema<OperationArguments<GetFleetsFleetIdWingsData>>({
+  headers: { required: false, schema: zGetFleetsFleetIdWingsHeaders },
+  path: { required: true, schema: zGetFleetsFleetIdWingsPath },
+});
+
+export const GetFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<OperationArguments<GetFleetsFleetIdWingsData>, GetFleetsFleetIdWingsResponse> = {
   operationId: "GetFleetsFleetIdWings",
   method: "GET",
   path: "/fleets/{fleet_id}/wings",
@@ -232,12 +302,18 @@ export const GetFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<GetFl
   requestSchema: GetFleetsFleetIdWingsRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetFleetsFleetIdWingsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFleetsFleetIdWingsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PutFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDescriptor<PutFleetsFleetIdMembersMemberIdInput, PutFleetsFleetIdMembersMemberIdOutput> = {
+export const PutFleetsFleetIdMembersMemberIdRequestSchema: z.ZodType<OperationArguments<PutFleetsFleetIdMembersMemberIdData>> = composeOperationRequestSchema<OperationArguments<PutFleetsFleetIdMembersMemberIdData>>({
+  headers: { required: false, schema: zPutFleetsFleetIdMembersMemberIdHeaders },
+  path: { required: true, schema: zPutFleetsFleetIdMembersMemberIdPath },
+  body: { required: true, schema: zPutFleetsFleetIdMembersMemberIdBody },
+});
+
+export const PutFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDescriptor<OperationArguments<PutFleetsFleetIdMembersMemberIdData>, PutFleetsFleetIdMembersMemberIdResponse> = {
   operationId: "PutFleetsFleetIdMembersMemberId",
   method: "PUT",
   path: "/fleets/{fleet_id}/members/{member_id}",
@@ -257,7 +333,12 @@ export const PutFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDescri
   transport: { compatibilityDateOverride: true },
 };
 
-export const DeleteFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDescriptor<DeleteFleetsFleetIdMembersMemberIdInput, DeleteFleetsFleetIdMembersMemberIdOutput> = {
+export const DeleteFleetsFleetIdMembersMemberIdRequestSchema: z.ZodType<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>> = composeOperationRequestSchema<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>>({
+  headers: { required: false, schema: zDeleteFleetsFleetIdMembersMemberIdHeaders },
+  path: { required: true, schema: zDeleteFleetsFleetIdMembersMemberIdPath },
+});
+
+export const DeleteFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDescriptor<OperationArguments<DeleteFleetsFleetIdMembersMemberIdData>, DeleteFleetsFleetIdMembersMemberIdResponse> = {
   operationId: "DeleteFleetsFleetIdMembersMemberId",
   method: "DELETE",
   path: "/fleets/{fleet_id}/members/{member_id}",
@@ -277,7 +358,13 @@ export const DeleteFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDes
   transport: { compatibilityDateOverride: true },
 };
 
-export const PutFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescriptor<PutFleetsFleetIdSquadsSquadIdInput, PutFleetsFleetIdSquadsSquadIdOutput> = {
+export const PutFleetsFleetIdSquadsSquadIdRequestSchema: z.ZodType<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>> = composeOperationRequestSchema<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>>({
+  headers: { required: false, schema: zPutFleetsFleetIdSquadsSquadIdHeaders },
+  path: { required: true, schema: zPutFleetsFleetIdSquadsSquadIdPath },
+  body: { required: true, schema: zPutFleetsFleetIdSquadsSquadIdBody },
+});
+
+export const PutFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescriptor<OperationArguments<PutFleetsFleetIdSquadsSquadIdData>, PutFleetsFleetIdSquadsSquadIdResponse> = {
   operationId: "PutFleetsFleetIdSquadsSquadId",
   method: "PUT",
   path: "/fleets/{fleet_id}/squads/{squad_id}",
@@ -297,7 +384,13 @@ export const PutFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescript
   transport: { compatibilityDateOverride: true },
 };
 
-export const PutFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescriptor<PutFleetsFleetIdWingsWingIdInput, PutFleetsFleetIdWingsWingIdOutput> = {
+export const PutFleetsFleetIdWingsWingIdRequestSchema: z.ZodType<OperationArguments<PutFleetsFleetIdWingsWingIdData>> = composeOperationRequestSchema<OperationArguments<PutFleetsFleetIdWingsWingIdData>>({
+  headers: { required: false, schema: zPutFleetsFleetIdWingsWingIdHeaders },
+  path: { required: true, schema: zPutFleetsFleetIdWingsWingIdPath },
+  body: { required: true, schema: zPutFleetsFleetIdWingsWingIdBody },
+});
+
+export const PutFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescriptor<OperationArguments<PutFleetsFleetIdWingsWingIdData>, PutFleetsFleetIdWingsWingIdResponse> = {
   operationId: "PutFleetsFleetIdWingsWingId",
   method: "PUT",
   path: "/fleets/{fleet_id}/wings/{wing_id}",
@@ -317,7 +410,13 @@ export const PutFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescriptor
   transport: { compatibilityDateOverride: true },
 };
 
-export const PutFleetsFleetIdDescriptor: OperationExecutionDescriptor<PutFleetsFleetIdInput, PutFleetsFleetIdOutput> = {
+export const PutFleetsFleetIdRequestSchema: z.ZodType<OperationArguments<PutFleetsFleetIdData>> = composeOperationRequestSchema<OperationArguments<PutFleetsFleetIdData>>({
+  headers: { required: false, schema: zPutFleetsFleetIdHeaders },
+  path: { required: true, schema: zPutFleetsFleetIdPath },
+  body: { required: true, schema: zPutFleetsFleetIdBody },
+});
+
+export const PutFleetsFleetIdDescriptor: OperationExecutionDescriptor<OperationArguments<PutFleetsFleetIdData>, PutFleetsFleetIdResponse> = {
   operationId: "PutFleetsFleetId",
   method: "PUT",
   path: "/fleets/{fleet_id}",

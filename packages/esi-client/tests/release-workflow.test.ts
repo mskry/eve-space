@@ -25,7 +25,7 @@ describe('ESI client trusted publication workflow', () => {
 
   it('builds one candidate under the minimum supported runtime', () => {
     const validate = job('validate');
-    expect(validate).toContain('node-version: 22.18.0');
+    expect(validate).toContain("node-version-file: '.node-version'");
     expect(validate).toContain('fetch-depth: 0');
     expect(validate).toContain('persist-credentials: false');
     expect(validate).toContain('pnpm install --frozen-lockfile');
@@ -41,7 +41,7 @@ describe('ESI client trusted publication workflow', () => {
     expect(workflow.match(/id-token: write/g)).toHaveLength(1);
     expect(publish).toContain('needs: validate');
     expect(publish).toContain('environment: npm');
-    expect(publish).toContain('node-version: 24');
+    expect(publish).toContain("node-version-file: '.node-version'");
     expect(publish).toContain('actions/download-artifact@v4');
     expect(publish).toContain('Require npm 11.5.1 or newer');
     expect(workflow.match(/name: esi-client-release-candidate/g)).toHaveLength(2);

@@ -16,30 +16,32 @@ Get public contracts
 - Domain import: `@evespace/esi-client/domains/contracts`
 - Domain index: [contracts](../domains/contracts.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createContractsClient } from '@evespace/esi-client/domains/contracts';
+import type { GetContractsPublicRegionIdResponse } from '@evespace/esi-client/types';
 
 const client = createContractsClient();
 
 const regionId = 10000002;
 
-const data = await client.listPublicContracts(regionId);
+const data: GetContractsPublicRegionIdResponse = await client.listPublicContracts(regionId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetContractsPublicRegionIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const regionId = 10000002;
 
-const data = await client.contracts.listPublicContracts(regionId);
+const data: GetContractsPublicRegionIdResponse = await client.contracts.listPublicContracts(regionId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.contracts.listPublicContracts(regionId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetContractsPublicRegionIdData, GetContractsPublicRegionIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const regionId = 10000002;
 const arguments_: CallOperationArguments<'GetContractsPublicRegionId'> = { path: { "region_id": regionId } };
 
 const response = await client.callOperation('GetContractsPublicRegionId', arguments_);
+const data: GetContractsPublicRegionIdResponse = response.data;
 ```
 
 ## Parameters
@@ -69,14 +73,16 @@ const response = await client.callOperation('GetContractsPublicRegionId', argume
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetContractsPublicRegionIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetContractsPublicRegionIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetContractsPublicRegionIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetContractsPublicRegionIdPath`; `query` uses `@evespace/esi-client/zod` export `zGetContractsPublicRegionIdQuery`.
+- Response type: `@evespace/esi-client/types` export `GetContractsPublicRegionIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.contracts.withMetadata().listPublicContracts(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetContractsPublicRegionIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetContractsPublicRegionIdResponse` | OK |
 
 ## Authentication
 
@@ -108,6 +114,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

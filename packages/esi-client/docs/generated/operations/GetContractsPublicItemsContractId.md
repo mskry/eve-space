@@ -16,30 +16,32 @@ Get public contract items
 - Domain import: `@evespace/esi-client/domains/contracts`
 - Domain index: [contracts](../domains/contracts.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createContractsClient } from '@evespace/esi-client/domains/contracts';
+import type { GetContractsPublicItemsContractIdResponse } from '@evespace/esi-client/types';
 
 const client = createContractsClient();
 
 const contractId = 12345;
 
-const data = await client.listPublicContractItems(contractId);
+const data: GetContractsPublicItemsContractIdResponse = await client.listPublicContractItems(contractId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetContractsPublicItemsContractIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const contractId = 12345;
 
-const data = await client.contracts.listPublicContractItems(contractId);
+const data: GetContractsPublicItemsContractIdResponse = await client.contracts.listPublicContractItems(contractId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.contracts.listPublicContractItems(contractId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetContractsPublicItemsContractIdData, GetContractsPublicItemsContractIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const contractId = 12345;
 const arguments_: CallOperationArguments<'GetContractsPublicItemsContractId'> = { path: { "contract_id": contractId } };
 
 const response = await client.callOperation('GetContractsPublicItemsContractId', arguments_);
+const data: GetContractsPublicItemsContractIdResponse = response.data;
 ```
 
 ## Parameters
@@ -69,15 +73,17 @@ const response = await client.callOperation('GetContractsPublicItemsContractId',
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetContractsPublicItemsContractIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetContractsPublicItemsContractIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetContractsPublicItemsContractIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetContractsPublicItemsContractIdPath`; `query` uses `@evespace/esi-client/zod` export `zGetContractsPublicItemsContractIdQuery`.
+- Response type: `@evespace/esi-client/types` export `GetContractsPublicItemsContractIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.contracts.withMetadata().listPublicContractItems(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetContractsPublicItemsContractIdStatus200SuccessResponseSchema` | OK |
-| `204` | none | `@evespace/esi-client/schemas` | `GetContractsPublicItemsContractIdStatus204SuccessResponseSchema` | Contract expired or recently accepted by player |
+| `200` | json | `@evespace/esi-client/zod` | `zGetContractsPublicItemsContractIdResponse` | OK |
+| `204` | none | `@evespace/esi-client/zod` | `zGetContractsPublicItemsContractIdResponse` | Contract expired or recently accepted by player |
 
 ## Authentication
 
@@ -109,6 +115,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

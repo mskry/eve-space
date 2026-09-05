@@ -1,6 +1,6 @@
 {
   "name": "@evespace/esi-client",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "TypeScript client for EVE Online's ESI (EVE Swagger Interface) API",
   "keywords": [
     "api",
@@ -36,10 +36,15 @@
       "import": "./dist/root.js",
       "default": "./dist/root.js"
     },
-    "./schemas": {
-      "types": "./dist/schemas.d.ts",
-      "import": "./dist/schemas.js",
-      "default": "./dist/schemas.js"
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js",
+      "default": "./dist/types/index.js"
+    },
+    "./zod": {
+      "types": "./dist/zod.d.ts",
+      "import": "./dist/zod.js",
+      "default": "./dist/zod.js"
     },
     "./operations": {
       "types": "./dist/operations/index.d.ts",
@@ -252,12 +257,13 @@
     "docs:check": "node scripts/check-documentation.ts",
     "drift:report": "node scripts/drift-report.ts",
     "examples:check": "node scripts/check-examples.ts",
-    "format": "oxfmt --write package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/client scripts tests README.md CHANGELOG.md",
-    "format:check": "oxfmt --check package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/client scripts tests README.md CHANGELOG.md",
+    "format": "oxfmt --write package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/types.ts src/zod.ts src/client scripts tests README.md CHANGELOG.md",
+    "format:check": "oxfmt --check package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/types.ts src/zod.ts src/client scripts tests README.md CHANGELOG.md",
     "generate": "node scripts/generate/source.ts",
     "generate:check": "node scripts/generate/check.ts",
+    "generate:shadow:check": "node scripts/generate/hey-api-shadow.ts",
     "generate:source:refresh": "node scripts/generate/source.ts --refresh-snapshot",
-    "lint": "oxlint --type-aware --deny-warnings src/index.ts src/operations.ts src/client scripts tests tsdown.config.ts vitest.config.ts",
+    "lint": "oxlint --type-aware --deny-warnings src/index.ts src/operations.ts src/types.ts src/zod.ts src/client scripts tests tsdown.config.ts vitest.config.ts",
     "package:check": "node scripts/check-package.ts",
     "package:budgets:refresh": "pnpm build && node scripts/inspect-pack.ts --refresh-budgets",
     "pack:inspect": "node scripts/inspect-pack.ts",
@@ -275,28 +281,29 @@
     "validate": "pnpm generate:check && pnpm docs:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm examples:check && pnpm build && pnpm run package:check -- --built"
   },
   "devDependencies": {
-    "@arethetypeswrong/cli": "0.18.5",
-    "@arethetypeswrong/core": "0.18.5",
-    "@bybrave/fast-json-patch2": "4.0.0",
-    "@scalar/openapi-parser": "0.28.14",
-    "@types/node": "22.18.0",
-    "@vitest/coverage-v8": "4.1.11",
-    "es-module-lexer": "2.3.2",
-    "esbuild": "0.28.2",
-    "oxfmt": "0.64.0",
-    "oxlint": "1.79.0",
-    "oxlint-tsgolint": "7.0.2001",
-    "publint": "0.3.23",
-    "tsdown": "0.22.14",
-    "typescript": "7.0.2",
-    "vitest": "4.1.11",
-    "zod": "4.4.3"
+    "@arethetypeswrong/cli": "catalog:",
+    "@arethetypeswrong/core": "catalog:",
+    "@bybrave/fast-json-patch2": "catalog:",
+    "@evespace/esi-client-codegen": "workspace:*",
+    "@scalar/openapi-parser": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest5",
+    "es-module-lexer": "catalog:",
+    "esbuild": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:tsgo",
+    "vitest": "catalog:vitest5",
+    "zod": "catalog:"
   },
   "peerDependencies": {
-    "zod": "^4.0.0"
+    "zod": "catalog:"
   },
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=24.20.0"
   },
   "packageManager": "pnpm@11.22.0"
 }

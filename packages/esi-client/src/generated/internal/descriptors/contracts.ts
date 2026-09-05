@@ -4,48 +4,71 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdContractsContractIdBidsData,
+  GetCharactersCharacterIdContractsContractIdBidsResponse,
+  GetCharactersCharacterIdContractsContractIdItemsData,
+  GetCharactersCharacterIdContractsContractIdItemsResponse,
+  GetCharactersCharacterIdContractsData,
+  GetCharactersCharacterIdContractsResponse,
+  GetContractsPublicBidsContractIdData,
+  GetContractsPublicBidsContractIdResponse,
+  GetContractsPublicItemsContractIdData,
+  GetContractsPublicItemsContractIdResponse,
+  GetContractsPublicRegionIdData,
+  GetContractsPublicRegionIdResponse,
+  GetCorporationsCorporationIdContractsContractIdBidsData,
+  GetCorporationsCorporationIdContractsContractIdBidsResponse,
+  GetCorporationsCorporationIdContractsContractIdItemsData,
+  GetCorporationsCorporationIdContractsContractIdItemsResponse,
+  GetCorporationsCorporationIdContractsData,
+  GetCorporationsCorporationIdContractsResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdContractsContractIdBidsRequestSchema,
-  GetCharactersCharacterIdContractsContractIdBidsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdContractsContractIdItemsRequestSchema,
-  GetCharactersCharacterIdContractsContractIdItemsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdContractsRequestSchema,
-  GetCharactersCharacterIdContractsStatus200SuccessResponseSchema,
-  GetContractsPublicBidsContractIdRequestSchema,
-  GetContractsPublicBidsContractIdStatus200SuccessResponseSchema,
-  GetContractsPublicBidsContractIdStatus204SuccessResponseSchema,
-  GetContractsPublicItemsContractIdRequestSchema,
-  GetContractsPublicItemsContractIdStatus200SuccessResponseSchema,
-  GetContractsPublicItemsContractIdStatus204SuccessResponseSchema,
-  GetContractsPublicRegionIdRequestSchema,
-  GetContractsPublicRegionIdStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdContractsContractIdBidsRequestSchema,
-  GetCorporationsCorporationIdContractsContractIdBidsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdContractsContractIdItemsRequestSchema,
-  GetCorporationsCorporationIdContractsContractIdItemsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdContractsRequestSchema,
-  GetCorporationsCorporationIdContractsStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdContractsContractIdBidsInput,
-  type GetCharactersCharacterIdContractsContractIdBidsOutput,
-  type GetCharactersCharacterIdContractsContractIdItemsInput,
-  type GetCharactersCharacterIdContractsContractIdItemsOutput,
-  type GetCharactersCharacterIdContractsInput,
-  type GetCharactersCharacterIdContractsOutput,
-  type GetContractsPublicBidsContractIdInput,
-  type GetContractsPublicBidsContractIdOutput,
-  type GetContractsPublicItemsContractIdInput,
-  type GetContractsPublicItemsContractIdOutput,
-  type GetContractsPublicRegionIdInput,
-  type GetContractsPublicRegionIdOutput,
-  type GetCorporationsCorporationIdContractsContractIdBidsInput,
-  type GetCorporationsCorporationIdContractsContractIdBidsOutput,
-  type GetCorporationsCorporationIdContractsContractIdItemsInput,
-  type GetCorporationsCorporationIdContractsContractIdItemsOutput,
-  type GetCorporationsCorporationIdContractsInput,
-  type GetCorporationsCorporationIdContractsOutput,
-} from '../../schemas/operations/contracts.js';
+  zGetCharactersCharacterIdContractsContractIdBidsHeaders,
+  zGetCharactersCharacterIdContractsContractIdBidsPath,
+  zGetCharactersCharacterIdContractsContractIdBidsResponse,
+  zGetCharactersCharacterIdContractsContractIdItemsHeaders,
+  zGetCharactersCharacterIdContractsContractIdItemsPath,
+  zGetCharactersCharacterIdContractsContractIdItemsResponse,
+  zGetCharactersCharacterIdContractsHeaders,
+  zGetCharactersCharacterIdContractsPath,
+  zGetCharactersCharacterIdContractsQuery,
+  zGetCharactersCharacterIdContractsResponse,
+  zGetContractsPublicBidsContractIdHeaders,
+  zGetContractsPublicBidsContractIdPath,
+  zGetContractsPublicBidsContractIdQuery,
+  zGetContractsPublicBidsContractIdResponse,
+  zGetContractsPublicItemsContractIdHeaders,
+  zGetContractsPublicItemsContractIdPath,
+  zGetContractsPublicItemsContractIdQuery,
+  zGetContractsPublicItemsContractIdResponse,
+  zGetContractsPublicRegionIdHeaders,
+  zGetContractsPublicRegionIdPath,
+  zGetContractsPublicRegionIdQuery,
+  zGetContractsPublicRegionIdResponse,
+  zGetCorporationsCorporationIdContractsContractIdBidsHeaders,
+  zGetCorporationsCorporationIdContractsContractIdBidsPath,
+  zGetCorporationsCorporationIdContractsContractIdBidsQuery,
+  zGetCorporationsCorporationIdContractsContractIdBidsResponse,
+  zGetCorporationsCorporationIdContractsContractIdItemsHeaders,
+  zGetCorporationsCorporationIdContractsContractIdItemsPath,
+  zGetCorporationsCorporationIdContractsContractIdItemsResponse,
+  zGetCorporationsCorporationIdContractsHeaders,
+  zGetCorporationsCorporationIdContractsPath,
+  zGetCorporationsCorporationIdContractsQuery,
+  zGetCorporationsCorporationIdContractsResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdContractsContractIdBidsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdContractsContractIdBidsInput, GetCharactersCharacterIdContractsContractIdBidsOutput> = {
+export const GetCharactersCharacterIdContractsContractIdBidsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdContractsContractIdBidsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdContractsContractIdBidsPath },
+});
+
+export const GetCharactersCharacterIdContractsContractIdBidsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>, GetCharactersCharacterIdContractsContractIdBidsResponse> = {
   operationId: "GetCharactersCharacterIdContractsContractIdBids",
   method: "GET",
   path: "/characters/{character_id}/contracts/{contract_id}/bids",
@@ -60,12 +83,17 @@ export const GetCharactersCharacterIdContractsContractIdBidsDescriptor: Operatio
   requestSchema: GetCharactersCharacterIdContractsContractIdBidsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_character_contracts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdContractsContractIdBidsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdContractsContractIdBidsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdContractsContractIdItemsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdContractsContractIdItemsInput, GetCharactersCharacterIdContractsContractIdItemsOutput> = {
+export const GetCharactersCharacterIdContractsContractIdItemsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdContractsContractIdItemsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdContractsContractIdItemsPath },
+});
+
+export const GetCharactersCharacterIdContractsContractIdItemsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>, GetCharactersCharacterIdContractsContractIdItemsResponse> = {
   operationId: "GetCharactersCharacterIdContractsContractIdItems",
   method: "GET",
   path: "/characters/{character_id}/contracts/{contract_id}/items",
@@ -80,12 +108,18 @@ export const GetCharactersCharacterIdContractsContractIdItemsDescriptor: Operati
   requestSchema: GetCharactersCharacterIdContractsContractIdItemsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_character_contracts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdContractsContractIdItemsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdContractsContractIdItemsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdContractsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdContractsInput, GetCharactersCharacterIdContractsOutput> = {
+export const GetCharactersCharacterIdContractsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdContractsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdContractsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdContractsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdContractsPath },
+  query: { required: false, schema: zGetCharactersCharacterIdContractsQuery },
+});
+
+export const GetCharactersCharacterIdContractsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdContractsData>, GetCharactersCharacterIdContractsResponse> = {
   operationId: "GetCharactersCharacterIdContracts",
   method: "GET",
   path: "/characters/{character_id}/contracts",
@@ -100,12 +134,18 @@ export const GetCharactersCharacterIdContractsDescriptor: OperationExecutionDesc
   requestSchema: GetCharactersCharacterIdContractsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_character_contracts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdContractsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdContractsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdContractsContractIdBidsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdContractsContractIdBidsInput, GetCorporationsCorporationIdContractsContractIdBidsOutput> = {
+export const GetCorporationsCorporationIdContractsContractIdBidsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdContractsContractIdBidsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdContractsContractIdBidsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdContractsContractIdBidsQuery },
+});
+
+export const GetCorporationsCorporationIdContractsContractIdBidsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>, GetCorporationsCorporationIdContractsContractIdBidsResponse> = {
   operationId: "GetCorporationsCorporationIdContractsContractIdBids",
   method: "GET",
   path: "/corporations/{corporation_id}/contracts/{contract_id}/bids",
@@ -121,12 +161,17 @@ export const GetCorporationsCorporationIdContractsContractIdBidsDescriptor: Oper
   requestSchema: GetCorporationsCorporationIdContractsContractIdBidsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_corporation_contracts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdContractsContractIdBidsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContractsContractIdBidsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdContractsContractIdItemsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdContractsContractIdItemsInput, GetCorporationsCorporationIdContractsContractIdItemsOutput> = {
+export const GetCorporationsCorporationIdContractsContractIdItemsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdContractsContractIdItemsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdContractsContractIdItemsPath },
+});
+
+export const GetCorporationsCorporationIdContractsContractIdItemsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>, GetCorporationsCorporationIdContractsContractIdItemsResponse> = {
   operationId: "GetCorporationsCorporationIdContractsContractIdItems",
   method: "GET",
   path: "/corporations/{corporation_id}/contracts/{contract_id}/items",
@@ -141,12 +186,18 @@ export const GetCorporationsCorporationIdContractsContractIdItemsDescriptor: Ope
   requestSchema: GetCorporationsCorporationIdContractsContractIdItemsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_corporation_contracts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdContractsContractIdItemsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContractsContractIdItemsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdContractsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdContractsInput, GetCorporationsCorporationIdContractsOutput> = {
+export const GetCorporationsCorporationIdContractsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdContractsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdContractsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdContractsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdContractsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdContractsQuery },
+});
+
+export const GetCorporationsCorporationIdContractsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdContractsData>, GetCorporationsCorporationIdContractsResponse> = {
   operationId: "GetCorporationsCorporationIdContracts",
   method: "GET",
   path: "/corporations/{corporation_id}/contracts",
@@ -161,12 +212,18 @@ export const GetCorporationsCorporationIdContractsDescriptor: OperationExecution
   requestSchema: GetCorporationsCorporationIdContractsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_corporation_contracts.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdContractsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContractsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetContractsPublicBidsContractIdDescriptor: OperationExecutionDescriptor<GetContractsPublicBidsContractIdInput, GetContractsPublicBidsContractIdOutput> = {
+export const GetContractsPublicBidsContractIdRequestSchema: z.ZodType<OperationArguments<GetContractsPublicBidsContractIdData>> = composeOperationRequestSchema<OperationArguments<GetContractsPublicBidsContractIdData>>({
+  headers: { required: false, schema: zGetContractsPublicBidsContractIdHeaders },
+  path: { required: true, schema: zGetContractsPublicBidsContractIdPath },
+  query: { required: false, schema: zGetContractsPublicBidsContractIdQuery },
+});
+
+export const GetContractsPublicBidsContractIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetContractsPublicBidsContractIdData>, GetContractsPublicBidsContractIdResponse> = {
   operationId: "GetContractsPublicBidsContractId",
   method: "GET",
   path: "/contracts/public/bids/{contract_id}",
@@ -181,13 +238,19 @@ export const GetContractsPublicBidsContractIdDescriptor: OperationExecutionDescr
   requestSchema: GetContractsPublicBidsContractIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetContractsPublicBidsContractIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetContractsPublicBidsContractIdResponse },
     { status: 204, body: 'none' },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetContractsPublicItemsContractIdDescriptor: OperationExecutionDescriptor<GetContractsPublicItemsContractIdInput, GetContractsPublicItemsContractIdOutput> = {
+export const GetContractsPublicItemsContractIdRequestSchema: z.ZodType<OperationArguments<GetContractsPublicItemsContractIdData>> = composeOperationRequestSchema<OperationArguments<GetContractsPublicItemsContractIdData>>({
+  headers: { required: false, schema: zGetContractsPublicItemsContractIdHeaders },
+  path: { required: true, schema: zGetContractsPublicItemsContractIdPath },
+  query: { required: false, schema: zGetContractsPublicItemsContractIdQuery },
+});
+
+export const GetContractsPublicItemsContractIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetContractsPublicItemsContractIdData>, GetContractsPublicItemsContractIdResponse> = {
   operationId: "GetContractsPublicItemsContractId",
   method: "GET",
   path: "/contracts/public/items/{contract_id}",
@@ -202,13 +265,19 @@ export const GetContractsPublicItemsContractIdDescriptor: OperationExecutionDesc
   requestSchema: GetContractsPublicItemsContractIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetContractsPublicItemsContractIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetContractsPublicItemsContractIdResponse },
     { status: 204, body: 'none' },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetContractsPublicRegionIdDescriptor: OperationExecutionDescriptor<GetContractsPublicRegionIdInput, GetContractsPublicRegionIdOutput> = {
+export const GetContractsPublicRegionIdRequestSchema: z.ZodType<OperationArguments<GetContractsPublicRegionIdData>> = composeOperationRequestSchema<OperationArguments<GetContractsPublicRegionIdData>>({
+  headers: { required: false, schema: zGetContractsPublicRegionIdHeaders },
+  path: { required: true, schema: zGetContractsPublicRegionIdPath },
+  query: { required: false, schema: zGetContractsPublicRegionIdQuery },
+});
+
+export const GetContractsPublicRegionIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetContractsPublicRegionIdData>, GetContractsPublicRegionIdResponse> = {
   operationId: "GetContractsPublicRegionId",
   method: "GET",
   path: "/contracts/public/{region_id}",
@@ -223,7 +292,7 @@ export const GetContractsPublicRegionIdDescriptor: OperationExecutionDescriptor<
   requestSchema: GetContractsPublicRegionIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetContractsPublicRegionIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetContractsPublicRegionIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -4,26 +4,39 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetAlliancesAllianceIdCorporationsData,
+  GetAlliancesAllianceIdCorporationsResponse,
+  GetAlliancesAllianceIdData,
+  GetAlliancesAllianceIdIconsData,
+  GetAlliancesAllianceIdIconsResponse,
+  GetAlliancesAllianceIdResponse,
+  GetAlliancesData,
+  GetAlliancesResponse,
+} from '../../types.gen.js';
 import {
-  GetAlliancesAllianceIdCorporationsRequestSchema,
-  GetAlliancesAllianceIdCorporationsStatus200SuccessResponseSchema,
-  GetAlliancesAllianceIdIconsRequestSchema,
-  GetAlliancesAllianceIdIconsStatus200SuccessResponseSchema,
-  GetAlliancesAllianceIdRequestSchema,
-  GetAlliancesAllianceIdStatus200SuccessResponseSchema,
-  GetAlliancesRequestSchema,
-  GetAlliancesStatus200SuccessResponseSchema,
-  type GetAlliancesAllianceIdCorporationsInput,
-  type GetAlliancesAllianceIdCorporationsOutput,
-  type GetAlliancesAllianceIdIconsInput,
-  type GetAlliancesAllianceIdIconsOutput,
-  type GetAlliancesAllianceIdInput,
-  type GetAlliancesAllianceIdOutput,
-  type GetAlliancesInput,
-  type GetAlliancesOutput,
-} from '../../schemas/operations/alliance.js';
+  zGetAlliancesAllianceIdCorporationsHeaders,
+  zGetAlliancesAllianceIdCorporationsPath,
+  zGetAlliancesAllianceIdCorporationsResponse,
+  zGetAlliancesAllianceIdHeaders,
+  zGetAlliancesAllianceIdIconsHeaders,
+  zGetAlliancesAllianceIdIconsPath,
+  zGetAlliancesAllianceIdIconsResponse,
+  zGetAlliancesAllianceIdPath,
+  zGetAlliancesAllianceIdResponse,
+  zGetAlliancesHeaders,
+  zGetAlliancesResponse,
+} from '../../zod.gen.js';
 
-export const GetAlliancesAllianceIdIconsDescriptor: OperationExecutionDescriptor<GetAlliancesAllianceIdIconsInput, GetAlliancesAllianceIdIconsOutput> = {
+export const GetAlliancesAllianceIdIconsRequestSchema: z.ZodType<OperationArguments<GetAlliancesAllianceIdIconsData>> = composeOperationRequestSchema<OperationArguments<GetAlliancesAllianceIdIconsData>>({
+  headers: { required: false, schema: zGetAlliancesAllianceIdIconsHeaders },
+  path: { required: true, schema: zGetAlliancesAllianceIdIconsPath },
+});
+
+export const GetAlliancesAllianceIdIconsDescriptor: OperationExecutionDescriptor<OperationArguments<GetAlliancesAllianceIdIconsData>, GetAlliancesAllianceIdIconsResponse> = {
   operationId: "GetAlliancesAllianceIdIcons",
   method: "GET",
   path: "/alliances/{alliance_id}/icons",
@@ -37,12 +50,17 @@ export const GetAlliancesAllianceIdIconsDescriptor: OperationExecutionDescriptor
   requestSchema: GetAlliancesAllianceIdIconsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetAlliancesAllianceIdIconsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetAlliancesAllianceIdIconsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetAlliancesAllianceIdDescriptor: OperationExecutionDescriptor<GetAlliancesAllianceIdInput, GetAlliancesAllianceIdOutput> = {
+export const GetAlliancesAllianceIdRequestSchema: z.ZodType<OperationArguments<GetAlliancesAllianceIdData>> = composeOperationRequestSchema<OperationArguments<GetAlliancesAllianceIdData>>({
+  headers: { required: false, schema: zGetAlliancesAllianceIdHeaders },
+  path: { required: true, schema: zGetAlliancesAllianceIdPath },
+});
+
+export const GetAlliancesAllianceIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetAlliancesAllianceIdData>, GetAlliancesAllianceIdResponse> = {
   operationId: "GetAlliancesAllianceId",
   method: "GET",
   path: "/alliances/{alliance_id}",
@@ -56,12 +74,16 @@ export const GetAlliancesAllianceIdDescriptor: OperationExecutionDescriptor<GetA
   requestSchema: GetAlliancesAllianceIdRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetAlliancesAllianceIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetAlliancesAllianceIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetAlliancesDescriptor: OperationExecutionDescriptor<GetAlliancesInput, GetAlliancesOutput> = {
+export const GetAlliancesRequestSchema: z.ZodType<OperationArguments<GetAlliancesData>> = composeOperationRequestSchema<OperationArguments<GetAlliancesData>>({
+  headers: { required: false, schema: zGetAlliancesHeaders },
+});
+
+export const GetAlliancesDescriptor: OperationExecutionDescriptor<OperationArguments<GetAlliancesData>, GetAlliancesResponse> = {
   operationId: "GetAlliances",
   method: "GET",
   path: "/alliances",
@@ -74,12 +96,17 @@ export const GetAlliancesDescriptor: OperationExecutionDescriptor<GetAlliancesIn
   requestSchema: GetAlliancesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetAlliancesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetAlliancesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetAlliancesAllianceIdCorporationsDescriptor: OperationExecutionDescriptor<GetAlliancesAllianceIdCorporationsInput, GetAlliancesAllianceIdCorporationsOutput> = {
+export const GetAlliancesAllianceIdCorporationsRequestSchema: z.ZodType<OperationArguments<GetAlliancesAllianceIdCorporationsData>> = composeOperationRequestSchema<OperationArguments<GetAlliancesAllianceIdCorporationsData>>({
+  headers: { required: false, schema: zGetAlliancesAllianceIdCorporationsHeaders },
+  path: { required: true, schema: zGetAlliancesAllianceIdCorporationsPath },
+});
+
+export const GetAlliancesAllianceIdCorporationsDescriptor: OperationExecutionDescriptor<OperationArguments<GetAlliancesAllianceIdCorporationsData>, GetAlliancesAllianceIdCorporationsResponse> = {
   operationId: "GetAlliancesAllianceIdCorporations",
   method: "GET",
   path: "/alliances/{alliance_id}/corporations",
@@ -93,7 +120,7 @@ export const GetAlliancesAllianceIdCorporationsDescriptor: OperationExecutionDes
   requestSchema: GetAlliancesAllianceIdCorporationsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetAlliancesAllianceIdCorporationsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetAlliancesAllianceIdCorporationsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

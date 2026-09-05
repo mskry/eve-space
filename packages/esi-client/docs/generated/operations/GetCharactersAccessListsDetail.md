@@ -16,12 +16,13 @@ Get Access List details
 - Domain import: `@evespace/esi-client/domains/access-list`
 - Domain index: [accessList](../domains/access-list.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createAccessListClient } from '@evespace/esi-client/domains/access-list';
+import type { GetCharactersAccessListsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,13 +32,14 @@ const client = createAccessListClient({ token: accessToken });
 const characterId = 90000001;
 const accessListId = 12345;
 
-const data = await client.get(characterId, accessListId);
+const data: GetCharactersAccessListsDetailResponse = await client.get(characterId, accessListId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersAccessListsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const accessListId = 12345;
 
-const data = await client.accessList.get(characterId, accessListId);
+const data: GetCharactersAccessListsDetailResponse = await client.accessList.get(characterId, accessListId);
 ```
 
 ## Generic-execution snippet
@@ -55,6 +57,7 @@ const data = await client.accessList.get(characterId, accessListId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersAccessListsDetailData, GetCharactersAccessListsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -67,6 +70,7 @@ const accessListId = 12345;
 const arguments_: CallOperationArguments<'GetCharactersAccessListsDetail'> = { path: { "character_id": characterId, "access_list_id": accessListId } };
 
 const response = await client.callOperation('GetCharactersAccessListsDetail', arguments_);
+const data: GetCharactersAccessListsDetailResponse = response.data;
 ```
 
 ## Parameters
@@ -81,14 +85,16 @@ const response = await client.callOperation('GetCharactersAccessListsDetail', ar
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersAccessListsDetailRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersAccessListsDetailData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersAccessListsDetailHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersAccessListsDetailPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersAccessListsDetailResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.accessList.withMetadata().get(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersAccessListsDetailStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersAccessListsDetailResponse` | OK |
 
 ## Authentication
 
@@ -120,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

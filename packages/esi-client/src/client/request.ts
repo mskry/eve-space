@@ -24,6 +24,7 @@ export type {
   OperationHttpMethod,
   OperationParameterDescriptor,
   OperationParameterPlacement,
+  OperationArguments,
   OperationParameterSchema,
   OperationRequestArguments,
   OperationSchema,

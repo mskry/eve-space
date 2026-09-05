@@ -4,50 +4,51 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdLocationInput,
-  GetCharactersCharacterIdLocationOutput,
-  GetCharactersCharacterIdOnlineInput,
-  GetCharactersCharacterIdOnlineOutput,
-  GetCharactersCharacterIdShipInput,
-  GetCharactersCharacterIdShipOutput,
-} from '../../schemas/operations/location.js';
+  GetCharactersCharacterIdLocationData,
+  GetCharactersCharacterIdLocationResponse,
+  GetCharactersCharacterIdOnlineData,
+  GetCharactersCharacterIdOnlineResponse,
+  GetCharactersCharacterIdShipData,
+  GetCharactersCharacterIdShipResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdLocationOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdLocationInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdLocationInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdLocationInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdShipOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdShipInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdShipInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdShipInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdOnlineOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdOnlineInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdOnlineInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdOnlineInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>["headers"]>["X-Tenant"];
 }
 
 export interface LocationDomainClient {
-  get(characterId: NonNullable<GetCharactersCharacterIdLocationInput['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<GetCharactersCharacterIdLocationOutput>;
+  get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<GetCharactersCharacterIdLocationResponse>;
 
-  getCurrentShip(characterId: NonNullable<GetCharactersCharacterIdShipInput['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<GetCharactersCharacterIdShipOutput>;
+  getCurrentShip(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<GetCharactersCharacterIdShipResponse>;
 
-  getOnlineStatus(characterId: NonNullable<GetCharactersCharacterIdOnlineInput['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<GetCharactersCharacterIdOnlineOutput>;
+  getOnlineStatus(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<GetCharactersCharacterIdOnlineResponse>;
 
   withMetadata(): LocationDomainClientWithMetadata;
 }
 
 export interface LocationDomainClientWithMetadata {
-  get(characterId: NonNullable<GetCharactersCharacterIdLocationInput['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<EsiResponse<GetCharactersCharacterIdLocationOutput>>;
+  get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<EsiResponse<GetCharactersCharacterIdLocationResponse>>;
 
-  getCurrentShip(characterId: NonNullable<GetCharactersCharacterIdShipInput['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<EsiResponse<GetCharactersCharacterIdShipOutput>>;
+  getCurrentShip(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<EsiResponse<GetCharactersCharacterIdShipResponse>>;
 
-  getOnlineStatus(characterId: NonNullable<GetCharactersCharacterIdOnlineInput['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<EsiResponse<GetCharactersCharacterIdOnlineOutput>>;
+  getOnlineStatus(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<EsiResponse<GetCharactersCharacterIdOnlineResponse>>;
 }

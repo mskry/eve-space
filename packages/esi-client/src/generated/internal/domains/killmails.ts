@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetKillmailsKillmailIdKillmailHashDescriptor,
@@ -19,13 +20,13 @@ import type {
   GetCorporationsCorporationIdKillmailsRecentOptions,
 } from './killmails-contract.js';
 import type {
-  GetCharactersCharacterIdKillmailsRecentInput,
-  GetCharactersCharacterIdKillmailsRecentOutput,
-  GetCorporationsCorporationIdKillmailsRecentInput,
-  GetCorporationsCorporationIdKillmailsRecentOutput,
-  GetKillmailsKillmailIdKillmailHashInput,
-  GetKillmailsKillmailIdKillmailHashOutput,
-} from '../../schemas/operations/killmails.js';
+  GetCharactersCharacterIdKillmailsRecentData,
+  GetCharactersCharacterIdKillmailsRecentResponse,
+  GetCorporationsCorporationIdKillmailsRecentData,
+  GetCorporationsCorporationIdKillmailsRecentResponse,
+  GetKillmailsKillmailIdKillmailHashData,
+  GetKillmailsKillmailIdKillmailHashResponse,
+} from '../../types.gen.js';
 
 class KillmailsDomainClientWithMetadataImplementation implements KillmailsDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -35,18 +36,18 @@ class KillmailsDomainClientWithMetadataImplementation implements KillmailsDomain
     Object.freeze(this);
   }
 
-  get(killmailId: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>["killmail_id"], killmailHash: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>["killmail_hash"], options?: GetKillmailsKillmailIdKillmailHashOptions): Promise<EsiResponse<GetKillmailsKillmailIdKillmailHashOutput>> {
-    const arguments_: GetKillmailsKillmailIdKillmailHashInput = { path: { "killmail_id": killmailId, "killmail_hash": killmailHash }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  get(killmailId: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']>["killmail_id"], killmailHash: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']>["killmail_hash"], options?: GetKillmailsKillmailIdKillmailHashOptions): Promise<EsiResponse<GetKillmailsKillmailIdKillmailHashResponse>> {
+    const arguments_: OperationArguments<GetKillmailsKillmailIdKillmailHashData> = { path: { "killmail_id": killmailId, "killmail_hash": killmailHash }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetKillmailsKillmailIdKillmailHashDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listRecentForCharacter(characterId: NonNullable<GetCharactersCharacterIdKillmailsRecentInput['path']>["character_id"], options?: GetCharactersCharacterIdKillmailsRecentOptions): Promise<EsiResponse<GetCharactersCharacterIdKillmailsRecentOutput>> {
-    const arguments_: GetCharactersCharacterIdKillmailsRecentInput = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listRecentForCharacter(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['path']>["character_id"], options?: GetCharactersCharacterIdKillmailsRecentOptions): Promise<EsiResponse<GetCharactersCharacterIdKillmailsRecentResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdKillmailsRecentData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdKillmailsRecentDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listRecentForCorporation(corporationId: NonNullable<GetCorporationsCorporationIdKillmailsRecentInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdKillmailsRecentOptions): Promise<EsiResponse<GetCorporationsCorporationIdKillmailsRecentOutput>> {
-    const arguments_: GetCorporationsCorporationIdKillmailsRecentInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listRecentForCorporation(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdKillmailsRecentOptions): Promise<EsiResponse<GetCorporationsCorporationIdKillmailsRecentResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdKillmailsRecentData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdKillmailsRecentDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -59,15 +60,15 @@ class KillmailsDomainClientImplementation implements KillmailsDomainClient {
     Object.freeze(this);
   }
 
-  get(killmailId: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>["killmail_id"], killmailHash: NonNullable<GetKillmailsKillmailIdKillmailHashInput['path']>["killmail_hash"], options?: GetKillmailsKillmailIdKillmailHashOptions): Promise<GetKillmailsKillmailIdKillmailHashOutput> {
+  get(killmailId: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']>["killmail_id"], killmailHash: NonNullable<OperationArguments<GetKillmailsKillmailIdKillmailHashData>['path']>["killmail_hash"], options?: GetKillmailsKillmailIdKillmailHashOptions): Promise<GetKillmailsKillmailIdKillmailHashResponse> {
     return this.#metadata.get(killmailId, killmailHash, options).then((response) => response.data);
   }
 
-  listRecentForCharacter(characterId: NonNullable<GetCharactersCharacterIdKillmailsRecentInput['path']>["character_id"], options?: GetCharactersCharacterIdKillmailsRecentOptions): Promise<GetCharactersCharacterIdKillmailsRecentOutput> {
+  listRecentForCharacter(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>['path']>["character_id"], options?: GetCharactersCharacterIdKillmailsRecentOptions): Promise<GetCharactersCharacterIdKillmailsRecentResponse> {
     return this.#metadata.listRecentForCharacter(characterId, options).then((response) => response.data);
   }
 
-  listRecentForCorporation(corporationId: NonNullable<GetCorporationsCorporationIdKillmailsRecentInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdKillmailsRecentOptions): Promise<GetCorporationsCorporationIdKillmailsRecentOutput> {
+  listRecentForCorporation(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdKillmailsRecentOptions): Promise<GetCorporationsCorporationIdKillmailsRecentResponse> {
     return this.#metadata.listRecentForCorporation(corporationId, options).then((response) => response.data);
   }
 

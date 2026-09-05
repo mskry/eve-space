@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createKillmailsClient } from '@evespace/esi-client/domains/killmails';
+import type { GetCharactersCharacterIdKillmailsRecentResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createKillmailsClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listRecentForCharacter(characterId);
+const data: GetCharactersCharacterIdKillmailsRecentResponse = await client.listRecentForCharacter(characterId);

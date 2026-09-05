@@ -16,12 +16,13 @@ Delete fitting
 - Domain import: `@evespace/esi-client/domains/fittings`
 - Domain index: [fittings](../domains/fittings.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFittingsClient } from '@evespace/esi-client/domains/fittings';
+import type { DeleteCharactersCharacterIdFittingsFittingIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -32,13 +33,14 @@ const characterId = 90000001;
 const fittingId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.deleteFitting(characterId, fittingId);
+const data: DeleteCharactersCharacterIdFittingsFittingIdResponse = await client.deleteFitting(characterId, fittingId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { DeleteCharactersCharacterIdFittingsFittingIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -49,7 +51,7 @@ const characterId = 90000001;
 const fittingId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.fittings.deleteFitting(characterId, fittingId);
+const data: DeleteCharactersCharacterIdFittingsFittingIdResponse = await client.fittings.deleteFitting(characterId, fittingId);
 ```
 
 ## Generic-execution snippet
@@ -57,6 +59,7 @@ const data = await client.fittings.deleteFitting(characterId, fittingId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { DeleteCharactersCharacterIdFittingsFittingIdData, DeleteCharactersCharacterIdFittingsFittingIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -72,6 +75,7 @@ const arguments_: CallOperationArguments<'DeleteCharactersCharacterIdFittingsFit
 const response = await client.callOperation('DeleteCharactersCharacterIdFittingsFittingId', arguments_, {
   confirmMutation: true,
 });
+const data: DeleteCharactersCharacterIdFittingsFittingIdResponse = response.data;
 ```
 
 ## Parameters
@@ -86,14 +90,16 @@ const response = await client.callOperation('DeleteCharactersCharacterIdFittings
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `DeleteCharactersCharacterIdFittingsFittingIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `DeleteCharactersCharacterIdFittingsFittingIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zDeleteCharactersCharacterIdFittingsFittingIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zDeleteCharactersCharacterIdFittingsFittingIdPath`.
+- Response type: `@evespace/esi-client/types` export `DeleteCharactersCharacterIdFittingsFittingIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.fittings.withMetadata().deleteFitting(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `DeleteCharactersCharacterIdFittingsFittingIdStatus204SuccessResponseSchema` | Fitting deleted |
+| `204` | none | `@evespace/esi-client/zod` | `zDeleteCharactersCharacterIdFittingsFittingIdResponse` | Fitting deleted |
 
 ## Authentication
 
@@ -128,6 +134,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

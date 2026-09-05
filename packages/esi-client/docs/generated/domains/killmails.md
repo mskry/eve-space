@@ -23,6 +23,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createKillmailsClient } from '@evespace/esi-client/domains/killmails';
+import type { GetCharactersCharacterIdKillmailsRecentResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,7 +32,7 @@ const client = createKillmailsClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listRecentForCharacter(characterId);
+const data: GetCharactersCharacterIdKillmailsRecentResponse = await client.listRecentForCharacter(characterId);
 ```
 
 ## Aggregate client
@@ -40,6 +41,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdKillmailsRecentResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -48,7 +50,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.killmails.listRecentForCharacter(characterId);
+const data: GetCharactersCharacterIdKillmailsRecentResponse = await client.killmails.listRecentForCharacter(characterId);
 ```
 
 ## Shared concepts

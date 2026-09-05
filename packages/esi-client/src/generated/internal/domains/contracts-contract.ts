@@ -4,134 +4,135 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdContractsContractIdBidsInput,
-  GetCharactersCharacterIdContractsContractIdBidsOutput,
-  GetCharactersCharacterIdContractsContractIdItemsInput,
-  GetCharactersCharacterIdContractsContractIdItemsOutput,
-  GetCharactersCharacterIdContractsInput,
-  GetCharactersCharacterIdContractsOutput,
-  GetContractsPublicBidsContractIdInput,
-  GetContractsPublicBidsContractIdOutput,
-  GetContractsPublicItemsContractIdInput,
-  GetContractsPublicItemsContractIdOutput,
-  GetContractsPublicRegionIdInput,
-  GetContractsPublicRegionIdOutput,
-  GetCorporationsCorporationIdContractsContractIdBidsInput,
-  GetCorporationsCorporationIdContractsContractIdBidsOutput,
-  GetCorporationsCorporationIdContractsContractIdItemsInput,
-  GetCorporationsCorporationIdContractsContractIdItemsOutput,
-  GetCorporationsCorporationIdContractsInput,
-  GetCorporationsCorporationIdContractsOutput,
-} from '../../schemas/operations/contracts.js';
+  GetCharactersCharacterIdContractsContractIdBidsData,
+  GetCharactersCharacterIdContractsContractIdBidsResponse,
+  GetCharactersCharacterIdContractsContractIdItemsData,
+  GetCharactersCharacterIdContractsContractIdItemsResponse,
+  GetCharactersCharacterIdContractsData,
+  GetCharactersCharacterIdContractsResponse,
+  GetContractsPublicBidsContractIdData,
+  GetContractsPublicBidsContractIdResponse,
+  GetContractsPublicItemsContractIdData,
+  GetContractsPublicItemsContractIdResponse,
+  GetContractsPublicRegionIdData,
+  GetContractsPublicRegionIdResponse,
+  GetCorporationsCorporationIdContractsContractIdBidsData,
+  GetCorporationsCorporationIdContractsContractIdBidsResponse,
+  GetCorporationsCorporationIdContractsContractIdItemsData,
+  GetCorporationsCorporationIdContractsContractIdItemsResponse,
+  GetCorporationsCorporationIdContractsData,
+  GetCorporationsCorporationIdContractsResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdContractsContractIdBidsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdContractsContractIdBidsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdContractsContractIdBidsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdContractsContractIdBidsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdContractsContractIdItemsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdContractsContractIdItemsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdContractsContractIdItemsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdContractsContractIdItemsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdContractsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdContractsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdContractsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCharactersCharacterIdContractsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdContractsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdContractsContractIdBidsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdContractsContractIdItemsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdContractsContractIdItemsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdContractsContractIdItemsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdContractsContractIdItemsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdContractsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdContractsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdContractsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdContractsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdContractsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetContractsPublicBidsContractIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetContractsPublicBidsContractIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetContractsPublicBidsContractIdInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetContractsPublicBidsContractIdInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetContractsPublicBidsContractIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetContractsPublicItemsContractIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetContractsPublicItemsContractIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetContractsPublicItemsContractIdInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetContractsPublicItemsContractIdInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetContractsPublicItemsContractIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetContractsPublicRegionIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetContractsPublicRegionIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetContractsPublicRegionIdInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetContractsPublicRegionIdInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetContractsPublicRegionIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetContractsPublicRegionIdData>["headers"]>["X-Tenant"];
 }
 
 export interface ContractsDomainClient {
-  listCharacterContractBids(characterId: NonNullable<GetCharactersCharacterIdContractsContractIdBidsInput['path']>["character_id"], contractId: NonNullable<GetCharactersCharacterIdContractsContractIdBidsInput['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdBidsOptions): Promise<GetCharactersCharacterIdContractsContractIdBidsOutput>;
+  listCharacterContractBids(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']>["character_id"], contractId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdBidsOptions): Promise<GetCharactersCharacterIdContractsContractIdBidsResponse>;
 
-  listCharacterContractItems(characterId: NonNullable<GetCharactersCharacterIdContractsContractIdItemsInput['path']>["character_id"], contractId: NonNullable<GetCharactersCharacterIdContractsContractIdItemsInput['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdItemsOptions): Promise<GetCharactersCharacterIdContractsContractIdItemsOutput>;
+  listCharacterContractItems(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']>["character_id"], contractId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdItemsOptions): Promise<GetCharactersCharacterIdContractsContractIdItemsResponse>;
 
-  listCharacterContracts(characterId: NonNullable<GetCharactersCharacterIdContractsInput['path']>["character_id"], options?: GetCharactersCharacterIdContractsOptions): Promise<GetCharactersCharacterIdContractsOutput>;
+  listCharacterContracts(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>['path']>["character_id"], options?: GetCharactersCharacterIdContractsOptions): Promise<GetCharactersCharacterIdContractsResponse>;
 
-  listCorporationContractBids(corporationId: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput['path']>["corporation_id"], contractId: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdBidsOptions): Promise<GetCorporationsCorporationIdContractsContractIdBidsOutput>;
+  listCorporationContractBids(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']>["corporation_id"], contractId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdBidsOptions): Promise<GetCorporationsCorporationIdContractsContractIdBidsResponse>;
 
-  listCorporationContractItems(corporationId: NonNullable<GetCorporationsCorporationIdContractsContractIdItemsInput['path']>["corporation_id"], contractId: NonNullable<GetCorporationsCorporationIdContractsContractIdItemsInput['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdItemsOptions): Promise<GetCorporationsCorporationIdContractsContractIdItemsOutput>;
+  listCorporationContractItems(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']>["corporation_id"], contractId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdItemsOptions): Promise<GetCorporationsCorporationIdContractsContractIdItemsResponse>;
 
-  listCorporationContracts(corporationId: NonNullable<GetCorporationsCorporationIdContractsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContractsOptions): Promise<GetCorporationsCorporationIdContractsOutput>;
+  listCorporationContracts(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContractsOptions): Promise<GetCorporationsCorporationIdContractsResponse>;
 
-  listPublicContractBids(contractId: NonNullable<GetContractsPublicBidsContractIdInput['path']>["contract_id"], options?: GetContractsPublicBidsContractIdOptions): Promise<GetContractsPublicBidsContractIdOutput>;
+  listPublicContractBids(contractId: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>['path']>["contract_id"], options?: GetContractsPublicBidsContractIdOptions): Promise<GetContractsPublicBidsContractIdResponse>;
 
-  listPublicContractItems(contractId: NonNullable<GetContractsPublicItemsContractIdInput['path']>["contract_id"], options?: GetContractsPublicItemsContractIdOptions): Promise<GetContractsPublicItemsContractIdOutput>;
+  listPublicContractItems(contractId: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>['path']>["contract_id"], options?: GetContractsPublicItemsContractIdOptions): Promise<GetContractsPublicItemsContractIdResponse>;
 
-  listPublicContracts(regionId: NonNullable<GetContractsPublicRegionIdInput['path']>["region_id"], options?: GetContractsPublicRegionIdOptions): Promise<GetContractsPublicRegionIdOutput>;
+  listPublicContracts(regionId: NonNullable<OperationArguments<GetContractsPublicRegionIdData>['path']>["region_id"], options?: GetContractsPublicRegionIdOptions): Promise<GetContractsPublicRegionIdResponse>;
 
   withMetadata(): ContractsDomainClientWithMetadata;
 }
 
 export interface ContractsDomainClientWithMetadata {
-  listCharacterContractBids(characterId: NonNullable<GetCharactersCharacterIdContractsContractIdBidsInput['path']>["character_id"], contractId: NonNullable<GetCharactersCharacterIdContractsContractIdBidsInput['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdBidsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdBidsOutput>>;
+  listCharacterContractBids(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']>["character_id"], contractId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdBidsData>['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdBidsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdBidsResponse>>;
 
-  listCharacterContractItems(characterId: NonNullable<GetCharactersCharacterIdContractsContractIdItemsInput['path']>["character_id"], contractId: NonNullable<GetCharactersCharacterIdContractsContractIdItemsInput['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdItemsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdItemsOutput>>;
+  listCharacterContractItems(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']>["character_id"], contractId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsContractIdItemsData>['path']>["contract_id"], options?: GetCharactersCharacterIdContractsContractIdItemsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsContractIdItemsResponse>>;
 
-  listCharacterContracts(characterId: NonNullable<GetCharactersCharacterIdContractsInput['path']>["character_id"], options?: GetCharactersCharacterIdContractsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsOutput>>;
+  listCharacterContracts(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContractsData>['path']>["character_id"], options?: GetCharactersCharacterIdContractsOptions): Promise<EsiResponse<GetCharactersCharacterIdContractsResponse>>;
 
-  listCorporationContractBids(corporationId: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput['path']>["corporation_id"], contractId: NonNullable<GetCorporationsCorporationIdContractsContractIdBidsInput['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdBidsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdBidsOutput>>;
+  listCorporationContractBids(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']>["corporation_id"], contractId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdBidsData>['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdBidsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdBidsResponse>>;
 
-  listCorporationContractItems(corporationId: NonNullable<GetCorporationsCorporationIdContractsContractIdItemsInput['path']>["corporation_id"], contractId: NonNullable<GetCorporationsCorporationIdContractsContractIdItemsInput['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdItemsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdItemsOutput>>;
+  listCorporationContractItems(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']>["corporation_id"], contractId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsContractIdItemsData>['path']>["contract_id"], options?: GetCorporationsCorporationIdContractsContractIdItemsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsContractIdItemsResponse>>;
 
-  listCorporationContracts(corporationId: NonNullable<GetCorporationsCorporationIdContractsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContractsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsOutput>>;
+  listCorporationContracts(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContractsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContractsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContractsResponse>>;
 
-  listPublicContractBids(contractId: NonNullable<GetContractsPublicBidsContractIdInput['path']>["contract_id"], options?: GetContractsPublicBidsContractIdOptions): Promise<EsiResponse<GetContractsPublicBidsContractIdOutput>>;
+  listPublicContractBids(contractId: NonNullable<OperationArguments<GetContractsPublicBidsContractIdData>['path']>["contract_id"], options?: GetContractsPublicBidsContractIdOptions): Promise<EsiResponse<GetContractsPublicBidsContractIdResponse>>;
 
-  listPublicContractItems(contractId: NonNullable<GetContractsPublicItemsContractIdInput['path']>["contract_id"], options?: GetContractsPublicItemsContractIdOptions): Promise<EsiResponse<GetContractsPublicItemsContractIdOutput>>;
+  listPublicContractItems(contractId: NonNullable<OperationArguments<GetContractsPublicItemsContractIdData>['path']>["contract_id"], options?: GetContractsPublicItemsContractIdOptions): Promise<EsiResponse<GetContractsPublicItemsContractIdResponse>>;
 
-  listPublicContracts(regionId: NonNullable<GetContractsPublicRegionIdInput['path']>["region_id"], options?: GetContractsPublicRegionIdOptions): Promise<EsiResponse<GetContractsPublicRegionIdOutput>>;
+  listPublicContracts(regionId: NonNullable<OperationArguments<GetContractsPublicRegionIdData>['path']>["region_id"], options?: GetContractsPublicRegionIdOptions): Promise<EsiResponse<GetContractsPublicRegionIdResponse>>;
 }

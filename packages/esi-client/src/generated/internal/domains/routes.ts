@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   PostRouteDescriptor,
@@ -15,9 +16,9 @@ import type {
   PostRouteOptions,
 } from './routes-contract.js';
 import type {
-  PostRouteInput,
-  PostRouteOutput,
-} from '../../schemas/operations/routes.js';
+  PostRouteData,
+  PostRouteResponse,
+} from '../../types.gen.js';
 
 class RoutesDomainClientWithMetadataImplementation implements RoutesDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -27,8 +28,8 @@ class RoutesDomainClientWithMetadataImplementation implements RoutesDomainClient
     Object.freeze(this);
   }
 
-  calculate(originSystemId: NonNullable<PostRouteInput['path']>["origin_system_id"], destinationSystemId: NonNullable<PostRouteInput['path']>["destination_system_id"], options: PostRouteOptions): Promise<EsiResponse<PostRouteOutput>> {
-    const arguments_: PostRouteInput = { path: { "origin_system_id": originSystemId, "destination_system_id": destinationSystemId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
+  calculate(originSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["origin_system_id"], destinationSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["destination_system_id"], options: PostRouteOptions): Promise<EsiResponse<PostRouteResponse>> {
+    const arguments_: OperationArguments<PostRouteData> = { path: { "origin_system_id": originSystemId, "destination_system_id": destinationSystemId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
     return executeOperation(this.#configuration, PostRouteDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -41,7 +42,7 @@ class RoutesDomainClientImplementation implements RoutesDomainClient {
     Object.freeze(this);
   }
 
-  calculate(originSystemId: NonNullable<PostRouteInput['path']>["origin_system_id"], destinationSystemId: NonNullable<PostRouteInput['path']>["destination_system_id"], options: PostRouteOptions): Promise<PostRouteOutput> {
+  calculate(originSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["origin_system_id"], destinationSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["destination_system_id"], options: PostRouteOptions): Promise<PostRouteResponse> {
     return this.#metadata.calculate(originSystemId, destinationSystemId, options).then((response) => response.data);
   }
 

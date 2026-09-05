@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createFactionWarfareClient } from '@evespace/esi-client/domains/faction-warfare';
+import type { GetCharactersCharacterIdFwStatsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createFactionWarfareClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.getCharacterStats(characterId);
+const data: GetCharactersCharacterIdFwStatsResponse = await client.getCharacterStats(characterId);

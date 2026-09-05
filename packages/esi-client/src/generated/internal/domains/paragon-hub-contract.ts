@@ -4,91 +4,92 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersParagonHubSkinrInput,
-  GetCharactersParagonHubSkinrOutput,
-  GetParagonHubSkinrAlliancesInput,
-  GetParagonHubSkinrAlliancesOutput,
-  GetParagonHubSkinrCharactersInput,
-  GetParagonHubSkinrCharactersOutput,
-  GetParagonHubSkinrCorporationsInput,
-  GetParagonHubSkinrCorporationsOutput,
-  GetParagonHubSkinrInput,
-  GetParagonHubSkinrOutput,
-} from '../../schemas/operations/paragon-hub.js';
+  GetCharactersParagonHubSkinrData,
+  GetCharactersParagonHubSkinrResponse,
+  GetParagonHubSkinrAlliancesData,
+  GetParagonHubSkinrAlliancesResponse,
+  GetParagonHubSkinrCharactersData,
+  GetParagonHubSkinrCharactersResponse,
+  GetParagonHubSkinrCorporationsData,
+  GetParagonHubSkinrCorporationsResponse,
+  GetParagonHubSkinrData,
+  GetParagonHubSkinrResponse,
+} from '../../types.gen.js';
 
 export interface GetParagonHubSkinrAlliancesOptions {
-  readonly "after"?: NonNullable<GetParagonHubSkinrAlliancesInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetParagonHubSkinrAlliancesInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetParagonHubSkinrAlliancesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetParagonHubSkinrAlliancesInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetParagonHubSkinrAlliancesInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetParagonHubSkinrAlliancesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetParagonHubSkinrCharactersOptions {
-  readonly "after"?: NonNullable<GetParagonHubSkinrCharactersInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetParagonHubSkinrCharactersInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetParagonHubSkinrCharactersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetParagonHubSkinrCharactersInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetParagonHubSkinrCharactersInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetParagonHubSkinrCharactersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>["headers"]>["X-Tenant"];
 }
 
 export interface GetParagonHubSkinrCorporationsOptions {
-  readonly "after"?: NonNullable<GetParagonHubSkinrCorporationsInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetParagonHubSkinrCorporationsInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetParagonHubSkinrCorporationsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetParagonHubSkinrCorporationsInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetParagonHubSkinrCorporationsInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetParagonHubSkinrCorporationsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersParagonHubSkinrOptions {
-  readonly "after"?: NonNullable<GetCharactersParagonHubSkinrInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetCharactersParagonHubSkinrInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersParagonHubSkinrInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersParagonHubSkinrInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetCharactersParagonHubSkinrInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetCharactersParagonHubSkinrInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>["headers"]>["X-Tenant"];
 }
 
 export interface GetParagonHubSkinrOptions {
-  readonly "after"?: NonNullable<GetParagonHubSkinrInput["query"]>["after"];
-  readonly "before"?: NonNullable<GetParagonHubSkinrInput["query"]>["before"];
+  readonly "after"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["query"]>["after"];
+  readonly "before"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["query"]>["before"];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetParagonHubSkinrInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetParagonHubSkinrInput["header"]>["If-None-Match"];
-  readonly "limit"?: NonNullable<GetParagonHubSkinrInput["query"]>["limit"];
-  readonly "xTenant"?: NonNullable<GetParagonHubSkinrInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["headers"]>["If-None-Match"];
+  readonly "limit"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["query"]>["limit"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetParagonHubSkinrData>["headers"]>["X-Tenant"];
 }
 
 export interface ParagonHubDomainClient {
-  listListingsForAlliance(allianceId: NonNullable<GetParagonHubSkinrAlliancesInput['path']>["alliance_id"], options?: GetParagonHubSkinrAlliancesOptions): Promise<GetParagonHubSkinrAlliancesOutput>;
+  listListingsForAlliance(allianceId: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>['path']>["alliance_id"], options?: GetParagonHubSkinrAlliancesOptions): Promise<GetParagonHubSkinrAlliancesResponse>;
 
-  listListingsForCharacter(characterId: NonNullable<GetParagonHubSkinrCharactersInput['path']>["character_id"], options?: GetParagonHubSkinrCharactersOptions): Promise<GetParagonHubSkinrCharactersOutput>;
+  listListingsForCharacter(characterId: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>['path']>["character_id"], options?: GetParagonHubSkinrCharactersOptions): Promise<GetParagonHubSkinrCharactersResponse>;
 
-  listListingsForCorporation(corporationId: NonNullable<GetParagonHubSkinrCorporationsInput['path']>["corporation_id"], options?: GetParagonHubSkinrCorporationsOptions): Promise<GetParagonHubSkinrCorporationsOutput>;
+  listListingsForCorporation(corporationId: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>['path']>["corporation_id"], options?: GetParagonHubSkinrCorporationsOptions): Promise<GetParagonHubSkinrCorporationsResponse>;
 
-  listPostedListings(characterId: NonNullable<GetCharactersParagonHubSkinrInput['path']>["character_id"], options?: GetCharactersParagonHubSkinrOptions): Promise<GetCharactersParagonHubSkinrOutput>;
+  listPostedListings(characterId: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>['path']>["character_id"], options?: GetCharactersParagonHubSkinrOptions): Promise<GetCharactersParagonHubSkinrResponse>;
 
-  listPublicListings(options?: GetParagonHubSkinrOptions): Promise<GetParagonHubSkinrOutput>;
+  listPublicListings(options?: GetParagonHubSkinrOptions): Promise<GetParagonHubSkinrResponse>;
 
   withMetadata(): ParagonHubDomainClientWithMetadata;
 }
 
 export interface ParagonHubDomainClientWithMetadata {
-  listListingsForAlliance(allianceId: NonNullable<GetParagonHubSkinrAlliancesInput['path']>["alliance_id"], options?: GetParagonHubSkinrAlliancesOptions): Promise<EsiResponse<GetParagonHubSkinrAlliancesOutput>>;
+  listListingsForAlliance(allianceId: NonNullable<OperationArguments<GetParagonHubSkinrAlliancesData>['path']>["alliance_id"], options?: GetParagonHubSkinrAlliancesOptions): Promise<EsiResponse<GetParagonHubSkinrAlliancesResponse>>;
 
-  listListingsForCharacter(characterId: NonNullable<GetParagonHubSkinrCharactersInput['path']>["character_id"], options?: GetParagonHubSkinrCharactersOptions): Promise<EsiResponse<GetParagonHubSkinrCharactersOutput>>;
+  listListingsForCharacter(characterId: NonNullable<OperationArguments<GetParagonHubSkinrCharactersData>['path']>["character_id"], options?: GetParagonHubSkinrCharactersOptions): Promise<EsiResponse<GetParagonHubSkinrCharactersResponse>>;
 
-  listListingsForCorporation(corporationId: NonNullable<GetParagonHubSkinrCorporationsInput['path']>["corporation_id"], options?: GetParagonHubSkinrCorporationsOptions): Promise<EsiResponse<GetParagonHubSkinrCorporationsOutput>>;
+  listListingsForCorporation(corporationId: NonNullable<OperationArguments<GetParagonHubSkinrCorporationsData>['path']>["corporation_id"], options?: GetParagonHubSkinrCorporationsOptions): Promise<EsiResponse<GetParagonHubSkinrCorporationsResponse>>;
 
-  listPostedListings(characterId: NonNullable<GetCharactersParagonHubSkinrInput['path']>["character_id"], options?: GetCharactersParagonHubSkinrOptions): Promise<EsiResponse<GetCharactersParagonHubSkinrOutput>>;
+  listPostedListings(characterId: NonNullable<OperationArguments<GetCharactersParagonHubSkinrData>['path']>["character_id"], options?: GetCharactersParagonHubSkinrOptions): Promise<EsiResponse<GetCharactersParagonHubSkinrResponse>>;
 
-  listPublicListings(options?: GetParagonHubSkinrOptions): Promise<EsiResponse<GetParagonHubSkinrOutput>>;
+  listPublicListings(options?: GetParagonHubSkinrOptions): Promise<EsiResponse<GetParagonHubSkinrResponse>>;
 }

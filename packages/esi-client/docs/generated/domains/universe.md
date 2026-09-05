@@ -50,10 +50,11 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseAncestriesResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
-const data = await client.listAncestries();
+const data: GetUniverseAncestriesResponse = await client.listAncestries();
 ```
 
 ## Aggregate client
@@ -62,10 +63,11 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseAncestriesResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.universe.listAncestries();
+const data: GetUniverseAncestriesResponse = await client.universe.listAncestries();
 ```
 
 ## Shared concepts

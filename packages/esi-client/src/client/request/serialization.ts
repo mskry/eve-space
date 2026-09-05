@@ -63,7 +63,7 @@ export function createHeaderRecord(
       parameter.schema.type === 'array'
         ? validatedArray(value).map(String).join(',')
         : String(value);
-    validateHeaderValue(descriptor.operationId, ['header', parameter.name], serialized);
+    validateHeaderValue(descriptor.operationId, ['headers', parameter.name], serialized);
     Object.defineProperty(headers, parameter.name.toLowerCase(), {
       value: serialized,
       enumerable: true,
