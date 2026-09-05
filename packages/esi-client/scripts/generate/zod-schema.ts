@@ -1261,29 +1261,59 @@ function emitSchemaType(
   const parsedType = parseSchemaType(schema.type, joinPointer(path, 'type'));
   const nullable = parseNullable(schema.nullable, joinPointer(path, 'nullable'));
   const clauses: string[] = [];
-  if (schema.$ref !== undefined) {
-    if (typeof schema.$ref !== 'string') {
-      throw new ZodSchemaEmissionError('$ref must be a string', joinPointer(path, '$ref'));
-    }
-    const reference = state.references.get(schema.$ref);
-    if (reference === undefined) {
-      throw new ZodSchemaEmissionError(
-        `Unresolved local component reference ${JSON.stringify(schema.$ref)}`,
-        joinPointer(path, '$ref'),
-      );
-    }
-    clauses.push(reference[direction]);
-  }
+  appendTypeReferenceClause(schema, path, state, direction, clauses);
   if (parsedType.type !== null) {
     clauses.push(emitTypeScriptType(schema, parsedType.type, path, state, direction));
   }
   if (schema.const !== undefined) clauses.push(serializeLiteral(schema.const));
-  if (schema.enum !== undefined) {
-    if (!Array.isArray(schema.enum)) {
-      throw new ZodSchemaEmissionError('enum must be an array', joinPointer(path, 'enum'));
-    }
-    clauses.push(schema.enum.map(serializeLiteral).join(' | '));
+  appendTypeEnumClause(schema, path, clauses);
+  appendTypeCompositionClauses(schema, path, state, direction, clauses);
+
+  let type = clauses.length === 0 ? 'z.output<ReturnType<typeof z.json>>' : clauses.join(' & ');
+  if (nullable || parsedType.nullable) type = `${parenthesizeType(type)} | null`;
+  return type;
+}
+
+function appendTypeReferenceClause(
+  schema: Record<string, unknown>,
+  path: string,
+  state: TypeEmitState,
+  direction: SchemaDirection,
+  clauses: string[],
+): void {
+  if (schema.$ref === undefined) return;
+  if (typeof schema.$ref !== 'string') {
+    throw new ZodSchemaEmissionError('$ref must be a string', joinPointer(path, '$ref'));
   }
+  const reference = state.references.get(schema.$ref);
+  if (reference === undefined) {
+    throw new ZodSchemaEmissionError(
+      `Unresolved local component reference ${JSON.stringify(schema.$ref)}`,
+      joinPointer(path, '$ref'),
+    );
+  }
+  clauses.push(reference[direction]);
+}
+
+function appendTypeEnumClause(
+  schema: Record<string, unknown>,
+  path: string,
+  clauses: string[],
+): void {
+  if (schema.enum === undefined) return;
+  if (!Array.isArray(schema.enum)) {
+    throw new ZodSchemaEmissionError('enum must be an array', joinPointer(path, 'enum'));
+  }
+  clauses.push(schema.enum.map(serializeLiteral).join(' | '));
+}
+
+function appendTypeCompositionClauses(
+  schema: Record<string, unknown>,
+  path: string,
+  state: TypeEmitState,
+  direction: SchemaDirection,
+  clauses: string[],
+): void {
   for (const keyword of ['allOf', 'oneOf', 'anyOf'] as const) {
     const branches = schema[keyword];
     if (branches === undefined) continue;
@@ -1306,9 +1336,6 @@ function emitSchemaType(
         .join(separator),
     );
   }
-  let type = clauses.length === 0 ? 'z.output<ReturnType<typeof z.json>>' : clauses.join(' & ');
-  if (nullable || parsedType.nullable) type = `${parenthesizeType(type)} | null`;
-  return type;
 }
 
 function emitTypeScriptType(
