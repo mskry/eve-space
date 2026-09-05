@@ -8,11 +8,11 @@ import {
   assertExecutableEsiOperationDefinitions,
   assertEsiOperationCatalogConfiguration,
   assertRegisteredEsiOperation,
-  coreEsiOperationCatalog,
-  esiOperationCatalog,
   getEsiOperationContract,
-} from '../../src/esi-resilience/catalog.js'
+} from '../../src/esi-resilience/catalog-access.js'
+import { coreEsiOperationCatalog, esiOperationCatalog } from '../../src/esi-resilience/catalog.js'
 import { assertEsiOperationContracts } from '../../src/esi-resilience/catalog-validation.js'
+import { classifyEsiResponse } from '../../src/esi-resilience/policy.js'
 import { installedModuleEsiOperationCatalog } from '../../src/generated/platform/installed-module-esi.js'
 
 describe('ESI operation policies', () => {
@@ -918,3 +918,54 @@ function validModuleOperation() {
     responseValidation: { kind: 'enabled' },
   } as const
 }
+
+describe('ESI mutation contracts', () => {
+  test('declares every character mutation and its 404 semantics in the catalog', () => {
+    const mutations = Object.entries(esiOperationCatalog)
+      .filter(([, contract]) => contract.mutation)
+      .map(([operation, contract]) => [operation, contract.mutation?.appliedOnMissing])
+
+    expect(mutations).toEqual([
+      ['mail-send', false],
+      ['mail-create-label', false],
+      ['mail-update', false],
+      ['mail-delete', true],
+      ['mail-delete-label', true],
+      ['character-cspa-charge', false],
+    ])
+  })
+
+  test('requires a mutation to be character-authorized and uncached', () => {
+    expect(() =>
+      assertEsiOperationContracts({
+        'module-operation': {
+          ...validModuleOperation(),
+          cache: { kind: 'none' },
+          mutation: { kind: 'character', appliedOnMissing: false },
+        },
+      }),
+    ).toThrow('declares a mutation without character authorization and an uncached contract')
+  })
+
+  test('keeps every mutation out of the cached read paths', () => {
+    for (const [, contract] of Object.entries(esiOperationCatalog)) {
+      if (!contract.mutation) continue
+      expect(contract.cache.kind).toBe('none')
+      expect(contract.authorization.kind).toBe('character')
+    }
+  })
+})
+
+describe('ESI response classification', () => {
+  test('charges the documented bucket cost for each response class', () => {
+    expect(classifyEsiResponse(200)).toEqual({ outcome: 'success', tokenCost: 2 })
+    expect(classifyEsiResponse(204)).toEqual({ outcome: 'success', tokenCost: 2 })
+    expect(classifyEsiResponse(304)).toEqual({ outcome: 'notModified', tokenCost: 1 })
+    expect(classifyEsiResponse(404)).toEqual({ outcome: 'clientError', tokenCost: 5 })
+    expect(classifyEsiResponse(500)).toEqual({ outcome: 'serverError', tokenCost: 0 })
+  })
+
+  test('exempts 429 from the client-error cost so cooldowns are not self-reinforcing', () => {
+    expect(classifyEsiResponse(429)).toEqual({ outcome: 'rateLimited', tokenCost: 0 })
+  })
+})

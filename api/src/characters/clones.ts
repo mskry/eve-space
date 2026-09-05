@@ -6,10 +6,11 @@ import type {
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
-import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import type { ImplantBonus } from '../universe/implant-attributes.js'
 import {
@@ -205,7 +206,7 @@ function mapCharacterImplantsSnapshot(
 
 async function loadImplantStaticData(typeIds: readonly number[]) {
   const lookupIds = [...new Set(typeIds)]
-    .filter((typeId) => Number.isSafeInteger(typeId) && typeId > 0)
+    .filter(isPositiveSafeInteger)
     .slice(0, maximumImplantTypeLookupIds)
   if (lookupIds.length === 0) return new Map<number, ImplantStaticData>()
 

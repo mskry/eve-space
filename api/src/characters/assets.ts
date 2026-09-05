@@ -6,11 +6,12 @@ import type {
 import { eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeCategories, sdeGroups, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
-import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 import { resolveUniverseNamesBestEffort, type UniverseName } from '../universe/names.js'
 
 export const characterAssetsScope = getCharacterEsiScope('character-assets-page')
@@ -156,11 +157,7 @@ async function loadCharacterAssetPage(characterId: number, page: number) {
 }
 
 function validatePageCount(value: unknown) {
-  if (
-    !Number.isSafeInteger(value) ||
-    Number(value) <= 0 ||
-    Number(value) > maximumCharacterAssetPages
-  )
+  if (!isPositiveSafeInteger(value) || Number(value) > maximumCharacterAssetPages)
     throw new CharacterAssetsPaginationError()
   return Number(value)
 }
@@ -301,7 +298,7 @@ export function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {
     )
   const seen = new Set<number>()
   for (const itemId of itemIds) {
-    if (!Number.isSafeInteger(itemId) || itemId <= 0)
+    if (!isPositiveSafeInteger(itemId))
       throw new Error('Character asset name batch item IDs must be positive safe integers')
     if (seen.has(itemId)) throw new Error('Character asset name batch item IDs must be unique')
     seen.add(itemId)

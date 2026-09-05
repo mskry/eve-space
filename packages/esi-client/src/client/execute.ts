@@ -8,6 +8,7 @@ import {
   EsiResponseValidationError,
 } from './errors.js';
 import { constructOperationRequest } from './request.js';
+import { isRecord } from './request/guards.js';
 import { createEsiResponse, extractEsiResponseMetadata } from './response.js';
 import type {
   ExecutableOperationDescriptor,
@@ -462,8 +463,4 @@ function requestValidationError(
   code: string,
 ): EsiRequestValidationError {
   return new EsiRequestValidationError({ operationId, issues: [{ path, message, code }] });
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

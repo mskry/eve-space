@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto'
 import type { Redis } from 'ioredis'
+import { isNonnegativeSafeInteger } from '../type-guards.js'
 import { esiOperationCatalog, esiOperations, type EsiOperation } from './catalog.js'
+import { getDeclaredEsiRateLimit } from './catalog-access.js'
+import { parseCount } from './numeric.js'
+import { classifyEsiResponse } from './policy.js'
 
 const keyPrefix = 'eve-space:v1:esi-resilience:telemetry:rate-window'
 export const esiRateMeasurementWindowMs = 15 * 60_000
@@ -45,7 +49,8 @@ export async function recordEsiRateMeasurement(
   },
 ) {
   const contract = esiOperationCatalog[options.operation]
-  if (contract.rateGroup.kind !== 'declared') return
+  const rateLimit = getDeclaredEsiRateLimit(contract)
+  if (!rateLimit) return
   const scope = contract.authorization.kind === 'character' ? 'character' : 'public'
   if (scope === 'character' && !options.principal) return
 
@@ -56,9 +61,9 @@ export async function recordEsiRateMeasurement(
     scope === 'character'
       ? createHash('sha256').update(options.principal!).digest('hex')
       : undefined
-  const weightedTokens = responseTokenCost(options.status)
+  const weightedTokens = classifyEsiResponse(options.status).tokenCost
   const operationKey = measurementKey('operation', options.operation, bucketStart)
-  const groupKey = measurementKey('group', contract.rateGroup.group, bucketStart)
+  const groupKey = measurementKey('group', rateLimit.group, bucketStart)
   const transaction = connection.multi()
 
   for (const key of [operationKey, groupKey]) {
@@ -80,24 +85,24 @@ export async function readEsiRateMeasurement(
 ): Promise<EsiRateMeasurement> {
   const now = options.now ?? Date.now()
   const windowOffset = options.windowOffset ?? 1
-  if (!Number.isSafeInteger(windowOffset) || windowOffset < 0)
+  if (!isNonnegativeSafeInteger(windowOffset))
     throw new Error('ESI rate measurement window offset must be a non-negative integer')
 
   const bucketStart = toBucketStart(now) - windowOffset * esiRateMeasurementWindowMs
   const operationContracts = esiOperations.flatMap((operation) => {
     const contract = esiOperationCatalog[operation]
-    return contract.rateGroup.kind === 'declared'
-      ? [
-          {
-            operation,
-            rateLimit: contract.rateGroup,
-            scope:
-              contract.authorization.kind === 'character'
-                ? ('character' as const)
-                : ('public' as const),
-          },
-        ]
-      : []
+    const rateLimit = getDeclaredEsiRateLimit(contract)
+    if (!rateLimit) return []
+    return [
+      {
+        operation,
+        rateLimit,
+        scope:
+          contract.authorization.kind === 'character'
+            ? ('character' as const)
+            : ('public' as const),
+      },
+    ]
   })
   const operations = await Promise.all(
     operationContracts.map(async ({ operation, rateLimit, scope }) => {
@@ -194,26 +199,14 @@ async function readCounts(connection: Redis, key: string, scope: EsiRateMeasurem
     scope === 'character' ? connection.pfcount(`${key}:characters`) : Promise.resolve(null),
   ])
   return {
-    requests: asCount(value.requests),
-    weightedTokens: asCount(value.weightedTokens),
+    requests: parseCount(value.requests),
+    weightedTokens: parseCount(value.weightedTokens),
     distinctCharacters,
   }
 }
 
 function toBucketStart(now: number) {
   return Math.floor(now / esiRateMeasurementWindowMs) * esiRateMeasurementWindowMs
-}
-
-function responseTokenCost(status: number) {
-  if (status >= 200 && status < 300) return 2
-  if (status >= 300 && status < 400) return 1
-  if (status >= 400 && status < 500 && status !== 429) return 5
-  return 0
-}
-
-function asCount(value: string | undefined) {
-  const count = Number(value)
-  return Number.isSafeInteger(count) && count >= 0 ? count : 0
 }
 
 function characterAverage(value: number, count: number | null) {

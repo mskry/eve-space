@@ -2,7 +2,8 @@ import { serve } from '@hono/node-server'
 import { app } from './index.js'
 import { sql } from './db/client.js'
 import { env, isSsoConfigured } from './env.js'
-import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog.js'
+import { closeSharedCacheRedisConnection } from './esi-resilience/cache-redis.js'
+import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog-access.js'
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
 
 assertEsiOperationCatalogConfiguration({
@@ -18,6 +19,7 @@ const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
 
 async function shutdown() {
   server.close()
+  await closeSharedCacheRedisConnection()
   await sql.end({ timeout: 5 })
 }
 

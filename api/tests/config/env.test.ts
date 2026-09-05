@@ -37,6 +37,7 @@ describe('environment configuration', () => {
       ESI_CACHE_L1_MAX_ENTRIES: 250,
       ESI_CACHE_MAX_RETENTION_SECONDS: 86_400,
       MODULE_RUNTIME_CACHE_TTL_MS: 5_000,
+      ESI_REQUEST_TIMEOUT_MS: 30_000,
       ESI_OPERATION_CONCURRENCY: 6,
       AFFILIATION_ACTIVE_INTERVAL_SECONDS: 3_600,
       AFFILIATION_INACTIVE_INTERVAL_SECONDS: 86_400,
@@ -85,6 +86,7 @@ describe('environment configuration', () => {
       { MODULE_RUNTIME_CACHE_TTL_MS: '30001' },
       'Too big: expected number to be <=30000',
     ],
+    ['ESI request timeout', { ESI_REQUEST_TIMEOUT_MS: '0' }, 'Too small: expected number to be >0'],
     [
       'token encryption key',
       { TOKEN_ENCRYPTION_KEY: 'not-a-base64-key' },

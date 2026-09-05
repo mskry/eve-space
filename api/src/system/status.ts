@@ -2,12 +2,12 @@ import { createStatusClient } from '@evespace/esi-client/domains/status'
 import { sql } from '../db/client.js'
 import { probeDomainEventStatus, type DomainEventStatus } from '../domain-events/status.js'
 import { esiErrorBudgetFloor } from '../esi-resilience/policy.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
 import {
   probeEsiResilienceTelemetry,
   type EsiResilienceTelemetry,
 } from '../esi-resilience/telemetry.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import { probeQueueStatus, type QueueStatus } from '../queue/status.js'
 
 const cacheTtlMs = 30_000

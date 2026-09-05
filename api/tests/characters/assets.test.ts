@@ -33,10 +33,10 @@ vi.mock('@evespace/esi-client/domains/assets', () => ({
 vi.mock('../../src/db/client.js', () => ({
   db: { select: vi.fn(() => mocks.query) },
 }))
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
 }))
 vi.mock('../../src/universe/names.js', () => ({

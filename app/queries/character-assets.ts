@@ -1,6 +1,7 @@
 import { defineQueryOptions } from '@pinia/colada'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
+import { isPositiveSafeInteger } from '../utils/number-guards'
 import { ApiQueryError, toApiQueryError } from '../utils/query-error'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
@@ -26,8 +27,7 @@ export function canRunCharacterAssetsQuery(access: CharacterAssetsAccess, charac
     access.isClient &&
     access.authenticated &&
     access.ownsCharacter &&
-    Number.isSafeInteger(characterId) &&
-    characterId > 0
+    isPositiveSafeInteger(characterId)
   )
 }
 

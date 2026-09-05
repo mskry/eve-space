@@ -16,11 +16,11 @@ vi.mock('@evespace/esi-client/domains/status', () => ({
 
 vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
 
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
 
-vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 vi.mock('../../src/esi-resilience/telemetry.js', () => ({
   probeEsiResilienceTelemetry: mocks.probeEsiResilienceTelemetry,

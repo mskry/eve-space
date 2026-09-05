@@ -7,8 +7,8 @@ import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platfo
 import {
   getEsiOperationContract,
   getExecutableEsiOperationDefinition,
-  type EsiOperation,
-} from '../esi-resilience/catalog.js'
+} from '../esi-resilience/catalog-access.js'
+import type { EsiOperation } from '../esi-resilience/catalog.js'
 import {
   dispatchModuleEsiOperation,
   validateModuleEsiOperationInputs,
@@ -21,8 +21,8 @@ import {
   getEsiResilienceLayer,
   type CharacterEsiOperation,
   type PublicEsiOperation,
-} from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+} from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'

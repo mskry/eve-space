@@ -1,6 +1,6 @@
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
 export interface CharacterEmploymentHistoryEntry {

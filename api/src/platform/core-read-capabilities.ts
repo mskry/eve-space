@@ -6,6 +6,7 @@ import type {
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { characters, platformSubjectLifecycles, sdeGroups, sdeTypes } from '../db/schema.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 
 const maxCoreSdeTypeIds = 500
 
@@ -54,7 +55,7 @@ export const sdeCoreReads = {
   async loadPublishedTypeGroups(typeIds: readonly number[]) {
     if (typeIds.length > maxCoreSdeTypeIds)
       throw new Error(`SDE type lookup cannot exceed ${maxCoreSdeTypeIds} IDs`)
-    if (typeIds.some((typeId) => !Number.isSafeInteger(typeId) || typeId <= 0))
+    if (typeIds.some((typeId) => !isPositiveSafeInteger(typeId)))
       throw new Error('SDE type lookup IDs must be positive safe integers')
 
     const uniqueTypeIds = [...new Set(typeIds)]

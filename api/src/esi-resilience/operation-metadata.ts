@@ -1,33 +1,13 @@
-type DocumentedCacheBehavior =
-  | { kind: 'relative'; seconds: number }
-  | { kind: 'daily-utc'; hour: number; minute: number }
-  | { kind: 'runtime-only' }
-  | { kind: 'none' }
+import { defineMetadataReview, defineOperationMetadata } from './catalog-validation.js'
 
-type DocumentedRateLimit =
-  | { kind: 'legacy-only' }
-  | { kind: 'declared'; group: string; maximumTokens: number; window: string }
-
-interface EsiOperationMetadata {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
-  path: string
-  esiOperationId: string
-  minimumCompatibilityDate: string
-  requiredScope: string | null
-  cache: DocumentedCacheBehavior
-  supportsConditionalRequests: boolean
-  rateLimit: DocumentedRateLimit
-  maximumBatchSize?: number
-}
-
-export const esiMetadataReview = {
+export const esiMetadataReview = defineMetadataReview({
   explorerUrl: 'https://developers.eveonline.com/api-explorer',
   reviewedAt: '2026-09-03',
   requestedCompatibilityDate: '2026-08-23',
   resolvedCompatibilityDate: '2026-08-18',
-} as const
+})
 
-export const esiOperationMetadata = {
+export const esiOperationMetadata = defineOperationMetadata({
   status: {
     method: 'GET',
     path: '/status',
@@ -544,4 +524,4 @@ export const esiOperationMetadata = {
     rateLimit: { kind: 'legacy-only' },
     maximumBatchSize: 1_000,
   },
-} as const satisfies Record<string, EsiOperationMetadata>
+})

@@ -1,3 +1,5 @@
+import { isPositiveSafeInteger } from '../type-guards.js'
+
 export const implantSlotAttributeId = 331
 
 export const implantBonusAttributes = [
@@ -29,5 +31,5 @@ export function isImplantBonusValue(value: number | null): value is number {
 }
 
 export function isImplantSlot(value: number | null): value is number {
-  return value !== null && Number.isSafeInteger(value) && value > 0
+  return isPositiveSafeInteger(value)
 }

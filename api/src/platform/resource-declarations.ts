@@ -8,7 +8,7 @@ import {
   assertRegisteredEsiOperation,
   getEsiOperationContract,
   getExecutableEsiOperationDefinition,
-} from '../esi-resilience/catalog.js'
+} from '../esi-resilience/catalog-access.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 
 export function findInstalledResource(

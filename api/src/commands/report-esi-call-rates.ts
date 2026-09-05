@@ -1,5 +1,5 @@
 import {
-  closeCacheRedisConnection,
+  closeSharedCacheRedisConnection,
   getSharedCacheRedisConnection,
 } from '../esi-resilience/cache-redis.js'
 import { readEsiRateMeasurement } from '../esi-resilience/rate-measurement.js'
@@ -12,5 +12,5 @@ try {
   })
   process.stdout.write(`${JSON.stringify(measurement, null, 2)}\n`)
 } finally {
-  await closeCacheRedisConnection(connection)
+  await closeSharedCacheRedisConnection()
 }

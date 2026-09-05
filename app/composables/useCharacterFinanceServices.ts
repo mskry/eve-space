@@ -11,6 +11,7 @@ import {
 } from '../queries/finance'
 import type { FinanceOrderMode } from '../types/finance'
 import type { ApiClient } from '../utils/api-client'
+import { isPositiveSafeInteger } from '../utils/number-guards'
 
 export type CharacterFinanceService = 'journal' | 'transactions' | 'orders' | 'contracts'
 export type CharacterFinancePageResource = 'journal' | 'order-history' | 'contracts'
@@ -110,7 +111,7 @@ export function useCharacterFinanceServices(options: CharacterFinanceServicesOpt
   }
 
   function changePage(resource: CharacterFinancePageResource, nextPage: number) {
-    if (!Number.isSafeInteger(nextPage) || nextPage < 1) return false
+    if (!isPositiveSafeInteger(nextPage)) return false
     if (resource === 'journal') journalPage.value = nextPage
     if (resource === 'order-history') orderHistoryPage.value = nextPage
     if (resource === 'contracts') contractPage.value = nextPage

@@ -4,9 +4,10 @@ import { sql } from '../db/client.js'
 import {
   assertRegisteredEsiOperation,
   getOptionalCharacterEsiScope,
-  type EsiOperation,
-} from '../esi-resilience/catalog.js'
+} from '../esi-resilience/catalog-access.js'
+import type { EsiOperation } from '../esi-resilience/catalog.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 import {
   platformCollectionFailureClasses,
   platformCollectionStateIdentitySchema,
@@ -138,7 +139,7 @@ export async function resolveInstalledResourceEligibility(
 export async function selectDueInstalledResources(
   options: SelectDueResourcesOptions,
 ): Promise<readonly DueInstalledResource[]> {
-  if (!Number.isSafeInteger(options.limit) || options.limit <= 0)
+  if (!isPositiveSafeInteger(options.limit))
     throw new Error('Resource planning limit must be a positive safe integer')
   const resources = options.resources ?? installedModuleResources
   if (resources.length === 0) return []

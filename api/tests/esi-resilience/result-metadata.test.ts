@@ -2,9 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   combineEsiResultMetadata,
   toEsiResultMetadata,
-} from '../../src/esi-resilience/public-metadata.js'
+} from '../../src/esi-resilience/result-metadata.js'
 
-describe('public ESI freshness metadata', () => {
+describe('ESI result metadata', () => {
   test('projects only explicitly public freshness fields', () => {
     const metadata = toEsiResultMetadata({
       data: { name: 'Bandera' },

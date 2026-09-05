@@ -11,13 +11,13 @@ vi.mock('../../src/characters/skills.js', () => ({
   characterSkillsScope: 'esi-skills.read_skills.v1',
   getCharacterSkillsData: vi.fn(),
 }))
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({
     getCharacter: mocks.getCharacter,
     getPublic: mocks.getPublic,
   }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 const results = {
   location: result(

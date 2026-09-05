@@ -21,7 +21,7 @@ describe('ESI egress verification', () => {
       'api/src/esi-resilience/catalog.ts': characterExecutorCatalog(),
       'api/src/mail/bypass.ts': `
         import { createMailClient } from '@evespace/esi-client/domains/mail'
-        import { createEsiTransport } from '../../esi-resilience/transport.js'
+        import { createEsiTransport } from '../../esi-resilience/request-transport.js'
 
         export const read = (layer, authority) => layer.executeCharacterMutation({
           operation: 'mail-headers',
@@ -58,7 +58,7 @@ describe('ESI egress verification', () => {
       'api/src/esi-resilience/catalog.ts': characterExecutorCatalog(),
       'api/src/mail/valid.ts': `
         import { createMailClient } from '@evespace/esi-client/domains/mail'
-        import { createEsiTransport } from '../../esi-resilience/transport.js'
+        import { createEsiTransport } from '../../esi-resilience/request-transport.js'
 
         export const read = (layer) => layer.getCharacter({
           operation: 'mail-headers',

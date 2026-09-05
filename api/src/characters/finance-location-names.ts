@@ -1,3 +1,4 @@
+import { isPositiveSafeInteger } from '../type-guards.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
 // Upwell structures start here. PostUniverseNames cannot resolve them without the structure
@@ -7,7 +8,7 @@ const upwellStructureIdFloor = 1_000_000_000_000
 
 export async function loadFinanceLocationNames(locationIds: readonly number[]) {
   const resolvableIds = [...new Set(locationIds)].filter(
-    (id) => Number.isSafeInteger(id) && id > 0 && id < upwellStructureIdFloor,
+    (id) => isPositiveSafeInteger(id) && id < upwellStructureIdFloor,
   )
   if (resolvableIds.length === 0) return new Map<number, string>()
 

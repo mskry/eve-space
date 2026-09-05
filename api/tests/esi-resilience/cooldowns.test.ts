@@ -5,8 +5,10 @@ describe('ESI shared cooldowns', () => {
 
   test('suppresses another operation after a global low-budget response', async () => {
     const redis = memoryRedis()
-    const { acquireEsiRequestPermit, EsiQuotaError, recordEsiResponse } =
-      await import('../../src/esi-resilience/cooldowns.js')
+    const [{ EsiQuotaError, recordEsiResponse }, { acquireEsiRequestPermit }] = await Promise.all([
+      import('../../src/esi-resilience/cooldowns.js'),
+      import('../../src/esi-resilience/permits.js'),
+    ])
     await recordEsiResponse({
       connection: redis as never,
       operation: 'status',
@@ -25,8 +27,10 @@ describe('ESI shared cooldowns', () => {
 
   test('bounds queued operation concurrency and releases its owner lease atomically', async () => {
     const redis = memoryRedis()
-    const { acquireEsiRequestPermit, EsiQuotaError } =
-      await import('../../src/esi-resilience/cooldowns.js')
+    const [{ EsiQuotaError }, { acquireEsiRequestPermit }] = await Promise.all([
+      import('../../src/esi-resilience/cooldowns.js'),
+      import('../../src/esi-resilience/permits.js'),
+    ])
     const first = await acquireEsiRequestPermit({
       connection: redis as never,
       operation: 'status',
@@ -50,8 +54,10 @@ describe('ESI shared cooldowns', () => {
     const unavailable = {
       get: vi.fn().mockRejectedValue(new Error('unavailable')),
     }
-    const { acquireEsiRequestPermit, EsiQuotaError } =
-      await import('../../src/esi-resilience/cooldowns.js')
+    const [{ EsiQuotaError }, { acquireEsiRequestPermit }] = await Promise.all([
+      import('../../src/esi-resilience/cooldowns.js'),
+      import('../../src/esi-resilience/permits.js'),
+    ])
     const first = await acquireEsiRequestPermit({
       connection: unavailable as never,
       operation: 'status',
@@ -75,8 +81,10 @@ describe('ESI shared cooldowns', () => {
 
   test('honors locally recorded cooldowns while coordination Redis is unavailable', async () => {
     const unavailable = { get: vi.fn().mockRejectedValue(new Error('unavailable')), eval: vi.fn() }
-    const { acquireEsiRequestPermit, recordEsiResponse } =
-      await import('../../src/esi-resilience/cooldowns.js')
+    const [{ recordEsiResponse }, { acquireEsiRequestPermit }] = await Promise.all([
+      import('../../src/esi-resilience/cooldowns.js'),
+      import('../../src/esi-resilience/permits.js'),
+    ])
     await recordEsiResponse({
       connection: unavailable as never,
       operation: 'wallet-balance',
