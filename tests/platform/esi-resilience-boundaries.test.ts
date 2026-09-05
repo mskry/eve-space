@@ -34,6 +34,19 @@ describe('ESI resilience module boundaries', () => {
     ).toEqual([])
   })
 
+  it.each(['layer', 'cooldowns'])(
+    'rejects recorder-only telemetry importing execution module %s',
+    (importedModule) => {
+      expect(
+        esiResilienceImportViolations([
+          source('telemetry-counters', `import './${importedModule}.js'`),
+        ]),
+      ).toEqual([
+        `api/src/esi-resilience/telemetry-counters.ts: observability module telemetry-counters cannot import execution module ${importedModule}`,
+      ])
+    },
+  )
+
   it('requires new modules to declare their tier', () => {
     expect(esiResilienceImportViolations([source('new-module', '')])).toEqual([
       'api/src/esi-resilience/new-module.ts: ESI resilience module new-module has no declared tier',

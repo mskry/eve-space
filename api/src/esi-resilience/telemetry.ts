@@ -216,6 +216,7 @@ async function readUpstreamOperations(connection: Redis) {
     outcomes: {
       success: parseCount(value.success),
       notModified: parseCount(value.notModified),
+      redirect: parseCount(value.redirect),
       rateLimited: parseCount(value.rateLimited),
       clientError: parseCount(value.clientError),
       serverError: parseCount(value.serverError),
@@ -231,7 +232,14 @@ function emptyUpstreamOperations() {
   return (Object.keys(esiOperationCatalog) as EsiOperation[]).map((operation) => ({
     operation,
     policy: operationPolicy(esiOperationCatalog[operation]),
-    outcomes: { success: 0, notModified: 0, rateLimited: 0, clientError: 0, serverError: 0 },
+    outcomes: {
+      success: 0,
+      notModified: 0,
+      redirect: 0,
+      rateLimited: 0,
+      clientError: 0,
+      serverError: 0,
+    },
     observedRateGroup: null,
     rateGroupMismatches: 0,
     cacheSources: getEsiCacheSourceCounts(operation),

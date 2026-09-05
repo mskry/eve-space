@@ -57,6 +57,16 @@ const allowedImportTiersBySourceTier: Record<EsiResilienceTier, readonly EsiResi
   ],
 }
 
+const allowedImportTiersByModule: Partial<Record<string, readonly EsiResilienceTier[]>> = {
+  'telemetry-counters': [
+    'support',
+    'representation',
+    'contract',
+    'infrastructure',
+    'observability',
+  ],
+}
+
 export interface EsiResilienceSource {
   readonly path: string
   readonly source: string
@@ -86,7 +96,9 @@ function violationsForImport(
   if (!importedModule) return []
 
   const importedTier = tierByModule.get(importedModule)
-  if (!importedTier || allowedImportTiersBySourceTier[sourceTier].includes(importedTier)) return []
+  const allowedImportTiers =
+    allowedImportTiersByModule[module] ?? allowedImportTiersBySourceTier[sourceTier]
+  if (!importedTier || allowedImportTiers.includes(importedTier)) return []
 
   return [
     `${path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,

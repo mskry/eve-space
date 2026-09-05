@@ -13,6 +13,7 @@ export const esiErrorBudgetFloor = 10
 export type EsiResponseOutcome =
   | 'success'
   | 'notModified'
+  | 'redirect'
   | 'rateLimited'
   | 'clientError'
   | 'serverError'
@@ -27,6 +28,7 @@ export function classifyEsiResponse(status: number): {
 } {
   if (status >= 200 && status < 300) return { outcome: 'success', tokenCost: 2 }
   if (status === 304) return { outcome: 'notModified', tokenCost: 1 }
+  if (status >= 300 && status < 400) return { outcome: 'redirect', tokenCost: 1 }
   if (status === 429) return { outcome: 'rateLimited', tokenCost: 0 }
   if (status >= 400 && status < 500) return { outcome: 'clientError', tokenCost: 5 }
   return { outcome: 'serverError', tokenCost: 0 }

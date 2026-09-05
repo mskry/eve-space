@@ -960,7 +960,9 @@ describe('ESI response classification', () => {
   test('charges the documented bucket cost for each response class', () => {
     expect(classifyEsiResponse(200)).toEqual({ outcome: 'success', tokenCost: 2 })
     expect(classifyEsiResponse(204)).toEqual({ outcome: 'success', tokenCost: 2 })
+    expect(classifyEsiResponse(301)).toEqual({ outcome: 'redirect', tokenCost: 1 })
     expect(classifyEsiResponse(304)).toEqual({ outcome: 'notModified', tokenCost: 1 })
+    expect(classifyEsiResponse(307)).toEqual({ outcome: 'redirect', tokenCost: 1 })
     expect(classifyEsiResponse(404)).toEqual({ outcome: 'clientError', tokenCost: 5 })
     expect(classifyEsiResponse(500)).toEqual({ outcome: 'serverError', tokenCost: 0 })
   })
