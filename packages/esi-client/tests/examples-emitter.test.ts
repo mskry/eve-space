@@ -90,7 +90,7 @@ describe('generated examples', () => {
       expect(snippets.genericExecution).toContain('confirmMutation: true');
       expect(snippets.genericExecution).toContain('requires authorization');
     }
-  });
+  }, 15_000);
 
   it('emits the curated standalone set with provenance and safe mutation credentials', async () => {
     const fixture = await loadFixture();

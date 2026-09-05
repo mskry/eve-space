@@ -1,0 +1,94 @@
+name: Publish ESI Client
+
+on:
+  push:
+    tags:
+      - '@evespace/esi-client@*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: esi-client-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate release candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.18.0
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate release metadata
+        run: pnpm --filter @evespace/esi-client release:validate -- --tag "$GITHUB_REF_NAME"
+
+      - name: Create validated release candidate
+        run: pnpm --filter @evespace/esi-client release:candidate -- --output-directory "$RUNNER_TEMP/esi-client-release"
+
+      - name: Verify release commands did not modify tracked files
+        run: git diff --exit-code
+
+      - name: Upload release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: esi-client-release-candidate
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/esi-client-release/package.tgz
+            ${{ runner.temp }}/esi-client-release/package.tgz.sha256
+          retention-days: 1
+
+  publish:
+    name: Publish to npm
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out release verifier
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Download validated release candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: esi-client-release-candidate
+          path: release
+
+      - name: Require npm 11.5.1 or newer
+        run: node packages/esi-client/scripts/verify-npm-version.ts "$(npm --version)"
+
+      - name: Verify downloaded release candidate
+        run: node packages/esi-client/scripts/verify-release-candidate.ts --tarball release/package.tgz --digest release/package.tgz.sha256 --tag "$GITHUB_REF_NAME"
+
+      - name: Publish verified tarball
+        run: npm publish release/package.tgz --access public
