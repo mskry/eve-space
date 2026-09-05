@@ -461,50 +461,70 @@ function collectParameterValues(
     header: new Map(),
   };
   for (const placement of argumentPlacements) {
-    const parameters = descriptor.parameters.filter(
-      (parameter) => parameter.placement === placement,
-    );
-    if (parameters.length === 0) continue;
-    const group = arguments_[placement];
-    if (group !== undefined && !isPlainRecord(group)) {
-      throw requestError(
-        descriptor.operationId,
-        [placement],
-        `${placement} arguments must be a plain object`,
-        'invalid_type',
-      );
-    }
-    if (group !== undefined) {
-      assertDataProperties(descriptor.operationId, group, [placement]);
-      for (const name of Object.keys(group)) {
-        if (!parameters.some((parameter) => parameter.name === name)) {
-          throw requestError(
-            descriptor.operationId,
-            [placement, name],
-            `Undeclared ${placement} parameter: ${name}`,
-            'unrecognized_key',
-          );
-        }
-      }
-    }
-    for (const parameter of parameters) {
-      const parameterValue = group?.[parameter.name];
-      if (parameterValue === undefined) {
-        if (parameter.required) {
-          throw requestError(
-            descriptor.operationId,
-            [placement, parameter.name],
-            `Required ${placement} parameter is missing: ${parameter.name}`,
-            'required',
-          );
-        }
-        continue;
-      }
-      validateParameterValue(descriptor.operationId, parameter, parameterValue);
-      result[placement].set(parameter.name, parameterValue);
-    }
+    collectPlacementValues(descriptor, arguments_, placement, result[placement]);
   }
   return result;
+}
+
+function collectPlacementValues(
+  descriptor: ValidatedDescriptor,
+  arguments_: Readonly<Record<string, unknown>>,
+  placement: OperationParameterPlacement,
+  result: Map<string, unknown>,
+): void {
+  const parameters = descriptor.parameters.filter((parameter) => parameter.placement === placement);
+  if (parameters.length === 0) return;
+  const group = validateParameterGroup(
+    descriptor.operationId,
+    arguments_[placement],
+    placement,
+    parameters,
+  );
+  for (const parameter of parameters) {
+    const parameterValue = group?.[parameter.name];
+    if (parameterValue === undefined) {
+      if (parameter.required) {
+        throw requestError(
+          descriptor.operationId,
+          [placement, parameter.name],
+          `Required ${placement} parameter is missing: ${parameter.name}`,
+          'required',
+        );
+      }
+      continue;
+    }
+    validateParameterValue(descriptor.operationId, parameter, parameterValue);
+    result.set(parameter.name, parameterValue);
+  }
+}
+
+function validateParameterGroup(
+  operationId: string,
+  value: unknown,
+  placement: OperationParameterPlacement,
+  parameters: readonly ValidatedParameter[],
+): Readonly<Record<string, unknown>> | undefined {
+  if (value === undefined) return undefined;
+  if (!isPlainRecord(value)) {
+    throw requestError(
+      operationId,
+      [placement],
+      `${placement} arguments must be a plain object`,
+      'invalid_type',
+    );
+  }
+  assertDataProperties(operationId, value, [placement]);
+  for (const name of Object.keys(value)) {
+    if (!parameters.some((parameter) => parameter.name === name)) {
+      throw requestError(
+        operationId,
+        [placement, name],
+        `Undeclared ${placement} parameter: ${name}`,
+        'unrecognized_key',
+      );
+    }
+  }
+  return value;
 }
 
 function validateParameterValue(
@@ -614,10 +634,10 @@ function substitutePath(
 function serializePathValue(parameter: ValidatedParameter, value: unknown): string {
   if (parameter.schema.type === 'array') {
     return validatedArray(value)
-      .map((item) => encodePathComponent(serializeScalar(item)))
+      .map((item) => encodePathComponent(String(item)))
       .join(',');
   }
-  return encodePathComponent(serializeScalar(value));
+  return encodePathComponent(String(value));
 }
 
 function serializeQuery(
@@ -630,20 +650,18 @@ function serializeQuery(
     const encodedName = encodeRfc3986(parameter.name);
     const value = values.get(parameter.name);
     if (parameter.schema.type !== 'array') {
-      pairs.push(`${encodedName}=${encodeRfc3986(serializeScalar(value))}`);
+      pairs.push(`${encodedName}=${encodeRfc3986(String(value))}`);
       continue;
     }
     const items = validatedArray(value);
     if (parameter.explode) {
       if (items.length === 0) pairs.push(`${encodedName}=`);
       for (const item of items) {
-        pairs.push(`${encodedName}=${encodeRfc3986(serializeScalar(item))}`);
+        pairs.push(`${encodedName}=${encodeRfc3986(String(item))}`);
       }
       continue;
     }
-    pairs.push(
-      `${encodedName}=${items.map((item) => encodeRfc3986(serializeScalar(item))).join(',')}`,
-    );
+    pairs.push(`${encodedName}=${items.map((item) => encodeRfc3986(String(item))).join(',')}`);
   }
   return pairs.join('&');
 }
@@ -658,8 +676,8 @@ function createHeaderRecord(
     const value = values.get(parameter.name);
     const serialized =
       parameter.schema.type === 'array'
-        ? validatedArray(value).map(serializeScalar).join(',')
-        : serializeScalar(value);
+        ? validatedArray(value).map(String).join(',')
+        : String(value);
     validateHeaderValue(descriptor.operationId, ['header', parameter.name], serialized);
     Object.defineProperty(headers, parameter.name.toLowerCase(), {
       value: serialized,
@@ -724,33 +742,51 @@ function validateJsonValue(
   }
   ancestors.add(value);
   if (Array.isArray(value)) {
-    assertJsonArrayProperties(operationId, value, path);
-    for (let index = 0; index < value.length; index += 1) {
-      if (!Object.hasOwn(value, index)) {
-        throw requestError(
-          operationId,
-          [...path, index],
-          'JSON arrays must not be sparse',
-          'invalid_json',
-        );
-      }
-      validateJsonValue(operationId, value[index], [...path, index], ancestors);
-    }
+    validateJsonArray(operationId, value, path, ancestors);
   } else {
-    if (!isPlainRecord(value)) {
+    validateJsonObject(operationId, value, path, ancestors);
+  }
+  ancestors.delete(value);
+}
+
+function validateJsonArray(
+  operationId: string,
+  value: readonly unknown[],
+  path: readonly (string | number)[],
+  ancestors: WeakSet<object>,
+): void {
+  assertJsonArrayProperties(operationId, value, path);
+  for (let index = 0; index < value.length; index += 1) {
+    if (!Object.hasOwn(value, index)) {
       throw requestError(
         operationId,
-        path,
-        'Request body objects must be plain objects',
+        [...path, index],
+        'JSON arrays must not be sparse',
         'invalid_json',
       );
     }
-    assertDataProperties(operationId, value, path);
-    for (const key of Object.keys(value)) {
-      validateJsonValue(operationId, value[key], [...path, key], ancestors);
-    }
+    validateJsonValue(operationId, value[index], [...path, index], ancestors);
   }
-  ancestors.delete(value);
+}
+
+function validateJsonObject(
+  operationId: string,
+  value: object,
+  path: readonly (string | number)[],
+  ancestors: WeakSet<object>,
+): void {
+  if (!isPlainRecord(value)) {
+    throw requestError(
+      operationId,
+      path,
+      'Request body objects must be plain objects',
+      'invalid_json',
+    );
+  }
+  assertDataProperties(operationId, value, path);
+  for (const key of Object.keys(value)) {
+    validateJsonValue(operationId, value[key], [...path, key], ancestors);
+  }
 }
 
 function assertJsonArrayProperties(
@@ -817,10 +853,6 @@ function validateHeaderValue(
       );
     }
   }
-}
-
-function serializeScalar(value: unknown): string {
-  return String(value);
 }
 
 function encodeRfc3986(value: string): string {
@@ -892,16 +924,9 @@ function hasControlCharacter(value: string): boolean {
 }
 
 function hasUnpairedSurrogate(value: string): boolean {
-  for (let index = 0; index < value.length; index += 1) {
-    const codeUnit = value.charCodeAt(index);
-    if (codeUnit >= 0xd800 && codeUnit <= 0xdbff) {
-      if (index + 1 >= value.length) return true;
-      const nextCodeUnit = value.charCodeAt(index + 1);
-      if (nextCodeUnit < 0xdc00 || nextCodeUnit > 0xdfff) return true;
-      index += 1;
-      continue;
-    }
-    if (codeUnit >= 0xdc00 && codeUnit <= 0xdfff) return true;
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) return true;
   }
   return false;
 }

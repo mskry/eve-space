@@ -185,23 +185,46 @@ function validateExecutionDescriptor<TResponse>(
 ): ValidatedExecutionDescriptor<TResponse> {
   const operationId = descriptor.operationId;
   const authentication = descriptor.authentication;
-  if (authentication !== null) {
-    if (!isRecord(authentication) || !Array.isArray(authentication.scopes)) {
-      throw new TypeError(`Operation descriptor ${operationId} authentication must provide scopes`);
-    }
-    for (const scope of authentication.scopes) {
-      if (typeof scope !== 'string' || scope.length === 0) {
-        throw new TypeError(
-          `Operation descriptor ${operationId} has an invalid authentication scope`,
-        );
-      }
-    }
-  }
+  validateAuthentication(operationId, authentication);
   if (!Array.isArray(descriptor.successResponses) || descriptor.successResponses.length === 0) {
     throw new TypeError(`Operation descriptor ${operationId} must declare successful responses`);
   }
+  const statuses = validateSuccessResponses(operationId, descriptor.successResponses);
+  if (statuses.has('2XX') && statuses.size > 1) {
+    throw new TypeError(`Operation descriptor ${operationId} has overlapping success statuses`);
+  }
+  const transport = descriptor.transport;
+  validateTransport(operationId, transport);
+  return {
+    authentication,
+    successResponses: descriptor.successResponses,
+    allowsCompatibilityDateOverride: transport?.compatibilityDateOverride === true,
+  };
+}
+
+function validateAuthentication(
+  operationId: string,
+  authentication: OperationAuthentication | null,
+): void {
+  if (authentication === null) return;
+  if (!isRecord(authentication) || !Array.isArray(authentication.scopes)) {
+    throw new TypeError(`Operation descriptor ${operationId} authentication must provide scopes`);
+  }
+  for (const scope of authentication.scopes) {
+    if (typeof scope !== 'string' || scope.length === 0) {
+      throw new TypeError(
+        `Operation descriptor ${operationId} has an invalid authentication scope`,
+      );
+    }
+  }
+}
+
+function validateSuccessResponses(
+  operationId: string,
+  responses: readonly OperationSuccessResponse[],
+): Set<OperationSuccessStatus> {
   const statuses = new Set<OperationSuccessStatus>();
-  for (const response of descriptor.successResponses) {
+  for (const response of responses) {
     validateSuccessResponse(operationId, response);
     if (statuses.has(response.status)) {
       throw new TypeError(
@@ -210,10 +233,13 @@ function validateExecutionDescriptor<TResponse>(
     }
     statuses.add(response.status);
   }
-  if (statuses.has('2XX') && statuses.size > 1) {
-    throw new TypeError(`Operation descriptor ${operationId} has overlapping success statuses`);
-  }
-  const transport = descriptor.transport;
+  return statuses;
+}
+
+function validateTransport(
+  operationId: string,
+  transport: OperationTransportDescriptor | undefined,
+): void {
   if (
     transport !== undefined &&
     (!isRecord(transport) ||
@@ -222,11 +248,6 @@ function validateExecutionDescriptor<TResponse>(
   ) {
     throw new TypeError(`Operation descriptor ${operationId} has invalid transport metadata`);
   }
-  return {
-    authentication,
-    successResponses: descriptor.successResponses,
-    allowsCompatibilityDateOverride: transport?.compatibilityDateOverride === true,
-  };
 }
 
 function validateSuccessResponse(operationId: string, response: OperationSuccessResponse): void {

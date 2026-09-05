@@ -9,16 +9,16 @@ import {
   DEFAULT_ESI_BASE_URL,
   PINNED_ESI_COMPATIBILITY_DATE,
 } from '../src/client/configuration.js';
-import { domainFileName } from '../scripts/generate/domain-client.mjs';
-import { normalizeOpenApiDocument } from '../scripts/generate/normalize.mjs';
-import { resolveOperationMetadata } from '../scripts/generate/operation-metadata.mjs';
-import type { EmitterContext } from '../scripts/generate/orchestrate.mjs';
-import { generatedSourceEmitter } from '../scripts/generate/source-emitter.mjs';
-import { generatedTestsEmitter } from '../scripts/generate/test-emitter.mjs';
+import { domainFileName } from '../scripts/generate/domain-client.ts';
+import { normalizeOpenApiDocument } from '../scripts/generate/normalize.ts';
+import { resolveOperationMetadata } from '../scripts/generate/operation-metadata.ts';
+import type { EmitterContext } from '../scripts/generate/orchestrate.ts';
+import { generatedSourceEmitter } from '../scripts/generate/source-emitter.ts';
+import { generatedTestsEmitter } from '../scripts/generate/test-emitter.ts';
 import {
   renderZodModelSchemaModule,
   renderZodOperationSchemaModule,
-} from '../scripts/generate/zod-schema.mjs';
+} from '../scripts/generate/zod-schema.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 import { expectIsolatedDeclarationsCompilation } from './helpers/typescript.js';
 

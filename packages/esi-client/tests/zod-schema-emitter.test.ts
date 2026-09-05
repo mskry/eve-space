@@ -10,9 +10,9 @@ import type {
   NormalizedOpenApiModel,
   NormalizedOperation,
   NormalizedSchema,
-} from '../scripts/generate/normalize.mjs';
-import type { EmitterContext } from '../scripts/generate/orchestrate.mjs';
-import { createGeneratedSourceEmitter } from '../scripts/generate/source-emitter.mjs';
+} from '../scripts/generate/normalize.ts';
+import type { EmitterContext } from '../scripts/generate/orchestrate.ts';
+import { createGeneratedSourceEmitter } from '../scripts/generate/source-emitter.ts';
 import {
   createSchemaDependencyModel,
   emitZodSchemaSource,
@@ -23,7 +23,7 @@ import {
   renderZodSchemaModule,
   ZodSchemaEmissionError,
   zodSchemaSourceComponent,
-} from '../scripts/generate/zod-schema.mjs';
+} from '../scripts/generate/zod-schema.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 import { executeTypeScript, expectIsolatedDeclarationsCompilation } from './helpers/typescript.js';
 

@@ -10,13 +10,13 @@ import type {
   NormalizedOperation,
   NormalizedParameter,
   NormalizedSchema,
-} from '../scripts/generate/normalize.mjs';
+} from '../scripts/generate/normalize.ts';
 import {
   generatedOperationContractTestsComponent,
   renderGeneratedOperationContractTests,
-} from '../scripts/generate/operation-contract-test-emitter.mjs';
-import type { EmitterContext } from '../scripts/generate/orchestrate.mjs';
-import { createGeneratedTestsEmitter } from '../scripts/generate/test-emitter.mjs';
+} from '../scripts/generate/operation-contract-test-emitter.ts';
+import type { EmitterContext } from '../scripts/generate/orchestrate.ts';
+import { createGeneratedTestsEmitter } from '../scripts/generate/test-emitter.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 const executeFile = promisify(execFile);

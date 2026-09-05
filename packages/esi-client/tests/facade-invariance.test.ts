@@ -2,19 +2,19 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
 
-import { renderGeneratedDocumentation } from '../scripts/generate/documentation-emitter.mjs';
-import { renderDomainClientArtifacts } from '../scripts/generate/domain-client.mjs';
-import { renderOperationSnippets } from '../scripts/generate/examples-emitter.mjs';
-import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.mjs';
+import { renderGeneratedDocumentation } from '../scripts/generate/documentation-emitter.ts';
+import { renderDomainClientArtifacts } from '../scripts/generate/domain-client.ts';
+import { renderOperationSnippets } from '../scripts/generate/examples-emitter.ts';
+import type { NormalizedOpenApiModel } from '../scripts/generate/normalize.ts';
 import {
   resolveOperationMetadata,
   type ResolvedOperationMetadata,
-} from '../scripts/generate/operation-metadata.mjs';
+} from '../scripts/generate/operation-metadata.ts';
 import {
   createSerializableOperationManifest,
   renderOperationRegistryArtifacts,
-} from '../scripts/generate/operation-registry.mjs';
-import type { GenerationProvenance } from '../scripts/generate/orchestrate.mjs';
+} from '../scripts/generate/operation-registry.ts';
+import type { GenerationProvenance } from '../scripts/generate/orchestrate.ts';
 
 const operationCount = 233;
 

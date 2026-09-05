@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { resolveCompatibilityDate, stageOpenApiSnapshot } from '../scripts/generate/openapi.mjs';
+import { resolveCompatibilityDate, stageOpenApiSnapshot } from '../scripts/generate/openapi.ts';
 
 const temporaryDirectories: string[] = [];
 const validDocument = {

@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   inspectExamplesProject,
   validateDocumentedPackageImports,
-} from '../scripts/check-examples.mjs';
+} from '../scripts/check-examples.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 

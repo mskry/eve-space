@@ -14,17 +14,17 @@ import {
   domainClientSourceComponent,
   renderDomainClientArtifacts,
   validateDomainClientArtifacts,
-} from '../scripts/generate/domain-client.mjs';
+} from '../scripts/generate/domain-client.ts';
 import type {
   NormalizedOpenApiModel,
   NormalizedOperation,
   NormalizedParameter,
-} from '../scripts/generate/normalize.mjs';
-import type { ResolvedOperationMetadata } from '../scripts/generate/operation-metadata.mjs';
-import type { EmitterContext } from '../scripts/generate/orchestrate.mjs';
-import { createGeneratedSourceEmitter } from '../scripts/generate/source-emitter.mjs';
-import { operationRegistrySourceComponent } from '../scripts/generate/operation-registry.mjs';
-import { zodSchemaSourceComponent } from '../scripts/generate/zod-schema.mjs';
+} from '../scripts/generate/normalize.ts';
+import type { ResolvedOperationMetadata } from '../scripts/generate/operation-metadata.ts';
+import type { EmitterContext } from '../scripts/generate/orchestrate.ts';
+import { createGeneratedSourceEmitter } from '../scripts/generate/source-emitter.ts';
+import { operationRegistrySourceComponent } from '../scripts/generate/operation-registry.ts';
+import { zodSchemaSourceComponent } from '../scripts/generate/zod-schema.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 import { expectIsolatedDeclarationsCompilation } from './helpers/typescript.js';
 

@@ -8,8 +8,8 @@ import {
   compareSpecificationDrift,
   renderSpecificationDriftReport,
   reportSpecificationDrift,
-} from '../scripts/drift-report.mjs';
-import { normalizeOpenApiDocument } from '../scripts/generate/normalize.mjs';
+} from '../scripts/drift-report.ts';
+import { normalizeOpenApiDocument } from '../scripts/generate/normalize.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('specification drift comparison', () => {

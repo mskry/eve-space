@@ -2,18 +2,12 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  createNamingReview,
-  renderNamingReviewReport,
-} from '../scripts/generate/naming-review.mjs';
-import type {
-  NormalizedOpenApiModel,
-  NormalizedOperation,
-} from '../scripts/generate/normalize.mjs';
+import { createNamingReview, renderNamingReviewReport } from '../scripts/generate/naming-review.ts';
+import type { NormalizedOpenApiModel, NormalizedOperation } from '../scripts/generate/normalize.ts';
 import {
   loadFacadeCatalog,
   type FacadeCatalogEntry,
-} from '../scripts/generate/operation-metadata.mjs';
+} from '../scripts/generate/operation-metadata.ts';
 
 const provenance = { compatibilityDate: '2026-08-18', sha256: 'a'.repeat(64) };
 

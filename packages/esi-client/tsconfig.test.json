@@ -1,8 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "declaration": false,
     "isolatedDeclarations": false,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node", "vitest/globals"]
   },
   "include": ["tests/**/*.ts", "tsdown.config.ts", "vitest.config.ts"],

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { applySpecificationCorrections } from '../scripts/generate/corrections.mjs';
+import { applySpecificationCorrections } from '../scripts/generate/corrections.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 describe('specification corrections', () => {

@@ -157,6 +157,20 @@ const MAX_ISSUE_PATH_SEGMENTS: number = 32;
 const MAX_ISSUE_STRING_CHARACTERS: number = 256;
 const MAX_SCOPES: number = 64;
 const MAX_SECRET_LOOKAHEAD: number = 4_096;
+const sensitiveAssignmentNamePattern: string = [
+  '(?:proxy-)?authorization',
+  'access[_-]?token',
+  'refresh[_-]?token',
+  'id[_-]?token',
+  'api[_-]?key',
+  'password',
+  'client[_-]?secret',
+].join('|');
+const sensitiveAssignmentValuePattern: string = String.raw`"[^"]*"|'[^']*'|[^\s,;}\]]+`;
+const sensitiveAssignmentPattern: RegExp = new RegExp(
+  String.raw`\b(${sensitiveAssignmentNamePattern})\b\s*[:=]\s*(?:${sensitiveAssignmentValuePattern})`,
+  'giu',
+);
 const sensitiveNames: ReadonlySet<string> = new Set([
   'authorization',
   'proxyauthorization',
@@ -431,10 +445,7 @@ function redactText(value: string, redactor: Redactor): string {
   let redacted = value;
   for (const secret of redactor.secrets) redacted = redacted.split(secret).join(REDACTED);
   redacted = redacted.replace(/\b(Bearer|Basic)\s+[^\s"',;}\]]+/giu, '$1 [REDACTED]');
-  return redacted.replace(
-    /\b((?:proxy-)?authorization|access[_-]?token|refresh[_-]?token|id[_-]?token|api[_-]?key|password|client[_-]?secret)\b\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^\s,;}\]]+)/giu,
-    '$1=[REDACTED]',
-  );
+  return redacted.replace(sensitiveAssignmentPattern, '$1=[REDACTED]');
 }
 
 function takeBoundedText(
@@ -447,8 +458,10 @@ function takeBoundedText(
   let bytes = 0;
   for (const character of value) {
     const codePoint = character.codePointAt(0) ?? 0;
-    const characterBytes =
-      codePoint <= 0x7f ? 1 : codePoint <= 0x7ff ? 2 : codePoint <= 0xffff ? 3 : 4;
+    let characterBytes = 4;
+    if (codePoint <= 0x7f) characterBytes = 1;
+    else if (codePoint <= 0x7ff) characterBytes = 2;
+    else if (codePoint <= 0xffff) characterBytes = 3;
     if (characters >= maximumCharacters || bytes + characterBytes > maximumBytes) {
       return { text, truncated: true };
     }
@@ -627,17 +640,9 @@ function normalizeIssues(
   for (const issue of issues) {
     if (normalized.length >= MAX_ISSUES) break;
     if (typeof issue !== 'object' || issue === null) continue;
-    const path: (string | number)[] = [];
-    for (const segment of issue.path ?? []) {
-      if (path.length >= MAX_ISSUE_PATH_SEGMENTS) break;
-      if (typeof segment === 'number' && Number.isFinite(segment)) path.push(segment);
-      if (typeof segment === 'string') {
-        path.push(sanitizeString(segment, redactor, MAX_ISSUE_STRING_CHARACTERS, ''));
-      }
-    }
     normalized.push(
       Object.freeze({
-        path: Object.freeze(path),
+        path: normalizeIssuePath(issue.path, redactor),
         message: sanitizeString(
           issue.message,
           redactor,
@@ -649,6 +654,21 @@ function normalizeIssues(
     );
   }
   return Object.freeze(normalized);
+}
+
+function normalizeIssuePath(
+  input: readonly PropertyKey[] | undefined,
+  redactor: Redactor,
+): readonly (string | number)[] {
+  const path: (string | number)[] = [];
+  for (const segment of input ?? []) {
+    if (path.length >= MAX_ISSUE_PATH_SEGMENTS) break;
+    if (typeof segment === 'number' && Number.isFinite(segment)) path.push(segment);
+    if (typeof segment === 'string') {
+      path.push(sanitizeString(segment, redactor, MAX_ISSUE_STRING_CHARACTERS, ''));
+    }
+  }
+  return Object.freeze(path);
 }
 
 function normalizeErrorBody(
@@ -685,50 +705,70 @@ function normalizeJsonValue(
     state.truncated = true;
     return TRUNCATED;
   }
-  if (value === null || typeof value === 'boolean') return value;
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  if (typeof value === 'string') {
-    return sanitizeString(value, redactor, ESI_ERROR_BODY_LIMITS.stringCharacters, '');
+  switch (typeof value) {
+    case 'boolean':
+      return value;
+    case 'number':
+      return Number.isFinite(value) ? value : 0;
+    case 'string':
+      return sanitizeString(value, redactor, ESI_ERROR_BODY_LIMITS.stringCharacters, '');
+    case 'object':
+      return normalizeJsonObject(value, depth, state, redactor);
+    default:
+      state.truncated = true;
+      return TRUNCATED;
   }
-  if (Array.isArray(value)) {
-    const result: EsiErrorBodyValue[] = [];
-    for (const item of value) {
-      if (state.arrayItems >= ESI_ERROR_BODY_LIMITS.arrayItems) {
-        state.truncated = true;
-        break;
-      }
-      state.arrayItems += 1;
-      result.push(normalizeJsonValue(item, depth + 1, state, redactor));
+}
+
+function normalizeJsonObject(
+  value: object | null,
+  depth: number,
+  state: NormalizationState,
+  redactor: Redactor,
+): EsiErrorBodyValue {
+  if (value === null) return null;
+  if (Array.isArray(value)) return normalizeJsonArray(value, depth, state, redactor);
+  const result: Record<string, EsiErrorBodyValue> = {};
+  for (const [rawKey, item] of Object.entries(value)) {
+    if (state.keys >= ESI_ERROR_BODY_LIMITS.keys) {
+      state.truncated = true;
+      break;
     }
-    return Object.freeze(result);
-  }
-  if (typeof value === 'object') {
-    const result: Record<string, EsiErrorBodyValue> = {};
-    for (const [rawKey, item] of Object.entries(value)) {
-      if (state.keys >= ESI_ERROR_BODY_LIMITS.keys) {
-        state.truncated = true;
-        break;
-      }
-      state.keys += 1;
-      const key = sanitizeString(rawKey, redactor, MAX_ISSUE_STRING_CHARACTERS, '');
-      if (Object.hasOwn(result, key)) {
-        state.truncated = true;
-        continue;
-      }
-      const normalized = isSensitiveName(rawKey)
-        ? REDACTED
-        : normalizeJsonValue(item, depth + 1, state, redactor);
-      Object.defineProperty(result, key, {
-        value: normalized,
-        enumerable: true,
-        configurable: false,
-        writable: false,
-      });
+    state.keys += 1;
+    const key = sanitizeString(rawKey, redactor, MAX_ISSUE_STRING_CHARACTERS, '');
+    if (Object.hasOwn(result, key)) {
+      state.truncated = true;
+      continue;
     }
-    return Object.freeze(result);
+    const normalized = isSensitiveName(rawKey)
+      ? REDACTED
+      : normalizeJsonValue(item, depth + 1, state, redactor);
+    Object.defineProperty(result, key, {
+      value: normalized,
+      enumerable: true,
+      configurable: false,
+      writable: false,
+    });
   }
-  state.truncated = true;
-  return TRUNCATED;
+  return Object.freeze(result);
+}
+
+function normalizeJsonArray(
+  value: readonly unknown[],
+  depth: number,
+  state: NormalizationState,
+  redactor: Redactor,
+): EsiErrorBodyValue {
+  const result: EsiErrorBodyValue[] = [];
+  for (const item of value) {
+    if (state.arrayItems >= ESI_ERROR_BODY_LIMITS.arrayItems) {
+      state.truncated = true;
+      break;
+    }
+    state.arrayItems += 1;
+    result.push(normalizeJsonValue(item, depth + 1, state, redactor));
+  }
+  return Object.freeze(result);
 }
 
 function isSensitiveName(value: string): boolean {

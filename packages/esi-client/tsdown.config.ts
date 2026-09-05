@@ -59,5 +59,5 @@ export default defineConfig({
     neverBundle: true,
     onlyImport: ['zod'],
   },
-  onSuccess: 'node scripts/check-runtime-imports.mjs',
+  onSuccess: 'node scripts/check-runtime-imports.ts',
 });

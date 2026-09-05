@@ -31,8 +31,6 @@ logs
 .claude/
 .opencode/
 openspec/
-!packages/esi-client/openspec/
-!packages/esi-client/openspec/**
 
 # Local env files
 .env
