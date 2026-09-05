@@ -17,7 +17,10 @@ import {
   createSerializableOperationManifest,
   type SerializableOperationManifest,
 } from '../scripts/generate/operation-registry.ts';
-import type { EmitterContext, GenerationProvenance } from '../scripts/generate/orchestrate.ts';
+import type {
+  EmitterContext,
+  GenerationProvenance,
+} from '../scripts/generate/generation-contracts.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 const operationCount = 233;
@@ -39,6 +42,7 @@ const examplePaths = [
   'examples/metadata.md',
   'examples/validation-error.md',
   'examples/mutation-safety.md',
+  'examples/schema-validation.md',
 ];
 
 describe('generated LLM documentation', () => {
@@ -92,7 +96,11 @@ describe('generated LLM documentation', () => {
       expect(page).toContain("from '@evespace/esi-client/domains/");
       expect(page).toContain("import { EsiClient } from '@evespace/esi-client';");
       expect(page).toContain("from '@evespace/esi-client/operations';");
-      expect(page).toContain(operation.requestSchema.export);
+      expect(page).toContain(operation.requestType.export);
+      expect(page).toContain(operation.responseType.export);
+      for (const requestSchema of operation.requestSchemas) {
+        expect(page).toContain(requestSchema.schema.export);
+      }
       expect(page).toContain('## Parameters');
       expect(page).toContain('## Result and schemas');
       expect(page).toContain('## Authentication');

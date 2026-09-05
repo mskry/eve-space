@@ -15,7 +15,7 @@ import {
   generatedOperationContractTestsComponent,
   renderGeneratedOperationContractTests,
 } from '../scripts/generate/operation-contract-test-emitter.ts';
-import type { EmitterContext } from '../scripts/generate/orchestrate.ts';
+import type { EmitterContext } from '../scripts/generate/generation-contracts.ts';
 import { createGeneratedTestsEmitter } from '../scripts/generate/test-emitter.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
@@ -48,7 +48,7 @@ describe('generated operation contract tests', () => {
     expect(first).toContain('"scopes": [\n        "esi-things.read.v1"');
     expect(first).toContain('"body": "none"');
     expect(first).toContain('"content-type": "application/json"');
-    expect(first).toContain('PutThingStatus204SuccessResponseSchema');
+    expect(first).toContain('zPutThingResponse');
   });
 
   it('fails generation for unsupported required fixture shapes and invalid accounting', () => {

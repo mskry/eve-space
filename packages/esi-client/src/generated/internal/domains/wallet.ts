@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdWalletDescriptor,
@@ -25,19 +26,19 @@ import type {
   GetCorporationsCorporationIdWalletsDivisionTransactionsOptions,
 } from './wallet-contract.js';
 import type {
-  GetCharactersCharacterIdWalletInput,
-  GetCharactersCharacterIdWalletJournalInput,
-  GetCharactersCharacterIdWalletJournalOutput,
-  GetCharactersCharacterIdWalletOutput,
-  GetCharactersCharacterIdWalletTransactionsInput,
-  GetCharactersCharacterIdWalletTransactionsOutput,
-  GetCorporationsCorporationIdWalletsDivisionJournalInput,
-  GetCorporationsCorporationIdWalletsDivisionJournalOutput,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsInput,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsOutput,
-  GetCorporationsCorporationIdWalletsInput,
-  GetCorporationsCorporationIdWalletsOutput,
-} from '../../schemas/operations/wallet.js';
+  GetCharactersCharacterIdWalletData,
+  GetCharactersCharacterIdWalletJournalData,
+  GetCharactersCharacterIdWalletJournalResponse,
+  GetCharactersCharacterIdWalletResponse,
+  GetCharactersCharacterIdWalletTransactionsData,
+  GetCharactersCharacterIdWalletTransactionsResponse,
+  GetCorporationsCorporationIdWalletsData,
+  GetCorporationsCorporationIdWalletsDivisionJournalData,
+  GetCorporationsCorporationIdWalletsDivisionJournalResponse,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsData,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsResponse,
+  GetCorporationsCorporationIdWalletsResponse,
+} from '../../types.gen.js';
 
 class WalletDomainClientWithMetadataImplementation implements WalletDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -47,33 +48,33 @@ class WalletDomainClientWithMetadataImplementation implements WalletDomainClient
     Object.freeze(this);
   }
 
-  getCharacterBalance(characterId: NonNullable<GetCharactersCharacterIdWalletInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletOutput>> {
-    const arguments_: GetCharactersCharacterIdWalletInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getCharacterBalance(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdWalletData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdWalletDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCharacterJournal(characterId: NonNullable<GetCharactersCharacterIdWalletJournalInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletJournalOutput>> {
-    const arguments_: GetCharactersCharacterIdWalletJournalInput = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCharacterJournal(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletJournalResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdWalletJournalData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdWalletJournalDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCharacterTransactions(characterId: NonNullable<GetCharactersCharacterIdWalletTransactionsInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletTransactionsOutput>> {
-    const arguments_: GetCharactersCharacterIdWalletTransactionsInput = { path: { "character_id": characterId }, query: { "from_id": options?.["fromId"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCharacterTransactions(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletTransactionsResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdWalletTransactionsData> = { path: { "character_id": characterId }, query: { "from_id": options?.["fromId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdWalletTransactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporationBalances(corporationId: NonNullable<GetCorporationsCorporationIdWalletsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsOutput>> {
-    const arguments_: GetCorporationsCorporationIdWalletsInput = { path: { "corporation_id": corporationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporationBalances(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdWalletsData> = { path: { "corporation_id": corporationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporationDivisionJournal(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionJournalOutput>> {
-    const arguments_: GetCorporationsCorporationIdWalletsDivisionJournalInput = { path: { "corporation_id": corporationId, "division": division }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporationDivisionJournal(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionJournalResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData> = { path: { "corporation_id": corporationId, "division": division }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDivisionJournalDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporationDivisionTransactions(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionTransactionsOutput>> {
-    const arguments_: GetCorporationsCorporationIdWalletsDivisionTransactionsInput = { path: { "corporation_id": corporationId, "division": division }, query: { "from_id": options?.["fromId"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporationDivisionTransactions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionTransactionsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData> = { path: { "corporation_id": corporationId, "division": division }, query: { "from_id": options?.["fromId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdWalletsDivisionTransactionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -86,27 +87,27 @@ class WalletDomainClientImplementation implements WalletDomainClient {
     Object.freeze(this);
   }
 
-  getCharacterBalance(characterId: NonNullable<GetCharactersCharacterIdWalletInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<GetCharactersCharacterIdWalletOutput> {
+  getCharacterBalance(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<GetCharactersCharacterIdWalletResponse> {
     return this.#metadata.getCharacterBalance(characterId, options).then((response) => response.data);
   }
 
-  listCharacterJournal(characterId: NonNullable<GetCharactersCharacterIdWalletJournalInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<GetCharactersCharacterIdWalletJournalOutput> {
+  listCharacterJournal(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<GetCharactersCharacterIdWalletJournalResponse> {
     return this.#metadata.listCharacterJournal(characterId, options).then((response) => response.data);
   }
 
-  listCharacterTransactions(characterId: NonNullable<GetCharactersCharacterIdWalletTransactionsInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<GetCharactersCharacterIdWalletTransactionsOutput> {
+  listCharacterTransactions(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<GetCharactersCharacterIdWalletTransactionsResponse> {
     return this.#metadata.listCharacterTransactions(characterId, options).then((response) => response.data);
   }
 
-  listCorporationBalances(corporationId: NonNullable<GetCorporationsCorporationIdWalletsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<GetCorporationsCorporationIdWalletsOutput> {
+  listCorporationBalances(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<GetCorporationsCorporationIdWalletsResponse> {
     return this.#metadata.listCorporationBalances(corporationId, options).then((response) => response.data);
   }
 
-  listCorporationDivisionJournal(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<GetCorporationsCorporationIdWalletsDivisionJournalOutput> {
+  listCorporationDivisionJournal(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<GetCorporationsCorporationIdWalletsDivisionJournalResponse> {
     return this.#metadata.listCorporationDivisionJournal(corporationId, division, options).then((response) => response.data);
   }
 
-  listCorporationDivisionTransactions(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<GetCorporationsCorporationIdWalletsDivisionTransactionsOutput> {
+  listCorporationDivisionTransactions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<GetCorporationsCorporationIdWalletsDivisionTransactionsResponse> {
     return this.#metadata.listCorporationDivisionTransactions(corporationId, division, options).then((response) => response.data);
   }
 

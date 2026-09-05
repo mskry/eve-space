@@ -4,93 +4,94 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdWalletInput,
-  GetCharactersCharacterIdWalletJournalInput,
-  GetCharactersCharacterIdWalletJournalOutput,
-  GetCharactersCharacterIdWalletOutput,
-  GetCharactersCharacterIdWalletTransactionsInput,
-  GetCharactersCharacterIdWalletTransactionsOutput,
-  GetCorporationsCorporationIdWalletsDivisionJournalInput,
-  GetCorporationsCorporationIdWalletsDivisionJournalOutput,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsInput,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsOutput,
-  GetCorporationsCorporationIdWalletsInput,
-  GetCorporationsCorporationIdWalletsOutput,
-} from '../../schemas/operations/wallet.js';
+  GetCharactersCharacterIdWalletData,
+  GetCharactersCharacterIdWalletJournalData,
+  GetCharactersCharacterIdWalletJournalResponse,
+  GetCharactersCharacterIdWalletResponse,
+  GetCharactersCharacterIdWalletTransactionsData,
+  GetCharactersCharacterIdWalletTransactionsResponse,
+  GetCorporationsCorporationIdWalletsData,
+  GetCorporationsCorporationIdWalletsDivisionJournalData,
+  GetCorporationsCorporationIdWalletsDivisionJournalResponse,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsData,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsResponse,
+  GetCorporationsCorporationIdWalletsResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdWalletOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdWalletInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdWalletInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdWalletInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdWalletJournalOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdWalletJournalInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdWalletJournalInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCharactersCharacterIdWalletJournalInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdWalletJournalInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdWalletTransactionsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "fromId"?: NonNullable<GetCharactersCharacterIdWalletTransactionsInput["query"]>["from_id"];
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdWalletTransactionsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdWalletTransactionsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdWalletTransactionsInput["header"]>["X-Tenant"];
+  readonly "fromId"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["query"]>["from_id"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdWalletsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdWalletsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdWalletsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdWalletsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdWalletsDivisionJournalOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdWalletsDivisionTransactionsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "fromId"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput["query"]>["from_id"];
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput["header"]>["X-Tenant"];
+  readonly "fromId"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["query"]>["from_id"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>["headers"]>["X-Tenant"];
 }
 
 export interface WalletDomainClient {
-  getCharacterBalance(characterId: NonNullable<GetCharactersCharacterIdWalletInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<GetCharactersCharacterIdWalletOutput>;
+  getCharacterBalance(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<GetCharactersCharacterIdWalletResponse>;
 
-  listCharacterJournal(characterId: NonNullable<GetCharactersCharacterIdWalletJournalInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<GetCharactersCharacterIdWalletJournalOutput>;
+  listCharacterJournal(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<GetCharactersCharacterIdWalletJournalResponse>;
 
-  listCharacterTransactions(characterId: NonNullable<GetCharactersCharacterIdWalletTransactionsInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<GetCharactersCharacterIdWalletTransactionsOutput>;
+  listCharacterTransactions(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<GetCharactersCharacterIdWalletTransactionsResponse>;
 
-  listCorporationBalances(corporationId: NonNullable<GetCorporationsCorporationIdWalletsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<GetCorporationsCorporationIdWalletsOutput>;
+  listCorporationBalances(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<GetCorporationsCorporationIdWalletsResponse>;
 
-  listCorporationDivisionJournal(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<GetCorporationsCorporationIdWalletsDivisionJournalOutput>;
+  listCorporationDivisionJournal(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<GetCorporationsCorporationIdWalletsDivisionJournalResponse>;
 
-  listCorporationDivisionTransactions(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<GetCorporationsCorporationIdWalletsDivisionTransactionsOutput>;
+  listCorporationDivisionTransactions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<GetCorporationsCorporationIdWalletsDivisionTransactionsResponse>;
 
   withMetadata(): WalletDomainClientWithMetadata;
 }
 
 export interface WalletDomainClientWithMetadata {
-  getCharacterBalance(characterId: NonNullable<GetCharactersCharacterIdWalletInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletOutput>>;
+  getCharacterBalance(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletResponse>>;
 
-  listCharacterJournal(characterId: NonNullable<GetCharactersCharacterIdWalletJournalInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletJournalOutput>>;
+  listCharacterJournal(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletJournalData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletJournalOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletJournalResponse>>;
 
-  listCharacterTransactions(characterId: NonNullable<GetCharactersCharacterIdWalletTransactionsInput['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletTransactionsOutput>>;
+  listCharacterTransactions(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>['path']>["character_id"], options?: GetCharactersCharacterIdWalletTransactionsOptions): Promise<EsiResponse<GetCharactersCharacterIdWalletTransactionsResponse>>;
 
-  listCorporationBalances(corporationId: NonNullable<GetCorporationsCorporationIdWalletsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsOutput>>;
+  listCorporationBalances(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdWalletsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsResponse>>;
 
-  listCorporationDivisionJournal(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionJournalInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionJournalOutput>>;
+  listCorporationDivisionJournal(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionJournalOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionJournalResponse>>;
 
-  listCorporationDivisionTransactions(corporationId: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["corporation_id"], division: NonNullable<GetCorporationsCorporationIdWalletsDivisionTransactionsInput['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionTransactionsOutput>>;
+  listCorporationDivisionTransactions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["corporation_id"], division: NonNullable<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>['path']>["division"], options?: GetCorporationsCorporationIdWalletsDivisionTransactionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdWalletsDivisionTransactionsResponse>>;
 }

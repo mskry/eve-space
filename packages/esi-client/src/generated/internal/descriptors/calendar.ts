@@ -4,26 +4,42 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdCalendarData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesResponse,
+  GetCharactersCharacterIdCalendarEventIdData,
+  GetCharactersCharacterIdCalendarEventIdResponse,
+  GetCharactersCharacterIdCalendarResponse,
+  PutCharactersCharacterIdCalendarEventIdData,
+  PutCharactersCharacterIdCalendarEventIdResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdCalendarEventIdAttendeesRequestSchema,
-  GetCharactersCharacterIdCalendarEventIdAttendeesStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdCalendarEventIdRequestSchema,
-  GetCharactersCharacterIdCalendarEventIdStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdCalendarRequestSchema,
-  GetCharactersCharacterIdCalendarStatus200SuccessResponseSchema,
-  PutCharactersCharacterIdCalendarEventIdRequestSchema,
-  PutCharactersCharacterIdCalendarEventIdStatus204SuccessResponseSchema,
-  type GetCharactersCharacterIdCalendarEventIdAttendeesInput,
-  type GetCharactersCharacterIdCalendarEventIdAttendeesOutput,
-  type GetCharactersCharacterIdCalendarEventIdInput,
-  type GetCharactersCharacterIdCalendarEventIdOutput,
-  type GetCharactersCharacterIdCalendarInput,
-  type GetCharactersCharacterIdCalendarOutput,
-  type PutCharactersCharacterIdCalendarEventIdInput,
-  type PutCharactersCharacterIdCalendarEventIdOutput,
-} from '../../schemas/operations/calendar.js';
+  zGetCharactersCharacterIdCalendarEventIdAttendeesHeaders,
+  zGetCharactersCharacterIdCalendarEventIdAttendeesPath,
+  zGetCharactersCharacterIdCalendarEventIdAttendeesResponse,
+  zGetCharactersCharacterIdCalendarEventIdHeaders,
+  zGetCharactersCharacterIdCalendarEventIdPath,
+  zGetCharactersCharacterIdCalendarEventIdResponse,
+  zGetCharactersCharacterIdCalendarHeaders,
+  zGetCharactersCharacterIdCalendarPath,
+  zGetCharactersCharacterIdCalendarQuery,
+  zGetCharactersCharacterIdCalendarResponse,
+  zPutCharactersCharacterIdCalendarEventIdBody,
+  zPutCharactersCharacterIdCalendarEventIdHeaders,
+  zPutCharactersCharacterIdCalendarEventIdPath,
+  zPutCharactersCharacterIdCalendarEventIdResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdCalendarEventIdDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdCalendarEventIdInput, GetCharactersCharacterIdCalendarEventIdOutput> = {
+export const GetCharactersCharacterIdCalendarEventIdRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdCalendarEventIdHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdCalendarEventIdPath },
+});
+
+export const GetCharactersCharacterIdCalendarEventIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>, GetCharactersCharacterIdCalendarEventIdResponse> = {
   operationId: "GetCharactersCharacterIdCalendarEventId",
   method: "GET",
   path: "/characters/{character_id}/calendar/{event_id}",
@@ -38,12 +54,17 @@ export const GetCharactersCharacterIdCalendarEventIdDescriptor: OperationExecuti
   requestSchema: GetCharactersCharacterIdCalendarEventIdRequestSchema,
   authentication: { scopes: ["esi-calendar.read_calendar_events.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdCalendarEventIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdCalendarEventIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdCalendarEventIdAttendeesDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdCalendarEventIdAttendeesInput, GetCharactersCharacterIdCalendarEventIdAttendeesOutput> = {
+export const GetCharactersCharacterIdCalendarEventIdAttendeesRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdCalendarEventIdAttendeesHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdCalendarEventIdAttendeesPath },
+});
+
+export const GetCharactersCharacterIdCalendarEventIdAttendeesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>, GetCharactersCharacterIdCalendarEventIdAttendeesResponse> = {
   operationId: "GetCharactersCharacterIdCalendarEventIdAttendees",
   method: "GET",
   path: "/characters/{character_id}/calendar/{event_id}/attendees",
@@ -58,12 +79,18 @@ export const GetCharactersCharacterIdCalendarEventIdAttendeesDescriptor: Operati
   requestSchema: GetCharactersCharacterIdCalendarEventIdAttendeesRequestSchema,
   authentication: { scopes: ["esi-calendar.read_calendar_events.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdCalendarEventIdAttendeesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdCalendarEventIdAttendeesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdCalendarDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdCalendarInput, GetCharactersCharacterIdCalendarOutput> = {
+export const GetCharactersCharacterIdCalendarRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdCalendarData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdCalendarData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdCalendarHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdCalendarPath },
+  query: { required: false, schema: zGetCharactersCharacterIdCalendarQuery },
+});
+
+export const GetCharactersCharacterIdCalendarDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdCalendarData>, GetCharactersCharacterIdCalendarResponse> = {
   operationId: "GetCharactersCharacterIdCalendar",
   method: "GET",
   path: "/characters/{character_id}/calendar",
@@ -78,12 +105,18 @@ export const GetCharactersCharacterIdCalendarDescriptor: OperationExecutionDescr
   requestSchema: GetCharactersCharacterIdCalendarRequestSchema,
   authentication: { scopes: ["esi-calendar.read_calendar_events.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdCalendarStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdCalendarResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PutCharactersCharacterIdCalendarEventIdDescriptor: OperationExecutionDescriptor<PutCharactersCharacterIdCalendarEventIdInput, PutCharactersCharacterIdCalendarEventIdOutput> = {
+export const PutCharactersCharacterIdCalendarEventIdRequestSchema: z.ZodType<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>> = composeOperationRequestSchema<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>>({
+  headers: { required: false, schema: zPutCharactersCharacterIdCalendarEventIdHeaders },
+  path: { required: true, schema: zPutCharactersCharacterIdCalendarEventIdPath },
+  body: { required: true, schema: zPutCharactersCharacterIdCalendarEventIdBody },
+});
+
+export const PutCharactersCharacterIdCalendarEventIdDescriptor: OperationExecutionDescriptor<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>, PutCharactersCharacterIdCalendarEventIdResponse> = {
   operationId: "PutCharactersCharacterIdCalendarEventId",
   method: "PUT",
   path: "/characters/{character_id}/calendar/{event_id}",

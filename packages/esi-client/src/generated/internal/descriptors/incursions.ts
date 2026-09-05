@@ -4,14 +4,23 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetIncursionsData,
+  GetIncursionsResponse,
+} from '../../types.gen.js';
 import {
-  GetIncursionsRequestSchema,
-  GetIncursionsStatus200SuccessResponseSchema,
-  type GetIncursionsInput,
-  type GetIncursionsOutput,
-} from '../../schemas/operations/incursions.js';
+  zGetIncursionsHeaders,
+  zGetIncursionsResponse,
+} from '../../zod.gen.js';
 
-export const GetIncursionsDescriptor: OperationExecutionDescriptor<GetIncursionsInput, GetIncursionsOutput> = {
+export const GetIncursionsRequestSchema: z.ZodType<OperationArguments<GetIncursionsData>> = composeOperationRequestSchema<OperationArguments<GetIncursionsData>>({
+  headers: { required: false, schema: zGetIncursionsHeaders },
+});
+
+export const GetIncursionsDescriptor: OperationExecutionDescriptor<OperationArguments<GetIncursionsData>, GetIncursionsResponse> = {
   operationId: "GetIncursions",
   method: "GET",
   path: "/incursions",
@@ -24,7 +33,7 @@ export const GetIncursionsDescriptor: OperationExecutionDescriptor<GetIncursions
   requestSchema: GetIncursionsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetIncursionsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetIncursionsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

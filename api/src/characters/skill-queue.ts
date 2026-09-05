@@ -1,5 +1,5 @@
 import { createSkillsClient } from '@evespace/esi-client/domains/skills'
-import type { GetCharactersCharacterIdSkillqueueOutput } from '@evespace/esi-client/schemas'
+import type { GetCharactersCharacterIdSkillqueueResponse } from '@evespace/esi-client/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
@@ -89,7 +89,7 @@ export async function getCharacterSkillQueue(characterId: number): Promise<Chara
 }
 
 async function mapCharacterSkillQueue(
-  result: GetCharactersCharacterIdSkillqueueOutput,
+  result: GetCharactersCharacterIdSkillqueueResponse,
 ): Promise<CharacterSkillQueueEntries> {
   if (result.length === 0) return { entries: [] }
 

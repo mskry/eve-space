@@ -1,8 +1,10 @@
 # @evespace/esi-client
 
+[![npm](https://img.shields.io/npm/v/@evespace/esi-client.svg)](https://www.npmjs.com/package/@evespace/esi-client)
 [![ESI Client](https://github.com/mskry/eve-space/actions/workflows/esi-client.yml/badge.svg)](https://github.com/mskry/eve-space/actions/workflows/esi-client.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space_esi-client&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mskry_eve-space_esi-client)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mskry_eve-space_esi-client&metric=coverage)](https://sonarcloud.io/summary/overall?id=mskry_eve-space_esi-client)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 An ESM-only TypeScript SDK for EVE Online ESI, centered on `EsiClient` and generated from a pinned, corrected OpenAPI specification.
 
@@ -31,7 +33,7 @@ const response = await statusClient.withMetadata().get();
 npm install @evespace/esi-client zod
 ```
 
-Zod `^4.0.0` is a required peer dependency. The package requires Node.js 22.18 or newer and publishes ESM only: use `import`, not CommonJS `require`.
+Zod `^4.5.4` is a required peer dependency. The package requires Node.js 24.20 or newer and publishes ESM only: use `import`, not CommonJS `require`.
 
 ## Authenticated Domain Call
 
@@ -71,14 +73,26 @@ Generic mutations are denied by default. They require both `allowGenericMutation
 The root export is the convenient entry point. ESM subpaths provide narrower imports:
 
 - `@evespace/esi-client/operations` for discovery, descriptors, and generic execution types
-- `@evespace/esi-client/schemas` for generated Zod schemas and inferred types
+- `@evespace/esi-client/types` for natural generated request and response types
+- `@evespace/esi-client/zod` for matching natural generated Zod schemas
 - `@evespace/esi-client/domains/<domain>` for one generated domain client
 
-Method option interfaces use stable operation IDs, for example `GetAlliancesAllianceIdIconsOptions`, matching the operation's generated input, output, schemas, descriptor, manifest entry, and discovery identity. Their globally unique names are available from both the package root and corresponding domain subpath.
+For example, the status operation exposes these natural generated symbols:
+
+```ts
+import type {
+  GetStatusData,
+  GetStatusResponse,
+  GetStatusResponses,
+} from '@evespace/esi-client/types';
+import { zGetStatusHeaders, zGetStatusResponse, zStatus } from '@evespace/esi-client/zod';
+```
+
+Method option interfaces use stable operation IDs, for example `GetAlliancesAllianceIdIconsOptions`, matching the operation's generated data, response, schemas, descriptor, manifest entry, and discovery identity. Their globally unique names are available from both the package root and corresponding domain subpath.
 
 Every domain subpath exports a `create<Domain>Client` factory, such as `createStatusClient`. Factories accept the same client options applicable to `EsiClient`; domain client contracts are exported as TypeScript interfaces while configuration plumbing remains internal.
 
-Domain subpaths reduce the runtime and TypeScript declaration graph reached by an import. They do not reduce npm installation size: the installed tarball still contains all domains, aggregate discovery metadata, and shared schemas.
+Domain subpaths reduce the runtime and TypeScript declaration graph reached by an import. They do not reduce npm installation size: the installed tarball still contains all domains, aggregate discovery metadata, and generated type and schema entries.
 
 Start with the repository [`llms.txt`](llms.txt), then retrieve only the documentation needed:
 
@@ -90,27 +104,35 @@ The generated domain indexes link focused references for every supported operati
 
 ## Development
 
-Development uses Node.js 22.18+ and pnpm 11.22.0 from the EVE Space monorepo root. The package is owned and released independently but uses the root lockfile and workspace configuration.
+Development uses Node.js 24.20+ and pnpm 11.22.0 from the EVE Space monorepo root. The package is owned and released independently but uses the root runtime pins, lockfile, and workspace configuration.
 
 Run `pnpm esi:validate` from the repository root for generation reproducibility, documentation and example checks, formatting, linting, TypeScript 7 type checking, tests, build and package validation, installed-package smoke tests, and artifact inspection. Focused commands include `pnpm esi:generate:check`, `pnpm esi:package:check`, and `pnpm esi:smoke:package`.
 
+Source generation uses exactly `@hey-api/openapi-ts@0.99.0` through the private `@evespace/esi-client-codegen` workspace package. Hey API is internal build-time tooling configured only for its bundled TypeScript and Zod plugins. It emits natural TypeScript and Zod 4 artifacts, not the SDK client or runtime; the request serializer, executor, domain facade, operation registry, and EVE-specific behavior remain maintained in this repository.
+
+`pnpm --filter @evespace/esi-client generate` and `generate:check` operate offline from the committed corrected snapshot at `openapi/generated/esi-openapi.json`. The first replaces generated source, documentation, examples, tests, and OpenAPI artifacts atomically; the second reproduces and compares the complete generated target set without modifying the worktree. `generate:source:refresh` is the only networked generation path. It retrieves the ESI specification, applies the repository corrections, validates and records provenance, then generates from that staged corrected document.
+
+Keep the generator pinned exactly. Any pin change must pass full generation, semantic, package, and installed-tarball validation before it is accepted.
+
 Run `pnpm --filter @evespace/esi-client test:coverage` to produce the package-owned `coverage/lcov.info`. Local analysis uses `pnpm sonar:esi-client` with a package project token in the ignored `packages/esi-client/.env.sonar`; `pnpm quality:sonar:esi-client` generates coverage and scans together. The package has a separate Sonar project and quality gate from the application. Its GitHub workflow retains the package LCOV artifact for 14 days; fork pull requests run validation and coverage without receiving the scanner secret.
 
-## Repository History And Releases
+## Releases
 
-The standalone repository `git@github.com:mskry/esi-client.git` was imported without squashing at commit `71f40ba27c63bd6e7119abce433ba84ef03fb93a`. Its source history remains reachable from the monorepo. The standalone `v2.0.0` tag points to commit `3ebda91a9a1839994c64d87066a7748928c34407`; that unqualified tag was not imported. Future package releases use annotated scoped tags named `@evespace/esi-client@<version>`.
+Package releases use annotated scoped tags named `@evespace/esi-client@<version>`.
 
 To release, update this package's version and changelog in a reviewed commit and merge it to `main` only after `CI`, root `Coverage`, and `ESI Client` checks succeed. Create an annotated tag at that exact commit and push it:
 
 ```bash
-git tag -a '@evespace/esi-client@2.0.1' -m '@evespace/esi-client@2.0.1'
-git push origin '@evespace/esi-client@2.0.1'
+git tag -a '@evespace/esi-client@3.0.0' -m '@evespace/esi-client@3.0.0'
+git push origin '@evespace/esi-client@3.0.0'
 ```
 
-The tag-triggered workflow verifies stable tag syntax, package and changelog versions, annotation, `origin/main` ancestry, and registry nonexistence. It runs the complete package validation on Node.js 22.18, transfers exactly one tested tarball and SHA-256 digest, then publishes those bytes from Node.js 24 through npm trusted publishing with automatic provenance. It never uses a long-lived npm write token or republishes a duplicate version.
+The tag-triggered workflow verifies stable tag syntax, package and changelog versions, annotation, `origin/main` ancestry, and registry nonexistence. It runs the complete package validation on Node.js 24.20, transfers exactly one tested tarball and SHA-256 digest, then publishes those bytes from the same Node.js release through npm trusted publishing with automatic provenance. It never uses a long-lived npm write token or republishes a duplicate version.
 
 Before the first automated release, create the GitHub `npm` environment, restrict it to the scoped tag pattern, and configure npm trusted publishing for repository `mskry/eve-space`, workflow `esi-client-publish.yml`, environment `npm`, and direct publish permission. Protect scoped package tags so only authorized maintainers can create them. Do not push a release tag until these external settings are complete.
 
 ## License
 
 MIT © Mykola Skrypets
+
+The internal generator uses `@hey-api/openapi-ts@0.99.0`, distributed under the MIT License. It is not a runtime dependency or part of the published package graph.

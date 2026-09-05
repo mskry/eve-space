@@ -16,26 +16,28 @@ List solar system cost indices
 - Domain import: `@evespace/esi-client/domains/industry`
 - Domain index: [industry](../domains/industry.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createIndustryClient } from '@evespace/esi-client/domains/industry';
+import type { GetIndustrySystemsResponse } from '@evespace/esi-client/types';
 
 const client = createIndustryClient();
 
-const data = await client.listSystemCostIndices();
+const data: GetIndustrySystemsResponse = await client.listSystemCostIndices();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetIndustrySystemsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.industry.listSystemCostIndices();
+const data: GetIndustrySystemsResponse = await client.industry.listSystemCostIndices();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.industry.listSystemCostIndices();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetIndustrySystemsData, GetIndustrySystemsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetIndustrySystems'> = {};
 
 const response = await client.callOperation('GetIndustrySystems', arguments_);
+const data: GetIndustrySystemsResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetIndustrySystems', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetIndustrySystemsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetIndustrySystemsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetIndustrySystemsHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetIndustrySystemsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.industry.withMetadata().listSystemCostIndices(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetIndustrySystemsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetIndustrySystemsResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

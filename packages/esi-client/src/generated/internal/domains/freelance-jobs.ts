@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetFreelanceJobsDetailDescriptor,
@@ -25,19 +26,19 @@ import type {
   GetFreelanceJobsListingOptions,
 } from './freelance-jobs-contract.js';
 import type {
-  GetCharactersFreelanceJobsListingInput,
-  GetCharactersFreelanceJobsListingOutput,
-  GetCharactersFreelanceJobsParticipationInput,
-  GetCharactersFreelanceJobsParticipationOutput,
-  GetCorporationsFreelanceJobsListingInput,
-  GetCorporationsFreelanceJobsListingOutput,
-  GetCorporationsFreelanceJobsParticipantsInput,
-  GetCorporationsFreelanceJobsParticipantsOutput,
-  GetFreelanceJobsDetailInput,
-  GetFreelanceJobsDetailOutput,
-  GetFreelanceJobsListingInput,
-  GetFreelanceJobsListingOutput,
-} from '../../schemas/operations/freelance-jobs.js';
+  GetCharactersFreelanceJobsListingData,
+  GetCharactersFreelanceJobsListingResponse,
+  GetCharactersFreelanceJobsParticipationData,
+  GetCharactersFreelanceJobsParticipationResponse,
+  GetCorporationsFreelanceJobsListingData,
+  GetCorporationsFreelanceJobsListingResponse,
+  GetCorporationsFreelanceJobsParticipantsData,
+  GetCorporationsFreelanceJobsParticipantsResponse,
+  GetFreelanceJobsDetailData,
+  GetFreelanceJobsDetailResponse,
+  GetFreelanceJobsListingData,
+  GetFreelanceJobsListingResponse,
+} from '../../types.gen.js';
 
 class FreelanceJobsDomainClientWithMetadataImplementation implements FreelanceJobsDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -47,33 +48,33 @@ class FreelanceJobsDomainClientWithMetadataImplementation implements FreelanceJo
     Object.freeze(this);
   }
 
-  get(jobId: NonNullable<GetFreelanceJobsDetailInput['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<EsiResponse<GetFreelanceJobsDetailOutput>> {
-    const arguments_: GetFreelanceJobsDetailInput = { path: { "job_id": jobId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  get(jobId: NonNullable<OperationArguments<GetFreelanceJobsDetailData>['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<EsiResponse<GetFreelanceJobsDetailResponse>> {
+    const arguments_: OperationArguments<GetFreelanceJobsDetailData> = { path: { "job_id": jobId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetFreelanceJobsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getCharacterParticipation(characterId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["character_id"], jobId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<EsiResponse<GetCharactersFreelanceJobsParticipationOutput>> {
-    const arguments_: GetCharactersFreelanceJobsParticipationInput = { path: { "character_id": characterId, "job_id": jobId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getCharacterParticipation(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["character_id"], jobId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<EsiResponse<GetCharactersFreelanceJobsParticipationResponse>> {
+    const arguments_: OperationArguments<GetCharactersFreelanceJobsParticipationData> = { path: { "character_id": characterId, "job_id": jobId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersFreelanceJobsParticipationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCharacterJobs(characterId: NonNullable<GetCharactersFreelanceJobsListingInput['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<EsiResponse<GetCharactersFreelanceJobsListingOutput>> {
-    const arguments_: GetCharactersFreelanceJobsListingInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<EsiResponse<GetCharactersFreelanceJobsListingResponse>> {
+    const arguments_: OperationArguments<GetCharactersFreelanceJobsListingData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsFreelanceJobsListingInput['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsListingOutput>> {
-    const arguments_: GetCorporationsFreelanceJobsListingInput = { path: { "corporation_id": corporationId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsListingResponse>> {
+    const arguments_: OperationArguments<GetCorporationsFreelanceJobsListingData> = { path: { "corporation_id": corporationId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listParticipants(corporationId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["corporation_id"], jobId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsParticipantsOutput>> {
-    const arguments_: GetCorporationsFreelanceJobsParticipantsInput = { path: { "corporation_id": corporationId, "job_id": jobId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listParticipants(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["corporation_id"], jobId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<EsiResponse<GetCorporationsFreelanceJobsParticipantsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsFreelanceJobsParticipantsData> = { path: { "corporation_id": corporationId, "job_id": jobId }, query: { "after": options?.["after"], "before": options?.["before"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsFreelanceJobsParticipantsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listPublic(options?: GetFreelanceJobsListingOptions): Promise<EsiResponse<GetFreelanceJobsListingOutput>> {
-    const arguments_: GetFreelanceJobsListingInput = { query: { "after": options?.["after"], "before": options?.["before"], "corporation_id": options?.["corporationId"], "limit": options?.["limit"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listPublic(options?: GetFreelanceJobsListingOptions): Promise<EsiResponse<GetFreelanceJobsListingResponse>> {
+    const arguments_: OperationArguments<GetFreelanceJobsListingData> = { query: { "after": options?.["after"], "before": options?.["before"], "corporation_id": options?.["corporationId"], "limit": options?.["limit"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetFreelanceJobsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -86,27 +87,27 @@ class FreelanceJobsDomainClientImplementation implements FreelanceJobsDomainClie
     Object.freeze(this);
   }
 
-  get(jobId: NonNullable<GetFreelanceJobsDetailInput['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<GetFreelanceJobsDetailOutput> {
+  get(jobId: NonNullable<OperationArguments<GetFreelanceJobsDetailData>['path']>["job_id"], options?: GetFreelanceJobsDetailOptions): Promise<GetFreelanceJobsDetailResponse> {
     return this.#metadata.get(jobId, options).then((response) => response.data);
   }
 
-  getCharacterParticipation(characterId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["character_id"], jobId: NonNullable<GetCharactersFreelanceJobsParticipationInput['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<GetCharactersFreelanceJobsParticipationOutput> {
+  getCharacterParticipation(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["character_id"], jobId: NonNullable<OperationArguments<GetCharactersFreelanceJobsParticipationData>['path']>["job_id"], options?: GetCharactersFreelanceJobsParticipationOptions): Promise<GetCharactersFreelanceJobsParticipationResponse> {
     return this.#metadata.getCharacterParticipation(characterId, jobId, options).then((response) => response.data);
   }
 
-  listCharacterJobs(characterId: NonNullable<GetCharactersFreelanceJobsListingInput['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<GetCharactersFreelanceJobsListingOutput> {
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersFreelanceJobsListingData>['path']>["character_id"], options?: GetCharactersFreelanceJobsListingOptions): Promise<GetCharactersFreelanceJobsListingResponse> {
     return this.#metadata.listCharacterJobs(characterId, options).then((response) => response.data);
   }
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsFreelanceJobsListingInput['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<GetCorporationsFreelanceJobsListingOutput> {
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsListingData>['path']>["corporation_id"], options?: GetCorporationsFreelanceJobsListingOptions): Promise<GetCorporationsFreelanceJobsListingResponse> {
     return this.#metadata.listCorporationJobs(corporationId, options).then((response) => response.data);
   }
 
-  listParticipants(corporationId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["corporation_id"], jobId: NonNullable<GetCorporationsFreelanceJobsParticipantsInput['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<GetCorporationsFreelanceJobsParticipantsOutput> {
+  listParticipants(corporationId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["corporation_id"], jobId: NonNullable<OperationArguments<GetCorporationsFreelanceJobsParticipantsData>['path']>["job_id"], options?: GetCorporationsFreelanceJobsParticipantsOptions): Promise<GetCorporationsFreelanceJobsParticipantsResponse> {
     return this.#metadata.listParticipants(corporationId, jobId, options).then((response) => response.data);
   }
 
-  listPublic(options?: GetFreelanceJobsListingOptions): Promise<GetFreelanceJobsListingOutput> {
+  listPublic(options?: GetFreelanceJobsListingOptions): Promise<GetFreelanceJobsListingResponse> {
     return this.#metadata.listPublic(options).then((response) => response.data);
   }
 

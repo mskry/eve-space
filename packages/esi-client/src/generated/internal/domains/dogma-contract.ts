@@ -4,76 +4,77 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetDogmaAttributesAttributeIdInput,
-  GetDogmaAttributesAttributeIdOutput,
-  GetDogmaAttributesInput,
-  GetDogmaAttributesOutput,
-  GetDogmaDynamicItemsTypeIdItemIdInput,
-  GetDogmaDynamicItemsTypeIdItemIdOutput,
-  GetDogmaEffectsEffectIdInput,
-  GetDogmaEffectsEffectIdOutput,
-  GetDogmaEffectsInput,
-  GetDogmaEffectsOutput,
-} from '../../schemas/operations/dogma.js';
+  GetDogmaAttributesAttributeIdData,
+  GetDogmaAttributesAttributeIdResponse,
+  GetDogmaAttributesData,
+  GetDogmaAttributesResponse,
+  GetDogmaDynamicItemsTypeIdItemIdData,
+  GetDogmaDynamicItemsTypeIdItemIdResponse,
+  GetDogmaEffectsData,
+  GetDogmaEffectsEffectIdData,
+  GetDogmaEffectsEffectIdResponse,
+  GetDogmaEffectsResponse,
+} from '../../types.gen.js';
 
 export interface GetDogmaAttributesAttributeIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetDogmaAttributesAttributeIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetDogmaAttributesAttributeIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetDogmaAttributesAttributeIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetDogmaDynamicItemsTypeIdItemIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetDogmaEffectsEffectIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetDogmaEffectsEffectIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetDogmaEffectsEffectIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetDogmaEffectsEffectIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetDogmaAttributesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetDogmaAttributesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetDogmaAttributesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetDogmaAttributesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaAttributesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaAttributesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaAttributesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetDogmaEffectsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetDogmaEffectsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetDogmaEffectsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetDogmaEffectsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetDogmaEffectsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetDogmaEffectsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetDogmaEffectsData>["headers"]>["X-Tenant"];
 }
 
 export interface DogmaDomainClient {
-  getAttribute(attributeId: NonNullable<GetDogmaAttributesAttributeIdInput['path']>["attribute_id"], options?: GetDogmaAttributesAttributeIdOptions): Promise<GetDogmaAttributesAttributeIdOutput>;
+  getAttribute(attributeId: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>['path']>["attribute_id"], options?: GetDogmaAttributesAttributeIdOptions): Promise<GetDogmaAttributesAttributeIdResponse>;
 
-  getDynamicItem(typeId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>["type_id"], itemId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>["item_id"], options?: GetDogmaDynamicItemsTypeIdItemIdOptions): Promise<GetDogmaDynamicItemsTypeIdItemIdOutput>;
+  getDynamicItem(typeId: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']>["type_id"], itemId: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']>["item_id"], options?: GetDogmaDynamicItemsTypeIdItemIdOptions): Promise<GetDogmaDynamicItemsTypeIdItemIdResponse>;
 
-  getEffect(effectId: NonNullable<GetDogmaEffectsEffectIdInput['path']>["effect_id"], options?: GetDogmaEffectsEffectIdOptions): Promise<GetDogmaEffectsEffectIdOutput>;
+  getEffect(effectId: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>['path']>["effect_id"], options?: GetDogmaEffectsEffectIdOptions): Promise<GetDogmaEffectsEffectIdResponse>;
 
-  listAttributes(options?: GetDogmaAttributesOptions): Promise<GetDogmaAttributesOutput>;
+  listAttributes(options?: GetDogmaAttributesOptions): Promise<GetDogmaAttributesResponse>;
 
-  listEffects(options?: GetDogmaEffectsOptions): Promise<GetDogmaEffectsOutput>;
+  listEffects(options?: GetDogmaEffectsOptions): Promise<GetDogmaEffectsResponse>;
 
   withMetadata(): DogmaDomainClientWithMetadata;
 }
 
 export interface DogmaDomainClientWithMetadata {
-  getAttribute(attributeId: NonNullable<GetDogmaAttributesAttributeIdInput['path']>["attribute_id"], options?: GetDogmaAttributesAttributeIdOptions): Promise<EsiResponse<GetDogmaAttributesAttributeIdOutput>>;
+  getAttribute(attributeId: NonNullable<OperationArguments<GetDogmaAttributesAttributeIdData>['path']>["attribute_id"], options?: GetDogmaAttributesAttributeIdOptions): Promise<EsiResponse<GetDogmaAttributesAttributeIdResponse>>;
 
-  getDynamicItem(typeId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>["type_id"], itemId: NonNullable<GetDogmaDynamicItemsTypeIdItemIdInput['path']>["item_id"], options?: GetDogmaDynamicItemsTypeIdItemIdOptions): Promise<EsiResponse<GetDogmaDynamicItemsTypeIdItemIdOutput>>;
+  getDynamicItem(typeId: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']>["type_id"], itemId: NonNullable<OperationArguments<GetDogmaDynamicItemsTypeIdItemIdData>['path']>["item_id"], options?: GetDogmaDynamicItemsTypeIdItemIdOptions): Promise<EsiResponse<GetDogmaDynamicItemsTypeIdItemIdResponse>>;
 
-  getEffect(effectId: NonNullable<GetDogmaEffectsEffectIdInput['path']>["effect_id"], options?: GetDogmaEffectsEffectIdOptions): Promise<EsiResponse<GetDogmaEffectsEffectIdOutput>>;
+  getEffect(effectId: NonNullable<OperationArguments<GetDogmaEffectsEffectIdData>['path']>["effect_id"], options?: GetDogmaEffectsEffectIdOptions): Promise<EsiResponse<GetDogmaEffectsEffectIdResponse>>;
 
-  listAttributes(options?: GetDogmaAttributesOptions): Promise<EsiResponse<GetDogmaAttributesOutput>>;
+  listAttributes(options?: GetDogmaAttributesOptions): Promise<EsiResponse<GetDogmaAttributesResponse>>;
 
-  listEffects(options?: GetDogmaEffectsOptions): Promise<EsiResponse<GetDogmaEffectsOutput>>;
+  listEffects(options?: GetDogmaEffectsOptions): Promise<EsiResponse<GetDogmaEffectsResponse>>;
 }

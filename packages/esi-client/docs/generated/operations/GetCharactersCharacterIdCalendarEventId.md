@@ -16,12 +16,13 @@ Get an event
 - Domain import: `@evespace/esi-client/domains/calendar`
 - Domain index: [calendar](../domains/calendar.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCalendarClient } from '@evespace/esi-client/domains/calendar';
+import type { GetCharactersCharacterIdCalendarEventIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,13 +32,14 @@ const client = createCalendarClient({ token: accessToken });
 const characterId = 90000001;
 const eventId = 12345;
 
-const data = await client.getEvent(characterId, eventId);
+const data: GetCharactersCharacterIdCalendarEventIdResponse = await client.getEvent(characterId, eventId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdCalendarEventIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const eventId = 12345;
 
-const data = await client.calendar.getEvent(characterId, eventId);
+const data: GetCharactersCharacterIdCalendarEventIdResponse = await client.calendar.getEvent(characterId, eventId);
 ```
 
 ## Generic-execution snippet
@@ -55,6 +57,7 @@ const data = await client.calendar.getEvent(characterId, eventId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdCalendarEventIdData, GetCharactersCharacterIdCalendarEventIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -67,6 +70,7 @@ const eventId = 12345;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdCalendarEventId'> = { path: { "character_id": characterId, "event_id": eventId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdCalendarEventId', arguments_);
+const data: GetCharactersCharacterIdCalendarEventIdResponse = response.data;
 ```
 
 ## Parameters
@@ -81,14 +85,16 @@ const response = await client.callOperation('GetCharactersCharacterIdCalendarEve
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdCalendarEventIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdCalendarEventIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdCalendarEventIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdCalendarEventIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdCalendarEventIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.calendar.withMetadata().getEvent(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdCalendarEventIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdCalendarEventIdResponse` | OK |
 
 ## Authentication
 
@@ -120,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

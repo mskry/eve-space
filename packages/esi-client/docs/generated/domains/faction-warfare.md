@@ -28,6 +28,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createFactionWarfareClient } from '@evespace/esi-client/domains/faction-warfare';
+import type { GetCharactersCharacterIdFwStatsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -36,7 +37,7 @@ const client = createFactionWarfareClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.getCharacterStats(characterId);
+const data: GetCharactersCharacterIdFwStatsResponse = await client.getCharacterStats(characterId);
 ```
 
 ## Aggregate client
@@ -45,6 +46,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdFwStatsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -53,7 +55,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.factionWarfare.getCharacterStats(characterId);
+const data: GetCharactersCharacterIdFwStatsResponse = await client.factionWarfare.getCharacterStats(characterId);
 ```
 
 ## Shared concepts

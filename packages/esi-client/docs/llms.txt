@@ -7,9 +7,9 @@ DO NOT EDIT.
 
 # @evespace/esi-client
 
-> ESM-only TypeScript SDK for EVE Online ESI. Requires Node.js 22.18+ and Zod 4.
+> ESM-only TypeScript SDK for EVE Online ESI. Requires Node.js 24.20+ and Zod 4.
 
-Use narrow domain, schema, and operation imports when possible. The generated references are derived from the pinned ESI registry; this entry document intentionally does not embed the complete API.
+Use narrow domain, type, Zod, and operation imports when possible. The generated references are derived from the pinned ESI registry; this entry document intentionally does not embed the complete API.
 
 ## Start
 
@@ -25,7 +25,8 @@ Use narrow domain, schema, and operation imports when possible. The generated re
 ## Imports
 
 - Client: `import { EsiClient } from '@evespace/esi-client';`
-- Schemas: `@evespace/esi-client/schemas`
+- Types: `@evespace/esi-client/types`
+- Zod schemas: `@evespace/esi-client/zod`
 - Discovery and generic execution: `@evespace/esi-client/operations`
 - One domain: `@evespace/esi-client/domains/<domain>`
 

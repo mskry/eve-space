@@ -16,12 +16,13 @@ List historical orders from a corporation
 - Domain import: `@evespace/esi-client/domains/market`
 - Domain index: [market](../domains/market.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMarketClient } from '@evespace/esi-client/domains/market';
+import type { GetCorporationsCorporationIdOrdersHistoryResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createMarketClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.listCorporationOrderHistory(corporationId);
+const data: GetCorporationsCorporationIdOrdersHistoryResponse = await client.listCorporationOrderHistory(corporationId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCorporationsCorporationIdOrdersHistoryResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.market.listCorporationOrderHistory(corporationId);
+const data: GetCorporationsCorporationIdOrdersHistoryResponse = await client.market.listCorporationOrderHistory(corporationId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.market.listCorporationOrderHistory(corporationId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCorporationsCorporationIdOrdersHistoryData, GetCorporationsCorporationIdOrdersHistoryResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const corporationId = 98000001;
 const arguments_: CallOperationArguments<'GetCorporationsCorporationIdOrdersHistory'> = { path: { "corporation_id": corporationId } };
 
 const response = await client.callOperation('GetCorporationsCorporationIdOrdersHistory', arguments_);
+const data: GetCorporationsCorporationIdOrdersHistoryResponse = response.data;
 ```
 
 ## Parameters
@@ -78,14 +82,16 @@ const response = await client.callOperation('GetCorporationsCorporationIdOrdersH
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCorporationsCorporationIdOrdersHistoryRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCorporationsCorporationIdOrdersHistoryData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCorporationsCorporationIdOrdersHistoryHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCorporationsCorporationIdOrdersHistoryPath`; `query` uses `@evespace/esi-client/zod` export `zGetCorporationsCorporationIdOrdersHistoryQuery`.
+- Response type: `@evespace/esi-client/types` export `GetCorporationsCorporationIdOrdersHistoryResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.market.withMetadata().listCorporationOrderHistory(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCorporationsCorporationIdOrdersHistoryStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCorporationsCorporationIdOrdersHistoryResponse` | OK |
 
 ## Authentication
 
@@ -118,6 +124,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

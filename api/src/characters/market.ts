@@ -1,8 +1,8 @@
 import { createMarketClient } from '@evespace/esi-client/domains/market'
 import type {
-  GetCharactersCharacterIdOrdersHistoryOutput,
-  GetCharactersCharacterIdOrdersOutput,
-} from '@evespace/esi-client/schemas'
+  GetCharactersCharacterIdOrdersHistoryResponse,
+  GetCharactersCharacterIdOrdersResponse,
+} from '@evespace/esi-client/types'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
 import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
@@ -15,8 +15,8 @@ import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 export const marketOrdersScope = getCharacterEsiScope('market-orders')
 
 type EsiCharacterMarketOrder =
-  | GetCharactersCharacterIdOrdersOutput[number]
-  | GetCharactersCharacterIdOrdersHistoryOutput[number]
+  | GetCharactersCharacterIdOrdersResponse[number]
+  | GetCharactersCharacterIdOrdersHistoryResponse[number]
 
 interface CharacterMarketOrder {
   orderId: number

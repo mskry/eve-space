@@ -4,307 +4,308 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCorporationsCorporationIdAlliancehistoryInput,
-  GetCorporationsCorporationIdAlliancehistoryOutput,
-  GetCorporationsCorporationIdBlueprintsInput,
-  GetCorporationsCorporationIdBlueprintsOutput,
-  GetCorporationsCorporationIdContainersLogsInput,
-  GetCorporationsCorporationIdContainersLogsOutput,
-  GetCorporationsCorporationIdDivisionsInput,
-  GetCorporationsCorporationIdDivisionsOutput,
-  GetCorporationsCorporationIdFacilitiesInput,
-  GetCorporationsCorporationIdFacilitiesOutput,
-  GetCorporationsCorporationIdIconsInput,
-  GetCorporationsCorporationIdIconsOutput,
-  GetCorporationsCorporationIdInput,
-  GetCorporationsCorporationIdMedalsInput,
-  GetCorporationsCorporationIdMedalsIssuedInput,
-  GetCorporationsCorporationIdMedalsIssuedOutput,
-  GetCorporationsCorporationIdMedalsOutput,
-  GetCorporationsCorporationIdMembersInput,
-  GetCorporationsCorporationIdMembersLimitInput,
-  GetCorporationsCorporationIdMembersLimitOutput,
-  GetCorporationsCorporationIdMembersOutput,
-  GetCorporationsCorporationIdMembersTitlesInput,
-  GetCorporationsCorporationIdMembersTitlesOutput,
-  GetCorporationsCorporationIdMembertrackingInput,
-  GetCorporationsCorporationIdMembertrackingOutput,
-  GetCorporationsCorporationIdOutput,
-  GetCorporationsCorporationIdRolesHistoryInput,
-  GetCorporationsCorporationIdRolesHistoryOutput,
-  GetCorporationsCorporationIdRolesInput,
-  GetCorporationsCorporationIdRolesOutput,
-  GetCorporationsCorporationIdShareholdersInput,
-  GetCorporationsCorporationIdShareholdersOutput,
-  GetCorporationsCorporationIdStandingsInput,
-  GetCorporationsCorporationIdStandingsOutput,
-  GetCorporationsCorporationIdStarbasesInput,
-  GetCorporationsCorporationIdStarbasesOutput,
-  GetCorporationsCorporationIdStarbasesStarbaseIdInput,
-  GetCorporationsCorporationIdStarbasesStarbaseIdOutput,
-  GetCorporationsCorporationIdStructuresInput,
-  GetCorporationsCorporationIdStructuresOutput,
-  GetCorporationsCorporationIdTitlesInput,
-  GetCorporationsCorporationIdTitlesOutput,
-  GetCorporationsNpccorpsInput,
-  GetCorporationsNpccorpsOutput,
-} from '../../schemas/operations/corporation.js';
+  GetCorporationsCorporationIdAlliancehistoryData,
+  GetCorporationsCorporationIdAlliancehistoryResponse,
+  GetCorporationsCorporationIdBlueprintsData,
+  GetCorporationsCorporationIdBlueprintsResponse,
+  GetCorporationsCorporationIdContainersLogsData,
+  GetCorporationsCorporationIdContainersLogsResponse,
+  GetCorporationsCorporationIdData,
+  GetCorporationsCorporationIdDivisionsData,
+  GetCorporationsCorporationIdDivisionsResponse,
+  GetCorporationsCorporationIdFacilitiesData,
+  GetCorporationsCorporationIdFacilitiesResponse,
+  GetCorporationsCorporationIdIconsData,
+  GetCorporationsCorporationIdIconsResponse,
+  GetCorporationsCorporationIdMedalsData,
+  GetCorporationsCorporationIdMedalsIssuedData,
+  GetCorporationsCorporationIdMedalsIssuedResponse,
+  GetCorporationsCorporationIdMedalsResponse,
+  GetCorporationsCorporationIdMembersData,
+  GetCorporationsCorporationIdMembersLimitData,
+  GetCorporationsCorporationIdMembersLimitResponse,
+  GetCorporationsCorporationIdMembersResponse,
+  GetCorporationsCorporationIdMembersTitlesData,
+  GetCorporationsCorporationIdMembersTitlesResponse,
+  GetCorporationsCorporationIdMembertrackingData,
+  GetCorporationsCorporationIdMembertrackingResponse,
+  GetCorporationsCorporationIdResponse,
+  GetCorporationsCorporationIdRolesData,
+  GetCorporationsCorporationIdRolesHistoryData,
+  GetCorporationsCorporationIdRolesHistoryResponse,
+  GetCorporationsCorporationIdRolesResponse,
+  GetCorporationsCorporationIdShareholdersData,
+  GetCorporationsCorporationIdShareholdersResponse,
+  GetCorporationsCorporationIdStandingsData,
+  GetCorporationsCorporationIdStandingsResponse,
+  GetCorporationsCorporationIdStarbasesData,
+  GetCorporationsCorporationIdStarbasesResponse,
+  GetCorporationsCorporationIdStarbasesStarbaseIdData,
+  GetCorporationsCorporationIdStarbasesStarbaseIdResponse,
+  GetCorporationsCorporationIdStructuresData,
+  GetCorporationsCorporationIdStructuresResponse,
+  GetCorporationsCorporationIdTitlesData,
+  GetCorporationsCorporationIdTitlesResponse,
+  GetCorporationsNpccorpsData,
+  GetCorporationsNpccorpsResponse,
+} from '../../types.gen.js';
 
 export interface GetCorporationsCorporationIdIconsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdIconsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdIconsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdIconsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdMembersLimitOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdMembersLimitInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdMembersLimitInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdMembersLimitInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdStarbasesStarbaseIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput["header"]>["If-None-Match"];
-  readonly "systemId": NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput["query"]>["system_id"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>["headers"]>["If-None-Match"];
+  readonly "systemId": NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>["query"]>["system_id"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdAlliancehistoryOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdAlliancehistoryInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdAlliancehistoryInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdAlliancehistoryInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdContainersLogsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdContainersLogsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdContainersLogsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdContainersLogsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdContainersLogsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdBlueprintsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdBlueprintsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdBlueprintsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdBlueprintsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdBlueprintsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdDivisionsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdDivisionsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdDivisionsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdDivisionsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdFacilitiesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdFacilitiesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdFacilitiesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdFacilitiesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdMedalsIssuedOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdMedalsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdMedalsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdMedalsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdMedalsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdMedalsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdRolesHistoryOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdRolesHistoryInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdRolesHistoryInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdRolesHistoryInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdRolesHistoryInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdRolesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdRolesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdRolesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdRolesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdMembersTitlesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdMembersTitlesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdMembersTitlesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdMembersTitlesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdMembertrackingOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdMembertrackingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdMembertrackingInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdMembertrackingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdMembersOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdMembersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdMembersInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdMembersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsNpccorpsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsNpccorpsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsNpccorpsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsNpccorpsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsNpccorpsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsNpccorpsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsNpccorpsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdShareholdersOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdShareholdersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdShareholdersInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdShareholdersInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdShareholdersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdStandingsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdStandingsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdStandingsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdStandingsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdStandingsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdStarbasesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdStarbasesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdStarbasesInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdStarbasesInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdStarbasesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdStructuresOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdStructuresInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdStructuresInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdStructuresInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdStructuresInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdTitlesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdTitlesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdTitlesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdTitlesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>["headers"]>["X-Tenant"];
 }
 
 export interface CorporationDomainClient {
-  getIcon(corporationId: NonNullable<GetCorporationsCorporationIdIconsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<GetCorporationsCorporationIdIconsOutput>;
+  getIcon(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<GetCorporationsCorporationIdIconsResponse>;
 
-  getMemberLimit(corporationId: NonNullable<GetCorporationsCorporationIdMembersLimitInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<GetCorporationsCorporationIdMembersLimitOutput>;
+  getMemberLimit(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<GetCorporationsCorporationIdMembersLimitResponse>;
 
-  getPublicInfo(corporationId: NonNullable<GetCorporationsCorporationIdInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<GetCorporationsCorporationIdOutput>;
+  getPublicInfo(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<GetCorporationsCorporationIdResponse>;
 
-  getStarbase(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["corporation_id"], starbaseId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<GetCorporationsCorporationIdStarbasesStarbaseIdOutput>;
+  getStarbase(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["corporation_id"], starbaseId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<GetCorporationsCorporationIdStarbasesStarbaseIdResponse>;
 
-  listAllianceHistory(corporationId: NonNullable<GetCorporationsCorporationIdAlliancehistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<GetCorporationsCorporationIdAlliancehistoryOutput>;
+  listAllianceHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<GetCorporationsCorporationIdAlliancehistoryResponse>;
 
-  listAuditLogSecureContainerLogs(corporationId: NonNullable<GetCorporationsCorporationIdContainersLogsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<GetCorporationsCorporationIdContainersLogsOutput>;
+  listAuditLogSecureContainerLogs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<GetCorporationsCorporationIdContainersLogsResponse>;
 
-  listBlueprints(corporationId: NonNullable<GetCorporationsCorporationIdBlueprintsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<GetCorporationsCorporationIdBlueprintsOutput>;
+  listBlueprints(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<GetCorporationsCorporationIdBlueprintsResponse>;
 
-  listDivisions(corporationId: NonNullable<GetCorporationsCorporationIdDivisionsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<GetCorporationsCorporationIdDivisionsOutput>;
+  listDivisions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<GetCorporationsCorporationIdDivisionsResponse>;
 
-  listFacilities(corporationId: NonNullable<GetCorporationsCorporationIdFacilitiesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<GetCorporationsCorporationIdFacilitiesOutput>;
+  listFacilities(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<GetCorporationsCorporationIdFacilitiesResponse>;
 
-  listIssuedMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<GetCorporationsCorporationIdMedalsIssuedOutput>;
+  listIssuedMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<GetCorporationsCorporationIdMedalsIssuedResponse>;
 
-  listMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<GetCorporationsCorporationIdMedalsOutput>;
+  listMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<GetCorporationsCorporationIdMedalsResponse>;
 
-  listMemberRoleHistory(corporationId: NonNullable<GetCorporationsCorporationIdRolesHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<GetCorporationsCorporationIdRolesHistoryOutput>;
+  listMemberRoleHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<GetCorporationsCorporationIdRolesHistoryResponse>;
 
-  listMemberRoles(corporationId: NonNullable<GetCorporationsCorporationIdRolesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<GetCorporationsCorporationIdRolesOutput>;
+  listMemberRoles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<GetCorporationsCorporationIdRolesResponse>;
 
-  listMemberTitles(corporationId: NonNullable<GetCorporationsCorporationIdMembersTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<GetCorporationsCorporationIdMembersTitlesOutput>;
+  listMemberTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<GetCorporationsCorporationIdMembersTitlesResponse>;
 
-  listMemberTracking(corporationId: NonNullable<GetCorporationsCorporationIdMembertrackingInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<GetCorporationsCorporationIdMembertrackingOutput>;
+  listMemberTracking(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<GetCorporationsCorporationIdMembertrackingResponse>;
 
-  listMembers(corporationId: NonNullable<GetCorporationsCorporationIdMembersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<GetCorporationsCorporationIdMembersOutput>;
+  listMembers(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<GetCorporationsCorporationIdMembersResponse>;
 
-  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<GetCorporationsNpccorpsOutput>;
+  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<GetCorporationsNpccorpsResponse>;
 
-  listShareholders(corporationId: NonNullable<GetCorporationsCorporationIdShareholdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<GetCorporationsCorporationIdShareholdersOutput>;
+  listShareholders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<GetCorporationsCorporationIdShareholdersResponse>;
 
-  listStandings(corporationId: NonNullable<GetCorporationsCorporationIdStandingsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<GetCorporationsCorporationIdStandingsOutput>;
+  listStandings(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<GetCorporationsCorporationIdStandingsResponse>;
 
-  listStarbases(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<GetCorporationsCorporationIdStarbasesOutput>;
+  listStarbases(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<GetCorporationsCorporationIdStarbasesResponse>;
 
-  listStructures(corporationId: NonNullable<GetCorporationsCorporationIdStructuresInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<GetCorporationsCorporationIdStructuresOutput>;
+  listStructures(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<GetCorporationsCorporationIdStructuresResponse>;
 
-  listTitles(corporationId: NonNullable<GetCorporationsCorporationIdTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<GetCorporationsCorporationIdTitlesOutput>;
+  listTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<GetCorporationsCorporationIdTitlesResponse>;
 
   withMetadata(): CorporationDomainClientWithMetadata;
 }
 
 export interface CorporationDomainClientWithMetadata {
-  getIcon(corporationId: NonNullable<GetCorporationsCorporationIdIconsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIconsOutput>>;
+  getIcon(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIconsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIconsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIconsResponse>>;
 
-  getMemberLimit(corporationId: NonNullable<GetCorporationsCorporationIdMembersLimitInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersLimitOutput>>;
+  getMemberLimit(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersLimitData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersLimitOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersLimitResponse>>;
 
-  getPublicInfo(corporationId: NonNullable<GetCorporationsCorporationIdInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdOutput>>;
+  getPublicInfo(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdResponse>>;
 
-  getStarbase(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["corporation_id"], starbaseId: NonNullable<GetCorporationsCorporationIdStarbasesStarbaseIdInput['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesStarbaseIdOutput>>;
+  getStarbase(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["corporation_id"], starbaseId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesStarbaseIdData>['path']>["starbase_id"], options: GetCorporationsCorporationIdStarbasesStarbaseIdOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesStarbaseIdResponse>>;
 
-  listAllianceHistory(corporationId: NonNullable<GetCorporationsCorporationIdAlliancehistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdAlliancehistoryOutput>>;
+  listAllianceHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdAlliancehistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdAlliancehistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdAlliancehistoryResponse>>;
 
-  listAuditLogSecureContainerLogs(corporationId: NonNullable<GetCorporationsCorporationIdContainersLogsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContainersLogsOutput>>;
+  listAuditLogSecureContainerLogs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContainersLogsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContainersLogsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContainersLogsResponse>>;
 
-  listBlueprints(corporationId: NonNullable<GetCorporationsCorporationIdBlueprintsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<EsiResponse<GetCorporationsCorporationIdBlueprintsOutput>>;
+  listBlueprints(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdBlueprintsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdBlueprintsOptions): Promise<EsiResponse<GetCorporationsCorporationIdBlueprintsResponse>>;
 
-  listDivisions(corporationId: NonNullable<GetCorporationsCorporationIdDivisionsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdDivisionsOutput>>;
+  listDivisions(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdDivisionsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdDivisionsOptions): Promise<EsiResponse<GetCorporationsCorporationIdDivisionsResponse>>;
 
-  listFacilities(corporationId: NonNullable<GetCorporationsCorporationIdFacilitiesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<EsiResponse<GetCorporationsCorporationIdFacilitiesOutput>>;
+  listFacilities(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdFacilitiesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdFacilitiesOptions): Promise<EsiResponse<GetCorporationsCorporationIdFacilitiesResponse>>;
 
-  listIssuedMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsIssuedInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsIssuedOutput>>;
+  listIssuedMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsIssuedData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsIssuedOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsIssuedResponse>>;
 
-  listMedals(corporationId: NonNullable<GetCorporationsCorporationIdMedalsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsOutput>>;
+  listMedals(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMedalsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMedalsOptions): Promise<EsiResponse<GetCorporationsCorporationIdMedalsResponse>>;
 
-  listMemberRoleHistory(corporationId: NonNullable<GetCorporationsCorporationIdRolesHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesHistoryOutput>>;
+  listMemberRoleHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesHistoryResponse>>;
 
-  listMemberRoles(corporationId: NonNullable<GetCorporationsCorporationIdRolesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesOutput>>;
+  listMemberRoles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdRolesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdRolesOptions): Promise<EsiResponse<GetCorporationsCorporationIdRolesResponse>>;
 
-  listMemberTitles(corporationId: NonNullable<GetCorporationsCorporationIdMembersTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersTitlesOutput>>;
+  listMemberTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersTitlesResponse>>;
 
-  listMemberTracking(corporationId: NonNullable<GetCorporationsCorporationIdMembertrackingInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembertrackingOutput>>;
+  listMemberTracking(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembertrackingData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembertrackingOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembertrackingResponse>>;
 
-  listMembers(corporationId: NonNullable<GetCorporationsCorporationIdMembersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersOutput>>;
+  listMembers(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdMembersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdMembersOptions): Promise<EsiResponse<GetCorporationsCorporationIdMembersResponse>>;
 
-  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<EsiResponse<GetCorporationsNpccorpsOutput>>;
+  listNpcCorporations(options?: GetCorporationsNpccorpsOptions): Promise<EsiResponse<GetCorporationsNpccorpsResponse>>;
 
-  listShareholders(corporationId: NonNullable<GetCorporationsCorporationIdShareholdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdShareholdersOutput>>;
+  listShareholders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdShareholdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdShareholdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdShareholdersResponse>>;
 
-  listStandings(corporationId: NonNullable<GetCorporationsCorporationIdStandingsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<EsiResponse<GetCorporationsCorporationIdStandingsOutput>>;
+  listStandings(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStandingsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStandingsOptions): Promise<EsiResponse<GetCorporationsCorporationIdStandingsResponse>>;
 
-  listStarbases(corporationId: NonNullable<GetCorporationsCorporationIdStarbasesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesOutput>>;
+  listStarbases(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStarbasesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStarbasesOptions): Promise<EsiResponse<GetCorporationsCorporationIdStarbasesResponse>>;
 
-  listStructures(corporationId: NonNullable<GetCorporationsCorporationIdStructuresInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<EsiResponse<GetCorporationsCorporationIdStructuresOutput>>;
+  listStructures(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdStructuresData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdStructuresOptions): Promise<EsiResponse<GetCorporationsCorporationIdStructuresResponse>>;
 
-  listTitles(corporationId: NonNullable<GetCorporationsCorporationIdTitlesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdTitlesOutput>>;
+  listTitles(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdTitlesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdTitlesOptions): Promise<EsiResponse<GetCorporationsCorporationIdTitlesResponse>>;
 }

@@ -29,6 +29,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createMailClient } from '@evespace/esi-client/domains/mail';
+import type { DeleteCharactersCharacterIdMailLabelsLabelIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -39,7 +40,7 @@ const characterId = 90000001;
 const labelId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.deleteLabel(characterId, labelId);
+const data: DeleteCharactersCharacterIdMailLabelsLabelIdResponse = await client.deleteLabel(characterId, labelId);
 ```
 
 ## Aggregate client
@@ -48,6 +49,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { DeleteCharactersCharacterIdMailLabelsLabelIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -58,7 +60,7 @@ const characterId = 90000001;
 const labelId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.mail.deleteLabel(characterId, labelId);
+const data: DeleteCharactersCharacterIdMailLabelsLabelIdResponse = await client.mail.deleteLabel(characterId, labelId);
 ```
 
 ## Shared concepts

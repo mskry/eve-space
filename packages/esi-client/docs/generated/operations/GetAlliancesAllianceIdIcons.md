@@ -16,30 +16,32 @@ Get alliance icon
 - Domain import: `@evespace/esi-client/domains/alliance`
 - Domain index: [alliance](../domains/alliance.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance';
+import type { GetAlliancesAllianceIdIconsResponse } from '@evespace/esi-client/types';
 
 const client = createAllianceClient();
 
 const allianceId = 99000001;
 
-const data = await client.getIcon(allianceId);
+const data: GetAlliancesAllianceIdIconsResponse = await client.getIcon(allianceId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetAlliancesAllianceIdIconsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const allianceId = 99000001;
 
-const data = await client.alliance.getIcon(allianceId);
+const data: GetAlliancesAllianceIdIconsResponse = await client.alliance.getIcon(allianceId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.alliance.getIcon(allianceId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetAlliancesAllianceIdIconsData, GetAlliancesAllianceIdIconsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const allianceId = 99000001;
 const arguments_: CallOperationArguments<'GetAlliancesAllianceIdIcons'> = { path: { "alliance_id": allianceId } };
 
 const response = await client.callOperation('GetAlliancesAllianceIdIcons', arguments_);
+const data: GetAlliancesAllianceIdIconsResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetAlliancesAllianceIdIcons', argum
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetAlliancesAllianceIdIconsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetAlliancesAllianceIdIconsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetAlliancesAllianceIdIconsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetAlliancesAllianceIdIconsPath`.
+- Response type: `@evespace/esi-client/types` export `GetAlliancesAllianceIdIconsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.alliance.withMetadata().getIcon(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetAlliancesAllianceIdIconsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetAlliancesAllianceIdIconsResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

@@ -39,6 +39,10 @@ The API exports its chained Hono `AppType`. Nuxt uses `hono/client` to build URL
 
 `@evespace/esi-client`, `@hono/zod-validator`, and the API share Zod 4. The SDK validates ESI wire responses, while Hono schemas validate this application's HTTP inputs; API response DTOs remain an intentional boundary rather than exposing ESI payloads directly.
 
+The ESI client's generated contract exposes natural TypeScript symbols through `@evespace/esi-client/types` and matching Zod schemas through `@evespace/esi-client/zod`. Exactly `@hey-api/openapi-ts@0.99.0` produces those artifacts as private build-time tooling, not as a packaged SDK or client runtime. The repository continues to own the request serializer, executor, domain facade, operation registry, and EVE-specific runtime behavior.
+
+Ordinary source generation and drift checking are deterministic and offline. They read the committed corrected `packages/esi-client/openapi/generated/esi-openapi.json` snapshot and generate in temporary workspaces before replacement or comparison. `generate:source:refresh` is the only networked path; it validates the upstream OpenAPI document, applies repository corrections, canonicalizes it, and records provenance before generation. Changes to the pinned generator must pass complete generation, semantic, and package validation.
+
 ## API Routes
 
 System and module discovery:
@@ -220,4 +224,4 @@ Do not run it without a real previous image. It intentionally refuses to infer o
 
 ## Current SDK Caveat
 
-Live ESI currently returns nullable `ship_type_id` values from `GetUniverseBloodlines`, while `@evespace/esi-client@2.0.0` expects numbers. Response validation is disabled only for that static operation; other ESI responses remain validated.
+Live ESI currently returns nullable `ship_type_id` values from `GetUniverseBloodlines`, while `@evespace/esi-client@3.0.0` expects numbers. Response validation is disabled only for that static operation; other ESI responses remain validated.

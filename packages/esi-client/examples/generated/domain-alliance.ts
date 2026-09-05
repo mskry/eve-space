@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance';
+import type { GetAlliancesResponse } from '@evespace/esi-client/types';
 
 const client = createAllianceClient();
 
-const data = await client.list();
+const data: GetAlliancesResponse = await client.list();

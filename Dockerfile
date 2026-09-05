@@ -1,4 +1,4 @@
-FROM node:22.18-alpine AS build
+FROM node:24.20-alpine AS build
 
 ENV PNPM_HOME=/pnpm
 ENV COREPACK_HOME=/corepack
@@ -10,7 +10,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile --ignore-scripts
 RUN pnpm build
 
-FROM node:22.18-alpine AS runtime
+FROM node:24.20-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0

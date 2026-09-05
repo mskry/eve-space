@@ -4,50 +4,51 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCosmeticsSkinrComponentsInput,
-  GetCharactersCosmeticsSkinrComponentsOutput,
-  GetCharactersCosmeticsSkinrInput,
-  GetCharactersCosmeticsSkinrOutput,
-  GetCosmeticsSkinrInput,
-  GetCosmeticsSkinrOutput,
-} from '../../schemas/operations/cosmetics.js';
+  GetCharactersCosmeticsSkinrComponentsData,
+  GetCharactersCosmeticsSkinrComponentsResponse,
+  GetCharactersCosmeticsSkinrData,
+  GetCharactersCosmeticsSkinrResponse,
+  GetCosmeticsSkinrData,
+  GetCosmeticsSkinrResponse,
+} from '../../types.gen.js';
 
 export interface GetCosmeticsSkinrOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCosmeticsSkinrInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCosmeticsSkinrInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCosmeticsSkinrInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCosmeticsSkinrData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCosmeticsSkinrData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCosmeticsSkinrData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCosmeticsSkinrComponentsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCosmeticsSkinrComponentsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCosmeticsSkinrComponentsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCosmeticsSkinrComponentsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCosmeticsSkinrOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCosmeticsSkinrInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCosmeticsSkinrInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCosmeticsSkinrInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>["headers"]>["X-Tenant"];
 }
 
 export interface CosmeticsDomainClient {
-  getSkinrLicense(skinrId: NonNullable<GetCosmeticsSkinrInput['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<GetCosmeticsSkinrOutput>;
+  getSkinrLicense(skinrId: NonNullable<OperationArguments<GetCosmeticsSkinrData>['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<GetCosmeticsSkinrResponse>;
 
-  listSkinrComponentLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrComponentsInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<GetCharactersCosmeticsSkinrComponentsOutput>;
+  listSkinrComponentLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<GetCharactersCosmeticsSkinrComponentsResponse>;
 
-  listSkinrLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<GetCharactersCosmeticsSkinrOutput>;
+  listSkinrLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<GetCharactersCosmeticsSkinrResponse>;
 
   withMetadata(): CosmeticsDomainClientWithMetadata;
 }
 
 export interface CosmeticsDomainClientWithMetadata {
-  getSkinrLicense(skinrId: NonNullable<GetCosmeticsSkinrInput['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<EsiResponse<GetCosmeticsSkinrOutput>>;
+  getSkinrLicense(skinrId: NonNullable<OperationArguments<GetCosmeticsSkinrData>['path']>["skinr_id"], options?: GetCosmeticsSkinrOptions): Promise<EsiResponse<GetCosmeticsSkinrResponse>>;
 
-  listSkinrComponentLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrComponentsInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrComponentsOutput>>;
+  listSkinrComponentLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrComponentsOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrComponentsResponse>>;
 
-  listSkinrLicenses(characterId: NonNullable<GetCharactersCosmeticsSkinrInput['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrOutput>>;
+  listSkinrLicenses(characterId: NonNullable<OperationArguments<GetCharactersCosmeticsSkinrData>['path']>["character_id"], options?: GetCharactersCosmeticsSkinrOptions): Promise<EsiResponse<GetCharactersCosmeticsSkinrResponse>>;
 }

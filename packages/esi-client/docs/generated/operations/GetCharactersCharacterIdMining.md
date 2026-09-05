@@ -16,12 +16,13 @@ Character mining ledger
 - Domain import: `@evespace/esi-client/domains/industry`
 - Domain index: [industry](../domains/industry.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createIndustryClient } from '@evespace/esi-client/domains/industry';
+import type { GetCharactersCharacterIdMiningResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createIndustryClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listCharacterMiningLedger(characterId);
+const data: GetCharactersCharacterIdMiningResponse = await client.listCharacterMiningLedger(characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdMiningResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.industry.listCharacterMiningLedger(characterId);
+const data: GetCharactersCharacterIdMiningResponse = await client.industry.listCharacterMiningLedger(characterId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.industry.listCharacterMiningLedger(characterId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdMiningData, GetCharactersCharacterIdMiningResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdMining'> = { path: { "character_id": characterId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdMining', arguments_);
+const data: GetCharactersCharacterIdMiningResponse = response.data;
 ```
 
 ## Parameters
@@ -78,14 +82,16 @@ const response = await client.callOperation('GetCharactersCharacterIdMining', ar
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdMiningRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdMiningData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdMiningHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdMiningPath`; `query` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdMiningQuery`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdMiningResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.industry.withMetadata().listCharacterMiningLedger(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdMiningStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdMiningResponse` | OK |
 
 ## Authentication
 
@@ -118,6 +124,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

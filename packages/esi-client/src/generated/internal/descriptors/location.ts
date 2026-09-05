@@ -4,22 +4,35 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdLocationData,
+  GetCharactersCharacterIdLocationResponse,
+  GetCharactersCharacterIdOnlineData,
+  GetCharactersCharacterIdOnlineResponse,
+  GetCharactersCharacterIdShipData,
+  GetCharactersCharacterIdShipResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdLocationRequestSchema,
-  GetCharactersCharacterIdLocationStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdOnlineRequestSchema,
-  GetCharactersCharacterIdOnlineStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdShipRequestSchema,
-  GetCharactersCharacterIdShipStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdLocationInput,
-  type GetCharactersCharacterIdLocationOutput,
-  type GetCharactersCharacterIdOnlineInput,
-  type GetCharactersCharacterIdOnlineOutput,
-  type GetCharactersCharacterIdShipInput,
-  type GetCharactersCharacterIdShipOutput,
-} from '../../schemas/operations/location.js';
+  zGetCharactersCharacterIdLocationHeaders,
+  zGetCharactersCharacterIdLocationPath,
+  zGetCharactersCharacterIdLocationResponse,
+  zGetCharactersCharacterIdOnlineHeaders,
+  zGetCharactersCharacterIdOnlinePath,
+  zGetCharactersCharacterIdOnlineResponse,
+  zGetCharactersCharacterIdShipHeaders,
+  zGetCharactersCharacterIdShipPath,
+  zGetCharactersCharacterIdShipResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdLocationDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdLocationInput, GetCharactersCharacterIdLocationOutput> = {
+export const GetCharactersCharacterIdLocationRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdLocationData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdLocationData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdLocationHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdLocationPath },
+});
+
+export const GetCharactersCharacterIdLocationDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdLocationData>, GetCharactersCharacterIdLocationResponse> = {
   operationId: "GetCharactersCharacterIdLocation",
   method: "GET",
   path: "/characters/{character_id}/location",
@@ -33,12 +46,17 @@ export const GetCharactersCharacterIdLocationDescriptor: OperationExecutionDescr
   requestSchema: GetCharactersCharacterIdLocationRequestSchema,
   authentication: { scopes: ["esi-location.read_location.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdLocationStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdLocationResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdShipDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdShipInput, GetCharactersCharacterIdShipOutput> = {
+export const GetCharactersCharacterIdShipRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdShipData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdShipData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdShipHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdShipPath },
+});
+
+export const GetCharactersCharacterIdShipDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdShipData>, GetCharactersCharacterIdShipResponse> = {
   operationId: "GetCharactersCharacterIdShip",
   method: "GET",
   path: "/characters/{character_id}/ship",
@@ -52,12 +70,17 @@ export const GetCharactersCharacterIdShipDescriptor: OperationExecutionDescripto
   requestSchema: GetCharactersCharacterIdShipRequestSchema,
   authentication: { scopes: ["esi-location.read_ship_type.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdShipStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdShipResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdOnlineDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdOnlineInput, GetCharactersCharacterIdOnlineOutput> = {
+export const GetCharactersCharacterIdOnlineRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdOnlineData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdOnlineData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdOnlineHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdOnlinePath },
+});
+
+export const GetCharactersCharacterIdOnlineDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdOnlineData>, GetCharactersCharacterIdOnlineResponse> = {
   operationId: "GetCharactersCharacterIdOnline",
   method: "GET",
   path: "/characters/{character_id}/online",
@@ -71,7 +94,7 @@ export const GetCharactersCharacterIdOnlineDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdOnlineRequestSchema,
   authentication: { scopes: ["esi-location.read_online.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdOnlineStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdOnlineResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -4,12 +4,12 @@
 // DO NOT EDIT.
 
 import { createRoutesClient } from '@evespace/esi-client/domains/routes';
-import type { PostRouteOptions } from '@evespace/esi-client/domains/routes';
+import type { PostRouteResponse, PostRouteData } from '@evespace/esi-client/types';
 
 const client = createRoutesClient();
 
 const originSystemId = 30000142;
 const destinationSystemId = 30000142;
-declare const requestBody: NonNullable<PostRouteOptions['body']>;
+declare const requestBody: NonNullable<PostRouteData['body']>;
 
-const data = await client.calculate(originSystemId, destinationSystemId, { body: requestBody });
+const data: PostRouteResponse = await client.calculate(originSystemId, destinationSystemId, { body: requestBody });

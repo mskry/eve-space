@@ -16,26 +16,28 @@ List (upcoming) raidable Skyhooks
 - Domain import: `@evespace/esi-client/domains/activities`
 - Domain index: [activities](../domains/activities.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createActivitiesClient } from '@evespace/esi-client/domains/activities';
+import type { GetSkyhooksRaidableResponse } from '@evespace/esi-client/types';
 
 const client = createActivitiesClient();
 
-const data = await client.listRaidableSkyhooks();
+const data: GetSkyhooksRaidableResponse = await client.listRaidableSkyhooks();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetSkyhooksRaidableResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.activities.listRaidableSkyhooks();
+const data: GetSkyhooksRaidableResponse = await client.activities.listRaidableSkyhooks();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.activities.listRaidableSkyhooks();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetSkyhooksRaidableData, GetSkyhooksRaidableResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetSkyhooksRaidable'> = {};
 
 const response = await client.callOperation('GetSkyhooksRaidable', arguments_);
+const data: GetSkyhooksRaidableResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetSkyhooksRaidable', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetSkyhooksRaidableRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetSkyhooksRaidableData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetSkyhooksRaidableHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetSkyhooksRaidableResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.activities.withMetadata().listRaidableSkyhooks(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetSkyhooksRaidableStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetSkyhooksRaidableResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

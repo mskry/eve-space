@@ -6,6 +6,7 @@ import {
   classifyProjectPath,
   generatedPaths,
   generatedReplacementTargets,
+  normalizeGeneratedPath,
   repositoryRoot,
   resolveGeneratedReplacementTargets,
 } from '../scripts/generate/paths.ts';
@@ -31,6 +32,14 @@ describe('generation path boundaries', () => {
     expect(classifyProjectPath('src/transport.ts')).toBe('maintained');
     expect(classifyProjectPath('tests/runtime.test.ts')).toBe('maintained');
     expect(classifyProjectPath('openapi/corrections/manifest.json')).toBe('maintained');
+  });
+
+  it.each([
+    ['src/generated/types.gen.ts', 'src/generated/types.gen.ts'],
+    ['src\\generated\\types.gen.ts', 'src/generated/types.gen.ts'],
+    ['docs\\generated/operations\\GetStatus.md', 'docs/generated/operations/GetStatus.md'],
+  ])('normalizes generated path separators in %j', (path, expected) => {
+    expect(normalizeGeneratedPath(path)).toBe(expected);
   });
 
   it.each([

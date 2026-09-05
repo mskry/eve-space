@@ -16,13 +16,13 @@ Respond to an event
 - Domain import: `@evespace/esi-client/domains/calendar`
 - Domain index: [calendar](../domains/calendar.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCalendarClient } from '@evespace/esi-client/domains/calendar';
-import type { PutCharactersCharacterIdCalendarEventIdOptions } from '@evespace/esi-client/domains/calendar';
+import type { PutCharactersCharacterIdCalendarEventIdResponse, PutCharactersCharacterIdCalendarEventIdData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,17 +31,17 @@ const client = createCalendarClient({ token: accessToken });
 
 const characterId = 90000001;
 const eventId = 12345;
-declare const requestBody: NonNullable<PutCharactersCharacterIdCalendarEventIdOptions['body']>;
+declare const requestBody: NonNullable<PutCharactersCharacterIdCalendarEventIdData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.respondToEvent(characterId, eventId, { body: requestBody });
+const data: PutCharactersCharacterIdCalendarEventIdResponse = await client.respondToEvent(characterId, eventId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PutCharactersCharacterIdCalendarEventIdOptions } from '@evespace/esi-client/domains/calendar';
+import type { PutCharactersCharacterIdCalendarEventIdResponse, PutCharactersCharacterIdCalendarEventIdData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -50,10 +50,10 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 const eventId = 12345;
-declare const requestBody: NonNullable<PutCharactersCharacterIdCalendarEventIdOptions['body']>;
+declare const requestBody: NonNullable<PutCharactersCharacterIdCalendarEventIdData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.calendar.respondToEvent(characterId, eventId, { body: requestBody });
+const data: PutCharactersCharacterIdCalendarEventIdResponse = await client.calendar.respondToEvent(characterId, eventId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -61,6 +61,7 @@ const data = await client.calendar.respondToEvent(characterId, eventId, { body: 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PutCharactersCharacterIdCalendarEventIdData, PutCharactersCharacterIdCalendarEventIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -69,7 +70,7 @@ const client = new EsiClient({ token: accessToken, allowGenericMutations: true }
 
 const characterId = 90000001;
 const eventId = 12345;
-declare const requestBody: NonNullable<CallOperationArguments<'PutCharactersCharacterIdCalendarEventId'>['body']>;
+declare const requestBody: NonNullable<PutCharactersCharacterIdCalendarEventIdData['body']>;
 
 const arguments_: CallOperationArguments<'PutCharactersCharacterIdCalendarEventId'> = { path: { "character_id": characterId, "event_id": eventId }, body: requestBody };
 
@@ -77,6 +78,7 @@ const arguments_: CallOperationArguments<'PutCharactersCharacterIdCalendarEventI
 const response = await client.callOperation('PutCharactersCharacterIdCalendarEventId', arguments_, {
   confirmMutation: true,
 });
+const data: PutCharactersCharacterIdCalendarEventIdResponse = response.data;
 ```
 
 ## Parameters
@@ -92,14 +94,16 @@ const response = await client.callOperation('PutCharactersCharacterIdCalendarEve
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PutCharactersCharacterIdCalendarEventIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PutCharactersCharacterIdCalendarEventIdData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPutCharactersCharacterIdCalendarEventIdBody`; `headers` uses `@evespace/esi-client/zod` export `zPutCharactersCharacterIdCalendarEventIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zPutCharactersCharacterIdCalendarEventIdPath`.
+- Response type: `@evespace/esi-client/types` export `PutCharactersCharacterIdCalendarEventIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.calendar.withMetadata().respondToEvent(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `PutCharactersCharacterIdCalendarEventIdStatus204SuccessResponseSchema` | Event updated |
+| `204` | none | `@evespace/esi-client/zod` | `zPutCharactersCharacterIdCalendarEventIdResponse` | Event updated |
 
 ## Authentication
 
@@ -134,6 +138,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

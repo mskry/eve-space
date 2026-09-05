@@ -4,18 +4,30 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdLoyaltyPointsData,
+  GetCharactersCharacterIdLoyaltyPointsResponse,
+  GetLoyaltyStoresCorporationIdOffersData,
+  GetLoyaltyStoresCorporationIdOffersResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdLoyaltyPointsRequestSchema,
-  GetCharactersCharacterIdLoyaltyPointsStatus200SuccessResponseSchema,
-  GetLoyaltyStoresCorporationIdOffersRequestSchema,
-  GetLoyaltyStoresCorporationIdOffersStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdLoyaltyPointsInput,
-  type GetCharactersCharacterIdLoyaltyPointsOutput,
-  type GetLoyaltyStoresCorporationIdOffersInput,
-  type GetLoyaltyStoresCorporationIdOffersOutput,
-} from '../../schemas/operations/loyalty.js';
+  zGetCharactersCharacterIdLoyaltyPointsHeaders,
+  zGetCharactersCharacterIdLoyaltyPointsPath,
+  zGetCharactersCharacterIdLoyaltyPointsResponse,
+  zGetLoyaltyStoresCorporationIdOffersHeaders,
+  zGetLoyaltyStoresCorporationIdOffersPath,
+  zGetLoyaltyStoresCorporationIdOffersResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdLoyaltyPointsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdLoyaltyPointsInput, GetCharactersCharacterIdLoyaltyPointsOutput> = {
+export const GetCharactersCharacterIdLoyaltyPointsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdLoyaltyPointsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdLoyaltyPointsPath },
+});
+
+export const GetCharactersCharacterIdLoyaltyPointsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>, GetCharactersCharacterIdLoyaltyPointsResponse> = {
   operationId: "GetCharactersCharacterIdLoyaltyPoints",
   method: "GET",
   path: "/characters/{character_id}/loyalty/points",
@@ -29,12 +41,17 @@ export const GetCharactersCharacterIdLoyaltyPointsDescriptor: OperationExecution
   requestSchema: GetCharactersCharacterIdLoyaltyPointsRequestSchema,
   authentication: { scopes: ["esi-characters.read_loyalty.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdLoyaltyPointsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdLoyaltyPointsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetLoyaltyStoresCorporationIdOffersDescriptor: OperationExecutionDescriptor<GetLoyaltyStoresCorporationIdOffersInput, GetLoyaltyStoresCorporationIdOffersOutput> = {
+export const GetLoyaltyStoresCorporationIdOffersRequestSchema: z.ZodType<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>> = composeOperationRequestSchema<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>>({
+  headers: { required: false, schema: zGetLoyaltyStoresCorporationIdOffersHeaders },
+  path: { required: true, schema: zGetLoyaltyStoresCorporationIdOffersPath },
+});
+
+export const GetLoyaltyStoresCorporationIdOffersDescriptor: OperationExecutionDescriptor<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>, GetLoyaltyStoresCorporationIdOffersResponse> = {
   operationId: "GetLoyaltyStoresCorporationIdOffers",
   method: "GET",
   path: "/loyalty/stores/{corporation_id}/offers",
@@ -48,7 +65,7 @@ export const GetLoyaltyStoresCorporationIdOffersDescriptor: OperationExecutionDe
   requestSchema: GetLoyaltyStoresCorporationIdOffersRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetLoyaltyStoresCorporationIdOffersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetLoyaltyStoresCorporationIdOffersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

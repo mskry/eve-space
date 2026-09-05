@@ -1,5 +1,5 @@
 import { createSkillsClient } from '@evespace/esi-client/domains/skills'
-import type { GetCharactersCharacterIdAttributesOutput } from '@evespace/esi-client/schemas'
+import type { GetCharactersCharacterIdAttributesResponse } from '@evespace/esi-client/types'
 import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
 import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
 import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
@@ -39,7 +39,7 @@ export async function getCharacterAttributes(characterId: number): Promise<Chara
 }
 
 function mapCharacterAttributes(
-  result: GetCharactersCharacterIdAttributesOutput,
+  result: GetCharactersCharacterIdAttributesResponse,
 ): CharacterAttributesData {
   return {
     charisma: result.charisma,

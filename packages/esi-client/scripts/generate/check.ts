@@ -1,20 +1,15 @@
-import { createHash } from 'node:crypto';
-import { lstat, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, lstat, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { createOperationAccountingReport, renderGeneratedJson } from './artifacts.ts';
-import { generatedDocumentationEmitter } from './documentation-emitter.ts';
-import { generatedExamplesEmitter } from './examples-emitter.ts';
-import { namingReviewReportPath, renderNamingReviewReport } from './naming-review.ts';
-import { normalizeOpenApiDocument } from './normalize.ts';
-import { loadFacadeCatalog, resolveOperationMetadata } from './operation-metadata.ts';
-import type { ResolvedOperationMetadata } from './operation-metadata.ts';
-import type { EmitterContext, GenerationProvenance } from './orchestrate.ts';
-import { generatedPaths, repositoryRoot } from './paths.ts';
-import { generatedSourceEmitter } from './source-emitter.ts';
-import { generatedTestsEmitter } from './test-emitter.ts';
+import { readCommittedSnapshot } from './committed-snapshot.ts';
+import { emitGeneratedArtifacts, writeOpenApiArtifacts } from './emit-artifacts.ts';
+import { emittedTargets, offlineEmitters } from './generation-emitters.ts';
+import type { GenerationProvenance } from './generation-contracts.ts';
+import { prepareGenerationContext } from './generation-context.ts';
+import { compareText } from './internal/text.ts';
+import { generatedTargets, repositoryRoot } from './paths.ts';
 
 export interface GenerationCheckResult {
   readonly compatibilityDate: string;
@@ -27,14 +22,15 @@ interface PathSnapshotEntry {
   readonly content: string;
 }
 
-export const generationCheckTargets: readonly string[] = Object.freeze([
-  ...generatedPaths.source,
-  ...generatedPaths.documentation,
-  ...generatedPaths.examples,
-  ...generatedPaths.tests,
-  ...generatedPaths.openapi,
-]);
+export const generationCheckTargets: readonly string[] = Object.freeze(
+  generatedTargets.map(({ path }) => path),
+);
 
+/**
+ * Regenerates every artifact into a temporary directory and compares it against the committed
+ * tree. This command never writes inside the project: it has no access to the replacement
+ * transaction at all, so staleness cannot be "fixed" by running it.
+ */
 export async function checkGeneratedOutputs(
   root: string = repositoryRoot,
 ): Promise<GenerationCheckResult> {
@@ -42,64 +38,25 @@ export async function checkGeneratedOutputs(
   const workspace = await mkdtemp(join(tmpdir(), 'esi-client-generate-check-'));
 
   try {
-    const generatedDirectory = join(projectRoot, 'openapi/generated');
-    const facadeCatalogPath = join(projectRoot, 'openapi/config/naming-overrides.json');
-    const [snapshotSource, provenance, compatibilityDate, facadeCatalogSource] = await Promise.all([
-      readFile(join(generatedDirectory, 'esi-openapi.json'), 'utf8'),
-      readFile(join(generatedDirectory, 'provenance.json'), 'utf8').then(
-        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- assertCommittedSnapshotProvenance validates this shape below
-        (source) => JSON.parse(source) as GenerationProvenance,
-      ),
-      readFile(join(projectRoot, 'openapi/compatibility-date.txt'), 'utf8').then((value) =>
-        value.trim(),
-      ),
-      readFile(facadeCatalogPath, 'utf8'),
-    ]);
-    const correctedDocument: Record<string, unknown> = JSON.parse(snapshotSource);
-    const canonicalSnapshot = serializeJson(correctedDocument);
-    assertCommittedSnapshotProvenance(provenance, compatibilityDate, canonicalSnapshot);
+    const committed = await readCommittedSnapshot(projectRoot);
 
-    const normalizedModel = await normalizeOpenApiDocument(correctedDocument, {
-      exclusionsPath: join(projectRoot, 'openapi/config/exclusions.json'),
-    });
-    const [facadeCatalog, operationMetadata] = await Promise.all([
-      loadFacadeCatalog(normalizedModel, facadeCatalogPath),
-      resolveOperationMetadata(normalizedModel, {
-        facadeCatalogPath,
-        safetyOverridesPath: join(projectRoot, 'openapi/config/safety-overrides.json'),
-      }),
-    ]);
-    const namingReviewReport = renderNamingReviewReport(normalizedModel, facadeCatalog, provenance);
-    assertNamingProvenance(provenance, facadeCatalogSource, namingReviewReport);
-    const context: EmitterContext = Object.freeze({
-      compatibilityDate,
-      correctedDocument,
-      normalizedModel,
-      namingReviewReport,
-      operationMetadata,
-      outputDirectory: workspace,
-      outputPath: (target: string) => join(workspace, target),
-      provenance,
-    });
+    const { context } = await prepareGenerationContext(committed.input, workspace, projectRoot);
+    assertProvenanceMatches(committed.provenance, context.provenance);
 
-    for (const emitter of [
-      generatedSourceEmitter,
-      generatedDocumentationEmitter,
-      generatedExamplesEmitter,
-      generatedTestsEmitter,
-    ]) {
-      await emitter.emit(context);
-    }
-    await writeOpenApiOutputs(
+    await emitGeneratedArtifacts(context, offlineEmitters, emittedTargets);
+    await writeOpenApiArtifacts(
       workspace,
-      canonicalSnapshot,
-      normalizedModel,
-      operationMetadata,
-      provenance,
+      committed.canonicalSnapshot,
+      context,
+      context.provenance,
     );
 
     const result = await compareGeneratedOutputs(workspace, projectRoot, generationCheckTargets);
-    return { ...result, compatibilityDate, sha256: provenance.sha256 };
+    return {
+      ...result,
+      compatibilityDate: committed.input.compatibilityDate,
+      sha256: context.provenance.sha256,
+    };
   } finally {
     await rm(workspace, { force: true, recursive: true });
   }
@@ -137,65 +94,20 @@ export async function compareGeneratedOutputs(
   return { fileCount: [...staged.values()].filter(({ kind }) => kind === 'file').length };
 }
 
-async function writeOpenApiOutputs(
-  outputDirectory: string,
-  snapshot: string,
-  normalizedModel: EmitterContext['normalizedModel'],
-  operationMetadata: readonly ResolvedOperationMetadata[],
-  provenance: GenerationProvenance,
-): Promise<void> {
-  const directory = join(outputDirectory, 'openapi/generated');
-  const accounting = createOperationAccountingReport(normalizedModel, operationMetadata);
-  await mkdir(directory, { recursive: true });
-  await Promise.all([
-    writeFile(join(directory, 'esi-openapi.json'), snapshot),
-    writeFile(join(directory, 'normalized-model.json'), serializeJson(normalizedModel)),
-    writeFile(
-      join(directory, 'operation-accounting.json'),
-      renderGeneratedJson(accounting, provenance),
-    ),
-    writeFile(join(directory, 'provenance.json'), serializeJson(provenance)),
-  ]);
-}
-
-function assertCommittedSnapshotProvenance(
-  provenance: GenerationProvenance,
-  compatibilityDate: string,
-  snapshot: string,
-): void {
-  const sha256 = createHash('sha256').update(snapshot).digest('hex');
-  if (
-    provenance === null ||
-    typeof provenance !== 'object' ||
-    provenance.compatibilityDate !== compatibilityDate ||
-    provenance.sha256 !== sha256 ||
-    !Array.isArray(provenance.appliedCorrections) ||
-    typeof provenance.sourceSha256 !== 'string' ||
-    typeof provenance.specificationUrl !== 'string'
-  ) {
-    throw new Error('Committed OpenAPI snapshot and provenance are inconsistent');
-  }
-}
-
-function assertNamingProvenance(
-  provenance: GenerationProvenance,
-  facadeCatalogSource: string,
-  namingReviewReport: string,
+function assertProvenanceMatches(
+  committed: GenerationProvenance,
+  prepared: GenerationProvenance,
 ): void {
   if (
-    provenance.facadeCatalog?.path !== 'openapi/config/naming-overrides.json' ||
-    provenance.facadeCatalog?.sha256 !== hashText(facadeCatalogSource) ||
-    provenance.facadeReviewReport?.path !== namingReviewReportPath ||
-    provenance.facadeReviewReport?.sha256 !== hashText(namingReviewReport)
+    committed.facadeCatalog?.path !== prepared.facadeCatalog.path ||
+    committed.facadeCatalog?.sha256 !== prepared.facadeCatalog.sha256 ||
+    committed.facadeReviewReport?.path !== prepared.facadeReviewReport.path ||
+    committed.facadeReviewReport?.sha256 !== prepared.facadeReviewReport.sha256
   ) {
     throw new Error(
       'Committed facade catalog, naming review report, and provenance are inconsistent',
     );
   }
-}
-
-function hashText(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
 }
 
 async function snapshotPaths(
@@ -236,26 +148,6 @@ async function snapshotPath(
   for (const entry of entries.toSorted((left, right) => compareText(left.name, right.name))) {
     await snapshotPath(root, `${repositoryPath}/${entry.name}`, snapshot);
   }
-}
-
-function serializeJson(value: unknown): string {
-  return `${JSON.stringify(sortJsonValue(value), null, 2)}\n`;
-}
-
-function sortJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortJsonValue);
-  if (value === null || typeof value !== 'object') return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .toSorted(([left], [right]) => compareText(left, right))
-      .map(([key, entry]) => [key, sortJsonValue(entry)]),
-  );
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
 }
 
 const entryPath = process.argv[1];

@@ -26,7 +26,7 @@ describe('descriptor-driven request construction', () => {
     const request = constructOperationRequest(descriptor, {
       path: { label: 'blue team/one', character_id: 90000001 },
       query: { standing: [1.5, -2], include_blocked: false, page: 2 },
-      header: { 'If-None-Match': '"revision-1"' },
+      headers: { 'If-None-Match': '"revision-1"' },
       body: { watched: true, ids: [3, 1], note: null },
     });
 
@@ -74,7 +74,7 @@ describe('descriptor-driven request construction', () => {
       constructOperationRequest(descriptor, {
         path: { segments: ['alpha', 'beta/gamma'] },
         query: { repeated: ['one two', 'a&b'], compact: ['x,y', 'z'] },
-        header: { 'X-Flags': [true, false] },
+        headers: { 'X-Flags': [true, false] },
       }),
     ).toEqual({
       method: 'GET',
@@ -185,7 +185,7 @@ describe('descriptor-driven request construction', () => {
     [
       'header object',
       operation({ parameters: [parameter('X-Value', 'header', 'string')] }),
-      { header: { 'X-Value': { nested: true } } },
+      { headers: { 'X-Value': { nested: true } } },
     ],
     [
       'non-finite number',
@@ -213,9 +213,9 @@ describe('descriptor-driven request construction', () => {
         parameters: [parameter('X-Value', 'header', 'string', true)],
       });
 
-      expect(() => constructOperationRequest(descriptor, { header: { 'X-Value': value } })).toThrow(
-        EsiRequestValidationError,
-      );
+      expect(() =>
+        constructOperationRequest(descriptor, { headers: { 'X-Value': value } }),
+      ).toThrow(EsiRequestValidationError);
     },
   );
 

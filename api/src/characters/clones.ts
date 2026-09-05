@@ -1,8 +1,8 @@
 import { createClonesClient } from '@evespace/esi-client/domains/clones'
 import type {
-  GetCharactersCharacterIdClonesOutput,
-  GetCharactersCharacterIdImplantsOutput,
-} from '@evespace/esi-client/schemas'
+  GetCharactersCharacterIdClonesResponse,
+  GetCharactersCharacterIdImplantsResponse,
+} from '@evespace/esi-client/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
@@ -174,7 +174,7 @@ export async function getCharacterImplants(characterId: number): Promise<Charact
 }
 
 function mapCharacterClonesSnapshot(
-  result: GetCharactersCharacterIdClonesOutput,
+  result: GetCharactersCharacterIdClonesResponse,
 ): CharacterClonesSnapshot {
   return {
     homeLocation: result.home_location
@@ -198,7 +198,7 @@ function mapCharacterClonesSnapshot(
 }
 
 function mapCharacterImplantsSnapshot(
-  result: GetCharactersCharacterIdImplantsOutput,
+  result: GetCharactersCharacterIdImplantsResponse,
 ): CharacterImplantsSnapshot {
   return { implantTypeIds: [...new Set(result)] }
 }

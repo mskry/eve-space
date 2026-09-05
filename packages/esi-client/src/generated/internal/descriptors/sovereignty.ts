@@ -4,18 +4,27 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetSovereigntyCampaignsData,
+  GetSovereigntyCampaignsResponse,
+  GetSovereigntySystemsData,
+  GetSovereigntySystemsResponse,
+} from '../../types.gen.js';
 import {
-  GetSovereigntyCampaignsRequestSchema,
-  GetSovereigntyCampaignsStatus200SuccessResponseSchema,
-  GetSovereigntySystemsRequestSchema,
-  GetSovereigntySystemsStatus200SuccessResponseSchema,
-  type GetSovereigntyCampaignsInput,
-  type GetSovereigntyCampaignsOutput,
-  type GetSovereigntySystemsInput,
-  type GetSovereigntySystemsOutput,
-} from '../../schemas/operations/sovereignty.js';
+  zGetSovereigntyCampaignsHeaders,
+  zGetSovereigntyCampaignsResponse,
+  zGetSovereigntySystemsHeaders,
+  zGetSovereigntySystemsResponse,
+} from '../../zod.gen.js';
 
-export const GetSovereigntyCampaignsDescriptor: OperationExecutionDescriptor<GetSovereigntyCampaignsInput, GetSovereigntyCampaignsOutput> = {
+export const GetSovereigntyCampaignsRequestSchema: z.ZodType<OperationArguments<GetSovereigntyCampaignsData>> = composeOperationRequestSchema<OperationArguments<GetSovereigntyCampaignsData>>({
+  headers: { required: false, schema: zGetSovereigntyCampaignsHeaders },
+});
+
+export const GetSovereigntyCampaignsDescriptor: OperationExecutionDescriptor<OperationArguments<GetSovereigntyCampaignsData>, GetSovereigntyCampaignsResponse> = {
   operationId: "GetSovereigntyCampaigns",
   method: "GET",
   path: "/sovereignty/campaigns",
@@ -28,12 +37,16 @@ export const GetSovereigntyCampaignsDescriptor: OperationExecutionDescriptor<Get
   requestSchema: GetSovereigntyCampaignsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetSovereigntyCampaignsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetSovereigntyCampaignsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetSovereigntySystemsDescriptor: OperationExecutionDescriptor<GetSovereigntySystemsInput, GetSovereigntySystemsOutput> = {
+export const GetSovereigntySystemsRequestSchema: z.ZodType<OperationArguments<GetSovereigntySystemsData>> = composeOperationRequestSchema<OperationArguments<GetSovereigntySystemsData>>({
+  headers: { required: false, schema: zGetSovereigntySystemsHeaders },
+});
+
+export const GetSovereigntySystemsDescriptor: OperationExecutionDescriptor<OperationArguments<GetSovereigntySystemsData>, GetSovereigntySystemsResponse> = {
   operationId: "GetSovereigntySystems",
   method: "GET",
   path: "/sovereignty/systems",
@@ -46,7 +59,7 @@ export const GetSovereigntySystemsDescriptor: OperationExecutionDescriptor<GetSo
   requestSchema: GetSovereigntySystemsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetSovereigntySystemsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetSovereigntySystemsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

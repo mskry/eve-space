@@ -4,133 +4,134 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  DeleteCharactersCharacterIdMailLabelsLabelIdInput,
-  DeleteCharactersCharacterIdMailLabelsLabelIdOutput,
-  DeleteCharactersCharacterIdMailMailIdInput,
-  DeleteCharactersCharacterIdMailMailIdOutput,
-  GetCharactersCharacterIdMailInput,
-  GetCharactersCharacterIdMailLabelsInput,
-  GetCharactersCharacterIdMailLabelsOutput,
-  GetCharactersCharacterIdMailListsInput,
-  GetCharactersCharacterIdMailListsOutput,
-  GetCharactersCharacterIdMailMailIdInput,
-  GetCharactersCharacterIdMailMailIdOutput,
-  GetCharactersCharacterIdMailOutput,
-  PostCharactersCharacterIdMailInput,
-  PostCharactersCharacterIdMailLabelsInput,
-  PostCharactersCharacterIdMailLabelsOutput,
-  PostCharactersCharacterIdMailOutput,
-  PutCharactersCharacterIdMailMailIdInput,
-  PutCharactersCharacterIdMailMailIdOutput,
-} from '../../schemas/operations/mail.js';
+  DeleteCharactersCharacterIdMailLabelsLabelIdData,
+  DeleteCharactersCharacterIdMailLabelsLabelIdResponse,
+  DeleteCharactersCharacterIdMailMailIdData,
+  DeleteCharactersCharacterIdMailMailIdResponse,
+  GetCharactersCharacterIdMailData,
+  GetCharactersCharacterIdMailLabelsData,
+  GetCharactersCharacterIdMailLabelsResponse,
+  GetCharactersCharacterIdMailListsData,
+  GetCharactersCharacterIdMailListsResponse,
+  GetCharactersCharacterIdMailMailIdData,
+  GetCharactersCharacterIdMailMailIdResponse,
+  GetCharactersCharacterIdMailResponse,
+  PostCharactersCharacterIdMailData,
+  PostCharactersCharacterIdMailLabelsData,
+  PostCharactersCharacterIdMailLabelsResponse,
+  PostCharactersCharacterIdMailResponse,
+  PutCharactersCharacterIdMailMailIdData,
+  PutCharactersCharacterIdMailMailIdResponse,
+} from '../../types.gen.js';
 
 export interface PostCharactersCharacterIdMailLabelsOptions {
-  readonly "body": PostCharactersCharacterIdMailLabelsInput['body'];
+  readonly "body": OperationArguments<PostCharactersCharacterIdMailLabelsData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostCharactersCharacterIdMailLabelsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostCharactersCharacterIdMailLabelsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostCharactersCharacterIdMailLabelsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>["headers"]>["X-Tenant"];
 }
 
 export interface DeleteCharactersCharacterIdMailLabelsLabelIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>["headers"]>["X-Tenant"];
 }
 
 export interface DeleteCharactersCharacterIdMailMailIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<DeleteCharactersCharacterIdMailMailIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<DeleteCharactersCharacterIdMailMailIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<DeleteCharactersCharacterIdMailMailIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdMailMailIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdMailMailIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdMailMailIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdMailMailIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdMailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdMailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdMailInput["header"]>["If-None-Match"];
-  readonly "labels"?: NonNullable<GetCharactersCharacterIdMailInput["query"]>["labels"];
-  readonly "lastMailId"?: NonNullable<GetCharactersCharacterIdMailInput["query"]>["last_mail_id"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdMailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["headers"]>["If-None-Match"];
+  readonly "labels"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["query"]>["labels"];
+  readonly "lastMailId"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["query"]>["last_mail_id"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdMailLabelsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdMailLabelsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdMailLabelsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdMailLabelsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdMailListsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdMailListsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdMailListsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdMailListsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>["headers"]>["X-Tenant"];
 }
 
 export interface PostCharactersCharacterIdMailOptions {
-  readonly "body": PostCharactersCharacterIdMailInput['body'];
+  readonly "body": OperationArguments<PostCharactersCharacterIdMailData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostCharactersCharacterIdMailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostCharactersCharacterIdMailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostCharactersCharacterIdMailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>["headers"]>["X-Tenant"];
 }
 
 export interface PutCharactersCharacterIdMailMailIdOptions {
-  readonly "body": PutCharactersCharacterIdMailMailIdInput['body'];
+  readonly "body": OperationArguments<PutCharactersCharacterIdMailMailIdData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PutCharactersCharacterIdMailMailIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PutCharactersCharacterIdMailMailIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PutCharactersCharacterIdMailMailIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>["headers"]>["X-Tenant"];
 }
 
 export interface MailDomainClient {
-  createLabel(characterId: NonNullable<PostCharactersCharacterIdMailLabelsInput['path']>["character_id"], options: PostCharactersCharacterIdMailLabelsOptions): Promise<PostCharactersCharacterIdMailLabelsOutput>;
+  createLabel(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>['path']>["character_id"], options: PostCharactersCharacterIdMailLabelsOptions): Promise<PostCharactersCharacterIdMailLabelsResponse>;
 
-  deleteLabel(characterId: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']>["character_id"], labelId: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']>["label_id"], options?: DeleteCharactersCharacterIdMailLabelsLabelIdOptions): Promise<DeleteCharactersCharacterIdMailLabelsLabelIdOutput>;
+  deleteLabel(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']>["character_id"], labelId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']>["label_id"], options?: DeleteCharactersCharacterIdMailLabelsLabelIdOptions): Promise<DeleteCharactersCharacterIdMailLabelsLabelIdResponse>;
 
-  deleteMail(characterId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>["character_id"], mailId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>["mail_id"], options?: DeleteCharactersCharacterIdMailMailIdOptions): Promise<DeleteCharactersCharacterIdMailMailIdOutput>;
+  deleteMail(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options?: DeleteCharactersCharacterIdMailMailIdOptions): Promise<DeleteCharactersCharacterIdMailMailIdResponse>;
 
-  get(characterId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>["character_id"], mailId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>["mail_id"], options?: GetCharactersCharacterIdMailMailIdOptions): Promise<GetCharactersCharacterIdMailMailIdOutput>;
+  get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options?: GetCharactersCharacterIdMailMailIdOptions): Promise<GetCharactersCharacterIdMailMailIdResponse>;
 
-  listHeaders(characterId: NonNullable<GetCharactersCharacterIdMailInput['path']>["character_id"], options?: GetCharactersCharacterIdMailOptions): Promise<GetCharactersCharacterIdMailOutput>;
+  listHeaders(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>['path']>["character_id"], options?: GetCharactersCharacterIdMailOptions): Promise<GetCharactersCharacterIdMailResponse>;
 
-  listLabels(characterId: NonNullable<GetCharactersCharacterIdMailLabelsInput['path']>["character_id"], options?: GetCharactersCharacterIdMailLabelsOptions): Promise<GetCharactersCharacterIdMailLabelsOutput>;
+  listLabels(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>['path']>["character_id"], options?: GetCharactersCharacterIdMailLabelsOptions): Promise<GetCharactersCharacterIdMailLabelsResponse>;
 
-  listMailingLists(characterId: NonNullable<GetCharactersCharacterIdMailListsInput['path']>["character_id"], options?: GetCharactersCharacterIdMailListsOptions): Promise<GetCharactersCharacterIdMailListsOutput>;
+  listMailingLists(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>['path']>["character_id"], options?: GetCharactersCharacterIdMailListsOptions): Promise<GetCharactersCharacterIdMailListsResponse>;
 
-  send(characterId: NonNullable<PostCharactersCharacterIdMailInput['path']>["character_id"], options: PostCharactersCharacterIdMailOptions): Promise<PostCharactersCharacterIdMailOutput>;
+  send(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>['path']>["character_id"], options: PostCharactersCharacterIdMailOptions): Promise<PostCharactersCharacterIdMailResponse>;
 
-  update(characterId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>["character_id"], mailId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>["mail_id"], options: PutCharactersCharacterIdMailMailIdOptions): Promise<PutCharactersCharacterIdMailMailIdOutput>;
+  update(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options: PutCharactersCharacterIdMailMailIdOptions): Promise<PutCharactersCharacterIdMailMailIdResponse>;
 
   withMetadata(): MailDomainClientWithMetadata;
 }
 
 export interface MailDomainClientWithMetadata {
-  createLabel(characterId: NonNullable<PostCharactersCharacterIdMailLabelsInput['path']>["character_id"], options: PostCharactersCharacterIdMailLabelsOptions): Promise<EsiResponse<PostCharactersCharacterIdMailLabelsOutput>>;
+  createLabel(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdMailLabelsData>['path']>["character_id"], options: PostCharactersCharacterIdMailLabelsOptions): Promise<EsiResponse<PostCharactersCharacterIdMailLabelsResponse>>;
 
-  deleteLabel(characterId: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']>["character_id"], labelId: NonNullable<DeleteCharactersCharacterIdMailLabelsLabelIdInput['path']>["label_id"], options?: DeleteCharactersCharacterIdMailLabelsLabelIdOptions): Promise<EsiResponse<DeleteCharactersCharacterIdMailLabelsLabelIdOutput>>;
+  deleteLabel(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']>["character_id"], labelId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>['path']>["label_id"], options?: DeleteCharactersCharacterIdMailLabelsLabelIdOptions): Promise<EsiResponse<DeleteCharactersCharacterIdMailLabelsLabelIdResponse>>;
 
-  deleteMail(characterId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>["character_id"], mailId: NonNullable<DeleteCharactersCharacterIdMailMailIdInput['path']>["mail_id"], options?: DeleteCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<DeleteCharactersCharacterIdMailMailIdOutput>>;
+  deleteMail(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options?: DeleteCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<DeleteCharactersCharacterIdMailMailIdResponse>>;
 
-  get(characterId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>["character_id"], mailId: NonNullable<GetCharactersCharacterIdMailMailIdInput['path']>["mail_id"], options?: GetCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<GetCharactersCharacterIdMailMailIdOutput>>;
+  get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<GetCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options?: GetCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<GetCharactersCharacterIdMailMailIdResponse>>;
 
-  listHeaders(characterId: NonNullable<GetCharactersCharacterIdMailInput['path']>["character_id"], options?: GetCharactersCharacterIdMailOptions): Promise<EsiResponse<GetCharactersCharacterIdMailOutput>>;
+  listHeaders(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailData>['path']>["character_id"], options?: GetCharactersCharacterIdMailOptions): Promise<EsiResponse<GetCharactersCharacterIdMailResponse>>;
 
-  listLabels(characterId: NonNullable<GetCharactersCharacterIdMailLabelsInput['path']>["character_id"], options?: GetCharactersCharacterIdMailLabelsOptions): Promise<EsiResponse<GetCharactersCharacterIdMailLabelsOutput>>;
+  listLabels(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailLabelsData>['path']>["character_id"], options?: GetCharactersCharacterIdMailLabelsOptions): Promise<EsiResponse<GetCharactersCharacterIdMailLabelsResponse>>;
 
-  listMailingLists(characterId: NonNullable<GetCharactersCharacterIdMailListsInput['path']>["character_id"], options?: GetCharactersCharacterIdMailListsOptions): Promise<EsiResponse<GetCharactersCharacterIdMailListsOutput>>;
+  listMailingLists(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMailListsData>['path']>["character_id"], options?: GetCharactersCharacterIdMailListsOptions): Promise<EsiResponse<GetCharactersCharacterIdMailListsResponse>>;
 
-  send(characterId: NonNullable<PostCharactersCharacterIdMailInput['path']>["character_id"], options: PostCharactersCharacterIdMailOptions): Promise<EsiResponse<PostCharactersCharacterIdMailOutput>>;
+  send(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdMailData>['path']>["character_id"], options: PostCharactersCharacterIdMailOptions): Promise<EsiResponse<PostCharactersCharacterIdMailResponse>>;
 
-  update(characterId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>["character_id"], mailId: NonNullable<PutCharactersCharacterIdMailMailIdInput['path']>["mail_id"], options: PutCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<PutCharactersCharacterIdMailMailIdOutput>>;
+  update(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']>["character_id"], mailId: NonNullable<OperationArguments<PutCharactersCharacterIdMailMailIdData>['path']>["mail_id"], options: PutCharactersCharacterIdMailMailIdOptions): Promise<EsiResponse<PutCharactersCharacterIdMailMailIdResponse>>;
 }

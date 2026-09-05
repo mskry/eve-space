@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdPlanetsPlanetIdDescriptor,
@@ -21,15 +22,15 @@ import type {
   GetCorporationsCorporationIdCustomsOfficesOptions,
 } from './planetary-interaction-contract.js';
 import type {
-  GetCharactersCharacterIdPlanetsInput,
-  GetCharactersCharacterIdPlanetsOutput,
-  GetCharactersCharacterIdPlanetsPlanetIdInput,
-  GetCharactersCharacterIdPlanetsPlanetIdOutput,
-  GetCorporationsCorporationIdCustomsOfficesInput,
-  GetCorporationsCorporationIdCustomsOfficesOutput,
-  GetUniverseSchematicsSchematicIdInput,
-  GetUniverseSchematicsSchematicIdOutput,
-} from '../../schemas/operations/planetary-interaction.js';
+  GetCharactersCharacterIdPlanetsData,
+  GetCharactersCharacterIdPlanetsPlanetIdData,
+  GetCharactersCharacterIdPlanetsPlanetIdResponse,
+  GetCharactersCharacterIdPlanetsResponse,
+  GetCorporationsCorporationIdCustomsOfficesData,
+  GetCorporationsCorporationIdCustomsOfficesResponse,
+  GetUniverseSchematicsSchematicIdData,
+  GetUniverseSchematicsSchematicIdResponse,
+} from '../../types.gen.js';
 
 class PlanetaryInteractionDomainClientWithMetadataImplementation implements PlanetaryInteractionDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -39,23 +40,23 @@ class PlanetaryInteractionDomainClientWithMetadataImplementation implements Plan
     Object.freeze(this);
   }
 
-  getColonyLayout(characterId: NonNullable<GetCharactersCharacterIdPlanetsPlanetIdInput['path']>["character_id"], planetId: NonNullable<GetCharactersCharacterIdPlanetsPlanetIdInput['path']>["planet_id"], options?: GetCharactersCharacterIdPlanetsPlanetIdOptions): Promise<EsiResponse<GetCharactersCharacterIdPlanetsPlanetIdOutput>> {
-    const arguments_: GetCharactersCharacterIdPlanetsPlanetIdInput = { path: { "character_id": characterId, "planet_id": planetId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getColonyLayout(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']>["character_id"], planetId: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']>["planet_id"], options?: GetCharactersCharacterIdPlanetsPlanetIdOptions): Promise<EsiResponse<GetCharactersCharacterIdPlanetsPlanetIdResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData> = { path: { "character_id": characterId, "planet_id": planetId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdPlanetsPlanetIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getSchematic(schematicId: NonNullable<GetUniverseSchematicsSchematicIdInput['path']>["schematic_id"], options?: GetUniverseSchematicsSchematicIdOptions): Promise<EsiResponse<GetUniverseSchematicsSchematicIdOutput>> {
-    const arguments_: GetUniverseSchematicsSchematicIdInput = { path: { "schematic_id": schematicId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getSchematic(schematicId: NonNullable<OperationArguments<GetUniverseSchematicsSchematicIdData>['path']>["schematic_id"], options?: GetUniverseSchematicsSchematicIdOptions): Promise<EsiResponse<GetUniverseSchematicsSchematicIdResponse>> {
+    const arguments_: OperationArguments<GetUniverseSchematicsSchematicIdData> = { path: { "schematic_id": schematicId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetUniverseSchematicsSchematicIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listColonies(characterId: NonNullable<GetCharactersCharacterIdPlanetsInput['path']>["character_id"], options?: GetCharactersCharacterIdPlanetsOptions): Promise<EsiResponse<GetCharactersCharacterIdPlanetsOutput>> {
-    const arguments_: GetCharactersCharacterIdPlanetsInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listColonies(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsData>['path']>["character_id"], options?: GetCharactersCharacterIdPlanetsOptions): Promise<EsiResponse<GetCharactersCharacterIdPlanetsResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdPlanetsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdPlanetsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCustomsOffices(corporationId: NonNullable<GetCorporationsCorporationIdCustomsOfficesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdCustomsOfficesOptions): Promise<EsiResponse<GetCorporationsCorporationIdCustomsOfficesOutput>> {
-    const arguments_: GetCorporationsCorporationIdCustomsOfficesInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCustomsOffices(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdCustomsOfficesOptions): Promise<EsiResponse<GetCorporationsCorporationIdCustomsOfficesResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdCustomsOfficesData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdCustomsOfficesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -68,19 +69,19 @@ class PlanetaryInteractionDomainClientImplementation implements PlanetaryInterac
     Object.freeze(this);
   }
 
-  getColonyLayout(characterId: NonNullable<GetCharactersCharacterIdPlanetsPlanetIdInput['path']>["character_id"], planetId: NonNullable<GetCharactersCharacterIdPlanetsPlanetIdInput['path']>["planet_id"], options?: GetCharactersCharacterIdPlanetsPlanetIdOptions): Promise<GetCharactersCharacterIdPlanetsPlanetIdOutput> {
+  getColonyLayout(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']>["character_id"], planetId: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsPlanetIdData>['path']>["planet_id"], options?: GetCharactersCharacterIdPlanetsPlanetIdOptions): Promise<GetCharactersCharacterIdPlanetsPlanetIdResponse> {
     return this.#metadata.getColonyLayout(characterId, planetId, options).then((response) => response.data);
   }
 
-  getSchematic(schematicId: NonNullable<GetUniverseSchematicsSchematicIdInput['path']>["schematic_id"], options?: GetUniverseSchematicsSchematicIdOptions): Promise<GetUniverseSchematicsSchematicIdOutput> {
+  getSchematic(schematicId: NonNullable<OperationArguments<GetUniverseSchematicsSchematicIdData>['path']>["schematic_id"], options?: GetUniverseSchematicsSchematicIdOptions): Promise<GetUniverseSchematicsSchematicIdResponse> {
     return this.#metadata.getSchematic(schematicId, options).then((response) => response.data);
   }
 
-  listColonies(characterId: NonNullable<GetCharactersCharacterIdPlanetsInput['path']>["character_id"], options?: GetCharactersCharacterIdPlanetsOptions): Promise<GetCharactersCharacterIdPlanetsOutput> {
+  listColonies(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdPlanetsData>['path']>["character_id"], options?: GetCharactersCharacterIdPlanetsOptions): Promise<GetCharactersCharacterIdPlanetsResponse> {
     return this.#metadata.listColonies(characterId, options).then((response) => response.data);
   }
 
-  listCustomsOffices(corporationId: NonNullable<GetCorporationsCorporationIdCustomsOfficesInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdCustomsOfficesOptions): Promise<GetCorporationsCorporationIdCustomsOfficesOutput> {
+  listCustomsOffices(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdCustomsOfficesData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdCustomsOfficesOptions): Promise<GetCorporationsCorporationIdCustomsOfficesResponse> {
     return this.#metadata.listCustomsOffices(corporationId, options).then((response) => response.data);
   }
 

@@ -1,6 +1,5 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreWorkspaces": ["packages/esi-client"],
   "workspaces": {
     ".": {
       "entry": [
@@ -32,6 +31,11 @@
         "tests/**/*.types.ts",
       ],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
+    },
+    "packages/esi-client": {
+      // Generated artifacts and generator helpers are validated by this package's dedicated suite.
+      "entry": ["{src,scripts,tests,examples}/**/*.{ts,js}"],
+      "project": ["{src,scripts,tests,examples}/**/*.{ts,js}"],
     },
     "packages/platform-module-contract": {
       "project": ["src/**/*.ts"],

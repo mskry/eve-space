@@ -4,406 +4,407 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetUniverseAncestriesInput,
-  GetUniverseAncestriesOutput,
-  GetUniverseAsteroidBeltsAsteroidBeltIdInput,
-  GetUniverseAsteroidBeltsAsteroidBeltIdOutput,
-  GetUniverseBloodlinesInput,
-  GetUniverseBloodlinesOutput,
-  GetUniverseCategoriesCategoryIdInput,
-  GetUniverseCategoriesCategoryIdOutput,
-  GetUniverseCategoriesInput,
-  GetUniverseCategoriesOutput,
-  GetUniverseConstellationsConstellationIdInput,
-  GetUniverseConstellationsConstellationIdOutput,
-  GetUniverseConstellationsInput,
-  GetUniverseConstellationsOutput,
-  GetUniverseFactionsInput,
-  GetUniverseFactionsOutput,
-  GetUniverseGraphicsGraphicIdInput,
-  GetUniverseGraphicsGraphicIdOutput,
-  GetUniverseGraphicsInput,
-  GetUniverseGraphicsOutput,
-  GetUniverseGroupsGroupIdInput,
-  GetUniverseGroupsGroupIdOutput,
-  GetUniverseGroupsInput,
-  GetUniverseGroupsOutput,
-  GetUniverseMoonsMoonIdInput,
-  GetUniverseMoonsMoonIdOutput,
-  GetUniversePlanetsPlanetIdInput,
-  GetUniversePlanetsPlanetIdOutput,
-  GetUniverseRacesInput,
-  GetUniverseRacesOutput,
-  GetUniverseRegionsInput,
-  GetUniverseRegionsOutput,
-  GetUniverseRegionsRegionIdInput,
-  GetUniverseRegionsRegionIdOutput,
-  GetUniverseStargatesStargateIdInput,
-  GetUniverseStargatesStargateIdOutput,
-  GetUniverseStarsStarIdInput,
-  GetUniverseStarsStarIdOutput,
-  GetUniverseStationsStationIdInput,
-  GetUniverseStationsStationIdOutput,
-  GetUniverseStructuresInput,
-  GetUniverseStructuresOutput,
-  GetUniverseStructuresStructureIdInput,
-  GetUniverseStructuresStructureIdOutput,
-  GetUniverseSystemJumpsInput,
-  GetUniverseSystemJumpsOutput,
-  GetUniverseSystemKillsInput,
-  GetUniverseSystemKillsOutput,
-  GetUniverseSystemsInput,
-  GetUniverseSystemsOutput,
-  GetUniverseSystemsSystemIdInput,
-  GetUniverseSystemsSystemIdOutput,
-  GetUniverseTypesInput,
-  GetUniverseTypesOutput,
-  GetUniverseTypesTypeIdInput,
-  GetUniverseTypesTypeIdOutput,
-  PostUniverseIdsInput,
-  PostUniverseIdsOutput,
-  PostUniverseNamesInput,
-  PostUniverseNamesOutput,
-} from '../../schemas/operations/universe.js';
+  GetUniverseAncestriesData,
+  GetUniverseAncestriesResponse,
+  GetUniverseAsteroidBeltsAsteroidBeltIdData,
+  GetUniverseAsteroidBeltsAsteroidBeltIdResponse,
+  GetUniverseBloodlinesData,
+  GetUniverseBloodlinesResponse,
+  GetUniverseCategoriesCategoryIdData,
+  GetUniverseCategoriesCategoryIdResponse,
+  GetUniverseCategoriesData,
+  GetUniverseCategoriesResponse,
+  GetUniverseConstellationsConstellationIdData,
+  GetUniverseConstellationsConstellationIdResponse,
+  GetUniverseConstellationsData,
+  GetUniverseConstellationsResponse,
+  GetUniverseFactionsData,
+  GetUniverseFactionsResponse,
+  GetUniverseGraphicsData,
+  GetUniverseGraphicsGraphicIdData,
+  GetUniverseGraphicsGraphicIdResponse,
+  GetUniverseGraphicsResponse,
+  GetUniverseGroupsData,
+  GetUniverseGroupsGroupIdData,
+  GetUniverseGroupsGroupIdResponse,
+  GetUniverseGroupsResponse,
+  GetUniverseMoonsMoonIdData,
+  GetUniverseMoonsMoonIdResponse,
+  GetUniversePlanetsPlanetIdData,
+  GetUniversePlanetsPlanetIdResponse,
+  GetUniverseRacesData,
+  GetUniverseRacesResponse,
+  GetUniverseRegionsData,
+  GetUniverseRegionsRegionIdData,
+  GetUniverseRegionsRegionIdResponse,
+  GetUniverseRegionsResponse,
+  GetUniverseStargatesStargateIdData,
+  GetUniverseStargatesStargateIdResponse,
+  GetUniverseStarsStarIdData,
+  GetUniverseStarsStarIdResponse,
+  GetUniverseStationsStationIdData,
+  GetUniverseStationsStationIdResponse,
+  GetUniverseStructuresData,
+  GetUniverseStructuresResponse,
+  GetUniverseStructuresStructureIdData,
+  GetUniverseStructuresStructureIdResponse,
+  GetUniverseSystemJumpsData,
+  GetUniverseSystemJumpsResponse,
+  GetUniverseSystemKillsData,
+  GetUniverseSystemKillsResponse,
+  GetUniverseSystemsData,
+  GetUniverseSystemsResponse,
+  GetUniverseSystemsSystemIdData,
+  GetUniverseSystemsSystemIdResponse,
+  GetUniverseTypesData,
+  GetUniverseTypesResponse,
+  GetUniverseTypesTypeIdData,
+  GetUniverseTypesTypeIdResponse,
+  PostUniverseIdsData,
+  PostUniverseIdsResponse,
+  PostUniverseNamesData,
+  PostUniverseNamesResponse,
+} from '../../types.gen.js';
 
 export interface GetUniverseAsteroidBeltsAsteroidBeltIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseAsteroidBeltsAsteroidBeltIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseAsteroidBeltsAsteroidBeltIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseAsteroidBeltsAsteroidBeltIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseConstellationsConstellationIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseConstellationsConstellationIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseConstellationsConstellationIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseConstellationsConstellationIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseGraphicsGraphicIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseGraphicsGraphicIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseGraphicsGraphicIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseGraphicsGraphicIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseCategoriesCategoryIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseCategoriesCategoryIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseCategoriesCategoryIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseCategoriesCategoryIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseGroupsGroupIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseGroupsGroupIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseGroupsGroupIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseGroupsGroupIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseMoonsMoonIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseMoonsMoonIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseMoonsMoonIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseMoonsMoonIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniversePlanetsPlanetIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniversePlanetsPlanetIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniversePlanetsPlanetIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniversePlanetsPlanetIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseRegionsRegionIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseRegionsRegionIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseRegionsRegionIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseRegionsRegionIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseSystemsSystemIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseSystemsSystemIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseSystemsSystemIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseSystemsSystemIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseStarsStarIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseStarsStarIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseStarsStarIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseStarsStarIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStarsStarIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStarsStarIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStarsStarIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseStargatesStargateIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseStargatesStargateIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseStargatesStargateIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseStargatesStargateIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseStationsStationIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseStationsStationIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseStationsStationIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseStationsStationIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStationsStationIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStationsStationIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStationsStationIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseStructuresStructureIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseStructuresStructureIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseStructuresStructureIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseStructuresStructureIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseTypesTypeIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseTypesTypeIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseTypesTypeIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseTypesTypeIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseAncestriesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseAncestriesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseAncestriesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseAncestriesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseAncestriesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseAncestriesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseAncestriesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseBloodlinesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseBloodlinesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseBloodlinesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseBloodlinesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseBloodlinesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseBloodlinesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseBloodlinesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseConstellationsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseConstellationsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseConstellationsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseConstellationsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseConstellationsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseConstellationsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseConstellationsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseFactionsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseFactionsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseFactionsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseFactionsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseFactionsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseFactionsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseFactionsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseGraphicsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseGraphicsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseGraphicsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseGraphicsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGraphicsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGraphicsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGraphicsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseCategoriesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseCategoriesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseCategoriesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseCategoriesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseCategoriesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseCategoriesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseCategoriesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseGroupsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseGroupsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseGroupsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetUniverseGroupsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetUniverseGroupsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseGroupsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseGroupsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetUniverseGroupsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseGroupsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseStructuresOptions {
   readonly "compatibilityDate"?: string;
-  readonly "filter"?: NonNullable<GetUniverseStructuresInput["query"]>["filter"];
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseStructuresInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseStructuresInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseStructuresInput["header"]>["X-Tenant"];
+  readonly "filter"?: NonNullable<OperationArguments<GetUniverseStructuresData>["query"]>["filter"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseStructuresData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseStructuresData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseStructuresData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseRacesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseRacesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseRacesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseRacesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseRacesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseRacesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseRacesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseRegionsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseRegionsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseRegionsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseRegionsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseRegionsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseRegionsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseRegionsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseSystemsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseSystemsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseSystemsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseSystemsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseSystemJumpsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseSystemJumpsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseSystemJumpsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseSystemJumpsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemJumpsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemJumpsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemJumpsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseSystemKillsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseSystemKillsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseSystemKillsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetUniverseSystemKillsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseSystemKillsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseSystemKillsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseSystemKillsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetUniverseTypesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetUniverseTypesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetUniverseTypesInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetUniverseTypesInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetUniverseTypesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetUniverseTypesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetUniverseTypesData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetUniverseTypesData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetUniverseTypesData>["headers"]>["X-Tenant"];
 }
 
 export interface PostUniverseIdsOptions {
-  readonly "body": PostUniverseIdsInput['body'];
+  readonly "body": OperationArguments<PostUniverseIdsData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostUniverseIdsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostUniverseIdsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostUniverseIdsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUniverseIdsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUniverseIdsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostUniverseIdsData>["headers"]>["X-Tenant"];
 }
 
 export interface PostUniverseNamesOptions {
-  readonly "body": PostUniverseNamesInput['body'];
+  readonly "body": OperationArguments<PostUniverseNamesData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostUniverseNamesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostUniverseNamesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostUniverseNamesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostUniverseNamesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostUniverseNamesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostUniverseNamesData>["headers"]>["X-Tenant"];
 }
 
 export interface UniverseDomainClient {
-  getAsteroidBelt(asteroidBeltId: NonNullable<GetUniverseAsteroidBeltsAsteroidBeltIdInput['path']>["asteroid_belt_id"], options?: GetUniverseAsteroidBeltsAsteroidBeltIdOptions): Promise<GetUniverseAsteroidBeltsAsteroidBeltIdOutput>;
+  getAsteroidBelt(asteroidBeltId: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['path']>["asteroid_belt_id"], options?: GetUniverseAsteroidBeltsAsteroidBeltIdOptions): Promise<GetUniverseAsteroidBeltsAsteroidBeltIdResponse>;
 
-  getConstellation(constellationId: NonNullable<GetUniverseConstellationsConstellationIdInput['path']>["constellation_id"], options?: GetUniverseConstellationsConstellationIdOptions): Promise<GetUniverseConstellationsConstellationIdOutput>;
+  getConstellation(constellationId: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>['path']>["constellation_id"], options?: GetUniverseConstellationsConstellationIdOptions): Promise<GetUniverseConstellationsConstellationIdResponse>;
 
-  getGraphic(graphicId: NonNullable<GetUniverseGraphicsGraphicIdInput['path']>["graphic_id"], options?: GetUniverseGraphicsGraphicIdOptions): Promise<GetUniverseGraphicsGraphicIdOutput>;
+  getGraphic(graphicId: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>['path']>["graphic_id"], options?: GetUniverseGraphicsGraphicIdOptions): Promise<GetUniverseGraphicsGraphicIdResponse>;
 
-  getItemCategory(categoryId: NonNullable<GetUniverseCategoriesCategoryIdInput['path']>["category_id"], options?: GetUniverseCategoriesCategoryIdOptions): Promise<GetUniverseCategoriesCategoryIdOutput>;
+  getItemCategory(categoryId: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>['path']>["category_id"], options?: GetUniverseCategoriesCategoryIdOptions): Promise<GetUniverseCategoriesCategoryIdResponse>;
 
-  getItemGroup(groupId: NonNullable<GetUniverseGroupsGroupIdInput['path']>["group_id"], options?: GetUniverseGroupsGroupIdOptions): Promise<GetUniverseGroupsGroupIdOutput>;
+  getItemGroup(groupId: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>['path']>["group_id"], options?: GetUniverseGroupsGroupIdOptions): Promise<GetUniverseGroupsGroupIdResponse>;
 
-  getMoon(moonId: NonNullable<GetUniverseMoonsMoonIdInput['path']>["moon_id"], options?: GetUniverseMoonsMoonIdOptions): Promise<GetUniverseMoonsMoonIdOutput>;
+  getMoon(moonId: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>['path']>["moon_id"], options?: GetUniverseMoonsMoonIdOptions): Promise<GetUniverseMoonsMoonIdResponse>;
 
-  getPlanet(planetId: NonNullable<GetUniversePlanetsPlanetIdInput['path']>["planet_id"], options?: GetUniversePlanetsPlanetIdOptions): Promise<GetUniversePlanetsPlanetIdOutput>;
+  getPlanet(planetId: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>['path']>["planet_id"], options?: GetUniversePlanetsPlanetIdOptions): Promise<GetUniversePlanetsPlanetIdResponse>;
 
-  getRegion(regionId: NonNullable<GetUniverseRegionsRegionIdInput['path']>["region_id"], options?: GetUniverseRegionsRegionIdOptions): Promise<GetUniverseRegionsRegionIdOutput>;
+  getRegion(regionId: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>['path']>["region_id"], options?: GetUniverseRegionsRegionIdOptions): Promise<GetUniverseRegionsRegionIdResponse>;
 
-  getSolarSystem(systemId: NonNullable<GetUniverseSystemsSystemIdInput['path']>["system_id"], options?: GetUniverseSystemsSystemIdOptions): Promise<GetUniverseSystemsSystemIdOutput>;
+  getSolarSystem(systemId: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>['path']>["system_id"], options?: GetUniverseSystemsSystemIdOptions): Promise<GetUniverseSystemsSystemIdResponse>;
 
-  getStar(starId: NonNullable<GetUniverseStarsStarIdInput['path']>["star_id"], options?: GetUniverseStarsStarIdOptions): Promise<GetUniverseStarsStarIdOutput>;
+  getStar(starId: NonNullable<OperationArguments<GetUniverseStarsStarIdData>['path']>["star_id"], options?: GetUniverseStarsStarIdOptions): Promise<GetUniverseStarsStarIdResponse>;
 
-  getStargate(stargateId: NonNullable<GetUniverseStargatesStargateIdInput['path']>["stargate_id"], options?: GetUniverseStargatesStargateIdOptions): Promise<GetUniverseStargatesStargateIdOutput>;
+  getStargate(stargateId: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>['path']>["stargate_id"], options?: GetUniverseStargatesStargateIdOptions): Promise<GetUniverseStargatesStargateIdResponse>;
 
-  getStation(stationId: NonNullable<GetUniverseStationsStationIdInput['path']>["station_id"], options?: GetUniverseStationsStationIdOptions): Promise<GetUniverseStationsStationIdOutput>;
+  getStation(stationId: NonNullable<OperationArguments<GetUniverseStationsStationIdData>['path']>["station_id"], options?: GetUniverseStationsStationIdOptions): Promise<GetUniverseStationsStationIdResponse>;
 
-  getStructure(structureId: NonNullable<GetUniverseStructuresStructureIdInput['path']>["structure_id"], options?: GetUniverseStructuresStructureIdOptions): Promise<GetUniverseStructuresStructureIdOutput>;
+  getStructure(structureId: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>['path']>["structure_id"], options?: GetUniverseStructuresStructureIdOptions): Promise<GetUniverseStructuresStructureIdResponse>;
 
-  getType(typeId: NonNullable<GetUniverseTypesTypeIdInput['path']>["type_id"], options?: GetUniverseTypesTypeIdOptions): Promise<GetUniverseTypesTypeIdOutput>;
+  getType(typeId: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>['path']>["type_id"], options?: GetUniverseTypesTypeIdOptions): Promise<GetUniverseTypesTypeIdResponse>;
 
-  listAncestries(options?: GetUniverseAncestriesOptions): Promise<GetUniverseAncestriesOutput>;
+  listAncestries(options?: GetUniverseAncestriesOptions): Promise<GetUniverseAncestriesResponse>;
 
-  listBloodlines(options?: GetUniverseBloodlinesOptions): Promise<GetUniverseBloodlinesOutput>;
+  listBloodlines(options?: GetUniverseBloodlinesOptions): Promise<GetUniverseBloodlinesResponse>;
 
-  listConstellations(options?: GetUniverseConstellationsOptions): Promise<GetUniverseConstellationsOutput>;
+  listConstellations(options?: GetUniverseConstellationsOptions): Promise<GetUniverseConstellationsResponse>;
 
-  listFactions(options?: GetUniverseFactionsOptions): Promise<GetUniverseFactionsOutput>;
+  listFactions(options?: GetUniverseFactionsOptions): Promise<GetUniverseFactionsResponse>;
 
-  listGraphics(options?: GetUniverseGraphicsOptions): Promise<GetUniverseGraphicsOutput>;
+  listGraphics(options?: GetUniverseGraphicsOptions): Promise<GetUniverseGraphicsResponse>;
 
-  listItemCategories(options?: GetUniverseCategoriesOptions): Promise<GetUniverseCategoriesOutput>;
+  listItemCategories(options?: GetUniverseCategoriesOptions): Promise<GetUniverseCategoriesResponse>;
 
-  listItemGroups(options?: GetUniverseGroupsOptions): Promise<GetUniverseGroupsOutput>;
+  listItemGroups(options?: GetUniverseGroupsOptions): Promise<GetUniverseGroupsResponse>;
 
-  listPublicStructures(options?: GetUniverseStructuresOptions): Promise<GetUniverseStructuresOutput>;
+  listPublicStructures(options?: GetUniverseStructuresOptions): Promise<GetUniverseStructuresResponse>;
 
-  listRaces(options?: GetUniverseRacesOptions): Promise<GetUniverseRacesOutput>;
+  listRaces(options?: GetUniverseRacesOptions): Promise<GetUniverseRacesResponse>;
 
-  listRegions(options?: GetUniverseRegionsOptions): Promise<GetUniverseRegionsOutput>;
+  listRegions(options?: GetUniverseRegionsOptions): Promise<GetUniverseRegionsResponse>;
 
-  listSolarSystems(options?: GetUniverseSystemsOptions): Promise<GetUniverseSystemsOutput>;
+  listSolarSystems(options?: GetUniverseSystemsOptions): Promise<GetUniverseSystemsResponse>;
 
-  listSystemJumps(options?: GetUniverseSystemJumpsOptions): Promise<GetUniverseSystemJumpsOutput>;
+  listSystemJumps(options?: GetUniverseSystemJumpsOptions): Promise<GetUniverseSystemJumpsResponse>;
 
-  listSystemKills(options?: GetUniverseSystemKillsOptions): Promise<GetUniverseSystemKillsOutput>;
+  listSystemKills(options?: GetUniverseSystemKillsOptions): Promise<GetUniverseSystemKillsResponse>;
 
-  listTypes(options?: GetUniverseTypesOptions): Promise<GetUniverseTypesOutput>;
+  listTypes(options?: GetUniverseTypesOptions): Promise<GetUniverseTypesResponse>;
 
-  resolveIds(options: PostUniverseIdsOptions): Promise<PostUniverseIdsOutput>;
+  resolveIds(options: PostUniverseIdsOptions): Promise<PostUniverseIdsResponse>;
 
-  resolveNames(options: PostUniverseNamesOptions): Promise<PostUniverseNamesOutput>;
+  resolveNames(options: PostUniverseNamesOptions): Promise<PostUniverseNamesResponse>;
 
   withMetadata(): UniverseDomainClientWithMetadata;
 }
 
 export interface UniverseDomainClientWithMetadata {
-  getAsteroidBelt(asteroidBeltId: NonNullable<GetUniverseAsteroidBeltsAsteroidBeltIdInput['path']>["asteroid_belt_id"], options?: GetUniverseAsteroidBeltsAsteroidBeltIdOptions): Promise<EsiResponse<GetUniverseAsteroidBeltsAsteroidBeltIdOutput>>;
+  getAsteroidBelt(asteroidBeltId: NonNullable<OperationArguments<GetUniverseAsteroidBeltsAsteroidBeltIdData>['path']>["asteroid_belt_id"], options?: GetUniverseAsteroidBeltsAsteroidBeltIdOptions): Promise<EsiResponse<GetUniverseAsteroidBeltsAsteroidBeltIdResponse>>;
 
-  getConstellation(constellationId: NonNullable<GetUniverseConstellationsConstellationIdInput['path']>["constellation_id"], options?: GetUniverseConstellationsConstellationIdOptions): Promise<EsiResponse<GetUniverseConstellationsConstellationIdOutput>>;
+  getConstellation(constellationId: NonNullable<OperationArguments<GetUniverseConstellationsConstellationIdData>['path']>["constellation_id"], options?: GetUniverseConstellationsConstellationIdOptions): Promise<EsiResponse<GetUniverseConstellationsConstellationIdResponse>>;
 
-  getGraphic(graphicId: NonNullable<GetUniverseGraphicsGraphicIdInput['path']>["graphic_id"], options?: GetUniverseGraphicsGraphicIdOptions): Promise<EsiResponse<GetUniverseGraphicsGraphicIdOutput>>;
+  getGraphic(graphicId: NonNullable<OperationArguments<GetUniverseGraphicsGraphicIdData>['path']>["graphic_id"], options?: GetUniverseGraphicsGraphicIdOptions): Promise<EsiResponse<GetUniverseGraphicsGraphicIdResponse>>;
 
-  getItemCategory(categoryId: NonNullable<GetUniverseCategoriesCategoryIdInput['path']>["category_id"], options?: GetUniverseCategoriesCategoryIdOptions): Promise<EsiResponse<GetUniverseCategoriesCategoryIdOutput>>;
+  getItemCategory(categoryId: NonNullable<OperationArguments<GetUniverseCategoriesCategoryIdData>['path']>["category_id"], options?: GetUniverseCategoriesCategoryIdOptions): Promise<EsiResponse<GetUniverseCategoriesCategoryIdResponse>>;
 
-  getItemGroup(groupId: NonNullable<GetUniverseGroupsGroupIdInput['path']>["group_id"], options?: GetUniverseGroupsGroupIdOptions): Promise<EsiResponse<GetUniverseGroupsGroupIdOutput>>;
+  getItemGroup(groupId: NonNullable<OperationArguments<GetUniverseGroupsGroupIdData>['path']>["group_id"], options?: GetUniverseGroupsGroupIdOptions): Promise<EsiResponse<GetUniverseGroupsGroupIdResponse>>;
 
-  getMoon(moonId: NonNullable<GetUniverseMoonsMoonIdInput['path']>["moon_id"], options?: GetUniverseMoonsMoonIdOptions): Promise<EsiResponse<GetUniverseMoonsMoonIdOutput>>;
+  getMoon(moonId: NonNullable<OperationArguments<GetUniverseMoonsMoonIdData>['path']>["moon_id"], options?: GetUniverseMoonsMoonIdOptions): Promise<EsiResponse<GetUniverseMoonsMoonIdResponse>>;
 
-  getPlanet(planetId: NonNullable<GetUniversePlanetsPlanetIdInput['path']>["planet_id"], options?: GetUniversePlanetsPlanetIdOptions): Promise<EsiResponse<GetUniversePlanetsPlanetIdOutput>>;
+  getPlanet(planetId: NonNullable<OperationArguments<GetUniversePlanetsPlanetIdData>['path']>["planet_id"], options?: GetUniversePlanetsPlanetIdOptions): Promise<EsiResponse<GetUniversePlanetsPlanetIdResponse>>;
 
-  getRegion(regionId: NonNullable<GetUniverseRegionsRegionIdInput['path']>["region_id"], options?: GetUniverseRegionsRegionIdOptions): Promise<EsiResponse<GetUniverseRegionsRegionIdOutput>>;
+  getRegion(regionId: NonNullable<OperationArguments<GetUniverseRegionsRegionIdData>['path']>["region_id"], options?: GetUniverseRegionsRegionIdOptions): Promise<EsiResponse<GetUniverseRegionsRegionIdResponse>>;
 
-  getSolarSystem(systemId: NonNullable<GetUniverseSystemsSystemIdInput['path']>["system_id"], options?: GetUniverseSystemsSystemIdOptions): Promise<EsiResponse<GetUniverseSystemsSystemIdOutput>>;
+  getSolarSystem(systemId: NonNullable<OperationArguments<GetUniverseSystemsSystemIdData>['path']>["system_id"], options?: GetUniverseSystemsSystemIdOptions): Promise<EsiResponse<GetUniverseSystemsSystemIdResponse>>;
 
-  getStar(starId: NonNullable<GetUniverseStarsStarIdInput['path']>["star_id"], options?: GetUniverseStarsStarIdOptions): Promise<EsiResponse<GetUniverseStarsStarIdOutput>>;
+  getStar(starId: NonNullable<OperationArguments<GetUniverseStarsStarIdData>['path']>["star_id"], options?: GetUniverseStarsStarIdOptions): Promise<EsiResponse<GetUniverseStarsStarIdResponse>>;
 
-  getStargate(stargateId: NonNullable<GetUniverseStargatesStargateIdInput['path']>["stargate_id"], options?: GetUniverseStargatesStargateIdOptions): Promise<EsiResponse<GetUniverseStargatesStargateIdOutput>>;
+  getStargate(stargateId: NonNullable<OperationArguments<GetUniverseStargatesStargateIdData>['path']>["stargate_id"], options?: GetUniverseStargatesStargateIdOptions): Promise<EsiResponse<GetUniverseStargatesStargateIdResponse>>;
 
-  getStation(stationId: NonNullable<GetUniverseStationsStationIdInput['path']>["station_id"], options?: GetUniverseStationsStationIdOptions): Promise<EsiResponse<GetUniverseStationsStationIdOutput>>;
+  getStation(stationId: NonNullable<OperationArguments<GetUniverseStationsStationIdData>['path']>["station_id"], options?: GetUniverseStationsStationIdOptions): Promise<EsiResponse<GetUniverseStationsStationIdResponse>>;
 
-  getStructure(structureId: NonNullable<GetUniverseStructuresStructureIdInput['path']>["structure_id"], options?: GetUniverseStructuresStructureIdOptions): Promise<EsiResponse<GetUniverseStructuresStructureIdOutput>>;
+  getStructure(structureId: NonNullable<OperationArguments<GetUniverseStructuresStructureIdData>['path']>["structure_id"], options?: GetUniverseStructuresStructureIdOptions): Promise<EsiResponse<GetUniverseStructuresStructureIdResponse>>;
 
-  getType(typeId: NonNullable<GetUniverseTypesTypeIdInput['path']>["type_id"], options?: GetUniverseTypesTypeIdOptions): Promise<EsiResponse<GetUniverseTypesTypeIdOutput>>;
+  getType(typeId: NonNullable<OperationArguments<GetUniverseTypesTypeIdData>['path']>["type_id"], options?: GetUniverseTypesTypeIdOptions): Promise<EsiResponse<GetUniverseTypesTypeIdResponse>>;
 
-  listAncestries(options?: GetUniverseAncestriesOptions): Promise<EsiResponse<GetUniverseAncestriesOutput>>;
+  listAncestries(options?: GetUniverseAncestriesOptions): Promise<EsiResponse<GetUniverseAncestriesResponse>>;
 
-  listBloodlines(options?: GetUniverseBloodlinesOptions): Promise<EsiResponse<GetUniverseBloodlinesOutput>>;
+  listBloodlines(options?: GetUniverseBloodlinesOptions): Promise<EsiResponse<GetUniverseBloodlinesResponse>>;
 
-  listConstellations(options?: GetUniverseConstellationsOptions): Promise<EsiResponse<GetUniverseConstellationsOutput>>;
+  listConstellations(options?: GetUniverseConstellationsOptions): Promise<EsiResponse<GetUniverseConstellationsResponse>>;
 
-  listFactions(options?: GetUniverseFactionsOptions): Promise<EsiResponse<GetUniverseFactionsOutput>>;
+  listFactions(options?: GetUniverseFactionsOptions): Promise<EsiResponse<GetUniverseFactionsResponse>>;
 
-  listGraphics(options?: GetUniverseGraphicsOptions): Promise<EsiResponse<GetUniverseGraphicsOutput>>;
+  listGraphics(options?: GetUniverseGraphicsOptions): Promise<EsiResponse<GetUniverseGraphicsResponse>>;
 
-  listItemCategories(options?: GetUniverseCategoriesOptions): Promise<EsiResponse<GetUniverseCategoriesOutput>>;
+  listItemCategories(options?: GetUniverseCategoriesOptions): Promise<EsiResponse<GetUniverseCategoriesResponse>>;
 
-  listItemGroups(options?: GetUniverseGroupsOptions): Promise<EsiResponse<GetUniverseGroupsOutput>>;
+  listItemGroups(options?: GetUniverseGroupsOptions): Promise<EsiResponse<GetUniverseGroupsResponse>>;
 
-  listPublicStructures(options?: GetUniverseStructuresOptions): Promise<EsiResponse<GetUniverseStructuresOutput>>;
+  listPublicStructures(options?: GetUniverseStructuresOptions): Promise<EsiResponse<GetUniverseStructuresResponse>>;
 
-  listRaces(options?: GetUniverseRacesOptions): Promise<EsiResponse<GetUniverseRacesOutput>>;
+  listRaces(options?: GetUniverseRacesOptions): Promise<EsiResponse<GetUniverseRacesResponse>>;
 
-  listRegions(options?: GetUniverseRegionsOptions): Promise<EsiResponse<GetUniverseRegionsOutput>>;
+  listRegions(options?: GetUniverseRegionsOptions): Promise<EsiResponse<GetUniverseRegionsResponse>>;
 
-  listSolarSystems(options?: GetUniverseSystemsOptions): Promise<EsiResponse<GetUniverseSystemsOutput>>;
+  listSolarSystems(options?: GetUniverseSystemsOptions): Promise<EsiResponse<GetUniverseSystemsResponse>>;
 
-  listSystemJumps(options?: GetUniverseSystemJumpsOptions): Promise<EsiResponse<GetUniverseSystemJumpsOutput>>;
+  listSystemJumps(options?: GetUniverseSystemJumpsOptions): Promise<EsiResponse<GetUniverseSystemJumpsResponse>>;
 
-  listSystemKills(options?: GetUniverseSystemKillsOptions): Promise<EsiResponse<GetUniverseSystemKillsOutput>>;
+  listSystemKills(options?: GetUniverseSystemKillsOptions): Promise<EsiResponse<GetUniverseSystemKillsResponse>>;
 
-  listTypes(options?: GetUniverseTypesOptions): Promise<EsiResponse<GetUniverseTypesOutput>>;
+  listTypes(options?: GetUniverseTypesOptions): Promise<EsiResponse<GetUniverseTypesResponse>>;
 
-  resolveIds(options: PostUniverseIdsOptions): Promise<EsiResponse<PostUniverseIdsOutput>>;
+  resolveIds(options: PostUniverseIdsOptions): Promise<EsiResponse<PostUniverseIdsResponse>>;
 
-  resolveNames(options: PostUniverseNamesOptions): Promise<EsiResponse<PostUniverseNamesOutput>>;
+  resolveNames(options: PostUniverseNamesOptions): Promise<EsiResponse<PostUniverseNamesResponse>>;
 }

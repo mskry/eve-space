@@ -1,3 +1,5 @@
+name: eve-space
+
 services:
   postgres:
     image: postgres:17-alpine
@@ -89,7 +91,7 @@ services:
       EVE_CLIENT_SECRET: ${EVE_CLIENT_SECRET:-}
       EVE_CALLBACK_URL: ${EVE_CALLBACK_URL:-http://localhost:8788/auth/eve/callback}
       EVE_SCOPES: ${EVE_SCOPES:-esi-assets.read_assets.v1 esi-wallet.read_character_wallet.v1 esi-markets.read_character_orders.v1 esi-contracts.read_character_contracts.v1 esi-location.read_location.v1 esi-location.read_ship_type.v1 esi-skills.read_skills.v1 esi-skills.read_skillqueue.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-mail.read_mail.v1 esi-mail.organize_mail.v1 esi-mail.send_mail.v1 esi-search.search_structures.v1 esi-characters.read_contacts.v1}
-      ESI_USER_AGENT: ${ESI_USER_AGENT:-EveSpace/0.1 @evespace/esi-client/2.0.0}
+      ESI_USER_AGENT: ${ESI_USER_AGENT:-EveSpace/0.1 @evespace/esi-client/3.0.0}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
       ADMIN_SETUP_SECRET: ${ADMIN_SETUP_SECRET:-}
       SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}

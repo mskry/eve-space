@@ -4,9 +4,10 @@
 // DO NOT EDIT.
 
 import { createCorporationClient } from '@evespace/esi-client/domains/corporation';
+import type { GetCorporationsCorporationIdResponse } from '@evespace/esi-client/types';
 
 const client = createCorporationClient();
 
 const corporationId = 98000001;
 
-const data = await client.getPublicInfo(corporationId);
+const data: GetCorporationsCorporationIdResponse = await client.getPublicInfo(corporationId);

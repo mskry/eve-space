@@ -31,6 +31,7 @@ describe('generated example type-check project', () => {
       'examples/generated/mutation-safety.ts',
       'examples/generated/paginated.ts',
       'examples/generated/public.ts',
+      'examples/generated/schema-validation.ts',
       'examples/generated/validation-error.ts',
     ]);
   });

@@ -16,7 +16,10 @@ import {
   createSerializableOperationManifest,
   type SerializableOperationManifest,
 } from '../scripts/generate/operation-registry.ts';
-import type { EmitterContext, GenerationProvenance } from '../scripts/generate/orchestrate.ts';
+import type {
+  EmitterContext,
+  GenerationProvenance,
+} from '../scripts/generate/generation-contracts.ts';
 import { makeTemporaryDirectory } from './helpers/temporary-directory.js';
 
 const operationCount = 233;
@@ -27,6 +30,7 @@ const representativePaths = [
   'mutation-safety.ts',
   'paginated.ts',
   'public.ts',
+  'schema-validation.ts',
   'validation-error.ts',
 ];
 
@@ -60,6 +64,9 @@ describe('generated examples', () => {
       expect(snippets.genericExecution).toContain(
         `client.callOperation('${operation.operationId}', arguments_`,
       );
+      expect(snippets.genericExecution).toContain(operation.requestType.export);
+      expect(snippets.genericExecution).toContain(operation.responseType.export);
+      expect(snippets.genericExecution).toContain("from '@evespace/esi-client/types';");
       expect(syntaxDiagnostics(snippets.domainMethod)).toEqual([]);
       expect(syntaxDiagnostics(snippets.standaloneDomainMethod)).toEqual([]);
       expect(syntaxDiagnostics(snippets.genericExecution)).toEqual([]);
@@ -119,6 +126,10 @@ describe('generated examples', () => {
     expect(mutation).toContain('generic gates do not apply');
     expect(mutation).toContain('allowGenericMutations: true');
     expect(mutation).toContain('confirmMutation: true');
+
+    const schemas = rendered.get('schema-validation.ts') ?? '';
+    expect(schemas).toContain("from '@evespace/esi-client/types';");
+    expect(schemas).toContain("from '@evespace/esi-client/zod';");
   });
 
   it('owns one composable examples/generated claim', async () => {

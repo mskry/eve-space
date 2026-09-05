@@ -4,22 +4,35 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdAttributesData,
+  GetCharactersCharacterIdAttributesResponse,
+  GetCharactersCharacterIdSkillqueueData,
+  GetCharactersCharacterIdSkillqueueResponse,
+  GetCharactersCharacterIdSkillsData,
+  GetCharactersCharacterIdSkillsResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdAttributesRequestSchema,
-  GetCharactersCharacterIdAttributesStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdSkillqueueRequestSchema,
-  GetCharactersCharacterIdSkillqueueStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdSkillsRequestSchema,
-  GetCharactersCharacterIdSkillsStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdAttributesInput,
-  type GetCharactersCharacterIdAttributesOutput,
-  type GetCharactersCharacterIdSkillqueueInput,
-  type GetCharactersCharacterIdSkillqueueOutput,
-  type GetCharactersCharacterIdSkillsInput,
-  type GetCharactersCharacterIdSkillsOutput,
-} from '../../schemas/operations/skills.js';
+  zGetCharactersCharacterIdAttributesHeaders,
+  zGetCharactersCharacterIdAttributesPath,
+  zGetCharactersCharacterIdAttributesResponse,
+  zGetCharactersCharacterIdSkillqueueHeaders,
+  zGetCharactersCharacterIdSkillqueuePath,
+  zGetCharactersCharacterIdSkillqueueResponse,
+  zGetCharactersCharacterIdSkillsHeaders,
+  zGetCharactersCharacterIdSkillsPath,
+  zGetCharactersCharacterIdSkillsResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdAttributesDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdAttributesInput, GetCharactersCharacterIdAttributesOutput> = {
+export const GetCharactersCharacterIdAttributesRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdAttributesData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdAttributesData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdAttributesHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdAttributesPath },
+});
+
+export const GetCharactersCharacterIdAttributesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdAttributesData>, GetCharactersCharacterIdAttributesResponse> = {
   operationId: "GetCharactersCharacterIdAttributes",
   method: "GET",
   path: "/characters/{character_id}/attributes",
@@ -33,12 +46,17 @@ export const GetCharactersCharacterIdAttributesDescriptor: OperationExecutionDes
   requestSchema: GetCharactersCharacterIdAttributesRequestSchema,
   authentication: { scopes: ["esi-skills.read_skills.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdAttributesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdAttributesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdSkillqueueDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdSkillqueueInput, GetCharactersCharacterIdSkillqueueOutput> = {
+export const GetCharactersCharacterIdSkillqueueRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdSkillqueueData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdSkillqueueData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdSkillqueueHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdSkillqueuePath },
+});
+
+export const GetCharactersCharacterIdSkillqueueDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdSkillqueueData>, GetCharactersCharacterIdSkillqueueResponse> = {
   operationId: "GetCharactersCharacterIdSkillqueue",
   method: "GET",
   path: "/characters/{character_id}/skillqueue",
@@ -52,12 +70,17 @@ export const GetCharactersCharacterIdSkillqueueDescriptor: OperationExecutionDes
   requestSchema: GetCharactersCharacterIdSkillqueueRequestSchema,
   authentication: { scopes: ["esi-skills.read_skillqueue.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdSkillqueueStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdSkillqueueResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdSkillsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdSkillsInput, GetCharactersCharacterIdSkillsOutput> = {
+export const GetCharactersCharacterIdSkillsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdSkillsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdSkillsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdSkillsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdSkillsPath },
+});
+
+export const GetCharactersCharacterIdSkillsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdSkillsData>, GetCharactersCharacterIdSkillsResponse> = {
   operationId: "GetCharactersCharacterIdSkills",
   method: "GET",
   path: "/characters/{character_id}/skills",
@@ -71,7 +94,7 @@ export const GetCharactersCharacterIdSkillsDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdSkillsRequestSchema,
   authentication: { scopes: ["esi-skills.read_skills.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdSkillsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdSkillsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

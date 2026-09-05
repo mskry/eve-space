@@ -4,37 +4,38 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdLoyaltyPointsInput,
-  GetCharactersCharacterIdLoyaltyPointsOutput,
-  GetLoyaltyStoresCorporationIdOffersInput,
-  GetLoyaltyStoresCorporationIdOffersOutput,
-} from '../../schemas/operations/loyalty.js';
+  GetCharactersCharacterIdLoyaltyPointsData,
+  GetCharactersCharacterIdLoyaltyPointsResponse,
+  GetLoyaltyStoresCorporationIdOffersData,
+  GetLoyaltyStoresCorporationIdOffersResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdLoyaltyPointsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdLoyaltyPointsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdLoyaltyPointsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdLoyaltyPointsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetLoyaltyStoresCorporationIdOffersOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetLoyaltyStoresCorporationIdOffersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetLoyaltyStoresCorporationIdOffersInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetLoyaltyStoresCorporationIdOffersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>["headers"]>["X-Tenant"];
 }
 
 export interface LoyaltyDomainClient {
-  listPoints(characterId: NonNullable<GetCharactersCharacterIdLoyaltyPointsInput['path']>["character_id"], options?: GetCharactersCharacterIdLoyaltyPointsOptions): Promise<GetCharactersCharacterIdLoyaltyPointsOutput>;
+  listPoints(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['path']>["character_id"], options?: GetCharactersCharacterIdLoyaltyPointsOptions): Promise<GetCharactersCharacterIdLoyaltyPointsResponse>;
 
-  listStoreOffers(corporationId: NonNullable<GetLoyaltyStoresCorporationIdOffersInput['path']>["corporation_id"], options?: GetLoyaltyStoresCorporationIdOffersOptions): Promise<GetLoyaltyStoresCorporationIdOffersOutput>;
+  listStoreOffers(corporationId: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['path']>["corporation_id"], options?: GetLoyaltyStoresCorporationIdOffersOptions): Promise<GetLoyaltyStoresCorporationIdOffersResponse>;
 
   withMetadata(): LoyaltyDomainClientWithMetadata;
 }
 
 export interface LoyaltyDomainClientWithMetadata {
-  listPoints(characterId: NonNullable<GetCharactersCharacterIdLoyaltyPointsInput['path']>["character_id"], options?: GetCharactersCharacterIdLoyaltyPointsOptions): Promise<EsiResponse<GetCharactersCharacterIdLoyaltyPointsOutput>>;
+  listPoints(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLoyaltyPointsData>['path']>["character_id"], options?: GetCharactersCharacterIdLoyaltyPointsOptions): Promise<EsiResponse<GetCharactersCharacterIdLoyaltyPointsResponse>>;
 
-  listStoreOffers(corporationId: NonNullable<GetLoyaltyStoresCorporationIdOffersInput['path']>["corporation_id"], options?: GetLoyaltyStoresCorporationIdOffersOptions): Promise<EsiResponse<GetLoyaltyStoresCorporationIdOffersOutput>>;
+  listStoreOffers(corporationId: NonNullable<OperationArguments<GetLoyaltyStoresCorporationIdOffersData>['path']>["corporation_id"], options?: GetLoyaltyStoresCorporationIdOffersOptions): Promise<EsiResponse<GetLoyaltyStoresCorporationIdOffersResponse>>;
 }

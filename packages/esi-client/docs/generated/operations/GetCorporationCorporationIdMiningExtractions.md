@@ -16,12 +16,13 @@ Moon extraction timers
 - Domain import: `@evespace/esi-client/domains/industry`
 - Domain index: [industry](../domains/industry.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createIndustryClient } from '@evespace/esi-client/domains/industry';
+import type { GetCorporationCorporationIdMiningExtractionsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createIndustryClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.listMoonExtractionTimers(corporationId);
+const data: GetCorporationCorporationIdMiningExtractionsResponse = await client.listMoonExtractionTimers(corporationId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCorporationCorporationIdMiningExtractionsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.industry.listMoonExtractionTimers(corporationId);
+const data: GetCorporationCorporationIdMiningExtractionsResponse = await client.industry.listMoonExtractionTimers(corporationId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.industry.listMoonExtractionTimers(corporationId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCorporationCorporationIdMiningExtractionsData, GetCorporationCorporationIdMiningExtractionsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const corporationId = 98000001;
 const arguments_: CallOperationArguments<'GetCorporationCorporationIdMiningExtractions'> = { path: { "corporation_id": corporationId } };
 
 const response = await client.callOperation('GetCorporationCorporationIdMiningExtractions', arguments_);
+const data: GetCorporationCorporationIdMiningExtractionsResponse = response.data;
 ```
 
 ## Parameters
@@ -78,14 +82,16 @@ const response = await client.callOperation('GetCorporationCorporationIdMiningEx
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCorporationCorporationIdMiningExtractionsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCorporationCorporationIdMiningExtractionsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCorporationCorporationIdMiningExtractionsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCorporationCorporationIdMiningExtractionsPath`; `query` uses `@evespace/esi-client/zod` export `zGetCorporationCorporationIdMiningExtractionsQuery`.
+- Response type: `@evespace/esi-client/types` export `GetCorporationCorporationIdMiningExtractionsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.industry.withMetadata().listMoonExtractionTimers(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCorporationCorporationIdMiningExtractionsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCorporationCorporationIdMiningExtractionsResponse` | OK |
 
 ## Authentication
 
@@ -118,6 +124,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

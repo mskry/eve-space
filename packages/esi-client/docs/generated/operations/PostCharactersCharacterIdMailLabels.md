@@ -16,13 +16,13 @@ Create a mail label
 - Domain import: `@evespace/esi-client/domains/mail`
 - Domain index: [mail](../domains/mail.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMailClient } from '@evespace/esi-client/domains/mail';
-import type { PostCharactersCharacterIdMailLabelsOptions } from '@evespace/esi-client/domains/mail';
+import type { PostCharactersCharacterIdMailLabelsResponse, PostCharactersCharacterIdMailLabelsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,17 +30,17 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createMailClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdMailLabelsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdMailLabelsData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.createLabel(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdMailLabelsResponse = await client.createLabel(characterId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostCharactersCharacterIdMailLabelsOptions } from '@evespace/esi-client/domains/mail';
+import type { PostCharactersCharacterIdMailLabelsResponse, PostCharactersCharacterIdMailLabelsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -48,10 +48,10 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdMailLabelsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdMailLabelsData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.mail.createLabel(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdMailLabelsResponse = await client.mail.createLabel(characterId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -59,6 +59,7 @@ const data = await client.mail.createLabel(characterId, { body: requestBody });
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostCharactersCharacterIdMailLabelsData, PostCharactersCharacterIdMailLabelsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -66,7 +67,7 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken, allowGenericMutations: true });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<CallOperationArguments<'PostCharactersCharacterIdMailLabels'>['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdMailLabelsData['body']>;
 
 const arguments_: CallOperationArguments<'PostCharactersCharacterIdMailLabels'> = { path: { "character_id": characterId }, body: requestBody };
 
@@ -74,6 +75,7 @@ const arguments_: CallOperationArguments<'PostCharactersCharacterIdMailLabels'> 
 const response = await client.callOperation('PostCharactersCharacterIdMailLabels', arguments_, {
   confirmMutation: true,
 });
+const data: PostCharactersCharacterIdMailLabelsResponse = response.data;
 ```
 
 ## Parameters
@@ -88,14 +90,16 @@ const response = await client.callOperation('PostCharactersCharacterIdMailLabels
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostCharactersCharacterIdMailLabelsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostCharactersCharacterIdMailLabelsData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdMailLabelsBody`; `headers` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdMailLabelsHeaders`; `path` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdMailLabelsPath`.
+- Response type: `@evespace/esi-client/types` export `PostCharactersCharacterIdMailLabelsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.mail.withMetadata().createLabel(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `201` | json | `@evespace/esi-client/schemas` | `PostCharactersCharacterIdMailLabelsStatus201SuccessResponseSchema` | Created |
+| `201` | json | `@evespace/esi-client/zod` | `zPostCharactersCharacterIdMailLabelsResponse` | Created |
 
 ## Authentication
 
@@ -130,6 +134,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

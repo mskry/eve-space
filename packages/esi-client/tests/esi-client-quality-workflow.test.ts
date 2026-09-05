@@ -20,6 +20,7 @@ describe('ESI client quality workflow', () => {
     for (const path of [
       '.github/workflows/esi-client.yml',
       '.github/workflows/esi-client-publish.yml',
+      '.node-version',
       'package.json',
       'pnpm-lock.yaml',
       'pnpm-workspace.yaml',
@@ -34,7 +35,7 @@ describe('ESI client quality workflow', () => {
     expect(workflow).toMatch(
       /^  analysis:\n    name: ESI client analysis\n    runs-on: ubuntu-latest$/m,
     );
-    expect(workflow.match(/node-version: 22\.18\.0/g)).toHaveLength(2);
+    expect(workflow.match(/node-version-file: '\.node-version'/g)).toHaveLength(2);
     expect(workflow.match(/pnpm install --frozen-lockfile/g)).toHaveLength(2);
     expect(workflow.match(/pnpm --filter @evespace\/esi-client test:coverage/g)).toHaveLength(1);
     expect(workflow).toContain('path: packages/esi-client/coverage/lcov.info');

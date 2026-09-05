@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdCalendarEventIdDescriptor,
@@ -21,15 +22,15 @@ import type {
   PutCharactersCharacterIdCalendarEventIdOptions,
 } from './calendar-contract.js';
 import type {
-  GetCharactersCharacterIdCalendarEventIdAttendeesInput,
-  GetCharactersCharacterIdCalendarEventIdAttendeesOutput,
-  GetCharactersCharacterIdCalendarEventIdInput,
-  GetCharactersCharacterIdCalendarEventIdOutput,
-  GetCharactersCharacterIdCalendarInput,
-  GetCharactersCharacterIdCalendarOutput,
-  PutCharactersCharacterIdCalendarEventIdInput,
-  PutCharactersCharacterIdCalendarEventIdOutput,
-} from '../../schemas/operations/calendar.js';
+  GetCharactersCharacterIdCalendarData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesResponse,
+  GetCharactersCharacterIdCalendarEventIdData,
+  GetCharactersCharacterIdCalendarEventIdResponse,
+  GetCharactersCharacterIdCalendarResponse,
+  PutCharactersCharacterIdCalendarEventIdData,
+  PutCharactersCharacterIdCalendarEventIdResponse,
+} from '../../types.gen.js';
 
 class CalendarDomainClientWithMetadataImplementation implements CalendarDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -39,23 +40,23 @@ class CalendarDomainClientWithMetadataImplementation implements CalendarDomainCl
     Object.freeze(this);
   }
 
-  getEvent(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdOutput>> {
-    const arguments_: GetCharactersCharacterIdCalendarEventIdInput = { path: { "character_id": characterId, "event_id": eventId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getEvent(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdCalendarEventIdData> = { path: { "character_id": characterId, "event_id": eventId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarEventIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listEventAttendees(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdAttendeesOutput>> {
-    const arguments_: GetCharactersCharacterIdCalendarEventIdAttendeesInput = { path: { "character_id": characterId, "event_id": eventId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listEventAttendees(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdAttendeesResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData> = { path: { "character_id": characterId, "event_id": eventId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarEventIdAttendeesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listEvents(characterId: NonNullable<GetCharactersCharacterIdCalendarInput['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarOutput>> {
-    const arguments_: GetCharactersCharacterIdCalendarInput = { path: { "character_id": characterId }, query: { "from_event": options?.["fromEvent"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listEvents(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdCalendarData> = { path: { "character_id": characterId }, query: { "from_event": options?.["fromEvent"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdCalendarDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  respondToEvent(characterId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<PutCharactersCharacterIdCalendarEventIdOutput>> {
-    const arguments_: PutCharactersCharacterIdCalendarEventIdInput = { path: { "character_id": characterId, "event_id": eventId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
+  respondToEvent(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<PutCharactersCharacterIdCalendarEventIdResponse>> {
+    const arguments_: OperationArguments<PutCharactersCharacterIdCalendarEventIdData> = { path: { "character_id": characterId, "event_id": eventId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] }, body: options?.["body"] };
     return executeOperation(this.#configuration, PutCharactersCharacterIdCalendarEventIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -68,19 +69,19 @@ class CalendarDomainClientImplementation implements CalendarDomainClient {
     Object.freeze(this);
   }
 
-  getEvent(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<GetCharactersCharacterIdCalendarEventIdOutput> {
+  getEvent(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<GetCharactersCharacterIdCalendarEventIdResponse> {
     return this.#metadata.getEvent(characterId, eventId, options).then((response) => response.data);
   }
 
-  listEventAttendees(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<GetCharactersCharacterIdCalendarEventIdAttendeesOutput> {
+  listEventAttendees(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<GetCharactersCharacterIdCalendarEventIdAttendeesResponse> {
     return this.#metadata.listEventAttendees(characterId, eventId, options).then((response) => response.data);
   }
 
-  listEvents(characterId: NonNullable<GetCharactersCharacterIdCalendarInput['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<GetCharactersCharacterIdCalendarOutput> {
+  listEvents(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<GetCharactersCharacterIdCalendarResponse> {
     return this.#metadata.listEvents(characterId, options).then((response) => response.data);
   }
 
-  respondToEvent(characterId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<PutCharactersCharacterIdCalendarEventIdOutput> {
+  respondToEvent(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<PutCharactersCharacterIdCalendarEventIdResponse> {
     return this.#metadata.respondToEvent(characterId, eventId, options).then((response) => response.data);
   }
 

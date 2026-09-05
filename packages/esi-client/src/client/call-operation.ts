@@ -1,4 +1,4 @@
-import type { GeneratedOperationSignatures } from '../generated/schemas/contracts.js';
+import type { GeneratedOperationContractMap } from '../generated/internal/operation-contracts.js';
 import { operationRegistry } from '../generated/operations/registry.js';
 import type { EsiClientConfiguration } from './configuration.js';
 import {
@@ -8,17 +8,15 @@ import {
   EsiUnknownOperationError,
 } from './errors.js';
 import { executeOperation, validateOperationRequestArguments } from './execute.js';
-import type { OperationExecutionDescriptor } from './execute.js';
-import type { OperationRequestArguments } from './request.js';
 import type { EsiResponse } from './response.js';
 
-export type StableOperationId = keyof GeneratedOperationSignatures;
+export type StableOperationId = keyof GeneratedOperationContractMap;
 
 export type CallOperationArguments<TStableId extends StableOperationId> =
-  GeneratedOperationSignatures[TStableId]['input'] & OperationRequestArguments;
+  GeneratedOperationContractMap[TStableId]['arguments'];
 
 export type CallOperationResult<TStableId extends StableOperationId> =
-  GeneratedOperationSignatures[TStableId]['output'];
+  GeneratedOperationContractMap[TStableId]['response'];
 
 export interface CallOperationOptions {
   readonly confirmMutation?: boolean;
@@ -60,13 +58,7 @@ export async function executeRegisteredOperation<TStableId extends StableOperati
     });
   }
 
-  // The generated signature map restores the input/output types intentionally erased by the
-  // serializable Record-shaped registry export.
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-  const descriptor = entry.transport as OperationExecutionDescriptor<
-    CallOperationArguments<TStableId>,
-    CallOperationResult<TStableId>
-  >;
+  const descriptor = entry.transport;
   const validatedArguments = validateOperationRequestArguments(descriptor, arguments_);
   const validatedOptions = validateCallOperationOptions(descriptor.operationId, options);
   assertGenericOperationSafety(

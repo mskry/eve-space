@@ -6,7 +6,7 @@
   "type": "module",
   "sideEffects": false,
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=24.20.0"
   },
   "exports": {
     ".": {
@@ -24,9 +24,9 @@
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
     "@evespace/esi-client": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "typescript": "~5.9.3"
+    "typescript": "catalog:tsgo"
   }
 }

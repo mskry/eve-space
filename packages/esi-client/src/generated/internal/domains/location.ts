@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdLocationDescriptor,
@@ -19,13 +20,13 @@ import type {
   GetCharactersCharacterIdOnlineOptions,
 } from './location-contract.js';
 import type {
-  GetCharactersCharacterIdLocationInput,
-  GetCharactersCharacterIdLocationOutput,
-  GetCharactersCharacterIdOnlineInput,
-  GetCharactersCharacterIdOnlineOutput,
-  GetCharactersCharacterIdShipInput,
-  GetCharactersCharacterIdShipOutput,
-} from '../../schemas/operations/location.js';
+  GetCharactersCharacterIdLocationData,
+  GetCharactersCharacterIdLocationResponse,
+  GetCharactersCharacterIdOnlineData,
+  GetCharactersCharacterIdOnlineResponse,
+  GetCharactersCharacterIdShipData,
+  GetCharactersCharacterIdShipResponse,
+} from '../../types.gen.js';
 
 class LocationDomainClientWithMetadataImplementation implements LocationDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -35,18 +36,18 @@ class LocationDomainClientWithMetadataImplementation implements LocationDomainCl
     Object.freeze(this);
   }
 
-  get(characterId: NonNullable<GetCharactersCharacterIdLocationInput['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<EsiResponse<GetCharactersCharacterIdLocationOutput>> {
-    const arguments_: GetCharactersCharacterIdLocationInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<EsiResponse<GetCharactersCharacterIdLocationResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdLocationData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdLocationDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getCurrentShip(characterId: NonNullable<GetCharactersCharacterIdShipInput['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<EsiResponse<GetCharactersCharacterIdShipOutput>> {
-    const arguments_: GetCharactersCharacterIdShipInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getCurrentShip(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<EsiResponse<GetCharactersCharacterIdShipResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdShipData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdShipDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  getOnlineStatus(characterId: NonNullable<GetCharactersCharacterIdOnlineInput['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<EsiResponse<GetCharactersCharacterIdOnlineOutput>> {
-    const arguments_: GetCharactersCharacterIdOnlineInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getOnlineStatus(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<EsiResponse<GetCharactersCharacterIdOnlineResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdOnlineData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdOnlineDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -59,15 +60,15 @@ class LocationDomainClientImplementation implements LocationDomainClient {
     Object.freeze(this);
   }
 
-  get(characterId: NonNullable<GetCharactersCharacterIdLocationInput['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<GetCharactersCharacterIdLocationOutput> {
+  get(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdLocationData>['path']>["character_id"], options?: GetCharactersCharacterIdLocationOptions): Promise<GetCharactersCharacterIdLocationResponse> {
     return this.#metadata.get(characterId, options).then((response) => response.data);
   }
 
-  getCurrentShip(characterId: NonNullable<GetCharactersCharacterIdShipInput['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<GetCharactersCharacterIdShipOutput> {
+  getCurrentShip(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdShipData>['path']>["character_id"], options?: GetCharactersCharacterIdShipOptions): Promise<GetCharactersCharacterIdShipResponse> {
     return this.#metadata.getCurrentShip(characterId, options).then((response) => response.data);
   }
 
-  getOnlineStatus(characterId: NonNullable<GetCharactersCharacterIdOnlineInput['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<GetCharactersCharacterIdOnlineOutput> {
+  getOnlineStatus(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOnlineData>['path']>["character_id"], options?: GetCharactersCharacterIdOnlineOptions): Promise<GetCharactersCharacterIdOnlineResponse> {
     return this.#metadata.getOnlineStatus(characterId, options).then((response) => response.data);
   }
 

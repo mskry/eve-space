@@ -57,7 +57,7 @@ Roadmap items describe planned direction, not functionality available in the cur
 
 ## Requirements
 
-- Node.js 22.18 or newer
+- Node.js 24.20 or newer
 - pnpm 11.22.0 through Corepack
 - Docker Engine with Docker Compose (OrbStack and Docker Desktop are both suitable locally)
 - An EVE Developer application for the SSO flow
@@ -129,7 +129,7 @@ POSTGRES_PASSWORD=your-url-safe-random-postgres-password
 DATABASE_URL=postgres://eve_space:your-url-safe-random-postgres-password@localhost:5432/eve_space
 EVE_CLIENT_ID=your-client-id
 EVE_CLIENT_SECRET=your-client-secret
-ESI_USER_AGENT=EveSpace/0.1 (eve:your-character) @evespace/esi-client/2.0.0
+ESI_USER_AGENT=EveSpace/0.1 (eve:your-character) @evespace/esi-client/3.0.0
 TOKEN_ENCRYPTION_KEY=your-base64-encoded-32-byte-key
 ADMIN_SETUP_SECRET=your-high-entropy-one-time-setup-secret
 ```

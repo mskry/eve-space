@@ -16,12 +16,13 @@ Get active implants
 - Domain import: `@evespace/esi-client/domains/clones`
 - Domain index: [clones](../domains/clones.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createClonesClient } from '@evespace/esi-client/domains/clones';
+import type { GetCharactersCharacterIdImplantsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createClonesClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listActiveImplants(characterId);
+const data: GetCharactersCharacterIdImplantsResponse = await client.listActiveImplants(characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdImplantsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.clones.listActiveImplants(characterId);
+const data: GetCharactersCharacterIdImplantsResponse = await client.clones.listActiveImplants(characterId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.clones.listActiveImplants(characterId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdImplantsData, GetCharactersCharacterIdImplantsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdImplants'> = { path: { "character_id": characterId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdImplants', arguments_);
+const data: GetCharactersCharacterIdImplantsResponse = response.data;
 ```
 
 ## Parameters
@@ -77,14 +81,16 @@ const response = await client.callOperation('GetCharactersCharacterIdImplants', 
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdImplantsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdImplantsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdImplantsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdImplantsPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdImplantsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.clones.withMetadata().listActiveImplants(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdImplantsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdImplantsResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +122,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

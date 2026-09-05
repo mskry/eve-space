@@ -4,30 +4,45 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  PostUiAutopilotWaypointData,
+  PostUiAutopilotWaypointResponse,
+  PostUiOpenwindowContractData,
+  PostUiOpenwindowContractResponse,
+  PostUiOpenwindowInformationData,
+  PostUiOpenwindowInformationResponse,
+  PostUiOpenwindowMarketdetailsData,
+  PostUiOpenwindowMarketdetailsResponse,
+  PostUiOpenwindowNewmailData,
+  PostUiOpenwindowNewmailResponse,
+} from '../../types.gen.js';
 import {
-  PostUiAutopilotWaypointRequestSchema,
-  PostUiAutopilotWaypointStatus204SuccessResponseSchema,
-  PostUiOpenwindowContractRequestSchema,
-  PostUiOpenwindowContractStatus204SuccessResponseSchema,
-  PostUiOpenwindowInformationRequestSchema,
-  PostUiOpenwindowInformationStatus204SuccessResponseSchema,
-  PostUiOpenwindowMarketdetailsRequestSchema,
-  PostUiOpenwindowMarketdetailsStatus204SuccessResponseSchema,
-  PostUiOpenwindowNewmailRequestSchema,
-  PostUiOpenwindowNewmailStatus204SuccessResponseSchema,
-  type PostUiAutopilotWaypointInput,
-  type PostUiAutopilotWaypointOutput,
-  type PostUiOpenwindowContractInput,
-  type PostUiOpenwindowContractOutput,
-  type PostUiOpenwindowInformationInput,
-  type PostUiOpenwindowInformationOutput,
-  type PostUiOpenwindowMarketdetailsInput,
-  type PostUiOpenwindowMarketdetailsOutput,
-  type PostUiOpenwindowNewmailInput,
-  type PostUiOpenwindowNewmailOutput,
-} from '../../schemas/operations/user-interface.js';
+  zPostUiAutopilotWaypointHeaders,
+  zPostUiAutopilotWaypointQuery,
+  zPostUiAutopilotWaypointResponse,
+  zPostUiOpenwindowContractHeaders,
+  zPostUiOpenwindowContractQuery,
+  zPostUiOpenwindowContractResponse,
+  zPostUiOpenwindowInformationHeaders,
+  zPostUiOpenwindowInformationQuery,
+  zPostUiOpenwindowInformationResponse,
+  zPostUiOpenwindowMarketdetailsHeaders,
+  zPostUiOpenwindowMarketdetailsQuery,
+  zPostUiOpenwindowMarketdetailsResponse,
+  zPostUiOpenwindowNewmailBody,
+  zPostUiOpenwindowNewmailHeaders,
+  zPostUiOpenwindowNewmailResponse,
+} from '../../zod.gen.js';
 
-export const PostUiOpenwindowContractDescriptor: OperationExecutionDescriptor<PostUiOpenwindowContractInput, PostUiOpenwindowContractOutput> = {
+export const PostUiOpenwindowContractRequestSchema: z.ZodType<OperationArguments<PostUiOpenwindowContractData>> = composeOperationRequestSchema<OperationArguments<PostUiOpenwindowContractData>>({
+  headers: { required: false, schema: zPostUiOpenwindowContractHeaders },
+  query: { required: true, schema: zPostUiOpenwindowContractQuery },
+});
+
+export const PostUiOpenwindowContractDescriptor: OperationExecutionDescriptor<OperationArguments<PostUiOpenwindowContractData>, PostUiOpenwindowContractResponse> = {
   operationId: "PostUiOpenwindowContract",
   method: "POST",
   path: "/ui/openwindow/contract",
@@ -46,7 +61,12 @@ export const PostUiOpenwindowContractDescriptor: OperationExecutionDescriptor<Po
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostUiOpenwindowInformationDescriptor: OperationExecutionDescriptor<PostUiOpenwindowInformationInput, PostUiOpenwindowInformationOutput> = {
+export const PostUiOpenwindowInformationRequestSchema: z.ZodType<OperationArguments<PostUiOpenwindowInformationData>> = composeOperationRequestSchema<OperationArguments<PostUiOpenwindowInformationData>>({
+  headers: { required: false, schema: zPostUiOpenwindowInformationHeaders },
+  query: { required: true, schema: zPostUiOpenwindowInformationQuery },
+});
+
+export const PostUiOpenwindowInformationDescriptor: OperationExecutionDescriptor<OperationArguments<PostUiOpenwindowInformationData>, PostUiOpenwindowInformationResponse> = {
   operationId: "PostUiOpenwindowInformation",
   method: "POST",
   path: "/ui/openwindow/information",
@@ -65,7 +85,12 @@ export const PostUiOpenwindowInformationDescriptor: OperationExecutionDescriptor
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostUiOpenwindowMarketdetailsDescriptor: OperationExecutionDescriptor<PostUiOpenwindowMarketdetailsInput, PostUiOpenwindowMarketdetailsOutput> = {
+export const PostUiOpenwindowMarketdetailsRequestSchema: z.ZodType<OperationArguments<PostUiOpenwindowMarketdetailsData>> = composeOperationRequestSchema<OperationArguments<PostUiOpenwindowMarketdetailsData>>({
+  headers: { required: false, schema: zPostUiOpenwindowMarketdetailsHeaders },
+  query: { required: true, schema: zPostUiOpenwindowMarketdetailsQuery },
+});
+
+export const PostUiOpenwindowMarketdetailsDescriptor: OperationExecutionDescriptor<OperationArguments<PostUiOpenwindowMarketdetailsData>, PostUiOpenwindowMarketdetailsResponse> = {
   operationId: "PostUiOpenwindowMarketdetails",
   method: "POST",
   path: "/ui/openwindow/marketdetails",
@@ -84,7 +109,12 @@ export const PostUiOpenwindowMarketdetailsDescriptor: OperationExecutionDescript
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostUiOpenwindowNewmailDescriptor: OperationExecutionDescriptor<PostUiOpenwindowNewmailInput, PostUiOpenwindowNewmailOutput> = {
+export const PostUiOpenwindowNewmailRequestSchema: z.ZodType<OperationArguments<PostUiOpenwindowNewmailData>> = composeOperationRequestSchema<OperationArguments<PostUiOpenwindowNewmailData>>({
+  headers: { required: false, schema: zPostUiOpenwindowNewmailHeaders },
+  body: { required: true, schema: zPostUiOpenwindowNewmailBody },
+});
+
+export const PostUiOpenwindowNewmailDescriptor: OperationExecutionDescriptor<OperationArguments<PostUiOpenwindowNewmailData>, PostUiOpenwindowNewmailResponse> = {
   operationId: "PostUiOpenwindowNewmail",
   method: "POST",
   path: "/ui/openwindow/newmail",
@@ -102,7 +132,12 @@ export const PostUiOpenwindowNewmailDescriptor: OperationExecutionDescriptor<Pos
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostUiAutopilotWaypointDescriptor: OperationExecutionDescriptor<PostUiAutopilotWaypointInput, PostUiAutopilotWaypointOutput> = {
+export const PostUiAutopilotWaypointRequestSchema: z.ZodType<OperationArguments<PostUiAutopilotWaypointData>> = composeOperationRequestSchema<OperationArguments<PostUiAutopilotWaypointData>>({
+  headers: { required: false, schema: zPostUiAutopilotWaypointHeaders },
+  query: { required: true, schema: zPostUiAutopilotWaypointQuery },
+});
+
+export const PostUiAutopilotWaypointDescriptor: OperationExecutionDescriptor<OperationArguments<PostUiAutopilotWaypointData>, PostUiAutopilotWaypointResponse> = {
   operationId: "PostUiAutopilotWaypoint",
   method: "POST",
   path: "/ui/autopilot/waypoint",

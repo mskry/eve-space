@@ -16,12 +16,13 @@ List Paragon Hub SKINR listings targeted at a corporation
 - Domain import: `@evespace/esi-client/domains/paragon-hub`
 - Domain index: [paragonHub](../domains/paragon-hub.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createParagonHubClient } from '@evespace/esi-client/domains/paragon-hub';
+import type { GetParagonHubSkinrCorporationsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createParagonHubClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.listListingsForCorporation(corporationId);
+const data: GetParagonHubSkinrCorporationsResponse = await client.listListingsForCorporation(corporationId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetParagonHubSkinrCorporationsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const corporationId = 98000001;
 
-const data = await client.paragonHub.listListingsForCorporation(corporationId);
+const data: GetParagonHubSkinrCorporationsResponse = await client.paragonHub.listListingsForCorporation(corporationId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.paragonHub.listListingsForCorporation(corporationId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetParagonHubSkinrCorporationsData, GetParagonHubSkinrCorporationsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const corporationId = 98000001;
 const arguments_: CallOperationArguments<'GetParagonHubSkinrCorporations'> = { path: { "corporation_id": corporationId } };
 
 const response = await client.callOperation('GetParagonHubSkinrCorporations', arguments_);
+const data: GetParagonHubSkinrCorporationsResponse = response.data;
 ```
 
 ## Parameters
@@ -80,14 +84,16 @@ const response = await client.callOperation('GetParagonHubSkinrCorporations', ar
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetParagonHubSkinrCorporationsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetParagonHubSkinrCorporationsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetParagonHubSkinrCorporationsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetParagonHubSkinrCorporationsPath`; `query` uses `@evespace/esi-client/zod` export `zGetParagonHubSkinrCorporationsQuery`.
+- Response type: `@evespace/esi-client/types` export `GetParagonHubSkinrCorporationsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.paragonHub.withMetadata().listListingsForCorporation(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetParagonHubSkinrCorporationsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetParagonHubSkinrCorporationsResponse` | OK |
 
 ## Authentication
 
@@ -119,6 +125,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

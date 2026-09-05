@@ -4,34 +4,50 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersStructuresMercenaryDensDetailData,
+  GetCharactersStructuresMercenaryDensDetailResponse,
+  GetCharactersStructuresMercenaryDensListingData,
+  GetCharactersStructuresMercenaryDensListingResponse,
+  GetCorporationsStructuresSkyhooksDetailData,
+  GetCorporationsStructuresSkyhooksDetailResponse,
+  GetCorporationsStructuresSkyhooksListingData,
+  GetCorporationsStructuresSkyhooksListingResponse,
+  GetCorporationsStructuresSovereigntyHubsDetailData,
+  GetCorporationsStructuresSovereigntyHubsDetailResponse,
+  GetCorporationsStructuresSovereigntyHubsListingData,
+  GetCorporationsStructuresSovereigntyHubsListingResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersStructuresMercenaryDensDetailRequestSchema,
-  GetCharactersStructuresMercenaryDensDetailStatus200SuccessResponseSchema,
-  GetCharactersStructuresMercenaryDensListingRequestSchema,
-  GetCharactersStructuresMercenaryDensListingStatus200SuccessResponseSchema,
-  GetCorporationsStructuresSkyhooksDetailRequestSchema,
-  GetCorporationsStructuresSkyhooksDetailStatus200SuccessResponseSchema,
-  GetCorporationsStructuresSkyhooksListingRequestSchema,
-  GetCorporationsStructuresSkyhooksListingStatus200SuccessResponseSchema,
-  GetCorporationsStructuresSovereigntyHubsDetailRequestSchema,
-  GetCorporationsStructuresSovereigntyHubsDetailStatus200SuccessResponseSchema,
-  GetCorporationsStructuresSovereigntyHubsListingRequestSchema,
-  GetCorporationsStructuresSovereigntyHubsListingStatus200SuccessResponseSchema,
-  type GetCharactersStructuresMercenaryDensDetailInput,
-  type GetCharactersStructuresMercenaryDensDetailOutput,
-  type GetCharactersStructuresMercenaryDensListingInput,
-  type GetCharactersStructuresMercenaryDensListingOutput,
-  type GetCorporationsStructuresSkyhooksDetailInput,
-  type GetCorporationsStructuresSkyhooksDetailOutput,
-  type GetCorporationsStructuresSkyhooksListingInput,
-  type GetCorporationsStructuresSkyhooksListingOutput,
-  type GetCorporationsStructuresSovereigntyHubsDetailInput,
-  type GetCorporationsStructuresSovereigntyHubsDetailOutput,
-  type GetCorporationsStructuresSovereigntyHubsListingInput,
-  type GetCorporationsStructuresSovereigntyHubsListingOutput,
-} from '../../schemas/operations/structures.js';
+  zGetCharactersStructuresMercenaryDensDetailHeaders,
+  zGetCharactersStructuresMercenaryDensDetailPath,
+  zGetCharactersStructuresMercenaryDensDetailResponse,
+  zGetCharactersStructuresMercenaryDensListingHeaders,
+  zGetCharactersStructuresMercenaryDensListingPath,
+  zGetCharactersStructuresMercenaryDensListingResponse,
+  zGetCorporationsStructuresSkyhooksDetailHeaders,
+  zGetCorporationsStructuresSkyhooksDetailPath,
+  zGetCorporationsStructuresSkyhooksDetailResponse,
+  zGetCorporationsStructuresSkyhooksListingHeaders,
+  zGetCorporationsStructuresSkyhooksListingPath,
+  zGetCorporationsStructuresSkyhooksListingResponse,
+  zGetCorporationsStructuresSovereigntyHubsDetailHeaders,
+  zGetCorporationsStructuresSovereigntyHubsDetailPath,
+  zGetCorporationsStructuresSovereigntyHubsDetailResponse,
+  zGetCorporationsStructuresSovereigntyHubsListingHeaders,
+  zGetCorporationsStructuresSovereigntyHubsListingPath,
+  zGetCorporationsStructuresSovereigntyHubsListingResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersStructuresMercenaryDensDetailDescriptor: OperationExecutionDescriptor<GetCharactersStructuresMercenaryDensDetailInput, GetCharactersStructuresMercenaryDensDetailOutput> = {
+export const GetCharactersStructuresMercenaryDensDetailRequestSchema: z.ZodType<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>> = composeOperationRequestSchema<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>>({
+  headers: { required: false, schema: zGetCharactersStructuresMercenaryDensDetailHeaders },
+  path: { required: true, schema: zGetCharactersStructuresMercenaryDensDetailPath },
+});
+
+export const GetCharactersStructuresMercenaryDensDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>, GetCharactersStructuresMercenaryDensDetailResponse> = {
   operationId: "GetCharactersStructuresMercenaryDensDetail",
   method: "GET",
   path: "/characters/{character_id}/structures/mercenary-dens/{mercenary_den_id}",
@@ -46,12 +62,17 @@ export const GetCharactersStructuresMercenaryDensDetailDescriptor: OperationExec
   requestSchema: GetCharactersStructuresMercenaryDensDetailRequestSchema,
   authentication: { scopes: ["esi-structures.read_character.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersStructuresMercenaryDensDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersStructuresMercenaryDensDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsStructuresSkyhooksDetailDescriptor: OperationExecutionDescriptor<GetCorporationsStructuresSkyhooksDetailInput, GetCorporationsStructuresSkyhooksDetailOutput> = {
+export const GetCorporationsStructuresSkyhooksDetailRequestSchema: z.ZodType<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>>({
+  headers: { required: false, schema: zGetCorporationsStructuresSkyhooksDetailHeaders },
+  path: { required: true, schema: zGetCorporationsStructuresSkyhooksDetailPath },
+});
+
+export const GetCorporationsStructuresSkyhooksDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>, GetCorporationsStructuresSkyhooksDetailResponse> = {
   operationId: "GetCorporationsStructuresSkyhooksDetail",
   method: "GET",
   path: "/corporations/{corporation_id}/structures/skyhooks/{skyhook_id}",
@@ -66,12 +87,17 @@ export const GetCorporationsStructuresSkyhooksDetailDescriptor: OperationExecuti
   requestSchema: GetCorporationsStructuresSkyhooksDetailRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsStructuresSkyhooksDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsStructuresSkyhooksDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsStructuresSovereigntyHubsDetailDescriptor: OperationExecutionDescriptor<GetCorporationsStructuresSovereigntyHubsDetailInput, GetCorporationsStructuresSovereigntyHubsDetailOutput> = {
+export const GetCorporationsStructuresSovereigntyHubsDetailRequestSchema: z.ZodType<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>>({
+  headers: { required: false, schema: zGetCorporationsStructuresSovereigntyHubsDetailHeaders },
+  path: { required: true, schema: zGetCorporationsStructuresSovereigntyHubsDetailPath },
+});
+
+export const GetCorporationsStructuresSovereigntyHubsDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>, GetCorporationsStructuresSovereigntyHubsDetailResponse> = {
   operationId: "GetCorporationsStructuresSovereigntyHubsDetail",
   method: "GET",
   path: "/corporations/{corporation_id}/structures/sovereignty-hubs/{sovereignty_hub_id}",
@@ -86,12 +112,17 @@ export const GetCorporationsStructuresSovereigntyHubsDetailDescriptor: Operation
   requestSchema: GetCorporationsStructuresSovereigntyHubsDetailRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsStructuresSovereigntyHubsDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsStructuresSovereigntyHubsDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersStructuresMercenaryDensListingDescriptor: OperationExecutionDescriptor<GetCharactersStructuresMercenaryDensListingInput, GetCharactersStructuresMercenaryDensListingOutput> = {
+export const GetCharactersStructuresMercenaryDensListingRequestSchema: z.ZodType<OperationArguments<GetCharactersStructuresMercenaryDensListingData>> = composeOperationRequestSchema<OperationArguments<GetCharactersStructuresMercenaryDensListingData>>({
+  headers: { required: false, schema: zGetCharactersStructuresMercenaryDensListingHeaders },
+  path: { required: true, schema: zGetCharactersStructuresMercenaryDensListingPath },
+});
+
+export const GetCharactersStructuresMercenaryDensListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersStructuresMercenaryDensListingData>, GetCharactersStructuresMercenaryDensListingResponse> = {
   operationId: "GetCharactersStructuresMercenaryDensListing",
   method: "GET",
   path: "/characters/{character_id}/structures/mercenary-dens",
@@ -105,12 +136,17 @@ export const GetCharactersStructuresMercenaryDensListingDescriptor: OperationExe
   requestSchema: GetCharactersStructuresMercenaryDensListingRequestSchema,
   authentication: { scopes: ["esi-structures.read_character.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersStructuresMercenaryDensListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersStructuresMercenaryDensListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsStructuresSkyhooksListingDescriptor: OperationExecutionDescriptor<GetCorporationsStructuresSkyhooksListingInput, GetCorporationsStructuresSkyhooksListingOutput> = {
+export const GetCorporationsStructuresSkyhooksListingRequestSchema: z.ZodType<OperationArguments<GetCorporationsStructuresSkyhooksListingData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsStructuresSkyhooksListingData>>({
+  headers: { required: false, schema: zGetCorporationsStructuresSkyhooksListingHeaders },
+  path: { required: true, schema: zGetCorporationsStructuresSkyhooksListingPath },
+});
+
+export const GetCorporationsStructuresSkyhooksListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsStructuresSkyhooksListingData>, GetCorporationsStructuresSkyhooksListingResponse> = {
   operationId: "GetCorporationsStructuresSkyhooksListing",
   method: "GET",
   path: "/corporations/{corporation_id}/structures/skyhooks",
@@ -124,12 +160,17 @@ export const GetCorporationsStructuresSkyhooksListingDescriptor: OperationExecut
   requestSchema: GetCorporationsStructuresSkyhooksListingRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsStructuresSkyhooksListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsStructuresSkyhooksListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsStructuresSovereigntyHubsListingDescriptor: OperationExecutionDescriptor<GetCorporationsStructuresSovereigntyHubsListingInput, GetCorporationsStructuresSovereigntyHubsListingOutput> = {
+export const GetCorporationsStructuresSovereigntyHubsListingRequestSchema: z.ZodType<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>>({
+  headers: { required: false, schema: zGetCorporationsStructuresSovereigntyHubsListingHeaders },
+  path: { required: true, schema: zGetCorporationsStructuresSovereigntyHubsListingPath },
+});
+
+export const GetCorporationsStructuresSovereigntyHubsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>, GetCorporationsStructuresSovereigntyHubsListingResponse> = {
   operationId: "GetCorporationsStructuresSovereigntyHubsListing",
   method: "GET",
   path: "/corporations/{corporation_id}/structures/sovereignty-hubs",
@@ -143,7 +184,7 @@ export const GetCorporationsStructuresSovereigntyHubsListingDescriptor: Operatio
   requestSchema: GetCorporationsStructuresSovereigntyHubsListingRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsStructuresSovereigntyHubsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsStructuresSovereigntyHubsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -4,37 +4,38 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetSovereigntyCampaignsInput,
-  GetSovereigntyCampaignsOutput,
-  GetSovereigntySystemsInput,
-  GetSovereigntySystemsOutput,
-} from '../../schemas/operations/sovereignty.js';
+  GetSovereigntyCampaignsData,
+  GetSovereigntyCampaignsResponse,
+  GetSovereigntySystemsData,
+  GetSovereigntySystemsResponse,
+} from '../../types.gen.js';
 
 export interface GetSovereigntyCampaignsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetSovereigntyCampaignsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetSovereigntyCampaignsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetSovereigntyCampaignsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetSovereigntyCampaignsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetSovereigntyCampaignsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetSovereigntyCampaignsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetSovereigntySystemsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetSovereigntySystemsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetSovereigntySystemsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetSovereigntySystemsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetSovereigntySystemsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetSovereigntySystemsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetSovereigntySystemsData>["headers"]>["X-Tenant"];
 }
 
 export interface SovereigntyDomainClient {
-  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<GetSovereigntyCampaignsOutput>;
+  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<GetSovereigntyCampaignsResponse>;
 
-  listSystems(options?: GetSovereigntySystemsOptions): Promise<GetSovereigntySystemsOutput>;
+  listSystems(options?: GetSovereigntySystemsOptions): Promise<GetSovereigntySystemsResponse>;
 
   withMetadata(): SovereigntyDomainClientWithMetadata;
 }
 
 export interface SovereigntyDomainClientWithMetadata {
-  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<EsiResponse<GetSovereigntyCampaignsOutput>>;
+  listCampaigns(options?: GetSovereigntyCampaignsOptions): Promise<EsiResponse<GetSovereigntyCampaignsResponse>>;
 
-  listSystems(options?: GetSovereigntySystemsOptions): Promise<EsiResponse<GetSovereigntySystemsOutput>>;
+  listSystems(options?: GetSovereigntySystemsOptions): Promise<EsiResponse<GetSovereigntySystemsResponse>>;
 }

@@ -4,22 +4,37 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdKillmailsRecentData,
+  GetCharactersCharacterIdKillmailsRecentResponse,
+  GetCorporationsCorporationIdKillmailsRecentData,
+  GetCorporationsCorporationIdKillmailsRecentResponse,
+  GetKillmailsKillmailIdKillmailHashData,
+  GetKillmailsKillmailIdKillmailHashResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdKillmailsRecentRequestSchema,
-  GetCharactersCharacterIdKillmailsRecentStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdKillmailsRecentRequestSchema,
-  GetCorporationsCorporationIdKillmailsRecentStatus200SuccessResponseSchema,
-  GetKillmailsKillmailIdKillmailHashRequestSchema,
-  GetKillmailsKillmailIdKillmailHashStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdKillmailsRecentInput,
-  type GetCharactersCharacterIdKillmailsRecentOutput,
-  type GetCorporationsCorporationIdKillmailsRecentInput,
-  type GetCorporationsCorporationIdKillmailsRecentOutput,
-  type GetKillmailsKillmailIdKillmailHashInput,
-  type GetKillmailsKillmailIdKillmailHashOutput,
-} from '../../schemas/operations/killmails.js';
+  zGetCharactersCharacterIdKillmailsRecentHeaders,
+  zGetCharactersCharacterIdKillmailsRecentPath,
+  zGetCharactersCharacterIdKillmailsRecentQuery,
+  zGetCharactersCharacterIdKillmailsRecentResponse,
+  zGetCorporationsCorporationIdKillmailsRecentHeaders,
+  zGetCorporationsCorporationIdKillmailsRecentPath,
+  zGetCorporationsCorporationIdKillmailsRecentQuery,
+  zGetCorporationsCorporationIdKillmailsRecentResponse,
+  zGetKillmailsKillmailIdKillmailHashHeaders,
+  zGetKillmailsKillmailIdKillmailHashPath,
+  zGetKillmailsKillmailIdKillmailHashResponse,
+} from '../../zod.gen.js';
 
-export const GetKillmailsKillmailIdKillmailHashDescriptor: OperationExecutionDescriptor<GetKillmailsKillmailIdKillmailHashInput, GetKillmailsKillmailIdKillmailHashOutput> = {
+export const GetKillmailsKillmailIdKillmailHashRequestSchema: z.ZodType<OperationArguments<GetKillmailsKillmailIdKillmailHashData>> = composeOperationRequestSchema<OperationArguments<GetKillmailsKillmailIdKillmailHashData>>({
+  headers: { required: false, schema: zGetKillmailsKillmailIdKillmailHashHeaders },
+  path: { required: true, schema: zGetKillmailsKillmailIdKillmailHashPath },
+});
+
+export const GetKillmailsKillmailIdKillmailHashDescriptor: OperationExecutionDescriptor<OperationArguments<GetKillmailsKillmailIdKillmailHashData>, GetKillmailsKillmailIdKillmailHashResponse> = {
   operationId: "GetKillmailsKillmailIdKillmailHash",
   method: "GET",
   path: "/killmails/{killmail_id}/{killmail_hash}",
@@ -34,12 +49,18 @@ export const GetKillmailsKillmailIdKillmailHashDescriptor: OperationExecutionDes
   requestSchema: GetKillmailsKillmailIdKillmailHashRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetKillmailsKillmailIdKillmailHashStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetKillmailsKillmailIdKillmailHashResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdKillmailsRecentDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdKillmailsRecentInput, GetCharactersCharacterIdKillmailsRecentOutput> = {
+export const GetCharactersCharacterIdKillmailsRecentRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdKillmailsRecentHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdKillmailsRecentPath },
+  query: { required: false, schema: zGetCharactersCharacterIdKillmailsRecentQuery },
+});
+
+export const GetCharactersCharacterIdKillmailsRecentDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdKillmailsRecentData>, GetCharactersCharacterIdKillmailsRecentResponse> = {
   operationId: "GetCharactersCharacterIdKillmailsRecent",
   method: "GET",
   path: "/characters/{character_id}/killmails/recent",
@@ -54,12 +75,18 @@ export const GetCharactersCharacterIdKillmailsRecentDescriptor: OperationExecuti
   requestSchema: GetCharactersCharacterIdKillmailsRecentRequestSchema,
   authentication: { scopes: ["esi-killmails.read_killmails.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdKillmailsRecentStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdKillmailsRecentResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdKillmailsRecentDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdKillmailsRecentInput, GetCorporationsCorporationIdKillmailsRecentOutput> = {
+export const GetCorporationsCorporationIdKillmailsRecentRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdKillmailsRecentHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdKillmailsRecentPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdKillmailsRecentQuery },
+});
+
+export const GetCorporationsCorporationIdKillmailsRecentDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdKillmailsRecentData>, GetCorporationsCorporationIdKillmailsRecentResponse> = {
   operationId: "GetCorporationsCorporationIdKillmailsRecent",
   method: "GET",
   path: "/corporations/{corporation_id}/killmails/recent",
@@ -74,7 +101,7 @@ export const GetCorporationsCorporationIdKillmailsRecentDescriptor: OperationExe
   requestSchema: GetCorporationsCorporationIdKillmailsRecentRequestSchema,
   authentication: { scopes: ["esi-killmails.read_corporation_killmails.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdKillmailsRecentStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdKillmailsRecentResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

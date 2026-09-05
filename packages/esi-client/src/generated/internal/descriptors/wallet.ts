@@ -4,34 +4,54 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdWalletData,
+  GetCharactersCharacterIdWalletJournalData,
+  GetCharactersCharacterIdWalletJournalResponse,
+  GetCharactersCharacterIdWalletResponse,
+  GetCharactersCharacterIdWalletTransactionsData,
+  GetCharactersCharacterIdWalletTransactionsResponse,
+  GetCorporationsCorporationIdWalletsData,
+  GetCorporationsCorporationIdWalletsDivisionJournalData,
+  GetCorporationsCorporationIdWalletsDivisionJournalResponse,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsData,
+  GetCorporationsCorporationIdWalletsDivisionTransactionsResponse,
+  GetCorporationsCorporationIdWalletsResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdWalletJournalRequestSchema,
-  GetCharactersCharacterIdWalletJournalStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdWalletRequestSchema,
-  GetCharactersCharacterIdWalletStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdWalletTransactionsRequestSchema,
-  GetCharactersCharacterIdWalletTransactionsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdWalletsDivisionJournalRequestSchema,
-  GetCorporationsCorporationIdWalletsDivisionJournalStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsRequestSchema,
-  GetCorporationsCorporationIdWalletsDivisionTransactionsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdWalletsRequestSchema,
-  GetCorporationsCorporationIdWalletsStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdWalletInput,
-  type GetCharactersCharacterIdWalletJournalInput,
-  type GetCharactersCharacterIdWalletJournalOutput,
-  type GetCharactersCharacterIdWalletOutput,
-  type GetCharactersCharacterIdWalletTransactionsInput,
-  type GetCharactersCharacterIdWalletTransactionsOutput,
-  type GetCorporationsCorporationIdWalletsDivisionJournalInput,
-  type GetCorporationsCorporationIdWalletsDivisionJournalOutput,
-  type GetCorporationsCorporationIdWalletsDivisionTransactionsInput,
-  type GetCorporationsCorporationIdWalletsDivisionTransactionsOutput,
-  type GetCorporationsCorporationIdWalletsInput,
-  type GetCorporationsCorporationIdWalletsOutput,
-} from '../../schemas/operations/wallet.js';
+  zGetCharactersCharacterIdWalletHeaders,
+  zGetCharactersCharacterIdWalletJournalHeaders,
+  zGetCharactersCharacterIdWalletJournalPath,
+  zGetCharactersCharacterIdWalletJournalQuery,
+  zGetCharactersCharacterIdWalletJournalResponse,
+  zGetCharactersCharacterIdWalletPath,
+  zGetCharactersCharacterIdWalletResponse,
+  zGetCharactersCharacterIdWalletTransactionsHeaders,
+  zGetCharactersCharacterIdWalletTransactionsPath,
+  zGetCharactersCharacterIdWalletTransactionsQuery,
+  zGetCharactersCharacterIdWalletTransactionsResponse,
+  zGetCorporationsCorporationIdWalletsDivisionJournalHeaders,
+  zGetCorporationsCorporationIdWalletsDivisionJournalPath,
+  zGetCorporationsCorporationIdWalletsDivisionJournalQuery,
+  zGetCorporationsCorporationIdWalletsDivisionJournalResponse,
+  zGetCorporationsCorporationIdWalletsDivisionTransactionsHeaders,
+  zGetCorporationsCorporationIdWalletsDivisionTransactionsPath,
+  zGetCorporationsCorporationIdWalletsDivisionTransactionsQuery,
+  zGetCorporationsCorporationIdWalletsDivisionTransactionsResponse,
+  zGetCorporationsCorporationIdWalletsHeaders,
+  zGetCorporationsCorporationIdWalletsPath,
+  zGetCorporationsCorporationIdWalletsResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdWalletDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdWalletInput, GetCharactersCharacterIdWalletOutput> = {
+export const GetCharactersCharacterIdWalletRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdWalletData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdWalletData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdWalletHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdWalletPath },
+});
+
+export const GetCharactersCharacterIdWalletDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdWalletData>, GetCharactersCharacterIdWalletResponse> = {
   operationId: "GetCharactersCharacterIdWallet",
   method: "GET",
   path: "/characters/{character_id}/wallet",
@@ -45,12 +65,18 @@ export const GetCharactersCharacterIdWalletDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdWalletRequestSchema,
   authentication: { scopes: ["esi-wallet.read_character_wallet.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdWalletStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdWalletResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdWalletJournalDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdWalletJournalInput, GetCharactersCharacterIdWalletJournalOutput> = {
+export const GetCharactersCharacterIdWalletJournalRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdWalletJournalData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdWalletJournalData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdWalletJournalHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdWalletJournalPath },
+  query: { required: false, schema: zGetCharactersCharacterIdWalletJournalQuery },
+});
+
+export const GetCharactersCharacterIdWalletJournalDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdWalletJournalData>, GetCharactersCharacterIdWalletJournalResponse> = {
   operationId: "GetCharactersCharacterIdWalletJournal",
   method: "GET",
   path: "/characters/{character_id}/wallet/journal",
@@ -65,12 +91,18 @@ export const GetCharactersCharacterIdWalletJournalDescriptor: OperationExecution
   requestSchema: GetCharactersCharacterIdWalletJournalRequestSchema,
   authentication: { scopes: ["esi-wallet.read_character_wallet.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdWalletJournalStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdWalletJournalResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdWalletTransactionsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdWalletTransactionsInput, GetCharactersCharacterIdWalletTransactionsOutput> = {
+export const GetCharactersCharacterIdWalletTransactionsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdWalletTransactionsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdWalletTransactionsPath },
+  query: { required: false, schema: zGetCharactersCharacterIdWalletTransactionsQuery },
+});
+
+export const GetCharactersCharacterIdWalletTransactionsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdWalletTransactionsData>, GetCharactersCharacterIdWalletTransactionsResponse> = {
   operationId: "GetCharactersCharacterIdWalletTransactions",
   method: "GET",
   path: "/characters/{character_id}/wallet/transactions",
@@ -85,12 +117,17 @@ export const GetCharactersCharacterIdWalletTransactionsDescriptor: OperationExec
   requestSchema: GetCharactersCharacterIdWalletTransactionsRequestSchema,
   authentication: { scopes: ["esi-wallet.read_character_wallet.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdWalletTransactionsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdWalletTransactionsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdWalletsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdWalletsInput, GetCorporationsCorporationIdWalletsOutput> = {
+export const GetCorporationsCorporationIdWalletsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdWalletsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdWalletsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdWalletsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdWalletsPath },
+});
+
+export const GetCorporationsCorporationIdWalletsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdWalletsData>, GetCorporationsCorporationIdWalletsResponse> = {
   operationId: "GetCorporationsCorporationIdWallets",
   method: "GET",
   path: "/corporations/{corporation_id}/wallets",
@@ -104,12 +141,18 @@ export const GetCorporationsCorporationIdWalletsDescriptor: OperationExecutionDe
   requestSchema: GetCorporationsCorporationIdWalletsRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdWalletsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdWalletsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdWalletsDivisionJournalDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdWalletsDivisionJournalInput, GetCorporationsCorporationIdWalletsDivisionJournalOutput> = {
+export const GetCorporationsCorporationIdWalletsDivisionJournalRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdWalletsDivisionJournalHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdWalletsDivisionJournalPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdWalletsDivisionJournalQuery },
+});
+
+export const GetCorporationsCorporationIdWalletsDivisionJournalDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdWalletsDivisionJournalData>, GetCorporationsCorporationIdWalletsDivisionJournalResponse> = {
   operationId: "GetCorporationsCorporationIdWalletsDivisionJournal",
   method: "GET",
   path: "/corporations/{corporation_id}/wallets/{division}/journal",
@@ -125,12 +168,18 @@ export const GetCorporationsCorporationIdWalletsDivisionJournalDescriptor: Opera
   requestSchema: GetCorporationsCorporationIdWalletsDivisionJournalRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdWalletsDivisionJournalStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdWalletsDivisionJournalResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdWalletsDivisionTransactionsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdWalletsDivisionTransactionsInput, GetCorporationsCorporationIdWalletsDivisionTransactionsOutput> = {
+export const GetCorporationsCorporationIdWalletsDivisionTransactionsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdWalletsDivisionTransactionsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdWalletsDivisionTransactionsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdWalletsDivisionTransactionsQuery },
+});
+
+export const GetCorporationsCorporationIdWalletsDivisionTransactionsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdWalletsDivisionTransactionsData>, GetCorporationsCorporationIdWalletsDivisionTransactionsResponse> = {
   operationId: "GetCorporationsCorporationIdWalletsDivisionTransactions",
   method: "GET",
   path: "/corporations/{corporation_id}/wallets/{division}/transactions",
@@ -146,7 +195,7 @@ export const GetCorporationsCorporationIdWalletsDivisionTransactionsDescriptor: 
   requestSchema: GetCorporationsCorporationIdWalletsDivisionTransactionsRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdWalletsDivisionTransactionsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdWalletsDivisionTransactionsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

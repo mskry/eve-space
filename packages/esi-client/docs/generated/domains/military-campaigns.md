@@ -26,6 +26,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createMilitaryCampaignsClient } from '@evespace/esi-client/domains/military-campaigns';
+import type { GetCharactersMilitaryCampaignsObjectivesListingResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -34,7 +35,7 @@ const client = createMilitaryCampaignsClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listCharacterObjectiveParticipations(characterId);
+const data: GetCharactersMilitaryCampaignsObjectivesListingResponse = await client.listCharacterObjectiveParticipations(characterId);
 ```
 
 ## Aggregate client
@@ -43,6 +44,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersMilitaryCampaignsObjectivesListingResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -51,7 +53,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.militaryCampaigns.listCharacterObjectiveParticipations(characterId);
+const data: GetCharactersMilitaryCampaignsObjectivesListingResponse = await client.militaryCampaigns.listCharacterObjectiveParticipations(characterId);
 ```
 
 ## Shared concepts

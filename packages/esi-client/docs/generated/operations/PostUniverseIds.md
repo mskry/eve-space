@@ -16,32 +16,32 @@ Bulk names to IDs
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
-import type { PostUniverseIdsOptions } from '@evespace/esi-client/domains/universe';
+import type { PostUniverseIdsResponse, PostUniverseIdsData } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
-declare const requestBody: NonNullable<PostUniverseIdsOptions['body']>;
+declare const requestBody: NonNullable<PostUniverseIdsData['body']>;
 
-const data = await client.resolveIds({ body: requestBody });
+const data: PostUniverseIdsResponse = await client.resolveIds({ body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostUniverseIdsOptions } from '@evespace/esi-client/domains/universe';
+import type { PostUniverseIdsResponse, PostUniverseIdsData } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-declare const requestBody: NonNullable<PostUniverseIdsOptions['body']>;
+declare const requestBody: NonNullable<PostUniverseIdsData['body']>;
 
-const data = await client.universe.resolveIds({ body: requestBody });
+const data: PostUniverseIdsResponse = await client.universe.resolveIds({ body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -49,14 +49,16 @@ const data = await client.universe.resolveIds({ body: requestBody });
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostUniverseIdsData, PostUniverseIdsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-declare const requestBody: NonNullable<CallOperationArguments<'PostUniverseIds'>['body']>;
+declare const requestBody: NonNullable<PostUniverseIdsData['body']>;
 
 const arguments_: CallOperationArguments<'PostUniverseIds'> = { body: requestBody };
 
 const response = await client.callOperation('PostUniverseIds', arguments_);
+const data: PostUniverseIdsResponse = response.data;
 ```
 
 ## Parameters
@@ -70,14 +72,16 @@ const response = await client.callOperation('PostUniverseIds', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostUniverseIdsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostUniverseIdsData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostUniverseIdsBody`; `headers` uses `@evespace/esi-client/zod` export `zPostUniverseIdsHeaders`.
+- Response type: `@evespace/esi-client/types` export `PostUniverseIdsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().resolveIds(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `PostUniverseIdsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zPostUniverseIdsResponse` | OK |
 
 ## Authentication
 
@@ -108,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

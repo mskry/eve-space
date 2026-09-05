@@ -16,30 +16,32 @@ Get military campaign details
 - Domain import: `@evespace/esi-client/domains/military-campaigns`
 - Domain index: [militaryCampaigns](../domains/military-campaigns.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMilitaryCampaignsClient } from '@evespace/esi-client/domains/military-campaigns';
+import type { GetMilitaryCampaignsDetailResponse } from '@evespace/esi-client/types';
 
 const client = createMilitaryCampaignsClient();
 
 const campaignId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.getCampaign(campaignId);
+const data: GetMilitaryCampaignsDetailResponse = await client.getCampaign(campaignId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetMilitaryCampaignsDetailResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const campaignId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.militaryCampaigns.getCampaign(campaignId);
+const data: GetMilitaryCampaignsDetailResponse = await client.militaryCampaigns.getCampaign(campaignId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.militaryCampaigns.getCampaign(campaignId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetMilitaryCampaignsDetailData, GetMilitaryCampaignsDetailResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const campaignId = "00000000-0000-4000-8000-000000000000";
 const arguments_: CallOperationArguments<'GetMilitaryCampaignsDetail'> = { path: { "campaign_id": campaignId } };
 
 const response = await client.callOperation('GetMilitaryCampaignsDetail', arguments_);
+const data: GetMilitaryCampaignsDetailResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetMilitaryCampaignsDetail', argume
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetMilitaryCampaignsDetailRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetMilitaryCampaignsDetailData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetMilitaryCampaignsDetailHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetMilitaryCampaignsDetailPath`.
+- Response type: `@evespace/esi-client/types` export `GetMilitaryCampaignsDetailResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.militaryCampaigns.withMetadata().getCampaign(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetMilitaryCampaignsDetailStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetMilitaryCampaignsDetailResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

@@ -4,42 +4,65 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdIndustryJobsData,
+  GetCharactersCharacterIdIndustryJobsResponse,
+  GetCharactersCharacterIdMiningData,
+  GetCharactersCharacterIdMiningResponse,
+  GetCorporationCorporationIdMiningExtractionsData,
+  GetCorporationCorporationIdMiningExtractionsResponse,
+  GetCorporationCorporationIdMiningObserversData,
+  GetCorporationCorporationIdMiningObserversObserverIdData,
+  GetCorporationCorporationIdMiningObserversObserverIdResponse,
+  GetCorporationCorporationIdMiningObserversResponse,
+  GetCorporationsCorporationIdIndustryJobsData,
+  GetCorporationsCorporationIdIndustryJobsResponse,
+  GetIndustryFacilitiesData,
+  GetIndustryFacilitiesResponse,
+  GetIndustrySystemsData,
+  GetIndustrySystemsResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdIndustryJobsRequestSchema,
-  GetCharactersCharacterIdIndustryJobsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdMiningRequestSchema,
-  GetCharactersCharacterIdMiningStatus200SuccessResponseSchema,
-  GetCorporationCorporationIdMiningExtractionsRequestSchema,
-  GetCorporationCorporationIdMiningExtractionsStatus200SuccessResponseSchema,
-  GetCorporationCorporationIdMiningObserversObserverIdRequestSchema,
-  GetCorporationCorporationIdMiningObserversObserverIdStatus200SuccessResponseSchema,
-  GetCorporationCorporationIdMiningObserversRequestSchema,
-  GetCorporationCorporationIdMiningObserversStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdIndustryJobsRequestSchema,
-  GetCorporationsCorporationIdIndustryJobsStatus200SuccessResponseSchema,
-  GetIndustryFacilitiesRequestSchema,
-  GetIndustryFacilitiesStatus200SuccessResponseSchema,
-  GetIndustrySystemsRequestSchema,
-  GetIndustrySystemsStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdIndustryJobsInput,
-  type GetCharactersCharacterIdIndustryJobsOutput,
-  type GetCharactersCharacterIdMiningInput,
-  type GetCharactersCharacterIdMiningOutput,
-  type GetCorporationCorporationIdMiningExtractionsInput,
-  type GetCorporationCorporationIdMiningExtractionsOutput,
-  type GetCorporationCorporationIdMiningObserversInput,
-  type GetCorporationCorporationIdMiningObserversObserverIdInput,
-  type GetCorporationCorporationIdMiningObserversObserverIdOutput,
-  type GetCorporationCorporationIdMiningObserversOutput,
-  type GetCorporationsCorporationIdIndustryJobsInput,
-  type GetCorporationsCorporationIdIndustryJobsOutput,
-  type GetIndustryFacilitiesInput,
-  type GetIndustryFacilitiesOutput,
-  type GetIndustrySystemsInput,
-  type GetIndustrySystemsOutput,
-} from '../../schemas/operations/industry.js';
+  zGetCharactersCharacterIdIndustryJobsHeaders,
+  zGetCharactersCharacterIdIndustryJobsPath,
+  zGetCharactersCharacterIdIndustryJobsQuery,
+  zGetCharactersCharacterIdIndustryJobsResponse,
+  zGetCharactersCharacterIdMiningHeaders,
+  zGetCharactersCharacterIdMiningPath,
+  zGetCharactersCharacterIdMiningQuery,
+  zGetCharactersCharacterIdMiningResponse,
+  zGetCorporationCorporationIdMiningExtractionsHeaders,
+  zGetCorporationCorporationIdMiningExtractionsPath,
+  zGetCorporationCorporationIdMiningExtractionsQuery,
+  zGetCorporationCorporationIdMiningExtractionsResponse,
+  zGetCorporationCorporationIdMiningObserversHeaders,
+  zGetCorporationCorporationIdMiningObserversObserverIdHeaders,
+  zGetCorporationCorporationIdMiningObserversObserverIdPath,
+  zGetCorporationCorporationIdMiningObserversObserverIdQuery,
+  zGetCorporationCorporationIdMiningObserversObserverIdResponse,
+  zGetCorporationCorporationIdMiningObserversPath,
+  zGetCorporationCorporationIdMiningObserversQuery,
+  zGetCorporationCorporationIdMiningObserversResponse,
+  zGetCorporationsCorporationIdIndustryJobsHeaders,
+  zGetCorporationsCorporationIdIndustryJobsPath,
+  zGetCorporationsCorporationIdIndustryJobsQuery,
+  zGetCorporationsCorporationIdIndustryJobsResponse,
+  zGetIndustryFacilitiesHeaders,
+  zGetIndustryFacilitiesResponse,
+  zGetIndustrySystemsHeaders,
+  zGetIndustrySystemsResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdIndustryJobsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdIndustryJobsInput, GetCharactersCharacterIdIndustryJobsOutput> = {
+export const GetCharactersCharacterIdIndustryJobsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdIndustryJobsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdIndustryJobsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdIndustryJobsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdIndustryJobsPath },
+  query: { required: false, schema: zGetCharactersCharacterIdIndustryJobsQuery },
+});
+
+export const GetCharactersCharacterIdIndustryJobsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdIndustryJobsData>, GetCharactersCharacterIdIndustryJobsResponse> = {
   operationId: "GetCharactersCharacterIdIndustryJobs",
   method: "GET",
   path: "/characters/{character_id}/industry/jobs",
@@ -54,12 +77,18 @@ export const GetCharactersCharacterIdIndustryJobsDescriptor: OperationExecutionD
   requestSchema: GetCharactersCharacterIdIndustryJobsRequestSchema,
   authentication: { scopes: ["esi-industry.read_character_jobs.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdIndustryJobsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdIndustryJobsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdMiningDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdMiningInput, GetCharactersCharacterIdMiningOutput> = {
+export const GetCharactersCharacterIdMiningRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdMiningData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdMiningData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdMiningHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdMiningPath },
+  query: { required: false, schema: zGetCharactersCharacterIdMiningQuery },
+});
+
+export const GetCharactersCharacterIdMiningDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdMiningData>, GetCharactersCharacterIdMiningResponse> = {
   operationId: "GetCharactersCharacterIdMining",
   method: "GET",
   path: "/characters/{character_id}/mining",
@@ -74,12 +103,18 @@ export const GetCharactersCharacterIdMiningDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdMiningRequestSchema,
   authentication: { scopes: ["esi-industry.read_character_mining.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdMiningStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdMiningResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdIndustryJobsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdIndustryJobsInput, GetCorporationsCorporationIdIndustryJobsOutput> = {
+export const GetCorporationsCorporationIdIndustryJobsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdIndustryJobsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdIndustryJobsPath },
+  query: { required: false, schema: zGetCorporationsCorporationIdIndustryJobsQuery },
+});
+
+export const GetCorporationsCorporationIdIndustryJobsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>, GetCorporationsCorporationIdIndustryJobsResponse> = {
   operationId: "GetCorporationsCorporationIdIndustryJobs",
   method: "GET",
   path: "/corporations/{corporation_id}/industry/jobs",
@@ -95,12 +130,16 @@ export const GetCorporationsCorporationIdIndustryJobsDescriptor: OperationExecut
   requestSchema: GetCorporationsCorporationIdIndustryJobsRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_jobs.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdIndustryJobsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdIndustryJobsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetIndustryFacilitiesDescriptor: OperationExecutionDescriptor<GetIndustryFacilitiesInput, GetIndustryFacilitiesOutput> = {
+export const GetIndustryFacilitiesRequestSchema: z.ZodType<OperationArguments<GetIndustryFacilitiesData>> = composeOperationRequestSchema<OperationArguments<GetIndustryFacilitiesData>>({
+  headers: { required: false, schema: zGetIndustryFacilitiesHeaders },
+});
+
+export const GetIndustryFacilitiesDescriptor: OperationExecutionDescriptor<OperationArguments<GetIndustryFacilitiesData>, GetIndustryFacilitiesResponse> = {
   operationId: "GetIndustryFacilities",
   method: "GET",
   path: "/industry/facilities",
@@ -113,12 +152,18 @@ export const GetIndustryFacilitiesDescriptor: OperationExecutionDescriptor<GetIn
   requestSchema: GetIndustryFacilitiesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetIndustryFacilitiesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetIndustryFacilitiesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationCorporationIdMiningObserversDescriptor: OperationExecutionDescriptor<GetCorporationCorporationIdMiningObserversInput, GetCorporationCorporationIdMiningObserversOutput> = {
+export const GetCorporationCorporationIdMiningObserversRequestSchema: z.ZodType<OperationArguments<GetCorporationCorporationIdMiningObserversData>> = composeOperationRequestSchema<OperationArguments<GetCorporationCorporationIdMiningObserversData>>({
+  headers: { required: false, schema: zGetCorporationCorporationIdMiningObserversHeaders },
+  path: { required: true, schema: zGetCorporationCorporationIdMiningObserversPath },
+  query: { required: false, schema: zGetCorporationCorporationIdMiningObserversQuery },
+});
+
+export const GetCorporationCorporationIdMiningObserversDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationCorporationIdMiningObserversData>, GetCorporationCorporationIdMiningObserversResponse> = {
   operationId: "GetCorporationCorporationIdMiningObservers",
   method: "GET",
   path: "/corporation/{corporation_id}/mining/observers",
@@ -133,12 +178,18 @@ export const GetCorporationCorporationIdMiningObserversDescriptor: OperationExec
   requestSchema: GetCorporationCorporationIdMiningObserversRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_mining.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationCorporationIdMiningObserversStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationCorporationIdMiningObserversResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationCorporationIdMiningExtractionsDescriptor: OperationExecutionDescriptor<GetCorporationCorporationIdMiningExtractionsInput, GetCorporationCorporationIdMiningExtractionsOutput> = {
+export const GetCorporationCorporationIdMiningExtractionsRequestSchema: z.ZodType<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>>({
+  headers: { required: false, schema: zGetCorporationCorporationIdMiningExtractionsHeaders },
+  path: { required: true, schema: zGetCorporationCorporationIdMiningExtractionsPath },
+  query: { required: false, schema: zGetCorporationCorporationIdMiningExtractionsQuery },
+});
+
+export const GetCorporationCorporationIdMiningExtractionsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>, GetCorporationCorporationIdMiningExtractionsResponse> = {
   operationId: "GetCorporationCorporationIdMiningExtractions",
   method: "GET",
   path: "/corporation/{corporation_id}/mining/extractions",
@@ -153,12 +204,18 @@ export const GetCorporationCorporationIdMiningExtractionsDescriptor: OperationEx
   requestSchema: GetCorporationCorporationIdMiningExtractionsRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_mining.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationCorporationIdMiningExtractionsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationCorporationIdMiningExtractionsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationCorporationIdMiningObserversObserverIdDescriptor: OperationExecutionDescriptor<GetCorporationCorporationIdMiningObserversObserverIdInput, GetCorporationCorporationIdMiningObserversObserverIdOutput> = {
+export const GetCorporationCorporationIdMiningObserversObserverIdRequestSchema: z.ZodType<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>> = composeOperationRequestSchema<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>>({
+  headers: { required: false, schema: zGetCorporationCorporationIdMiningObserversObserverIdHeaders },
+  path: { required: true, schema: zGetCorporationCorporationIdMiningObserversObserverIdPath },
+  query: { required: false, schema: zGetCorporationCorporationIdMiningObserversObserverIdQuery },
+});
+
+export const GetCorporationCorporationIdMiningObserversObserverIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>, GetCorporationCorporationIdMiningObserversObserverIdResponse> = {
   operationId: "GetCorporationCorporationIdMiningObserversObserverId",
   method: "GET",
   path: "/corporation/{corporation_id}/mining/observers/{observer_id}",
@@ -174,12 +231,16 @@ export const GetCorporationCorporationIdMiningObserversObserverIdDescriptor: Ope
   requestSchema: GetCorporationCorporationIdMiningObserversObserverIdRequestSchema,
   authentication: { scopes: ["esi-industry.read_corporation_mining.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationCorporationIdMiningObserversObserverIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationCorporationIdMiningObserversObserverIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetIndustrySystemsDescriptor: OperationExecutionDescriptor<GetIndustrySystemsInput, GetIndustrySystemsOutput> = {
+export const GetIndustrySystemsRequestSchema: z.ZodType<OperationArguments<GetIndustrySystemsData>> = composeOperationRequestSchema<OperationArguments<GetIndustrySystemsData>>({
+  headers: { required: false, schema: zGetIndustrySystemsHeaders },
+});
+
+export const GetIndustrySystemsDescriptor: OperationExecutionDescriptor<OperationArguments<GetIndustrySystemsData>, GetIndustrySystemsResponse> = {
   operationId: "GetIndustrySystems",
   method: "GET",
   path: "/industry/systems",
@@ -192,7 +253,7 @@ export const GetIndustrySystemsDescriptor: OperationExecutionDescriptor<GetIndus
   requestSchema: GetIndustrySystemsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetIndustrySystemsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetIndustrySystemsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

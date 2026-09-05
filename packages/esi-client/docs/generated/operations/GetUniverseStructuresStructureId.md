@@ -16,12 +16,13 @@ Get structure information
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseStructuresStructureIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createUniverseClient({ token: accessToken });
 
 const structureId = 1020000000000;
 
-const data = await client.getStructure(structureId);
+const data: GetUniverseStructuresStructureIdResponse = await client.getStructure(structureId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseStructuresStructureIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const structureId = 1020000000000;
 
-const data = await client.universe.getStructure(structureId);
+const data: GetUniverseStructuresStructureIdResponse = await client.universe.getStructure(structureId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.universe.getStructure(structureId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseStructuresStructureIdData, GetUniverseStructuresStructureIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const structureId = 1020000000000;
 const arguments_: CallOperationArguments<'GetUniverseStructuresStructureId'> = { path: { "structure_id": structureId } };
 
 const response = await client.callOperation('GetUniverseStructuresStructureId', arguments_);
+const data: GetUniverseStructuresStructureIdResponse = response.data;
 ```
 
 ## Parameters
@@ -77,14 +81,16 @@ const response = await client.callOperation('GetUniverseStructuresStructureId', 
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseStructuresStructureIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseStructuresStructureIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseStructuresStructureIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetUniverseStructuresStructureIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseStructuresStructureIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().getStructure(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseStructuresStructureIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseStructuresStructureIdResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +122,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

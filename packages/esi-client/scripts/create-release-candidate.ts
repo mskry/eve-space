@@ -35,7 +35,10 @@ function runPnpm(script: string): Promise<void> {
     child.once('error', reject);
     child.once('exit', (code, signal) => {
       if (code === 0) resolvePromise();
-      else reject(new Error(`${script} failed with ${signal ?? `exit code ${code}`}`));
+      else {
+        const reason = signal ?? `exit code ${code}`;
+        reject(new Error(`${script} failed with ${reason}`));
+      }
     });
   });
 }

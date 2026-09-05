@@ -89,6 +89,14 @@ containers.
 New behavior needs tests. The API coverage suite enforces 80% lines, functions, and statements and
 75% branches, and CI will fail the pull request below those thresholds.
 
+### ESI Client Generation
+
+The ESI client uses exactly `@hey-api/openapi-ts@0.99.0` as private build-time tooling, under its MIT License. It is configured only to generate natural TypeScript and Zod 4 artifacts; the published package uses the repository-maintained client runtime and does not ship a Hey API SDK or client runtime.
+
+From the repository root, `pnpm --filter @evespace/esi-client generate` and `pnpm esi:generate:check` are offline and read the committed corrected `packages/esi-client/openapi/generated/esi-openapi.json` snapshot. Only `pnpm --filter @evespace/esi-client generate:source:refresh` may contact ESI; it validates, corrects, hashes, and records provenance for the refreshed source before generation.
+
+Keep the Hey API dependency exactly pinned. Any pin change must pass complete generation, semantic, package, and installed-tarball validation before it is accepted.
+
 ## Pull Requests
 
 - Branch from `main` and keep each pull request to one coherent change.

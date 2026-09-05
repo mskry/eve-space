@@ -21,7 +21,7 @@ export const argumentPlacements: readonly OperationParameterPlacement[] = [
   'query',
   'header',
 ];
-export const argumentNames: ReadonlySet<string> = new Set([...argumentPlacements, 'body']);
+export const argumentNames: ReadonlySet<string> = new Set(['path', 'query', 'headers', 'body']);
 export const headerNamePattern: RegExp = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/u;
 export const placeholderPattern: RegExp = /\{([^{}]+)\}/gu;
 
@@ -38,7 +38,14 @@ export function requestError(
 }
 
 export function hasPlacement(descriptor: ValidatedDescriptor, value: string): boolean {
-  return descriptor.parameters.some(({ placement }) => placement === value);
+  const placement = value === 'headers' ? 'header' : value;
+  return descriptor.parameters.some((parameter) => parameter.placement === placement);
+}
+
+export function argumentGroupName(
+  placement: OperationParameterPlacement,
+): 'path' | 'query' | 'headers' {
+  return placement === 'header' ? 'headers' : placement;
 }
 
 export function isScalarSchemaType(value: unknown): value is ScalarParameterSchema['type'] {

@@ -16,12 +16,13 @@ Delete contacts
 - Domain import: `@evespace/esi-client/domains/contacts`
 - Domain index: [contacts](../domains/contacts.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createContactsClient } from '@evespace/esi-client/domains/contacts';
+import type { DeleteCharactersCharacterIdContactsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,13 +32,14 @@ const client = createContactsClient({ token: accessToken });
 const characterId = 90000001;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.deleteCharacterContacts(characterId, { contactIds: [12345] });
+const data: DeleteCharactersCharacterIdContactsResponse = await client.deleteCharacterContacts(characterId, { contactIds: [12345] });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { DeleteCharactersCharacterIdContactsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.contacts.deleteCharacterContacts(characterId, { contactIds: [12345] });
+const data: DeleteCharactersCharacterIdContactsResponse = await client.contacts.deleteCharacterContacts(characterId, { contactIds: [12345] });
 ```
 
 ## Generic-execution snippet
@@ -55,6 +57,7 @@ const data = await client.contacts.deleteCharacterContacts(characterId, { contac
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { DeleteCharactersCharacterIdContactsData, DeleteCharactersCharacterIdContactsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -69,6 +72,7 @@ const arguments_: CallOperationArguments<'DeleteCharactersCharacterIdContacts'> 
 const response = await client.callOperation('DeleteCharactersCharacterIdContacts', arguments_, {
   confirmMutation: true,
 });
+const data: DeleteCharactersCharacterIdContactsResponse = response.data;
 ```
 
 ## Parameters
@@ -83,14 +87,16 @@ const response = await client.callOperation('DeleteCharactersCharacterIdContacts
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `DeleteCharactersCharacterIdContactsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `DeleteCharactersCharacterIdContactsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zDeleteCharactersCharacterIdContactsHeaders`; `path` uses `@evespace/esi-client/zod` export `zDeleteCharactersCharacterIdContactsPath`; `query` uses `@evespace/esi-client/zod` export `zDeleteCharactersCharacterIdContactsQuery`.
+- Response type: `@evespace/esi-client/types` export `DeleteCharactersCharacterIdContactsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.contacts.withMetadata().deleteCharacterContacts(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `204` | none | `@evespace/esi-client/schemas` | `DeleteCharactersCharacterIdContactsStatus204SuccessResponseSchema` | Contacts deleted |
+| `204` | none | `@evespace/esi-client/zod` | `zDeleteCharactersCharacterIdContactsResponse` | Contacts deleted |
 
 ## Authentication
 
@@ -125,6 +131,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

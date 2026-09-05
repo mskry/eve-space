@@ -4,26 +4,42 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCorporationsProjectsContributionData,
+  GetCorporationsProjectsContributionResponse,
+  GetCorporationsProjectsContributorsData,
+  GetCorporationsProjectsContributorsResponse,
+  GetCorporationsProjectsDetailData,
+  GetCorporationsProjectsDetailResponse,
+  GetCorporationsProjectsListingData,
+  GetCorporationsProjectsListingResponse,
+} from '../../types.gen.js';
 import {
-  GetCorporationsProjectsContributionRequestSchema,
-  GetCorporationsProjectsContributionStatus200SuccessResponseSchema,
-  GetCorporationsProjectsContributorsRequestSchema,
-  GetCorporationsProjectsContributorsStatus200SuccessResponseSchema,
-  GetCorporationsProjectsDetailRequestSchema,
-  GetCorporationsProjectsDetailStatus200SuccessResponseSchema,
-  GetCorporationsProjectsListingRequestSchema,
-  GetCorporationsProjectsListingStatus200SuccessResponseSchema,
-  type GetCorporationsProjectsContributionInput,
-  type GetCorporationsProjectsContributionOutput,
-  type GetCorporationsProjectsContributorsInput,
-  type GetCorporationsProjectsContributorsOutput,
-  type GetCorporationsProjectsDetailInput,
-  type GetCorporationsProjectsDetailOutput,
-  type GetCorporationsProjectsListingInput,
-  type GetCorporationsProjectsListingOutput,
-} from '../../schemas/operations/corporation-projects.js';
+  zGetCorporationsProjectsContributionHeaders,
+  zGetCorporationsProjectsContributionPath,
+  zGetCorporationsProjectsContributionResponse,
+  zGetCorporationsProjectsContributorsHeaders,
+  zGetCorporationsProjectsContributorsPath,
+  zGetCorporationsProjectsContributorsQuery,
+  zGetCorporationsProjectsContributorsResponse,
+  zGetCorporationsProjectsDetailHeaders,
+  zGetCorporationsProjectsDetailPath,
+  zGetCorporationsProjectsDetailResponse,
+  zGetCorporationsProjectsListingHeaders,
+  zGetCorporationsProjectsListingPath,
+  zGetCorporationsProjectsListingQuery,
+  zGetCorporationsProjectsListingResponse,
+} from '../../zod.gen.js';
 
-export const GetCorporationsProjectsDetailDescriptor: OperationExecutionDescriptor<GetCorporationsProjectsDetailInput, GetCorporationsProjectsDetailOutput> = {
+export const GetCorporationsProjectsDetailRequestSchema: z.ZodType<OperationArguments<GetCorporationsProjectsDetailData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsProjectsDetailData>>({
+  headers: { required: false, schema: zGetCorporationsProjectsDetailHeaders },
+  path: { required: true, schema: zGetCorporationsProjectsDetailPath },
+});
+
+export const GetCorporationsProjectsDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsProjectsDetailData>, GetCorporationsProjectsDetailResponse> = {
   operationId: "GetCorporationsProjectsDetail",
   method: "GET",
   path: "/corporations/{corporation_id}/projects/{project_id}",
@@ -38,12 +54,17 @@ export const GetCorporationsProjectsDetailDescriptor: OperationExecutionDescript
   requestSchema: GetCorporationsProjectsDetailRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsProjectsDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsProjectsDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsProjectsContributionDescriptor: OperationExecutionDescriptor<GetCorporationsProjectsContributionInput, GetCorporationsProjectsContributionOutput> = {
+export const GetCorporationsProjectsContributionRequestSchema: z.ZodType<OperationArguments<GetCorporationsProjectsContributionData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsProjectsContributionData>>({
+  headers: { required: false, schema: zGetCorporationsProjectsContributionHeaders },
+  path: { required: true, schema: zGetCorporationsProjectsContributionPath },
+});
+
+export const GetCorporationsProjectsContributionDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsProjectsContributionData>, GetCorporationsProjectsContributionResponse> = {
   operationId: "GetCorporationsProjectsContribution",
   method: "GET",
   path: "/corporations/{corporation_id}/projects/{project_id}/contribution/{character_id}",
@@ -59,12 +80,18 @@ export const GetCorporationsProjectsContributionDescriptor: OperationExecutionDe
   requestSchema: GetCorporationsProjectsContributionRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsProjectsContributionStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsProjectsContributionResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsProjectsListingDescriptor: OperationExecutionDescriptor<GetCorporationsProjectsListingInput, GetCorporationsProjectsListingOutput> = {
+export const GetCorporationsProjectsListingRequestSchema: z.ZodType<OperationArguments<GetCorporationsProjectsListingData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsProjectsListingData>>({
+  headers: { required: false, schema: zGetCorporationsProjectsListingHeaders },
+  path: { required: true, schema: zGetCorporationsProjectsListingPath },
+  query: { required: false, schema: zGetCorporationsProjectsListingQuery },
+});
+
+export const GetCorporationsProjectsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsProjectsListingData>, GetCorporationsProjectsListingResponse> = {
   operationId: "GetCorporationsProjectsListing",
   method: "GET",
   path: "/corporations/{corporation_id}/projects",
@@ -82,12 +109,18 @@ export const GetCorporationsProjectsListingDescriptor: OperationExecutionDescrip
   requestSchema: GetCorporationsProjectsListingRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsProjectsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsProjectsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsProjectsContributorsDescriptor: OperationExecutionDescriptor<GetCorporationsProjectsContributorsInput, GetCorporationsProjectsContributorsOutput> = {
+export const GetCorporationsProjectsContributorsRequestSchema: z.ZodType<OperationArguments<GetCorporationsProjectsContributorsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsProjectsContributorsData>>({
+  headers: { required: false, schema: zGetCorporationsProjectsContributorsHeaders },
+  path: { required: true, schema: zGetCorporationsProjectsContributorsPath },
+  query: { required: false, schema: zGetCorporationsProjectsContributorsQuery },
+});
+
+export const GetCorporationsProjectsContributorsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsProjectsContributorsData>, GetCorporationsProjectsContributorsResponse> = {
   operationId: "GetCorporationsProjectsContributors",
   method: "GET",
   path: "/corporations/{corporation_id}/projects/{project_id}/contributors",
@@ -105,7 +138,7 @@ export const GetCorporationsProjectsContributorsDescriptor: OperationExecutionDe
   requestSchema: GetCorporationsProjectsContributorsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsProjectsContributorsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsProjectsContributorsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

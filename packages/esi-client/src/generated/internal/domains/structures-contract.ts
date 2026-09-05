@@ -4,89 +4,90 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersStructuresMercenaryDensDetailInput,
-  GetCharactersStructuresMercenaryDensDetailOutput,
-  GetCharactersStructuresMercenaryDensListingInput,
-  GetCharactersStructuresMercenaryDensListingOutput,
-  GetCorporationsStructuresSkyhooksDetailInput,
-  GetCorporationsStructuresSkyhooksDetailOutput,
-  GetCorporationsStructuresSkyhooksListingInput,
-  GetCorporationsStructuresSkyhooksListingOutput,
-  GetCorporationsStructuresSovereigntyHubsDetailInput,
-  GetCorporationsStructuresSovereigntyHubsDetailOutput,
-  GetCorporationsStructuresSovereigntyHubsListingInput,
-  GetCorporationsStructuresSovereigntyHubsListingOutput,
-} from '../../schemas/operations/structures.js';
+  GetCharactersStructuresMercenaryDensDetailData,
+  GetCharactersStructuresMercenaryDensDetailResponse,
+  GetCharactersStructuresMercenaryDensListingData,
+  GetCharactersStructuresMercenaryDensListingResponse,
+  GetCorporationsStructuresSkyhooksDetailData,
+  GetCorporationsStructuresSkyhooksDetailResponse,
+  GetCorporationsStructuresSkyhooksListingData,
+  GetCorporationsStructuresSkyhooksListingResponse,
+  GetCorporationsStructuresSovereigntyHubsDetailData,
+  GetCorporationsStructuresSovereigntyHubsDetailResponse,
+  GetCorporationsStructuresSovereigntyHubsListingData,
+  GetCorporationsStructuresSovereigntyHubsListingResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersStructuresMercenaryDensDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersStructuresMercenaryDensDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersStructuresMercenaryDensDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersStructuresMercenaryDensDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsStructuresSkyhooksDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsStructuresSkyhooksDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsStructuresSkyhooksDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsStructuresSkyhooksDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsStructuresSovereigntyHubsDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsStructuresSovereigntyHubsDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsStructuresSovereigntyHubsDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsStructuresSovereigntyHubsDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersStructuresMercenaryDensListingOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersStructuresMercenaryDensListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersStructuresMercenaryDensListingInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersStructuresMercenaryDensListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsStructuresSkyhooksListingOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsStructuresSkyhooksListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsStructuresSkyhooksListingInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsStructuresSkyhooksListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsStructuresSovereigntyHubsListingOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsStructuresSovereigntyHubsListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsStructuresSovereigntyHubsListingInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsStructuresSovereigntyHubsListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>["headers"]>["X-Tenant"];
 }
 
 export interface StructuresDomainClient {
-  getMercenaryDen(characterId: NonNullable<GetCharactersStructuresMercenaryDensDetailInput['path']>["character_id"], mercenaryDenId: NonNullable<GetCharactersStructuresMercenaryDensDetailInput['path']>["mercenary_den_id"], options?: GetCharactersStructuresMercenaryDensDetailOptions): Promise<GetCharactersStructuresMercenaryDensDetailOutput>;
+  getMercenaryDen(characterId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']>["character_id"], mercenaryDenId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']>["mercenary_den_id"], options?: GetCharactersStructuresMercenaryDensDetailOptions): Promise<GetCharactersStructuresMercenaryDensDetailResponse>;
 
-  getSkyhook(corporationId: NonNullable<GetCorporationsStructuresSkyhooksDetailInput['path']>["corporation_id"], skyhookId: NonNullable<GetCorporationsStructuresSkyhooksDetailInput['path']>["skyhook_id"], options?: GetCorporationsStructuresSkyhooksDetailOptions): Promise<GetCorporationsStructuresSkyhooksDetailOutput>;
+  getSkyhook(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']>["corporation_id"], skyhookId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']>["skyhook_id"], options?: GetCorporationsStructuresSkyhooksDetailOptions): Promise<GetCorporationsStructuresSkyhooksDetailResponse>;
 
-  getSovereigntyHub(corporationId: NonNullable<GetCorporationsStructuresSovereigntyHubsDetailInput['path']>["corporation_id"], sovereigntyHubId: NonNullable<GetCorporationsStructuresSovereigntyHubsDetailInput['path']>["sovereignty_hub_id"], options?: GetCorporationsStructuresSovereigntyHubsDetailOptions): Promise<GetCorporationsStructuresSovereigntyHubsDetailOutput>;
+  getSovereigntyHub(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']>["corporation_id"], sovereigntyHubId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']>["sovereignty_hub_id"], options?: GetCorporationsStructuresSovereigntyHubsDetailOptions): Promise<GetCorporationsStructuresSovereigntyHubsDetailResponse>;
 
-  listMercenaryDens(characterId: NonNullable<GetCharactersStructuresMercenaryDensListingInput['path']>["character_id"], options?: GetCharactersStructuresMercenaryDensListingOptions): Promise<GetCharactersStructuresMercenaryDensListingOutput>;
+  listMercenaryDens(characterId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>['path']>["character_id"], options?: GetCharactersStructuresMercenaryDensListingOptions): Promise<GetCharactersStructuresMercenaryDensListingResponse>;
 
-  listSkyhooks(corporationId: NonNullable<GetCorporationsStructuresSkyhooksListingInput['path']>["corporation_id"], options?: GetCorporationsStructuresSkyhooksListingOptions): Promise<GetCorporationsStructuresSkyhooksListingOutput>;
+  listSkyhooks(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>['path']>["corporation_id"], options?: GetCorporationsStructuresSkyhooksListingOptions): Promise<GetCorporationsStructuresSkyhooksListingResponse>;
 
-  listSovereigntyHubs(corporationId: NonNullable<GetCorporationsStructuresSovereigntyHubsListingInput['path']>["corporation_id"], options?: GetCorporationsStructuresSovereigntyHubsListingOptions): Promise<GetCorporationsStructuresSovereigntyHubsListingOutput>;
+  listSovereigntyHubs(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['path']>["corporation_id"], options?: GetCorporationsStructuresSovereigntyHubsListingOptions): Promise<GetCorporationsStructuresSovereigntyHubsListingResponse>;
 
   withMetadata(): StructuresDomainClientWithMetadata;
 }
 
 export interface StructuresDomainClientWithMetadata {
-  getMercenaryDen(characterId: NonNullable<GetCharactersStructuresMercenaryDensDetailInput['path']>["character_id"], mercenaryDenId: NonNullable<GetCharactersStructuresMercenaryDensDetailInput['path']>["mercenary_den_id"], options?: GetCharactersStructuresMercenaryDensDetailOptions): Promise<EsiResponse<GetCharactersStructuresMercenaryDensDetailOutput>>;
+  getMercenaryDen(characterId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']>["character_id"], mercenaryDenId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensDetailData>['path']>["mercenary_den_id"], options?: GetCharactersStructuresMercenaryDensDetailOptions): Promise<EsiResponse<GetCharactersStructuresMercenaryDensDetailResponse>>;
 
-  getSkyhook(corporationId: NonNullable<GetCorporationsStructuresSkyhooksDetailInput['path']>["corporation_id"], skyhookId: NonNullable<GetCorporationsStructuresSkyhooksDetailInput['path']>["skyhook_id"], options?: GetCorporationsStructuresSkyhooksDetailOptions): Promise<EsiResponse<GetCorporationsStructuresSkyhooksDetailOutput>>;
+  getSkyhook(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']>["corporation_id"], skyhookId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksDetailData>['path']>["skyhook_id"], options?: GetCorporationsStructuresSkyhooksDetailOptions): Promise<EsiResponse<GetCorporationsStructuresSkyhooksDetailResponse>>;
 
-  getSovereigntyHub(corporationId: NonNullable<GetCorporationsStructuresSovereigntyHubsDetailInput['path']>["corporation_id"], sovereigntyHubId: NonNullable<GetCorporationsStructuresSovereigntyHubsDetailInput['path']>["sovereignty_hub_id"], options?: GetCorporationsStructuresSovereigntyHubsDetailOptions): Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsDetailOutput>>;
+  getSovereigntyHub(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']>["corporation_id"], sovereigntyHubId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsDetailData>['path']>["sovereignty_hub_id"], options?: GetCorporationsStructuresSovereigntyHubsDetailOptions): Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsDetailResponse>>;
 
-  listMercenaryDens(characterId: NonNullable<GetCharactersStructuresMercenaryDensListingInput['path']>["character_id"], options?: GetCharactersStructuresMercenaryDensListingOptions): Promise<EsiResponse<GetCharactersStructuresMercenaryDensListingOutput>>;
+  listMercenaryDens(characterId: NonNullable<OperationArguments<GetCharactersStructuresMercenaryDensListingData>['path']>["character_id"], options?: GetCharactersStructuresMercenaryDensListingOptions): Promise<EsiResponse<GetCharactersStructuresMercenaryDensListingResponse>>;
 
-  listSkyhooks(corporationId: NonNullable<GetCorporationsStructuresSkyhooksListingInput['path']>["corporation_id"], options?: GetCorporationsStructuresSkyhooksListingOptions): Promise<EsiResponse<GetCorporationsStructuresSkyhooksListingOutput>>;
+  listSkyhooks(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSkyhooksListingData>['path']>["corporation_id"], options?: GetCorporationsStructuresSkyhooksListingOptions): Promise<EsiResponse<GetCorporationsStructuresSkyhooksListingResponse>>;
 
-  listSovereigntyHubs(corporationId: NonNullable<GetCorporationsStructuresSovereigntyHubsListingInput['path']>["corporation_id"], options?: GetCorporationsStructuresSovereigntyHubsListingOptions): Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsListingOutput>>;
+  listSovereigntyHubs(corporationId: NonNullable<OperationArguments<GetCorporationsStructuresSovereigntyHubsListingData>['path']>["corporation_id"], options?: GetCorporationsStructuresSovereigntyHubsListingOptions): Promise<EsiResponse<GetCorporationsStructuresSovereigntyHubsListingResponse>>;
 }

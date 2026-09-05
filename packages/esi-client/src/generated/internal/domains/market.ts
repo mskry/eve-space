@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetMarketsGroupsMarketGroupIdDescriptor,
@@ -35,29 +36,29 @@ import type {
   GetMarketsStructuresStructureIdOptions,
 } from './market-contract.js';
 import type {
-  GetCharactersCharacterIdOrdersHistoryInput,
-  GetCharactersCharacterIdOrdersHistoryOutput,
-  GetCharactersCharacterIdOrdersInput,
-  GetCharactersCharacterIdOrdersOutput,
-  GetCorporationsCorporationIdOrdersHistoryInput,
-  GetCorporationsCorporationIdOrdersHistoryOutput,
-  GetCorporationsCorporationIdOrdersInput,
-  GetCorporationsCorporationIdOrdersOutput,
-  GetMarketsGroupsInput,
-  GetMarketsGroupsMarketGroupIdInput,
-  GetMarketsGroupsMarketGroupIdOutput,
-  GetMarketsGroupsOutput,
-  GetMarketsPricesInput,
-  GetMarketsPricesOutput,
-  GetMarketsRegionIdHistoryInput,
-  GetMarketsRegionIdHistoryOutput,
-  GetMarketsRegionIdOrdersInput,
-  GetMarketsRegionIdOrdersOutput,
-  GetMarketsRegionIdTypesInput,
-  GetMarketsRegionIdTypesOutput,
-  GetMarketsStructuresStructureIdInput,
-  GetMarketsStructuresStructureIdOutput,
-} from '../../schemas/operations/market.js';
+  GetCharactersCharacterIdOrdersData,
+  GetCharactersCharacterIdOrdersHistoryData,
+  GetCharactersCharacterIdOrdersHistoryResponse,
+  GetCharactersCharacterIdOrdersResponse,
+  GetCorporationsCorporationIdOrdersData,
+  GetCorporationsCorporationIdOrdersHistoryData,
+  GetCorporationsCorporationIdOrdersHistoryResponse,
+  GetCorporationsCorporationIdOrdersResponse,
+  GetMarketsGroupsData,
+  GetMarketsGroupsMarketGroupIdData,
+  GetMarketsGroupsMarketGroupIdResponse,
+  GetMarketsGroupsResponse,
+  GetMarketsPricesData,
+  GetMarketsPricesResponse,
+  GetMarketsRegionIdHistoryData,
+  GetMarketsRegionIdHistoryResponse,
+  GetMarketsRegionIdOrdersData,
+  GetMarketsRegionIdOrdersResponse,
+  GetMarketsRegionIdTypesData,
+  GetMarketsRegionIdTypesResponse,
+  GetMarketsStructuresStructureIdData,
+  GetMarketsStructuresStructureIdResponse,
+} from '../../types.gen.js';
 
 class MarketDomainClientWithMetadataImplementation implements MarketDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -67,58 +68,58 @@ class MarketDomainClientWithMetadataImplementation implements MarketDomainClient
     Object.freeze(this);
   }
 
-  getGroup(marketGroupId: NonNullable<GetMarketsGroupsMarketGroupIdInput['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<EsiResponse<GetMarketsGroupsMarketGroupIdOutput>> {
-    const arguments_: GetMarketsGroupsMarketGroupIdInput = { path: { "market_group_id": marketGroupId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getGroup(marketGroupId: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<EsiResponse<GetMarketsGroupsMarketGroupIdResponse>> {
+    const arguments_: OperationArguments<GetMarketsGroupsMarketGroupIdData> = { path: { "market_group_id": marketGroupId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMarketsGroupsMarketGroupIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCharacterOrderHistory(characterId: NonNullable<GetCharactersCharacterIdOrdersHistoryInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersHistoryOutput>> {
-    const arguments_: GetCharactersCharacterIdOrdersHistoryInput = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCharacterOrderHistory(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersHistoryResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdOrdersHistoryData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdOrdersHistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCharacterOrders(characterId: NonNullable<GetCharactersCharacterIdOrdersInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersOutput>> {
-    const arguments_: GetCharactersCharacterIdOrdersInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCharacterOrders(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdOrdersData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdOrdersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporationOrderHistory(corporationId: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersHistoryOutput>> {
-    const arguments_: GetCorporationsCorporationIdOrdersHistoryInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporationOrderHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersHistoryResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdOrdersHistoryData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdOrdersHistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporationOrders(corporationId: NonNullable<GetCorporationsCorporationIdOrdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersOutput>> {
-    const arguments_: GetCorporationsCorporationIdOrdersInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporationOrders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdOrdersData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdOrdersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listGroups(options?: GetMarketsGroupsOptions): Promise<EsiResponse<GetMarketsGroupsOutput>> {
-    const arguments_: GetMarketsGroupsInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listGroups(options?: GetMarketsGroupsOptions): Promise<EsiResponse<GetMarketsGroupsResponse>> {
+    const arguments_: OperationArguments<GetMarketsGroupsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMarketsGroupsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listPrices(options?: GetMarketsPricesOptions): Promise<EsiResponse<GetMarketsPricesOutput>> {
-    const arguments_: GetMarketsPricesInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listPrices(options?: GetMarketsPricesOptions): Promise<EsiResponse<GetMarketsPricesResponse>> {
+    const arguments_: OperationArguments<GetMarketsPricesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMarketsPricesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listRegionHistory(regionId: NonNullable<GetMarketsRegionIdHistoryInput['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<EsiResponse<GetMarketsRegionIdHistoryOutput>> {
-    const arguments_: GetMarketsRegionIdHistoryInput = { path: { "region_id": regionId }, query: { "type_id": options?.["typeId"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listRegionHistory(regionId: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<EsiResponse<GetMarketsRegionIdHistoryResponse>> {
+    const arguments_: OperationArguments<GetMarketsRegionIdHistoryData> = { path: { "region_id": regionId }, query: { "type_id": options?.["typeId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMarketsRegionIdHistoryDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listRegionOrders(regionId: NonNullable<GetMarketsRegionIdOrdersInput['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<EsiResponse<GetMarketsRegionIdOrdersOutput>> {
-    const arguments_: GetMarketsRegionIdOrdersInput = { path: { "region_id": regionId }, query: { "order_type": options?.["orderType"], "page": options?.["page"], "type_id": options?.["typeId"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listRegionOrders(regionId: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<EsiResponse<GetMarketsRegionIdOrdersResponse>> {
+    const arguments_: OperationArguments<GetMarketsRegionIdOrdersData> = { path: { "region_id": regionId }, query: { "order_type": options?.["orderType"], "page": options?.["page"], "type_id": options?.["typeId"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMarketsRegionIdOrdersDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listRegionTypes(regionId: NonNullable<GetMarketsRegionIdTypesInput['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<EsiResponse<GetMarketsRegionIdTypesOutput>> {
-    const arguments_: GetMarketsRegionIdTypesInput = { path: { "region_id": regionId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listRegionTypes(regionId: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<EsiResponse<GetMarketsRegionIdTypesResponse>> {
+    const arguments_: OperationArguments<GetMarketsRegionIdTypesData> = { path: { "region_id": regionId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMarketsRegionIdTypesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listStructureOrders(structureId: NonNullable<GetMarketsStructuresStructureIdInput['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<EsiResponse<GetMarketsStructuresStructureIdOutput>> {
-    const arguments_: GetMarketsStructuresStructureIdInput = { path: { "structure_id": structureId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listStructureOrders(structureId: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<EsiResponse<GetMarketsStructuresStructureIdResponse>> {
+    const arguments_: OperationArguments<GetMarketsStructuresStructureIdData> = { path: { "structure_id": structureId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetMarketsStructuresStructureIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -131,47 +132,47 @@ class MarketDomainClientImplementation implements MarketDomainClient {
     Object.freeze(this);
   }
 
-  getGroup(marketGroupId: NonNullable<GetMarketsGroupsMarketGroupIdInput['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<GetMarketsGroupsMarketGroupIdOutput> {
+  getGroup(marketGroupId: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<GetMarketsGroupsMarketGroupIdResponse> {
     return this.#metadata.getGroup(marketGroupId, options).then((response) => response.data);
   }
 
-  listCharacterOrderHistory(characterId: NonNullable<GetCharactersCharacterIdOrdersHistoryInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<GetCharactersCharacterIdOrdersHistoryOutput> {
+  listCharacterOrderHistory(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<GetCharactersCharacterIdOrdersHistoryResponse> {
     return this.#metadata.listCharacterOrderHistory(characterId, options).then((response) => response.data);
   }
 
-  listCharacterOrders(characterId: NonNullable<GetCharactersCharacterIdOrdersInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<GetCharactersCharacterIdOrdersOutput> {
+  listCharacterOrders(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<GetCharactersCharacterIdOrdersResponse> {
     return this.#metadata.listCharacterOrders(characterId, options).then((response) => response.data);
   }
 
-  listCorporationOrderHistory(corporationId: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<GetCorporationsCorporationIdOrdersHistoryOutput> {
+  listCorporationOrderHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<GetCorporationsCorporationIdOrdersHistoryResponse> {
     return this.#metadata.listCorporationOrderHistory(corporationId, options).then((response) => response.data);
   }
 
-  listCorporationOrders(corporationId: NonNullable<GetCorporationsCorporationIdOrdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<GetCorporationsCorporationIdOrdersOutput> {
+  listCorporationOrders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<GetCorporationsCorporationIdOrdersResponse> {
     return this.#metadata.listCorporationOrders(corporationId, options).then((response) => response.data);
   }
 
-  listGroups(options?: GetMarketsGroupsOptions): Promise<GetMarketsGroupsOutput> {
+  listGroups(options?: GetMarketsGroupsOptions): Promise<GetMarketsGroupsResponse> {
     return this.#metadata.listGroups(options).then((response) => response.data);
   }
 
-  listPrices(options?: GetMarketsPricesOptions): Promise<GetMarketsPricesOutput> {
+  listPrices(options?: GetMarketsPricesOptions): Promise<GetMarketsPricesResponse> {
     return this.#metadata.listPrices(options).then((response) => response.data);
   }
 
-  listRegionHistory(regionId: NonNullable<GetMarketsRegionIdHistoryInput['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<GetMarketsRegionIdHistoryOutput> {
+  listRegionHistory(regionId: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<GetMarketsRegionIdHistoryResponse> {
     return this.#metadata.listRegionHistory(regionId, options).then((response) => response.data);
   }
 
-  listRegionOrders(regionId: NonNullable<GetMarketsRegionIdOrdersInput['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<GetMarketsRegionIdOrdersOutput> {
+  listRegionOrders(regionId: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<GetMarketsRegionIdOrdersResponse> {
     return this.#metadata.listRegionOrders(regionId, options).then((response) => response.data);
   }
 
-  listRegionTypes(regionId: NonNullable<GetMarketsRegionIdTypesInput['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<GetMarketsRegionIdTypesOutput> {
+  listRegionTypes(regionId: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<GetMarketsRegionIdTypesResponse> {
     return this.#metadata.listRegionTypes(regionId, options).then((response) => response.data);
   }
 
-  listStructureOrders(structureId: NonNullable<GetMarketsStructuresStructureIdInput['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<GetMarketsStructuresStructureIdOutput> {
+  listStructureOrders(structureId: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<GetMarketsStructuresStructureIdResponse> {
     return this.#metadata.listStructureOrders(structureId, options).then((response) => response.data);
   }
 

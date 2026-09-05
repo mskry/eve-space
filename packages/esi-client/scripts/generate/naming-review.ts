@@ -5,7 +5,10 @@ import {
   defaultMethodName,
   type FacadeCatalogEntry,
 } from './operation-metadata.ts';
-import { operationSchemaName } from './zod-schema.ts';
+import { operationSchemaName } from './operation-names.ts';
+import { deepFreeze } from './internal/json.ts';
+import { splitWords } from './internal/facade-naming.ts';
+import { capitalize, compareText } from './internal/text.ts';
 
 export type NamingResponseShape = 'collection' | 'detail' | 'none';
 
@@ -303,12 +306,9 @@ function resolveSchema(
 }
 
 function normalizedWords(value: string): string[] {
-  return value
-    .replaceAll(/([a-z0-9])([A-Z])/gu, '$1 $2')
-    .replaceAll(/([A-Z])(?=[A-Z][a-z])/gu, '$1 ')
-    .split(/[^A-Za-z0-9]+/u)
-    .filter(Boolean)
-    .flatMap((word) => terminology.get(word.toLowerCase()) ?? [word.toLowerCase()]);
+  return splitWords(value).flatMap(
+    (word) => terminology.get(word.toLowerCase()) ?? [word.toLowerCase()],
+  );
 }
 
 function operationHasOptions(operation: NormalizedOperation): boolean {
@@ -346,22 +346,4 @@ function code(value: string): string {
 
 function cell(value: string): string {
   return value.replaceAll('|', String.raw`\|`).replaceAll(/\r?\n/gu, ' ');
-}
-
-function capitalize(value: string): string {
-  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
-}
-
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const entry of Object.values(value)) deepFreeze(entry);
-  }
-  return value;
 }

@@ -4,42 +4,53 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdFwStatsData,
+  GetCharactersCharacterIdFwStatsResponse,
+  GetCorporationsCorporationIdFwStatsData,
+  GetCorporationsCorporationIdFwStatsResponse,
+  GetFwLeaderboardsCharactersData,
+  GetFwLeaderboardsCharactersResponse,
+  GetFwLeaderboardsCorporationsData,
+  GetFwLeaderboardsCorporationsResponse,
+  GetFwLeaderboardsData,
+  GetFwLeaderboardsResponse,
+  GetFwStatsData,
+  GetFwStatsResponse,
+  GetFwSystemsData,
+  GetFwSystemsResponse,
+  GetFwWarsData,
+  GetFwWarsResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdFwStatsRequestSchema,
-  GetCharactersCharacterIdFwStatsStatus200SuccessResponseSchema,
-  GetCorporationsCorporationIdFwStatsRequestSchema,
-  GetCorporationsCorporationIdFwStatsStatus200SuccessResponseSchema,
-  GetFwLeaderboardsCharactersRequestSchema,
-  GetFwLeaderboardsCharactersStatus200SuccessResponseSchema,
-  GetFwLeaderboardsCorporationsRequestSchema,
-  GetFwLeaderboardsCorporationsStatus200SuccessResponseSchema,
-  GetFwLeaderboardsRequestSchema,
-  GetFwLeaderboardsStatus200SuccessResponseSchema,
-  GetFwStatsRequestSchema,
-  GetFwStatsStatus200SuccessResponseSchema,
-  GetFwSystemsRequestSchema,
-  GetFwSystemsStatus200SuccessResponseSchema,
-  GetFwWarsRequestSchema,
-  GetFwWarsStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdFwStatsInput,
-  type GetCharactersCharacterIdFwStatsOutput,
-  type GetCorporationsCorporationIdFwStatsInput,
-  type GetCorporationsCorporationIdFwStatsOutput,
-  type GetFwLeaderboardsCharactersInput,
-  type GetFwLeaderboardsCharactersOutput,
-  type GetFwLeaderboardsCorporationsInput,
-  type GetFwLeaderboardsCorporationsOutput,
-  type GetFwLeaderboardsInput,
-  type GetFwLeaderboardsOutput,
-  type GetFwStatsInput,
-  type GetFwStatsOutput,
-  type GetFwSystemsInput,
-  type GetFwSystemsOutput,
-  type GetFwWarsInput,
-  type GetFwWarsOutput,
-} from '../../schemas/operations/faction-warfare.js';
+  zGetCharactersCharacterIdFwStatsHeaders,
+  zGetCharactersCharacterIdFwStatsPath,
+  zGetCharactersCharacterIdFwStatsResponse,
+  zGetCorporationsCorporationIdFwStatsHeaders,
+  zGetCorporationsCorporationIdFwStatsPath,
+  zGetCorporationsCorporationIdFwStatsResponse,
+  zGetFwLeaderboardsCharactersHeaders,
+  zGetFwLeaderboardsCharactersResponse,
+  zGetFwLeaderboardsCorporationsHeaders,
+  zGetFwLeaderboardsCorporationsResponse,
+  zGetFwLeaderboardsHeaders,
+  zGetFwLeaderboardsResponse,
+  zGetFwStatsHeaders,
+  zGetFwStatsResponse,
+  zGetFwSystemsHeaders,
+  zGetFwSystemsResponse,
+  zGetFwWarsHeaders,
+  zGetFwWarsResponse,
+} from '../../zod.gen.js';
 
-export const GetFwLeaderboardsCharactersDescriptor: OperationExecutionDescriptor<GetFwLeaderboardsCharactersInput, GetFwLeaderboardsCharactersOutput> = {
+export const GetFwLeaderboardsCharactersRequestSchema: z.ZodType<OperationArguments<GetFwLeaderboardsCharactersData>> = composeOperationRequestSchema<OperationArguments<GetFwLeaderboardsCharactersData>>({
+  headers: { required: false, schema: zGetFwLeaderboardsCharactersHeaders },
+});
+
+export const GetFwLeaderboardsCharactersDescriptor: OperationExecutionDescriptor<OperationArguments<GetFwLeaderboardsCharactersData>, GetFwLeaderboardsCharactersResponse> = {
   operationId: "GetFwLeaderboardsCharacters",
   method: "GET",
   path: "/fw/leaderboards/characters",
@@ -52,12 +63,17 @@ export const GetFwLeaderboardsCharactersDescriptor: OperationExecutionDescriptor
   requestSchema: GetFwLeaderboardsCharactersRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFwLeaderboardsCharactersStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFwLeaderboardsCharactersResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdFwStatsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdFwStatsInput, GetCharactersCharacterIdFwStatsOutput> = {
+export const GetCharactersCharacterIdFwStatsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdFwStatsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdFwStatsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdFwStatsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdFwStatsPath },
+});
+
+export const GetCharactersCharacterIdFwStatsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdFwStatsData>, GetCharactersCharacterIdFwStatsResponse> = {
   operationId: "GetCharactersCharacterIdFwStats",
   method: "GET",
   path: "/characters/{character_id}/fw/stats",
@@ -71,12 +87,16 @@ export const GetCharactersCharacterIdFwStatsDescriptor: OperationExecutionDescri
   requestSchema: GetCharactersCharacterIdFwStatsRequestSchema,
   authentication: { scopes: ["esi-characters.read_fw_stats.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdFwStatsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdFwStatsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFwLeaderboardsCorporationsDescriptor: OperationExecutionDescriptor<GetFwLeaderboardsCorporationsInput, GetFwLeaderboardsCorporationsOutput> = {
+export const GetFwLeaderboardsCorporationsRequestSchema: z.ZodType<OperationArguments<GetFwLeaderboardsCorporationsData>> = composeOperationRequestSchema<OperationArguments<GetFwLeaderboardsCorporationsData>>({
+  headers: { required: false, schema: zGetFwLeaderboardsCorporationsHeaders },
+});
+
+export const GetFwLeaderboardsCorporationsDescriptor: OperationExecutionDescriptor<OperationArguments<GetFwLeaderboardsCorporationsData>, GetFwLeaderboardsCorporationsResponse> = {
   operationId: "GetFwLeaderboardsCorporations",
   method: "GET",
   path: "/fw/leaderboards/corporations",
@@ -89,12 +109,17 @@ export const GetFwLeaderboardsCorporationsDescriptor: OperationExecutionDescript
   requestSchema: GetFwLeaderboardsCorporationsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFwLeaderboardsCorporationsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFwLeaderboardsCorporationsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCorporationsCorporationIdFwStatsDescriptor: OperationExecutionDescriptor<GetCorporationsCorporationIdFwStatsInput, GetCorporationsCorporationIdFwStatsOutput> = {
+export const GetCorporationsCorporationIdFwStatsRequestSchema: z.ZodType<OperationArguments<GetCorporationsCorporationIdFwStatsData>> = composeOperationRequestSchema<OperationArguments<GetCorporationsCorporationIdFwStatsData>>({
+  headers: { required: false, schema: zGetCorporationsCorporationIdFwStatsHeaders },
+  path: { required: true, schema: zGetCorporationsCorporationIdFwStatsPath },
+});
+
+export const GetCorporationsCorporationIdFwStatsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCorporationsCorporationIdFwStatsData>, GetCorporationsCorporationIdFwStatsResponse> = {
   operationId: "GetCorporationsCorporationIdFwStats",
   method: "GET",
   path: "/corporations/{corporation_id}/fw/stats",
@@ -108,12 +133,16 @@ export const GetCorporationsCorporationIdFwStatsDescriptor: OperationExecutionDe
   requestSchema: GetCorporationsCorporationIdFwStatsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_fw_stats.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCorporationsCorporationIdFwStatsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCorporationsCorporationIdFwStatsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFwLeaderboardsDescriptor: OperationExecutionDescriptor<GetFwLeaderboardsInput, GetFwLeaderboardsOutput> = {
+export const GetFwLeaderboardsRequestSchema: z.ZodType<OperationArguments<GetFwLeaderboardsData>> = composeOperationRequestSchema<OperationArguments<GetFwLeaderboardsData>>({
+  headers: { required: false, schema: zGetFwLeaderboardsHeaders },
+});
+
+export const GetFwLeaderboardsDescriptor: OperationExecutionDescriptor<OperationArguments<GetFwLeaderboardsData>, GetFwLeaderboardsResponse> = {
   operationId: "GetFwLeaderboards",
   method: "GET",
   path: "/fw/leaderboards",
@@ -126,12 +155,16 @@ export const GetFwLeaderboardsDescriptor: OperationExecutionDescriptor<GetFwLead
   requestSchema: GetFwLeaderboardsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFwLeaderboardsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFwLeaderboardsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFwStatsDescriptor: OperationExecutionDescriptor<GetFwStatsInput, GetFwStatsOutput> = {
+export const GetFwStatsRequestSchema: z.ZodType<OperationArguments<GetFwStatsData>> = composeOperationRequestSchema<OperationArguments<GetFwStatsData>>({
+  headers: { required: false, schema: zGetFwStatsHeaders },
+});
+
+export const GetFwStatsDescriptor: OperationExecutionDescriptor<OperationArguments<GetFwStatsData>, GetFwStatsResponse> = {
   operationId: "GetFwStats",
   method: "GET",
   path: "/fw/stats",
@@ -144,12 +177,16 @@ export const GetFwStatsDescriptor: OperationExecutionDescriptor<GetFwStatsInput,
   requestSchema: GetFwStatsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFwStatsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFwStatsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFwSystemsDescriptor: OperationExecutionDescriptor<GetFwSystemsInput, GetFwSystemsOutput> = {
+export const GetFwSystemsRequestSchema: z.ZodType<OperationArguments<GetFwSystemsData>> = composeOperationRequestSchema<OperationArguments<GetFwSystemsData>>({
+  headers: { required: false, schema: zGetFwSystemsHeaders },
+});
+
+export const GetFwSystemsDescriptor: OperationExecutionDescriptor<OperationArguments<GetFwSystemsData>, GetFwSystemsResponse> = {
   operationId: "GetFwSystems",
   method: "GET",
   path: "/fw/systems",
@@ -162,12 +199,16 @@ export const GetFwSystemsDescriptor: OperationExecutionDescriptor<GetFwSystemsIn
   requestSchema: GetFwSystemsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFwSystemsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFwSystemsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetFwWarsDescriptor: OperationExecutionDescriptor<GetFwWarsInput, GetFwWarsOutput> = {
+export const GetFwWarsRequestSchema: z.ZodType<OperationArguments<GetFwWarsData>> = composeOperationRequestSchema<OperationArguments<GetFwWarsData>>({
+  headers: { required: false, schema: zGetFwWarsHeaders },
+});
+
+export const GetFwWarsDescriptor: OperationExecutionDescriptor<OperationArguments<GetFwWarsData>, GetFwWarsResponse> = {
   operationId: "GetFwWars",
   method: "GET",
   path: "/fw/wars",
@@ -180,7 +221,7 @@ export const GetFwWarsDescriptor: OperationExecutionDescriptor<GetFwWarsInput, G
   requestSchema: GetFwWarsRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetFwWarsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetFwWarsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

@@ -5,4 +5,3 @@
 
 export * from './domains/index.js';
 export * from './esi-client.js';
-export * from './schemas/index.js';

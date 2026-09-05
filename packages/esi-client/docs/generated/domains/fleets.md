@@ -34,6 +34,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createFleetsClient } from '@evespace/esi-client/domains/fleets';
+import type { DeleteFleetsFleetIdMembersMemberIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -44,7 +45,7 @@ const fleetId = 12345;
 const memberId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.removeMember(fleetId, memberId);
+const data: DeleteFleetsFleetIdMembersMemberIdResponse = await client.removeMember(fleetId, memberId);
 ```
 
 ## Aggregate client
@@ -53,6 +54,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { DeleteFleetsFleetIdMembersMemberIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -63,7 +65,7 @@ const fleetId = 12345;
 const memberId = 12345;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.fleets.removeMember(fleetId, memberId);
+const data: DeleteFleetsFleetIdMembersMemberIdResponse = await client.fleets.removeMember(fleetId, memberId);
 ```
 
 ## Shared concepts

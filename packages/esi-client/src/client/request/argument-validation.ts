@@ -1,4 +1,5 @@
 import {
+  argumentGroupName,
   argumentNames,
   argumentPlacements,
   assertDataProperties,
@@ -73,10 +74,12 @@ function collectPlacementValues(
 ): void {
   const parameters = descriptor.parameters.filter((parameter) => parameter.placement === placement);
   if (parameters.length === 0) return;
+  const groupName = argumentGroupName(placement);
   const group = validateParameterGroup(
     descriptor.operationId,
-    arguments_[placement],
+    arguments_[groupName],
     placement,
+    groupName,
     parameters,
   );
   for (const parameter of parameters) {
@@ -85,7 +88,7 @@ function collectPlacementValues(
       if (parameter.required) {
         throw requestError(
           descriptor.operationId,
-          [placement, parameter.name],
+          [groupName, parameter.name],
           `Required ${placement} parameter is missing: ${parameter.name}`,
           'required',
         );
@@ -101,24 +104,25 @@ function validateParameterGroup(
   operationId: string,
   value: unknown,
   placement: OperationParameterPlacement,
+  groupName: 'path' | 'query' | 'headers',
   parameters: readonly ValidatedParameter[],
 ): Readonly<Record<string, unknown>> | undefined {
   if (value === undefined) return undefined;
   if (!isPlainRecord(value)) {
     throw requestError(
       operationId,
-      [placement],
-      `${placement} arguments must be a plain object`,
+      [groupName],
+      `${groupName} arguments must be a plain object`,
       'invalid_type',
     );
   }
-  assertDataProperties(operationId, value, [placement]);
+  assertDataProperties(operationId, value, [groupName]);
   for (const name of Object.keys(value)) {
     if (!parameters.some((parameter) => parameter.name === name)) {
       throw requestError(
         operationId,
-        [placement, name],
-        `Undeclared ${placement} parameter: ${name}`,
+        [groupName, name],
+        `Undeclared ${groupName} parameter: ${name}`,
         'unrecognized_key',
       );
     }
@@ -131,7 +135,10 @@ function validateParameterValue(
   parameter: ValidatedParameter,
   value: unknown,
 ): void {
-  const path: readonly (string | number)[] = [parameter.placement, parameter.name];
+  const path: readonly (string | number)[] = [
+    argumentGroupName(parameter.placement),
+    parameter.name,
+  ];
   if (parameter.schema.type !== 'array') {
     validateScalar(operationId, parameter.schema, value, path, parameter.placement);
     return;

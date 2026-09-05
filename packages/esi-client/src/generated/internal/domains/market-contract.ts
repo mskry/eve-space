@@ -4,163 +4,164 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdOrdersHistoryInput,
-  GetCharactersCharacterIdOrdersHistoryOutput,
-  GetCharactersCharacterIdOrdersInput,
-  GetCharactersCharacterIdOrdersOutput,
-  GetCorporationsCorporationIdOrdersHistoryInput,
-  GetCorporationsCorporationIdOrdersHistoryOutput,
-  GetCorporationsCorporationIdOrdersInput,
-  GetCorporationsCorporationIdOrdersOutput,
-  GetMarketsGroupsInput,
-  GetMarketsGroupsMarketGroupIdInput,
-  GetMarketsGroupsMarketGroupIdOutput,
-  GetMarketsGroupsOutput,
-  GetMarketsPricesInput,
-  GetMarketsPricesOutput,
-  GetMarketsRegionIdHistoryInput,
-  GetMarketsRegionIdHistoryOutput,
-  GetMarketsRegionIdOrdersInput,
-  GetMarketsRegionIdOrdersOutput,
-  GetMarketsRegionIdTypesInput,
-  GetMarketsRegionIdTypesOutput,
-  GetMarketsStructuresStructureIdInput,
-  GetMarketsStructuresStructureIdOutput,
-} from '../../schemas/operations/market.js';
+  GetCharactersCharacterIdOrdersData,
+  GetCharactersCharacterIdOrdersHistoryData,
+  GetCharactersCharacterIdOrdersHistoryResponse,
+  GetCharactersCharacterIdOrdersResponse,
+  GetCorporationsCorporationIdOrdersData,
+  GetCorporationsCorporationIdOrdersHistoryData,
+  GetCorporationsCorporationIdOrdersHistoryResponse,
+  GetCorporationsCorporationIdOrdersResponse,
+  GetMarketsGroupsData,
+  GetMarketsGroupsMarketGroupIdData,
+  GetMarketsGroupsMarketGroupIdResponse,
+  GetMarketsGroupsResponse,
+  GetMarketsPricesData,
+  GetMarketsPricesResponse,
+  GetMarketsRegionIdHistoryData,
+  GetMarketsRegionIdHistoryResponse,
+  GetMarketsRegionIdOrdersData,
+  GetMarketsRegionIdOrdersResponse,
+  GetMarketsRegionIdTypesData,
+  GetMarketsRegionIdTypesResponse,
+  GetMarketsStructuresStructureIdData,
+  GetMarketsStructuresStructureIdResponse,
+} from '../../types.gen.js';
 
 export interface GetMarketsGroupsMarketGroupIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMarketsGroupsMarketGroupIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMarketsGroupsMarketGroupIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMarketsGroupsMarketGroupIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdOrdersHistoryOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdOrdersHistoryInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdOrdersHistoryInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCharactersCharacterIdOrdersHistoryInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdOrdersHistoryInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdOrdersOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdOrdersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdOrdersInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdOrdersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdOrdersHistoryOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdOrdersOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdOrdersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdOrdersInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdOrdersInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdOrdersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMarketsGroupsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMarketsGroupsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMarketsGroupsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMarketsGroupsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsGroupsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsGroupsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsGroupsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMarketsPricesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMarketsPricesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMarketsPricesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMarketsPricesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsPricesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsPricesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsPricesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMarketsRegionIdHistoryOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMarketsRegionIdHistoryInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMarketsRegionIdHistoryInput["header"]>["If-None-Match"];
-  readonly "typeId": NonNullable<GetMarketsRegionIdHistoryInput["query"]>["type_id"];
-  readonly "xTenant"?: NonNullable<GetMarketsRegionIdHistoryInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["headers"]>["If-None-Match"];
+  readonly "typeId": NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["query"]>["type_id"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMarketsRegionIdOrdersOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMarketsRegionIdOrdersInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMarketsRegionIdOrdersInput["header"]>["If-None-Match"];
-  readonly "orderType": NonNullable<GetMarketsRegionIdOrdersInput["query"]>["order_type"];
-  readonly "page"?: NonNullable<GetMarketsRegionIdOrdersInput["query"]>["page"];
-  readonly "typeId"?: NonNullable<GetMarketsRegionIdOrdersInput["query"]>["type_id"];
-  readonly "xTenant"?: NonNullable<GetMarketsRegionIdOrdersInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["headers"]>["If-None-Match"];
+  readonly "orderType": NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["query"]>["order_type"];
+  readonly "page"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["query"]>["page"];
+  readonly "typeId"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["query"]>["type_id"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMarketsRegionIdTypesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMarketsRegionIdTypesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMarketsRegionIdTypesInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetMarketsRegionIdTypesInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetMarketsRegionIdTypesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMarketsStructuresStructureIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMarketsStructuresStructureIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMarketsStructuresStructureIdInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetMarketsStructuresStructureIdInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetMarketsStructuresStructureIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>["headers"]>["X-Tenant"];
 }
 
 export interface MarketDomainClient {
-  getGroup(marketGroupId: NonNullable<GetMarketsGroupsMarketGroupIdInput['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<GetMarketsGroupsMarketGroupIdOutput>;
+  getGroup(marketGroupId: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<GetMarketsGroupsMarketGroupIdResponse>;
 
-  listCharacterOrderHistory(characterId: NonNullable<GetCharactersCharacterIdOrdersHistoryInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<GetCharactersCharacterIdOrdersHistoryOutput>;
+  listCharacterOrderHistory(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<GetCharactersCharacterIdOrdersHistoryResponse>;
 
-  listCharacterOrders(characterId: NonNullable<GetCharactersCharacterIdOrdersInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<GetCharactersCharacterIdOrdersOutput>;
+  listCharacterOrders(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<GetCharactersCharacterIdOrdersResponse>;
 
-  listCorporationOrderHistory(corporationId: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<GetCorporationsCorporationIdOrdersHistoryOutput>;
+  listCorporationOrderHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<GetCorporationsCorporationIdOrdersHistoryResponse>;
 
-  listCorporationOrders(corporationId: NonNullable<GetCorporationsCorporationIdOrdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<GetCorporationsCorporationIdOrdersOutput>;
+  listCorporationOrders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<GetCorporationsCorporationIdOrdersResponse>;
 
-  listGroups(options?: GetMarketsGroupsOptions): Promise<GetMarketsGroupsOutput>;
+  listGroups(options?: GetMarketsGroupsOptions): Promise<GetMarketsGroupsResponse>;
 
-  listPrices(options?: GetMarketsPricesOptions): Promise<GetMarketsPricesOutput>;
+  listPrices(options?: GetMarketsPricesOptions): Promise<GetMarketsPricesResponse>;
 
-  listRegionHistory(regionId: NonNullable<GetMarketsRegionIdHistoryInput['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<GetMarketsRegionIdHistoryOutput>;
+  listRegionHistory(regionId: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<GetMarketsRegionIdHistoryResponse>;
 
-  listRegionOrders(regionId: NonNullable<GetMarketsRegionIdOrdersInput['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<GetMarketsRegionIdOrdersOutput>;
+  listRegionOrders(regionId: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<GetMarketsRegionIdOrdersResponse>;
 
-  listRegionTypes(regionId: NonNullable<GetMarketsRegionIdTypesInput['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<GetMarketsRegionIdTypesOutput>;
+  listRegionTypes(regionId: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<GetMarketsRegionIdTypesResponse>;
 
-  listStructureOrders(structureId: NonNullable<GetMarketsStructuresStructureIdInput['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<GetMarketsStructuresStructureIdOutput>;
+  listStructureOrders(structureId: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<GetMarketsStructuresStructureIdResponse>;
 
   withMetadata(): MarketDomainClientWithMetadata;
 }
 
 export interface MarketDomainClientWithMetadata {
-  getGroup(marketGroupId: NonNullable<GetMarketsGroupsMarketGroupIdInput['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<EsiResponse<GetMarketsGroupsMarketGroupIdOutput>>;
+  getGroup(marketGroupId: NonNullable<OperationArguments<GetMarketsGroupsMarketGroupIdData>['path']>["market_group_id"], options?: GetMarketsGroupsMarketGroupIdOptions): Promise<EsiResponse<GetMarketsGroupsMarketGroupIdResponse>>;
 
-  listCharacterOrderHistory(characterId: NonNullable<GetCharactersCharacterIdOrdersHistoryInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersHistoryOutput>>;
+  listCharacterOrderHistory(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersHistoryData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersHistoryOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersHistoryResponse>>;
 
-  listCharacterOrders(characterId: NonNullable<GetCharactersCharacterIdOrdersInput['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersOutput>>;
+  listCharacterOrders(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdOrdersData>['path']>["character_id"], options?: GetCharactersCharacterIdOrdersOptions): Promise<EsiResponse<GetCharactersCharacterIdOrdersResponse>>;
 
-  listCorporationOrderHistory(corporationId: NonNullable<GetCorporationsCorporationIdOrdersHistoryInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersHistoryOutput>>;
+  listCorporationOrderHistory(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersHistoryData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersHistoryOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersHistoryResponse>>;
 
-  listCorporationOrders(corporationId: NonNullable<GetCorporationsCorporationIdOrdersInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersOutput>>;
+  listCorporationOrders(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdOrdersData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdOrdersOptions): Promise<EsiResponse<GetCorporationsCorporationIdOrdersResponse>>;
 
-  listGroups(options?: GetMarketsGroupsOptions): Promise<EsiResponse<GetMarketsGroupsOutput>>;
+  listGroups(options?: GetMarketsGroupsOptions): Promise<EsiResponse<GetMarketsGroupsResponse>>;
 
-  listPrices(options?: GetMarketsPricesOptions): Promise<EsiResponse<GetMarketsPricesOutput>>;
+  listPrices(options?: GetMarketsPricesOptions): Promise<EsiResponse<GetMarketsPricesResponse>>;
 
-  listRegionHistory(regionId: NonNullable<GetMarketsRegionIdHistoryInput['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<EsiResponse<GetMarketsRegionIdHistoryOutput>>;
+  listRegionHistory(regionId: NonNullable<OperationArguments<GetMarketsRegionIdHistoryData>['path']>["region_id"], options: GetMarketsRegionIdHistoryOptions): Promise<EsiResponse<GetMarketsRegionIdHistoryResponse>>;
 
-  listRegionOrders(regionId: NonNullable<GetMarketsRegionIdOrdersInput['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<EsiResponse<GetMarketsRegionIdOrdersOutput>>;
+  listRegionOrders(regionId: NonNullable<OperationArguments<GetMarketsRegionIdOrdersData>['path']>["region_id"], options: GetMarketsRegionIdOrdersOptions): Promise<EsiResponse<GetMarketsRegionIdOrdersResponse>>;
 
-  listRegionTypes(regionId: NonNullable<GetMarketsRegionIdTypesInput['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<EsiResponse<GetMarketsRegionIdTypesOutput>>;
+  listRegionTypes(regionId: NonNullable<OperationArguments<GetMarketsRegionIdTypesData>['path']>["region_id"], options?: GetMarketsRegionIdTypesOptions): Promise<EsiResponse<GetMarketsRegionIdTypesResponse>>;
 
-  listStructureOrders(structureId: NonNullable<GetMarketsStructuresStructureIdInput['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<EsiResponse<GetMarketsStructuresStructureIdOutput>>;
+  listStructureOrders(structureId: NonNullable<OperationArguments<GetMarketsStructuresStructureIdData>['path']>["structure_id"], options?: GetMarketsStructuresStructureIdOptions): Promise<EsiResponse<GetMarketsStructuresStructureIdResponse>>;
 }

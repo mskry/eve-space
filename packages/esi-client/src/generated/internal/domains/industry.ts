@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdIndustryJobsDescriptor,
@@ -29,23 +30,23 @@ import type {
   GetIndustrySystemsOptions,
 } from './industry-contract.js';
 import type {
-  GetCharactersCharacterIdIndustryJobsInput,
-  GetCharactersCharacterIdIndustryJobsOutput,
-  GetCharactersCharacterIdMiningInput,
-  GetCharactersCharacterIdMiningOutput,
-  GetCorporationCorporationIdMiningExtractionsInput,
-  GetCorporationCorporationIdMiningExtractionsOutput,
-  GetCorporationCorporationIdMiningObserversInput,
-  GetCorporationCorporationIdMiningObserversObserverIdInput,
-  GetCorporationCorporationIdMiningObserversObserverIdOutput,
-  GetCorporationCorporationIdMiningObserversOutput,
-  GetCorporationsCorporationIdIndustryJobsInput,
-  GetCorporationsCorporationIdIndustryJobsOutput,
-  GetIndustryFacilitiesInput,
-  GetIndustryFacilitiesOutput,
-  GetIndustrySystemsInput,
-  GetIndustrySystemsOutput,
-} from '../../schemas/operations/industry.js';
+  GetCharactersCharacterIdIndustryJobsData,
+  GetCharactersCharacterIdIndustryJobsResponse,
+  GetCharactersCharacterIdMiningData,
+  GetCharactersCharacterIdMiningResponse,
+  GetCorporationCorporationIdMiningExtractionsData,
+  GetCorporationCorporationIdMiningExtractionsResponse,
+  GetCorporationCorporationIdMiningObserversData,
+  GetCorporationCorporationIdMiningObserversObserverIdData,
+  GetCorporationCorporationIdMiningObserversObserverIdResponse,
+  GetCorporationCorporationIdMiningObserversResponse,
+  GetCorporationsCorporationIdIndustryJobsData,
+  GetCorporationsCorporationIdIndustryJobsResponse,
+  GetIndustryFacilitiesData,
+  GetIndustryFacilitiesResponse,
+  GetIndustrySystemsData,
+  GetIndustrySystemsResponse,
+} from '../../types.gen.js';
 
 class IndustryDomainClientWithMetadataImplementation implements IndustryDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -55,43 +56,43 @@ class IndustryDomainClientWithMetadataImplementation implements IndustryDomainCl
     Object.freeze(this);
   }
 
-  listCharacterJobs(characterId: NonNullable<GetCharactersCharacterIdIndustryJobsInput['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<EsiResponse<GetCharactersCharacterIdIndustryJobsOutput>> {
-    const arguments_: GetCharactersCharacterIdIndustryJobsInput = { path: { "character_id": characterId }, query: { "include_completed": options?.["includeCompleted"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<EsiResponse<GetCharactersCharacterIdIndustryJobsResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdIndustryJobsData> = { path: { "character_id": characterId }, query: { "include_completed": options?.["includeCompleted"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdIndustryJobsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCharacterMiningLedger(characterId: NonNullable<GetCharactersCharacterIdMiningInput['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<EsiResponse<GetCharactersCharacterIdMiningOutput>> {
-    const arguments_: GetCharactersCharacterIdMiningInput = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCharacterMiningLedger(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<EsiResponse<GetCharactersCharacterIdMiningResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdMiningData> = { path: { "character_id": characterId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdMiningDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsCorporationIdIndustryJobsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIndustryJobsOutput>> {
-    const arguments_: GetCorporationsCorporationIdIndustryJobsInput = { path: { "corporation_id": corporationId }, query: { "include_completed": options?.["includeCompleted"], "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<EsiResponse<GetCorporationsCorporationIdIndustryJobsResponse>> {
+    const arguments_: OperationArguments<GetCorporationsCorporationIdIndustryJobsData> = { path: { "corporation_id": corporationId }, query: { "include_completed": options?.["includeCompleted"], "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationsCorporationIdIndustryJobsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<EsiResponse<GetIndustryFacilitiesOutput>> {
-    const arguments_: GetIndustryFacilitiesInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<EsiResponse<GetIndustryFacilitiesResponse>> {
+    const arguments_: OperationArguments<GetIndustryFacilitiesData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetIndustryFacilitiesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMiningObservers(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversOutput>> {
-    const arguments_: GetCorporationCorporationIdMiningObserversInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMiningObservers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversResponse>> {
+    const arguments_: OperationArguments<GetCorporationCorporationIdMiningObserversData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationCorporationIdMiningObserversDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMoonExtractionTimers(corporationId: NonNullable<GetCorporationCorporationIdMiningExtractionsInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningExtractionsOutput>> {
-    const arguments_: GetCorporationCorporationIdMiningExtractionsInput = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMoonExtractionTimers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningExtractionsResponse>> {
+    const arguments_: OperationArguments<GetCorporationCorporationIdMiningExtractionsData> = { path: { "corporation_id": corporationId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationCorporationIdMiningExtractionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listObservedMining(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["corporation_id"], observerId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversObserverIdOutput>> {
-    const arguments_: GetCorporationCorporationIdMiningObserversObserverIdInput = { path: { "corporation_id": corporationId, "observer_id": observerId }, query: { "page": options?.["page"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listObservedMining(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["corporation_id"], observerId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<EsiResponse<GetCorporationCorporationIdMiningObserversObserverIdResponse>> {
+    const arguments_: OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData> = { path: { "corporation_id": corporationId, "observer_id": observerId }, query: { "page": options?.["page"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCorporationCorporationIdMiningObserversObserverIdDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<EsiResponse<GetIndustrySystemsOutput>> {
-    const arguments_: GetIndustrySystemsInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<EsiResponse<GetIndustrySystemsResponse>> {
+    const arguments_: OperationArguments<GetIndustrySystemsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetIndustrySystemsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -104,35 +105,35 @@ class IndustryDomainClientImplementation implements IndustryDomainClient {
     Object.freeze(this);
   }
 
-  listCharacterJobs(characterId: NonNullable<GetCharactersCharacterIdIndustryJobsInput['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<GetCharactersCharacterIdIndustryJobsOutput> {
+  listCharacterJobs(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdIndustryJobsData>['path']>["character_id"], options?: GetCharactersCharacterIdIndustryJobsOptions): Promise<GetCharactersCharacterIdIndustryJobsResponse> {
     return this.#metadata.listCharacterJobs(characterId, options).then((response) => response.data);
   }
 
-  listCharacterMiningLedger(characterId: NonNullable<GetCharactersCharacterIdMiningInput['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<GetCharactersCharacterIdMiningOutput> {
+  listCharacterMiningLedger(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdMiningData>['path']>["character_id"], options?: GetCharactersCharacterIdMiningOptions): Promise<GetCharactersCharacterIdMiningResponse> {
     return this.#metadata.listCharacterMiningLedger(characterId, options).then((response) => response.data);
   }
 
-  listCorporationJobs(corporationId: NonNullable<GetCorporationsCorporationIdIndustryJobsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<GetCorporationsCorporationIdIndustryJobsOutput> {
+  listCorporationJobs(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdIndustryJobsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdIndustryJobsOptions): Promise<GetCorporationsCorporationIdIndustryJobsResponse> {
     return this.#metadata.listCorporationJobs(corporationId, options).then((response) => response.data);
   }
 
-  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<GetIndustryFacilitiesOutput> {
+  listFacilities(options?: GetIndustryFacilitiesOptions): Promise<GetIndustryFacilitiesResponse> {
     return this.#metadata.listFacilities(options).then((response) => response.data);
   }
 
-  listMiningObservers(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<GetCorporationCorporationIdMiningObserversOutput> {
+  listMiningObservers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningObserversOptions): Promise<GetCorporationCorporationIdMiningObserversResponse> {
     return this.#metadata.listMiningObservers(corporationId, options).then((response) => response.data);
   }
 
-  listMoonExtractionTimers(corporationId: NonNullable<GetCorporationCorporationIdMiningExtractionsInput['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<GetCorporationCorporationIdMiningExtractionsOutput> {
+  listMoonExtractionTimers(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningExtractionsData>['path']>["corporation_id"], options?: GetCorporationCorporationIdMiningExtractionsOptions): Promise<GetCorporationCorporationIdMiningExtractionsResponse> {
     return this.#metadata.listMoonExtractionTimers(corporationId, options).then((response) => response.data);
   }
 
-  listObservedMining(corporationId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["corporation_id"], observerId: NonNullable<GetCorporationCorporationIdMiningObserversObserverIdInput['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<GetCorporationCorporationIdMiningObserversObserverIdOutput> {
+  listObservedMining(corporationId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["corporation_id"], observerId: NonNullable<OperationArguments<GetCorporationCorporationIdMiningObserversObserverIdData>['path']>["observer_id"], options?: GetCorporationCorporationIdMiningObserversObserverIdOptions): Promise<GetCorporationCorporationIdMiningObserversObserverIdResponse> {
     return this.#metadata.listObservedMining(corporationId, observerId, options).then((response) => response.data);
   }
 
-  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<GetIndustrySystemsOutput> {
+  listSystemCostIndices(options?: GetIndustrySystemsOptions): Promise<GetIndustrySystemsResponse> {
     return this.#metadata.listSystemCostIndices(options).then((response) => response.data);
   }
 

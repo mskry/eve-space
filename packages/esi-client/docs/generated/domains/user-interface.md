@@ -25,6 +25,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createUserInterfaceClient } from '@evespace/esi-client/domains/user-interface';
+import type { PostUiAutopilotWaypointResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -32,7 +33,7 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createUserInterfaceClient({ token: accessToken });
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.setAutopilotWaypoint({ addToBeginning: true, clearOtherWaypoints: true, destinationId: 12345 });
+const data: PostUiAutopilotWaypointResponse = await client.setAutopilotWaypoint({ addToBeginning: true, clearOtherWaypoints: true, destinationId: 12345 });
 ```
 
 ## Aggregate client
@@ -41,6 +42,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { PostUiAutopilotWaypointResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -48,7 +50,7 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.userInterface.setAutopilotWaypoint({ addToBeginning: true, clearOtherWaypoints: true, destinationId: 12345 });
+const data: PostUiAutopilotWaypointResponse = await client.userInterface.setAutopilotWaypoint({ addToBeginning: true, clearOtherWaypoints: true, destinationId: 12345 });
 ```
 
 ## Shared concepts

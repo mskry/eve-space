@@ -16,32 +16,34 @@ Get dynamic item information
 - Domain import: `@evespace/esi-client/domains/dogma`
 - Domain index: [dogma](../domains/dogma.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createDogmaClient } from '@evespace/esi-client/domains/dogma';
+import type { GetDogmaDynamicItemsTypeIdItemIdResponse } from '@evespace/esi-client/types';
 
 const client = createDogmaClient();
 
 const typeId = 34;
 const itemId = 1000000000001;
 
-const data = await client.getDynamicItem(typeId, itemId);
+const data: GetDogmaDynamicItemsTypeIdItemIdResponse = await client.getDynamicItem(typeId, itemId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetDogmaDynamicItemsTypeIdItemIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const typeId = 34;
 const itemId = 1000000000001;
 
-const data = await client.dogma.getDynamicItem(typeId, itemId);
+const data: GetDogmaDynamicItemsTypeIdItemIdResponse = await client.dogma.getDynamicItem(typeId, itemId);
 ```
 
 ## Generic-execution snippet
@@ -49,6 +51,7 @@ const data = await client.dogma.getDynamicItem(typeId, itemId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetDogmaDynamicItemsTypeIdItemIdData, GetDogmaDynamicItemsTypeIdItemIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -58,6 +61,7 @@ const itemId = 1000000000001;
 const arguments_: CallOperationArguments<'GetDogmaDynamicItemsTypeIdItemId'> = { path: { "type_id": typeId, "item_id": itemId } };
 
 const response = await client.callOperation('GetDogmaDynamicItemsTypeIdItemId', arguments_);
+const data: GetDogmaDynamicItemsTypeIdItemIdResponse = response.data;
 ```
 
 ## Parameters
@@ -72,14 +76,16 @@ const response = await client.callOperation('GetDogmaDynamicItemsTypeIdItemId', 
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetDogmaDynamicItemsTypeIdItemIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetDogmaDynamicItemsTypeIdItemIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetDogmaDynamicItemsTypeIdItemIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetDogmaDynamicItemsTypeIdItemIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetDogmaDynamicItemsTypeIdItemIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.dogma.withMetadata().getDynamicItem(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetDogmaDynamicItemsTypeIdItemIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetDogmaDynamicItemsTypeIdItemIdResponse` | OK |
 
 ## Authentication
 
@@ -110,6 +116,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

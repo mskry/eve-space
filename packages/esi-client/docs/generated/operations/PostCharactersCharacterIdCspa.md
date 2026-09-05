@@ -16,13 +16,13 @@ Calculate a CSPA charge cost
 - Domain import: `@evespace/esi-client/domains/character`
 - Domain index: [character](../domains/character.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCharacterClient } from '@evespace/esi-client/domains/character';
-import type { PostCharactersCharacterIdCspaOptions } from '@evespace/esi-client/domains/character';
+import type { PostCharactersCharacterIdCspaResponse, PostCharactersCharacterIdCspaData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,16 +30,16 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createCharacterClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdCspaOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdCspaData['body']>;
 
-const data = await client.calculateCspaCharge(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdCspaResponse = await client.calculateCspaCharge(characterId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostCharactersCharacterIdCspaOptions } from '@evespace/esi-client/domains/character';
+import type { PostCharactersCharacterIdCspaResponse, PostCharactersCharacterIdCspaData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,9 +47,9 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdCspaOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdCspaData['body']>;
 
-const data = await client.character.calculateCspaCharge(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdCspaResponse = await client.character.calculateCspaCharge(characterId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -57,6 +57,7 @@ const data = await client.character.calculateCspaCharge(characterId, { body: req
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostCharactersCharacterIdCspaData, PostCharactersCharacterIdCspaResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,11 +65,12 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<CallOperationArguments<'PostCharactersCharacterIdCspa'>['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdCspaData['body']>;
 
 const arguments_: CallOperationArguments<'PostCharactersCharacterIdCspa'> = { path: { "character_id": characterId }, body: requestBody };
 
 const response = await client.callOperation('PostCharactersCharacterIdCspa', arguments_);
+const data: PostCharactersCharacterIdCspaResponse = response.data;
 ```
 
 ## Parameters
@@ -83,14 +85,16 @@ const response = await client.callOperation('PostCharactersCharacterIdCspa', arg
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostCharactersCharacterIdCspaRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostCharactersCharacterIdCspaData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdCspaBody`; `headers` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdCspaHeaders`; `path` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdCspaPath`.
+- Response type: `@evespace/esi-client/types` export `PostCharactersCharacterIdCspaResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.character.withMetadata().calculateCspaCharge(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `201` | json | `@evespace/esi-client/schemas` | `PostCharactersCharacterIdCspaStatus201SuccessResponseSchema` | Created |
+| `201` | json | `@evespace/esi-client/zod` | `zPostCharactersCharacterIdCspaResponse` | Created |
 
 ## Authentication
 
@@ -122,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

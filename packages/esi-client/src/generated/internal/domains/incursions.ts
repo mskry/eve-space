@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetIncursionsDescriptor,
@@ -15,9 +16,9 @@ import type {
   GetIncursionsOptions,
 } from './incursions-contract.js';
 import type {
-  GetIncursionsInput,
-  GetIncursionsOutput,
-} from '../../schemas/operations/incursions.js';
+  GetIncursionsData,
+  GetIncursionsResponse,
+} from '../../types.gen.js';
 
 class IncursionsDomainClientWithMetadataImplementation implements IncursionsDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -27,8 +28,8 @@ class IncursionsDomainClientWithMetadataImplementation implements IncursionsDoma
     Object.freeze(this);
   }
 
-  list(options?: GetIncursionsOptions): Promise<EsiResponse<GetIncursionsOutput>> {
-    const arguments_: GetIncursionsInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  list(options?: GetIncursionsOptions): Promise<EsiResponse<GetIncursionsResponse>> {
+    const arguments_: OperationArguments<GetIncursionsData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetIncursionsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -41,7 +42,7 @@ class IncursionsDomainClientImplementation implements IncursionsDomainClient {
     Object.freeze(this);
   }
 
-  list(options?: GetIncursionsOptions): Promise<GetIncursionsOutput> {
+  list(options?: GetIncursionsOptions): Promise<GetIncursionsResponse> {
     return this.#metadata.list(options).then((response) => response.data);
   }
 

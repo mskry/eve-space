@@ -4,26 +4,35 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetMetaChangelogData,
+  GetMetaChangelogResponse,
+  GetMetaCompatibilityDatesData,
+  GetMetaCompatibilityDatesResponse,
+  GetMetaNameData,
+  GetMetaNameResponse,
+  GetMetaStatusData,
+  GetMetaStatusResponse,
+} from '../../types.gen.js';
 import {
-  GetMetaChangelogRequestSchema,
-  GetMetaChangelogStatus200SuccessResponseSchema,
-  GetMetaCompatibilityDatesRequestSchema,
-  GetMetaCompatibilityDatesStatus200SuccessResponseSchema,
-  GetMetaNameRequestSchema,
-  GetMetaNameStatus200SuccessResponseSchema,
-  GetMetaStatusRequestSchema,
-  GetMetaStatusStatus200SuccessResponseSchema,
-  type GetMetaChangelogInput,
-  type GetMetaChangelogOutput,
-  type GetMetaCompatibilityDatesInput,
-  type GetMetaCompatibilityDatesOutput,
-  type GetMetaNameInput,
-  type GetMetaNameOutput,
-  type GetMetaStatusInput,
-  type GetMetaStatusOutput,
-} from '../../schemas/operations/meta.js';
+  zGetMetaChangelogHeaders,
+  zGetMetaChangelogResponse,
+  zGetMetaCompatibilityDatesHeaders,
+  zGetMetaCompatibilityDatesResponse,
+  zGetMetaNameHeaders,
+  zGetMetaNameResponse,
+  zGetMetaStatusHeaders,
+  zGetMetaStatusResponse,
+} from '../../zod.gen.js';
 
-export const GetMetaChangelogDescriptor: OperationExecutionDescriptor<GetMetaChangelogInput, GetMetaChangelogOutput> = {
+export const GetMetaChangelogRequestSchema: z.ZodType<OperationArguments<GetMetaChangelogData>> = composeOperationRequestSchema<OperationArguments<GetMetaChangelogData>>({
+  headers: { required: false, schema: zGetMetaChangelogHeaders },
+});
+
+export const GetMetaChangelogDescriptor: OperationExecutionDescriptor<OperationArguments<GetMetaChangelogData>, GetMetaChangelogResponse> = {
   operationId: "GetMetaChangelog",
   method: "GET",
   path: "/meta/changelog",
@@ -36,12 +45,16 @@ export const GetMetaChangelogDescriptor: OperationExecutionDescriptor<GetMetaCha
   requestSchema: GetMetaChangelogRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMetaChangelogStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMetaChangelogResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMetaStatusDescriptor: OperationExecutionDescriptor<GetMetaStatusInput, GetMetaStatusOutput> = {
+export const GetMetaStatusRequestSchema: z.ZodType<OperationArguments<GetMetaStatusData>> = composeOperationRequestSchema<OperationArguments<GetMetaStatusData>>({
+  headers: { required: false, schema: zGetMetaStatusHeaders },
+});
+
+export const GetMetaStatusDescriptor: OperationExecutionDescriptor<OperationArguments<GetMetaStatusData>, GetMetaStatusResponse> = {
   operationId: "GetMetaStatus",
   method: "GET",
   path: "/meta/status",
@@ -54,12 +67,16 @@ export const GetMetaStatusDescriptor: OperationExecutionDescriptor<GetMetaStatus
   requestSchema: GetMetaStatusRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMetaStatusStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMetaStatusResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMetaNameDescriptor: OperationExecutionDescriptor<GetMetaNameInput, GetMetaNameOutput> = {
+export const GetMetaNameRequestSchema: z.ZodType<OperationArguments<GetMetaNameData>> = composeOperationRequestSchema<OperationArguments<GetMetaNameData>>({
+  headers: { required: false, schema: zGetMetaNameHeaders },
+});
+
+export const GetMetaNameDescriptor: OperationExecutionDescriptor<OperationArguments<GetMetaNameData>, GetMetaNameResponse> = {
   operationId: "GetMetaName",
   method: "GET",
   path: "/meta/name",
@@ -72,12 +89,16 @@ export const GetMetaNameDescriptor: OperationExecutionDescriptor<GetMetaNameInpu
   requestSchema: GetMetaNameRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMetaNameStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMetaNameResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetMetaCompatibilityDatesDescriptor: OperationExecutionDescriptor<GetMetaCompatibilityDatesInput, GetMetaCompatibilityDatesOutput> = {
+export const GetMetaCompatibilityDatesRequestSchema: z.ZodType<OperationArguments<GetMetaCompatibilityDatesData>> = composeOperationRequestSchema<OperationArguments<GetMetaCompatibilityDatesData>>({
+  headers: { required: false, schema: zGetMetaCompatibilityDatesHeaders },
+});
+
+export const GetMetaCompatibilityDatesDescriptor: OperationExecutionDescriptor<OperationArguments<GetMetaCompatibilityDatesData>, GetMetaCompatibilityDatesResponse> = {
   operationId: "GetMetaCompatibilityDates",
   method: "GET",
   path: "/meta/compatibility-dates",
@@ -90,7 +111,7 @@ export const GetMetaCompatibilityDatesDescriptor: OperationExecutionDescriptor<G
   requestSchema: GetMetaCompatibilityDatesRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetMetaCompatibilityDatesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetMetaCompatibilityDatesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

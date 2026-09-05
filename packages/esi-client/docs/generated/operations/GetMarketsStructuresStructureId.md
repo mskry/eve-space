@@ -16,12 +16,13 @@ List orders in a structure
 - Domain import: `@evespace/esi-client/domains/market`
 - Domain index: [market](../domains/market.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMarketClient } from '@evespace/esi-client/domains/market';
+import type { GetMarketsStructuresStructureIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createMarketClient({ token: accessToken });
 
 const structureId = 1020000000000;
 
-const data = await client.listStructureOrders(structureId);
+const data: GetMarketsStructuresStructureIdResponse = await client.listStructureOrders(structureId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetMarketsStructuresStructureIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const structureId = 1020000000000;
 
-const data = await client.market.listStructureOrders(structureId);
+const data: GetMarketsStructuresStructureIdResponse = await client.market.listStructureOrders(structureId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.market.listStructureOrders(structureId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetMarketsStructuresStructureIdData, GetMarketsStructuresStructureIdResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const structureId = 1020000000000;
 const arguments_: CallOperationArguments<'GetMarketsStructuresStructureId'> = { path: { "structure_id": structureId } };
 
 const response = await client.callOperation('GetMarketsStructuresStructureId', arguments_);
+const data: GetMarketsStructuresStructureIdResponse = response.data;
 ```
 
 ## Parameters
@@ -78,14 +82,16 @@ const response = await client.callOperation('GetMarketsStructuresStructureId', a
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetMarketsStructuresStructureIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetMarketsStructuresStructureIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetMarketsStructuresStructureIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetMarketsStructuresStructureIdPath`; `query` uses `@evespace/esi-client/zod` export `zGetMarketsStructuresStructureIdQuery`.
+- Response type: `@evespace/esi-client/types` export `GetMarketsStructuresStructureIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.market.withMetadata().listStructureOrders(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetMarketsStructuresStructureIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetMarketsStructuresStructureIdResponse` | OK |
 
 ## Authentication
 
@@ -118,6 +124,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

@@ -16,13 +16,13 @@ Get corporation asset locations
 - Domain import: `@evespace/esi-client/domains/assets`
 - Domain index: [assets](../domains/assets.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createAssetsClient } from '@evespace/esi-client/domains/assets';
-import type { PostCorporationsCorporationIdAssetsLocationsOptions } from '@evespace/esi-client/domains/assets';
+import type { PostCorporationsCorporationIdAssetsLocationsResponse, PostCorporationsCorporationIdAssetsLocationsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,16 +30,16 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createAssetsClient({ token: accessToken });
 
 const corporationId = 98000001;
-declare const requestBody: NonNullable<PostCorporationsCorporationIdAssetsLocationsOptions['body']>;
+declare const requestBody: NonNullable<PostCorporationsCorporationIdAssetsLocationsData['body']>;
 
-const data = await client.lookupCorporationLocations(corporationId, { body: requestBody });
+const data: PostCorporationsCorporationIdAssetsLocationsResponse = await client.lookupCorporationLocations(corporationId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostCorporationsCorporationIdAssetsLocationsOptions } from '@evespace/esi-client/domains/assets';
+import type { PostCorporationsCorporationIdAssetsLocationsResponse, PostCorporationsCorporationIdAssetsLocationsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,9 +47,9 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const corporationId = 98000001;
-declare const requestBody: NonNullable<PostCorporationsCorporationIdAssetsLocationsOptions['body']>;
+declare const requestBody: NonNullable<PostCorporationsCorporationIdAssetsLocationsData['body']>;
 
-const data = await client.assets.lookupCorporationLocations(corporationId, { body: requestBody });
+const data: PostCorporationsCorporationIdAssetsLocationsResponse = await client.assets.lookupCorporationLocations(corporationId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -57,6 +57,7 @@ const data = await client.assets.lookupCorporationLocations(corporationId, { bod
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostCorporationsCorporationIdAssetsLocationsData, PostCorporationsCorporationIdAssetsLocationsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,11 +65,12 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const corporationId = 98000001;
-declare const requestBody: NonNullable<CallOperationArguments<'PostCorporationsCorporationIdAssetsLocations'>['body']>;
+declare const requestBody: NonNullable<PostCorporationsCorporationIdAssetsLocationsData['body']>;
 
 const arguments_: CallOperationArguments<'PostCorporationsCorporationIdAssetsLocations'> = { path: { "corporation_id": corporationId }, body: requestBody };
 
 const response = await client.callOperation('PostCorporationsCorporationIdAssetsLocations', arguments_);
+const data: PostCorporationsCorporationIdAssetsLocationsResponse = response.data;
 ```
 
 ## Parameters
@@ -83,14 +85,16 @@ const response = await client.callOperation('PostCorporationsCorporationIdAssets
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostCorporationsCorporationIdAssetsLocationsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostCorporationsCorporationIdAssetsLocationsData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostCorporationsCorporationIdAssetsLocationsBody`; `headers` uses `@evespace/esi-client/zod` export `zPostCorporationsCorporationIdAssetsLocationsHeaders`; `path` uses `@evespace/esi-client/zod` export `zPostCorporationsCorporationIdAssetsLocationsPath`.
+- Response type: `@evespace/esi-client/types` export `PostCorporationsCorporationIdAssetsLocationsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.assets.withMetadata().lookupCorporationLocations(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `PostCorporationsCorporationIdAssetsLocationsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zPostCorporationsCorporationIdAssetsLocationsResponse` | OK |
 
 ## Authentication
 
@@ -122,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

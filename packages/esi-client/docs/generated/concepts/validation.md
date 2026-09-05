@@ -7,7 +7,7 @@ DO NOT EDIT.
 
 # Validation
 
-Successful JSON responses are validated by generated Zod 4 schemas by default. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
+Successful JSON responses are validated by generated Zod 4 schemas by default. Natural TypeScript exports are available from `@evespace/esi-client/types`; matching natural Zod exports are available from `@evespace/esi-client/zod`. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
 
 Typed request validation is opt-in with `validateRequests: true`. Generic `callOperation` arguments are always validated before network activity. Response validation can be disabled explicitly with `validateResponses: false`.
 

@@ -4,37 +4,38 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersAccessListsDetailInput,
-  GetCharactersAccessListsDetailOutput,
-  GetCharactersAccessListsListingInput,
-  GetCharactersAccessListsListingOutput,
-} from '../../schemas/operations/access-list.js';
+  GetCharactersAccessListsDetailData,
+  GetCharactersAccessListsDetailResponse,
+  GetCharactersAccessListsListingData,
+  GetCharactersAccessListsListingResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersAccessListsDetailOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersAccessListsDetailInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersAccessListsDetailInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersAccessListsDetailInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersAccessListsListingOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersAccessListsListingInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersAccessListsListingInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersAccessListsListingInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersAccessListsListingData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersAccessListsListingData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersAccessListsListingData>["headers"]>["X-Tenant"];
 }
 
 export interface AccessListDomainClient {
-  get(characterId: NonNullable<GetCharactersAccessListsDetailInput['path']>["character_id"], accessListId: NonNullable<GetCharactersAccessListsDetailInput['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<GetCharactersAccessListsDetailOutput>;
+  get(characterId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["character_id"], accessListId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<GetCharactersAccessListsDetailResponse>;
 
-  list(characterId: NonNullable<GetCharactersAccessListsListingInput['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<GetCharactersAccessListsListingOutput>;
+  list(characterId: NonNullable<OperationArguments<GetCharactersAccessListsListingData>['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<GetCharactersAccessListsListingResponse>;
 
   withMetadata(): AccessListDomainClientWithMetadata;
 }
 
 export interface AccessListDomainClientWithMetadata {
-  get(characterId: NonNullable<GetCharactersAccessListsDetailInput['path']>["character_id"], accessListId: NonNullable<GetCharactersAccessListsDetailInput['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<EsiResponse<GetCharactersAccessListsDetailOutput>>;
+  get(characterId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["character_id"], accessListId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<EsiResponse<GetCharactersAccessListsDetailResponse>>;
 
-  list(characterId: NonNullable<GetCharactersAccessListsListingInput['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<EsiResponse<GetCharactersAccessListsListingOutput>>;
+  list(characterId: NonNullable<OperationArguments<GetCharactersAccessListsListingData>['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<EsiResponse<GetCharactersAccessListsListingResponse>>;
 }

@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdClonesDescriptor,
@@ -17,11 +18,11 @@ import type {
   GetCharactersCharacterIdImplantsOptions,
 } from './clones-contract.js';
 import type {
-  GetCharactersCharacterIdClonesInput,
-  GetCharactersCharacterIdClonesOutput,
-  GetCharactersCharacterIdImplantsInput,
-  GetCharactersCharacterIdImplantsOutput,
-} from '../../schemas/operations/clones.js';
+  GetCharactersCharacterIdClonesData,
+  GetCharactersCharacterIdClonesResponse,
+  GetCharactersCharacterIdImplantsData,
+  GetCharactersCharacterIdImplantsResponse,
+} from '../../types.gen.js';
 
 class ClonesDomainClientWithMetadataImplementation implements ClonesDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -31,13 +32,13 @@ class ClonesDomainClientWithMetadataImplementation implements ClonesDomainClient
     Object.freeze(this);
   }
 
-  getState(characterId: NonNullable<GetCharactersCharacterIdClonesInput['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<EsiResponse<GetCharactersCharacterIdClonesOutput>> {
-    const arguments_: GetCharactersCharacterIdClonesInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getState(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<EsiResponse<GetCharactersCharacterIdClonesResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdClonesData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdClonesDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listActiveImplants(characterId: NonNullable<GetCharactersCharacterIdImplantsInput['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<EsiResponse<GetCharactersCharacterIdImplantsOutput>> {
-    const arguments_: GetCharactersCharacterIdImplantsInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listActiveImplants(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<EsiResponse<GetCharactersCharacterIdImplantsResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdImplantsData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdImplantsDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -50,11 +51,11 @@ class ClonesDomainClientImplementation implements ClonesDomainClient {
     Object.freeze(this);
   }
 
-  getState(characterId: NonNullable<GetCharactersCharacterIdClonesInput['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<GetCharactersCharacterIdClonesOutput> {
+  getState(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdClonesData>['path']>["character_id"], options?: GetCharactersCharacterIdClonesOptions): Promise<GetCharactersCharacterIdClonesResponse> {
     return this.#metadata.getState(characterId, options).then((response) => response.data);
   }
 
-  listActiveImplants(characterId: NonNullable<GetCharactersCharacterIdImplantsInput['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<GetCharactersCharacterIdImplantsOutput> {
+  listActiveImplants(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdImplantsData>['path']>["character_id"], options?: GetCharactersCharacterIdImplantsOptions): Promise<GetCharactersCharacterIdImplantsResponse> {
     return this.#metadata.listActiveImplants(characterId, options).then((response) => response.data);
   }
 

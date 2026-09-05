@@ -16,6 +16,14 @@ import { assertEsiOperationContracts } from '../../src/esi-resilience/catalog-va
 import { installedModuleEsiOperationCatalog } from '../../src/generated/platform/installed-module-esi.js'
 
 describe('ESI operation policies', () => {
+  test('keeps GetUniverseBloodlines as the only API response-validation override', () => {
+    const disabled = Object.entries(esiOperationCatalog)
+      .filter(([, contract]) => contract.responseValidation.kind === 'disabled')
+      .map(([operation, contract]) => [operation, contract.audit.esiOperationId])
+
+    expect(disabled).toEqual([['universe-bloodlines', 'GetUniverseBloodlines']])
+  })
+
   test('requires definitions to own a real matching SDK descriptor and catalog contract', () => {
     const contract = {
       ...validModuleOperation(),

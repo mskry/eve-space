@@ -16,12 +16,13 @@ Get colonies
 - Domain import: `@evespace/esi-client/domains/planetary-interaction`
 - Domain index: [planetaryInteraction](../domains/planetary-interaction.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createPlanetaryInteractionClient } from '@evespace/esi-client/domains/planetary-interaction';
+import type { GetCharactersCharacterIdPlanetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createPlanetaryInteractionClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listColonies(characterId);
+const data: GetCharactersCharacterIdPlanetsResponse = await client.listColonies(characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdPlanetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.planetaryInteraction.listColonies(characterId);
+const data: GetCharactersCharacterIdPlanetsResponse = await client.planetaryInteraction.listColonies(characterId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.planetaryInteraction.listColonies(characterId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdPlanetsData, GetCharactersCharacterIdPlanetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdPlanets'> = { path: { "character_id": characterId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdPlanets', arguments_);
+const data: GetCharactersCharacterIdPlanetsResponse = response.data;
 ```
 
 ## Parameters
@@ -77,14 +81,16 @@ const response = await client.callOperation('GetCharactersCharacterIdPlanets', a
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdPlanetsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdPlanetsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdPlanetsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdPlanetsPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdPlanetsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.planetaryInteraction.withMetadata().listColonies(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdPlanetsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdPlanetsResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +122,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

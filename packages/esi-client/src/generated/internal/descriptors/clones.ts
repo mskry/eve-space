@@ -4,18 +4,30 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdClonesData,
+  GetCharactersCharacterIdClonesResponse,
+  GetCharactersCharacterIdImplantsData,
+  GetCharactersCharacterIdImplantsResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdClonesRequestSchema,
-  GetCharactersCharacterIdClonesStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdImplantsRequestSchema,
-  GetCharactersCharacterIdImplantsStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdClonesInput,
-  type GetCharactersCharacterIdClonesOutput,
-  type GetCharactersCharacterIdImplantsInput,
-  type GetCharactersCharacterIdImplantsOutput,
-} from '../../schemas/operations/clones.js';
+  zGetCharactersCharacterIdClonesHeaders,
+  zGetCharactersCharacterIdClonesPath,
+  zGetCharactersCharacterIdClonesResponse,
+  zGetCharactersCharacterIdImplantsHeaders,
+  zGetCharactersCharacterIdImplantsPath,
+  zGetCharactersCharacterIdImplantsResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdClonesDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdClonesInput, GetCharactersCharacterIdClonesOutput> = {
+export const GetCharactersCharacterIdClonesRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdClonesData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdClonesData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdClonesHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdClonesPath },
+});
+
+export const GetCharactersCharacterIdClonesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdClonesData>, GetCharactersCharacterIdClonesResponse> = {
   operationId: "GetCharactersCharacterIdClones",
   method: "GET",
   path: "/characters/{character_id}/clones",
@@ -29,12 +41,17 @@ export const GetCharactersCharacterIdClonesDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdClonesRequestSchema,
   authentication: { scopes: ["esi-clones.read_clones.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdClonesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdClonesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdImplantsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdImplantsInput, GetCharactersCharacterIdImplantsOutput> = {
+export const GetCharactersCharacterIdImplantsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdImplantsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdImplantsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdImplantsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdImplantsPath },
+});
+
+export const GetCharactersCharacterIdImplantsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdImplantsData>, GetCharactersCharacterIdImplantsResponse> = {
   operationId: "GetCharactersCharacterIdImplants",
   method: "GET",
   path: "/characters/{character_id}/implants",
@@ -48,7 +65,7 @@ export const GetCharactersCharacterIdImplantsDescriptor: OperationExecutionDescr
   requestSchema: GetCharactersCharacterIdImplantsRequestSchema,
   authentication: { scopes: ["esi-clones.read_implants.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdImplantsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdImplantsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

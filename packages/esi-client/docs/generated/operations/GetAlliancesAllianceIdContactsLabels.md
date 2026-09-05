@@ -16,12 +16,13 @@ Get alliance contact labels
 - Domain import: `@evespace/esi-client/domains/contacts`
 - Domain index: [contacts](../domains/contacts.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createContactsClient } from '@evespace/esi-client/domains/contacts';
+import type { GetAlliancesAllianceIdContactsLabelsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createContactsClient({ token: accessToken });
 
 const allianceId = 99000001;
 
-const data = await client.listAllianceContactLabels(allianceId);
+const data: GetAlliancesAllianceIdContactsLabelsResponse = await client.listAllianceContactLabels(allianceId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetAlliancesAllianceIdContactsLabelsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const allianceId = 99000001;
 
-const data = await client.contacts.listAllianceContactLabels(allianceId);
+const data: GetAlliancesAllianceIdContactsLabelsResponse = await client.contacts.listAllianceContactLabels(allianceId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.contacts.listAllianceContactLabels(allianceId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetAlliancesAllianceIdContactsLabelsData, GetAlliancesAllianceIdContactsLabelsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const allianceId = 99000001;
 const arguments_: CallOperationArguments<'GetAlliancesAllianceIdContactsLabels'> = { path: { "alliance_id": allianceId } };
 
 const response = await client.callOperation('GetAlliancesAllianceIdContactsLabels', arguments_);
+const data: GetAlliancesAllianceIdContactsLabelsResponse = response.data;
 ```
 
 ## Parameters
@@ -77,14 +81,16 @@ const response = await client.callOperation('GetAlliancesAllianceIdContactsLabel
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetAlliancesAllianceIdContactsLabelsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetAlliancesAllianceIdContactsLabelsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetAlliancesAllianceIdContactsLabelsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetAlliancesAllianceIdContactsLabelsPath`.
+- Response type: `@evespace/esi-client/types` export `GetAlliancesAllianceIdContactsLabelsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.contacts.withMetadata().listAllianceContactLabels(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetAlliancesAllianceIdContactsLabelsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetAlliancesAllianceIdContactsLabelsResponse` | OK |
 
 ## Authentication
 
@@ -116,6 +122,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

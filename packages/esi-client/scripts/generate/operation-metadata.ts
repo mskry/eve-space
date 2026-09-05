@@ -1,8 +1,17 @@
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 
 import type { NormalizedOpenApiModel, NormalizedOperation } from './normalize.ts';
-import { operationSchemaName } from './zod-schema.ts';
+import { operationSchemaName } from './operation-names.ts';
+import { assertRecord, rejectUnknownKeys } from './internal/guards.ts';
+import {
+  domainSymbolNames,
+  facadeMemberPattern,
+  reservedIdentifiers,
+  splitWords,
+} from './internal/facade-naming.ts';
+import { deepFreeze } from './internal/json.ts';
+import { capitalize, compareText } from './internal/text.ts';
+import { resolveConfigPath } from './paths.ts';
 
 export type OperationSafetyClassification = 'read' | 'mutation';
 
@@ -32,6 +41,8 @@ export interface ResolvedOperationMetadata {
 export interface OperationMetadataOptions {
   facadeCatalogPath?: string;
   safetyOverridesPath?: string;
+  /** Reuse a catalog already loaded by the caller instead of reading the file again. */
+  facadeCatalog?: readonly FacadeCatalogEntry[];
 }
 
 interface FacadeCatalogConfig {
@@ -46,63 +57,9 @@ interface SafetyOverridesConfig {
   readonly overrides: readonly Record<string, unknown>[];
 }
 
-export const defaultFacadeCatalogPath: string = fileURLToPath(
-  new URL('../../openapi/config/naming-overrides.json', import.meta.url),
-);
-export const defaultSafetyOverridesPath: string = fileURLToPath(
-  new URL('../../openapi/config/safety-overrides.json', import.meta.url),
-);
+export const defaultFacadeCatalogPath: string = resolveConfigPath('facadeCatalog');
+export const defaultSafetyOverridesPath: string = resolveConfigPath('safetyOverrides');
 
-const identifierPattern = /^[A-Za-z][A-Za-z0-9]*$/u;
-const reservedIdentifiers = new Set([
-  'await',
-  'break',
-  'case',
-  'catch',
-  'class',
-  'const',
-  'continue',
-  'constructor',
-  'debugger',
-  'default',
-  'delete',
-  'do',
-  'else',
-  'enum',
-  'export',
-  'extends',
-  'false',
-  'finally',
-  'for',
-  'function',
-  'if',
-  'implements',
-  'import',
-  'in',
-  'instanceof',
-  'interface',
-  'let',
-  'new',
-  'null',
-  'package',
-  'private',
-  'protected',
-  'public',
-  'return',
-  'static',
-  'super',
-  'switch',
-  'this',
-  'throw',
-  'true',
-  'try',
-  'typeof',
-  'var',
-  'void',
-  'while',
-  'with',
-  'yield',
-]);
 const reservedFacadeMembers = new Set([
   ...reservedIdentifiers,
   'callOperation',
@@ -130,7 +87,19 @@ export async function loadFacadeCatalog(
   model: NormalizedOpenApiModel,
   path: string = defaultFacadeCatalogPath,
 ): Promise<readonly FacadeCatalogEntry[]> {
-  const config = await readFacadeCatalog(path);
+  return parseFacadeCatalog(model, await readFile(path, 'utf8'), path);
+}
+
+/**
+ * Builds the catalog from source that has already been read, so one read can back the emitted
+ * metadata, the naming review report, and the provenance hash that attests to them.
+ */
+export function parseFacadeCatalog(
+  model: NormalizedOpenApiModel,
+  source: string,
+  path: string = defaultFacadeCatalogPath,
+): readonly FacadeCatalogEntry[] {
+  const config = parseFacadeCatalogConfig(source, path);
   const operationIds = operationIdSet(model);
   const seen = new Set<string>();
   let previousOperationId: string | undefined;
@@ -227,7 +196,7 @@ export async function resolveOperationMetadata(
   options: OperationMetadataOptions = {},
 ): Promise<readonly ResolvedOperationMetadata[]> {
   const [facadeCatalog, safetyOverrides] = await Promise.all([
-    loadFacadeCatalog(model, options.facadeCatalogPath),
+    options.facadeCatalog ?? loadFacadeCatalog(model, options.facadeCatalogPath),
     loadSafetyOverrides(model, options.safetyOverridesPath),
   ]);
   const namingById = new Map(facadeCatalog.map((entry) => [entry.operationId, entry]));
@@ -266,8 +235,8 @@ export function defaultMethodName(operationId: string): string {
   return safeDefaultIdentifier(toIdentifier(operationId, 'operation'), 'operation');
 }
 
-async function readFacadeCatalog(path: string): Promise<FacadeCatalogConfig> {
-  const config = await readJsonConfig(path, 'facade catalog');
+function parseFacadeCatalogConfig(source: string, path: string): FacadeCatalogConfig {
+  const config = parseJsonConfig(source, path, 'facade catalog');
   rejectUnknownKeys(config, new Set(['operations', 'schemaVersion']), 'facade catalog config');
   assertFacadeCatalogConfig(config);
   return config;
@@ -298,9 +267,19 @@ function assertSafetyOverridesConfig(
 }
 
 async function readJsonConfig(path: string, name: string): Promise<Record<string, unknown>> {
+  let source: string;
+  try {
+    source = await readFile(path, 'utf8');
+  } catch (error) {
+    throw new Error(`Failed to read ${name} from ${path}`, { cause: error });
+  }
+  return parseJsonConfig(source, path, name);
+}
+
+function parseJsonConfig(source: string, path: string, name: string): Record<string, unknown> {
   let config: unknown;
   try {
-    config = JSON.parse(await readFile(path, 'utf8'));
+    config = JSON.parse(source);
   } catch (error) {
     throw new Error(`Failed to read ${name} from ${path}`, { cause: error });
   }
@@ -329,7 +308,7 @@ function rejectDuplicateOrStale(
 function validFacadeIdentifier(value: unknown, kind: string, operationId: string): string {
   const context = `Facade ${kind} for ${operationId}`;
   const identifier = requiredString(value, context);
-  if (!identifierPattern.test(identifier)) {
+  if (!facadeMemberPattern.test(identifier)) {
     throw new Error(`Invalid TypeScript identifier for ${context}: ${identifier}`);
   }
   if (!/^[a-z]/u.test(identifier)) {
@@ -381,10 +360,7 @@ function validateFacadeCatalog(
   const classes = new Map<string, string>();
   const factories = new Map<string, string>();
   for (const [domain, operationId] of domains) {
-    const className = `${capitalize(domain)}DomainClient`;
-    const metadataClassName = `${className}WithMetadata`;
-    const factoryName = `create${capitalize(domain)}Client`;
-    const fileName = domainFileName(domain);
+    const { className, factoryName, fileName, metadataClassName } = domainSymbolNames(domain);
     assertDerivedIdentifier(className, 'domain class', operationId);
     assertDerivedIdentifier(metadataClassName, 'metadata domain class', operationId);
     assertDerivedIdentifier(factoryName, 'domain factory', operationId);
@@ -423,7 +399,7 @@ function operationHasOptions(operation: NormalizedOperation): boolean {
 }
 
 function assertDerivedIdentifier(identifier: string, kind: string, operationId: string): void {
-  if (!identifierPattern.test(identifier) || reservedIdentifiers.has(identifier)) {
+  if (!facadeMemberPattern.test(identifier) || reservedIdentifiers.has(identifier)) {
     throw new Error(`Invalid derived facade ${kind} for ${operationId}: ${identifier}`);
   }
 }
@@ -439,13 +415,6 @@ function rejectDerivedCollision(
     throw new Error(`${context}: ${previousOperationId} and ${operationId}`);
   }
   symbols.set(symbol, operationId);
-}
-
-function domainFileName(domain: string): string {
-  return domain
-    .replaceAll(/([a-z0-9])([A-Z])/gu, '$1-$2')
-    .replaceAll(/([A-Z])(?=[A-Z][a-z])/gu, '$1-')
-    .toLowerCase();
 }
 
 function safeDefaultIdentifier(identifier: string, prefix: string): string {
@@ -464,18 +433,6 @@ function toIdentifier(value: string, fallback: string): string {
     .join('')}`;
 }
 
-function splitWords(value: string): string[] {
-  return value
-    .replaceAll(/([a-z0-9])([A-Z])/gu, '$1 $2')
-    .replaceAll(/([A-Z])(?=[A-Z][a-z])/gu, '$1 ')
-    .split(/[^A-Za-z0-9]+/u)
-    .filter(Boolean);
-}
-
-function capitalize(value: string): string {
-  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
-}
-
 function compareOperationIds(
   left: { readonly operationId: string },
   right: { readonly operationId: string },
@@ -485,40 +442,9 @@ function compareOperationIds(
   return 0;
 }
 
-function compareText(left: string, right: string): number {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
 function requiredString(value: unknown, context: string): string {
   if (typeof value !== 'string' || value.length === 0 || value.trim() !== value) {
     throw new Error(`${context} must be a non-empty trimmed string`);
-  }
-  return value;
-}
-
-function rejectUnknownKeys(
-  value: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
-  context: string,
-): void {
-  const unknown = Object.keys(value).filter((key) => !allowed.has(key));
-  if (unknown.length > 0) {
-    throw new Error(`Unknown ${context} field: ${unknown.toSorted(compareText).join(', ')}`);
-  }
-}
-
-function assertRecord(value: unknown, context: string): asserts value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`${context} must be an object`);
-  }
-}
-
-function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
-    Object.freeze(value);
-    for (const entry of Object.values(value)) deepFreeze(entry);
   }
   return value;
 }

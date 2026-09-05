@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createCorporationProjectsClient } from '@evespace/esi-client/domains/corporation-projects';
+import type { GetCorporationsProjectsContributionResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -14,4 +15,4 @@ const corporationId = 98000001;
 const projectId = "00000000-0000-4000-8000-000000000000";
 const characterId = 90000001;
 
-const data = await client.getContribution(corporationId, projectId, characterId);
+const data: GetCorporationsProjectsContributionResponse = await client.getContribution(corporationId, projectId, characterId);

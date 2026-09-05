@@ -16,12 +16,13 @@ Get character assets
 - Domain import: `@evespace/esi-client/domains/assets`
 - Domain index: [assets](../domains/assets.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createAssetsClient } from '@evespace/esi-client/domains/assets';
+import type { GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,13 +31,14 @@ const client = createAssetsClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listCharacterAssets(characterId);
+const data: GetCharactersCharacterIdAssetsResponse = await client.listCharacterAssets(characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -45,7 +47,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.assets.listCharacterAssets(characterId);
+const data: GetCharactersCharacterIdAssetsResponse = await client.assets.listCharacterAssets(characterId);
 ```
 
 ## Generic-execution snippet
@@ -53,6 +55,7 @@ const data = await client.assets.listCharacterAssets(characterId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersCharacterIdAssetsData, GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -64,6 +67,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCharactersCharacterIdAssets'> = { path: { "character_id": characterId } };
 
 const response = await client.callOperation('GetCharactersCharacterIdAssets', arguments_);
+const data: GetCharactersCharacterIdAssetsResponse = response.data;
 ```
 
 ## Parameters
@@ -78,14 +82,16 @@ const response = await client.callOperation('GetCharactersCharacterIdAssets', ar
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersCharacterIdAssetsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersCharacterIdAssetsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdAssetsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdAssetsPath`; `query` uses `@evespace/esi-client/zod` export `zGetCharactersCharacterIdAssetsQuery`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersCharacterIdAssetsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.assets.withMetadata().listCharacterAssets(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersCharacterIdAssetsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersCharacterIdAssetsResponse` | OK |
 
 ## Authentication
 
@@ -118,6 +124,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

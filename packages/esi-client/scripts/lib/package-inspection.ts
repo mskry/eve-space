@@ -21,6 +21,10 @@ export interface PackedPackageBoundaryResult {
   readonly operationExportTargets: readonly string[];
 }
 
+export interface PackedArtifactIntegrityResult {
+  readonly analyzedArtifactCount: number;
+}
+
 export interface PackageMeasurements {
   packageVersion: string;
   totals: { [metric: string]: number };
@@ -108,6 +112,14 @@ const totalByteMetrics = Object.freeze([
 ]);
 const totalMetrics = Object.freeze([...totalByteMetrics, 'fileCount']);
 const unsupportedRequirePattern = /\brequire(?:\.resolve)?\s*\(/u;
+const rawPackedSourcePathPattern =
+  /^(?:openapi|scripts|src|tests)(?:\/|$)|^dist\/(?:generated|src)(?:\/|$)/u;
+const generatedClientArtifactPattern = /(?:^|\/)(?:client|sdk)\.gen\.(?:d\.)?[cm]?[jt]s$/u;
+const generatedClientSourcePattern = /\bsrc\/generated\/(?:client|sdk)\.gen\.[cm]?[jt]s\b/u;
+const generatorPackagePattern = /@hey-api\/|@evespace\/esi-client-codegen/u;
+const generatedTimestampPattern = /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z\b/u;
+const machineLocalPathPattern =
+  /(?:file:\/\/\/|\/(?:Users|home|private\/var|tmp|var\/folders)\/|[A-Za-z]:[\\/](?:Temp|Users)[\\/])/u;
 
 initSync();
 
@@ -159,6 +171,100 @@ export function validatePackedPackageBoundary(
   }
 
   return { forbiddenPaths: forbidden, operationExportTargets: targets.toSorted(compareText) };
+}
+
+export function validatePackedArtifactIntegrity(
+  files: readonly PackedFile[],
+  packageJson: PackedPackageManifest,
+): PackedArtifactIntegrityResult {
+  const normalizedFiles = normalizePackedArtifacts(files);
+  const artifacts = new Map(normalizedFiles.map((file) => [file.path, file]));
+  const approvedExternalPackages = new Set(collectDeclaredExternalPackages(packageJson));
+  let analyzedArtifactCount = 0;
+  for (const artifact of normalizedFiles) {
+    analyzedArtifactCount += validatePackedArtifact(artifact, artifacts, approvedExternalPackages);
+  }
+
+  return { analyzedArtifactCount };
+}
+
+function normalizePackedArtifacts(files: readonly PackedFile[]): NormalizedPackedFile[] {
+  if (!Array.isArray(files)) throw new TypeError('Packed files must be an array');
+  const normalizedFiles: NormalizedPackedFile[] = files.map((file) => ({
+    path: normalizePackedPath(file.path),
+    size: requireNonnegativeInteger(file.size, `Packed artifact ${file.path} size`),
+    source: file.source,
+  }));
+  const duplicatePaths = findDuplicates(normalizedFiles.map(({ path }) => path));
+  if (duplicatePaths.length > 0) {
+    throw new Error(`Packed package contains duplicate paths: ${duplicatePaths.join(', ')}`);
+  }
+
+  const unsafePaths = normalizedFiles
+    .map(({ path }) => path)
+    .filter(
+      (path) =>
+        path === '..' ||
+        path.startsWith('../') ||
+        posix.isAbsolute(path) ||
+        rawPackedSourcePathPattern.test(path) ||
+        generatedClientArtifactPattern.test(path),
+    )
+    .toSorted(compareText);
+  if (unsafePaths.length > 0) {
+    throw new Error(
+      `Packed source or generated client artifacts are forbidden: ${unsafePaths.join(', ')}`,
+    );
+  }
+  return normalizedFiles;
+}
+
+function validatePackedArtifact(
+  artifact: NormalizedPackedFile,
+  artifacts: ReadonlyMap<string, NormalizedPackedFile>,
+  approvedExternalPackages: ReadonlySet<string>,
+): 0 | 1 {
+  let kind: 'runtime' | 'declaration' | undefined;
+  if (artifact.path.endsWith('.js')) {
+    kind = 'runtime';
+  } else if (/\.d\.(?:ts|mts|cts)$/u.test(artifact.path)) {
+    kind = 'declaration';
+  }
+  if (kind === undefined) return 0;
+  if (typeof artifact.source !== 'string') {
+    throw new TypeError(`Packed ${kind} artifact source is unavailable: ${artifact.path}`);
+  }
+
+  const forbiddenContent = [
+    [generatedClientSourcePattern, 'generated Hey API SDK/client source marker'],
+    [generatorPackagePattern, 'generator package reference'],
+    [generatedTimestampPattern, 'generation timestamp'],
+    [machineLocalPathPattern, 'absolute or temporary machine path'],
+  ] as const;
+  for (const [pattern, description] of forbiddenContent) {
+    if (pattern.test(artifact.source)) {
+      throw new Error(`Packed ${kind} artifact ${artifact.path} contains a ${description}`);
+    }
+  }
+
+  for (const specifier of parseArtifactImports(artifact.source, artifact.path, kind)) {
+    if (isRelativeSpecifier(specifier)) {
+      resolvePackedRelativeEdge(artifact.path, specifier, kind, artifacts);
+      continue;
+    }
+    if (isUnsupportedSpecifier(specifier)) {
+      throw new Error(
+        `Packed ${kind} artifact has unsupported edge from ${artifact.path}: ${specifier}`,
+      );
+    }
+    if (!approvedExternalPackages.has(externalPackageName(specifier))) {
+      throw new Error(
+        `Packed ${kind} artifact has undeclared external edge from ${artifact.path}: ${specifier}`,
+      );
+    }
+  }
+
+  return 1;
 }
 
 export function measurePackedPackage(

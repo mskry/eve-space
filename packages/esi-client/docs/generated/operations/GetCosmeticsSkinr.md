@@ -16,30 +16,32 @@ Get SKINR attributes
 - Domain import: `@evespace/esi-client/domains/cosmetics`
 - Domain index: [cosmetics](../domains/cosmetics.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCosmeticsClient } from '@evespace/esi-client/domains/cosmetics';
+import type { GetCosmeticsSkinrResponse } from '@evespace/esi-client/types';
 
 const client = createCosmeticsClient();
 
 const skinrId = "example-skinr-id";
 
-const data = await client.getSkinrLicense(skinrId);
+const data: GetCosmeticsSkinrResponse = await client.getSkinrLicense(skinrId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCosmeticsSkinrResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const skinrId = "example-skinr-id";
 
-const data = await client.cosmetics.getSkinrLicense(skinrId);
+const data: GetCosmeticsSkinrResponse = await client.cosmetics.getSkinrLicense(skinrId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.cosmetics.getSkinrLicense(skinrId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCosmeticsSkinrData, GetCosmeticsSkinrResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const skinrId = "example-skinr-id";
 const arguments_: CallOperationArguments<'GetCosmeticsSkinr'> = { path: { "skinr_id": skinrId } };
 
 const response = await client.callOperation('GetCosmeticsSkinr', arguments_);
+const data: GetCosmeticsSkinrResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetCosmeticsSkinr', arguments_);
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCosmeticsSkinrRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCosmeticsSkinrData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCosmeticsSkinrHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCosmeticsSkinrPath`.
+- Response type: `@evespace/esi-client/types` export `GetCosmeticsSkinrResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.cosmetics.withMetadata().getSkinrLicense(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCosmeticsSkinrStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCosmeticsSkinrResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

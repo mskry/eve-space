@@ -4,25 +4,26 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  PostRouteInput,
-  PostRouteOutput,
-} from '../../schemas/operations/routes.js';
+  PostRouteData,
+  PostRouteResponse,
+} from '../../types.gen.js';
 
 export interface PostRouteOptions {
-  readonly "body": PostRouteInput['body'];
+  readonly "body": OperationArguments<PostRouteData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostRouteInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostRouteInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PostRouteInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostRouteData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostRouteData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostRouteData>["headers"]>["X-Tenant"];
 }
 
 export interface RoutesDomainClient {
-  calculate(originSystemId: NonNullable<PostRouteInput['path']>["origin_system_id"], destinationSystemId: NonNullable<PostRouteInput['path']>["destination_system_id"], options: PostRouteOptions): Promise<PostRouteOutput>;
+  calculate(originSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["origin_system_id"], destinationSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["destination_system_id"], options: PostRouteOptions): Promise<PostRouteResponse>;
 
   withMetadata(): RoutesDomainClientWithMetadata;
 }
 
 export interface RoutesDomainClientWithMetadata {
-  calculate(originSystemId: NonNullable<PostRouteInput['path']>["origin_system_id"], destinationSystemId: NonNullable<PostRouteInput['path']>["destination_system_id"], options: PostRouteOptions): Promise<EsiResponse<PostRouteOutput>>;
+  calculate(originSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["origin_system_id"], destinationSystemId: NonNullable<OperationArguments<PostRouteData>['path']>["destination_system_id"], options: PostRouteOptions): Promise<EsiResponse<PostRouteResponse>>;
 }

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { EsiHttpError } from '@evespace/esi-client'
 
 const mocks = vi.hoisted(() => ({
   getPublic: vi.fn(),
@@ -31,6 +32,11 @@ vi.mock('../../src/universe/resolution-cache.js', () => ({
 }))
 
 const emptyCache = () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() })
+const postUniverseNamesCharacter90666561Fixture = {
+  id: 90_666_561,
+  error: 'Ensure all IDs are valid before resolving',
+  cached: { category: 'character', id: 90_666_561, name: 'CCP Bartender' },
+} as const
 
 beforeEach(() => {
   mocks.readUniverseIds.mockImplementation(emptyCache)
@@ -147,6 +153,44 @@ describe('universe name resolver', () => {
       { category: 'character', id: 1, name: 'Resolved' },
     ])
     expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([2])
+  })
+
+  test('PostUniverseNames 90666561 retains stale success and never overwrites it after the exact structured 404', async () => {
+    mocks.readUniverseNames.mockResolvedValue({
+      fresh: new Map(),
+      stale: new Map([
+        [
+          postUniverseNamesCharacter90666561Fixture.id,
+          postUniverseNamesCharacter90666561Fixture.cached,
+        ],
+      ]),
+      suppressed: new Set(),
+    })
+    mocks.resolveNames.mockRejectedValue(
+      new EsiHttpError({
+        operationId: 'PostUniverseNames',
+        status: 404,
+        responseBodyText: JSON.stringify({
+          error: postUniverseNamesCharacter90666561Fixture.error,
+        }),
+      }),
+    )
+    const { resolveUniverseNames } = await import('../../src/universe/names.js')
+
+    await expect(
+      resolveUniverseNames([postUniverseNamesCharacter90666561Fixture.id]),
+    ).resolves.toEqual(
+      new Map([
+        [
+          postUniverseNamesCharacter90666561Fixture.id,
+          postUniverseNamesCharacter90666561Fixture.cached,
+        ],
+      ]),
+    )
+    expect(mocks.writeUniverseNames).not.toHaveBeenCalled()
+    expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([
+      postUniverseNamesCharacter90666561Fixture.id,
+    ])
   })
 
   test('records missing IDs before rethrowing a sibling split failure', async () => {

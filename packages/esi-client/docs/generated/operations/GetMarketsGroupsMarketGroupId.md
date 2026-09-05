@@ -16,30 +16,32 @@ Get item group information
 - Domain import: `@evespace/esi-client/domains/market`
 - Domain index: [market](../domains/market.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMarketClient } from '@evespace/esi-client/domains/market';
+import type { GetMarketsGroupsMarketGroupIdResponse } from '@evespace/esi-client/types';
 
 const client = createMarketClient();
 
 const marketGroupId = 12345;
 
-const data = await client.getGroup(marketGroupId);
+const data: GetMarketsGroupsMarketGroupIdResponse = await client.getGroup(marketGroupId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetMarketsGroupsMarketGroupIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const marketGroupId = 12345;
 
-const data = await client.market.getGroup(marketGroupId);
+const data: GetMarketsGroupsMarketGroupIdResponse = await client.market.getGroup(marketGroupId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.market.getGroup(marketGroupId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetMarketsGroupsMarketGroupIdData, GetMarketsGroupsMarketGroupIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const marketGroupId = 12345;
 const arguments_: CallOperationArguments<'GetMarketsGroupsMarketGroupId'> = { path: { "market_group_id": marketGroupId } };
 
 const response = await client.callOperation('GetMarketsGroupsMarketGroupId', arguments_);
+const data: GetMarketsGroupsMarketGroupIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetMarketsGroupsMarketGroupId', arg
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetMarketsGroupsMarketGroupIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetMarketsGroupsMarketGroupIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetMarketsGroupsMarketGroupIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetMarketsGroupsMarketGroupIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetMarketsGroupsMarketGroupIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.market.withMetadata().getGroup(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetMarketsGroupsMarketGroupIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetMarketsGroupsMarketGroupIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

@@ -4,14 +4,27 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdSearchData,
+  GetCharactersCharacterIdSearchResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdSearchRequestSchema,
-  GetCharactersCharacterIdSearchStatus200SuccessResponseSchema,
-  type GetCharactersCharacterIdSearchInput,
-  type GetCharactersCharacterIdSearchOutput,
-} from '../../schemas/operations/search.js';
+  zGetCharactersCharacterIdSearchHeaders,
+  zGetCharactersCharacterIdSearchPath,
+  zGetCharactersCharacterIdSearchQuery,
+  zGetCharactersCharacterIdSearchResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdSearchDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdSearchInput, GetCharactersCharacterIdSearchOutput> = {
+export const GetCharactersCharacterIdSearchRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdSearchData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdSearchData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdSearchHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdSearchPath },
+  query: { required: true, schema: zGetCharactersCharacterIdSearchQuery },
+});
+
+export const GetCharactersCharacterIdSearchDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdSearchData>, GetCharactersCharacterIdSearchResponse> = {
   operationId: "GetCharactersCharacterIdSearch",
   method: "GET",
   path: "/characters/{character_id}/search",
@@ -28,7 +41,7 @@ export const GetCharactersCharacterIdSearchDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdSearchRequestSchema,
   authentication: { scopes: ["esi-search.search_structures.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdSearchStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdSearchResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

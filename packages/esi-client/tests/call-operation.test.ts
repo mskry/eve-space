@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { EsiClient } from '../src/generated/esi-client.js';
-import type { GetStatusOutput } from '../src/generated/schemas/operations.js';
+import type { GetStatusResponse } from '../src/generated/types.gen.js';
 import { callOperation } from '../src/operations.js';
 import type { EsiResponse } from '../src/client/response.js';
 import {
@@ -18,7 +18,7 @@ describe('generic operation execution', () => {
     const fetch = statusFetch();
     const client = new EsiClient({ baseUrl: 'https://esi.example.test', fetch });
 
-    const response: EsiResponse<GetStatusOutput> = await client.callOperation('GetStatus', {});
+    const response: EsiResponse<GetStatusResponse> = await client.callOperation('GetStatus', {});
 
     expect(response.data.players).toBe(42);
     expect(JSON.parse(JSON.stringify(response))).toEqual(response);

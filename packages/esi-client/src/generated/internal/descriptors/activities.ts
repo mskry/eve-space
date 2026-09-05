@@ -4,22 +4,34 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersMercenaryTacticalOperationsDetailData,
+  GetCharactersMercenaryTacticalOperationsDetailResponse,
+  GetCharactersMercenaryTacticalOperationsListingData,
+  GetCharactersMercenaryTacticalOperationsListingResponse,
+  GetSkyhooksRaidableData,
+  GetSkyhooksRaidableResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersMercenaryTacticalOperationsDetailRequestSchema,
-  GetCharactersMercenaryTacticalOperationsDetailStatus200SuccessResponseSchema,
-  GetCharactersMercenaryTacticalOperationsListingRequestSchema,
-  GetCharactersMercenaryTacticalOperationsListingStatus200SuccessResponseSchema,
-  GetSkyhooksRaidableRequestSchema,
-  GetSkyhooksRaidableStatus200SuccessResponseSchema,
-  type GetCharactersMercenaryTacticalOperationsDetailInput,
-  type GetCharactersMercenaryTacticalOperationsDetailOutput,
-  type GetCharactersMercenaryTacticalOperationsListingInput,
-  type GetCharactersMercenaryTacticalOperationsListingOutput,
-  type GetSkyhooksRaidableInput,
-  type GetSkyhooksRaidableOutput,
-} from '../../schemas/operations/activities.js';
+  zGetCharactersMercenaryTacticalOperationsDetailHeaders,
+  zGetCharactersMercenaryTacticalOperationsDetailPath,
+  zGetCharactersMercenaryTacticalOperationsDetailResponse,
+  zGetCharactersMercenaryTacticalOperationsListingHeaders,
+  zGetCharactersMercenaryTacticalOperationsListingPath,
+  zGetCharactersMercenaryTacticalOperationsListingResponse,
+  zGetSkyhooksRaidableHeaders,
+  zGetSkyhooksRaidableResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersMercenaryTacticalOperationsDetailDescriptor: OperationExecutionDescriptor<GetCharactersMercenaryTacticalOperationsDetailInput, GetCharactersMercenaryTacticalOperationsDetailOutput> = {
+export const GetCharactersMercenaryTacticalOperationsDetailRequestSchema: z.ZodType<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>> = composeOperationRequestSchema<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>>({
+  headers: { required: false, schema: zGetCharactersMercenaryTacticalOperationsDetailHeaders },
+  path: { required: true, schema: zGetCharactersMercenaryTacticalOperationsDetailPath },
+});
+
+export const GetCharactersMercenaryTacticalOperationsDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>, GetCharactersMercenaryTacticalOperationsDetailResponse> = {
   operationId: "GetCharactersMercenaryTacticalOperationsDetail",
   method: "GET",
   path: "/characters/{character_id}/mercenary-tactical-operations/{operation_id}",
@@ -34,12 +46,17 @@ export const GetCharactersMercenaryTacticalOperationsDetailDescriptor: Operation
   requestSchema: GetCharactersMercenaryTacticalOperationsDetailRequestSchema,
   authentication: { scopes: ["esi-activities.read_character.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersMercenaryTacticalOperationsDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersMercenaryTacticalOperationsDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersMercenaryTacticalOperationsListingDescriptor: OperationExecutionDescriptor<GetCharactersMercenaryTacticalOperationsListingInput, GetCharactersMercenaryTacticalOperationsListingOutput> = {
+export const GetCharactersMercenaryTacticalOperationsListingRequestSchema: z.ZodType<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>> = composeOperationRequestSchema<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>>({
+  headers: { required: false, schema: zGetCharactersMercenaryTacticalOperationsListingHeaders },
+  path: { required: true, schema: zGetCharactersMercenaryTacticalOperationsListingPath },
+});
+
+export const GetCharactersMercenaryTacticalOperationsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>, GetCharactersMercenaryTacticalOperationsListingResponse> = {
   operationId: "GetCharactersMercenaryTacticalOperationsListing",
   method: "GET",
   path: "/characters/{character_id}/mercenary-tactical-operations",
@@ -53,12 +70,16 @@ export const GetCharactersMercenaryTacticalOperationsListingDescriptor: Operatio
   requestSchema: GetCharactersMercenaryTacticalOperationsListingRequestSchema,
   authentication: { scopes: ["esi-activities.read_character.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersMercenaryTacticalOperationsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersMercenaryTacticalOperationsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetSkyhooksRaidableDescriptor: OperationExecutionDescriptor<GetSkyhooksRaidableInput, GetSkyhooksRaidableOutput> = {
+export const GetSkyhooksRaidableRequestSchema: z.ZodType<OperationArguments<GetSkyhooksRaidableData>> = composeOperationRequestSchema<OperationArguments<GetSkyhooksRaidableData>>({
+  headers: { required: false, schema: zGetSkyhooksRaidableHeaders },
+});
+
+export const GetSkyhooksRaidableDescriptor: OperationExecutionDescriptor<OperationArguments<GetSkyhooksRaidableData>, GetSkyhooksRaidableResponse> = {
   operationId: "GetSkyhooksRaidable",
   method: "GET",
   path: "/skyhooks/raidable",
@@ -71,7 +92,7 @@ export const GetSkyhooksRaidableDescriptor: OperationExecutionDescriptor<GetSkyh
   requestSchema: GetSkyhooksRaidableRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetSkyhooksRaidableStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetSkyhooksRaidableResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

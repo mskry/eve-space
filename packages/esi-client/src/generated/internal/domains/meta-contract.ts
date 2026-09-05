@@ -4,63 +4,64 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetMetaChangelogInput,
-  GetMetaChangelogOutput,
-  GetMetaCompatibilityDatesInput,
-  GetMetaCompatibilityDatesOutput,
-  GetMetaNameInput,
-  GetMetaNameOutput,
-  GetMetaStatusInput,
-  GetMetaStatusOutput,
-} from '../../schemas/operations/meta.js';
+  GetMetaChangelogData,
+  GetMetaChangelogResponse,
+  GetMetaCompatibilityDatesData,
+  GetMetaCompatibilityDatesResponse,
+  GetMetaNameData,
+  GetMetaNameResponse,
+  GetMetaStatusData,
+  GetMetaStatusResponse,
+} from '../../types.gen.js';
 
 export interface GetMetaChangelogOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMetaChangelogInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMetaChangelogInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMetaChangelogInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaChangelogData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaChangelogData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMetaChangelogData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMetaStatusOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMetaStatusInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMetaStatusInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMetaStatusInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaStatusData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaStatusData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMetaStatusData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMetaNameOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMetaNameInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMetaNameInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMetaNameInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaNameData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaNameData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMetaNameData>["headers"]>["X-Tenant"];
 }
 
 export interface GetMetaCompatibilityDatesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetMetaCompatibilityDatesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetMetaCompatibilityDatesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetMetaCompatibilityDatesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetMetaCompatibilityDatesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetMetaCompatibilityDatesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetMetaCompatibilityDatesData>["headers"]>["X-Tenant"];
 }
 
 export interface MetaDomainClient {
-  getChangelog(options?: GetMetaChangelogOptions): Promise<GetMetaChangelogOutput>;
+  getChangelog(options?: GetMetaChangelogOptions): Promise<GetMetaChangelogResponse>;
 
-  getHealthStatus(options?: GetMetaStatusOptions): Promise<GetMetaStatusOutput>;
+  getHealthStatus(options?: GetMetaStatusOptions): Promise<GetMetaStatusResponse>;
 
-  getName(options?: GetMetaNameOptions): Promise<GetMetaNameOutput>;
+  getName(options?: GetMetaNameOptions): Promise<GetMetaNameResponse>;
 
-  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<GetMetaCompatibilityDatesOutput>;
+  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<GetMetaCompatibilityDatesResponse>;
 
   withMetadata(): MetaDomainClientWithMetadata;
 }
 
 export interface MetaDomainClientWithMetadata {
-  getChangelog(options?: GetMetaChangelogOptions): Promise<EsiResponse<GetMetaChangelogOutput>>;
+  getChangelog(options?: GetMetaChangelogOptions): Promise<EsiResponse<GetMetaChangelogResponse>>;
 
-  getHealthStatus(options?: GetMetaStatusOptions): Promise<EsiResponse<GetMetaStatusOutput>>;
+  getHealthStatus(options?: GetMetaStatusOptions): Promise<EsiResponse<GetMetaStatusResponse>>;
 
-  getName(options?: GetMetaNameOptions): Promise<EsiResponse<GetMetaNameOutput>>;
+  getName(options?: GetMetaNameOptions): Promise<EsiResponse<GetMetaNameResponse>>;
 
-  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<EsiResponse<GetMetaCompatibilityDatesOutput>>;
+  listCompatibilityDates(options?: GetMetaCompatibilityDatesOptions): Promise<EsiResponse<GetMetaCompatibilityDatesResponse>>;
 }

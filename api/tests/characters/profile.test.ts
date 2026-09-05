@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   getCorporation: vi.fn(),
   listBloodlines: vi.fn(),
   listRaces: vi.fn(),
+  universeClientOptions: [] as unknown[],
 }))
 
 vi.mock('@evespace/esi-client/domains/character', () => ({
@@ -21,9 +22,12 @@ vi.mock('@evespace/esi-client/domains/alliance', () => ({
   createAllianceClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.getAlliance }) }),
 }))
 vi.mock('@evespace/esi-client/domains/universe', () => ({
-  createUniverseClient: () => ({
-    withMetadata: () => ({ listBloodlines: mocks.listBloodlines, listRaces: mocks.listRaces }),
-  }),
+  createUniverseClient: (options: unknown) => {
+    mocks.universeClientOptions.push(options)
+    return {
+      withMetadata: () => ({ listBloodlines: mocks.listBloodlines, listRaces: mocks.listRaces }),
+    }
+  },
 }))
 vi.mock('../../src/esi-resilience/resilience.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
@@ -54,8 +58,24 @@ const publicMetadata = {
   validatedAt: esiMetadata.validatedAt,
   stale: false,
 }
+const getUniverseBloodlinesNullableShipTypeIdFixture = [
+  {
+    bloodline_id: 5,
+    charisma: 3,
+    corporation_id: 1_000_166,
+    description: 'Observed live bloodline response',
+    intelligence: 7,
+    memory: 4,
+    name: 'Khanid',
+    perception: 8,
+    race_id: 4,
+    ship_type_id: null,
+    willpower: 7,
+  },
+]
 
 beforeEach(() => {
+  mocks.universeClientOptions.length = 0
   mocks.get.mockImplementation(async (resource) => {
     const loaded = await resource.load({})
     return {
@@ -68,11 +88,21 @@ beforeEach(() => {
     response({ member_count: 1, name: 'Imperial Academy', ticker: 'IAC' }),
   )
   mocks.listRaces.mockResolvedValue(response([{ name: 'Amarr', race_id: 4 }]))
-  mocks.listBloodlines.mockResolvedValue(response([{ bloodline_id: 5, name: 'Khanid' }]))
+  mocks.listBloodlines.mockResolvedValue(response(getUniverseBloodlinesNullableShipTypeIdFixture))
   mocks.getAlliance.mockResolvedValue(response({ name: 'Alliance', ticker: 'ALLY' }))
 })
 
 describe('character profile', () => {
+  test('keeps the GetUniverseBloodlines nullable ship_type_id override operation-specific', async () => {
+    const { getCharacterProfile } = await import('../../src/characters/profile.js')
+
+    await expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({ bloodline: 'Khanid' })
+
+    expect(mocks.universeClientOptions).toHaveLength(2)
+    expect(mocks.universeClientOptions[0]).not.toHaveProperty('validateResponses')
+    expect(mocks.universeClientOptions[1]).toMatchObject({ validateResponses: false })
+  })
+
   test('composes independently resilient public resources without changing the DTO', async () => {
     const { getCharacterProfile } = await import('../../src/characters/profile.js')
 

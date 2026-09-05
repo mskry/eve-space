@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join, posix, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { domainFileName } from './generate/domain-client.ts';
+import { domainFileName } from './generate/internal/facade-naming.ts';
 import { resolveOperationMetadata } from './generate/operation-metadata.ts';
 import type { NormalizedOpenApiModel } from './generate/normalize.ts';
 

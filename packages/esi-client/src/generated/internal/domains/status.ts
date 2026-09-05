@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetStatusDescriptor,
@@ -15,9 +16,9 @@ import type {
   GetStatusOptions,
 } from './status-contract.js';
 import type {
-  GetStatusInput,
-  GetStatusOutput,
-} from '../../schemas/operations/status.js';
+  GetStatusData,
+  GetStatusResponse,
+} from '../../types.gen.js';
 
 class StatusDomainClientWithMetadataImplementation implements StatusDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -27,8 +28,8 @@ class StatusDomainClientWithMetadataImplementation implements StatusDomainClient
     Object.freeze(this);
   }
 
-  get(options?: GetStatusOptions): Promise<EsiResponse<GetStatusOutput>> {
-    const arguments_: GetStatusInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  get(options?: GetStatusOptions): Promise<EsiResponse<GetStatusResponse>> {
+    const arguments_: OperationArguments<GetStatusData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetStatusDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -41,7 +42,7 @@ class StatusDomainClientImplementation implements StatusDomainClient {
     Object.freeze(this);
   }
 
-  get(options?: GetStatusOptions): Promise<GetStatusOutput> {
+  get(options?: GetStatusOptions): Promise<GetStatusResponse> {
     return this.#metadata.get(options).then((response) => response.data);
   }
 

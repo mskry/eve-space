@@ -4,66 +4,92 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCharacterIdAgentsResearchData,
+  GetCharactersCharacterIdAgentsResearchResponse,
+  GetCharactersCharacterIdBlueprintsData,
+  GetCharactersCharacterIdBlueprintsResponse,
+  GetCharactersCharacterIdCorporationhistoryData,
+  GetCharactersCharacterIdCorporationhistoryResponse,
+  GetCharactersCharacterIdFatigueData,
+  GetCharactersCharacterIdFatigueResponse,
+  GetCharactersCharacterIdMedalsData,
+  GetCharactersCharacterIdMedalsResponse,
+  GetCharactersCharacterIdNotificationsContactsData,
+  GetCharactersCharacterIdNotificationsContactsResponse,
+  GetCharactersCharacterIdNotificationsData,
+  GetCharactersCharacterIdNotificationsResponse,
+  GetCharactersCharacterIdPortraitData,
+  GetCharactersCharacterIdPortraitResponse,
+  GetCharactersCharacterIdRolesData,
+  GetCharactersCharacterIdRolesResponse,
+  GetCharactersCharacterIdStandingsData,
+  GetCharactersCharacterIdStandingsResponse,
+  GetCharactersCharacterIdTitlesData,
+  GetCharactersCharacterIdTitlesResponse,
+  GetCharactersDetailData,
+  GetCharactersDetailResponse,
+  PostCharactersAffiliationData,
+  PostCharactersAffiliationResponse,
+  PostCharactersCharacterIdCspaData,
+  PostCharactersCharacterIdCspaResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCharacterIdAgentsResearchRequestSchema,
-  GetCharactersCharacterIdAgentsResearchStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdBlueprintsRequestSchema,
-  GetCharactersCharacterIdBlueprintsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdCorporationhistoryRequestSchema,
-  GetCharactersCharacterIdCorporationhistoryStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdFatigueRequestSchema,
-  GetCharactersCharacterIdFatigueStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdMedalsRequestSchema,
-  GetCharactersCharacterIdMedalsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdNotificationsContactsRequestSchema,
-  GetCharactersCharacterIdNotificationsContactsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdNotificationsRequestSchema,
-  GetCharactersCharacterIdNotificationsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdPortraitRequestSchema,
-  GetCharactersCharacterIdPortraitStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdRolesRequestSchema,
-  GetCharactersCharacterIdRolesStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdStandingsRequestSchema,
-  GetCharactersCharacterIdStandingsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdTitlesRequestSchema,
-  GetCharactersCharacterIdTitlesStatus200SuccessResponseSchema,
-  GetCharactersDetailRequestSchema,
-  GetCharactersDetailStatus200SuccessResponseSchema,
-  PostCharactersAffiliationRequestSchema,
-  PostCharactersAffiliationStatus200SuccessResponseSchema,
-  PostCharactersCharacterIdCspaRequestSchema,
-  PostCharactersCharacterIdCspaStatus201SuccessResponseSchema,
-  type GetCharactersCharacterIdAgentsResearchInput,
-  type GetCharactersCharacterIdAgentsResearchOutput,
-  type GetCharactersCharacterIdBlueprintsInput,
-  type GetCharactersCharacterIdBlueprintsOutput,
-  type GetCharactersCharacterIdCorporationhistoryInput,
-  type GetCharactersCharacterIdCorporationhistoryOutput,
-  type GetCharactersCharacterIdFatigueInput,
-  type GetCharactersCharacterIdFatigueOutput,
-  type GetCharactersCharacterIdMedalsInput,
-  type GetCharactersCharacterIdMedalsOutput,
-  type GetCharactersCharacterIdNotificationsContactsInput,
-  type GetCharactersCharacterIdNotificationsContactsOutput,
-  type GetCharactersCharacterIdNotificationsInput,
-  type GetCharactersCharacterIdNotificationsOutput,
-  type GetCharactersCharacterIdPortraitInput,
-  type GetCharactersCharacterIdPortraitOutput,
-  type GetCharactersCharacterIdRolesInput,
-  type GetCharactersCharacterIdRolesOutput,
-  type GetCharactersCharacterIdStandingsInput,
-  type GetCharactersCharacterIdStandingsOutput,
-  type GetCharactersCharacterIdTitlesInput,
-  type GetCharactersCharacterIdTitlesOutput,
-  type GetCharactersDetailInput,
-  type GetCharactersDetailOutput,
-  type PostCharactersAffiliationInput,
-  type PostCharactersAffiliationOutput,
-  type PostCharactersCharacterIdCspaInput,
-  type PostCharactersCharacterIdCspaOutput,
-} from '../../schemas/operations/character.js';
+  zGetCharactersCharacterIdAgentsResearchHeaders,
+  zGetCharactersCharacterIdAgentsResearchPath,
+  zGetCharactersCharacterIdAgentsResearchResponse,
+  zGetCharactersCharacterIdBlueprintsHeaders,
+  zGetCharactersCharacterIdBlueprintsPath,
+  zGetCharactersCharacterIdBlueprintsQuery,
+  zGetCharactersCharacterIdBlueprintsResponse,
+  zGetCharactersCharacterIdCorporationhistoryHeaders,
+  zGetCharactersCharacterIdCorporationhistoryPath,
+  zGetCharactersCharacterIdCorporationhistoryResponse,
+  zGetCharactersCharacterIdFatigueHeaders,
+  zGetCharactersCharacterIdFatiguePath,
+  zGetCharactersCharacterIdFatigueResponse,
+  zGetCharactersCharacterIdMedalsHeaders,
+  zGetCharactersCharacterIdMedalsPath,
+  zGetCharactersCharacterIdMedalsResponse,
+  zGetCharactersCharacterIdNotificationsContactsHeaders,
+  zGetCharactersCharacterIdNotificationsContactsPath,
+  zGetCharactersCharacterIdNotificationsContactsResponse,
+  zGetCharactersCharacterIdNotificationsHeaders,
+  zGetCharactersCharacterIdNotificationsPath,
+  zGetCharactersCharacterIdNotificationsResponse,
+  zGetCharactersCharacterIdPortraitHeaders,
+  zGetCharactersCharacterIdPortraitPath,
+  zGetCharactersCharacterIdPortraitResponse,
+  zGetCharactersCharacterIdRolesHeaders,
+  zGetCharactersCharacterIdRolesPath,
+  zGetCharactersCharacterIdRolesResponse,
+  zGetCharactersCharacterIdStandingsHeaders,
+  zGetCharactersCharacterIdStandingsPath,
+  zGetCharactersCharacterIdStandingsResponse,
+  zGetCharactersCharacterIdTitlesHeaders,
+  zGetCharactersCharacterIdTitlesPath,
+  zGetCharactersCharacterIdTitlesResponse,
+  zGetCharactersDetailHeaders,
+  zGetCharactersDetailPath,
+  zGetCharactersDetailResponse,
+  zPostCharactersAffiliationBody,
+  zPostCharactersAffiliationHeaders,
+  zPostCharactersAffiliationResponse,
+  zPostCharactersCharacterIdCspaBody,
+  zPostCharactersCharacterIdCspaHeaders,
+  zPostCharactersCharacterIdCspaPath,
+  zPostCharactersCharacterIdCspaResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersCharacterIdAgentsResearchDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdAgentsResearchInput, GetCharactersCharacterIdAgentsResearchOutput> = {
+export const GetCharactersCharacterIdAgentsResearchRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdAgentsResearchData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdAgentsResearchData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdAgentsResearchHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdAgentsResearchPath },
+});
+
+export const GetCharactersCharacterIdAgentsResearchDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdAgentsResearchData>, GetCharactersCharacterIdAgentsResearchResponse> = {
   operationId: "GetCharactersCharacterIdAgentsResearch",
   method: "GET",
   path: "/characters/{character_id}/agents_research",
@@ -77,12 +103,18 @@ export const GetCharactersCharacterIdAgentsResearchDescriptor: OperationExecutio
   requestSchema: GetCharactersCharacterIdAgentsResearchRequestSchema,
   authentication: { scopes: ["esi-characters.read_agents_research.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdAgentsResearchStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdAgentsResearchResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostCharactersCharacterIdCspaDescriptor: OperationExecutionDescriptor<PostCharactersCharacterIdCspaInput, PostCharactersCharacterIdCspaOutput> = {
+export const PostCharactersCharacterIdCspaRequestSchema: z.ZodType<OperationArguments<PostCharactersCharacterIdCspaData>> = composeOperationRequestSchema<OperationArguments<PostCharactersCharacterIdCspaData>>({
+  headers: { required: false, schema: zPostCharactersCharacterIdCspaHeaders },
+  path: { required: true, schema: zPostCharactersCharacterIdCspaPath },
+  body: { required: true, schema: zPostCharactersCharacterIdCspaBody },
+});
+
+export const PostCharactersCharacterIdCspaDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersCharacterIdCspaData>, PostCharactersCharacterIdCspaResponse> = {
   operationId: "PostCharactersCharacterIdCspa",
   method: "POST",
   path: "/characters/{character_id}/cspa",
@@ -96,12 +128,17 @@ export const PostCharactersCharacterIdCspaDescriptor: OperationExecutionDescript
   requestSchema: PostCharactersCharacterIdCspaRequestSchema,
   authentication: { scopes: ["esi-characters.read_contacts.v1"] },
   successResponses: [
-    { status: 201, body: 'json', schema: PostCharactersCharacterIdCspaStatus201SuccessResponseSchema },
+    { status: 201, body: 'json', schema: zPostCharactersCharacterIdCspaResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdRolesDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdRolesInput, GetCharactersCharacterIdRolesOutput> = {
+export const GetCharactersCharacterIdRolesRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdRolesData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdRolesData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdRolesHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdRolesPath },
+});
+
+export const GetCharactersCharacterIdRolesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdRolesData>, GetCharactersCharacterIdRolesResponse> = {
   operationId: "GetCharactersCharacterIdRoles",
   method: "GET",
   path: "/characters/{character_id}/roles",
@@ -115,12 +152,17 @@ export const GetCharactersCharacterIdRolesDescriptor: OperationExecutionDescript
   requestSchema: GetCharactersCharacterIdRolesRequestSchema,
   authentication: { scopes: ["esi-characters.read_corporation_roles.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdRolesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdRolesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdFatigueDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdFatigueInput, GetCharactersCharacterIdFatigueOutput> = {
+export const GetCharactersCharacterIdFatigueRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdFatigueData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdFatigueData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdFatigueHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdFatiguePath },
+});
+
+export const GetCharactersCharacterIdFatigueDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdFatigueData>, GetCharactersCharacterIdFatigueResponse> = {
   operationId: "GetCharactersCharacterIdFatigue",
   method: "GET",
   path: "/characters/{character_id}/fatigue",
@@ -134,12 +176,17 @@ export const GetCharactersCharacterIdFatigueDescriptor: OperationExecutionDescri
   requestSchema: GetCharactersCharacterIdFatigueRequestSchema,
   authentication: { scopes: ["esi-characters.read_fatigue.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdFatigueStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdFatigueResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdPortraitDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdPortraitInput, GetCharactersCharacterIdPortraitOutput> = {
+export const GetCharactersCharacterIdPortraitRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdPortraitData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdPortraitData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdPortraitHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdPortraitPath },
+});
+
+export const GetCharactersCharacterIdPortraitDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdPortraitData>, GetCharactersCharacterIdPortraitResponse> = {
   operationId: "GetCharactersCharacterIdPortrait",
   method: "GET",
   path: "/characters/{character_id}/portrait",
@@ -153,12 +200,17 @@ export const GetCharactersCharacterIdPortraitDescriptor: OperationExecutionDescr
   requestSchema: GetCharactersCharacterIdPortraitRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdPortraitStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdPortraitResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersDetailDescriptor: OperationExecutionDescriptor<GetCharactersDetailInput, GetCharactersDetailOutput> = {
+export const GetCharactersDetailRequestSchema: z.ZodType<OperationArguments<GetCharactersDetailData>> = composeOperationRequestSchema<OperationArguments<GetCharactersDetailData>>({
+  headers: { required: false, schema: zGetCharactersDetailHeaders },
+  path: { required: true, schema: zGetCharactersDetailPath },
+});
+
+export const GetCharactersDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersDetailData>, GetCharactersDetailResponse> = {
   operationId: "GetCharactersDetail",
   method: "GET",
   path: "/characters/{character_id}",
@@ -172,12 +224,18 @@ export const GetCharactersDetailDescriptor: OperationExecutionDescriptor<GetChar
   requestSchema: GetCharactersDetailRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdBlueprintsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdBlueprintsInput, GetCharactersCharacterIdBlueprintsOutput> = {
+export const GetCharactersCharacterIdBlueprintsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdBlueprintsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdBlueprintsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdBlueprintsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdBlueprintsPath },
+  query: { required: false, schema: zGetCharactersCharacterIdBlueprintsQuery },
+});
+
+export const GetCharactersCharacterIdBlueprintsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdBlueprintsData>, GetCharactersCharacterIdBlueprintsResponse> = {
   operationId: "GetCharactersCharacterIdBlueprints",
   method: "GET",
   path: "/characters/{character_id}/blueprints",
@@ -192,12 +250,17 @@ export const GetCharactersCharacterIdBlueprintsDescriptor: OperationExecutionDes
   requestSchema: GetCharactersCharacterIdBlueprintsRequestSchema,
   authentication: { scopes: ["esi-characters.read_blueprints.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdBlueprintsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdBlueprintsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdNotificationsContactsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdNotificationsContactsInput, GetCharactersCharacterIdNotificationsContactsOutput> = {
+export const GetCharactersCharacterIdNotificationsContactsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdNotificationsContactsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdNotificationsContactsPath },
+});
+
+export const GetCharactersCharacterIdNotificationsContactsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdNotificationsContactsData>, GetCharactersCharacterIdNotificationsContactsResponse> = {
   operationId: "GetCharactersCharacterIdNotificationsContacts",
   method: "GET",
   path: "/characters/{character_id}/notifications/contacts",
@@ -211,12 +274,17 @@ export const GetCharactersCharacterIdNotificationsContactsDescriptor: OperationE
   requestSchema: GetCharactersCharacterIdNotificationsContactsRequestSchema,
   authentication: { scopes: ["esi-characters.read_notifications.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdNotificationsContactsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdNotificationsContactsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdCorporationhistoryDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdCorporationhistoryInput, GetCharactersCharacterIdCorporationhistoryOutput> = {
+export const GetCharactersCharacterIdCorporationhistoryRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdCorporationhistoryHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdCorporationhistoryPath },
+});
+
+export const GetCharactersCharacterIdCorporationhistoryDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdCorporationhistoryData>, GetCharactersCharacterIdCorporationhistoryResponse> = {
   operationId: "GetCharactersCharacterIdCorporationhistory",
   method: "GET",
   path: "/characters/{character_id}/corporationhistory",
@@ -230,12 +298,17 @@ export const GetCharactersCharacterIdCorporationhistoryDescriptor: OperationExec
   requestSchema: GetCharactersCharacterIdCorporationhistoryRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdCorporationhistoryStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdCorporationhistoryResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdTitlesDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdTitlesInput, GetCharactersCharacterIdTitlesOutput> = {
+export const GetCharactersCharacterIdTitlesRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdTitlesData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdTitlesData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdTitlesHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdTitlesPath },
+});
+
+export const GetCharactersCharacterIdTitlesDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdTitlesData>, GetCharactersCharacterIdTitlesResponse> = {
   operationId: "GetCharactersCharacterIdTitles",
   method: "GET",
   path: "/characters/{character_id}/titles",
@@ -249,12 +322,17 @@ export const GetCharactersCharacterIdTitlesDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdTitlesRequestSchema,
   authentication: { scopes: ["esi-characters.read_titles.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdTitlesStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdTitlesResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdMedalsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdMedalsInput, GetCharactersCharacterIdMedalsOutput> = {
+export const GetCharactersCharacterIdMedalsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdMedalsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdMedalsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdMedalsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdMedalsPath },
+});
+
+export const GetCharactersCharacterIdMedalsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdMedalsData>, GetCharactersCharacterIdMedalsResponse> = {
   operationId: "GetCharactersCharacterIdMedals",
   method: "GET",
   path: "/characters/{character_id}/medals",
@@ -268,12 +346,17 @@ export const GetCharactersCharacterIdMedalsDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersCharacterIdMedalsRequestSchema,
   authentication: { scopes: ["esi-characters.read_medals.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdMedalsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdMedalsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdNotificationsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdNotificationsInput, GetCharactersCharacterIdNotificationsOutput> = {
+export const GetCharactersCharacterIdNotificationsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdNotificationsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdNotificationsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdNotificationsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdNotificationsPath },
+});
+
+export const GetCharactersCharacterIdNotificationsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdNotificationsData>, GetCharactersCharacterIdNotificationsResponse> = {
   operationId: "GetCharactersCharacterIdNotifications",
   method: "GET",
   path: "/characters/{character_id}/notifications",
@@ -287,12 +370,17 @@ export const GetCharactersCharacterIdNotificationsDescriptor: OperationExecution
   requestSchema: GetCharactersCharacterIdNotificationsRequestSchema,
   authentication: { scopes: ["esi-characters.read_notifications.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdNotificationsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdNotificationsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdStandingsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdStandingsInput, GetCharactersCharacterIdStandingsOutput> = {
+export const GetCharactersCharacterIdStandingsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdStandingsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdStandingsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdStandingsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdStandingsPath },
+});
+
+export const GetCharactersCharacterIdStandingsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdStandingsData>, GetCharactersCharacterIdStandingsResponse> = {
   operationId: "GetCharactersCharacterIdStandings",
   method: "GET",
   path: "/characters/{character_id}/standings",
@@ -306,12 +394,17 @@ export const GetCharactersCharacterIdStandingsDescriptor: OperationExecutionDesc
   requestSchema: GetCharactersCharacterIdStandingsRequestSchema,
   authentication: { scopes: ["esi-characters.read_standings.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdStandingsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdStandingsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostCharactersAffiliationDescriptor: OperationExecutionDescriptor<PostCharactersAffiliationInput, PostCharactersAffiliationOutput> = {
+export const PostCharactersAffiliationRequestSchema: z.ZodType<OperationArguments<PostCharactersAffiliationData>> = composeOperationRequestSchema<OperationArguments<PostCharactersAffiliationData>>({
+  headers: { required: false, schema: zPostCharactersAffiliationHeaders },
+  body: { required: true, schema: zPostCharactersAffiliationBody },
+});
+
+export const PostCharactersAffiliationDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersAffiliationData>, PostCharactersAffiliationResponse> = {
   operationId: "PostCharactersAffiliation",
   method: "POST",
   path: "/characters/affiliation",
@@ -324,7 +417,7 @@ export const PostCharactersAffiliationDescriptor: OperationExecutionDescriptor<P
   requestSchema: PostCharactersAffiliationRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: PostCharactersAffiliationStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zPostCharactersAffiliationResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

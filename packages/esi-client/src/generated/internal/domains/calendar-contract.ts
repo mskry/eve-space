@@ -4,65 +4,66 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetCharactersCharacterIdCalendarEventIdAttendeesInput,
-  GetCharactersCharacterIdCalendarEventIdAttendeesOutput,
-  GetCharactersCharacterIdCalendarEventIdInput,
-  GetCharactersCharacterIdCalendarEventIdOutput,
-  GetCharactersCharacterIdCalendarInput,
-  GetCharactersCharacterIdCalendarOutput,
-  PutCharactersCharacterIdCalendarEventIdInput,
-  PutCharactersCharacterIdCalendarEventIdOutput,
-} from '../../schemas/operations/calendar.js';
+  GetCharactersCharacterIdCalendarData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesData,
+  GetCharactersCharacterIdCalendarEventIdAttendeesResponse,
+  GetCharactersCharacterIdCalendarEventIdData,
+  GetCharactersCharacterIdCalendarEventIdResponse,
+  GetCharactersCharacterIdCalendarResponse,
+  PutCharactersCharacterIdCalendarEventIdData,
+  PutCharactersCharacterIdCalendarEventIdResponse,
+} from '../../types.gen.js';
 
 export interface GetCharactersCharacterIdCalendarEventIdOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdCalendarEventIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdCalendarEventIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdCalendarEventIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdCalendarEventIdAttendeesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdCalendarOptions {
   readonly "compatibilityDate"?: string;
-  readonly "fromEvent"?: NonNullable<GetCharactersCharacterIdCalendarInput["query"]>["from_event"];
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdCalendarInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdCalendarInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdCalendarInput["header"]>["X-Tenant"];
+  readonly "fromEvent"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["query"]>["from_event"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>["headers"]>["X-Tenant"];
 }
 
 export interface PutCharactersCharacterIdCalendarEventIdOptions {
-  readonly "body": PutCharactersCharacterIdCalendarEventIdInput['body'];
+  readonly "body": OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PutCharactersCharacterIdCalendarEventIdInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PutCharactersCharacterIdCalendarEventIdInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<PutCharactersCharacterIdCalendarEventIdInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>["headers"]>["X-Tenant"];
 }
 
 export interface CalendarDomainClient {
-  getEvent(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<GetCharactersCharacterIdCalendarEventIdOutput>;
+  getEvent(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<GetCharactersCharacterIdCalendarEventIdResponse>;
 
-  listEventAttendees(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<GetCharactersCharacterIdCalendarEventIdAttendeesOutput>;
+  listEventAttendees(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<GetCharactersCharacterIdCalendarEventIdAttendeesResponse>;
 
-  listEvents(characterId: NonNullable<GetCharactersCharacterIdCalendarInput['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<GetCharactersCharacterIdCalendarOutput>;
+  listEvents(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<GetCharactersCharacterIdCalendarResponse>;
 
-  respondToEvent(characterId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<PutCharactersCharacterIdCalendarEventIdOutput>;
+  respondToEvent(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<PutCharactersCharacterIdCalendarEventIdResponse>;
 
   withMetadata(): CalendarDomainClientWithMetadata;
 }
 
 export interface CalendarDomainClientWithMetadata {
-  getEvent(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdOutput>>;
+  getEvent(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdResponse>>;
 
-  listEventAttendees(characterId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["character_id"], eventId: NonNullable<GetCharactersCharacterIdCalendarEventIdAttendeesInput['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdAttendeesOutput>>;
+  listEventAttendees(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["character_id"], eventId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarEventIdAttendeesData>['path']>["event_id"], options?: GetCharactersCharacterIdCalendarEventIdAttendeesOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarEventIdAttendeesResponse>>;
 
-  listEvents(characterId: NonNullable<GetCharactersCharacterIdCalendarInput['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarOutput>>;
+  listEvents(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdCalendarData>['path']>["character_id"], options?: GetCharactersCharacterIdCalendarOptions): Promise<EsiResponse<GetCharactersCharacterIdCalendarResponse>>;
 
-  respondToEvent(characterId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["character_id"], eventId: NonNullable<PutCharactersCharacterIdCalendarEventIdInput['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<PutCharactersCharacterIdCalendarEventIdOutput>>;
+  respondToEvent(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["character_id"], eventId: NonNullable<OperationArguments<PutCharactersCharacterIdCalendarEventIdData>['path']>["event_id"], options: PutCharactersCharacterIdCalendarEventIdOptions): Promise<EsiResponse<PutCharactersCharacterIdCalendarEventIdResponse>>;
 }

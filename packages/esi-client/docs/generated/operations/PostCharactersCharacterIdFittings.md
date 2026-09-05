@@ -16,13 +16,13 @@ Create fitting
 - Domain import: `@evespace/esi-client/domains/fittings`
 - Domain index: [fittings](../domains/fittings.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createFittingsClient } from '@evespace/esi-client/domains/fittings';
-import type { PostCharactersCharacterIdFittingsOptions } from '@evespace/esi-client/domains/fittings';
+import type { PostCharactersCharacterIdFittingsResponse, PostCharactersCharacterIdFittingsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,17 +30,17 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createFittingsClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdFittingsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdFittingsData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.create(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdFittingsResponse = await client.create(characterId, { body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostCharactersCharacterIdFittingsOptions } from '@evespace/esi-client/domains/fittings';
+import type { PostCharactersCharacterIdFittingsResponse, PostCharactersCharacterIdFittingsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -48,10 +48,10 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdFittingsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdFittingsData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.fittings.create(characterId, { body: requestBody });
+const data: PostCharactersCharacterIdFittingsResponse = await client.fittings.create(characterId, { body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -59,6 +59,7 @@ const data = await client.fittings.create(characterId, { body: requestBody });
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostCharactersCharacterIdFittingsData, PostCharactersCharacterIdFittingsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -66,7 +67,7 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken, allowGenericMutations: true });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<CallOperationArguments<'PostCharactersCharacterIdFittings'>['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdFittingsData['body']>;
 
 const arguments_: CallOperationArguments<'PostCharactersCharacterIdFittings'> = { path: { "character_id": characterId }, body: requestBody };
 
@@ -74,6 +75,7 @@ const arguments_: CallOperationArguments<'PostCharactersCharacterIdFittings'> = 
 const response = await client.callOperation('PostCharactersCharacterIdFittings', arguments_, {
   confirmMutation: true,
 });
+const data: PostCharactersCharacterIdFittingsResponse = response.data;
 ```
 
 ## Parameters
@@ -88,14 +90,16 @@ const response = await client.callOperation('PostCharactersCharacterIdFittings',
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostCharactersCharacterIdFittingsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostCharactersCharacterIdFittingsData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdFittingsBody`; `headers` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdFittingsHeaders`; `path` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdFittingsPath`.
+- Response type: `@evespace/esi-client/types` export `PostCharactersCharacterIdFittingsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.fittings.withMetadata().create(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `201` | json | `@evespace/esi-client/schemas` | `PostCharactersCharacterIdFittingsStatus201SuccessResponseSchema` | Created |
+| `201` | json | `@evespace/esi-client/zod` | `zPostCharactersCharacterIdFittingsResponse` | Created |
 
 ## Authentication
 
@@ -130,6 +134,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

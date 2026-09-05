@@ -16,12 +16,13 @@ Get your project contribution
 - Domain import: `@evespace/esi-client/domains/corporation-projects`
 - Domain index: [corporationProjects](../domains/corporation-projects.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createCorporationProjectsClient } from '@evespace/esi-client/domains/corporation-projects';
+import type { GetCorporationsProjectsContributionResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -32,13 +33,14 @@ const corporationId = 98000001;
 const projectId = "00000000-0000-4000-8000-000000000000";
 const characterId = 90000001;
 
-const data = await client.getContribution(corporationId, projectId, characterId);
+const data: GetCorporationsProjectsContributionResponse = await client.getContribution(corporationId, projectId, characterId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCorporationsProjectsContributionResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -49,7 +51,7 @@ const corporationId = 98000001;
 const projectId = "00000000-0000-4000-8000-000000000000";
 const characterId = 90000001;
 
-const data = await client.corporationProjects.getContribution(corporationId, projectId, characterId);
+const data: GetCorporationsProjectsContributionResponse = await client.corporationProjects.getContribution(corporationId, projectId, characterId);
 ```
 
 ## Generic-execution snippet
@@ -57,6 +59,7 @@ const data = await client.corporationProjects.getContribution(corporationId, pro
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCorporationsProjectsContributionData, GetCorporationsProjectsContributionResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -70,6 +73,7 @@ const characterId = 90000001;
 const arguments_: CallOperationArguments<'GetCorporationsProjectsContribution'> = { path: { "corporation_id": corporationId, "project_id": projectId, "character_id": characterId } };
 
 const response = await client.callOperation('GetCorporationsProjectsContribution', arguments_);
+const data: GetCorporationsProjectsContributionResponse = response.data;
 ```
 
 ## Parameters
@@ -85,14 +89,16 @@ const response = await client.callOperation('GetCorporationsProjectsContribution
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCorporationsProjectsContributionRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCorporationsProjectsContributionData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCorporationsProjectsContributionHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCorporationsProjectsContributionPath`.
+- Response type: `@evespace/esi-client/types` export `GetCorporationsProjectsContributionResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.corporationProjects.withMetadata().getContribution(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCorporationsProjectsContributionStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCorporationsProjectsContributionResponse` | OK |
 
 ## Authentication
 
@@ -124,6 +130,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

@@ -4,24 +4,25 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  GetInsurancePricesInput,
-  GetInsurancePricesOutput,
-} from '../../schemas/operations/insurance.js';
+  GetInsurancePricesData,
+  GetInsurancePricesResponse,
+} from '../../types.gen.js';
 
 export interface GetInsurancePricesOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetInsurancePricesInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetInsurancePricesInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetInsurancePricesInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetInsurancePricesData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetInsurancePricesData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetInsurancePricesData>["headers"]>["X-Tenant"];
 }
 
 export interface InsuranceDomainClient {
-  listPrices(options?: GetInsurancePricesOptions): Promise<GetInsurancePricesOutput>;
+  listPrices(options?: GetInsurancePricesOptions): Promise<GetInsurancePricesResponse>;
 
   withMetadata(): InsuranceDomainClientWithMetadata;
 }
 
 export interface InsuranceDomainClientWithMetadata {
-  listPrices(options?: GetInsurancePricesOptions): Promise<EsiResponse<GetInsurancePricesOutput>>;
+  listPrices(options?: GetInsurancePricesOptions): Promise<EsiResponse<GetInsurancePricesResponse>>;
 }

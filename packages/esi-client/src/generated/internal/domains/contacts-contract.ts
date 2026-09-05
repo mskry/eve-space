@@ -4,140 +4,141 @@
 // DO NOT EDIT.
 
 import type { EsiResponse } from '../../../client/response.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type {
-  DeleteCharactersCharacterIdContactsInput,
-  DeleteCharactersCharacterIdContactsOutput,
-  GetAlliancesAllianceIdContactsInput,
-  GetAlliancesAllianceIdContactsLabelsInput,
-  GetAlliancesAllianceIdContactsLabelsOutput,
-  GetAlliancesAllianceIdContactsOutput,
-  GetCharactersCharacterIdContactsInput,
-  GetCharactersCharacterIdContactsLabelsInput,
-  GetCharactersCharacterIdContactsLabelsOutput,
-  GetCharactersCharacterIdContactsOutput,
-  GetCorporationsCorporationIdContactsInput,
-  GetCorporationsCorporationIdContactsLabelsInput,
-  GetCorporationsCorporationIdContactsLabelsOutput,
-  GetCorporationsCorporationIdContactsOutput,
-  PostCharactersCharacterIdContactsInput,
-  PostCharactersCharacterIdContactsOutput,
-  PutCharactersCharacterIdContactsInput,
-  PutCharactersCharacterIdContactsOutput,
-} from '../../schemas/operations/contacts.js';
+  DeleteCharactersCharacterIdContactsData,
+  DeleteCharactersCharacterIdContactsResponse,
+  GetAlliancesAllianceIdContactsData,
+  GetAlliancesAllianceIdContactsLabelsData,
+  GetAlliancesAllianceIdContactsLabelsResponse,
+  GetAlliancesAllianceIdContactsResponse,
+  GetCharactersCharacterIdContactsData,
+  GetCharactersCharacterIdContactsLabelsData,
+  GetCharactersCharacterIdContactsLabelsResponse,
+  GetCharactersCharacterIdContactsResponse,
+  GetCorporationsCorporationIdContactsData,
+  GetCorporationsCorporationIdContactsLabelsData,
+  GetCorporationsCorporationIdContactsLabelsResponse,
+  GetCorporationsCorporationIdContactsResponse,
+  PostCharactersCharacterIdContactsData,
+  PostCharactersCharacterIdContactsResponse,
+  PutCharactersCharacterIdContactsData,
+  PutCharactersCharacterIdContactsResponse,
+} from '../../types.gen.js';
 
 export interface PostCharactersCharacterIdContactsOptions {
-  readonly "body": PostCharactersCharacterIdContactsInput['body'];
+  readonly "body": OperationArguments<PostCharactersCharacterIdContactsData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PostCharactersCharacterIdContactsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PostCharactersCharacterIdContactsInput["header"]>["If-None-Match"];
-  readonly "labelIds"?: NonNullable<PostCharactersCharacterIdContactsInput["query"]>["label_ids"];
-  readonly "standing": NonNullable<PostCharactersCharacterIdContactsInput["query"]>["standing"];
-  readonly "watched"?: NonNullable<PostCharactersCharacterIdContactsInput["query"]>["watched"];
-  readonly "xTenant"?: NonNullable<PostCharactersCharacterIdContactsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
+  readonly "labelIds"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["query"]>["label_ids"];
+  readonly "standing": NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["query"]>["standing"];
+  readonly "watched"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["query"]>["watched"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];
 }
 
 export interface DeleteCharactersCharacterIdContactsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "contactIds": NonNullable<DeleteCharactersCharacterIdContactsInput["query"]>["contact_ids"];
-  readonly "ifModifiedSince"?: NonNullable<DeleteCharactersCharacterIdContactsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<DeleteCharactersCharacterIdContactsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<DeleteCharactersCharacterIdContactsInput["header"]>["X-Tenant"];
+  readonly "contactIds": NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["query"]>["contact_ids"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetAlliancesAllianceIdContactsLabelsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetAlliancesAllianceIdContactsLabelsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetAlliancesAllianceIdContactsLabelsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetAlliancesAllianceIdContactsLabelsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetAlliancesAllianceIdContactsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetAlliancesAllianceIdContactsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetAlliancesAllianceIdContactsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetAlliancesAllianceIdContactsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetAlliancesAllianceIdContactsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdContactsLabelsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdContactsLabelsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdContactsLabelsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdContactsLabelsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCharactersCharacterIdContactsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCharactersCharacterIdContactsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCharactersCharacterIdContactsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCharactersCharacterIdContactsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCharactersCharacterIdContactsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdContactsLabelsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdContactsLabelsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdContactsLabelsInput["header"]>["If-None-Match"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdContactsLabelsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>["headers"]>["If-None-Match"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>["headers"]>["X-Tenant"];
 }
 
 export interface GetCorporationsCorporationIdContactsOptions {
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<GetCorporationsCorporationIdContactsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<GetCorporationsCorporationIdContactsInput["header"]>["If-None-Match"];
-  readonly "page"?: NonNullable<GetCorporationsCorporationIdContactsInput["query"]>["page"];
-  readonly "xTenant"?: NonNullable<GetCorporationsCorporationIdContactsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["headers"]>["If-None-Match"];
+  readonly "page"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["query"]>["page"];
+  readonly "xTenant"?: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>["headers"]>["X-Tenant"];
 }
 
 export interface PutCharactersCharacterIdContactsOptions {
-  readonly "body": PutCharactersCharacterIdContactsInput['body'];
+  readonly "body": OperationArguments<PutCharactersCharacterIdContactsData>['body'];
   readonly "compatibilityDate"?: string;
-  readonly "ifModifiedSince"?: NonNullable<PutCharactersCharacterIdContactsInput["header"]>["If-Modified-Since"];
-  readonly "ifNoneMatch"?: NonNullable<PutCharactersCharacterIdContactsInput["header"]>["If-None-Match"];
-  readonly "labelIds"?: NonNullable<PutCharactersCharacterIdContactsInput["query"]>["label_ids"];
-  readonly "standing": NonNullable<PutCharactersCharacterIdContactsInput["query"]>["standing"];
-  readonly "watched"?: NonNullable<PutCharactersCharacterIdContactsInput["query"]>["watched"];
-  readonly "xTenant"?: NonNullable<PutCharactersCharacterIdContactsInput["header"]>["X-Tenant"];
+  readonly "ifModifiedSince"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["headers"]>["If-Modified-Since"];
+  readonly "ifNoneMatch"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["headers"]>["If-None-Match"];
+  readonly "labelIds"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["query"]>["label_ids"];
+  readonly "standing": NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["query"]>["standing"];
+  readonly "watched"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["query"]>["watched"];
+  readonly "xTenant"?: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>["headers"]>["X-Tenant"];
 }
 
 export interface ContactsDomainClient {
-  addCharacterContacts(characterId: NonNullable<PostCharactersCharacterIdContactsInput['path']>["character_id"], options: PostCharactersCharacterIdContactsOptions): Promise<PostCharactersCharacterIdContactsOutput>;
+  addCharacterContacts(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>['path']>["character_id"], options: PostCharactersCharacterIdContactsOptions): Promise<PostCharactersCharacterIdContactsResponse>;
 
-  deleteCharacterContacts(characterId: NonNullable<DeleteCharactersCharacterIdContactsInput['path']>["character_id"], options: DeleteCharactersCharacterIdContactsOptions): Promise<DeleteCharactersCharacterIdContactsOutput>;
+  deleteCharacterContacts(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>['path']>["character_id"], options: DeleteCharactersCharacterIdContactsOptions): Promise<DeleteCharactersCharacterIdContactsResponse>;
 
-  listAllianceContactLabels(allianceId: NonNullable<GetAlliancesAllianceIdContactsLabelsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsLabelsOptions): Promise<GetAlliancesAllianceIdContactsLabelsOutput>;
+  listAllianceContactLabels(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsLabelsOptions): Promise<GetAlliancesAllianceIdContactsLabelsResponse>;
 
-  listAllianceContacts(allianceId: NonNullable<GetAlliancesAllianceIdContactsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsOptions): Promise<GetAlliancesAllianceIdContactsOutput>;
+  listAllianceContacts(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsOptions): Promise<GetAlliancesAllianceIdContactsResponse>;
 
-  listCharacterContactLabels(characterId: NonNullable<GetCharactersCharacterIdContactsLabelsInput['path']>["character_id"], options?: GetCharactersCharacterIdContactsLabelsOptions): Promise<GetCharactersCharacterIdContactsLabelsOutput>;
+  listCharacterContactLabels(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>['path']>["character_id"], options?: GetCharactersCharacterIdContactsLabelsOptions): Promise<GetCharactersCharacterIdContactsLabelsResponse>;
 
-  listCharacterContacts(characterId: NonNullable<GetCharactersCharacterIdContactsInput['path']>["character_id"], options?: GetCharactersCharacterIdContactsOptions): Promise<GetCharactersCharacterIdContactsOutput>;
+  listCharacterContacts(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>['path']>["character_id"], options?: GetCharactersCharacterIdContactsOptions): Promise<GetCharactersCharacterIdContactsResponse>;
 
-  listCorporationContactLabels(corporationId: NonNullable<GetCorporationsCorporationIdContactsLabelsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsLabelsOptions): Promise<GetCorporationsCorporationIdContactsLabelsOutput>;
+  listCorporationContactLabels(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsLabelsOptions): Promise<GetCorporationsCorporationIdContactsLabelsResponse>;
 
-  listCorporationContacts(corporationId: NonNullable<GetCorporationsCorporationIdContactsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsOptions): Promise<GetCorporationsCorporationIdContactsOutput>;
+  listCorporationContacts(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsOptions): Promise<GetCorporationsCorporationIdContactsResponse>;
 
-  updateCharacterContacts(characterId: NonNullable<PutCharactersCharacterIdContactsInput['path']>["character_id"], options: PutCharactersCharacterIdContactsOptions): Promise<PutCharactersCharacterIdContactsOutput>;
+  updateCharacterContacts(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>['path']>["character_id"], options: PutCharactersCharacterIdContactsOptions): Promise<PutCharactersCharacterIdContactsResponse>;
 
   withMetadata(): ContactsDomainClientWithMetadata;
 }
 
 export interface ContactsDomainClientWithMetadata {
-  addCharacterContacts(characterId: NonNullable<PostCharactersCharacterIdContactsInput['path']>["character_id"], options: PostCharactersCharacterIdContactsOptions): Promise<EsiResponse<PostCharactersCharacterIdContactsOutput>>;
+  addCharacterContacts(characterId: NonNullable<OperationArguments<PostCharactersCharacterIdContactsData>['path']>["character_id"], options: PostCharactersCharacterIdContactsOptions): Promise<EsiResponse<PostCharactersCharacterIdContactsResponse>>;
 
-  deleteCharacterContacts(characterId: NonNullable<DeleteCharactersCharacterIdContactsInput['path']>["character_id"], options: DeleteCharactersCharacterIdContactsOptions): Promise<EsiResponse<DeleteCharactersCharacterIdContactsOutput>>;
+  deleteCharacterContacts(characterId: NonNullable<OperationArguments<DeleteCharactersCharacterIdContactsData>['path']>["character_id"], options: DeleteCharactersCharacterIdContactsOptions): Promise<EsiResponse<DeleteCharactersCharacterIdContactsResponse>>;
 
-  listAllianceContactLabels(allianceId: NonNullable<GetAlliancesAllianceIdContactsLabelsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsLabelsOptions): Promise<EsiResponse<GetAlliancesAllianceIdContactsLabelsOutput>>;
+  listAllianceContactLabels(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsLabelsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsLabelsOptions): Promise<EsiResponse<GetAlliancesAllianceIdContactsLabelsResponse>>;
 
-  listAllianceContacts(allianceId: NonNullable<GetAlliancesAllianceIdContactsInput['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsOptions): Promise<EsiResponse<GetAlliancesAllianceIdContactsOutput>>;
+  listAllianceContacts(allianceId: NonNullable<OperationArguments<GetAlliancesAllianceIdContactsData>['path']>["alliance_id"], options?: GetAlliancesAllianceIdContactsOptions): Promise<EsiResponse<GetAlliancesAllianceIdContactsResponse>>;
 
-  listCharacterContactLabels(characterId: NonNullable<GetCharactersCharacterIdContactsLabelsInput['path']>["character_id"], options?: GetCharactersCharacterIdContactsLabelsOptions): Promise<EsiResponse<GetCharactersCharacterIdContactsLabelsOutput>>;
+  listCharacterContactLabels(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContactsLabelsData>['path']>["character_id"], options?: GetCharactersCharacterIdContactsLabelsOptions): Promise<EsiResponse<GetCharactersCharacterIdContactsLabelsResponse>>;
 
-  listCharacterContacts(characterId: NonNullable<GetCharactersCharacterIdContactsInput['path']>["character_id"], options?: GetCharactersCharacterIdContactsOptions): Promise<EsiResponse<GetCharactersCharacterIdContactsOutput>>;
+  listCharacterContacts(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdContactsData>['path']>["character_id"], options?: GetCharactersCharacterIdContactsOptions): Promise<EsiResponse<GetCharactersCharacterIdContactsResponse>>;
 
-  listCorporationContactLabels(corporationId: NonNullable<GetCorporationsCorporationIdContactsLabelsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsLabelsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContactsLabelsOutput>>;
+  listCorporationContactLabels(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsLabelsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsLabelsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContactsLabelsResponse>>;
 
-  listCorporationContacts(corporationId: NonNullable<GetCorporationsCorporationIdContactsInput['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContactsOutput>>;
+  listCorporationContacts(corporationId: NonNullable<OperationArguments<GetCorporationsCorporationIdContactsData>['path']>["corporation_id"], options?: GetCorporationsCorporationIdContactsOptions): Promise<EsiResponse<GetCorporationsCorporationIdContactsResponse>>;
 
-  updateCharacterContacts(characterId: NonNullable<PutCharactersCharacterIdContactsInput['path']>["character_id"], options: PutCharactersCharacterIdContactsOptions): Promise<EsiResponse<PutCharactersCharacterIdContactsOutput>>;
+  updateCharacterContacts(characterId: NonNullable<OperationArguments<PutCharactersCharacterIdContactsData>['path']>["character_id"], options: PutCharactersCharacterIdContactsOptions): Promise<EsiResponse<PutCharactersCharacterIdContactsResponse>>;
 }

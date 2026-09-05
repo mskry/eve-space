@@ -63,7 +63,13 @@ const operationContracts = [
       scopes: ['esi-characters.write_contacts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'DeleteCharactersCharacterIdContactsRequestSchema',
+    requestSchemaExports: [
+      'zDeleteCharactersCharacterIdContactsHeaders',
+      'zDeleteCharactersCharacterIdContactsPath',
+      'zDeleteCharactersCharacterIdContactsQuery',
+    ],
+    requestTypeExport: 'DeleteCharactersCharacterIdContactsData',
+    responseTypeExport: 'DeleteCharactersCharacterIdContactsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -71,7 +77,7 @@ const operationContracts = [
       query: {
         contact_ids: [0],
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -90,7 +96,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'DeleteCharactersCharacterIdContactsStatus204SuccessResponseSchema',
+        schemaExport: 'zDeleteCharactersCharacterIdContactsResponse',
       },
     ],
   },
@@ -145,13 +151,18 @@ const operationContracts = [
       scopes: ['esi-fittings.write_fittings.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'DeleteCharactersCharacterIdFittingsFittingIdRequestSchema',
+    requestSchemaExports: [
+      'zDeleteCharactersCharacterIdFittingsFittingIdHeaders',
+      'zDeleteCharactersCharacterIdFittingsFittingIdPath',
+    ],
+    requestTypeExport: 'DeleteCharactersCharacterIdFittingsFittingIdData',
+    responseTypeExport: 'DeleteCharactersCharacterIdFittingsFittingIdResponse',
     arguments: {
       path: {
         character_id: 0,
         fitting_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -170,7 +181,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'DeleteCharactersCharacterIdFittingsFittingIdStatus204SuccessResponseSchema',
+        schemaExport: 'zDeleteCharactersCharacterIdFittingsFittingIdResponse',
       },
     ],
   },
@@ -225,13 +236,18 @@ const operationContracts = [
       scopes: ['esi-mail.organize_mail.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdRequestSchema',
+    requestSchemaExports: [
+      'zDeleteCharactersCharacterIdMailLabelsLabelIdHeaders',
+      'zDeleteCharactersCharacterIdMailLabelsLabelIdPath',
+    ],
+    requestTypeExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdData',
+    responseTypeExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdResponse',
     arguments: {
       path: {
         character_id: 0,
         label_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -250,7 +266,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdStatus204SuccessResponseSchema',
+        schemaExport: 'zDeleteCharactersCharacterIdMailLabelsLabelIdResponse',
       },
     ],
   },
@@ -305,13 +321,18 @@ const operationContracts = [
       scopes: ['esi-mail.organize_mail.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'DeleteCharactersCharacterIdMailMailIdRequestSchema',
+    requestSchemaExports: [
+      'zDeleteCharactersCharacterIdMailMailIdHeaders',
+      'zDeleteCharactersCharacterIdMailMailIdPath',
+    ],
+    requestTypeExport: 'DeleteCharactersCharacterIdMailMailIdData',
+    responseTypeExport: 'DeleteCharactersCharacterIdMailMailIdResponse',
     arguments: {
       path: {
         character_id: 0,
         mail_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -330,7 +351,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'DeleteCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema',
+        schemaExport: 'zDeleteCharactersCharacterIdMailMailIdResponse',
       },
     ],
   },
@@ -385,13 +406,18 @@ const operationContracts = [
       scopes: ['esi-fleets.write_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'DeleteFleetsFleetIdMembersMemberIdRequestSchema',
+    requestSchemaExports: [
+      'zDeleteFleetsFleetIdMembersMemberIdHeaders',
+      'zDeleteFleetsFleetIdMembersMemberIdPath',
+    ],
+    requestTypeExport: 'DeleteFleetsFleetIdMembersMemberIdData',
+    responseTypeExport: 'DeleteFleetsFleetIdMembersMemberIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
         member_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -410,7 +436,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'DeleteFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema',
+        schemaExport: 'zDeleteFleetsFleetIdMembersMemberIdResponse',
       },
     ],
   },
@@ -465,13 +491,18 @@ const operationContracts = [
       scopes: ['esi-fleets.write_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'DeleteFleetsFleetIdSquadsSquadIdRequestSchema',
+    requestSchemaExports: [
+      'zDeleteFleetsFleetIdSquadsSquadIdHeaders',
+      'zDeleteFleetsFleetIdSquadsSquadIdPath',
+    ],
+    requestTypeExport: 'DeleteFleetsFleetIdSquadsSquadIdData',
+    responseTypeExport: 'DeleteFleetsFleetIdSquadsSquadIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
         squad_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -490,7 +521,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'DeleteFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema',
+        schemaExport: 'zDeleteFleetsFleetIdSquadsSquadIdResponse',
       },
     ],
   },
@@ -545,13 +576,18 @@ const operationContracts = [
       scopes: ['esi-fleets.write_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'DeleteFleetsFleetIdWingsWingIdRequestSchema',
+    requestSchemaExports: [
+      'zDeleteFleetsFleetIdWingsWingIdHeaders',
+      'zDeleteFleetsFleetIdWingsWingIdPath',
+    ],
+    requestTypeExport: 'DeleteFleetsFleetIdWingsWingIdData',
+    responseTypeExport: 'DeleteFleetsFleetIdWingsWingIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
         wing_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -570,7 +606,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'DeleteFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema',
+        schemaExport: 'zDeleteFleetsFleetIdWingsWingIdResponse',
       },
     ],
   },
@@ -609,9 +645,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetAlliancesRequestSchema',
+    requestSchemaExports: ['zGetAlliancesHeaders'],
+    requestTypeExport: 'GetAlliancesData',
+    responseTypeExport: 'GetAlliancesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -630,7 +668,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetAlliancesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetAlliancesResponse',
       },
     ],
   },
@@ -677,12 +715,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetAlliancesAllianceIdRequestSchema',
+    requestSchemaExports: ['zGetAlliancesAllianceIdHeaders', 'zGetAlliancesAllianceIdPath'],
+    requestTypeExport: 'GetAlliancesAllianceIdData',
+    responseTypeExport: 'GetAlliancesAllianceIdResponse',
     arguments: {
       path: {
         alliance_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -701,7 +741,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetAlliancesAllianceIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetAlliancesAllianceIdResponse',
       },
     ],
   },
@@ -756,7 +796,13 @@ const operationContracts = [
       scopes: ['esi-alliances.read_contacts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetAlliancesAllianceIdContactsRequestSchema',
+    requestSchemaExports: [
+      'zGetAlliancesAllianceIdContactsHeaders',
+      'zGetAlliancesAllianceIdContactsPath',
+      'zGetAlliancesAllianceIdContactsQuery',
+    ],
+    requestTypeExport: 'GetAlliancesAllianceIdContactsData',
+    responseTypeExport: 'GetAlliancesAllianceIdContactsResponse',
     arguments: {
       path: {
         alliance_id: 0,
@@ -764,7 +810,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -783,7 +829,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetAlliancesAllianceIdContactsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetAlliancesAllianceIdContactsResponse',
       },
     ],
   },
@@ -830,12 +876,17 @@ const operationContracts = [
       scopes: ['esi-alliances.read_contacts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetAlliancesAllianceIdContactsLabelsRequestSchema',
+    requestSchemaExports: [
+      'zGetAlliancesAllianceIdContactsLabelsHeaders',
+      'zGetAlliancesAllianceIdContactsLabelsPath',
+    ],
+    requestTypeExport: 'GetAlliancesAllianceIdContactsLabelsData',
+    responseTypeExport: 'GetAlliancesAllianceIdContactsLabelsResponse',
     arguments: {
       path: {
         alliance_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -854,7 +905,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetAlliancesAllianceIdContactsLabelsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetAlliancesAllianceIdContactsLabelsResponse',
       },
     ],
   },
@@ -901,12 +952,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetAlliancesAllianceIdCorporationsRequestSchema',
+    requestSchemaExports: [
+      'zGetAlliancesAllianceIdCorporationsHeaders',
+      'zGetAlliancesAllianceIdCorporationsPath',
+    ],
+    requestTypeExport: 'GetAlliancesAllianceIdCorporationsData',
+    responseTypeExport: 'GetAlliancesAllianceIdCorporationsResponse',
     arguments: {
       path: {
         alliance_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -925,7 +981,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetAlliancesAllianceIdCorporationsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetAlliancesAllianceIdCorporationsResponse',
       },
     ],
   },
@@ -972,12 +1028,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetAlliancesAllianceIdIconsRequestSchema',
+    requestSchemaExports: [
+      'zGetAlliancesAllianceIdIconsHeaders',
+      'zGetAlliancesAllianceIdIconsPath',
+    ],
+    requestTypeExport: 'GetAlliancesAllianceIdIconsData',
+    responseTypeExport: 'GetAlliancesAllianceIdIconsResponse',
     arguments: {
       path: {
         alliance_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -996,7 +1057,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetAlliancesAllianceIdIconsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetAlliancesAllianceIdIconsResponse',
       },
     ],
   },
@@ -1051,13 +1112,18 @@ const operationContracts = [
       scopes: ['esi-access.read_lists.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersAccessListsDetailRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersAccessListsDetailHeaders',
+      'zGetCharactersAccessListsDetailPath',
+    ],
+    requestTypeExport: 'GetCharactersAccessListsDetailData',
+    responseTypeExport: 'GetCharactersAccessListsDetailResponse',
     arguments: {
       path: {
         access_list_id: 0,
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1076,7 +1142,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersAccessListsDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersAccessListsDetailResponse',
       },
     ],
   },
@@ -1123,12 +1189,17 @@ const operationContracts = [
       scopes: ['esi-access.read_lists.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersAccessListsListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersAccessListsListingHeaders',
+      'zGetCharactersAccessListsListingPath',
+    ],
+    requestTypeExport: 'GetCharactersAccessListsListingData',
+    responseTypeExport: 'GetCharactersAccessListsListingResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1147,7 +1218,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersAccessListsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersAccessListsListingResponse',
       },
     ],
   },
@@ -1194,12 +1265,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_agents_research.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdAgentsResearchRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdAgentsResearchHeaders',
+      'zGetCharactersCharacterIdAgentsResearchPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdAgentsResearchData',
+    responseTypeExport: 'GetCharactersCharacterIdAgentsResearchResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1218,7 +1294,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdAgentsResearchStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdAgentsResearchResponse',
       },
     ],
   },
@@ -1273,7 +1349,13 @@ const operationContracts = [
       scopes: ['esi-assets.read_assets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdAssetsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdAssetsHeaders',
+      'zGetCharactersCharacterIdAssetsPath',
+      'zGetCharactersCharacterIdAssetsQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdAssetsData',
+    responseTypeExport: 'GetCharactersCharacterIdAssetsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -1281,7 +1363,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1300,7 +1382,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdAssetsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdAssetsResponse',
       },
     ],
   },
@@ -1347,12 +1429,17 @@ const operationContracts = [
       scopes: ['esi-skills.read_skills.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdAttributesRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdAttributesHeaders',
+      'zGetCharactersCharacterIdAttributesPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdAttributesData',
+    responseTypeExport: 'GetCharactersCharacterIdAttributesResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1371,7 +1458,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdAttributesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdAttributesResponse',
       },
     ],
   },
@@ -1426,7 +1513,13 @@ const operationContracts = [
       scopes: ['esi-characters.read_blueprints.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdBlueprintsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdBlueprintsHeaders',
+      'zGetCharactersCharacterIdBlueprintsPath',
+      'zGetCharactersCharacterIdBlueprintsQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdBlueprintsData',
+    responseTypeExport: 'GetCharactersCharacterIdBlueprintsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -1434,7 +1527,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1453,7 +1546,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdBlueprintsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdBlueprintsResponse',
       },
     ],
   },
@@ -1508,7 +1601,13 @@ const operationContracts = [
       scopes: ['esi-calendar.read_calendar_events.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdCalendarRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdCalendarHeaders',
+      'zGetCharactersCharacterIdCalendarPath',
+      'zGetCharactersCharacterIdCalendarQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdCalendarData',
+    responseTypeExport: 'GetCharactersCharacterIdCalendarResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -1516,7 +1615,7 @@ const operationContracts = [
       query: {
         from_event: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1535,7 +1634,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdCalendarStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdCalendarResponse',
       },
     ],
   },
@@ -1590,13 +1689,18 @@ const operationContracts = [
       scopes: ['esi-calendar.read_calendar_events.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdCalendarEventIdRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdCalendarEventIdHeaders',
+      'zGetCharactersCharacterIdCalendarEventIdPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdCalendarEventIdData',
+    responseTypeExport: 'GetCharactersCharacterIdCalendarEventIdResponse',
     arguments: {
       path: {
         character_id: 0,
         event_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1615,7 +1719,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdCalendarEventIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdCalendarEventIdResponse',
       },
     ],
   },
@@ -1670,13 +1774,18 @@ const operationContracts = [
       scopes: ['esi-calendar.read_calendar_events.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdCalendarEventIdAttendeesHeaders',
+      'zGetCharactersCharacterIdCalendarEventIdAttendeesPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesData',
+    responseTypeExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesResponse',
     arguments: {
       path: {
         character_id: 0,
         event_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1695,8 +1804,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCharactersCharacterIdCalendarEventIdAttendeesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdCalendarEventIdAttendeesResponse',
       },
     ],
   },
@@ -1743,12 +1851,17 @@ const operationContracts = [
       scopes: ['esi-clones.read_clones.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdClonesRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdClonesHeaders',
+      'zGetCharactersCharacterIdClonesPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdClonesData',
+    responseTypeExport: 'GetCharactersCharacterIdClonesResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1767,7 +1880,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdClonesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdClonesResponse',
       },
     ],
   },
@@ -1822,7 +1935,13 @@ const operationContracts = [
       scopes: ['esi-characters.read_contacts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdContactsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdContactsHeaders',
+      'zGetCharactersCharacterIdContactsPath',
+      'zGetCharactersCharacterIdContactsQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdContactsData',
+    responseTypeExport: 'GetCharactersCharacterIdContactsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -1830,7 +1949,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1849,7 +1968,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdContactsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdContactsResponse',
       },
     ],
   },
@@ -1896,12 +2015,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_contacts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdContactsLabelsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdContactsLabelsHeaders',
+      'zGetCharactersCharacterIdContactsLabelsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdContactsLabelsData',
+    responseTypeExport: 'GetCharactersCharacterIdContactsLabelsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -1920,7 +2044,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdContactsLabelsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdContactsLabelsResponse',
       },
     ],
   },
@@ -1975,7 +2099,13 @@ const operationContracts = [
       scopes: ['esi-contracts.read_character_contracts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdContractsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdContractsHeaders',
+      'zGetCharactersCharacterIdContractsPath',
+      'zGetCharactersCharacterIdContractsQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdContractsData',
+    responseTypeExport: 'GetCharactersCharacterIdContractsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -1983,7 +2113,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2002,7 +2132,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdContractsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdContractsResponse',
       },
     ],
   },
@@ -2057,13 +2187,18 @@ const operationContracts = [
       scopes: ['esi-contracts.read_character_contracts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdContractsContractIdBidsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdContractsContractIdBidsHeaders',
+      'zGetCharactersCharacterIdContractsContractIdBidsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdContractsContractIdBidsData',
+    responseTypeExport: 'GetCharactersCharacterIdContractsContractIdBidsResponse',
     arguments: {
       path: {
         character_id: 0,
         contract_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2082,8 +2217,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCharactersCharacterIdContractsContractIdBidsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdContractsContractIdBidsResponse',
       },
     ],
   },
@@ -2138,13 +2272,18 @@ const operationContracts = [
       scopes: ['esi-contracts.read_character_contracts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdContractsContractIdItemsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdContractsContractIdItemsHeaders',
+      'zGetCharactersCharacterIdContractsContractIdItemsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdContractsContractIdItemsData',
+    responseTypeExport: 'GetCharactersCharacterIdContractsContractIdItemsResponse',
     arguments: {
       path: {
         character_id: 0,
         contract_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2163,8 +2302,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCharactersCharacterIdContractsContractIdItemsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdContractsContractIdItemsResponse',
       },
     ],
   },
@@ -2211,12 +2349,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdCorporationhistoryRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdCorporationhistoryHeaders',
+      'zGetCharactersCharacterIdCorporationhistoryPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdCorporationhistoryData',
+    responseTypeExport: 'GetCharactersCharacterIdCorporationhistoryResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2235,7 +2378,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdCorporationhistoryStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdCorporationhistoryResponse',
       },
     ],
   },
@@ -2282,12 +2425,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_fatigue.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdFatigueRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdFatigueHeaders',
+      'zGetCharactersCharacterIdFatiguePath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdFatigueData',
+    responseTypeExport: 'GetCharactersCharacterIdFatigueResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2306,7 +2454,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdFatigueStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdFatigueResponse',
       },
     ],
   },
@@ -2353,12 +2501,17 @@ const operationContracts = [
       scopes: ['esi-fittings.read_fittings.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdFittingsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdFittingsHeaders',
+      'zGetCharactersCharacterIdFittingsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdFittingsData',
+    responseTypeExport: 'GetCharactersCharacterIdFittingsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2377,7 +2530,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdFittingsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdFittingsResponse',
       },
     ],
   },
@@ -2424,12 +2577,17 @@ const operationContracts = [
       scopes: ['esi-fleets.read_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdFleetRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdFleetHeaders',
+      'zGetCharactersCharacterIdFleetPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdFleetData',
+    responseTypeExport: 'GetCharactersCharacterIdFleetResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2448,7 +2606,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdFleetStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdFleetResponse',
       },
     ],
   },
@@ -2495,12 +2653,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_fw_stats.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdFwStatsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdFwStatsHeaders',
+      'zGetCharactersCharacterIdFwStatsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdFwStatsData',
+    responseTypeExport: 'GetCharactersCharacterIdFwStatsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2519,7 +2682,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdFwStatsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdFwStatsResponse',
       },
     ],
   },
@@ -2566,12 +2729,17 @@ const operationContracts = [
       scopes: ['esi-clones.read_implants.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdImplantsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdImplantsHeaders',
+      'zGetCharactersCharacterIdImplantsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdImplantsData',
+    responseTypeExport: 'GetCharactersCharacterIdImplantsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2590,7 +2758,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdImplantsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdImplantsResponse',
       },
     ],
   },
@@ -2645,7 +2813,13 @@ const operationContracts = [
       scopes: ['esi-industry.read_character_jobs.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdIndustryJobsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdIndustryJobsHeaders',
+      'zGetCharactersCharacterIdIndustryJobsPath',
+      'zGetCharactersCharacterIdIndustryJobsQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdIndustryJobsData',
+    responseTypeExport: 'GetCharactersCharacterIdIndustryJobsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -2653,7 +2827,7 @@ const operationContracts = [
       query: {
         include_completed: true,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2672,7 +2846,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdIndustryJobsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdIndustryJobsResponse',
       },
     ],
   },
@@ -2727,7 +2901,13 @@ const operationContracts = [
       scopes: ['esi-killmails.read_killmails.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdKillmailsRecentRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdKillmailsRecentHeaders',
+      'zGetCharactersCharacterIdKillmailsRecentPath',
+      'zGetCharactersCharacterIdKillmailsRecentQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdKillmailsRecentData',
+    responseTypeExport: 'GetCharactersCharacterIdKillmailsRecentResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -2735,7 +2915,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2754,7 +2934,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdKillmailsRecentStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdKillmailsRecentResponse',
       },
     ],
   },
@@ -2801,12 +2981,17 @@ const operationContracts = [
       scopes: ['esi-location.read_location.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdLocationRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdLocationHeaders',
+      'zGetCharactersCharacterIdLocationPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdLocationData',
+    responseTypeExport: 'GetCharactersCharacterIdLocationResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2825,7 +3010,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdLocationStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdLocationResponse',
       },
     ],
   },
@@ -2872,12 +3057,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_loyalty.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdLoyaltyPointsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdLoyaltyPointsHeaders',
+      'zGetCharactersCharacterIdLoyaltyPointsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdLoyaltyPointsData',
+    responseTypeExport: 'GetCharactersCharacterIdLoyaltyPointsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2896,7 +3086,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdLoyaltyPointsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdLoyaltyPointsResponse',
       },
     ],
   },
@@ -2962,7 +3152,13 @@ const operationContracts = [
       scopes: ['esi-mail.read_mail.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdMailRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdMailHeaders',
+      'zGetCharactersCharacterIdMailPath',
+      'zGetCharactersCharacterIdMailQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdMailData',
+    responseTypeExport: 'GetCharactersCharacterIdMailResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -2971,7 +3167,7 @@ const operationContracts = [
         labels: [0],
         last_mail_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -2990,7 +3186,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdMailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdMailResponse',
       },
     ],
   },
@@ -3037,12 +3233,17 @@ const operationContracts = [
       scopes: ['esi-mail.read_mail.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdMailLabelsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdMailLabelsHeaders',
+      'zGetCharactersCharacterIdMailLabelsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdMailLabelsData',
+    responseTypeExport: 'GetCharactersCharacterIdMailLabelsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3061,7 +3262,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdMailLabelsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdMailLabelsResponse',
       },
     ],
   },
@@ -3108,12 +3309,17 @@ const operationContracts = [
       scopes: ['esi-mail.read_mail.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdMailListsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdMailListsHeaders',
+      'zGetCharactersCharacterIdMailListsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdMailListsData',
+    responseTypeExport: 'GetCharactersCharacterIdMailListsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3132,7 +3338,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdMailListsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdMailListsResponse',
       },
     ],
   },
@@ -3187,13 +3393,18 @@ const operationContracts = [
       scopes: ['esi-mail.read_mail.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdMailMailIdRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdMailMailIdHeaders',
+      'zGetCharactersCharacterIdMailMailIdPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdMailMailIdData',
+    responseTypeExport: 'GetCharactersCharacterIdMailMailIdResponse',
     arguments: {
       path: {
         character_id: 0,
         mail_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3212,7 +3423,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdMailMailIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdMailMailIdResponse',
       },
     ],
   },
@@ -3259,12 +3470,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_medals.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdMedalsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdMedalsHeaders',
+      'zGetCharactersCharacterIdMedalsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdMedalsData',
+    responseTypeExport: 'GetCharactersCharacterIdMedalsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3283,7 +3499,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdMedalsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdMedalsResponse',
       },
     ],
   },
@@ -3338,7 +3554,13 @@ const operationContracts = [
       scopes: ['esi-industry.read_character_mining.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdMiningRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdMiningHeaders',
+      'zGetCharactersCharacterIdMiningPath',
+      'zGetCharactersCharacterIdMiningQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdMiningData',
+    responseTypeExport: 'GetCharactersCharacterIdMiningResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -3346,7 +3568,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3365,7 +3587,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdMiningStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdMiningResponse',
       },
     ],
   },
@@ -3412,12 +3634,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_notifications.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdNotificationsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdNotificationsHeaders',
+      'zGetCharactersCharacterIdNotificationsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdNotificationsData',
+    responseTypeExport: 'GetCharactersCharacterIdNotificationsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3436,7 +3663,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdNotificationsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdNotificationsResponse',
       },
     ],
   },
@@ -3483,12 +3710,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_notifications.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdNotificationsContactsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdNotificationsContactsHeaders',
+      'zGetCharactersCharacterIdNotificationsContactsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdNotificationsContactsData',
+    responseTypeExport: 'GetCharactersCharacterIdNotificationsContactsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3507,7 +3739,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdNotificationsContactsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdNotificationsContactsResponse',
       },
     ],
   },
@@ -3554,12 +3786,17 @@ const operationContracts = [
       scopes: ['esi-location.read_online.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdOnlineRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdOnlineHeaders',
+      'zGetCharactersCharacterIdOnlinePath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdOnlineData',
+    responseTypeExport: 'GetCharactersCharacterIdOnlineResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3578,7 +3815,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdOnlineStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdOnlineResponse',
       },
     ],
   },
@@ -3625,12 +3862,17 @@ const operationContracts = [
       scopes: ['esi-markets.read_character_orders.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdOrdersRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdOrdersHeaders',
+      'zGetCharactersCharacterIdOrdersPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdOrdersData',
+    responseTypeExport: 'GetCharactersCharacterIdOrdersResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3649,7 +3891,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdOrdersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdOrdersResponse',
       },
     ],
   },
@@ -3704,7 +3946,13 @@ const operationContracts = [
       scopes: ['esi-markets.read_character_orders.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdOrdersHistoryRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdOrdersHistoryHeaders',
+      'zGetCharactersCharacterIdOrdersHistoryPath',
+      'zGetCharactersCharacterIdOrdersHistoryQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdOrdersHistoryData',
+    responseTypeExport: 'GetCharactersCharacterIdOrdersHistoryResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -3712,7 +3960,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3731,7 +3979,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdOrdersHistoryStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdOrdersHistoryResponse',
       },
     ],
   },
@@ -3778,12 +4026,17 @@ const operationContracts = [
       scopes: ['esi-planets.manage_planets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdPlanetsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdPlanetsHeaders',
+      'zGetCharactersCharacterIdPlanetsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdPlanetsData',
+    responseTypeExport: 'GetCharactersCharacterIdPlanetsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3802,7 +4055,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdPlanetsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdPlanetsResponse',
       },
     ],
   },
@@ -3857,13 +4110,18 @@ const operationContracts = [
       scopes: ['esi-planets.manage_planets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdPlanetsPlanetIdRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdPlanetsPlanetIdHeaders',
+      'zGetCharactersCharacterIdPlanetsPlanetIdPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdPlanetsPlanetIdData',
+    responseTypeExport: 'GetCharactersCharacterIdPlanetsPlanetIdResponse',
     arguments: {
       path: {
         character_id: 0,
         planet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3882,7 +4140,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdPlanetsPlanetIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdPlanetsPlanetIdResponse',
       },
     ],
   },
@@ -3929,12 +4187,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdPortraitRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdPortraitHeaders',
+      'zGetCharactersCharacterIdPortraitPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdPortraitData',
+    responseTypeExport: 'GetCharactersCharacterIdPortraitResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -3953,7 +4216,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdPortraitStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdPortraitResponse',
       },
     ],
   },
@@ -4000,12 +4263,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_corporation_roles.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdRolesRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdRolesHeaders',
+      'zGetCharactersCharacterIdRolesPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdRolesData',
+    responseTypeExport: 'GetCharactersCharacterIdRolesResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4024,7 +4292,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdRolesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdRolesResponse',
       },
     ],
   },
@@ -4098,7 +4366,13 @@ const operationContracts = [
       scopes: ['esi-search.search_structures.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdSearchRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdSearchHeaders',
+      'zGetCharactersCharacterIdSearchPath',
+      'zGetCharactersCharacterIdSearchQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdSearchData',
+    responseTypeExport: 'GetCharactersCharacterIdSearchResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -4108,7 +4382,7 @@ const operationContracts = [
         search: 'xxx',
         strict: true,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4127,7 +4401,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdSearchStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdSearchResponse',
       },
     ],
   },
@@ -4174,12 +4448,17 @@ const operationContracts = [
       scopes: ['esi-location.read_ship_type.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdShipRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdShipHeaders',
+      'zGetCharactersCharacterIdShipPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdShipData',
+    responseTypeExport: 'GetCharactersCharacterIdShipResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4198,7 +4477,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdShipStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdShipResponse',
       },
     ],
   },
@@ -4245,12 +4524,17 @@ const operationContracts = [
       scopes: ['esi-skills.read_skillqueue.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdSkillqueueRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdSkillqueueHeaders',
+      'zGetCharactersCharacterIdSkillqueuePath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdSkillqueueData',
+    responseTypeExport: 'GetCharactersCharacterIdSkillqueueResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4269,7 +4553,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdSkillqueueStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdSkillqueueResponse',
       },
     ],
   },
@@ -4316,12 +4600,17 @@ const operationContracts = [
       scopes: ['esi-skills.read_skills.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdSkillsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdSkillsHeaders',
+      'zGetCharactersCharacterIdSkillsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdSkillsData',
+    responseTypeExport: 'GetCharactersCharacterIdSkillsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4340,7 +4629,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdSkillsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdSkillsResponse',
       },
     ],
   },
@@ -4387,12 +4676,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_standings.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdStandingsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdStandingsHeaders',
+      'zGetCharactersCharacterIdStandingsPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdStandingsData',
+    responseTypeExport: 'GetCharactersCharacterIdStandingsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4411,7 +4705,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdStandingsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdStandingsResponse',
       },
     ],
   },
@@ -4458,12 +4752,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_titles.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdTitlesRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdTitlesHeaders',
+      'zGetCharactersCharacterIdTitlesPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdTitlesData',
+    responseTypeExport: 'GetCharactersCharacterIdTitlesResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4482,7 +4781,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdTitlesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdTitlesResponse',
       },
     ],
   },
@@ -4529,12 +4828,17 @@ const operationContracts = [
       scopes: ['esi-wallet.read_character_wallet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdWalletRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdWalletHeaders',
+      'zGetCharactersCharacterIdWalletPath',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdWalletData',
+    responseTypeExport: 'GetCharactersCharacterIdWalletResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4553,7 +4857,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdWalletStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdWalletResponse',
       },
     ],
   },
@@ -4608,7 +4912,13 @@ const operationContracts = [
       scopes: ['esi-wallet.read_character_wallet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdWalletJournalRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdWalletJournalHeaders',
+      'zGetCharactersCharacterIdWalletJournalPath',
+      'zGetCharactersCharacterIdWalletJournalQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdWalletJournalData',
+    responseTypeExport: 'GetCharactersCharacterIdWalletJournalResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -4616,7 +4926,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4635,7 +4945,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdWalletJournalStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdWalletJournalResponse',
       },
     ],
   },
@@ -4690,7 +5000,13 @@ const operationContracts = [
       scopes: ['esi-wallet.read_character_wallet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCharacterIdWalletTransactionsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCharacterIdWalletTransactionsHeaders',
+      'zGetCharactersCharacterIdWalletTransactionsPath',
+      'zGetCharactersCharacterIdWalletTransactionsQuery',
+    ],
+    requestTypeExport: 'GetCharactersCharacterIdWalletTransactionsData',
+    responseTypeExport: 'GetCharactersCharacterIdWalletTransactionsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -4698,7 +5014,7 @@ const operationContracts = [
       query: {
         from_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4717,7 +5033,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCharacterIdWalletTransactionsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCharacterIdWalletTransactionsResponse',
       },
     ],
   },
@@ -4764,12 +5080,17 @@ const operationContracts = [
       scopes: ['esi.cosmetic.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCosmeticsSkinrRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCosmeticsSkinrHeaders',
+      'zGetCharactersCosmeticsSkinrPath',
+    ],
+    requestTypeExport: 'GetCharactersCosmeticsSkinrData',
+    responseTypeExport: 'GetCharactersCosmeticsSkinrResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4788,7 +5109,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCosmeticsSkinrStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCosmeticsSkinrResponse',
       },
     ],
   },
@@ -4835,12 +5156,17 @@ const operationContracts = [
       scopes: ['esi.cosmetic.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersCosmeticsSkinrComponentsRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersCosmeticsSkinrComponentsHeaders',
+      'zGetCharactersCosmeticsSkinrComponentsPath',
+    ],
+    requestTypeExport: 'GetCharactersCosmeticsSkinrComponentsData',
+    responseTypeExport: 'GetCharactersCosmeticsSkinrComponentsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4859,7 +5185,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersCosmeticsSkinrComponentsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersCosmeticsSkinrComponentsResponse',
       },
     ],
   },
@@ -4906,12 +5232,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersDetailRequestSchema',
+    requestSchemaExports: ['zGetCharactersDetailHeaders', 'zGetCharactersDetailPath'],
+    requestTypeExport: 'GetCharactersDetailData',
+    responseTypeExport: 'GetCharactersDetailResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -4930,7 +5258,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersDetailResponse',
       },
     ],
   },
@@ -4977,12 +5305,17 @@ const operationContracts = [
       scopes: ['esi-characters.read_freelance_jobs.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersFreelanceJobsListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersFreelanceJobsListingHeaders',
+      'zGetCharactersFreelanceJobsListingPath',
+    ],
+    requestTypeExport: 'GetCharactersFreelanceJobsListingData',
+    responseTypeExport: 'GetCharactersFreelanceJobsListingResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5001,7 +5334,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersFreelanceJobsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersFreelanceJobsListingResponse',
       },
     ],
   },
@@ -5056,13 +5389,18 @@ const operationContracts = [
       scopes: ['esi-characters.read_freelance_jobs.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersFreelanceJobsParticipationRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersFreelanceJobsParticipationHeaders',
+      'zGetCharactersFreelanceJobsParticipationPath',
+    ],
+    requestTypeExport: 'GetCharactersFreelanceJobsParticipationData',
+    responseTypeExport: 'GetCharactersFreelanceJobsParticipationResponse',
     arguments: {
       path: {
         character_id: 0,
         job_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5081,7 +5419,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersFreelanceJobsParticipationStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersFreelanceJobsParticipationResponse',
       },
     ],
   },
@@ -5136,13 +5474,18 @@ const operationContracts = [
       scopes: ['esi-activities.read_character.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersMercenaryTacticalOperationsDetailRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersMercenaryTacticalOperationsDetailHeaders',
+      'zGetCharactersMercenaryTacticalOperationsDetailPath',
+    ],
+    requestTypeExport: 'GetCharactersMercenaryTacticalOperationsDetailData',
+    responseTypeExport: 'GetCharactersMercenaryTacticalOperationsDetailResponse',
     arguments: {
       path: {
         character_id: 0,
         operation_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5161,8 +5504,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCharactersMercenaryTacticalOperationsDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersMercenaryTacticalOperationsDetailResponse',
       },
     ],
   },
@@ -5209,12 +5551,17 @@ const operationContracts = [
       scopes: ['esi-activities.read_character.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersMercenaryTacticalOperationsListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersMercenaryTacticalOperationsListingHeaders',
+      'zGetCharactersMercenaryTacticalOperationsListingPath',
+    ],
+    requestTypeExport: 'GetCharactersMercenaryTacticalOperationsListingData',
+    responseTypeExport: 'GetCharactersMercenaryTacticalOperationsListingResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5233,8 +5580,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCharactersMercenaryTacticalOperationsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersMercenaryTacticalOperationsListingResponse',
       },
     ],
   },
@@ -5308,7 +5654,13 @@ const operationContracts = [
       scopes: ['esi.activity.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersMilitaryCampaignsObjectivesListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersMilitaryCampaignsObjectivesListingHeaders',
+      'zGetCharactersMilitaryCampaignsObjectivesListingPath',
+      'zGetCharactersMilitaryCampaignsObjectivesListingQuery',
+    ],
+    requestTypeExport: 'GetCharactersMilitaryCampaignsObjectivesListingData',
+    responseTypeExport: 'GetCharactersMilitaryCampaignsObjectivesListingResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -5318,7 +5670,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5337,8 +5689,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCharactersMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersMilitaryCampaignsObjectivesListingResponse',
       },
     ],
   },
@@ -5393,13 +5744,18 @@ const operationContracts = [
       scopes: ['esi.activity.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersMilitaryCampaignsObjectivesParticipationRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersMilitaryCampaignsObjectivesParticipationHeaders',
+      'zGetCharactersMilitaryCampaignsObjectivesParticipationPath',
+    ],
+    requestTypeExport: 'GetCharactersMilitaryCampaignsObjectivesParticipationData',
+    responseTypeExport: 'GetCharactersMilitaryCampaignsObjectivesParticipationResponse',
     arguments: {
       path: {
         character_id: 0,
         objective_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5418,8 +5774,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCharactersMilitaryCampaignsObjectivesParticipationStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersMilitaryCampaignsObjectivesParticipationResponse',
       },
     ],
   },
@@ -5493,7 +5848,13 @@ const operationContracts = [
       scopes: ['esi.cosmetic.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersParagonHubSkinrRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersParagonHubSkinrHeaders',
+      'zGetCharactersParagonHubSkinrPath',
+      'zGetCharactersParagonHubSkinrQuery',
+    ],
+    requestTypeExport: 'GetCharactersParagonHubSkinrData',
+    responseTypeExport: 'GetCharactersParagonHubSkinrResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -5503,7 +5864,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5522,7 +5883,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersParagonHubSkinrStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersParagonHubSkinrResponse',
       },
     ],
   },
@@ -5577,13 +5938,18 @@ const operationContracts = [
       scopes: ['esi-structures.read_character.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersStructuresMercenaryDensDetailRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersStructuresMercenaryDensDetailHeaders',
+      'zGetCharactersStructuresMercenaryDensDetailPath',
+    ],
+    requestTypeExport: 'GetCharactersStructuresMercenaryDensDetailData',
+    responseTypeExport: 'GetCharactersStructuresMercenaryDensDetailResponse',
     arguments: {
       path: {
         character_id: 0,
         mercenary_den_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5602,7 +5968,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersStructuresMercenaryDensDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersStructuresMercenaryDensDetailResponse',
       },
     ],
   },
@@ -5649,12 +6015,17 @@ const operationContracts = [
       scopes: ['esi-structures.read_character.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCharactersStructuresMercenaryDensListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCharactersStructuresMercenaryDensListingHeaders',
+      'zGetCharactersStructuresMercenaryDensListingPath',
+    ],
+    requestTypeExport: 'GetCharactersStructuresMercenaryDensListingData',
+    responseTypeExport: 'GetCharactersStructuresMercenaryDensListingResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5673,7 +6044,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCharactersStructuresMercenaryDensListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCharactersStructuresMercenaryDensListingResponse',
       },
     ],
   },
@@ -5728,7 +6099,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetContractsPublicBidsContractIdRequestSchema',
+    requestSchemaExports: [
+      'zGetContractsPublicBidsContractIdHeaders',
+      'zGetContractsPublicBidsContractIdPath',
+      'zGetContractsPublicBidsContractIdQuery',
+    ],
+    requestTypeExport: 'GetContractsPublicBidsContractIdData',
+    responseTypeExport: 'GetContractsPublicBidsContractIdResponse',
     arguments: {
       path: {
         contract_id: 0,
@@ -5736,7 +6113,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5755,12 +6132,12 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetContractsPublicBidsContractIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetContractsPublicBidsContractIdResponse',
       },
       {
         status: '204',
         body: 'none',
-        schemaExport: 'GetContractsPublicBidsContractIdStatus204SuccessResponseSchema',
+        schemaExport: 'zGetContractsPublicBidsContractIdResponse',
       },
     ],
   },
@@ -5815,7 +6192,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetContractsPublicItemsContractIdRequestSchema',
+    requestSchemaExports: [
+      'zGetContractsPublicItemsContractIdHeaders',
+      'zGetContractsPublicItemsContractIdPath',
+      'zGetContractsPublicItemsContractIdQuery',
+    ],
+    requestTypeExport: 'GetContractsPublicItemsContractIdData',
+    responseTypeExport: 'GetContractsPublicItemsContractIdResponse',
     arguments: {
       path: {
         contract_id: 0,
@@ -5823,7 +6206,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5842,12 +6225,12 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetContractsPublicItemsContractIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetContractsPublicItemsContractIdResponse',
       },
       {
         status: '204',
         body: 'none',
-        schemaExport: 'GetContractsPublicItemsContractIdStatus204SuccessResponseSchema',
+        schemaExport: 'zGetContractsPublicItemsContractIdResponse',
       },
     ],
   },
@@ -5902,7 +6285,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetContractsPublicRegionIdRequestSchema',
+    requestSchemaExports: [
+      'zGetContractsPublicRegionIdHeaders',
+      'zGetContractsPublicRegionIdPath',
+      'zGetContractsPublicRegionIdQuery',
+    ],
+    requestTypeExport: 'GetContractsPublicRegionIdData',
+    responseTypeExport: 'GetContractsPublicRegionIdResponse',
     arguments: {
       path: {
         region_id: 0,
@@ -5910,7 +6299,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -5929,7 +6318,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetContractsPublicRegionIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetContractsPublicRegionIdResponse',
       },
     ],
   },
@@ -5984,7 +6373,13 @@ const operationContracts = [
       scopes: ['esi-industry.read_corporation_mining.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationCorporationIdMiningExtractionsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationCorporationIdMiningExtractionsHeaders',
+      'zGetCorporationCorporationIdMiningExtractionsPath',
+      'zGetCorporationCorporationIdMiningExtractionsQuery',
+    ],
+    requestTypeExport: 'GetCorporationCorporationIdMiningExtractionsData',
+    responseTypeExport: 'GetCorporationCorporationIdMiningExtractionsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -5992,7 +6387,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6011,7 +6406,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationCorporationIdMiningExtractionsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationCorporationIdMiningExtractionsResponse',
       },
     ],
   },
@@ -6066,7 +6461,13 @@ const operationContracts = [
       scopes: ['esi-industry.read_corporation_mining.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationCorporationIdMiningObserversRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationCorporationIdMiningObserversHeaders',
+      'zGetCorporationCorporationIdMiningObserversPath',
+      'zGetCorporationCorporationIdMiningObserversQuery',
+    ],
+    requestTypeExport: 'GetCorporationCorporationIdMiningObserversData',
+    responseTypeExport: 'GetCorporationCorporationIdMiningObserversResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -6074,7 +6475,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6093,7 +6494,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationCorporationIdMiningObserversStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationCorporationIdMiningObserversResponse',
       },
     ],
   },
@@ -6156,7 +6557,13 @@ const operationContracts = [
       scopes: ['esi-industry.read_corporation_mining.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationCorporationIdMiningObserversObserverIdRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationCorporationIdMiningObserversObserverIdHeaders',
+      'zGetCorporationCorporationIdMiningObserversObserverIdPath',
+      'zGetCorporationCorporationIdMiningObserversObserverIdQuery',
+    ],
+    requestTypeExport: 'GetCorporationCorporationIdMiningObserversObserverIdData',
+    responseTypeExport: 'GetCorporationCorporationIdMiningObserversObserverIdResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -6165,7 +6572,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6184,8 +6591,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationCorporationIdMiningObserversObserverIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationCorporationIdMiningObserversObserverIdResponse',
       },
     ],
   },
@@ -6232,12 +6638,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdHeaders',
+      'zGetCorporationsCorporationIdPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdData',
+    responseTypeExport: 'GetCorporationsCorporationIdResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6256,7 +6667,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdResponse',
       },
     ],
   },
@@ -6303,12 +6714,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdAlliancehistoryRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdAlliancehistoryHeaders',
+      'zGetCorporationsCorporationIdAlliancehistoryPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdAlliancehistoryData',
+    responseTypeExport: 'GetCorporationsCorporationIdAlliancehistoryResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6327,7 +6743,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdAlliancehistoryStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdAlliancehistoryResponse',
       },
     ],
   },
@@ -6382,7 +6798,13 @@ const operationContracts = [
       scopes: ['esi-assets.read_corporation_assets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdAssetsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdAssetsHeaders',
+      'zGetCorporationsCorporationIdAssetsPath',
+      'zGetCorporationsCorporationIdAssetsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdAssetsData',
+    responseTypeExport: 'GetCorporationsCorporationIdAssetsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -6390,7 +6812,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6409,7 +6831,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdAssetsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdAssetsResponse',
       },
     ],
   },
@@ -6464,7 +6886,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_blueprints.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdBlueprintsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdBlueprintsHeaders',
+      'zGetCorporationsCorporationIdBlueprintsPath',
+      'zGetCorporationsCorporationIdBlueprintsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdBlueprintsData',
+    responseTypeExport: 'GetCorporationsCorporationIdBlueprintsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -6472,7 +6900,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6491,7 +6919,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdBlueprintsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdBlueprintsResponse',
       },
     ],
   },
@@ -6546,7 +6974,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_contacts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdContactsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdContactsHeaders',
+      'zGetCorporationsCorporationIdContactsPath',
+      'zGetCorporationsCorporationIdContactsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdContactsData',
+    responseTypeExport: 'GetCorporationsCorporationIdContactsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -6554,7 +6988,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6573,7 +7007,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdContactsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdContactsResponse',
       },
     ],
   },
@@ -6620,12 +7054,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_contacts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdContactsLabelsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdContactsLabelsHeaders',
+      'zGetCorporationsCorporationIdContactsLabelsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdContactsLabelsData',
+    responseTypeExport: 'GetCorporationsCorporationIdContactsLabelsResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6644,7 +7083,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdContactsLabelsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdContactsLabelsResponse',
       },
     ],
   },
@@ -6699,7 +7138,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_container_logs.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdContainersLogsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdContainersLogsHeaders',
+      'zGetCorporationsCorporationIdContainersLogsPath',
+      'zGetCorporationsCorporationIdContainersLogsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdContainersLogsData',
+    responseTypeExport: 'GetCorporationsCorporationIdContainersLogsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -6707,7 +7152,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6726,7 +7171,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdContainersLogsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdContainersLogsResponse',
       },
     ],
   },
@@ -6781,7 +7226,13 @@ const operationContracts = [
       scopes: ['esi-contracts.read_corporation_contracts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdContractsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdContractsHeaders',
+      'zGetCorporationsCorporationIdContractsPath',
+      'zGetCorporationsCorporationIdContractsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdContractsData',
+    responseTypeExport: 'GetCorporationsCorporationIdContractsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -6789,7 +7240,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6808,7 +7259,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdContractsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdContractsResponse',
       },
     ],
   },
@@ -6871,7 +7322,13 @@ const operationContracts = [
       scopes: ['esi-contracts.read_corporation_contracts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdContractsContractIdBidsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdContractsContractIdBidsHeaders',
+      'zGetCorporationsCorporationIdContractsContractIdBidsPath',
+      'zGetCorporationsCorporationIdContractsContractIdBidsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdContractsContractIdBidsData',
+    responseTypeExport: 'GetCorporationsCorporationIdContractsContractIdBidsResponse',
     arguments: {
       path: {
         contract_id: 0,
@@ -6880,7 +7337,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6899,8 +7356,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationsCorporationIdContractsContractIdBidsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdContractsContractIdBidsResponse',
       },
     ],
   },
@@ -6955,13 +7411,18 @@ const operationContracts = [
       scopes: ['esi-contracts.read_corporation_contracts.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdContractsContractIdItemsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdContractsContractIdItemsHeaders',
+      'zGetCorporationsCorporationIdContractsContractIdItemsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdContractsContractIdItemsData',
+    responseTypeExport: 'GetCorporationsCorporationIdContractsContractIdItemsResponse',
     arguments: {
       path: {
         contract_id: 0,
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -6980,8 +7441,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationsCorporationIdContractsContractIdItemsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdContractsContractIdItemsResponse',
       },
     ],
   },
@@ -7036,7 +7496,13 @@ const operationContracts = [
       scopes: ['esi-planets.read_customs_offices.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdCustomsOfficesRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdCustomsOfficesHeaders',
+      'zGetCorporationsCorporationIdCustomsOfficesPath',
+      'zGetCorporationsCorporationIdCustomsOfficesQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdCustomsOfficesData',
+    responseTypeExport: 'GetCorporationsCorporationIdCustomsOfficesResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -7044,7 +7510,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7063,7 +7529,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdCustomsOfficesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdCustomsOfficesResponse',
       },
     ],
   },
@@ -7110,12 +7576,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_divisions.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdDivisionsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdDivisionsHeaders',
+      'zGetCorporationsCorporationIdDivisionsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdDivisionsData',
+    responseTypeExport: 'GetCorporationsCorporationIdDivisionsResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7134,7 +7605,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdDivisionsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdDivisionsResponse',
       },
     ],
   },
@@ -7181,12 +7652,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_facilities.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdFacilitiesRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdFacilitiesHeaders',
+      'zGetCorporationsCorporationIdFacilitiesPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdFacilitiesData',
+    responseTypeExport: 'GetCorporationsCorporationIdFacilitiesResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7205,7 +7681,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdFacilitiesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdFacilitiesResponse',
       },
     ],
   },
@@ -7252,12 +7728,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_fw_stats.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdFwStatsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdFwStatsHeaders',
+      'zGetCorporationsCorporationIdFwStatsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdFwStatsData',
+    responseTypeExport: 'GetCorporationsCorporationIdFwStatsResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7276,7 +7757,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdFwStatsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdFwStatsResponse',
       },
     ],
   },
@@ -7323,12 +7804,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdIconsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdIconsHeaders',
+      'zGetCorporationsCorporationIdIconsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdIconsData',
+    responseTypeExport: 'GetCorporationsCorporationIdIconsResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7347,7 +7833,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdIconsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdIconsResponse',
       },
     ],
   },
@@ -7410,7 +7896,13 @@ const operationContracts = [
       scopes: ['esi-industry.read_corporation_jobs.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdIndustryJobsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdIndustryJobsHeaders',
+      'zGetCorporationsCorporationIdIndustryJobsPath',
+      'zGetCorporationsCorporationIdIndustryJobsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdIndustryJobsData',
+    responseTypeExport: 'GetCorporationsCorporationIdIndustryJobsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -7419,7 +7911,7 @@ const operationContracts = [
         include_completed: true,
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7438,7 +7930,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdIndustryJobsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdIndustryJobsResponse',
       },
     ],
   },
@@ -7493,7 +7985,13 @@ const operationContracts = [
       scopes: ['esi-killmails.read_corporation_killmails.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdKillmailsRecentRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdKillmailsRecentHeaders',
+      'zGetCorporationsCorporationIdKillmailsRecentPath',
+      'zGetCorporationsCorporationIdKillmailsRecentQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdKillmailsRecentData',
+    responseTypeExport: 'GetCorporationsCorporationIdKillmailsRecentResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -7501,7 +7999,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7520,7 +8018,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdKillmailsRecentStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdKillmailsRecentResponse',
       },
     ],
   },
@@ -7575,7 +8073,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_medals.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdMedalsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdMedalsHeaders',
+      'zGetCorporationsCorporationIdMedalsPath',
+      'zGetCorporationsCorporationIdMedalsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdMedalsData',
+    responseTypeExport: 'GetCorporationsCorporationIdMedalsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -7583,7 +8087,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7602,7 +8106,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdMedalsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdMedalsResponse',
       },
     ],
   },
@@ -7657,7 +8161,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_medals.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdMedalsIssuedRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdMedalsIssuedHeaders',
+      'zGetCorporationsCorporationIdMedalsIssuedPath',
+      'zGetCorporationsCorporationIdMedalsIssuedQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdMedalsIssuedData',
+    responseTypeExport: 'GetCorporationsCorporationIdMedalsIssuedResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -7665,7 +8175,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7684,7 +8194,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdMedalsIssuedStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdMedalsIssuedResponse',
       },
     ],
   },
@@ -7731,12 +8241,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_corporation_membership.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdMembersRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdMembersHeaders',
+      'zGetCorporationsCorporationIdMembersPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdMembersData',
+    responseTypeExport: 'GetCorporationsCorporationIdMembersResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7755,7 +8270,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdMembersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdMembersResponse',
       },
     ],
   },
@@ -7802,12 +8317,17 @@ const operationContracts = [
       scopes: ['esi-corporations.track_members.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdMembersLimitRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdMembersLimitHeaders',
+      'zGetCorporationsCorporationIdMembersLimitPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdMembersLimitData',
+    responseTypeExport: 'GetCorporationsCorporationIdMembersLimitResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7826,7 +8346,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdMembersLimitStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdMembersLimitResponse',
       },
     ],
   },
@@ -7873,12 +8393,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_titles.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdMembersTitlesRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdMembersTitlesHeaders',
+      'zGetCorporationsCorporationIdMembersTitlesPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdMembersTitlesData',
+    responseTypeExport: 'GetCorporationsCorporationIdMembersTitlesResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7897,7 +8422,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdMembersTitlesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdMembersTitlesResponse',
       },
     ],
   },
@@ -7944,12 +8469,17 @@ const operationContracts = [
       scopes: ['esi-corporations.track_members.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdMembertrackingRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdMembertrackingHeaders',
+      'zGetCorporationsCorporationIdMembertrackingPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdMembertrackingData',
+    responseTypeExport: 'GetCorporationsCorporationIdMembertrackingResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -7968,7 +8498,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdMembertrackingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdMembertrackingResponse',
       },
     ],
   },
@@ -8023,7 +8553,13 @@ const operationContracts = [
       scopes: ['esi-markets.read_corporation_orders.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdOrdersRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdOrdersHeaders',
+      'zGetCorporationsCorporationIdOrdersPath',
+      'zGetCorporationsCorporationIdOrdersQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdOrdersData',
+    responseTypeExport: 'GetCorporationsCorporationIdOrdersResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8031,7 +8567,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8050,7 +8586,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdOrdersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdOrdersResponse',
       },
     ],
   },
@@ -8105,7 +8641,13 @@ const operationContracts = [
       scopes: ['esi-markets.read_corporation_orders.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdOrdersHistoryRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdOrdersHistoryHeaders',
+      'zGetCorporationsCorporationIdOrdersHistoryPath',
+      'zGetCorporationsCorporationIdOrdersHistoryQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdOrdersHistoryData',
+    responseTypeExport: 'GetCorporationsCorporationIdOrdersHistoryResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8113,7 +8655,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8132,7 +8674,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdOrdersHistoryStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdOrdersHistoryResponse',
       },
     ],
   },
@@ -8179,12 +8721,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_corporation_membership.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdRolesRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdRolesHeaders',
+      'zGetCorporationsCorporationIdRolesPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdRolesData',
+    responseTypeExport: 'GetCorporationsCorporationIdRolesResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8203,7 +8750,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdRolesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdRolesResponse',
       },
     ],
   },
@@ -8258,7 +8805,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_corporation_membership.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdRolesHistoryRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdRolesHistoryHeaders',
+      'zGetCorporationsCorporationIdRolesHistoryPath',
+      'zGetCorporationsCorporationIdRolesHistoryQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdRolesHistoryData',
+    responseTypeExport: 'GetCorporationsCorporationIdRolesHistoryResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8266,7 +8819,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8285,7 +8838,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdRolesHistoryStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdRolesHistoryResponse',
       },
     ],
   },
@@ -8340,7 +8893,13 @@ const operationContracts = [
       scopes: ['esi-wallet.read_corporation_wallets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdShareholdersRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdShareholdersHeaders',
+      'zGetCorporationsCorporationIdShareholdersPath',
+      'zGetCorporationsCorporationIdShareholdersQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdShareholdersData',
+    responseTypeExport: 'GetCorporationsCorporationIdShareholdersResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8348,7 +8907,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8367,7 +8926,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdShareholdersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdShareholdersResponse',
       },
     ],
   },
@@ -8422,7 +8981,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_standings.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdStandingsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdStandingsHeaders',
+      'zGetCorporationsCorporationIdStandingsPath',
+      'zGetCorporationsCorporationIdStandingsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdStandingsData',
+    responseTypeExport: 'GetCorporationsCorporationIdStandingsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8430,7 +8995,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8449,7 +9014,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdStandingsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdStandingsResponse',
       },
     ],
   },
@@ -8504,7 +9069,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_starbases.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdStarbasesRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdStarbasesHeaders',
+      'zGetCorporationsCorporationIdStarbasesPath',
+      'zGetCorporationsCorporationIdStarbasesQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdStarbasesData',
+    responseTypeExport: 'GetCorporationsCorporationIdStarbasesResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8512,7 +9083,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8531,7 +9102,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdStarbasesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdStarbasesResponse',
       },
     ],
   },
@@ -8594,7 +9165,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_starbases.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdStarbasesStarbaseIdHeaders',
+      'zGetCorporationsCorporationIdStarbasesStarbaseIdPath',
+      'zGetCorporationsCorporationIdStarbasesStarbaseIdQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdData',
+    responseTypeExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8603,7 +9180,7 @@ const operationContracts = [
       query: {
         system_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8622,8 +9199,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationsCorporationIdStarbasesStarbaseIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdStarbasesStarbaseIdResponse',
       },
     ],
   },
@@ -8678,7 +9254,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_structures.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdStructuresRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdStructuresHeaders',
+      'zGetCorporationsCorporationIdStructuresPath',
+      'zGetCorporationsCorporationIdStructuresQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdStructuresData',
+    responseTypeExport: 'GetCorporationsCorporationIdStructuresResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8686,7 +9268,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8705,7 +9287,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdStructuresStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdStructuresResponse',
       },
     ],
   },
@@ -8752,12 +9334,17 @@ const operationContracts = [
       scopes: ['esi-corporations.read_titles.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdTitlesRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdTitlesHeaders',
+      'zGetCorporationsCorporationIdTitlesPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdTitlesData',
+    responseTypeExport: 'GetCorporationsCorporationIdTitlesResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8776,7 +9363,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdTitlesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdTitlesResponse',
       },
     ],
   },
@@ -8823,12 +9410,17 @@ const operationContracts = [
       scopes: ['esi-wallet.read_corporation_wallets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdWalletsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdWalletsHeaders',
+      'zGetCorporationsCorporationIdWalletsPath',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdWalletsData',
+    responseTypeExport: 'GetCorporationsCorporationIdWalletsResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8847,7 +9439,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsCorporationIdWalletsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdWalletsResponse',
       },
     ],
   },
@@ -8910,7 +9502,13 @@ const operationContracts = [
       scopes: ['esi-wallet.read_corporation_wallets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdWalletsDivisionJournalRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdWalletsDivisionJournalHeaders',
+      'zGetCorporationsCorporationIdWalletsDivisionJournalPath',
+      'zGetCorporationsCorporationIdWalletsDivisionJournalQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdWalletsDivisionJournalData',
+    responseTypeExport: 'GetCorporationsCorporationIdWalletsDivisionJournalResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -8919,7 +9517,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -8938,8 +9536,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationsCorporationIdWalletsDivisionJournalStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdWalletsDivisionJournalResponse',
       },
     ],
   },
@@ -9002,7 +9599,13 @@ const operationContracts = [
       scopes: ['esi-wallet.read_corporation_wallets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsCorporationIdWalletsDivisionTransactionsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsCorporationIdWalletsDivisionTransactionsHeaders',
+      'zGetCorporationsCorporationIdWalletsDivisionTransactionsPath',
+      'zGetCorporationsCorporationIdWalletsDivisionTransactionsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsCorporationIdWalletsDivisionTransactionsData',
+    responseTypeExport: 'GetCorporationsCorporationIdWalletsDivisionTransactionsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -9011,7 +9614,7 @@ const operationContracts = [
       query: {
         from_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9030,8 +9633,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationsCorporationIdWalletsDivisionTransactionsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsCorporationIdWalletsDivisionTransactionsResponse',
       },
     ],
   },
@@ -9105,7 +9707,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_freelance_jobs.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsFreelanceJobsListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsFreelanceJobsListingHeaders',
+      'zGetCorporationsFreelanceJobsListingPath',
+      'zGetCorporationsFreelanceJobsListingQuery',
+    ],
+    requestTypeExport: 'GetCorporationsFreelanceJobsListingData',
+    responseTypeExport: 'GetCorporationsFreelanceJobsListingResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -9115,7 +9723,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9134,7 +9742,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsFreelanceJobsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsFreelanceJobsListingResponse',
       },
     ],
   },
@@ -9216,7 +9824,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_freelance_jobs.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsFreelanceJobsParticipantsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsFreelanceJobsParticipantsHeaders',
+      'zGetCorporationsFreelanceJobsParticipantsPath',
+      'zGetCorporationsFreelanceJobsParticipantsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsFreelanceJobsParticipantsData',
+    responseTypeExport: 'GetCorporationsFreelanceJobsParticipantsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -9227,7 +9841,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9246,7 +9860,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsFreelanceJobsParticipantsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsFreelanceJobsParticipantsResponse',
       },
     ],
   },
@@ -9285,9 +9899,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsNpccorpsRequestSchema',
+    requestSchemaExports: ['zGetCorporationsNpccorpsHeaders'],
+    requestTypeExport: 'GetCorporationsNpccorpsData',
+    responseTypeExport: 'GetCorporationsNpccorpsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9306,7 +9922,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsNpccorpsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsNpccorpsResponse',
       },
     ],
   },
@@ -9370,14 +9986,19 @@ const operationContracts = [
       scopes: ['esi-corporations.read_projects.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsProjectsContributionRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsProjectsContributionHeaders',
+      'zGetCorporationsProjectsContributionPath',
+    ],
+    requestTypeExport: 'GetCorporationsProjectsContributionData',
+    responseTypeExport: 'GetCorporationsProjectsContributionResponse',
     arguments: {
       path: {
         character_id: 0,
         corporation_id: 0,
         project_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9396,7 +10017,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsProjectsContributionStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsProjectsContributionResponse',
       },
     ],
   },
@@ -9478,7 +10099,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_projects.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsProjectsContributorsRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsProjectsContributorsHeaders',
+      'zGetCorporationsProjectsContributorsPath',
+      'zGetCorporationsProjectsContributorsQuery',
+    ],
+    requestTypeExport: 'GetCorporationsProjectsContributorsData',
+    responseTypeExport: 'GetCorporationsProjectsContributorsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -9489,7 +10116,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9508,7 +10135,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsProjectsContributorsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsProjectsContributorsResponse',
       },
     ],
   },
@@ -9563,13 +10190,18 @@ const operationContracts = [
       scopes: ['esi-corporations.read_projects.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsProjectsDetailRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsProjectsDetailHeaders',
+      'zGetCorporationsProjectsDetailPath',
+    ],
+    requestTypeExport: 'GetCorporationsProjectsDetailData',
+    responseTypeExport: 'GetCorporationsProjectsDetailResponse',
     arguments: {
       path: {
         corporation_id: 0,
         project_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9588,7 +10220,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsProjectsDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsProjectsDetailResponse',
       },
     ],
   },
@@ -9671,7 +10303,13 @@ const operationContracts = [
       scopes: ['esi-corporations.read_projects.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsProjectsListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsProjectsListingHeaders',
+      'zGetCorporationsProjectsListingPath',
+      'zGetCorporationsProjectsListingQuery',
+    ],
+    requestTypeExport: 'GetCorporationsProjectsListingData',
+    responseTypeExport: 'GetCorporationsProjectsListingResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -9682,7 +10320,7 @@ const operationContracts = [
         limit: 10,
         state: 'All',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9701,7 +10339,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsProjectsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsProjectsListingResponse',
       },
     ],
   },
@@ -9756,13 +10394,18 @@ const operationContracts = [
       scopes: ['esi-structures.read_corporation.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsStructuresSkyhooksDetailRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsStructuresSkyhooksDetailHeaders',
+      'zGetCorporationsStructuresSkyhooksDetailPath',
+    ],
+    requestTypeExport: 'GetCorporationsStructuresSkyhooksDetailData',
+    responseTypeExport: 'GetCorporationsStructuresSkyhooksDetailResponse',
     arguments: {
       path: {
         corporation_id: 0,
         skyhook_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9781,7 +10424,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsStructuresSkyhooksDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsStructuresSkyhooksDetailResponse',
       },
     ],
   },
@@ -9828,12 +10471,17 @@ const operationContracts = [
       scopes: ['esi-structures.read_corporation.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsStructuresSkyhooksListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsStructuresSkyhooksListingHeaders',
+      'zGetCorporationsStructuresSkyhooksListingPath',
+    ],
+    requestTypeExport: 'GetCorporationsStructuresSkyhooksListingData',
+    responseTypeExport: 'GetCorporationsStructuresSkyhooksListingResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9852,7 +10500,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCorporationsStructuresSkyhooksListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsStructuresSkyhooksListingResponse',
       },
     ],
   },
@@ -9907,13 +10555,18 @@ const operationContracts = [
       scopes: ['esi-structures.read_corporation.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsStructuresSovereigntyHubsDetailRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsStructuresSovereigntyHubsDetailHeaders',
+      'zGetCorporationsStructuresSovereigntyHubsDetailPath',
+    ],
+    requestTypeExport: 'GetCorporationsStructuresSovereigntyHubsDetailData',
+    responseTypeExport: 'GetCorporationsStructuresSovereigntyHubsDetailResponse',
     arguments: {
       path: {
         corporation_id: 0,
         sovereignty_hub_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -9932,8 +10585,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationsStructuresSovereigntyHubsDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsStructuresSovereigntyHubsDetailResponse',
       },
     ],
   },
@@ -9980,12 +10632,17 @@ const operationContracts = [
       scopes: ['esi-structures.read_corporation.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCorporationsStructuresSovereigntyHubsListingRequestSchema',
+    requestSchemaExports: [
+      'zGetCorporationsStructuresSovereigntyHubsListingHeaders',
+      'zGetCorporationsStructuresSovereigntyHubsListingPath',
+    ],
+    requestTypeExport: 'GetCorporationsStructuresSovereigntyHubsListingData',
+    responseTypeExport: 'GetCorporationsStructuresSovereigntyHubsListingResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10004,8 +10661,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport:
-          'GetCorporationsStructuresSovereigntyHubsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCorporationsStructuresSovereigntyHubsListingResponse',
       },
     ],
   },
@@ -10052,12 +10708,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetCosmeticsSkinrRequestSchema',
+    requestSchemaExports: ['zGetCosmeticsSkinrHeaders', 'zGetCosmeticsSkinrPath'],
+    requestTypeExport: 'GetCosmeticsSkinrData',
+    responseTypeExport: 'GetCosmeticsSkinrResponse',
     arguments: {
       path: {
         skinr_id: 'x',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10076,7 +10734,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetCosmeticsSkinrStatus200SuccessResponseSchema',
+        schemaExport: 'zGetCosmeticsSkinrResponse',
       },
     ],
   },
@@ -10115,9 +10773,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetDogmaAttributesRequestSchema',
+    requestSchemaExports: ['zGetDogmaAttributesHeaders'],
+    requestTypeExport: 'GetDogmaAttributesData',
+    responseTypeExport: 'GetDogmaAttributesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10136,7 +10796,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetDogmaAttributesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetDogmaAttributesResponse',
       },
     ],
   },
@@ -10183,12 +10843,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetDogmaAttributesAttributeIdRequestSchema',
+    requestSchemaExports: [
+      'zGetDogmaAttributesAttributeIdHeaders',
+      'zGetDogmaAttributesAttributeIdPath',
+    ],
+    requestTypeExport: 'GetDogmaAttributesAttributeIdData',
+    responseTypeExport: 'GetDogmaAttributesAttributeIdResponse',
     arguments: {
       path: {
         attribute_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10207,7 +10872,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetDogmaAttributesAttributeIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetDogmaAttributesAttributeIdResponse',
       },
     ],
   },
@@ -10262,13 +10927,18 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetDogmaDynamicItemsTypeIdItemIdRequestSchema',
+    requestSchemaExports: [
+      'zGetDogmaDynamicItemsTypeIdItemIdHeaders',
+      'zGetDogmaDynamicItemsTypeIdItemIdPath',
+    ],
+    requestTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdData',
+    responseTypeExport: 'GetDogmaDynamicItemsTypeIdItemIdResponse',
     arguments: {
       path: {
         item_id: 0,
         type_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10287,7 +10957,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetDogmaDynamicItemsTypeIdItemIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetDogmaDynamicItemsTypeIdItemIdResponse',
       },
     ],
   },
@@ -10326,9 +10996,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetDogmaEffectsRequestSchema',
+    requestSchemaExports: ['zGetDogmaEffectsHeaders'],
+    requestTypeExport: 'GetDogmaEffectsData',
+    responseTypeExport: 'GetDogmaEffectsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10347,7 +11019,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetDogmaEffectsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetDogmaEffectsResponse',
       },
     ],
   },
@@ -10394,12 +11066,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetDogmaEffectsEffectIdRequestSchema',
+    requestSchemaExports: ['zGetDogmaEffectsEffectIdHeaders', 'zGetDogmaEffectsEffectIdPath'],
+    requestTypeExport: 'GetDogmaEffectsEffectIdData',
+    responseTypeExport: 'GetDogmaEffectsEffectIdResponse',
     arguments: {
       path: {
         effect_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10418,7 +11092,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetDogmaEffectsEffectIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetDogmaEffectsEffectIdResponse',
       },
     ],
   },
@@ -10465,12 +11139,14 @@ const operationContracts = [
       scopes: ['esi-fleets.read_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFleetsFleetIdRequestSchema',
+    requestSchemaExports: ['zGetFleetsFleetIdHeaders', 'zGetFleetsFleetIdPath'],
+    requestTypeExport: 'GetFleetsFleetIdData',
+    responseTypeExport: 'GetFleetsFleetIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10489,7 +11165,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFleetsFleetIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFleetsFleetIdResponse',
       },
     ],
   },
@@ -10536,12 +11212,14 @@ const operationContracts = [
       scopes: ['esi-fleets.read_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFleetsFleetIdMembersRequestSchema',
+    requestSchemaExports: ['zGetFleetsFleetIdMembersHeaders', 'zGetFleetsFleetIdMembersPath'],
+    requestTypeExport: 'GetFleetsFleetIdMembersData',
+    responseTypeExport: 'GetFleetsFleetIdMembersResponse',
     arguments: {
       path: {
         fleet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10560,7 +11238,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFleetsFleetIdMembersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFleetsFleetIdMembersResponse',
       },
     ],
   },
@@ -10607,12 +11285,14 @@ const operationContracts = [
       scopes: ['esi-fleets.read_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFleetsFleetIdWingsRequestSchema',
+    requestSchemaExports: ['zGetFleetsFleetIdWingsHeaders', 'zGetFleetsFleetIdWingsPath'],
+    requestTypeExport: 'GetFleetsFleetIdWingsData',
+    responseTypeExport: 'GetFleetsFleetIdWingsResponse',
     arguments: {
       path: {
         fleet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10631,7 +11311,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFleetsFleetIdWingsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFleetsFleetIdWingsResponse',
       },
     ],
   },
@@ -10678,12 +11358,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFreelanceJobsDetailRequestSchema',
+    requestSchemaExports: ['zGetFreelanceJobsDetailHeaders', 'zGetFreelanceJobsDetailPath'],
+    requestTypeExport: 'GetFreelanceJobsDetailData',
+    responseTypeExport: 'GetFreelanceJobsDetailResponse',
     arguments: {
       path: {
         job_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10702,7 +11384,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFreelanceJobsDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFreelanceJobsDetailResponse',
       },
     ],
   },
@@ -10777,7 +11459,9 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFreelanceJobsListingRequestSchema',
+    requestSchemaExports: ['zGetFreelanceJobsListingHeaders', 'zGetFreelanceJobsListingQuery'],
+    requestTypeExport: 'GetFreelanceJobsListingData',
+    responseTypeExport: 'GetFreelanceJobsListingResponse',
     arguments: {
       query: {
         after: '',
@@ -10785,7 +11469,7 @@ const operationContracts = [
         corporation_id: 0,
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10804,7 +11488,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFreelanceJobsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFreelanceJobsListingResponse',
       },
     ],
   },
@@ -10843,9 +11527,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFwLeaderboardsRequestSchema',
+    requestSchemaExports: ['zGetFwLeaderboardsHeaders'],
+    requestTypeExport: 'GetFwLeaderboardsData',
+    responseTypeExport: 'GetFwLeaderboardsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10864,7 +11550,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFwLeaderboardsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFwLeaderboardsResponse',
       },
     ],
   },
@@ -10903,9 +11589,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFwLeaderboardsCharactersRequestSchema',
+    requestSchemaExports: ['zGetFwLeaderboardsCharactersHeaders'],
+    requestTypeExport: 'GetFwLeaderboardsCharactersData',
+    responseTypeExport: 'GetFwLeaderboardsCharactersResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10924,7 +11612,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFwLeaderboardsCharactersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFwLeaderboardsCharactersResponse',
       },
     ],
   },
@@ -10963,9 +11651,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFwLeaderboardsCorporationsRequestSchema',
+    requestSchemaExports: ['zGetFwLeaderboardsCorporationsHeaders'],
+    requestTypeExport: 'GetFwLeaderboardsCorporationsData',
+    responseTypeExport: 'GetFwLeaderboardsCorporationsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -10984,7 +11674,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFwLeaderboardsCorporationsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFwLeaderboardsCorporationsResponse',
       },
     ],
   },
@@ -11023,9 +11713,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFwStatsRequestSchema',
+    requestSchemaExports: ['zGetFwStatsHeaders'],
+    requestTypeExport: 'GetFwStatsData',
+    responseTypeExport: 'GetFwStatsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11044,7 +11736,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFwStatsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFwStatsResponse',
       },
     ],
   },
@@ -11083,9 +11775,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFwSystemsRequestSchema',
+    requestSchemaExports: ['zGetFwSystemsHeaders'],
+    requestTypeExport: 'GetFwSystemsData',
+    responseTypeExport: 'GetFwSystemsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11104,7 +11798,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFwSystemsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFwSystemsResponse',
       },
     ],
   },
@@ -11143,9 +11837,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetFwWarsRequestSchema',
+    requestSchemaExports: ['zGetFwWarsHeaders'],
+    requestTypeExport: 'GetFwWarsData',
+    responseTypeExport: 'GetFwWarsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11164,7 +11860,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetFwWarsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetFwWarsResponse',
       },
     ],
   },
@@ -11203,9 +11899,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetIncursionsRequestSchema',
+    requestSchemaExports: ['zGetIncursionsHeaders'],
+    requestTypeExport: 'GetIncursionsData',
+    responseTypeExport: 'GetIncursionsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11224,7 +11922,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetIncursionsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetIncursionsResponse',
       },
     ],
   },
@@ -11263,9 +11961,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetIndustryFacilitiesRequestSchema',
+    requestSchemaExports: ['zGetIndustryFacilitiesHeaders'],
+    requestTypeExport: 'GetIndustryFacilitiesData',
+    responseTypeExport: 'GetIndustryFacilitiesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11284,7 +11984,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetIndustryFacilitiesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetIndustryFacilitiesResponse',
       },
     ],
   },
@@ -11323,9 +12023,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetIndustrySystemsRequestSchema',
+    requestSchemaExports: ['zGetIndustrySystemsHeaders'],
+    requestTypeExport: 'GetIndustrySystemsData',
+    responseTypeExport: 'GetIndustrySystemsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11344,7 +12046,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetIndustrySystemsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetIndustrySystemsResponse',
       },
     ],
   },
@@ -11383,9 +12085,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetInsurancePricesRequestSchema',
+    requestSchemaExports: ['zGetInsurancePricesHeaders'],
+    requestTypeExport: 'GetInsurancePricesData',
+    responseTypeExport: 'GetInsurancePricesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11404,7 +12108,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetInsurancePricesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetInsurancePricesResponse',
       },
     ],
   },
@@ -11459,13 +12163,18 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetKillmailsKillmailIdKillmailHashRequestSchema',
+    requestSchemaExports: [
+      'zGetKillmailsKillmailIdKillmailHashHeaders',
+      'zGetKillmailsKillmailIdKillmailHashPath',
+    ],
+    requestTypeExport: 'GetKillmailsKillmailIdKillmailHashData',
+    responseTypeExport: 'GetKillmailsKillmailIdKillmailHashResponse',
     arguments: {
       path: {
         killmail_hash: 'x',
         killmail_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11484,7 +12193,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetKillmailsKillmailIdKillmailHashStatus200SuccessResponseSchema',
+        schemaExport: 'zGetKillmailsKillmailIdKillmailHashResponse',
       },
     ],
   },
@@ -11531,12 +12240,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetLoyaltyStoresCorporationIdOffersRequestSchema',
+    requestSchemaExports: [
+      'zGetLoyaltyStoresCorporationIdOffersHeaders',
+      'zGetLoyaltyStoresCorporationIdOffersPath',
+    ],
+    requestTypeExport: 'GetLoyaltyStoresCorporationIdOffersData',
+    responseTypeExport: 'GetLoyaltyStoresCorporationIdOffersResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11555,7 +12269,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetLoyaltyStoresCorporationIdOffersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetLoyaltyStoresCorporationIdOffersResponse',
       },
     ],
   },
@@ -11594,9 +12308,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMarketsGroupsRequestSchema',
+    requestSchemaExports: ['zGetMarketsGroupsHeaders'],
+    requestTypeExport: 'GetMarketsGroupsData',
+    responseTypeExport: 'GetMarketsGroupsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11615,7 +12331,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMarketsGroupsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMarketsGroupsResponse',
       },
     ],
   },
@@ -11662,12 +12378,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMarketsGroupsMarketGroupIdRequestSchema',
+    requestSchemaExports: [
+      'zGetMarketsGroupsMarketGroupIdHeaders',
+      'zGetMarketsGroupsMarketGroupIdPath',
+    ],
+    requestTypeExport: 'GetMarketsGroupsMarketGroupIdData',
+    responseTypeExport: 'GetMarketsGroupsMarketGroupIdResponse',
     arguments: {
       path: {
         market_group_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11686,7 +12407,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMarketsGroupsMarketGroupIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMarketsGroupsMarketGroupIdResponse',
       },
     ],
   },
@@ -11725,9 +12446,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMarketsPricesRequestSchema',
+    requestSchemaExports: ['zGetMarketsPricesHeaders'],
+    requestTypeExport: 'GetMarketsPricesData',
+    responseTypeExport: 'GetMarketsPricesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11746,7 +12469,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMarketsPricesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMarketsPricesResponse',
       },
     ],
   },
@@ -11801,7 +12524,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMarketsRegionIdHistoryRequestSchema',
+    requestSchemaExports: [
+      'zGetMarketsRegionIdHistoryHeaders',
+      'zGetMarketsRegionIdHistoryPath',
+      'zGetMarketsRegionIdHistoryQuery',
+    ],
+    requestTypeExport: 'GetMarketsRegionIdHistoryData',
+    responseTypeExport: 'GetMarketsRegionIdHistoryResponse',
     arguments: {
       path: {
         region_id: 0,
@@ -11809,7 +12538,7 @@ const operationContracts = [
       query: {
         type_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11828,7 +12557,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMarketsRegionIdHistoryStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMarketsRegionIdHistoryResponse',
       },
     ],
   },
@@ -11899,7 +12628,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMarketsRegionIdOrdersRequestSchema',
+    requestSchemaExports: [
+      'zGetMarketsRegionIdOrdersHeaders',
+      'zGetMarketsRegionIdOrdersPath',
+      'zGetMarketsRegionIdOrdersQuery',
+    ],
+    requestTypeExport: 'GetMarketsRegionIdOrdersData',
+    responseTypeExport: 'GetMarketsRegionIdOrdersResponse',
     arguments: {
       path: {
         region_id: 0,
@@ -11909,7 +12644,7 @@ const operationContracts = [
         page: 1,
         type_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -11928,7 +12663,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMarketsRegionIdOrdersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMarketsRegionIdOrdersResponse',
       },
     ],
   },
@@ -11983,7 +12718,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMarketsRegionIdTypesRequestSchema',
+    requestSchemaExports: [
+      'zGetMarketsRegionIdTypesHeaders',
+      'zGetMarketsRegionIdTypesPath',
+      'zGetMarketsRegionIdTypesQuery',
+    ],
+    requestTypeExport: 'GetMarketsRegionIdTypesData',
+    responseTypeExport: 'GetMarketsRegionIdTypesResponse',
     arguments: {
       path: {
         region_id: 0,
@@ -11991,7 +12732,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12010,7 +12751,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMarketsRegionIdTypesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMarketsRegionIdTypesResponse',
       },
     ],
   },
@@ -12065,7 +12806,13 @@ const operationContracts = [
       scopes: ['esi-markets.structure_markets.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMarketsStructuresStructureIdRequestSchema',
+    requestSchemaExports: [
+      'zGetMarketsStructuresStructureIdHeaders',
+      'zGetMarketsStructuresStructureIdPath',
+      'zGetMarketsStructuresStructureIdQuery',
+    ],
+    requestTypeExport: 'GetMarketsStructuresStructureIdData',
+    responseTypeExport: 'GetMarketsStructuresStructureIdResponse',
     arguments: {
       path: {
         structure_id: 0,
@@ -12073,7 +12820,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12092,7 +12839,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMarketsStructuresStructureIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMarketsStructuresStructureIdResponse',
       },
     ],
   },
@@ -12131,9 +12878,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMetaChangelogRequestSchema',
+    requestSchemaExports: ['zGetMetaChangelogHeaders'],
+    requestTypeExport: 'GetMetaChangelogData',
+    responseTypeExport: 'GetMetaChangelogResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12152,7 +12901,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMetaChangelogStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMetaChangelogResponse',
       },
     ],
   },
@@ -12191,9 +12940,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMetaCompatibilityDatesRequestSchema',
+    requestSchemaExports: ['zGetMetaCompatibilityDatesHeaders'],
+    requestTypeExport: 'GetMetaCompatibilityDatesData',
+    responseTypeExport: 'GetMetaCompatibilityDatesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12212,7 +12963,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMetaCompatibilityDatesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMetaCompatibilityDatesResponse',
       },
     ],
   },
@@ -12251,9 +13002,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMetaNameRequestSchema',
+    requestSchemaExports: ['zGetMetaNameHeaders'],
+    requestTypeExport: 'GetMetaNameData',
+    responseTypeExport: 'GetMetaNameResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12272,7 +13025,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMetaNameStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMetaNameResponse',
       },
     ],
   },
@@ -12311,9 +13064,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMetaStatusRequestSchema',
+    requestSchemaExports: ['zGetMetaStatusHeaders'],
+    requestTypeExport: 'GetMetaStatusData',
+    responseTypeExport: 'GetMetaStatusResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12332,7 +13087,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMetaStatusStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMetaStatusResponse',
       },
     ],
   },
@@ -12379,12 +13134,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMilitaryCampaignsDetailRequestSchema',
+    requestSchemaExports: ['zGetMilitaryCampaignsDetailHeaders', 'zGetMilitaryCampaignsDetailPath'],
+    requestTypeExport: 'GetMilitaryCampaignsDetailData',
+    responseTypeExport: 'GetMilitaryCampaignsDetailResponse',
     arguments: {
       path: {
         campaign_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12403,7 +13160,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMilitaryCampaignsDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMilitaryCampaignsDetailResponse',
       },
     ],
   },
@@ -12442,9 +13199,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMilitaryCampaignsListingRequestSchema',
+    requestSchemaExports: ['zGetMilitaryCampaignsListingHeaders'],
+    requestTypeExport: 'GetMilitaryCampaignsListingData',
+    responseTypeExport: 'GetMilitaryCampaignsListingResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12463,7 +13222,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMilitaryCampaignsListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMilitaryCampaignsListingResponse',
       },
     ],
   },
@@ -12518,13 +13277,18 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMilitaryCampaignsObjectivesDetailRequestSchema',
+    requestSchemaExports: [
+      'zGetMilitaryCampaignsObjectivesDetailHeaders',
+      'zGetMilitaryCampaignsObjectivesDetailPath',
+    ],
+    requestTypeExport: 'GetMilitaryCampaignsObjectivesDetailData',
+    responseTypeExport: 'GetMilitaryCampaignsObjectivesDetailResponse',
     arguments: {
       path: {
         campaign_id: '123e4567-e89b-42d3-a456-426614174000',
         objective_id: '123e4567-e89b-42d3-a456-426614174000',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12543,7 +13307,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMilitaryCampaignsObjectivesDetailStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMilitaryCampaignsObjectivesDetailResponse',
       },
     ],
   },
@@ -12617,7 +13381,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetMilitaryCampaignsObjectivesListingRequestSchema',
+    requestSchemaExports: [
+      'zGetMilitaryCampaignsObjectivesListingHeaders',
+      'zGetMilitaryCampaignsObjectivesListingPath',
+      'zGetMilitaryCampaignsObjectivesListingQuery',
+    ],
+    requestTypeExport: 'GetMilitaryCampaignsObjectivesListingData',
+    responseTypeExport: 'GetMilitaryCampaignsObjectivesListingResponse',
     arguments: {
       path: {
         campaign_id: '123e4567-e89b-42d3-a456-426614174000',
@@ -12627,7 +13397,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12646,7 +13416,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema',
+        schemaExport: 'zGetMilitaryCampaignsObjectivesListingResponse',
       },
     ],
   },
@@ -12712,14 +13482,16 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetParagonHubSkinrRequestSchema',
+    requestSchemaExports: ['zGetParagonHubSkinrHeaders', 'zGetParagonHubSkinrQuery'],
+    requestTypeExport: 'GetParagonHubSkinrData',
+    responseTypeExport: 'GetParagonHubSkinrResponse',
     arguments: {
       query: {
         after: '',
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12738,7 +13510,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetParagonHubSkinrStatus200SuccessResponseSchema',
+        schemaExport: 'zGetParagonHubSkinrResponse',
       },
     ],
   },
@@ -12812,7 +13584,13 @@ const operationContracts = [
       scopes: ['esi.cosmetic.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetParagonHubSkinrAlliancesRequestSchema',
+    requestSchemaExports: [
+      'zGetParagonHubSkinrAlliancesHeaders',
+      'zGetParagonHubSkinrAlliancesPath',
+      'zGetParagonHubSkinrAlliancesQuery',
+    ],
+    requestTypeExport: 'GetParagonHubSkinrAlliancesData',
+    responseTypeExport: 'GetParagonHubSkinrAlliancesResponse',
     arguments: {
       path: {
         alliance_id: 0,
@@ -12822,7 +13600,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12841,7 +13619,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetParagonHubSkinrAlliancesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetParagonHubSkinrAlliancesResponse',
       },
     ],
   },
@@ -12915,7 +13693,13 @@ const operationContracts = [
       scopes: ['esi.cosmetic.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetParagonHubSkinrCharactersRequestSchema',
+    requestSchemaExports: [
+      'zGetParagonHubSkinrCharactersHeaders',
+      'zGetParagonHubSkinrCharactersPath',
+      'zGetParagonHubSkinrCharactersQuery',
+    ],
+    requestTypeExport: 'GetParagonHubSkinrCharactersData',
+    responseTypeExport: 'GetParagonHubSkinrCharactersResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -12925,7 +13709,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -12944,7 +13728,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetParagonHubSkinrCharactersStatus200SuccessResponseSchema',
+        schemaExport: 'zGetParagonHubSkinrCharactersResponse',
       },
     ],
   },
@@ -13018,7 +13802,13 @@ const operationContracts = [
       scopes: ['esi.cosmetic.char:read'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetParagonHubSkinrCorporationsRequestSchema',
+    requestSchemaExports: [
+      'zGetParagonHubSkinrCorporationsHeaders',
+      'zGetParagonHubSkinrCorporationsPath',
+      'zGetParagonHubSkinrCorporationsQuery',
+    ],
+    requestTypeExport: 'GetParagonHubSkinrCorporationsData',
+    responseTypeExport: 'GetParagonHubSkinrCorporationsResponse',
     arguments: {
       path: {
         corporation_id: 0,
@@ -13028,7 +13818,7 @@ const operationContracts = [
         before: '',
         limit: 10,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13047,7 +13837,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetParagonHubSkinrCorporationsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetParagonHubSkinrCorporationsResponse',
       },
     ],
   },
@@ -13086,9 +13876,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetSkyhooksRaidableRequestSchema',
+    requestSchemaExports: ['zGetSkyhooksRaidableHeaders'],
+    requestTypeExport: 'GetSkyhooksRaidableData',
+    responseTypeExport: 'GetSkyhooksRaidableResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13107,7 +13899,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetSkyhooksRaidableStatus200SuccessResponseSchema',
+        schemaExport: 'zGetSkyhooksRaidableResponse',
       },
     ],
   },
@@ -13146,9 +13938,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetSovereigntyCampaignsRequestSchema',
+    requestSchemaExports: ['zGetSovereigntyCampaignsHeaders'],
+    requestTypeExport: 'GetSovereigntyCampaignsData',
+    responseTypeExport: 'GetSovereigntyCampaignsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13167,7 +13961,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetSovereigntyCampaignsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetSovereigntyCampaignsResponse',
       },
     ],
   },
@@ -13206,9 +14000,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetSovereigntySystemsRequestSchema',
+    requestSchemaExports: ['zGetSovereigntySystemsHeaders'],
+    requestTypeExport: 'GetSovereigntySystemsData',
+    responseTypeExport: 'GetSovereigntySystemsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13227,7 +14023,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetSovereigntySystemsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetSovereigntySystemsResponse',
       },
     ],
   },
@@ -13266,9 +14062,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetStatusRequestSchema',
+    requestSchemaExports: ['zGetStatusHeaders'],
+    requestTypeExport: 'GetStatusData',
+    responseTypeExport: 'GetStatusResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13287,7 +14085,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetStatusStatus200SuccessResponseSchema',
+        schemaExport: 'zGetStatusResponse',
       },
     ],
   },
@@ -13326,9 +14124,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseAncestriesRequestSchema',
+    requestSchemaExports: ['zGetUniverseAncestriesHeaders'],
+    requestTypeExport: 'GetUniverseAncestriesData',
+    responseTypeExport: 'GetUniverseAncestriesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13347,7 +14147,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseAncestriesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseAncestriesResponse',
       },
     ],
   },
@@ -13394,12 +14194,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseAsteroidBeltsAsteroidBeltIdHeaders',
+      'zGetUniverseAsteroidBeltsAsteroidBeltIdPath',
+    ],
+    requestTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdData',
+    responseTypeExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdResponse',
     arguments: {
       path: {
         asteroid_belt_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13418,7 +14223,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseAsteroidBeltsAsteroidBeltIdResponse',
       },
     ],
   },
@@ -13457,9 +14262,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseBloodlinesRequestSchema',
+    requestSchemaExports: ['zGetUniverseBloodlinesHeaders'],
+    requestTypeExport: 'GetUniverseBloodlinesData',
+    responseTypeExport: 'GetUniverseBloodlinesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13478,7 +14285,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseBloodlinesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseBloodlinesResponse',
       },
     ],
   },
@@ -13517,9 +14324,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseCategoriesRequestSchema',
+    requestSchemaExports: ['zGetUniverseCategoriesHeaders'],
+    requestTypeExport: 'GetUniverseCategoriesData',
+    responseTypeExport: 'GetUniverseCategoriesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13538,7 +14347,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseCategoriesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseCategoriesResponse',
       },
     ],
   },
@@ -13585,12 +14394,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseCategoriesCategoryIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseCategoriesCategoryIdHeaders',
+      'zGetUniverseCategoriesCategoryIdPath',
+    ],
+    requestTypeExport: 'GetUniverseCategoriesCategoryIdData',
+    responseTypeExport: 'GetUniverseCategoriesCategoryIdResponse',
     arguments: {
       path: {
         category_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13609,7 +14423,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseCategoriesCategoryIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseCategoriesCategoryIdResponse',
       },
     ],
   },
@@ -13648,9 +14462,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseConstellationsRequestSchema',
+    requestSchemaExports: ['zGetUniverseConstellationsHeaders'],
+    requestTypeExport: 'GetUniverseConstellationsData',
+    responseTypeExport: 'GetUniverseConstellationsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13669,7 +14485,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseConstellationsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseConstellationsResponse',
       },
     ],
   },
@@ -13716,12 +14532,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseConstellationsConstellationIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseConstellationsConstellationIdHeaders',
+      'zGetUniverseConstellationsConstellationIdPath',
+    ],
+    requestTypeExport: 'GetUniverseConstellationsConstellationIdData',
+    responseTypeExport: 'GetUniverseConstellationsConstellationIdResponse',
     arguments: {
       path: {
         constellation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13740,7 +14561,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseConstellationsConstellationIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseConstellationsConstellationIdResponse',
       },
     ],
   },
@@ -13779,9 +14600,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseFactionsRequestSchema',
+    requestSchemaExports: ['zGetUniverseFactionsHeaders'],
+    requestTypeExport: 'GetUniverseFactionsData',
+    responseTypeExport: 'GetUniverseFactionsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13800,7 +14623,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseFactionsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseFactionsResponse',
       },
     ],
   },
@@ -13839,9 +14662,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseGraphicsRequestSchema',
+    requestSchemaExports: ['zGetUniverseGraphicsHeaders'],
+    requestTypeExport: 'GetUniverseGraphicsData',
+    responseTypeExport: 'GetUniverseGraphicsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13860,7 +14685,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseGraphicsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseGraphicsResponse',
       },
     ],
   },
@@ -13907,12 +14732,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseGraphicsGraphicIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseGraphicsGraphicIdHeaders',
+      'zGetUniverseGraphicsGraphicIdPath',
+    ],
+    requestTypeExport: 'GetUniverseGraphicsGraphicIdData',
+    responseTypeExport: 'GetUniverseGraphicsGraphicIdResponse',
     arguments: {
       path: {
         graphic_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -13931,7 +14761,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseGraphicsGraphicIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseGraphicsGraphicIdResponse',
       },
     ],
   },
@@ -13978,12 +14808,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseGroupsRequestSchema',
+    requestSchemaExports: ['zGetUniverseGroupsHeaders', 'zGetUniverseGroupsQuery'],
+    requestTypeExport: 'GetUniverseGroupsData',
+    responseTypeExport: 'GetUniverseGroupsResponse',
     arguments: {
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14002,7 +14834,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseGroupsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseGroupsResponse',
       },
     ],
   },
@@ -14049,12 +14881,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseGroupsGroupIdRequestSchema',
+    requestSchemaExports: ['zGetUniverseGroupsGroupIdHeaders', 'zGetUniverseGroupsGroupIdPath'],
+    requestTypeExport: 'GetUniverseGroupsGroupIdData',
+    responseTypeExport: 'GetUniverseGroupsGroupIdResponse',
     arguments: {
       path: {
         group_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14073,7 +14907,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseGroupsGroupIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseGroupsGroupIdResponse',
       },
     ],
   },
@@ -14120,12 +14954,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseMoonsMoonIdRequestSchema',
+    requestSchemaExports: ['zGetUniverseMoonsMoonIdHeaders', 'zGetUniverseMoonsMoonIdPath'],
+    requestTypeExport: 'GetUniverseMoonsMoonIdData',
+    responseTypeExport: 'GetUniverseMoonsMoonIdResponse',
     arguments: {
       path: {
         moon_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14144,7 +14980,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseMoonsMoonIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseMoonsMoonIdResponse',
       },
     ],
   },
@@ -14191,12 +15027,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniversePlanetsPlanetIdRequestSchema',
+    requestSchemaExports: ['zGetUniversePlanetsPlanetIdHeaders', 'zGetUniversePlanetsPlanetIdPath'],
+    requestTypeExport: 'GetUniversePlanetsPlanetIdData',
+    responseTypeExport: 'GetUniversePlanetsPlanetIdResponse',
     arguments: {
       path: {
         planet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14215,7 +15053,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniversePlanetsPlanetIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniversePlanetsPlanetIdResponse',
       },
     ],
   },
@@ -14254,9 +15092,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseRacesRequestSchema',
+    requestSchemaExports: ['zGetUniverseRacesHeaders'],
+    requestTypeExport: 'GetUniverseRacesData',
+    responseTypeExport: 'GetUniverseRacesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14275,7 +15115,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseRacesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseRacesResponse',
       },
     ],
   },
@@ -14314,9 +15154,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseRegionsRequestSchema',
+    requestSchemaExports: ['zGetUniverseRegionsHeaders'],
+    requestTypeExport: 'GetUniverseRegionsData',
+    responseTypeExport: 'GetUniverseRegionsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14335,7 +15177,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseRegionsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseRegionsResponse',
       },
     ],
   },
@@ -14382,12 +15224,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseRegionsRegionIdRequestSchema',
+    requestSchemaExports: ['zGetUniverseRegionsRegionIdHeaders', 'zGetUniverseRegionsRegionIdPath'],
+    requestTypeExport: 'GetUniverseRegionsRegionIdData',
+    responseTypeExport: 'GetUniverseRegionsRegionIdResponse',
     arguments: {
       path: {
         region_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14406,7 +15250,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseRegionsRegionIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseRegionsRegionIdResponse',
       },
     ],
   },
@@ -14453,12 +15297,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseSchematicsSchematicIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseSchematicsSchematicIdHeaders',
+      'zGetUniverseSchematicsSchematicIdPath',
+    ],
+    requestTypeExport: 'GetUniverseSchematicsSchematicIdData',
+    responseTypeExport: 'GetUniverseSchematicsSchematicIdResponse',
     arguments: {
       path: {
         schematic_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14477,7 +15326,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseSchematicsSchematicIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseSchematicsSchematicIdResponse',
       },
     ],
   },
@@ -14524,12 +15373,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseStargatesStargateIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseStargatesStargateIdHeaders',
+      'zGetUniverseStargatesStargateIdPath',
+    ],
+    requestTypeExport: 'GetUniverseStargatesStargateIdData',
+    responseTypeExport: 'GetUniverseStargatesStargateIdResponse',
     arguments: {
       path: {
         stargate_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14548,7 +15402,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseStargatesStargateIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseStargatesStargateIdResponse',
       },
     ],
   },
@@ -14595,12 +15449,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseStarsStarIdRequestSchema',
+    requestSchemaExports: ['zGetUniverseStarsStarIdHeaders', 'zGetUniverseStarsStarIdPath'],
+    requestTypeExport: 'GetUniverseStarsStarIdData',
+    responseTypeExport: 'GetUniverseStarsStarIdResponse',
     arguments: {
       path: {
         star_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14619,7 +15475,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseStarsStarIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseStarsStarIdResponse',
       },
     ],
   },
@@ -14666,12 +15522,17 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseStationsStationIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseStationsStationIdHeaders',
+      'zGetUniverseStationsStationIdPath',
+    ],
+    requestTypeExport: 'GetUniverseStationsStationIdData',
+    responseTypeExport: 'GetUniverseStationsStationIdResponse',
     arguments: {
       path: {
         station_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14690,7 +15551,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseStationsStationIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseStationsStationIdResponse',
       },
     ],
   },
@@ -14737,12 +15598,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseStructuresRequestSchema',
+    requestSchemaExports: ['zGetUniverseStructuresHeaders', 'zGetUniverseStructuresQuery'],
+    requestTypeExport: 'GetUniverseStructuresData',
+    responseTypeExport: 'GetUniverseStructuresResponse',
     arguments: {
       query: {
         filter: 'market',
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14761,7 +15624,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseStructuresStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseStructuresResponse',
       },
     ],
   },
@@ -14808,12 +15671,17 @@ const operationContracts = [
       scopes: ['esi-universe.read_structures.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseStructuresStructureIdRequestSchema',
+    requestSchemaExports: [
+      'zGetUniverseStructuresStructureIdHeaders',
+      'zGetUniverseStructuresStructureIdPath',
+    ],
+    requestTypeExport: 'GetUniverseStructuresStructureIdData',
+    responseTypeExport: 'GetUniverseStructuresStructureIdResponse',
     arguments: {
       path: {
         structure_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14832,7 +15700,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseStructuresStructureIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseStructuresStructureIdResponse',
       },
     ],
   },
@@ -14871,9 +15739,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseSystemJumpsRequestSchema',
+    requestSchemaExports: ['zGetUniverseSystemJumpsHeaders'],
+    requestTypeExport: 'GetUniverseSystemJumpsData',
+    responseTypeExport: 'GetUniverseSystemJumpsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14892,7 +15762,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseSystemJumpsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseSystemJumpsResponse',
       },
     ],
   },
@@ -14931,9 +15801,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseSystemKillsRequestSchema',
+    requestSchemaExports: ['zGetUniverseSystemKillsHeaders'],
+    requestTypeExport: 'GetUniverseSystemKillsData',
+    responseTypeExport: 'GetUniverseSystemKillsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -14952,7 +15824,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseSystemKillsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseSystemKillsResponse',
       },
     ],
   },
@@ -14991,9 +15863,11 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseSystemsRequestSchema',
+    requestSchemaExports: ['zGetUniverseSystemsHeaders'],
+    requestTypeExport: 'GetUniverseSystemsData',
+    responseTypeExport: 'GetUniverseSystemsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15012,7 +15886,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseSystemsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseSystemsResponse',
       },
     ],
   },
@@ -15059,12 +15933,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseSystemsSystemIdRequestSchema',
+    requestSchemaExports: ['zGetUniverseSystemsSystemIdHeaders', 'zGetUniverseSystemsSystemIdPath'],
+    requestTypeExport: 'GetUniverseSystemsSystemIdData',
+    responseTypeExport: 'GetUniverseSystemsSystemIdResponse',
     arguments: {
       path: {
         system_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15083,7 +15959,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseSystemsSystemIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseSystemsSystemIdResponse',
       },
     ],
   },
@@ -15130,12 +16006,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseTypesRequestSchema',
+    requestSchemaExports: ['zGetUniverseTypesHeaders', 'zGetUniverseTypesQuery'],
+    requestTypeExport: 'GetUniverseTypesData',
+    responseTypeExport: 'GetUniverseTypesResponse',
     arguments: {
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15154,7 +16032,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseTypesStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseTypesResponse',
       },
     ],
   },
@@ -15201,12 +16079,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetUniverseTypesTypeIdRequestSchema',
+    requestSchemaExports: ['zGetUniverseTypesTypeIdHeaders', 'zGetUniverseTypesTypeIdPath'],
+    requestTypeExport: 'GetUniverseTypesTypeIdData',
+    responseTypeExport: 'GetUniverseTypesTypeIdResponse',
     arguments: {
       path: {
         type_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15225,7 +16105,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetUniverseTypesTypeIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetUniverseTypesTypeIdResponse',
       },
     ],
   },
@@ -15272,12 +16152,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetWarsRequestSchema',
+    requestSchemaExports: ['zGetWarsHeaders', 'zGetWarsQuery'],
+    requestTypeExport: 'GetWarsData',
+    responseTypeExport: 'GetWarsResponse',
     arguments: {
       query: {
         max_war_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15296,7 +16178,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetWarsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetWarsResponse',
       },
     ],
   },
@@ -15343,12 +16225,14 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetWarsWarIdRequestSchema',
+    requestSchemaExports: ['zGetWarsWarIdHeaders', 'zGetWarsWarIdPath'],
+    requestTypeExport: 'GetWarsWarIdData',
+    responseTypeExport: 'GetWarsWarIdResponse',
     arguments: {
       path: {
         war_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15367,7 +16251,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetWarsWarIdStatus200SuccessResponseSchema',
+        schemaExport: 'zGetWarsWarIdResponse',
       },
     ],
   },
@@ -15422,7 +16306,13 @@ const operationContracts = [
       scopes: [],
     },
     requestBody: null,
-    requestSchemaExport: 'GetWarsWarIdKillmailsRequestSchema',
+    requestSchemaExports: [
+      'zGetWarsWarIdKillmailsHeaders',
+      'zGetWarsWarIdKillmailsPath',
+      'zGetWarsWarIdKillmailsQuery',
+    ],
+    requestTypeExport: 'GetWarsWarIdKillmailsData',
+    responseTypeExport: 'GetWarsWarIdKillmailsResponse',
     arguments: {
       path: {
         war_id: 0,
@@ -15430,7 +16320,7 @@ const operationContracts = [
       query: {
         page: 1,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15449,7 +16339,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'GetWarsWarIdKillmailsStatus200SuccessResponseSchema',
+        schemaExport: 'zGetWarsWarIdKillmailsResponse',
       },
     ],
   },
@@ -15491,9 +16381,11 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersAffiliationRequestSchema',
+    requestSchemaExports: ['zPostCharactersAffiliationBody', 'zPostCharactersAffiliationHeaders'],
+    requestTypeExport: 'PostCharactersAffiliationData',
+    responseTypeExport: 'PostCharactersAffiliationResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15515,7 +16407,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostCharactersAffiliationStatus200SuccessResponseSchema',
+        schemaExport: 'zPostCharactersAffiliationResponse',
       },
     ],
   },
@@ -15565,12 +16457,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersCharacterIdAssetsLocationsRequestSchema',
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdAssetsLocationsBody',
+      'zPostCharactersCharacterIdAssetsLocationsHeaders',
+      'zPostCharactersCharacterIdAssetsLocationsPath',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdAssetsLocationsData',
+    responseTypeExport: 'PostCharactersCharacterIdAssetsLocationsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15592,7 +16490,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostCharactersCharacterIdAssetsLocationsStatus200SuccessResponseSchema',
+        schemaExport: 'zPostCharactersCharacterIdAssetsLocationsResponse',
       },
     ],
   },
@@ -15642,12 +16540,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersCharacterIdAssetsNamesRequestSchema',
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdAssetsNamesBody',
+      'zPostCharactersCharacterIdAssetsNamesHeaders',
+      'zPostCharactersCharacterIdAssetsNamesPath',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdAssetsNamesData',
+    responseTypeExport: 'PostCharactersCharacterIdAssetsNamesResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15669,7 +16573,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostCharactersCharacterIdAssetsNamesStatus200SuccessResponseSchema',
+        schemaExport: 'zPostCharactersCharacterIdAssetsNamesResponse',
       },
     ],
   },
@@ -15746,7 +16650,14 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersCharacterIdContactsRequestSchema',
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdContactsBody',
+      'zPostCharactersCharacterIdContactsHeaders',
+      'zPostCharactersCharacterIdContactsPath',
+      'zPostCharactersCharacterIdContactsQuery',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdContactsData',
+    responseTypeExport: 'PostCharactersCharacterIdContactsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -15756,7 +16667,7 @@ const operationContracts = [
         standing: 0,
         watched: true,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15778,7 +16689,7 @@ const operationContracts = [
       {
         status: '201',
         body: 'json',
-        schemaExport: 'PostCharactersCharacterIdContactsStatus201SuccessResponseSchema',
+        schemaExport: 'zPostCharactersCharacterIdContactsResponse',
       },
     ],
   },
@@ -15828,12 +16739,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersCharacterIdCspaRequestSchema',
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdCspaBody',
+      'zPostCharactersCharacterIdCspaHeaders',
+      'zPostCharactersCharacterIdCspaPath',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdCspaData',
+    responseTypeExport: 'PostCharactersCharacterIdCspaResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15855,7 +16772,7 @@ const operationContracts = [
       {
         status: '201',
         body: 'json',
-        schemaExport: 'PostCharactersCharacterIdCspaStatus201SuccessResponseSchema',
+        schemaExport: 'zPostCharactersCharacterIdCspaResponse',
       },
     ],
   },
@@ -15905,12 +16822,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersCharacterIdFittingsRequestSchema',
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdFittingsBody',
+      'zPostCharactersCharacterIdFittingsHeaders',
+      'zPostCharactersCharacterIdFittingsPath',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdFittingsData',
+    responseTypeExport: 'PostCharactersCharacterIdFittingsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -15943,7 +16866,7 @@ const operationContracts = [
       {
         status: '201',
         body: 'json',
-        schemaExport: 'PostCharactersCharacterIdFittingsStatus201SuccessResponseSchema',
+        schemaExport: 'zPostCharactersCharacterIdFittingsResponse',
       },
     ],
   },
@@ -15993,12 +16916,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersCharacterIdMailRequestSchema',
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdMailBody',
+      'zPostCharactersCharacterIdMailHeaders',
+      'zPostCharactersCharacterIdMailPath',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdMailData',
+    responseTypeExport: 'PostCharactersCharacterIdMailResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16029,7 +16958,7 @@ const operationContracts = [
       {
         status: '201',
         body: 'json',
-        schemaExport: 'PostCharactersCharacterIdMailStatus201SuccessResponseSchema',
+        schemaExport: 'zPostCharactersCharacterIdMailResponse',
       },
     ],
   },
@@ -16079,12 +17008,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCharactersCharacterIdMailLabelsRequestSchema',
+    requestSchemaExports: [
+      'zPostCharactersCharacterIdMailLabelsBody',
+      'zPostCharactersCharacterIdMailLabelsHeaders',
+      'zPostCharactersCharacterIdMailLabelsPath',
+    ],
+    requestTypeExport: 'PostCharactersCharacterIdMailLabelsData',
+    responseTypeExport: 'PostCharactersCharacterIdMailLabelsResponse',
     arguments: {
       path: {
         character_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16108,7 +17043,7 @@ const operationContracts = [
       {
         status: '201',
         body: 'json',
-        schemaExport: 'PostCharactersCharacterIdMailLabelsStatus201SuccessResponseSchema',
+        schemaExport: 'zPostCharactersCharacterIdMailLabelsResponse',
       },
     ],
   },
@@ -16158,12 +17093,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCorporationsCorporationIdAssetsLocationsRequestSchema',
+    requestSchemaExports: [
+      'zPostCorporationsCorporationIdAssetsLocationsBody',
+      'zPostCorporationsCorporationIdAssetsLocationsHeaders',
+      'zPostCorporationsCorporationIdAssetsLocationsPath',
+    ],
+    requestTypeExport: 'PostCorporationsCorporationIdAssetsLocationsData',
+    responseTypeExport: 'PostCorporationsCorporationIdAssetsLocationsResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16185,7 +17126,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostCorporationsCorporationIdAssetsLocationsStatus200SuccessResponseSchema',
+        schemaExport: 'zPostCorporationsCorporationIdAssetsLocationsResponse',
       },
     ],
   },
@@ -16235,12 +17176,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostCorporationsCorporationIdAssetsNamesRequestSchema',
+    requestSchemaExports: [
+      'zPostCorporationsCorporationIdAssetsNamesBody',
+      'zPostCorporationsCorporationIdAssetsNamesHeaders',
+      'zPostCorporationsCorporationIdAssetsNamesPath',
+    ],
+    requestTypeExport: 'PostCorporationsCorporationIdAssetsNamesData',
+    responseTypeExport: 'PostCorporationsCorporationIdAssetsNamesResponse',
     arguments: {
       path: {
         corporation_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16262,7 +17209,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostCorporationsCorporationIdAssetsNamesStatus200SuccessResponseSchema',
+        schemaExport: 'zPostCorporationsCorporationIdAssetsNamesResponse',
       },
     ],
   },
@@ -16312,12 +17259,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostFleetsFleetIdMembersRequestSchema',
+    requestSchemaExports: [
+      'zPostFleetsFleetIdMembersBody',
+      'zPostFleetsFleetIdMembersHeaders',
+      'zPostFleetsFleetIdMembersPath',
+    ],
+    requestTypeExport: 'PostFleetsFleetIdMembersData',
+    responseTypeExport: 'PostFleetsFleetIdMembersResponse',
     arguments: {
       path: {
         fleet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16342,7 +17295,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PostFleetsFleetIdMembersStatus204SuccessResponseSchema',
+        schemaExport: 'zPostFleetsFleetIdMembersResponse',
       },
     ],
   },
@@ -16389,12 +17342,14 @@ const operationContracts = [
       scopes: ['esi-fleets.write_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'PostFleetsFleetIdWingsRequestSchema',
+    requestSchemaExports: ['zPostFleetsFleetIdWingsHeaders', 'zPostFleetsFleetIdWingsPath'],
+    requestTypeExport: 'PostFleetsFleetIdWingsData',
+    responseTypeExport: 'PostFleetsFleetIdWingsResponse',
     arguments: {
       path: {
         fleet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16413,7 +17368,7 @@ const operationContracts = [
       {
         status: '201',
         body: 'json',
-        schemaExport: 'PostFleetsFleetIdWingsStatus201SuccessResponseSchema',
+        schemaExport: 'zPostFleetsFleetIdWingsResponse',
       },
     ],
   },
@@ -16468,13 +17423,18 @@ const operationContracts = [
       scopes: ['esi-fleets.write_fleet.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'PostFleetsFleetIdWingsWingIdSquadsRequestSchema',
+    requestSchemaExports: [
+      'zPostFleetsFleetIdWingsWingIdSquadsHeaders',
+      'zPostFleetsFleetIdWingsWingIdSquadsPath',
+    ],
+    requestTypeExport: 'PostFleetsFleetIdWingsWingIdSquadsData',
+    responseTypeExport: 'PostFleetsFleetIdWingsWingIdSquadsResponse',
     arguments: {
       path: {
         fleet_id: 0,
         wing_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16493,7 +17453,7 @@ const operationContracts = [
       {
         status: '201',
         body: 'json',
-        schemaExport: 'PostFleetsFleetIdWingsWingIdSquadsStatus201SuccessResponseSchema',
+        schemaExport: 'zPostFleetsFleetIdWingsWingIdSquadsResponse',
       },
     ],
   },
@@ -16551,13 +17511,15 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostRouteRequestSchema',
+    requestSchemaExports: ['zPostRouteBody', 'zPostRouteHeaders', 'zPostRoutePath'],
+    requestTypeExport: 'PostRouteData',
+    responseTypeExport: 'PostRouteResponse',
     arguments: {
       path: {
         destination_system_id: 0,
         origin_system_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16579,7 +17541,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostRouteStatus200SuccessResponseSchema',
+        schemaExport: 'zPostRouteResponse',
       },
     ],
   },
@@ -16642,14 +17604,16 @@ const operationContracts = [
       scopes: ['esi-ui.write_waypoint.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'PostUiAutopilotWaypointRequestSchema',
+    requestSchemaExports: ['zPostUiAutopilotWaypointHeaders', 'zPostUiAutopilotWaypointQuery'],
+    requestTypeExport: 'PostUiAutopilotWaypointData',
+    responseTypeExport: 'PostUiAutopilotWaypointResponse',
     arguments: {
       query: {
         add_to_beginning: true,
         clear_other_waypoints: true,
         destination_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16668,7 +17632,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PostUiAutopilotWaypointStatus204SuccessResponseSchema',
+        schemaExport: 'zPostUiAutopilotWaypointResponse',
       },
     ],
   },
@@ -16715,12 +17679,14 @@ const operationContracts = [
       scopes: ['esi-ui.open_window.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'PostUiOpenwindowContractRequestSchema',
+    requestSchemaExports: ['zPostUiOpenwindowContractHeaders', 'zPostUiOpenwindowContractQuery'],
+    requestTypeExport: 'PostUiOpenwindowContractData',
+    responseTypeExport: 'PostUiOpenwindowContractResponse',
     arguments: {
       query: {
         contract_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16739,7 +17705,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PostUiOpenwindowContractStatus204SuccessResponseSchema',
+        schemaExport: 'zPostUiOpenwindowContractResponse',
       },
     ],
   },
@@ -16786,12 +17752,17 @@ const operationContracts = [
       scopes: ['esi-ui.open_window.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'PostUiOpenwindowInformationRequestSchema',
+    requestSchemaExports: [
+      'zPostUiOpenwindowInformationHeaders',
+      'zPostUiOpenwindowInformationQuery',
+    ],
+    requestTypeExport: 'PostUiOpenwindowInformationData',
+    responseTypeExport: 'PostUiOpenwindowInformationResponse',
     arguments: {
       query: {
         target_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16810,7 +17781,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PostUiOpenwindowInformationStatus204SuccessResponseSchema',
+        schemaExport: 'zPostUiOpenwindowInformationResponse',
       },
     ],
   },
@@ -16857,12 +17828,17 @@ const operationContracts = [
       scopes: ['esi-ui.open_window.v1'],
     },
     requestBody: null,
-    requestSchemaExport: 'PostUiOpenwindowMarketdetailsRequestSchema',
+    requestSchemaExports: [
+      'zPostUiOpenwindowMarketdetailsHeaders',
+      'zPostUiOpenwindowMarketdetailsQuery',
+    ],
+    requestTypeExport: 'PostUiOpenwindowMarketdetailsData',
+    responseTypeExport: 'PostUiOpenwindowMarketdetailsResponse',
     arguments: {
       query: {
         type_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16881,7 +17857,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PostUiOpenwindowMarketdetailsStatus204SuccessResponseSchema',
+        schemaExport: 'zPostUiOpenwindowMarketdetailsResponse',
       },
     ],
   },
@@ -16923,9 +17899,11 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostUiOpenwindowNewmailRequestSchema',
+    requestSchemaExports: ['zPostUiOpenwindowNewmailBody', 'zPostUiOpenwindowNewmailHeaders'],
+    requestTypeExport: 'PostUiOpenwindowNewmailData',
+    responseTypeExport: 'PostUiOpenwindowNewmailResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -16951,7 +17929,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PostUiOpenwindowNewmailStatus204SuccessResponseSchema',
+        schemaExport: 'zPostUiOpenwindowNewmailResponse',
       },
     ],
   },
@@ -16993,9 +17971,11 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostUniverseIdsRequestSchema',
+    requestSchemaExports: ['zPostUniverseIdsBody', 'zPostUniverseIdsHeaders'],
+    requestTypeExport: 'PostUniverseIdsData',
+    responseTypeExport: 'PostUniverseIdsResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17017,7 +17997,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostUniverseIdsStatus200SuccessResponseSchema',
+        schemaExport: 'zPostUniverseIdsResponse',
       },
     ],
   },
@@ -17059,9 +18039,11 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PostUniverseNamesRequestSchema',
+    requestSchemaExports: ['zPostUniverseNamesBody', 'zPostUniverseNamesHeaders'],
+    requestTypeExport: 'PostUniverseNamesData',
+    responseTypeExport: 'PostUniverseNamesResponse',
     arguments: {
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17083,7 +18065,7 @@ const operationContracts = [
       {
         status: '200',
         body: 'json',
-        schemaExport: 'PostUniverseNamesStatus200SuccessResponseSchema',
+        schemaExport: 'zPostUniverseNamesResponse',
       },
     ],
   },
@@ -17141,13 +18123,19 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PutCharactersCharacterIdCalendarEventIdRequestSchema',
+    requestSchemaExports: [
+      'zPutCharactersCharacterIdCalendarEventIdBody',
+      'zPutCharactersCharacterIdCalendarEventIdHeaders',
+      'zPutCharactersCharacterIdCalendarEventIdPath',
+    ],
+    requestTypeExport: 'PutCharactersCharacterIdCalendarEventIdData',
+    responseTypeExport: 'PutCharactersCharacterIdCalendarEventIdResponse',
     arguments: {
       path: {
         character_id: 0,
         event_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17171,7 +18159,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PutCharactersCharacterIdCalendarEventIdStatus204SuccessResponseSchema',
+        schemaExport: 'zPutCharactersCharacterIdCalendarEventIdResponse',
       },
     ],
   },
@@ -17248,7 +18236,14 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PutCharactersCharacterIdContactsRequestSchema',
+    requestSchemaExports: [
+      'zPutCharactersCharacterIdContactsBody',
+      'zPutCharactersCharacterIdContactsHeaders',
+      'zPutCharactersCharacterIdContactsPath',
+      'zPutCharactersCharacterIdContactsQuery',
+    ],
+    requestTypeExport: 'PutCharactersCharacterIdContactsData',
+    responseTypeExport: 'PutCharactersCharacterIdContactsResponse',
     arguments: {
       path: {
         character_id: 0,
@@ -17258,7 +18253,7 @@ const operationContracts = [
         standing: 0,
         watched: true,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17280,7 +18275,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PutCharactersCharacterIdContactsStatus204SuccessResponseSchema',
+        schemaExport: 'zPutCharactersCharacterIdContactsResponse',
       },
     ],
   },
@@ -17338,13 +18333,19 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PutCharactersCharacterIdMailMailIdRequestSchema',
+    requestSchemaExports: [
+      'zPutCharactersCharacterIdMailMailIdBody',
+      'zPutCharactersCharacterIdMailMailIdHeaders',
+      'zPutCharactersCharacterIdMailMailIdPath',
+    ],
+    requestTypeExport: 'PutCharactersCharacterIdMailMailIdData',
+    responseTypeExport: 'PutCharactersCharacterIdMailMailIdResponse',
     arguments: {
       path: {
         character_id: 0,
         mail_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17366,7 +18367,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PutCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema',
+        schemaExport: 'zPutCharactersCharacterIdMailMailIdResponse',
       },
     ],
   },
@@ -17416,12 +18417,18 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PutFleetsFleetIdRequestSchema',
+    requestSchemaExports: [
+      'zPutFleetsFleetIdBody',
+      'zPutFleetsFleetIdHeaders',
+      'zPutFleetsFleetIdPath',
+    ],
+    requestTypeExport: 'PutFleetsFleetIdData',
+    responseTypeExport: 'PutFleetsFleetIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17443,7 +18450,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PutFleetsFleetIdStatus204SuccessResponseSchema',
+        schemaExport: 'zPutFleetsFleetIdResponse',
       },
     ],
   },
@@ -17501,13 +18508,19 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PutFleetsFleetIdMembersMemberIdRequestSchema',
+    requestSchemaExports: [
+      'zPutFleetsFleetIdMembersMemberIdBody',
+      'zPutFleetsFleetIdMembersMemberIdHeaders',
+      'zPutFleetsFleetIdMembersMemberIdPath',
+    ],
+    requestTypeExport: 'PutFleetsFleetIdMembersMemberIdData',
+    responseTypeExport: 'PutFleetsFleetIdMembersMemberIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
         member_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17531,7 +18544,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PutFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema',
+        schemaExport: 'zPutFleetsFleetIdMembersMemberIdResponse',
       },
     ],
   },
@@ -17589,13 +18602,19 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PutFleetsFleetIdSquadsSquadIdRequestSchema',
+    requestSchemaExports: [
+      'zPutFleetsFleetIdSquadsSquadIdBody',
+      'zPutFleetsFleetIdSquadsSquadIdHeaders',
+      'zPutFleetsFleetIdSquadsSquadIdPath',
+    ],
+    requestTypeExport: 'PutFleetsFleetIdSquadsSquadIdData',
+    responseTypeExport: 'PutFleetsFleetIdSquadsSquadIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
         squad_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17619,7 +18638,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PutFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema',
+        schemaExport: 'zPutFleetsFleetIdSquadsSquadIdResponse',
       },
     ],
   },
@@ -17677,13 +18696,19 @@ const operationContracts = [
       required: true,
       mediaType: 'application/json',
     },
-    requestSchemaExport: 'PutFleetsFleetIdWingsWingIdRequestSchema',
+    requestSchemaExports: [
+      'zPutFleetsFleetIdWingsWingIdBody',
+      'zPutFleetsFleetIdWingsWingIdHeaders',
+      'zPutFleetsFleetIdWingsWingIdPath',
+    ],
+    requestTypeExport: 'PutFleetsFleetIdWingsWingIdData',
+    responseTypeExport: 'PutFleetsFleetIdWingsWingIdResponse',
     arguments: {
       path: {
         fleet_id: 0,
         wing_id: 0,
       },
-      header: {
+      headers: {
         'If-Modified-Since': 'x',
         'If-None-Match': 'x',
         'X-Tenant': 'x',
@@ -17707,7 +18732,7 @@ const operationContracts = [
       {
         status: '204',
         body: 'none',
-        schemaExport: 'PutFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema',
+        schemaExport: 'zPutFleetsFleetIdWingsWingIdResponse',
       },
     ],
   },
@@ -17717,1285 +18742,1279 @@ const jsonResponseContracts = [
     operationId: 'GetAlliances',
     status: '200',
     body: 'json',
-    schemaExport: 'GetAlliancesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetAlliancesResponse',
   },
   {
     operationId: 'GetAlliancesAllianceId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetAlliancesAllianceIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetAlliancesAllianceIdResponse',
   },
   {
     operationId: 'GetAlliancesAllianceIdContacts',
     status: '200',
     body: 'json',
-    schemaExport: 'GetAlliancesAllianceIdContactsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetAlliancesAllianceIdContactsResponse',
   },
   {
     operationId: 'GetAlliancesAllianceIdContactsLabels',
     status: '200',
     body: 'json',
-    schemaExport: 'GetAlliancesAllianceIdContactsLabelsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetAlliancesAllianceIdContactsLabelsResponse',
   },
   {
     operationId: 'GetAlliancesAllianceIdCorporations',
     status: '200',
     body: 'json',
-    schemaExport: 'GetAlliancesAllianceIdCorporationsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetAlliancesAllianceIdCorporationsResponse',
   },
   {
     operationId: 'GetAlliancesAllianceIdIcons',
     status: '200',
     body: 'json',
-    schemaExport: 'GetAlliancesAllianceIdIconsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetAlliancesAllianceIdIconsResponse',
   },
   {
     operationId: 'GetCharactersAccessListsDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersAccessListsDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersAccessListsDetailResponse',
   },
   {
     operationId: 'GetCharactersAccessListsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersAccessListsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersAccessListsListingResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdAgentsResearch',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdAgentsResearchStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdAgentsResearchResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdAssets',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdAssetsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdAssetsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdAttributes',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdAttributesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdAttributesResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdBlueprints',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdBlueprintsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdBlueprintsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdCalendar',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdCalendarStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdCalendarResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdCalendarEventId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdCalendarEventIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdCalendarEventIdResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdCalendarEventIdAttendees',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdCalendarEventIdAttendeesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdCalendarEventIdAttendeesResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdClones',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdClonesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdClonesResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdContacts',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdContactsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdContactsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdContactsLabels',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdContactsLabelsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdContactsLabelsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdContracts',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdContractsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdContractsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdContractsContractIdBids',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdContractsContractIdBidsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdContractsContractIdBidsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdContractsContractIdItems',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdContractsContractIdItemsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdContractsContractIdItemsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdCorporationhistory',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdCorporationhistoryStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdCorporationhistoryResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdFatigue',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdFatigueStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdFatigueResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdFittings',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdFittingsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdFittingsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdFleet',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdFleetStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdFleetResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdFwStats',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdFwStatsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdFwStatsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdImplants',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdImplantsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdImplantsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdIndustryJobs',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdIndustryJobsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdIndustryJobsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdKillmailsRecent',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdKillmailsRecentStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdKillmailsRecentResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdLocation',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdLocationStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdLocationResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdLoyaltyPoints',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdLoyaltyPointsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdLoyaltyPointsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdMail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdMailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdMailResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdMailLabels',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdMailLabelsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdMailLabelsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdMailLists',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdMailListsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdMailListsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdMailMailId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdMailMailIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdMailMailIdResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdMedals',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdMedalsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdMedalsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdMining',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdMiningStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdMiningResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdNotifications',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdNotificationsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdNotificationsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdNotificationsContacts',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdNotificationsContactsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdNotificationsContactsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdOnline',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdOnlineStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdOnlineResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdOrders',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdOrdersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdOrdersResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdOrdersHistory',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdOrdersHistoryStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdOrdersHistoryResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdPlanets',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdPlanetsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdPlanetsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdPlanetsPlanetId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdPlanetsPlanetIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdPlanetsPlanetIdResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdPortrait',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdPortraitStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdPortraitResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdRoles',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdRolesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdRolesResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdSearch',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdSearchStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdSearchResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdShip',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdShipStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdShipResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdSkillqueue',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdSkillqueueStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdSkillqueueResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdSkills',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdSkillsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdSkillsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdStandings',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdStandingsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdStandingsResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdTitles',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdTitlesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdTitlesResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdWallet',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdWalletStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdWalletResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdWalletJournal',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdWalletJournalStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdWalletJournalResponse',
   },
   {
     operationId: 'GetCharactersCharacterIdWalletTransactions',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCharacterIdWalletTransactionsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCharacterIdWalletTransactionsResponse',
   },
   {
     operationId: 'GetCharactersCosmeticsSkinr',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCosmeticsSkinrStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCosmeticsSkinrResponse',
   },
   {
     operationId: 'GetCharactersCosmeticsSkinrComponents',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersCosmeticsSkinrComponentsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersCosmeticsSkinrComponentsResponse',
   },
   {
     operationId: 'GetCharactersDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersDetailResponse',
   },
   {
     operationId: 'GetCharactersFreelanceJobsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersFreelanceJobsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersFreelanceJobsListingResponse',
   },
   {
     operationId: 'GetCharactersFreelanceJobsParticipation',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersFreelanceJobsParticipationStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersFreelanceJobsParticipationResponse',
   },
   {
     operationId: 'GetCharactersMercenaryTacticalOperationsDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersMercenaryTacticalOperationsDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersMercenaryTacticalOperationsDetailResponse',
   },
   {
     operationId: 'GetCharactersMercenaryTacticalOperationsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersMercenaryTacticalOperationsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersMercenaryTacticalOperationsListingResponse',
   },
   {
     operationId: 'GetCharactersMilitaryCampaignsObjectivesListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersMilitaryCampaignsObjectivesListingResponse',
   },
   {
     operationId: 'GetCharactersMilitaryCampaignsObjectivesParticipation',
     status: '200',
     body: 'json',
-    schemaExport:
-      'GetCharactersMilitaryCampaignsObjectivesParticipationStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersMilitaryCampaignsObjectivesParticipationResponse',
   },
   {
     operationId: 'GetCharactersParagonHubSkinr',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersParagonHubSkinrStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersParagonHubSkinrResponse',
   },
   {
     operationId: 'GetCharactersStructuresMercenaryDensDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersStructuresMercenaryDensDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersStructuresMercenaryDensDetailResponse',
   },
   {
     operationId: 'GetCharactersStructuresMercenaryDensListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCharactersStructuresMercenaryDensListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCharactersStructuresMercenaryDensListingResponse',
   },
   {
     operationId: 'GetContractsPublicBidsContractId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetContractsPublicBidsContractIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetContractsPublicBidsContractIdResponse',
   },
   {
     operationId: 'GetContractsPublicItemsContractId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetContractsPublicItemsContractIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetContractsPublicItemsContractIdResponse',
   },
   {
     operationId: 'GetContractsPublicRegionId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetContractsPublicRegionIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetContractsPublicRegionIdResponse',
   },
   {
     operationId: 'GetCorporationCorporationIdMiningExtractions',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationCorporationIdMiningExtractionsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationCorporationIdMiningExtractionsResponse',
   },
   {
     operationId: 'GetCorporationCorporationIdMiningObservers',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationCorporationIdMiningObserversStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationCorporationIdMiningObserversResponse',
   },
   {
     operationId: 'GetCorporationCorporationIdMiningObserversObserverId',
     status: '200',
     body: 'json',
-    schemaExport:
-      'GetCorporationCorporationIdMiningObserversObserverIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationCorporationIdMiningObserversObserverIdResponse',
   },
   {
     operationId: 'GetCorporationsCorporationId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdAlliancehistory',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdAlliancehistoryStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdAlliancehistoryResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdAssets',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdAssetsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdAssetsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdBlueprints',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdBlueprintsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdBlueprintsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdContacts',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdContactsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdContactsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdContactsLabels',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdContactsLabelsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdContactsLabelsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdContainersLogs',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdContainersLogsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdContainersLogsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdContracts',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdContractsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdContractsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdContractsContractIdBids',
     status: '200',
     body: 'json',
-    schemaExport:
-      'GetCorporationsCorporationIdContractsContractIdBidsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdContractsContractIdBidsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdContractsContractIdItems',
     status: '200',
     body: 'json',
-    schemaExport:
-      'GetCorporationsCorporationIdContractsContractIdItemsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdContractsContractIdItemsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdCustomsOffices',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdCustomsOfficesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdCustomsOfficesResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdDivisions',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdDivisionsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdDivisionsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdFacilities',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdFacilitiesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdFacilitiesResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdFwStats',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdFwStatsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdFwStatsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdIcons',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdIconsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdIconsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdIndustryJobs',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdIndustryJobsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdIndustryJobsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdKillmailsRecent',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdKillmailsRecentStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdKillmailsRecentResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdMedals',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdMedalsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdMedalsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdMedalsIssued',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdMedalsIssuedStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdMedalsIssuedResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdMembers',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdMembersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdMembersResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdMembersLimit',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdMembersLimitStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdMembersLimitResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdMembersTitles',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdMembersTitlesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdMembersTitlesResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdMembertracking',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdMembertrackingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdMembertrackingResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdOrders',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdOrdersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdOrdersResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdOrdersHistory',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdOrdersHistoryStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdOrdersHistoryResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdRoles',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdRolesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdRolesResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdRolesHistory',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdRolesHistoryStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdRolesHistoryResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdShareholders',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdShareholdersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdShareholdersResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdStandings',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdStandingsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdStandingsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdStarbases',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdStarbasesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdStarbasesResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdStarbasesStarbaseId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdStarbasesStarbaseIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdStarbasesStarbaseIdResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdStructures',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdStructuresStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdStructuresResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdTitles',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdTitlesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdTitlesResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdWallets',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsCorporationIdWalletsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdWalletsResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdWalletsDivisionJournal',
     status: '200',
     body: 'json',
-    schemaExport:
-      'GetCorporationsCorporationIdWalletsDivisionJournalStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdWalletsDivisionJournalResponse',
   },
   {
     operationId: 'GetCorporationsCorporationIdWalletsDivisionTransactions',
     status: '200',
     body: 'json',
-    schemaExport:
-      'GetCorporationsCorporationIdWalletsDivisionTransactionsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsCorporationIdWalletsDivisionTransactionsResponse',
   },
   {
     operationId: 'GetCorporationsFreelanceJobsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsFreelanceJobsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsFreelanceJobsListingResponse',
   },
   {
     operationId: 'GetCorporationsFreelanceJobsParticipants',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsFreelanceJobsParticipantsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsFreelanceJobsParticipantsResponse',
   },
   {
     operationId: 'GetCorporationsNpccorps',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsNpccorpsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsNpccorpsResponse',
   },
   {
     operationId: 'GetCorporationsProjectsContribution',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsProjectsContributionStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsProjectsContributionResponse',
   },
   {
     operationId: 'GetCorporationsProjectsContributors',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsProjectsContributorsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsProjectsContributorsResponse',
   },
   {
     operationId: 'GetCorporationsProjectsDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsProjectsDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsProjectsDetailResponse',
   },
   {
     operationId: 'GetCorporationsProjectsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsProjectsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsProjectsListingResponse',
   },
   {
     operationId: 'GetCorporationsStructuresSkyhooksDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsStructuresSkyhooksDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsStructuresSkyhooksDetailResponse',
   },
   {
     operationId: 'GetCorporationsStructuresSkyhooksListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsStructuresSkyhooksListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsStructuresSkyhooksListingResponse',
   },
   {
     operationId: 'GetCorporationsStructuresSovereigntyHubsDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsStructuresSovereigntyHubsDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsStructuresSovereigntyHubsDetailResponse',
   },
   {
     operationId: 'GetCorporationsStructuresSovereigntyHubsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCorporationsStructuresSovereigntyHubsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCorporationsStructuresSovereigntyHubsListingResponse',
   },
   {
     operationId: 'GetCosmeticsSkinr',
     status: '200',
     body: 'json',
-    schemaExport: 'GetCosmeticsSkinrStatus200SuccessResponseSchema',
+    schemaExport: 'zGetCosmeticsSkinrResponse',
   },
   {
     operationId: 'GetDogmaAttributes',
     status: '200',
     body: 'json',
-    schemaExport: 'GetDogmaAttributesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetDogmaAttributesResponse',
   },
   {
     operationId: 'GetDogmaAttributesAttributeId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetDogmaAttributesAttributeIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetDogmaAttributesAttributeIdResponse',
   },
   {
     operationId: 'GetDogmaDynamicItemsTypeIdItemId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetDogmaDynamicItemsTypeIdItemIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetDogmaDynamicItemsTypeIdItemIdResponse',
   },
   {
     operationId: 'GetDogmaEffects',
     status: '200',
     body: 'json',
-    schemaExport: 'GetDogmaEffectsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetDogmaEffectsResponse',
   },
   {
     operationId: 'GetDogmaEffectsEffectId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetDogmaEffectsEffectIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetDogmaEffectsEffectIdResponse',
   },
   {
     operationId: 'GetFleetsFleetId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFleetsFleetIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFleetsFleetIdResponse',
   },
   {
     operationId: 'GetFleetsFleetIdMembers',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFleetsFleetIdMembersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFleetsFleetIdMembersResponse',
   },
   {
     operationId: 'GetFleetsFleetIdWings',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFleetsFleetIdWingsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFleetsFleetIdWingsResponse',
   },
   {
     operationId: 'GetFreelanceJobsDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFreelanceJobsDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFreelanceJobsDetailResponse',
   },
   {
     operationId: 'GetFreelanceJobsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFreelanceJobsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFreelanceJobsListingResponse',
   },
   {
     operationId: 'GetFwLeaderboards',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFwLeaderboardsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFwLeaderboardsResponse',
   },
   {
     operationId: 'GetFwLeaderboardsCharacters',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFwLeaderboardsCharactersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFwLeaderboardsCharactersResponse',
   },
   {
     operationId: 'GetFwLeaderboardsCorporations',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFwLeaderboardsCorporationsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFwLeaderboardsCorporationsResponse',
   },
   {
     operationId: 'GetFwStats',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFwStatsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFwStatsResponse',
   },
   {
     operationId: 'GetFwSystems',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFwSystemsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFwSystemsResponse',
   },
   {
     operationId: 'GetFwWars',
     status: '200',
     body: 'json',
-    schemaExport: 'GetFwWarsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetFwWarsResponse',
   },
   {
     operationId: 'GetIncursions',
     status: '200',
     body: 'json',
-    schemaExport: 'GetIncursionsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetIncursionsResponse',
   },
   {
     operationId: 'GetIndustryFacilities',
     status: '200',
     body: 'json',
-    schemaExport: 'GetIndustryFacilitiesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetIndustryFacilitiesResponse',
   },
   {
     operationId: 'GetIndustrySystems',
     status: '200',
     body: 'json',
-    schemaExport: 'GetIndustrySystemsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetIndustrySystemsResponse',
   },
   {
     operationId: 'GetInsurancePrices',
     status: '200',
     body: 'json',
-    schemaExport: 'GetInsurancePricesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetInsurancePricesResponse',
   },
   {
     operationId: 'GetKillmailsKillmailIdKillmailHash',
     status: '200',
     body: 'json',
-    schemaExport: 'GetKillmailsKillmailIdKillmailHashStatus200SuccessResponseSchema',
+    schemaExport: 'zGetKillmailsKillmailIdKillmailHashResponse',
   },
   {
     operationId: 'GetLoyaltyStoresCorporationIdOffers',
     status: '200',
     body: 'json',
-    schemaExport: 'GetLoyaltyStoresCorporationIdOffersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetLoyaltyStoresCorporationIdOffersResponse',
   },
   {
     operationId: 'GetMarketsGroups',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMarketsGroupsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMarketsGroupsResponse',
   },
   {
     operationId: 'GetMarketsGroupsMarketGroupId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMarketsGroupsMarketGroupIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMarketsGroupsMarketGroupIdResponse',
   },
   {
     operationId: 'GetMarketsPrices',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMarketsPricesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMarketsPricesResponse',
   },
   {
     operationId: 'GetMarketsRegionIdHistory',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMarketsRegionIdHistoryStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMarketsRegionIdHistoryResponse',
   },
   {
     operationId: 'GetMarketsRegionIdOrders',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMarketsRegionIdOrdersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMarketsRegionIdOrdersResponse',
   },
   {
     operationId: 'GetMarketsRegionIdTypes',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMarketsRegionIdTypesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMarketsRegionIdTypesResponse',
   },
   {
     operationId: 'GetMarketsStructuresStructureId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMarketsStructuresStructureIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMarketsStructuresStructureIdResponse',
   },
   {
     operationId: 'GetMetaChangelog',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMetaChangelogStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMetaChangelogResponse',
   },
   {
     operationId: 'GetMetaCompatibilityDates',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMetaCompatibilityDatesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMetaCompatibilityDatesResponse',
   },
   {
     operationId: 'GetMetaName',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMetaNameStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMetaNameResponse',
   },
   {
     operationId: 'GetMetaStatus',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMetaStatusStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMetaStatusResponse',
   },
   {
     operationId: 'GetMilitaryCampaignsDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMilitaryCampaignsDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMilitaryCampaignsDetailResponse',
   },
   {
     operationId: 'GetMilitaryCampaignsListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMilitaryCampaignsListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMilitaryCampaignsListingResponse',
   },
   {
     operationId: 'GetMilitaryCampaignsObjectivesDetail',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMilitaryCampaignsObjectivesDetailStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMilitaryCampaignsObjectivesDetailResponse',
   },
   {
     operationId: 'GetMilitaryCampaignsObjectivesListing',
     status: '200',
     body: 'json',
-    schemaExport: 'GetMilitaryCampaignsObjectivesListingStatus200SuccessResponseSchema',
+    schemaExport: 'zGetMilitaryCampaignsObjectivesListingResponse',
   },
   {
     operationId: 'GetParagonHubSkinr',
     status: '200',
     body: 'json',
-    schemaExport: 'GetParagonHubSkinrStatus200SuccessResponseSchema',
+    schemaExport: 'zGetParagonHubSkinrResponse',
   },
   {
     operationId: 'GetParagonHubSkinrAlliances',
     status: '200',
     body: 'json',
-    schemaExport: 'GetParagonHubSkinrAlliancesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetParagonHubSkinrAlliancesResponse',
   },
   {
     operationId: 'GetParagonHubSkinrCharacters',
     status: '200',
     body: 'json',
-    schemaExport: 'GetParagonHubSkinrCharactersStatus200SuccessResponseSchema',
+    schemaExport: 'zGetParagonHubSkinrCharactersResponse',
   },
   {
     operationId: 'GetParagonHubSkinrCorporations',
     status: '200',
     body: 'json',
-    schemaExport: 'GetParagonHubSkinrCorporationsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetParagonHubSkinrCorporationsResponse',
   },
   {
     operationId: 'GetSkyhooksRaidable',
     status: '200',
     body: 'json',
-    schemaExport: 'GetSkyhooksRaidableStatus200SuccessResponseSchema',
+    schemaExport: 'zGetSkyhooksRaidableResponse',
   },
   {
     operationId: 'GetSovereigntyCampaigns',
     status: '200',
     body: 'json',
-    schemaExport: 'GetSovereigntyCampaignsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetSovereigntyCampaignsResponse',
   },
   {
     operationId: 'GetSovereigntySystems',
     status: '200',
     body: 'json',
-    schemaExport: 'GetSovereigntySystemsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetSovereigntySystemsResponse',
   },
   {
     operationId: 'GetStatus',
     status: '200',
     body: 'json',
-    schemaExport: 'GetStatusStatus200SuccessResponseSchema',
+    schemaExport: 'zGetStatusResponse',
   },
   {
     operationId: 'GetUniverseAncestries',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseAncestriesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseAncestriesResponse',
   },
   {
     operationId: 'GetUniverseAsteroidBeltsAsteroidBeltId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseAsteroidBeltsAsteroidBeltIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseAsteroidBeltsAsteroidBeltIdResponse',
   },
   {
     operationId: 'GetUniverseBloodlines',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseBloodlinesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseBloodlinesResponse',
   },
   {
     operationId: 'GetUniverseCategories',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseCategoriesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseCategoriesResponse',
   },
   {
     operationId: 'GetUniverseCategoriesCategoryId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseCategoriesCategoryIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseCategoriesCategoryIdResponse',
   },
   {
     operationId: 'GetUniverseConstellations',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseConstellationsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseConstellationsResponse',
   },
   {
     operationId: 'GetUniverseConstellationsConstellationId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseConstellationsConstellationIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseConstellationsConstellationIdResponse',
   },
   {
     operationId: 'GetUniverseFactions',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseFactionsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseFactionsResponse',
   },
   {
     operationId: 'GetUniverseGraphics',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseGraphicsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseGraphicsResponse',
   },
   {
     operationId: 'GetUniverseGraphicsGraphicId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseGraphicsGraphicIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseGraphicsGraphicIdResponse',
   },
   {
     operationId: 'GetUniverseGroups',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseGroupsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseGroupsResponse',
   },
   {
     operationId: 'GetUniverseGroupsGroupId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseGroupsGroupIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseGroupsGroupIdResponse',
   },
   {
     operationId: 'GetUniverseMoonsMoonId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseMoonsMoonIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseMoonsMoonIdResponse',
   },
   {
     operationId: 'GetUniversePlanetsPlanetId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniversePlanetsPlanetIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniversePlanetsPlanetIdResponse',
   },
   {
     operationId: 'GetUniverseRaces',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseRacesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseRacesResponse',
   },
   {
     operationId: 'GetUniverseRegions',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseRegionsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseRegionsResponse',
   },
   {
     operationId: 'GetUniverseRegionsRegionId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseRegionsRegionIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseRegionsRegionIdResponse',
   },
   {
     operationId: 'GetUniverseSchematicsSchematicId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseSchematicsSchematicIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseSchematicsSchematicIdResponse',
   },
   {
     operationId: 'GetUniverseStargatesStargateId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseStargatesStargateIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseStargatesStargateIdResponse',
   },
   {
     operationId: 'GetUniverseStarsStarId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseStarsStarIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseStarsStarIdResponse',
   },
   {
     operationId: 'GetUniverseStationsStationId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseStationsStationIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseStationsStationIdResponse',
   },
   {
     operationId: 'GetUniverseStructures',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseStructuresStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseStructuresResponse',
   },
   {
     operationId: 'GetUniverseStructuresStructureId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseStructuresStructureIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseStructuresStructureIdResponse',
   },
   {
     operationId: 'GetUniverseSystemJumps',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseSystemJumpsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseSystemJumpsResponse',
   },
   {
     operationId: 'GetUniverseSystemKills',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseSystemKillsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseSystemKillsResponse',
   },
   {
     operationId: 'GetUniverseSystems',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseSystemsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseSystemsResponse',
   },
   {
     operationId: 'GetUniverseSystemsSystemId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseSystemsSystemIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseSystemsSystemIdResponse',
   },
   {
     operationId: 'GetUniverseTypes',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseTypesStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseTypesResponse',
   },
   {
     operationId: 'GetUniverseTypesTypeId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetUniverseTypesTypeIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetUniverseTypesTypeIdResponse',
   },
   {
     operationId: 'GetWars',
     status: '200',
     body: 'json',
-    schemaExport: 'GetWarsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetWarsResponse',
   },
   {
     operationId: 'GetWarsWarId',
     status: '200',
     body: 'json',
-    schemaExport: 'GetWarsWarIdStatus200SuccessResponseSchema',
+    schemaExport: 'zGetWarsWarIdResponse',
   },
   {
     operationId: 'GetWarsWarIdKillmails',
     status: '200',
     body: 'json',
-    schemaExport: 'GetWarsWarIdKillmailsStatus200SuccessResponseSchema',
+    schemaExport: 'zGetWarsWarIdKillmailsResponse',
   },
   {
     operationId: 'PostCharactersAffiliation',
     status: '200',
     body: 'json',
-    schemaExport: 'PostCharactersAffiliationStatus200SuccessResponseSchema',
+    schemaExport: 'zPostCharactersAffiliationResponse',
   },
   {
     operationId: 'PostCharactersCharacterIdAssetsLocations',
     status: '200',
     body: 'json',
-    schemaExport: 'PostCharactersCharacterIdAssetsLocationsStatus200SuccessResponseSchema',
+    schemaExport: 'zPostCharactersCharacterIdAssetsLocationsResponse',
   },
   {
     operationId: 'PostCharactersCharacterIdAssetsNames',
     status: '200',
     body: 'json',
-    schemaExport: 'PostCharactersCharacterIdAssetsNamesStatus200SuccessResponseSchema',
+    schemaExport: 'zPostCharactersCharacterIdAssetsNamesResponse',
   },
   {
     operationId: 'PostCharactersCharacterIdContacts',
     status: '201',
     body: 'json',
-    schemaExport: 'PostCharactersCharacterIdContactsStatus201SuccessResponseSchema',
+    schemaExport: 'zPostCharactersCharacterIdContactsResponse',
   },
   {
     operationId: 'PostCharactersCharacterIdCspa',
     status: '201',
     body: 'json',
-    schemaExport: 'PostCharactersCharacterIdCspaStatus201SuccessResponseSchema',
+    schemaExport: 'zPostCharactersCharacterIdCspaResponse',
   },
   {
     operationId: 'PostCharactersCharacterIdFittings',
     status: '201',
     body: 'json',
-    schemaExport: 'PostCharactersCharacterIdFittingsStatus201SuccessResponseSchema',
+    schemaExport: 'zPostCharactersCharacterIdFittingsResponse',
   },
   {
     operationId: 'PostCharactersCharacterIdMail',
     status: '201',
     body: 'json',
-    schemaExport: 'PostCharactersCharacterIdMailStatus201SuccessResponseSchema',
+    schemaExport: 'zPostCharactersCharacterIdMailResponse',
   },
   {
     operationId: 'PostCharactersCharacterIdMailLabels',
     status: '201',
     body: 'json',
-    schemaExport: 'PostCharactersCharacterIdMailLabelsStatus201SuccessResponseSchema',
+    schemaExport: 'zPostCharactersCharacterIdMailLabelsResponse',
   },
   {
     operationId: 'PostCorporationsCorporationIdAssetsLocations',
     status: '200',
     body: 'json',
-    schemaExport: 'PostCorporationsCorporationIdAssetsLocationsStatus200SuccessResponseSchema',
+    schemaExport: 'zPostCorporationsCorporationIdAssetsLocationsResponse',
   },
   {
     operationId: 'PostCorporationsCorporationIdAssetsNames',
     status: '200',
     body: 'json',
-    schemaExport: 'PostCorporationsCorporationIdAssetsNamesStatus200SuccessResponseSchema',
+    schemaExport: 'zPostCorporationsCorporationIdAssetsNamesResponse',
   },
   {
     operationId: 'PostFleetsFleetIdWings',
     status: '201',
     body: 'json',
-    schemaExport: 'PostFleetsFleetIdWingsStatus201SuccessResponseSchema',
+    schemaExport: 'zPostFleetsFleetIdWingsResponse',
   },
   {
     operationId: 'PostFleetsFleetIdWingsWingIdSquads',
     status: '201',
     body: 'json',
-    schemaExport: 'PostFleetsFleetIdWingsWingIdSquadsStatus201SuccessResponseSchema',
+    schemaExport: 'zPostFleetsFleetIdWingsWingIdSquadsResponse',
   },
   {
     operationId: 'PostRoute',
     status: '200',
     body: 'json',
-    schemaExport: 'PostRouteStatus200SuccessResponseSchema',
+    schemaExport: 'zPostRouteResponse',
   },
   {
     operationId: 'PostUniverseIds',
     status: '200',
     body: 'json',
-    schemaExport: 'PostUniverseIdsStatus200SuccessResponseSchema',
+    schemaExport: 'zPostUniverseIdsResponse',
   },
   {
     operationId: 'PostUniverseNames',
     status: '200',
     body: 'json',
-    schemaExport: 'PostUniverseNamesStatus200SuccessResponseSchema',
+    schemaExport: 'zPostUniverseNamesResponse',
   },
 ] as const;
 const noContentResponseContracts = [
@@ -19003,133 +20022,133 @@ const noContentResponseContracts = [
     operationId: 'DeleteCharactersCharacterIdContacts',
     status: '204',
     body: 'none',
-    schemaExport: 'DeleteCharactersCharacterIdContactsStatus204SuccessResponseSchema',
+    schemaExport: 'zDeleteCharactersCharacterIdContactsResponse',
   },
   {
     operationId: 'DeleteCharactersCharacterIdFittingsFittingId',
     status: '204',
     body: 'none',
-    schemaExport: 'DeleteCharactersCharacterIdFittingsFittingIdStatus204SuccessResponseSchema',
+    schemaExport: 'zDeleteCharactersCharacterIdFittingsFittingIdResponse',
   },
   {
     operationId: 'DeleteCharactersCharacterIdMailLabelsLabelId',
     status: '204',
     body: 'none',
-    schemaExport: 'DeleteCharactersCharacterIdMailLabelsLabelIdStatus204SuccessResponseSchema',
+    schemaExport: 'zDeleteCharactersCharacterIdMailLabelsLabelIdResponse',
   },
   {
     operationId: 'DeleteCharactersCharacterIdMailMailId',
     status: '204',
     body: 'none',
-    schemaExport: 'DeleteCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema',
+    schemaExport: 'zDeleteCharactersCharacterIdMailMailIdResponse',
   },
   {
     operationId: 'DeleteFleetsFleetIdMembersMemberId',
     status: '204',
     body: 'none',
-    schemaExport: 'DeleteFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema',
+    schemaExport: 'zDeleteFleetsFleetIdMembersMemberIdResponse',
   },
   {
     operationId: 'DeleteFleetsFleetIdSquadsSquadId',
     status: '204',
     body: 'none',
-    schemaExport: 'DeleteFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema',
+    schemaExport: 'zDeleteFleetsFleetIdSquadsSquadIdResponse',
   },
   {
     operationId: 'DeleteFleetsFleetIdWingsWingId',
     status: '204',
     body: 'none',
-    schemaExport: 'DeleteFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema',
+    schemaExport: 'zDeleteFleetsFleetIdWingsWingIdResponse',
   },
   {
     operationId: 'GetContractsPublicBidsContractId',
     status: '204',
     body: 'none',
-    schemaExport: 'GetContractsPublicBidsContractIdStatus204SuccessResponseSchema',
+    schemaExport: 'zGetContractsPublicBidsContractIdResponse',
   },
   {
     operationId: 'GetContractsPublicItemsContractId',
     status: '204',
     body: 'none',
-    schemaExport: 'GetContractsPublicItemsContractIdStatus204SuccessResponseSchema',
+    schemaExport: 'zGetContractsPublicItemsContractIdResponse',
   },
   {
     operationId: 'PostFleetsFleetIdMembers',
     status: '204',
     body: 'none',
-    schemaExport: 'PostFleetsFleetIdMembersStatus204SuccessResponseSchema',
+    schemaExport: 'zPostFleetsFleetIdMembersResponse',
   },
   {
     operationId: 'PostUiAutopilotWaypoint',
     status: '204',
     body: 'none',
-    schemaExport: 'PostUiAutopilotWaypointStatus204SuccessResponseSchema',
+    schemaExport: 'zPostUiAutopilotWaypointResponse',
   },
   {
     operationId: 'PostUiOpenwindowContract',
     status: '204',
     body: 'none',
-    schemaExport: 'PostUiOpenwindowContractStatus204SuccessResponseSchema',
+    schemaExport: 'zPostUiOpenwindowContractResponse',
   },
   {
     operationId: 'PostUiOpenwindowInformation',
     status: '204',
     body: 'none',
-    schemaExport: 'PostUiOpenwindowInformationStatus204SuccessResponseSchema',
+    schemaExport: 'zPostUiOpenwindowInformationResponse',
   },
   {
     operationId: 'PostUiOpenwindowMarketdetails',
     status: '204',
     body: 'none',
-    schemaExport: 'PostUiOpenwindowMarketdetailsStatus204SuccessResponseSchema',
+    schemaExport: 'zPostUiOpenwindowMarketdetailsResponse',
   },
   {
     operationId: 'PostUiOpenwindowNewmail',
     status: '204',
     body: 'none',
-    schemaExport: 'PostUiOpenwindowNewmailStatus204SuccessResponseSchema',
+    schemaExport: 'zPostUiOpenwindowNewmailResponse',
   },
   {
     operationId: 'PutCharactersCharacterIdCalendarEventId',
     status: '204',
     body: 'none',
-    schemaExport: 'PutCharactersCharacterIdCalendarEventIdStatus204SuccessResponseSchema',
+    schemaExport: 'zPutCharactersCharacterIdCalendarEventIdResponse',
   },
   {
     operationId: 'PutCharactersCharacterIdContacts',
     status: '204',
     body: 'none',
-    schemaExport: 'PutCharactersCharacterIdContactsStatus204SuccessResponseSchema',
+    schemaExport: 'zPutCharactersCharacterIdContactsResponse',
   },
   {
     operationId: 'PutCharactersCharacterIdMailMailId',
     status: '204',
     body: 'none',
-    schemaExport: 'PutCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema',
+    schemaExport: 'zPutCharactersCharacterIdMailMailIdResponse',
   },
   {
     operationId: 'PutFleetsFleetId',
     status: '204',
     body: 'none',
-    schemaExport: 'PutFleetsFleetIdStatus204SuccessResponseSchema',
+    schemaExport: 'zPutFleetsFleetIdResponse',
   },
   {
     operationId: 'PutFleetsFleetIdMembersMemberId',
     status: '204',
     body: 'none',
-    schemaExport: 'PutFleetsFleetIdMembersMemberIdStatus204SuccessResponseSchema',
+    schemaExport: 'zPutFleetsFleetIdMembersMemberIdResponse',
   },
   {
     operationId: 'PutFleetsFleetIdSquadsSquadId',
     status: '204',
     body: 'none',
-    schemaExport: 'PutFleetsFleetIdSquadsSquadIdStatus204SuccessResponseSchema',
+    schemaExport: 'zPutFleetsFleetIdSquadsSquadIdResponse',
   },
   {
     operationId: 'PutFleetsFleetIdWingsWingId',
     status: '204',
     body: 'none',
-    schemaExport: 'PutFleetsFleetIdWingsWingIdStatus204SuccessResponseSchema',
+    schemaExport: 'zPutFleetsFleetIdWingsWingIdResponse',
   },
 ] as const;
 
@@ -19171,10 +20190,20 @@ describe('generated operation contracts', () => {
     expect(manifest.authentication).toEqual(contract.authentication);
     expect(manifest.requestBody === null).toBe(contract.requestBody === null);
     expect(manifest.requestBody?.required).toBe(contract.requestBody?.required);
-    expect(manifest.requestSchema.export).toBe(contract.requestSchemaExport);
+    expect(manifest.requestType.export).toBe(contract.requestTypeExport);
+    expect(manifest.requestType.module).toBe('@evespace/esi-client/types');
+    expect(manifest.requestSchemas.map(({ schema }) => schema.export)).toEqual(
+      contract.requestSchemaExports,
+    );
+    expect(
+      manifest.requestSchemas.every(({ schema }) => schema.module === '@evespace/esi-client/zod'),
+    ).toBe(true);
+    expect(manifest.responseType.export).toBe(contract.responseTypeExport);
+    expect(manifest.responseType.module).toBe('@evespace/esi-client/types');
 
     expect(runtime.requestSchema.parse(contract.arguments)).toEqual(contract.arguments);
-    expect(constructOperationRequest(runtime.transport, contract.arguments)).toEqual(
+    const transport = { ...runtime.transport, requestSchema: undefined };
+    expect(constructOperationRequest(transport, contract.arguments)).toEqual(
       contract.expectedRequest,
     );
 
@@ -19188,6 +20217,9 @@ describe('generated operation contracts', () => {
         schemaExport: schema.export,
       })),
     ).toEqual(contract.responses);
+    expect(
+      manifest.responses.every(({ schema }) => schema.module === '@evespace/esi-client/zod'),
+    ).toBe(true);
 
     for (const response of contract.responses) {
       const transportResponse = runtime.transport.successResponses.find(
@@ -19229,7 +20261,7 @@ describe('generated operation contracts', () => {
       expect(response.body).toBe('none');
       expect(schema.parse(undefined)).toBeUndefined();
       expect(schema.safeParse(null).success).toBe(false);
-      expect(runtime.responseSchema.parse(undefined)).toBeUndefined();
+      expect(runtime.responseSchema).toBe(schema);
     },
   );
 });

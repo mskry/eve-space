@@ -4,7 +4,8 @@ export default defineConfig({
   entry: {
     root: 'src/index.ts',
     'operations/index': 'src/operations.ts',
-    schemas: 'src/generated/schemas/index.ts',
+    'types/index': 'src/types.ts',
+    zod: 'src/zod.ts',
     'domains/access-list': 'src/generated/domains/access-list.ts',
     'domains/activities': 'src/generated/domains/activities.ts',
     'domains/alliance': 'src/generated/domains/alliance.ts',

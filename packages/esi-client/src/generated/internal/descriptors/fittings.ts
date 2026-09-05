@@ -4,22 +4,37 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  DeleteCharactersCharacterIdFittingsFittingIdData,
+  DeleteCharactersCharacterIdFittingsFittingIdResponse,
+  GetCharactersCharacterIdFittingsData,
+  GetCharactersCharacterIdFittingsResponse,
+  PostCharactersCharacterIdFittingsData,
+  PostCharactersCharacterIdFittingsResponse,
+} from '../../types.gen.js';
 import {
-  DeleteCharactersCharacterIdFittingsFittingIdRequestSchema,
-  DeleteCharactersCharacterIdFittingsFittingIdStatus204SuccessResponseSchema,
-  GetCharactersCharacterIdFittingsRequestSchema,
-  GetCharactersCharacterIdFittingsStatus200SuccessResponseSchema,
-  PostCharactersCharacterIdFittingsRequestSchema,
-  PostCharactersCharacterIdFittingsStatus201SuccessResponseSchema,
-  type DeleteCharactersCharacterIdFittingsFittingIdInput,
-  type DeleteCharactersCharacterIdFittingsFittingIdOutput,
-  type GetCharactersCharacterIdFittingsInput,
-  type GetCharactersCharacterIdFittingsOutput,
-  type PostCharactersCharacterIdFittingsInput,
-  type PostCharactersCharacterIdFittingsOutput,
-} from '../../schemas/operations/fittings.js';
+  zDeleteCharactersCharacterIdFittingsFittingIdHeaders,
+  zDeleteCharactersCharacterIdFittingsFittingIdPath,
+  zDeleteCharactersCharacterIdFittingsFittingIdResponse,
+  zGetCharactersCharacterIdFittingsHeaders,
+  zGetCharactersCharacterIdFittingsPath,
+  zGetCharactersCharacterIdFittingsResponse,
+  zPostCharactersCharacterIdFittingsBody,
+  zPostCharactersCharacterIdFittingsHeaders,
+  zPostCharactersCharacterIdFittingsPath,
+  zPostCharactersCharacterIdFittingsResponse,
+} from '../../zod.gen.js';
 
-export const PostCharactersCharacterIdFittingsDescriptor: OperationExecutionDescriptor<PostCharactersCharacterIdFittingsInput, PostCharactersCharacterIdFittingsOutput> = {
+export const PostCharactersCharacterIdFittingsRequestSchema: z.ZodType<OperationArguments<PostCharactersCharacterIdFittingsData>> = composeOperationRequestSchema<OperationArguments<PostCharactersCharacterIdFittingsData>>({
+  headers: { required: false, schema: zPostCharactersCharacterIdFittingsHeaders },
+  path: { required: true, schema: zPostCharactersCharacterIdFittingsPath },
+  body: { required: true, schema: zPostCharactersCharacterIdFittingsBody },
+});
+
+export const PostCharactersCharacterIdFittingsDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersCharacterIdFittingsData>, PostCharactersCharacterIdFittingsResponse> = {
   operationId: "PostCharactersCharacterIdFittings",
   method: "POST",
   path: "/characters/{character_id}/fittings",
@@ -33,12 +48,17 @@ export const PostCharactersCharacterIdFittingsDescriptor: OperationExecutionDesc
   requestSchema: PostCharactersCharacterIdFittingsRequestSchema,
   authentication: { scopes: ["esi-fittings.write_fittings.v1"] },
   successResponses: [
-    { status: 201, body: 'json', schema: PostCharactersCharacterIdFittingsStatus201SuccessResponseSchema },
+    { status: 201, body: 'json', schema: zPostCharactersCharacterIdFittingsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const DeleteCharactersCharacterIdFittingsFittingIdDescriptor: OperationExecutionDescriptor<DeleteCharactersCharacterIdFittingsFittingIdInput, DeleteCharactersCharacterIdFittingsFittingIdOutput> = {
+export const DeleteCharactersCharacterIdFittingsFittingIdRequestSchema: z.ZodType<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>> = composeOperationRequestSchema<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>>({
+  headers: { required: false, schema: zDeleteCharactersCharacterIdFittingsFittingIdHeaders },
+  path: { required: true, schema: zDeleteCharactersCharacterIdFittingsFittingIdPath },
+});
+
+export const DeleteCharactersCharacterIdFittingsFittingIdDescriptor: OperationExecutionDescriptor<OperationArguments<DeleteCharactersCharacterIdFittingsFittingIdData>, DeleteCharactersCharacterIdFittingsFittingIdResponse> = {
   operationId: "DeleteCharactersCharacterIdFittingsFittingId",
   method: "DELETE",
   path: "/characters/{character_id}/fittings/{fitting_id}",
@@ -58,7 +78,12 @@ export const DeleteCharactersCharacterIdFittingsFittingIdDescriptor: OperationEx
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdFittingsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdFittingsInput, GetCharactersCharacterIdFittingsOutput> = {
+export const GetCharactersCharacterIdFittingsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdFittingsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdFittingsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdFittingsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdFittingsPath },
+});
+
+export const GetCharactersCharacterIdFittingsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdFittingsData>, GetCharactersCharacterIdFittingsResponse> = {
   operationId: "GetCharactersCharacterIdFittings",
   method: "GET",
   path: "/characters/{character_id}/fittings",
@@ -72,7 +97,7 @@ export const GetCharactersCharacterIdFittingsDescriptor: OperationExecutionDescr
   requestSchema: GetCharactersCharacterIdFittingsRequestSchema,
   authentication: { scopes: ["esi-fittings.read_fittings.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdFittingsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdFittingsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

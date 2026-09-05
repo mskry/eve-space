@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersAccessListsDetailDescriptor,
@@ -17,11 +18,11 @@ import type {
   GetCharactersAccessListsListingOptions,
 } from './access-list-contract.js';
 import type {
-  GetCharactersAccessListsDetailInput,
-  GetCharactersAccessListsDetailOutput,
-  GetCharactersAccessListsListingInput,
-  GetCharactersAccessListsListingOutput,
-} from '../../schemas/operations/access-list.js';
+  GetCharactersAccessListsDetailData,
+  GetCharactersAccessListsDetailResponse,
+  GetCharactersAccessListsListingData,
+  GetCharactersAccessListsListingResponse,
+} from '../../types.gen.js';
 
 class AccessListDomainClientWithMetadataImplementation implements AccessListDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -31,13 +32,13 @@ class AccessListDomainClientWithMetadataImplementation implements AccessListDoma
     Object.freeze(this);
   }
 
-  get(characterId: NonNullable<GetCharactersAccessListsDetailInput['path']>["character_id"], accessListId: NonNullable<GetCharactersAccessListsDetailInput['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<EsiResponse<GetCharactersAccessListsDetailOutput>> {
-    const arguments_: GetCharactersAccessListsDetailInput = { path: { "character_id": characterId, "access_list_id": accessListId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  get(characterId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["character_id"], accessListId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<EsiResponse<GetCharactersAccessListsDetailResponse>> {
+    const arguments_: OperationArguments<GetCharactersAccessListsDetailData> = { path: { "character_id": characterId, "access_list_id": accessListId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersAccessListsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  list(characterId: NonNullable<GetCharactersAccessListsListingInput['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<EsiResponse<GetCharactersAccessListsListingOutput>> {
-    const arguments_: GetCharactersAccessListsListingInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  list(characterId: NonNullable<OperationArguments<GetCharactersAccessListsListingData>['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<EsiResponse<GetCharactersAccessListsListingResponse>> {
+    const arguments_: OperationArguments<GetCharactersAccessListsListingData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersAccessListsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -50,11 +51,11 @@ class AccessListDomainClientImplementation implements AccessListDomainClient {
     Object.freeze(this);
   }
 
-  get(characterId: NonNullable<GetCharactersAccessListsDetailInput['path']>["character_id"], accessListId: NonNullable<GetCharactersAccessListsDetailInput['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<GetCharactersAccessListsDetailOutput> {
+  get(characterId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["character_id"], accessListId: NonNullable<OperationArguments<GetCharactersAccessListsDetailData>['path']>["access_list_id"], options?: GetCharactersAccessListsDetailOptions): Promise<GetCharactersAccessListsDetailResponse> {
     return this.#metadata.get(characterId, accessListId, options).then((response) => response.data);
   }
 
-  list(characterId: NonNullable<GetCharactersAccessListsListingInput['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<GetCharactersAccessListsListingOutput> {
+  list(characterId: NonNullable<OperationArguments<GetCharactersAccessListsListingData>['path']>["character_id"], options?: GetCharactersAccessListsListingOptions): Promise<GetCharactersAccessListsListingResponse> {
     return this.#metadata.list(characterId, options).then((response) => response.data);
   }
 

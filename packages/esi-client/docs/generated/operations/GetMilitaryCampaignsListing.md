@@ -16,26 +16,28 @@ List military campaigns
 - Domain import: `@evespace/esi-client/domains/military-campaigns`
 - Domain index: [militaryCampaigns](../domains/military-campaigns.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMilitaryCampaignsClient } from '@evespace/esi-client/domains/military-campaigns';
+import type { GetMilitaryCampaignsListingResponse } from '@evespace/esi-client/types';
 
 const client = createMilitaryCampaignsClient();
 
-const data = await client.listCampaigns();
+const data: GetMilitaryCampaignsListingResponse = await client.listCampaigns();
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetMilitaryCampaignsListingResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.militaryCampaigns.listCampaigns();
+const data: GetMilitaryCampaignsListingResponse = await client.militaryCampaigns.listCampaigns();
 ```
 
 ## Generic-execution snippet
@@ -43,12 +45,14 @@ const data = await client.militaryCampaigns.listCampaigns();
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetMilitaryCampaignsListingData, GetMilitaryCampaignsListingResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const arguments_: CallOperationArguments<'GetMilitaryCampaignsListing'> = {};
 
 const response = await client.callOperation('GetMilitaryCampaignsListing', arguments_);
+const data: GetMilitaryCampaignsListingResponse = response.data;
 ```
 
 ## Parameters
@@ -61,14 +65,16 @@ const response = await client.callOperation('GetMilitaryCampaignsListing', argum
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetMilitaryCampaignsListingRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetMilitaryCampaignsListingData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetMilitaryCampaignsListingHeaders`.
+- Response type: `@evespace/esi-client/types` export `GetMilitaryCampaignsListingResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.militaryCampaigns.withMetadata().listCampaigns(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetMilitaryCampaignsListingStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetMilitaryCampaignsListingResponse` | OK |
 
 ## Authentication
 
@@ -99,6 +105,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

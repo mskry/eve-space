@@ -9,6 +9,8 @@ import {
   operationManifest,
   operationRegistry,
   type ExecutableOperationRegistry,
+  type OperationParameterDescriptor,
+  type OperationSuccessResponse,
   type SerializableOperationManifest,
 } from '../src/operations.js';
 
@@ -61,9 +63,12 @@ describe('generated operation registry and manifest', () => {
     expect(registryIds).toEqual(expectedIds);
     expect(manifestIds).toEqual(expectedIds);
     expect(new Set(manifestIds).size).toBe(operationCount);
+    expect(operationManifest.schemaVersion).toBe(2);
 
     for (const contract of operationManifest.operations) {
-      const runtime = operationRegistry[contract.operationId];
+      const runtime = Object.entries(operationRegistry).find(
+        ([operationId]) => operationId === contract.operationId,
+      )?.[1];
       if (runtime === undefined) throw new Error(`Missing registry entry: ${contract.operationId}`);
 
       expect(runtime.transport.operationId).toBe(contract.operationId);
@@ -93,6 +98,20 @@ describe('generated operation registry and manifest', () => {
         reviewedReadLikePost ? 'string' : 'undefined',
       );
       expect(runtime.requestSchema).toBe(runtime.transport.requestSchema);
+      expect(contract.requestType).toEqual({
+        export: `${contract.operationId}Data`,
+        module: '@evespace/esi-client/types',
+      });
+      expect(contract.responseType).toEqual({
+        export: `${contract.operationId}Response`,
+        module: '@evespace/esi-client/types',
+      });
+      expect(
+        contract.requestSchemas.every(({ schema }) => schema.module === '@evespace/esi-client/zod'),
+      ).toBe(true);
+      expect(
+        contract.responses.every(({ schema }) => schema.module === '@evespace/esi-client/zod'),
+      ).toBe(true);
       expect(runtime.transport.authentication?.scopes ?? []).toEqual(
         contract.authentication.scopes,
       );
@@ -101,10 +120,10 @@ describe('generated operation registry and manifest', () => {
         contract.transport.compatibilityDateOverride,
       );
       expect(
-        runtime.transport.parameters.map(({ name, placement, required }) => ({
-          name,
-          placement,
-          required,
+        runtime.transport.parameters.map((parameter: OperationParameterDescriptor) => ({
+          name: parameter.name,
+          placement: parameter.placement,
+          required: parameter.required,
         })),
       ).toEqual(
         contract.parameters.map(({ name, placement, required }) => ({ name, placement, required })),
@@ -117,7 +136,7 @@ describe('generated operation registry and manifest', () => {
         const schema = runtime.responseSchemasByStatus[response.status];
         expect(schema).toBeDefined();
         const transportResponse = runtime.transport.successResponses.find(
-          ({ status }) => String(status) === response.status,
+          (candidate: OperationSuccessResponse) => String(candidate.status) === response.status,
         );
         expect(transportResponse?.body).toBe(response.body);
         if (transportResponse?.body === 'json' && transportResponse.schema !== schema) {
@@ -136,6 +155,48 @@ describe('generated operation registry and manifest', () => {
     expect(serialized).not.toContain('super-secret-operation-registry-test-token');
     expect(JSON.parse(serialized)).toEqual(operationManifest);
     assertFrozenJsonValue(operationManifest, '$', new WeakSet());
+  });
+
+  it('preserves the normalized offset-only pagination contract', async () => {
+    const model = await readNormalizedModel();
+    const offsetOperations = model.operations.filter(
+      ({ pagination }) => pagination.kind === 'offset',
+    );
+    const unpaginatedOperations = model.operations.filter(
+      ({ pagination }) => pagination.kind === 'none',
+    );
+    const cursorParameterOperations = model.operations.filter(({ parameters }) =>
+      parameters.some(({ name }) => name === 'before' || name === 'after'),
+    );
+
+    expect(offsetOperations).toHaveLength(40);
+    expect(unpaginatedOperations).toHaveLength(193);
+    expect(cursorParameterOperations).toHaveLength(12);
+    for (const operation of offsetOperations) {
+      expect(operation.pagination).toEqual({
+        kind: 'offset',
+        requestParameters: ['page'],
+        responseHeaders: ['x-pages'],
+      });
+    }
+    for (const operation of cursorParameterOperations) {
+      expect(operation.pagination).toEqual({
+        kind: 'none',
+        requestParameters: [],
+        responseHeaders: [],
+      });
+    }
+    expect(
+      operationManifest.operations.map(({ operationId, pagination }) => ({
+        operationId,
+        pagination,
+      })),
+    ).toEqual(
+      model.operations.map(({ operationId, pagination }) => ({
+        operationId,
+        pagination,
+      })),
+    );
   });
 });
 

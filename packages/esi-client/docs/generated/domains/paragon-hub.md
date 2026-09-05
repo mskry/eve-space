@@ -25,6 +25,7 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createParagonHubClient } from '@evespace/esi-client/domains/paragon-hub';
+import type { GetCharactersParagonHubSkinrResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -33,7 +34,7 @@ const client = createParagonHubClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.listPostedListings(characterId);
+const data: GetCharactersParagonHubSkinrResponse = await client.listPostedListings(characterId);
 ```
 
 ## Aggregate client
@@ -42,6 +43,7 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersParagonHubSkinrResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -50,7 +52,7 @@ const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.paragonHub.listPostedListings(characterId);
+const data: GetCharactersParagonHubSkinrResponse = await client.paragonHub.listPostedListings(characterId);
 ```
 
 ## Shared concepts

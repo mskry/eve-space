@@ -16,12 +16,13 @@ Get Mercenary Den details
 - Domain import: `@evespace/esi-client/domains/structures`
 - Domain index: [structures](../domains/structures.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createStructuresClient } from '@evespace/esi-client/domains/structures';
+import type { GetCharactersStructuresMercenaryDensDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,13 +32,14 @@ const client = createStructuresClient({ token: accessToken });
 const characterId = 90000001;
 const mercenaryDenId = 1000000000001;
 
-const data = await client.getMercenaryDen(characterId, mercenaryDenId);
+const data: GetCharactersStructuresMercenaryDensDetailResponse = await client.getMercenaryDen(characterId, mercenaryDenId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCharactersStructuresMercenaryDensDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 const characterId = 90000001;
 const mercenaryDenId = 1000000000001;
 
-const data = await client.structures.getMercenaryDen(characterId, mercenaryDenId);
+const data: GetCharactersStructuresMercenaryDensDetailResponse = await client.structures.getMercenaryDen(characterId, mercenaryDenId);
 ```
 
 ## Generic-execution snippet
@@ -55,6 +57,7 @@ const data = await client.structures.getMercenaryDen(characterId, mercenaryDenId
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCharactersStructuresMercenaryDensDetailData, GetCharactersStructuresMercenaryDensDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -67,6 +70,7 @@ const mercenaryDenId = 1000000000001;
 const arguments_: CallOperationArguments<'GetCharactersStructuresMercenaryDensDetail'> = { path: { "character_id": characterId, "mercenary_den_id": mercenaryDenId } };
 
 const response = await client.callOperation('GetCharactersStructuresMercenaryDensDetail', arguments_);
+const data: GetCharactersStructuresMercenaryDensDetailResponse = response.data;
 ```
 
 ## Parameters
@@ -81,14 +85,16 @@ const response = await client.callOperation('GetCharactersStructuresMercenaryDen
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCharactersStructuresMercenaryDensDetailRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCharactersStructuresMercenaryDensDetailData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCharactersStructuresMercenaryDensDetailHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCharactersStructuresMercenaryDensDetailPath`.
+- Response type: `@evespace/esi-client/types` export `GetCharactersStructuresMercenaryDensDetailResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.structures.withMetadata().getMercenaryDen(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCharactersStructuresMercenaryDensDetailStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCharactersStructuresMercenaryDensDetailResponse` | OK |
 
 ## Authentication
 
@@ -120,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

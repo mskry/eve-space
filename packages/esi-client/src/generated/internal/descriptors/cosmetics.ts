@@ -4,22 +4,35 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersCosmeticsSkinrComponentsData,
+  GetCharactersCosmeticsSkinrComponentsResponse,
+  GetCharactersCosmeticsSkinrData,
+  GetCharactersCosmeticsSkinrResponse,
+  GetCosmeticsSkinrData,
+  GetCosmeticsSkinrResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersCosmeticsSkinrComponentsRequestSchema,
-  GetCharactersCosmeticsSkinrComponentsStatus200SuccessResponseSchema,
-  GetCharactersCosmeticsSkinrRequestSchema,
-  GetCharactersCosmeticsSkinrStatus200SuccessResponseSchema,
-  GetCosmeticsSkinrRequestSchema,
-  GetCosmeticsSkinrStatus200SuccessResponseSchema,
-  type GetCharactersCosmeticsSkinrComponentsInput,
-  type GetCharactersCosmeticsSkinrComponentsOutput,
-  type GetCharactersCosmeticsSkinrInput,
-  type GetCharactersCosmeticsSkinrOutput,
-  type GetCosmeticsSkinrInput,
-  type GetCosmeticsSkinrOutput,
-} from '../../schemas/operations/cosmetics.js';
+  zGetCharactersCosmeticsSkinrComponentsHeaders,
+  zGetCharactersCosmeticsSkinrComponentsPath,
+  zGetCharactersCosmeticsSkinrComponentsResponse,
+  zGetCharactersCosmeticsSkinrHeaders,
+  zGetCharactersCosmeticsSkinrPath,
+  zGetCharactersCosmeticsSkinrResponse,
+  zGetCosmeticsSkinrHeaders,
+  zGetCosmeticsSkinrPath,
+  zGetCosmeticsSkinrResponse,
+} from '../../zod.gen.js';
 
-export const GetCosmeticsSkinrDescriptor: OperationExecutionDescriptor<GetCosmeticsSkinrInput, GetCosmeticsSkinrOutput> = {
+export const GetCosmeticsSkinrRequestSchema: z.ZodType<OperationArguments<GetCosmeticsSkinrData>> = composeOperationRequestSchema<OperationArguments<GetCosmeticsSkinrData>>({
+  headers: { required: false, schema: zGetCosmeticsSkinrHeaders },
+  path: { required: true, schema: zGetCosmeticsSkinrPath },
+});
+
+export const GetCosmeticsSkinrDescriptor: OperationExecutionDescriptor<OperationArguments<GetCosmeticsSkinrData>, GetCosmeticsSkinrResponse> = {
   operationId: "GetCosmeticsSkinr",
   method: "GET",
   path: "/cosmetics/skinr/{skinr_id}",
@@ -33,12 +46,17 @@ export const GetCosmeticsSkinrDescriptor: OperationExecutionDescriptor<GetCosmet
   requestSchema: GetCosmeticsSkinrRequestSchema,
   authentication: null,
   successResponses: [
-    { status: 200, body: 'json', schema: GetCosmeticsSkinrStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCosmeticsSkinrResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCosmeticsSkinrComponentsDescriptor: OperationExecutionDescriptor<GetCharactersCosmeticsSkinrComponentsInput, GetCharactersCosmeticsSkinrComponentsOutput> = {
+export const GetCharactersCosmeticsSkinrComponentsRequestSchema: z.ZodType<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>>({
+  headers: { required: false, schema: zGetCharactersCosmeticsSkinrComponentsHeaders },
+  path: { required: true, schema: zGetCharactersCosmeticsSkinrComponentsPath },
+});
+
+export const GetCharactersCosmeticsSkinrComponentsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCosmeticsSkinrComponentsData>, GetCharactersCosmeticsSkinrComponentsResponse> = {
   operationId: "GetCharactersCosmeticsSkinrComponents",
   method: "GET",
   path: "/characters/{character_id}/cosmetics/skinr/components",
@@ -52,12 +70,17 @@ export const GetCharactersCosmeticsSkinrComponentsDescriptor: OperationExecution
   requestSchema: GetCharactersCosmeticsSkinrComponentsRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCosmeticsSkinrComponentsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCosmeticsSkinrComponentsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCosmeticsSkinrDescriptor: OperationExecutionDescriptor<GetCharactersCosmeticsSkinrInput, GetCharactersCosmeticsSkinrOutput> = {
+export const GetCharactersCosmeticsSkinrRequestSchema: z.ZodType<OperationArguments<GetCharactersCosmeticsSkinrData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCosmeticsSkinrData>>({
+  headers: { required: false, schema: zGetCharactersCosmeticsSkinrHeaders },
+  path: { required: true, schema: zGetCharactersCosmeticsSkinrPath },
+});
+
+export const GetCharactersCosmeticsSkinrDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCosmeticsSkinrData>, GetCharactersCosmeticsSkinrResponse> = {
   operationId: "GetCharactersCosmeticsSkinr",
   method: "GET",
   path: "/characters/{character_id}/cosmetics/skinr",
@@ -71,7 +94,7 @@ export const GetCharactersCosmeticsSkinrDescriptor: OperationExecutionDescriptor
   requestSchema: GetCharactersCosmeticsSkinrRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCosmeticsSkinrStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCosmeticsSkinrResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

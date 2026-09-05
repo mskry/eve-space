@@ -16,13 +16,13 @@ Add contacts
 - Domain import: `@evespace/esi-client/domains/contacts`
 - Domain index: [contacts](../domains/contacts.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createContactsClient } from '@evespace/esi-client/domains/contacts';
-import type { PostCharactersCharacterIdContactsOptions } from '@evespace/esi-client/domains/contacts';
+import type { PostCharactersCharacterIdContactsResponse, PostCharactersCharacterIdContactsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -30,17 +30,17 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = createContactsClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdContactsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdContactsData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.addCharacterContacts(characterId, { standing: 12345, body: requestBody });
+const data: PostCharactersCharacterIdContactsResponse = await client.addCharacterContacts(characterId, { standing: 12345, body: requestBody });
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
-import type { PostCharactersCharacterIdContactsOptions } from '@evespace/esi-client/domains/contacts';
+import type { PostCharactersCharacterIdContactsResponse, PostCharactersCharacterIdContactsData } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -48,10 +48,10 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<PostCharactersCharacterIdContactsOptions['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdContactsData['body']>;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.contacts.addCharacterContacts(characterId, { standing: 12345, body: requestBody });
+const data: PostCharactersCharacterIdContactsResponse = await client.contacts.addCharacterContacts(characterId, { standing: 12345, body: requestBody });
 ```
 
 ## Generic-execution snippet
@@ -59,6 +59,7 @@ const data = await client.contacts.addCharacterContacts(characterId, { standing:
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { PostCharactersCharacterIdContactsData, PostCharactersCharacterIdContactsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -66,7 +67,7 @@ if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this autho
 const client = new EsiClient({ token: accessToken, allowGenericMutations: true });
 
 const characterId = 90000001;
-declare const requestBody: NonNullable<CallOperationArguments<'PostCharactersCharacterIdContacts'>['body']>;
+declare const requestBody: NonNullable<PostCharactersCharacterIdContactsData['body']>;
 
 const arguments_: CallOperationArguments<'PostCharactersCharacterIdContacts'> = { path: { "character_id": characterId }, query: { "standing": 12345 }, body: requestBody };
 
@@ -74,6 +75,7 @@ const arguments_: CallOperationArguments<'PostCharactersCharacterIdContacts'> = 
 const response = await client.callOperation('PostCharactersCharacterIdContacts', arguments_, {
   confirmMutation: true,
 });
+const data: PostCharactersCharacterIdContactsResponse = response.data;
 ```
 
 ## Parameters
@@ -91,14 +93,16 @@ const response = await client.callOperation('PostCharactersCharacterIdContacts',
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `PostCharactersCharacterIdContactsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `PostCharactersCharacterIdContactsData`
+- Request-layer schemas: `body` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdContactsBody`; `headers` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdContactsHeaders`; `path` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdContactsPath`; `query` uses `@evespace/esi-client/zod` export `zPostCharactersCharacterIdContactsQuery`.
+- Response type: `@evespace/esi-client/types` export `PostCharactersCharacterIdContactsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.contacts.withMetadata().addCharacterContacts(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `201` | json | `@evespace/esi-client/schemas` | `PostCharactersCharacterIdContactsStatus201SuccessResponseSchema` | Created |
+| `201` | json | `@evespace/esi-client/zod` | `zPostCharactersCharacterIdContactsResponse` | Created |
 
 ## Authentication
 
@@ -133,6 +137,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

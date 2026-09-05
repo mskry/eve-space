@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createClonesClient } from '@evespace/esi-client/domains/clones';
+import type { GetCharactersCharacterIdClonesResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createClonesClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.getState(characterId);
+const data: GetCharactersCharacterIdClonesResponse = await client.getState(characterId);

@@ -4,18 +4,30 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  GetCharactersAccessListsDetailData,
+  GetCharactersAccessListsDetailResponse,
+  GetCharactersAccessListsListingData,
+  GetCharactersAccessListsListingResponse,
+} from '../../types.gen.js';
 import {
-  GetCharactersAccessListsDetailRequestSchema,
-  GetCharactersAccessListsDetailStatus200SuccessResponseSchema,
-  GetCharactersAccessListsListingRequestSchema,
-  GetCharactersAccessListsListingStatus200SuccessResponseSchema,
-  type GetCharactersAccessListsDetailInput,
-  type GetCharactersAccessListsDetailOutput,
-  type GetCharactersAccessListsListingInput,
-  type GetCharactersAccessListsListingOutput,
-} from '../../schemas/operations/access-list.js';
+  zGetCharactersAccessListsDetailHeaders,
+  zGetCharactersAccessListsDetailPath,
+  zGetCharactersAccessListsDetailResponse,
+  zGetCharactersAccessListsListingHeaders,
+  zGetCharactersAccessListsListingPath,
+  zGetCharactersAccessListsListingResponse,
+} from '../../zod.gen.js';
 
-export const GetCharactersAccessListsDetailDescriptor: OperationExecutionDescriptor<GetCharactersAccessListsDetailInput, GetCharactersAccessListsDetailOutput> = {
+export const GetCharactersAccessListsDetailRequestSchema: z.ZodType<OperationArguments<GetCharactersAccessListsDetailData>> = composeOperationRequestSchema<OperationArguments<GetCharactersAccessListsDetailData>>({
+  headers: { required: false, schema: zGetCharactersAccessListsDetailHeaders },
+  path: { required: true, schema: zGetCharactersAccessListsDetailPath },
+});
+
+export const GetCharactersAccessListsDetailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersAccessListsDetailData>, GetCharactersAccessListsDetailResponse> = {
   operationId: "GetCharactersAccessListsDetail",
   method: "GET",
   path: "/characters/{character_id}/access-lists/{access_list_id}",
@@ -30,12 +42,17 @@ export const GetCharactersAccessListsDetailDescriptor: OperationExecutionDescrip
   requestSchema: GetCharactersAccessListsDetailRequestSchema,
   authentication: { scopes: ["esi-access.read_lists.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersAccessListsDetailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersAccessListsDetailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersAccessListsListingDescriptor: OperationExecutionDescriptor<GetCharactersAccessListsListingInput, GetCharactersAccessListsListingOutput> = {
+export const GetCharactersAccessListsListingRequestSchema: z.ZodType<OperationArguments<GetCharactersAccessListsListingData>> = composeOperationRequestSchema<OperationArguments<GetCharactersAccessListsListingData>>({
+  headers: { required: false, schema: zGetCharactersAccessListsListingHeaders },
+  path: { required: true, schema: zGetCharactersAccessListsListingPath },
+});
+
+export const GetCharactersAccessListsListingDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersAccessListsListingData>, GetCharactersAccessListsListingResponse> = {
   operationId: "GetCharactersAccessListsListing",
   method: "GET",
   path: "/characters/{character_id}/access-lists",
@@ -49,7 +66,7 @@ export const GetCharactersAccessListsListingDescriptor: OperationExecutionDescri
   requestSchema: GetCharactersAccessListsListingRequestSchema,
   authentication: { scopes: ["esi-access.read_lists.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersAccessListsListingStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersAccessListsListingResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };

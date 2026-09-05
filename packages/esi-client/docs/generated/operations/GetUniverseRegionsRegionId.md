@@ -16,30 +16,32 @@ Get region information
 - Domain import: `@evespace/esi-client/domains/universe`
 - Domain index: [universe](../domains/universe.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createUniverseClient } from '@evespace/esi-client/domains/universe';
+import type { GetUniverseRegionsRegionIdResponse } from '@evespace/esi-client/types';
 
 const client = createUniverseClient();
 
 const regionId = 10000002;
 
-const data = await client.getRegion(regionId);
+const data: GetUniverseRegionsRegionIdResponse = await client.getRegion(regionId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetUniverseRegionsRegionIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const regionId = 10000002;
 
-const data = await client.universe.getRegion(regionId);
+const data: GetUniverseRegionsRegionIdResponse = await client.universe.getRegion(regionId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.universe.getRegion(regionId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetUniverseRegionsRegionIdData, GetUniverseRegionsRegionIdResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const regionId = 10000002;
 const arguments_: CallOperationArguments<'GetUniverseRegionsRegionId'> = { path: { "region_id": regionId } };
 
 const response = await client.callOperation('GetUniverseRegionsRegionId', arguments_);
+const data: GetUniverseRegionsRegionIdResponse = response.data;
 ```
 
 ## Parameters
@@ -68,14 +72,16 @@ const response = await client.callOperation('GetUniverseRegionsRegionId', argume
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetUniverseRegionsRegionIdRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetUniverseRegionsRegionIdData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetUniverseRegionsRegionIdHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetUniverseRegionsRegionIdPath`.
+- Response type: `@evespace/esi-client/types` export `GetUniverseRegionsRegionIdResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.universe.withMetadata().getRegion(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetUniverseRegionsRegionIdStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetUniverseRegionsRegionIdResponse` | OK |
 
 ## Authentication
 
@@ -106,6 +112,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

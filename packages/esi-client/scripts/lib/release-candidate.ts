@@ -27,7 +27,7 @@ export async function verifyReleaseCandidate({
   }
 
   const digestSource = await readFile(digestPath, 'utf8');
-  const match = /^([a-f0-9]{64})  ([^\r\n]+)\n?$/u.exec(digestSource);
+  const match = /^([a-f0-9]{64}) {2}([^\r\n]+)\n?$/u.exec(digestSource);
   if (match === null || match[2] !== basename(tarballPath)) {
     throw new Error('Release candidate digest is malformed or names a different file');
   }
@@ -46,7 +46,7 @@ export async function verifyReleaseCandidate({
       throw new Error(`Release candidate package name must be ${releasePackageName}`);
     }
     if (typeof packageJson.version !== 'string') {
-      throw new Error('Release candidate package version must be a string');
+      throw new TypeError('Release candidate package version must be a string');
     }
     if (packageJson.version !== expectedVersion) {
       throw new Error(

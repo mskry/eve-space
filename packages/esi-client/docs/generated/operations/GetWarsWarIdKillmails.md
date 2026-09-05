@@ -16,30 +16,32 @@ List kills for a war
 - Domain import: `@evespace/esi-client/domains/wars`
 - Domain index: [wars](../domains/wars.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createWarsClient } from '@evespace/esi-client/domains/wars';
+import type { GetWarsWarIdKillmailsResponse } from '@evespace/esi-client/types';
 
 const client = createWarsClient();
 
 const warId = 12345;
 
-const data = await client.listKillmails(warId);
+const data: GetWarsWarIdKillmailsResponse = await client.listKillmails(warId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetWarsWarIdKillmailsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const warId = 12345;
 
-const data = await client.wars.listKillmails(warId);
+const data: GetWarsWarIdKillmailsResponse = await client.wars.listKillmails(warId);
 ```
 
 ## Generic-execution snippet
@@ -47,6 +49,7 @@ const data = await client.wars.listKillmails(warId);
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetWarsWarIdKillmailsData, GetWarsWarIdKillmailsResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -55,6 +58,7 @@ const warId = 12345;
 const arguments_: CallOperationArguments<'GetWarsWarIdKillmails'> = { path: { "war_id": warId } };
 
 const response = await client.callOperation('GetWarsWarIdKillmails', arguments_);
+const data: GetWarsWarIdKillmailsResponse = response.data;
 ```
 
 ## Parameters
@@ -69,14 +73,16 @@ const response = await client.callOperation('GetWarsWarIdKillmails', arguments_)
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetWarsWarIdKillmailsRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetWarsWarIdKillmailsData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetWarsWarIdKillmailsHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetWarsWarIdKillmailsPath`; `query` uses `@evespace/esi-client/zod` export `zGetWarsWarIdKillmailsQuery`.
+- Response type: `@evespace/esi-client/types` export `GetWarsWarIdKillmailsResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.wars.withMetadata().listKillmails(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetWarsWarIdKillmailsStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetWarsWarIdKillmailsResponse` | OK |
 
 ## Authentication
 
@@ -108,6 +114,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Metadata](../examples/metadata.md)
 - [Paginated](../examples/paginated.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

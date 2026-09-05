@@ -14,7 +14,7 @@ import {
   createSerializableOperationManifest,
   renderOperationRegistryArtifacts,
 } from '../scripts/generate/operation-registry.ts';
-import type { GenerationProvenance } from '../scripts/generate/orchestrate.ts';
+import type { GenerationProvenance } from '../scripts/generate/generation-contracts.ts';
 
 const operationCount = 233;
 

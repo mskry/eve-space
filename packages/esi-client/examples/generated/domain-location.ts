@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createLocationClient } from '@evespace/esi-client/domains/location';
+import type { GetCharactersCharacterIdLocationResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -12,4 +13,4 @@ const client = createLocationClient({ token: accessToken });
 
 const characterId = 90000001;
 
-const data = await client.get(characterId);
+const data: GetCharactersCharacterIdLocationResponse = await client.get(characterId);

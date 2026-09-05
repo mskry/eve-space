@@ -16,12 +16,13 @@ Get Sovereignty Hub details
 - Domain import: `@evespace/esi-client/domains/structures`
 - Domain index: [structures](../domains/structures.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createStructuresClient } from '@evespace/esi-client/domains/structures';
+import type { GetCorporationsStructuresSovereigntyHubsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -31,13 +32,14 @@ const client = createStructuresClient({ token: accessToken });
 const corporationId = 98000001;
 const sovereigntyHubId = 1000000000001;
 
-const data = await client.getSovereigntyHub(corporationId, sovereigntyHubId);
+const data: GetCorporationsStructuresSovereigntyHubsDetailResponse = await client.getSovereigntyHub(corporationId, sovereigntyHubId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetCorporationsStructuresSovereigntyHubsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -47,7 +49,7 @@ const client = new EsiClient({ token: accessToken });
 const corporationId = 98000001;
 const sovereigntyHubId = 1000000000001;
 
-const data = await client.structures.getSovereigntyHub(corporationId, sovereigntyHubId);
+const data: GetCorporationsStructuresSovereigntyHubsDetailResponse = await client.structures.getSovereigntyHub(corporationId, sovereigntyHubId);
 ```
 
 ## Generic-execution snippet
@@ -55,6 +57,7 @@ const data = await client.structures.getSovereigntyHub(corporationId, sovereignt
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetCorporationsStructuresSovereigntyHubsDetailData, GetCorporationsStructuresSovereigntyHubsDetailResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -67,6 +70,7 @@ const sovereigntyHubId = 1000000000001;
 const arguments_: CallOperationArguments<'GetCorporationsStructuresSovereigntyHubsDetail'> = { path: { "corporation_id": corporationId, "sovereignty_hub_id": sovereigntyHubId } };
 
 const response = await client.callOperation('GetCorporationsStructuresSovereigntyHubsDetail', arguments_);
+const data: GetCorporationsStructuresSovereigntyHubsDetailResponse = response.data;
 ```
 
 ## Parameters
@@ -81,14 +85,16 @@ const response = await client.callOperation('GetCorporationsStructuresSovereignt
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetCorporationsStructuresSovereigntyHubsDetailRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetCorporationsStructuresSovereigntyHubsDetailData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetCorporationsStructuresSovereigntyHubsDetailHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetCorporationsStructuresSovereigntyHubsDetailPath`.
+- Response type: `@evespace/esi-client/types` export `GetCorporationsStructuresSovereigntyHubsDetailResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.structures.withMetadata().getSovereigntyHub(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetCorporationsStructuresSovereigntyHubsDetailStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetCorporationsStructuresSovereigntyHubsDetailResponse` | OK |
 
 ## Authentication
 
@@ -120,6 +126,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

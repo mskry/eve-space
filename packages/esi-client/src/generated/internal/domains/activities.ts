@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersMercenaryTacticalOperationsDetailDescriptor,
@@ -19,13 +20,13 @@ import type {
   GetSkyhooksRaidableOptions,
 } from './activities-contract.js';
 import type {
-  GetCharactersMercenaryTacticalOperationsDetailInput,
-  GetCharactersMercenaryTacticalOperationsDetailOutput,
-  GetCharactersMercenaryTacticalOperationsListingInput,
-  GetCharactersMercenaryTacticalOperationsListingOutput,
-  GetSkyhooksRaidableInput,
-  GetSkyhooksRaidableOutput,
-} from '../../schemas/operations/activities.js';
+  GetCharactersMercenaryTacticalOperationsDetailData,
+  GetCharactersMercenaryTacticalOperationsDetailResponse,
+  GetCharactersMercenaryTacticalOperationsListingData,
+  GetCharactersMercenaryTacticalOperationsListingResponse,
+  GetSkyhooksRaidableData,
+  GetSkyhooksRaidableResponse,
+} from '../../types.gen.js';
 
 class ActivitiesDomainClientWithMetadataImplementation implements ActivitiesDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -35,18 +36,18 @@ class ActivitiesDomainClientWithMetadataImplementation implements ActivitiesDoma
     Object.freeze(this);
   }
 
-  getMercenaryTacticalOperation(characterId: NonNullable<GetCharactersMercenaryTacticalOperationsDetailInput['path']>["character_id"], operationId: NonNullable<GetCharactersMercenaryTacticalOperationsDetailInput['path']>["operation_id"], options?: GetCharactersMercenaryTacticalOperationsDetailOptions): Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsDetailOutput>> {
-    const arguments_: GetCharactersMercenaryTacticalOperationsDetailInput = { path: { "character_id": characterId, "operation_id": operationId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  getMercenaryTacticalOperation(characterId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']>["character_id"], operationId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']>["operation_id"], options?: GetCharactersMercenaryTacticalOperationsDetailOptions): Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsDetailResponse>> {
+    const arguments_: OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData> = { path: { "character_id": characterId, "operation_id": operationId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersMercenaryTacticalOperationsDetailDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listMercenaryTacticalOperations(characterId: NonNullable<GetCharactersMercenaryTacticalOperationsListingInput['path']>["character_id"], options?: GetCharactersMercenaryTacticalOperationsListingOptions): Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsListingOutput>> {
-    const arguments_: GetCharactersMercenaryTacticalOperationsListingInput = { path: { "character_id": characterId }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listMercenaryTacticalOperations(characterId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['path']>["character_id"], options?: GetCharactersMercenaryTacticalOperationsListingOptions): Promise<EsiResponse<GetCharactersMercenaryTacticalOperationsListingResponse>> {
+    const arguments_: OperationArguments<GetCharactersMercenaryTacticalOperationsListingData> = { path: { "character_id": characterId }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersMercenaryTacticalOperationsListingDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 
-  listRaidableSkyhooks(options?: GetSkyhooksRaidableOptions): Promise<EsiResponse<GetSkyhooksRaidableOutput>> {
-    const arguments_: GetSkyhooksRaidableInput = { header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  listRaidableSkyhooks(options?: GetSkyhooksRaidableOptions): Promise<EsiResponse<GetSkyhooksRaidableResponse>> {
+    const arguments_: OperationArguments<GetSkyhooksRaidableData> = { headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetSkyhooksRaidableDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -59,15 +60,15 @@ class ActivitiesDomainClientImplementation implements ActivitiesDomainClient {
     Object.freeze(this);
   }
 
-  getMercenaryTacticalOperation(characterId: NonNullable<GetCharactersMercenaryTacticalOperationsDetailInput['path']>["character_id"], operationId: NonNullable<GetCharactersMercenaryTacticalOperationsDetailInput['path']>["operation_id"], options?: GetCharactersMercenaryTacticalOperationsDetailOptions): Promise<GetCharactersMercenaryTacticalOperationsDetailOutput> {
+  getMercenaryTacticalOperation(characterId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']>["character_id"], operationId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsDetailData>['path']>["operation_id"], options?: GetCharactersMercenaryTacticalOperationsDetailOptions): Promise<GetCharactersMercenaryTacticalOperationsDetailResponse> {
     return this.#metadata.getMercenaryTacticalOperation(characterId, operationId, options).then((response) => response.data);
   }
 
-  listMercenaryTacticalOperations(characterId: NonNullable<GetCharactersMercenaryTacticalOperationsListingInput['path']>["character_id"], options?: GetCharactersMercenaryTacticalOperationsListingOptions): Promise<GetCharactersMercenaryTacticalOperationsListingOutput> {
+  listMercenaryTacticalOperations(characterId: NonNullable<OperationArguments<GetCharactersMercenaryTacticalOperationsListingData>['path']>["character_id"], options?: GetCharactersMercenaryTacticalOperationsListingOptions): Promise<GetCharactersMercenaryTacticalOperationsListingResponse> {
     return this.#metadata.listMercenaryTacticalOperations(characterId, options).then((response) => response.data);
   }
 
-  listRaidableSkyhooks(options?: GetSkyhooksRaidableOptions): Promise<GetSkyhooksRaidableOutput> {
+  listRaidableSkyhooks(options?: GetSkyhooksRaidableOptions): Promise<GetSkyhooksRaidableResponse> {
     return this.#metadata.listRaidableSkyhooks(options).then((response) => response.data);
   }
 

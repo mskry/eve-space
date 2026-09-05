@@ -5,6 +5,7 @@
 
 import type { EsiClientConfiguration } from '../../../client/configuration.js';
 import { executeOperation } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
 import type { EsiResponse } from '../../../client/response.js';
 import {
   GetCharactersCharacterIdSearchDescriptor,
@@ -15,9 +16,9 @@ import type {
   GetCharactersCharacterIdSearchOptions,
 } from './search-contract.js';
 import type {
-  GetCharactersCharacterIdSearchInput,
-  GetCharactersCharacterIdSearchOutput,
-} from '../../schemas/operations/search.js';
+  GetCharactersCharacterIdSearchData,
+  GetCharactersCharacterIdSearchResponse,
+} from '../../types.gen.js';
 
 class SearchDomainClientWithMetadataImplementation implements SearchDomainClientWithMetadata {
   readonly #configuration: EsiClientConfiguration;
@@ -27,8 +28,8 @@ class SearchDomainClientWithMetadataImplementation implements SearchDomainClient
     Object.freeze(this);
   }
 
-  search(characterId: NonNullable<GetCharactersCharacterIdSearchInput['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<EsiResponse<GetCharactersCharacterIdSearchOutput>> {
-    const arguments_: GetCharactersCharacterIdSearchInput = { path: { "character_id": characterId }, query: { "categories": options?.["categories"], "search": options?.["search"], "strict": options?.["strict"] }, header: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
+  search(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<EsiResponse<GetCharactersCharacterIdSearchResponse>> {
+    const arguments_: OperationArguments<GetCharactersCharacterIdSearchData> = { path: { "character_id": characterId }, query: { "categories": options?.["categories"], "search": options?.["search"], "strict": options?.["strict"] }, headers: { "If-Modified-Since": options?.["ifModifiedSince"], "If-None-Match": options?.["ifNoneMatch"], "X-Tenant": options?.["xTenant"] } };
     return executeOperation(this.#configuration, GetCharactersCharacterIdSearchDescriptor, arguments_, { compatibilityDate: options?.compatibilityDate });
   }
 }
@@ -41,7 +42,7 @@ class SearchDomainClientImplementation implements SearchDomainClient {
     Object.freeze(this);
   }
 
-  search(characterId: NonNullable<GetCharactersCharacterIdSearchInput['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<GetCharactersCharacterIdSearchOutput> {
+  search(characterId: NonNullable<OperationArguments<GetCharactersCharacterIdSearchData>['path']>["character_id"], options: GetCharactersCharacterIdSearchOptions): Promise<GetCharactersCharacterIdSearchResponse> {
     return this.#metadata.search(characterId, options).then((response) => response.data);
   }
 

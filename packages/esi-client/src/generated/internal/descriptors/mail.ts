@@ -4,46 +4,70 @@
 // DO NOT EDIT.
 
 import type { OperationExecutionDescriptor } from '../../../client/execute.js';
+import type { OperationArguments } from '../../../client/request.js';
+import { composeOperationRequestSchema } from '../../../client/request-schema.js';
+import type { z } from 'zod';
+import type {
+  DeleteCharactersCharacterIdMailLabelsLabelIdData,
+  DeleteCharactersCharacterIdMailLabelsLabelIdResponse,
+  DeleteCharactersCharacterIdMailMailIdData,
+  DeleteCharactersCharacterIdMailMailIdResponse,
+  GetCharactersCharacterIdMailData,
+  GetCharactersCharacterIdMailLabelsData,
+  GetCharactersCharacterIdMailLabelsResponse,
+  GetCharactersCharacterIdMailListsData,
+  GetCharactersCharacterIdMailListsResponse,
+  GetCharactersCharacterIdMailMailIdData,
+  GetCharactersCharacterIdMailMailIdResponse,
+  GetCharactersCharacterIdMailResponse,
+  PostCharactersCharacterIdMailData,
+  PostCharactersCharacterIdMailLabelsData,
+  PostCharactersCharacterIdMailLabelsResponse,
+  PostCharactersCharacterIdMailResponse,
+  PutCharactersCharacterIdMailMailIdData,
+  PutCharactersCharacterIdMailMailIdResponse,
+} from '../../types.gen.js';
 import {
-  DeleteCharactersCharacterIdMailLabelsLabelIdRequestSchema,
-  DeleteCharactersCharacterIdMailLabelsLabelIdStatus204SuccessResponseSchema,
-  DeleteCharactersCharacterIdMailMailIdRequestSchema,
-  DeleteCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema,
-  GetCharactersCharacterIdMailLabelsRequestSchema,
-  GetCharactersCharacterIdMailLabelsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdMailListsRequestSchema,
-  GetCharactersCharacterIdMailListsStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdMailMailIdRequestSchema,
-  GetCharactersCharacterIdMailMailIdStatus200SuccessResponseSchema,
-  GetCharactersCharacterIdMailRequestSchema,
-  GetCharactersCharacterIdMailStatus200SuccessResponseSchema,
-  PostCharactersCharacterIdMailLabelsRequestSchema,
-  PostCharactersCharacterIdMailLabelsStatus201SuccessResponseSchema,
-  PostCharactersCharacterIdMailRequestSchema,
-  PostCharactersCharacterIdMailStatus201SuccessResponseSchema,
-  PutCharactersCharacterIdMailMailIdRequestSchema,
-  PutCharactersCharacterIdMailMailIdStatus204SuccessResponseSchema,
-  type DeleteCharactersCharacterIdMailLabelsLabelIdInput,
-  type DeleteCharactersCharacterIdMailLabelsLabelIdOutput,
-  type DeleteCharactersCharacterIdMailMailIdInput,
-  type DeleteCharactersCharacterIdMailMailIdOutput,
-  type GetCharactersCharacterIdMailInput,
-  type GetCharactersCharacterIdMailLabelsInput,
-  type GetCharactersCharacterIdMailLabelsOutput,
-  type GetCharactersCharacterIdMailListsInput,
-  type GetCharactersCharacterIdMailListsOutput,
-  type GetCharactersCharacterIdMailMailIdInput,
-  type GetCharactersCharacterIdMailMailIdOutput,
-  type GetCharactersCharacterIdMailOutput,
-  type PostCharactersCharacterIdMailInput,
-  type PostCharactersCharacterIdMailLabelsInput,
-  type PostCharactersCharacterIdMailLabelsOutput,
-  type PostCharactersCharacterIdMailOutput,
-  type PutCharactersCharacterIdMailMailIdInput,
-  type PutCharactersCharacterIdMailMailIdOutput,
-} from '../../schemas/operations/mail.js';
+  zDeleteCharactersCharacterIdMailLabelsLabelIdHeaders,
+  zDeleteCharactersCharacterIdMailLabelsLabelIdPath,
+  zDeleteCharactersCharacterIdMailLabelsLabelIdResponse,
+  zDeleteCharactersCharacterIdMailMailIdHeaders,
+  zDeleteCharactersCharacterIdMailMailIdPath,
+  zDeleteCharactersCharacterIdMailMailIdResponse,
+  zGetCharactersCharacterIdMailHeaders,
+  zGetCharactersCharacterIdMailLabelsHeaders,
+  zGetCharactersCharacterIdMailLabelsPath,
+  zGetCharactersCharacterIdMailLabelsResponse,
+  zGetCharactersCharacterIdMailListsHeaders,
+  zGetCharactersCharacterIdMailListsPath,
+  zGetCharactersCharacterIdMailListsResponse,
+  zGetCharactersCharacterIdMailMailIdHeaders,
+  zGetCharactersCharacterIdMailMailIdPath,
+  zGetCharactersCharacterIdMailMailIdResponse,
+  zGetCharactersCharacterIdMailPath,
+  zGetCharactersCharacterIdMailQuery,
+  zGetCharactersCharacterIdMailResponse,
+  zPostCharactersCharacterIdMailBody,
+  zPostCharactersCharacterIdMailHeaders,
+  zPostCharactersCharacterIdMailLabelsBody,
+  zPostCharactersCharacterIdMailLabelsHeaders,
+  zPostCharactersCharacterIdMailLabelsPath,
+  zPostCharactersCharacterIdMailLabelsResponse,
+  zPostCharactersCharacterIdMailPath,
+  zPostCharactersCharacterIdMailResponse,
+  zPutCharactersCharacterIdMailMailIdBody,
+  zPutCharactersCharacterIdMailMailIdHeaders,
+  zPutCharactersCharacterIdMailMailIdPath,
+  zPutCharactersCharacterIdMailMailIdResponse,
+} from '../../zod.gen.js';
 
-export const PostCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDescriptor<PostCharactersCharacterIdMailLabelsInput, PostCharactersCharacterIdMailLabelsOutput> = {
+export const PostCharactersCharacterIdMailLabelsRequestSchema: z.ZodType<OperationArguments<PostCharactersCharacterIdMailLabelsData>> = composeOperationRequestSchema<OperationArguments<PostCharactersCharacterIdMailLabelsData>>({
+  headers: { required: false, schema: zPostCharactersCharacterIdMailLabelsHeaders },
+  path: { required: true, schema: zPostCharactersCharacterIdMailLabelsPath },
+  body: { required: true, schema: zPostCharactersCharacterIdMailLabelsBody },
+});
+
+export const PostCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersCharacterIdMailLabelsData>, PostCharactersCharacterIdMailLabelsResponse> = {
   operationId: "PostCharactersCharacterIdMailLabels",
   method: "POST",
   path: "/characters/{character_id}/mail/labels",
@@ -57,12 +81,17 @@ export const PostCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDe
   requestSchema: PostCharactersCharacterIdMailLabelsRequestSchema,
   authentication: { scopes: ["esi-mail.organize_mail.v1"] },
   successResponses: [
-    { status: 201, body: 'json', schema: PostCharactersCharacterIdMailLabelsStatus201SuccessResponseSchema },
+    { status: 201, body: 'json', schema: zPostCharactersCharacterIdMailLabelsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const DeleteCharactersCharacterIdMailLabelsLabelIdDescriptor: OperationExecutionDescriptor<DeleteCharactersCharacterIdMailLabelsLabelIdInput, DeleteCharactersCharacterIdMailLabelsLabelIdOutput> = {
+export const DeleteCharactersCharacterIdMailLabelsLabelIdRequestSchema: z.ZodType<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>> = composeOperationRequestSchema<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>>({
+  headers: { required: false, schema: zDeleteCharactersCharacterIdMailLabelsLabelIdHeaders },
+  path: { required: true, schema: zDeleteCharactersCharacterIdMailLabelsLabelIdPath },
+});
+
+export const DeleteCharactersCharacterIdMailLabelsLabelIdDescriptor: OperationExecutionDescriptor<OperationArguments<DeleteCharactersCharacterIdMailLabelsLabelIdData>, DeleteCharactersCharacterIdMailLabelsLabelIdResponse> = {
   operationId: "DeleteCharactersCharacterIdMailLabelsLabelId",
   method: "DELETE",
   path: "/characters/{character_id}/mail/labels/{label_id}",
@@ -82,7 +111,12 @@ export const DeleteCharactersCharacterIdMailLabelsLabelIdDescriptor: OperationEx
   transport: { compatibilityDateOverride: true },
 };
 
-export const DeleteCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDescriptor<DeleteCharactersCharacterIdMailMailIdInput, DeleteCharactersCharacterIdMailMailIdOutput> = {
+export const DeleteCharactersCharacterIdMailMailIdRequestSchema: z.ZodType<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>> = composeOperationRequestSchema<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>>({
+  headers: { required: false, schema: zDeleteCharactersCharacterIdMailMailIdHeaders },
+  path: { required: true, schema: zDeleteCharactersCharacterIdMailMailIdPath },
+});
+
+export const DeleteCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDescriptor<OperationArguments<DeleteCharactersCharacterIdMailMailIdData>, DeleteCharactersCharacterIdMailMailIdResponse> = {
   operationId: "DeleteCharactersCharacterIdMailMailId",
   method: "DELETE",
   path: "/characters/{character_id}/mail/{mail_id}",
@@ -102,7 +136,12 @@ export const DeleteCharactersCharacterIdMailMailIdDescriptor: OperationExecution
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdMailMailIdInput, GetCharactersCharacterIdMailMailIdOutput> = {
+export const GetCharactersCharacterIdMailMailIdRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdMailMailIdData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdMailMailIdData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdMailMailIdHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdMailMailIdPath },
+});
+
+export const GetCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdMailMailIdData>, GetCharactersCharacterIdMailMailIdResponse> = {
   operationId: "GetCharactersCharacterIdMailMailId",
   method: "GET",
   path: "/characters/{character_id}/mail/{mail_id}",
@@ -117,12 +156,18 @@ export const GetCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDes
   requestSchema: GetCharactersCharacterIdMailMailIdRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdMailMailIdStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailMailIdResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdMailDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdMailInput, GetCharactersCharacterIdMailOutput> = {
+export const GetCharactersCharacterIdMailRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdMailData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdMailData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdMailHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdMailPath },
+  query: { required: false, schema: zGetCharactersCharacterIdMailQuery },
+});
+
+export const GetCharactersCharacterIdMailDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdMailData>, GetCharactersCharacterIdMailResponse> = {
   operationId: "GetCharactersCharacterIdMail",
   method: "GET",
   path: "/characters/{character_id}/mail",
@@ -138,12 +183,17 @@ export const GetCharactersCharacterIdMailDescriptor: OperationExecutionDescripto
   requestSchema: GetCharactersCharacterIdMailRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdMailStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdMailLabelsInput, GetCharactersCharacterIdMailLabelsOutput> = {
+export const GetCharactersCharacterIdMailLabelsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdMailLabelsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdMailLabelsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdMailLabelsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdMailLabelsPath },
+});
+
+export const GetCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdMailLabelsData>, GetCharactersCharacterIdMailLabelsResponse> = {
   operationId: "GetCharactersCharacterIdMailLabels",
   method: "GET",
   path: "/characters/{character_id}/mail/labels",
@@ -157,12 +207,17 @@ export const GetCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDes
   requestSchema: GetCharactersCharacterIdMailLabelsRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdMailLabelsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailLabelsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const GetCharactersCharacterIdMailListsDescriptor: OperationExecutionDescriptor<GetCharactersCharacterIdMailListsInput, GetCharactersCharacterIdMailListsOutput> = {
+export const GetCharactersCharacterIdMailListsRequestSchema: z.ZodType<OperationArguments<GetCharactersCharacterIdMailListsData>> = composeOperationRequestSchema<OperationArguments<GetCharactersCharacterIdMailListsData>>({
+  headers: { required: false, schema: zGetCharactersCharacterIdMailListsHeaders },
+  path: { required: true, schema: zGetCharactersCharacterIdMailListsPath },
+});
+
+export const GetCharactersCharacterIdMailListsDescriptor: OperationExecutionDescriptor<OperationArguments<GetCharactersCharacterIdMailListsData>, GetCharactersCharacterIdMailListsResponse> = {
   operationId: "GetCharactersCharacterIdMailLists",
   method: "GET",
   path: "/characters/{character_id}/mail/lists",
@@ -176,12 +231,18 @@ export const GetCharactersCharacterIdMailListsDescriptor: OperationExecutionDesc
   requestSchema: GetCharactersCharacterIdMailListsRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
   successResponses: [
-    { status: 200, body: 'json', schema: GetCharactersCharacterIdMailListsStatus200SuccessResponseSchema },
+    { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailListsResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PostCharactersCharacterIdMailDescriptor: OperationExecutionDescriptor<PostCharactersCharacterIdMailInput, PostCharactersCharacterIdMailOutput> = {
+export const PostCharactersCharacterIdMailRequestSchema: z.ZodType<OperationArguments<PostCharactersCharacterIdMailData>> = composeOperationRequestSchema<OperationArguments<PostCharactersCharacterIdMailData>>({
+  headers: { required: false, schema: zPostCharactersCharacterIdMailHeaders },
+  path: { required: true, schema: zPostCharactersCharacterIdMailPath },
+  body: { required: true, schema: zPostCharactersCharacterIdMailBody },
+});
+
+export const PostCharactersCharacterIdMailDescriptor: OperationExecutionDescriptor<OperationArguments<PostCharactersCharacterIdMailData>, PostCharactersCharacterIdMailResponse> = {
   operationId: "PostCharactersCharacterIdMail",
   method: "POST",
   path: "/characters/{character_id}/mail",
@@ -195,12 +256,18 @@ export const PostCharactersCharacterIdMailDescriptor: OperationExecutionDescript
   requestSchema: PostCharactersCharacterIdMailRequestSchema,
   authentication: { scopes: ["esi-mail.send_mail.v1"] },
   successResponses: [
-    { status: 201, body: 'json', schema: PostCharactersCharacterIdMailStatus201SuccessResponseSchema },
+    { status: 201, body: 'json', schema: zPostCharactersCharacterIdMailResponse },
   ],
   transport: { compatibilityDateOverride: true },
 };
 
-export const PutCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDescriptor<PutCharactersCharacterIdMailMailIdInput, PutCharactersCharacterIdMailMailIdOutput> = {
+export const PutCharactersCharacterIdMailMailIdRequestSchema: z.ZodType<OperationArguments<PutCharactersCharacterIdMailMailIdData>> = composeOperationRequestSchema<OperationArguments<PutCharactersCharacterIdMailMailIdData>>({
+  headers: { required: false, schema: zPutCharactersCharacterIdMailMailIdHeaders },
+  path: { required: true, schema: zPutCharactersCharacterIdMailMailIdPath },
+  body: { required: true, schema: zPutCharactersCharacterIdMailMailIdBody },
+});
+
+export const PutCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDescriptor<OperationArguments<PutCharactersCharacterIdMailMailIdData>, PutCharactersCharacterIdMailMailIdResponse> = {
   operationId: "PutCharactersCharacterIdMailMailId",
   method: "PUT",
   path: "/characters/{character_id}/mail/{mail_id}",

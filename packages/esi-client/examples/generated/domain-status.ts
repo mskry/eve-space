@@ -4,7 +4,8 @@
 // DO NOT EDIT.
 
 import { createStatusClient } from '@evespace/esi-client/domains/status';
+import type { GetStatusResponse } from '@evespace/esi-client/types';
 
 const client = createStatusClient();
 
-const data = await client.get();
+const data: GetStatusResponse = await client.get();

@@ -16,32 +16,34 @@ Get military campaign objective details
 - Domain import: `@evespace/esi-client/domains/military-campaigns`
 - Domain index: [militaryCampaigns](../domains/military-campaigns.md)
 
-Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `header`, and `body` groups matching the parameter table.
+Required path identifiers are positional in the domain method. Other request values and an available compatibility-date override are fields in its final options object. Generic arguments use `path`, `query`, `headers`, and `body` groups matching the parameter table.
 
 ## Standalone domain-factory snippet
 
 ```ts
 import { createMilitaryCampaignsClient } from '@evespace/esi-client/domains/military-campaigns';
+import type { GetMilitaryCampaignsObjectivesDetailResponse } from '@evespace/esi-client/types';
 
 const client = createMilitaryCampaignsClient();
 
 const campaignId = "00000000-0000-4000-8000-000000000000";
 const objectiveId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.getObjective(campaignId, objectiveId);
+const data: GetMilitaryCampaignsObjectivesDetailResponse = await client.getObjective(campaignId, objectiveId);
 ```
 
 ## Aggregate EsiClient snippet
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetMilitaryCampaignsObjectivesDetailResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
 const campaignId = "00000000-0000-4000-8000-000000000000";
 const objectiveId = "00000000-0000-4000-8000-000000000000";
 
-const data = await client.militaryCampaigns.getObjective(campaignId, objectiveId);
+const data: GetMilitaryCampaignsObjectivesDetailResponse = await client.militaryCampaigns.getObjective(campaignId, objectiveId);
 ```
 
 ## Generic-execution snippet
@@ -49,6 +51,7 @@ const data = await client.militaryCampaigns.getObjective(campaignId, objectiveId
 ```ts
 import { EsiClient } from '@evespace/esi-client';
 import type { CallOperationArguments } from '@evespace/esi-client/operations';
+import type { GetMilitaryCampaignsObjectivesDetailData, GetMilitaryCampaignsObjectivesDetailResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
@@ -58,6 +61,7 @@ const objectiveId = "00000000-0000-4000-8000-000000000000";
 const arguments_: CallOperationArguments<'GetMilitaryCampaignsObjectivesDetail'> = { path: { "campaign_id": campaignId, "objective_id": objectiveId } };
 
 const response = await client.callOperation('GetMilitaryCampaignsObjectivesDetail', arguments_);
+const data: GetMilitaryCampaignsObjectivesDetailResponse = response.data;
 ```
 
 ## Parameters
@@ -72,14 +76,16 @@ const response = await client.callOperation('GetMilitaryCampaignsObjectivesDetai
 
 ## Result and schemas
 
-- Request schema: `@evespace/esi-client/schemas` export `GetMilitaryCampaignsObjectivesDetailRequestSchema`
+- Request type: `@evespace/esi-client/types` export `GetMilitaryCampaignsObjectivesDetailData`
+- Request-layer schemas: `headers` uses `@evespace/esi-client/zod` export `zGetMilitaryCampaignsObjectivesDetailHeaders`; `path` uses `@evespace/esi-client/zod` export `zGetMilitaryCampaignsObjectivesDetailPath`.
+- Response type: `@evespace/esi-client/types` export `GetMilitaryCampaignsObjectivesDetailResponse`
 - Domain result: bare validated success data; a no-content response resolves to `undefined`.
 - Metadata result: `client.militaryCampaigns.withMetadata().getObjective(...)` returns `EsiResponse<T>`.
 - Generic result: `callOperation` returns one serializable `EsiResponse<T>` envelope.
 
 | Status | Body | Schema module | Schema export | Description |
 | --- | --- | --- | --- | --- |
-| `200` | json | `@evespace/esi-client/schemas` | `GetMilitaryCampaignsObjectivesDetailStatus200SuccessResponseSchema` | OK |
+| `200` | json | `@evespace/esi-client/zod` | `zGetMilitaryCampaignsObjectivesDetailResponse` | OK |
 
 ## Authentication
 
@@ -110,6 +116,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Metadata](../examples/metadata.md)
 - [Public](../examples/public.md)
+- [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 
 ## Shared concepts

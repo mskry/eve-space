@@ -25,10 +25,11 @@ Use the domain subpath when this is the only ESI domain the module needs:
 
 ```ts
 import { createDogmaClient } from '@evespace/esi-client/domains/dogma';
+import type { GetDogmaAttributesResponse } from '@evespace/esi-client/types';
 
 const client = createDogmaClient();
 
-const data = await client.listAttributes();
+const data: GetDogmaAttributesResponse = await client.listAttributes();
 ```
 
 ## Aggregate client
@@ -37,10 +38,11 @@ Use the root client when one configuration should serve multiple domains:
 
 ```ts
 import { EsiClient } from '@evespace/esi-client';
+import type { GetDogmaAttributesResponse } from '@evespace/esi-client/types';
 
 const client = new EsiClient();
 
-const data = await client.dogma.listAttributes();
+const data: GetDogmaAttributesResponse = await client.dogma.listAttributes();
 ```
 
 ## Shared concepts

@@ -4,6 +4,7 @@
 // DO NOT EDIT.
 
 import { createContactsClient } from '@evespace/esi-client/domains/contacts';
+import type { DeleteCharactersCharacterIdContactsResponse } from '@evespace/esi-client/types';
 
 const accessToken = process.env.ESI_ACCESS_TOKEN;
 if (!accessToken) throw new Error('Set ESI_ACCESS_TOKEN before making this authorized request.');
@@ -13,4 +14,4 @@ const client = createContactsClient({ token: accessToken });
 const characterId = 90000001;
 
 // This named typed mutation expresses explicit intent. Verify authorization before calling it.
-const data = await client.deleteCharacterContacts(characterId, { contactIds: [12345] });
+const data: DeleteCharactersCharacterIdContactsResponse = await client.deleteCharacterContacts(characterId, { contactIds: [12345] });
