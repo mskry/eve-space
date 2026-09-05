@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import { describe, expect, it } from 'vitest';
@@ -24,11 +25,13 @@ describe('release candidate verification', () => {
 
   it('accepts a scoped release tag through the verifier CLI', async () => {
     const candidate = await createCandidate();
-    const verifierPath = new URL('../scripts/verify-release-candidate.ts', import.meta.url);
+    const verifierPath = fileURLToPath(
+      new URL('../scripts/verify-release-candidate.ts', import.meta.url),
+    );
     const { stdout } = await execFileAsync(
       process.execPath,
       [
-        verifierPath.pathname,
+        verifierPath,
         '--tarball',
         candidate.tarballPath,
         '--digest',
