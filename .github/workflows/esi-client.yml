@@ -10,6 +10,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'packages/esi-client/**'
+      - 'packages/esi-client-codegen/**'
   push:
     branches:
       - main
@@ -21,6 +22,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'packages/esi-client/**'
+      - 'packages/esi-client-codegen/**'
 
 permissions:
   contents: read
