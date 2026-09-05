@@ -1,8 +1,8 @@
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance'
 import { getCorporationPublic } from '../corporations/public-data.js'
 import type { DeploymentOrganizationType } from '../db/schema.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 
 export interface DeploymentOrganization {
   type: DeploymentOrganizationType

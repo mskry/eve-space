@@ -13,18 +13,15 @@ import {
   renewEsiRequestLease,
 } from '../../../src/esi-resilience/coordination.js'
 import {
-  acquireEsiRequestPermit,
   EsiQuotaError,
   getEsiRequestCooldowns,
   recordEsiResponse,
 } from '../../../src/esi-resilience/cooldowns.js'
-import { EsiResilienceLayer } from '../../../src/esi-resilience/resilience.js'
-import {
-  cacheCoordinationSentinelKey,
-  cacheEnvelopeKey,
-} from '../../../src/esi-resilience/namespaces.js'
+import { acquireEsiRequestPermit } from '../../../src/esi-resilience/permits.js'
+import { EsiResilienceLayer } from '../../../src/esi-resilience/layer.js'
+import { cacheCoordinationSentinelKey, cacheEnvelopeKey } from '../../../src/esi-resilience/keys.js'
 import { createEsiRepresentationIdentity } from '../../../src/esi-resilience/identity.js'
-import { getEsiOperationContract } from '../../../src/esi-resilience/catalog.js'
+import { getEsiOperationContract } from '../../../src/esi-resilience/catalog-access.js'
 import type { EsiLoadResult, EsiRevalidation } from '../../../src/esi-resilience/types.js'
 import {
   readEsiRateMeasurement,
@@ -108,6 +105,28 @@ describe('ESI resilience Redis coordination', () => {
         requests: [{ operation: 'wallet-transactions', principal: 'character-90000002' }],
       }),
     ).resolves.toMatchObject([{ active: true, coordinationAvailable: false }])
+  })
+
+  test('executes runtime-only operations without reading or writing cache Redis', async () => {
+    const layer = new EsiResilienceLayer(cache, coordination, 2)
+    const load = vi.fn().mockResolvedValue({
+      data: [{ character_id: 90_000_001 }],
+      meta: { status: 200, headers: {} },
+    })
+    const resource = {
+      operation: 'bulk-affiliation' as const,
+      inputs: { characterIds: [90_000_001] },
+      load,
+    }
+    const cacheGet = vi.spyOn(cache, 'get')
+    const cacheSet = vi.spyOn(cache, 'set')
+
+    await layer.executeNoValue(resource)
+    await layer.executeNoValue(resource)
+
+    expect(load).toHaveBeenCalledTimes(2)
+    expect(cacheGet).not.toHaveBeenCalled()
+    expect(cacheSet).not.toHaveBeenCalled()
   })
 
   test('owner-checked Lua release cannot delete another owner lease', async () => {

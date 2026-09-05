@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto'
-import { getEsiOperationContract, type EsiOperation } from './catalog.js'
+import { isRecord } from '../type-guards.js'
+import { getEsiOperationContract } from './catalog-access.js'
+import type { EsiOperation } from './catalog.js'
+import type { EsiOperationContract } from './contract-types.js'
+import type { EsiResourceRevision } from './types.js'
 
 const maximumStringLength = 256
 
@@ -12,11 +16,6 @@ export interface EsiRepresentationIdentity {
   coordinationDigest: string
   representationVersion: string
   resourceRevision?: EsiResourceRevision
-}
-
-export interface EsiResourceRevision {
-  namespace: string
-  value: number
 }
 
 /**
@@ -71,7 +70,7 @@ export function createEsiRepresentationIdentity(options: {
 }
 
 function normalizeInputs(
-  identity: ReturnType<typeof getEsiOperationContract>['identity'],
+  identity: EsiOperationContract['identity'],
   inputs: Readonly<Record<string, unknown>>,
 ) {
   let allowedFields: readonly string[]
@@ -214,10 +213,6 @@ function assertIdentityInputFields(
 
 function toSnakeCase(value: string) {
   return value.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function normalizeScalar(value: unknown, field: string): IdentityScalar {

@@ -16,10 +16,10 @@ vi.mock('@evespace/esi-client/domains/corporation', () => ({
   }),
 }))
 
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 import { resolveDeploymentOrganization } from '../../src/deployment/organization.js'
 

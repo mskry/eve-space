@@ -1,4 +1,5 @@
 import { env } from '../env.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 
 /**
  * How many heartbeat intervals may be missed before the worker reads as stale. The Redis key TTL
@@ -20,7 +21,7 @@ export const derivedResourcePriorityBand = {
 } as const
 
 export function resourceRefreshPriority(materializationIntervalSeconds: number) {
-  if (!Number.isSafeInteger(materializationIntervalSeconds) || materializationIntervalSeconds <= 0)
+  if (!isPositiveSafeInteger(materializationIntervalSeconds))
     throw new Error('Resource materialization interval must be a positive safe integer')
 
   return Math.min(materializationIntervalSeconds, derivedResourcePriorityBand.lowest)

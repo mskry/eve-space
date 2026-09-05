@@ -3,10 +3,10 @@ import type { GetCharactersCharacterIdSkillqueueResponse } from '@evespace/esi-c
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
-import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
 import {
   skillAttributeFromDogmaValue,

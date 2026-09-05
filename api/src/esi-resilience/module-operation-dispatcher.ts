@@ -1,6 +1,7 @@
 import { EsiClient } from '@evespace/esi-client'
 import type { PlatformEsiRevalidation } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import { isRecord } from '../type-guards.js'
 import type { EsiLoadResult } from './types.js'
 
 export function validateModuleEsiOperationInputs(
@@ -50,8 +51,4 @@ function withRevalidation(
         : {}),
     },
   }
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

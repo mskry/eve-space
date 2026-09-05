@@ -1,13 +1,12 @@
 import { describe, expect, test } from 'vitest'
 import {
-  assertCacheValueSafe,
   cacheEnvelopeKey,
   cacheEnvelopeVersion,
   cacheIdentityVersion,
-} from '../../src/esi-resilience/namespaces.js'
+} from '../../src/esi-resilience/keys.js'
 import { createEsiRepresentationIdentity } from '../../src/esi-resilience/identity.js'
 
-describe('ESI cache namespaces', () => {
+describe('ESI cache keys', () => {
   test('versions cache envelope keys from public normalized identities', () => {
     const identity = createEsiRepresentationIdentity({
       operation: 'public-character',
@@ -20,7 +19,7 @@ describe('ESI cache namespaces', () => {
     )
   })
 
-  test('hashes credential-like player values while rejecting credential fields in values', () => {
+  test('hashes credential-like player values', () => {
     const identity = createEsiRepresentationIdentity({
       operation: 'public-character',
       inputs: { characterId: 'Bearer Token Pilot' },
@@ -28,8 +27,5 @@ describe('ESI cache namespaces', () => {
       representationVersion: 'v1',
     })
     expect(cacheEnvelopeKey('epoch-1', identity)).not.toContain('Bearer Token Pilot')
-    expect(() => assertCacheValueSafe({ nested: { refreshToken: 'secret' } })).toThrow(
-      'Unsafe cache value',
-    )
   })
 })

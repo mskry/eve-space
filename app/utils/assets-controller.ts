@@ -1,6 +1,7 @@
 import type { AssetFilterState, AssetLocationGroup, AssetVisibleLocation } from '../types/assets'
 import { assetFilterSignature, EMPTY_ASSET_FILTERS, hasActiveAssetFilters } from './assets-filter'
 import { flattenAssetRows } from './assets-hierarchy'
+import { isNonnegativeSafeInteger, isPositiveSafeInteger } from './number-guards'
 
 interface AssetWorkspaceControllerOptions {
   revealIncrement?: number
@@ -84,9 +85,9 @@ export function createAssetWorkspaceController(options: AssetWorkspaceController
 }
 
 function positiveInteger(value: number | undefined, fallback: number) {
-  return Number.isSafeInteger(value) && value !== undefined && value > 0 ? value : fallback
+  return isPositiveSafeInteger(value) ? value : fallback
 }
 
 function nonnegativeInteger(value: number | undefined, fallback: number) {
-  return Number.isSafeInteger(value) && value !== undefined && value >= 0 ? value : fallback
+  return isNonnegativeSafeInteger(value) ? value : fallback
 }

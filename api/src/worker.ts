@@ -1,6 +1,7 @@
 import { sql } from './db/client.js'
 import { env, isSsoConfigured } from './env.js'
-import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog.js'
+import { closeSharedCacheRedisConnection } from './esi-resilience/cache-redis.js'
+import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog-access.js'
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
 import { startWorkerPlatform } from './queue/platform.js'
 import { assertWorkerStartupDependencies } from './worker/readiness.js'
@@ -23,6 +24,7 @@ export async function startWorker() {
   })
   await assertWorkerStartupDependencies()
   if (shutdownRequested) {
+    await closeSharedCacheRedisConnection()
     await sql.end({ timeout: 5 })
     return
   }
@@ -36,6 +38,7 @@ export async function startWorker() {
   if (reason === 'run-loop-stopped')
     console.error('Worker processing loop ended; shutting down this replica')
   await platform.close(env.WORKER_SHUTDOWN_TIMEOUT_MS)
+  await closeSharedCacheRedisConnection()
   await sql.end({ timeout: 5 })
   if (reason === 'run-loop-stopped') process.exitCode = 1
 }
@@ -44,6 +47,7 @@ try {
   await startWorker()
 } catch (error) {
   console.error('Worker startup failed', error instanceof Error ? error.message : 'unknown error')
+  await closeSharedCacheRedisConnection()
   await sql.end({ timeout: 1 })
   process.exitCode = 1
 }

@@ -1,7 +1,9 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
 import { CharacterTokenNotFoundError } from '../auth/store.js'
-import { getEsiOperationContract, type EsiOperation } from '../esi-resilience/catalog.js'
+import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
+import type { EsiOperation } from '../esi-resilience/catalog.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 import { findInstalledResource } from './resource-declarations.js'
 import { getCharacterAuthorizationForLifecycle, ScopeRequiredError } from '../auth/tokens.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
@@ -49,8 +51,7 @@ export async function guardInstalledResourceExecution(
   if (!resource) return { outcome: 'noop', reason: 'resource-unavailable' }
 
   const characterId = Number(identity.subjectId)
-  if (!Number.isSafeInteger(characterId) || characterId <= 0)
-    return { outcome: 'noop', reason: 'obsolete' }
+  if (!isPositiveSafeInteger(characterId)) return { outcome: 'noop', reason: 'obsolete' }
 
   const operation = getEsiOperationContract(resource.operationId as EsiOperation)
   if (operation.authorization.kind === 'public')

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Queue } from 'bullmq'
-import { acquireEsiRequestPermit, EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { acquireEsiRequestPermit } from '../esi-resilience/permits.js'
 import { getCoordinationConnection } from '../esi-resilience/transport.js'
 import { env } from '../env.js'
 import {

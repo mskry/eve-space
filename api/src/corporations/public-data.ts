@@ -1,8 +1,8 @@
 import { createCorporationClient } from '@evespace/esi-client/domains/corporation'
 import type { EsiResponseMetadata } from '@evespace/esi-client'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { resolveUniverseNames } from '../universe/names.js'
 

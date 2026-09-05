@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq'
 import { env } from '../env.js'
+import { isNonnegativeSafeInteger } from '../type-guards.js'
 import { closeQueueRedisConnection, createProbeRedisConnection } from './redis.js'
 import {
   affiliationPlannerOutcomeKey,
@@ -154,13 +155,13 @@ function parseMemoryInfo(info: string, metric: string) {
   const prefix = `${metric}:`
   const line = info.split('\n').find((candidate) => candidate.startsWith(prefix))
   const value = line ? Number(line.slice(prefix.length).trim()) : Number.NaN
-  if (!Number.isSafeInteger(value) || value < 0) throw new Error(`Invalid Redis ${metric}`)
+  if (!isNonnegativeSafeInteger(value)) throw new Error(`Invalid Redis ${metric}`)
   return value
 }
 
 function parseMaxMemory(configuration: string[]) {
   const value = Number(configuration.at(-1))
-  if (!Number.isSafeInteger(value) || value < 0) throw new Error('Invalid Redis maxmemory')
+  if (!isNonnegativeSafeInteger(value)) throw new Error('Invalid Redis maxmemory')
   return value
 }
 
@@ -199,8 +200,7 @@ function parseAffiliationPlannerOutcome(value: string | null): AffiliationPlanne
       !['scheduled', 'idle', 'cooldown', 'paused', 'coalesced', 'failed'].includes(
         outcome as string,
       ) ||
-      !Number.isSafeInteger(planned) ||
-      (planned as number) < 0 ||
+      !isNonnegativeSafeInteger(planned) ||
       typeof recordedAt !== 'string' ||
       Number.isNaN(Date.parse(recordedAt))
     )

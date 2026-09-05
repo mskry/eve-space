@@ -12,6 +12,7 @@ import {
 } from '../skills/training.js'
 import type { SkillAttribute } from '../skills/training.js'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 import type { ImplantBonusAttribute } from './implant-attributes.js'
 import {
   implantBonusAttributes,
@@ -178,8 +179,4 @@ function sameTypeIdentity(left: TypeDetailRow, right: TypeDetailRow) {
     left.categoryName === right.categoryName &&
     left.categoryPublished === right.categoryPublished
   )
-}
-
-function isPositiveSafeInteger(value: number) {
-  return Number.isSafeInteger(value) && value > 0
 }

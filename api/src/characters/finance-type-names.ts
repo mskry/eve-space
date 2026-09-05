@@ -1,12 +1,13 @@
 import { inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeTypes } from '../db/schema.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 
 const financeTypeLookupBatchSize = 1_000
 
 export async function loadFinanceTypeNames(typeIds: readonly number[]) {
   const uniqueTypeIds = [...new Set(typeIds)]
-  if (uniqueTypeIds.some((typeId) => !Number.isSafeInteger(typeId) || typeId <= 0))
+  if (uniqueTypeIds.some((typeId) => !isPositiveSafeInteger(typeId)))
     throw new Error('Finance type lookup IDs must be positive safe integers')
   if (uniqueTypeIds.length === 0) return new Map<number, string>()
 

@@ -14,10 +14,10 @@ vi.mock('@evespace/esi-client/domains/character', () => ({
 vi.mock('@evespace/esi-client/domains/universe', () => ({
   createUniverseClient: () => ({ withMetadata: () => ({ resolveNames: mocks.resolveNames }) }),
 }))
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 vi.mock('../../src/universe/resolution-cache.js', () => ({
   readUniverseNames: () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() }),
   writeUniverseNames: vi.fn(),

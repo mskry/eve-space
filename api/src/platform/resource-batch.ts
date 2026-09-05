@@ -12,16 +12,17 @@ import {
   assertRegisteredEsiOperation,
   getEsiOperationContract,
   getExecutableEsiOperationDefinition,
-  type EsiOperation,
-} from '../esi-resilience/catalog.js'
-import { getEsiResilienceLayer, type PublicEsiOperation } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+} from '../esi-resilience/catalog-access.js'
+import type { EsiOperation } from '../esi-resilience/catalog.js'
+import { getEsiResilienceLayer, type PublicEsiOperation } from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import {
   dispatchModuleEsiOperation,
   validateModuleEsiOperationInputs,
 } from '../esi-resilience/module-operation-dispatcher.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { getQueueAdmissionCapacity, QueueAdmissionError } from '../queue/admission.js'
+import { isPositiveSafeInteger, isRecord } from '../type-guards.js'
 import {
   getJobDefinition,
   jobOptions,
@@ -325,7 +326,7 @@ function validateBatchClassification<Data>(
 
 function assertBatchClassificationOutcome(
   mode: PlatformResourceBatchMode,
-  value: Record<string, unknown>,
+  value: Readonly<Record<string, unknown>>,
   outcome: string,
 ) {
   if (mode === 'change-hint') {
@@ -344,7 +345,7 @@ function toEligibleBatchSubject(
   subjectIdentity: PlatformResourceBatchJobPayload['subjects'][number],
 ): Omit<EligibleBatchSubject, 'authorizationGeneration'> {
   const characterId = Number(subjectIdentity.subjectId)
-  if (!Number.isSafeInteger(characterId) || characterId <= 0)
+  if (!isPositiveSafeInteger(characterId))
     throw new Error('Resource batch subject character identity is invalid')
   return {
     identity: {
@@ -398,12 +399,7 @@ function isCharacterSubject(value: unknown): value is PlatformCharacterResourceS
   return (
     isRecord(value) &&
     value.kind === 'character' &&
-    Number.isSafeInteger(value.characterId) &&
-    Number(value.characterId) > 0 &&
+    isPositiveSafeInteger(value.characterId) &&
     typeof value.lifecycleId === 'string'
   )
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

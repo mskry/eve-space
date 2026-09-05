@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { EsiHttpError } from '@evespace/esi-client'
+import { EsiHttpError, EsiResponseParseError } from '@evespace/esi-client'
 
 const mocks = vi.hoisted(() => ({
   acquire: vi.fn(),
@@ -26,8 +26,8 @@ vi.mock('../../src/esi-resilience/coordination.js', () => ({
 }))
 
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
-import { cacheResourceRevisionRepairKey } from '../../src/esi-resilience/namespaces.js'
-import { EsiResilienceLayer } from '../../src/esi-resilience/resilience.js'
+import { cacheResourceRevisionRepairKey } from '../../src/esi-resilience/keys.js'
+import { EsiResilienceLayer } from '../../src/esi-resilience/layer.js'
 import { EsiTransportError } from '../../src/esi-resilience/transport.js'
 
 const now = Date.parse('2026-08-20T12:00:00.000Z')
@@ -342,6 +342,41 @@ describe('ESI resilience layer', () => {
     expect(outerLoad).toHaveBeenCalledOnce()
   })
 
+  test('serves outage-only stale data after a nested operation exhausts its retries', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const nestedLoad = vi.fn().mockRejectedValue(esiUnavailable())
+    const outerLoad = vi
+      .fn()
+      .mockResolvedValueOnce(result({ name: 'cached' }))
+      .mockImplementationOnce(async () => {
+        await layer.getPublic({
+          operation: 'universe-resolve-names',
+          inputs: { ids: [90_000_001] },
+          load: nestedLoad,
+        })
+        return result({ name: 'unreachable' })
+      })
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load: outerLoad,
+    }
+
+    await layer.getCharacter(resource)
+    await vi.advanceTimersByTimeAsync(60_001)
+    const pending = layer.getCharacter(resource)
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toMatchObject({
+      data: { name: 'cached' },
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(nestedLoad).toHaveBeenCalledTimes(3)
+    expect(outerLoad).toHaveBeenCalledTimes(2)
+  })
+
   test('serves a retained private entry while the upstream is unreachable', async () => {
     const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
     const load = vi
@@ -379,6 +414,62 @@ describe('ESI resilience layer', () => {
       { accessToken: 'token', principal: 'character-1' },
       { ifNoneMatch: '"etag"', ifModifiedSince: 'yesterday' },
     )
+  })
+
+  test.each([
+    [
+      'before response headers',
+      () => new EsiTransportError(new DOMException('Request timed out', 'TimeoutError')),
+    ],
+    [
+      'while reading the response body',
+      () =>
+        new EsiResponseParseError({
+          operationId: 'GetCharactersCharacterIdWallet',
+          status: 200,
+          cause: new EsiTransportError(new DOMException('Response timed out', 'TimeoutError'), 200),
+        }),
+    ],
+  ])('serves a retained private entry when a request times out %s', async (_stage, failure) => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce(result({ name: 'cached' }))
+      .mockRejectedValueOnce(failure())
+
+    await layer.getCharacter({ operation: 'wallet-balance', inputs: { characterId: 1 }, load })
+    await vi.advanceTimersByTimeAsync(60_001)
+
+    await expect(
+      layer.getCharacter({ operation: 'wallet-balance', inputs: { characterId: 1 }, load }),
+    ).resolves.toMatchObject({
+      data: { name: 'cached' },
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(load).toHaveBeenCalledTimes(2)
+  })
+
+  test('does not release retained private data for malformed JSON', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const invalid = new EsiResponseParseError({
+      operationId: 'GetCharactersCharacterIdWallet',
+      status: 200,
+      cause: new SyntaxError('Unexpected end of JSON input'),
+    })
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce(result({ name: 'cached' }))
+      .mockRejectedValueOnce(invalid)
+
+    await layer.getCharacter({ operation: 'wallet-balance', inputs: { characterId: 1 }, load })
+    await vi.advanceTimersByTimeAsync(60_001)
+
+    await expect(
+      layer.getCharacter({ operation: 'wallet-balance', inputs: { characterId: 1 }, load }),
+    ).rejects.toBe(invalid)
+    expect(load).toHaveBeenCalledTimes(2)
   })
 
   test('refuses a retained private entry when the refresh failure is not an outage', async () => {

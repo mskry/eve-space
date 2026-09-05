@@ -14,6 +14,7 @@ import {
   mapCharacterFinanceResourceState,
 } from '../utils/character-finance-mappers'
 import { financeContractHasItems } from '../utils/finance'
+import { isPositiveSafeInteger } from '../utils/number-guards'
 import type { CharacterFinancePageResource } from './useCharacterFinanceServices'
 
 interface CharacterFinanceContractDetailOptions {
@@ -150,11 +151,7 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
   }
 
   function changeContractPage(nextPage: number) {
-    if (
-      !Number.isSafeInteger(nextPage) ||
-      nextPage < 1 ||
-      nextPage === options.contractPage.value
-    ) {
+    if (!isPositiveSafeInteger(nextPage) || nextPage === options.contractPage.value) {
       return false
     }
     closeContractDrawer(false)

@@ -22,10 +22,10 @@ vi.mock('@evespace/esi-client/domains/contracts', () => ({
   createContractsClient: mocks.createContractsClient,
 }))
 vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getCharacter: mocks.getCharacter }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 vi.mock('../../src/characters/finance-type-names.js', () => ({
   loadFinanceTypeNames: mocks.loadTypeNames,
   financeTypeName: (typeId: number, names: ReadonlyMap<number, string>) =>

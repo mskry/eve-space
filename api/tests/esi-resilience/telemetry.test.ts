@@ -1,11 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { esiOperationCatalog } from '../../src/esi-resilience/catalog.js'
+import { ESI_CACHE_ENVELOPE_VERSION } from '../../src/esi-resilience/envelope.js'
+import { probeEsiResilienceTelemetry } from '../../src/esi-resilience/telemetry.js'
 import {
-  probeEsiResilienceTelemetry,
+  recordEsiCacheEnvelopeRejection,
   recordEsiCacheSource,
   recordEsiCoordinationFailure,
   recordEsiUpstreamOutcome,
-} from '../../src/esi-resilience/telemetry.js'
+  recordCacheConnectionError,
+} from '../../src/esi-resilience/telemetry-counters.js'
 
 describe('ESI resilience telemetry', () => {
   test('marks dependency failures degraded before three consecutive failed probes mark them unavailable', async () => {
@@ -57,7 +60,14 @@ describe('ESI resilience telemetry', () => {
         rateGroup: 'declared',
         declaredRateGroup: 'status',
       },
-      outcomes: { success: 3, notModified: 0, rateLimited: 0, clientError: 0, serverError: 0 },
+      outcomes: {
+        success: 3,
+        notModified: 0,
+        redirect: 0,
+        rateLimited: 0,
+        clientError: 0,
+        serverError: 0,
+      },
       observedRateGroup: null,
       rateGroupMismatches: 0,
       cacheSources: { esi: 0, cache: 0, 'not-modified': 0, stale: 0 },
@@ -121,6 +131,33 @@ describe('ESI resilience telemetry', () => {
     expect(JSON.stringify(telemetry)).not.toMatch(/character-\d/)
   })
 
+  test('counts cache envelope version and shape rejections separately', async () => {
+    const dependencies = {
+      probeCache: async () => true,
+      probeCoordination: async () => false,
+      cacheConnection: { hgetall: async () => ({}) } as never,
+    }
+    const before = await probeEsiResilienceTelemetry(dependencies)
+
+    recordEsiCacheEnvelopeRejection({ success: false, reason: 'versionMismatch', found: 2 })
+    recordEsiCacheEnvelopeRejection({ success: false, reason: 'invalidShape' })
+    recordEsiCacheEnvelopeRejection({ success: false, reason: 'invalidShape' })
+
+    const after = await probeEsiResilienceTelemetry(dependencies)
+    expect(after.cache.envelopeRejections).toEqual({
+      versionMismatch: before.cache.envelopeRejections.versionMismatch + 1,
+      invalidShape: before.cache.envelopeRejections.invalidShape + 2,
+      malformedJson: before.cache.envelopeRejections.malformedJson,
+      incoherentFreshnessWindow: before.cache.envelopeRejections.incoherentFreshnessWindow,
+    })
+    expect(after.cache.envelopeVersionMismatches).toMatchObject({
+      expected: ESI_CACHE_ENVELOPE_VERSION,
+      found: {
+        2: (before.cache.envelopeVersionMismatches.found['2'] ?? 0) + 1,
+      },
+    })
+  })
+
   test('reports cache telemetry independently when coordination is unavailable', async () => {
     const telemetry = await probeEsiResilienceTelemetry({
       probeCache: async () => true,
@@ -145,5 +182,17 @@ describe('ESI resilience telemetry', () => {
       status: 'operational',
       operationFailures: 1,
     })
+  })
+
+  test('reports sanitized cache connection error counts', async () => {
+    recordCacheConnectionError('ECONNREFUSED')
+    const telemetry = await probeEsiResilienceTelemetry({
+      probeCache: async () => true,
+      probeCoordination: async () => true,
+      cacheConnection: { hgetall: async () => ({}) } as never,
+      coordinationConnection: { mget: async () => [], get: async () => null } as never,
+    })
+
+    expect(telemetry.cache.connectionErrors).toMatchObject({ ECONNREFUSED: 1 })
   })
 })

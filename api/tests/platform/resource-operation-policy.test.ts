@@ -14,15 +14,15 @@ const mocks = vi.hoisted(() => ({
   getPublic: vi.fn(),
 }))
 
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: mocks.getEsiResilienceLayer,
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
 }))
 
 import { assertInstalledResourceDeclarations } from '../../src/platform/resource-declarations.js'
-import { getEsiOperationContract } from '../../src/esi-resilience/catalog.js'
+import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
 import { executeInstalledResourceOperation } from '../../src/platform/resource-operation-executor.js'
 
