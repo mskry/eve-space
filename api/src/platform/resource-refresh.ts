@@ -20,6 +20,7 @@ import {
 } from '../organization/compliance.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
+  loadPlatformCollectionState,
   upsertPlatformCollectionState,
   upsertPlatformCollectionStateInTransaction,
 } from './collection-state-store.js'
@@ -161,6 +162,9 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
         ${resourceRefreshLockKey(observation.identity)}
       )`,
     )
+    const currentState = await loadPlatformCollectionState(observation.identity, transaction)
+    if (currentState?.validatedAt && currentState.validatedAt >= validatedAt) return
+
     const applied = await materializeCoreResourceObservation(transaction, {
       resourceId: observation.resource.resourceId,
       subject: observation.subject,

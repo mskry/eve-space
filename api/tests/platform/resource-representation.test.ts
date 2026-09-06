@@ -27,7 +27,7 @@ describe('platform resource representation', () => {
     expect(findInstalledResource(resource, [resource as never])).toBe(resource)
     expect(
       findInstalledResource({ ...resource, subjectKind: 'corporation' }, [resource as never]),
-    ).toBe(undefined)
+    ).toBeUndefined()
   })
 
   test('converts valid lifecycle identities to typed subjects', () => {

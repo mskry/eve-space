@@ -1,4 +1,5 @@
 import { posix } from 'node:path'
+import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
@@ -110,59 +111,12 @@ function violationsForImport(
 }
 
 function dependencyCycleViolations(sources: readonly PlatformSource[]) {
-  const sourceModules = new Set(sources.map(({ path }) => moduleName(path)))
-  const dependencies = new Map(
-    sources.map((source) => [
-      moduleName(source.path),
-      typescriptModuleSpecifiers(source.path, source.source)
-        .map((specifier) => localModuleName(source.path, specifier))
-        .filter((module): module is string => Boolean(module && sourceModules.has(module)))
-        .toSorted((left, right) => left.localeCompare(right)),
-    ]),
-  )
-  const visited = new Set<string>()
-  const active = new Set<string>()
-  const stack: string[] = []
-  const cycles = new Set<string>()
-
-  for (const module of [...sourceModules].toSorted((left, right) => left.localeCompare(right)))
-    visitDependencies(module, dependencies, visited, active, stack, cycles)
-  return [...cycles].map((cycle) => `Platform dependency cycle: ${cycle}`)
-}
-
-function visitDependencies(
-  module: string,
-  dependencies: ReadonlyMap<string, readonly string[]>,
-  visited: Set<string>,
-  active: Set<string>,
-  stack: string[],
-  cycles: Set<string>,
-) {
-  if (visited.has(module)) return
-  visited.add(module)
-  active.add(module)
-  stack.push(module)
-
-  for (const dependency of dependencies.get(module) ?? []) {
-    if (!visited.has(dependency))
-      visitDependencies(dependency, dependencies, visited, active, stack, cycles)
-    else if (active.has(dependency)) {
-      const cycle = stack.slice(stack.indexOf(dependency))
-      cycles.add(canonicalCycle(cycle))
-    }
-  }
-
-  stack.pop()
-  active.delete(module)
-}
-
-function canonicalCycle(cycle: readonly string[]) {
-  const start = cycle.reduce(
-    (lowest, module, index) => (module.localeCompare(cycle[lowest]!) < 0 ? index : lowest),
-    0,
-  )
-  const ordered = [...cycle.slice(start), ...cycle.slice(0, start)]
-  return [...ordered, ordered[0]].join(' -> ')
+  return findDependencyCycles(
+    sources,
+    ({ path }) => moduleName(path),
+    ({ path, source }) =>
+      typescriptModuleSpecifiers(path, source).map((specifier) => localModuleName(path, specifier)),
+  ).map((cycle) => `Platform dependency cycle: ${cycle}`)
 }
 
 function moduleName(path: string) {

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   createPersistence: vi.fn(),
   databaseTransaction: vi.fn(),
   execute: vi.fn(),
+  loadState: vi.fn(),
   materializeCoreResourceObservation: vi.fn(),
   recordSuccess: vi.fn(),
   recomputeAllAccounts: vi.fn(),
@@ -36,6 +37,7 @@ vi.mock('../../src/platform/resource-eligibility.js', () => ({
   resolveInstalledResourceEligibility: mocks.resolveEligibility,
 }))
 vi.mock('../../src/platform/collection-state-store.js', () => ({
+  loadPlatformCollectionState: mocks.loadState,
   upsertPlatformCollectionState: mocks.upsertState,
   upsertPlatformCollectionStateInTransaction: vi.fn(),
 }))
@@ -65,6 +67,7 @@ describe('local resource observations', () => {
     mocks.databaseTransaction.mockImplementation((operation) =>
       operation({ execute: mocks.execute }),
     )
+    mocks.loadState.mockResolvedValue(null)
     mocks.resolveEligibility.mockResolvedValue({
       status: 'eligible',
       due: true,
@@ -234,6 +237,19 @@ describe('local resource observations', () => {
       recomputeAllAccounts: false,
     })
     await applyInstalledResourceObservation(coreObservation())
+    expect(mocks.recomputeAllAccounts).not.toHaveBeenCalled()
+    expect(mocks.recomputeManagedCorporations).not.toHaveBeenCalled()
+  })
+
+  test('discards a core observation older than the serialized collection state', async () => {
+    mocks.loadState.mockResolvedValue({
+      validatedAt: new Date('2026-08-26T15:00:00.000Z'),
+    })
+
+    await applyInstalledResourceObservation(coreObservation())
+
+    expect(mocks.materializeCoreResourceObservation).not.toHaveBeenCalled()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
     expect(mocks.recomputeAllAccounts).not.toHaveBeenCalled()
     expect(mocks.recomputeManagedCorporations).not.toHaveBeenCalled()
   })
