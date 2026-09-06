@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { EsiHttpError, EsiResponseParseError } from '@evespace/esi-client'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 
 const mocks = vi.hoisted(() => ({
   acquire: vi.fn(),
@@ -29,7 +31,12 @@ import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
 import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
 import { cacheResourceRevisionRepairKey } from '../../src/esi-resilience/keys.js'
+import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
 import { EsiResilienceLayer } from '../../src/esi-resilience/layer.js'
+import {
+  dispatchModuleEsiOperation,
+  validateModuleEsiOperationInputs,
+} from '../../src/esi-resilience/module-operation-dispatcher.js'
 import { EsiTransportError } from '../../src/esi-resilience/transport.js'
 
 const now = Date.parse('2026-08-20T12:00:00.000Z')
@@ -677,6 +684,64 @@ describe('ESI resilience layer', () => {
       { accessToken: 'token', principal: 'character-1' },
       { ifNoneMatch: '"etag"', ifModifiedSince: 'yesterday' },
     )
+  })
+
+  test('revalidates a registered generic operation before serving retained outage data', async () => {
+    const definition = {
+      sdkOperationId: 'GetCharactersCharacterIdWallet',
+      descriptor: operationRegistry.GetCharactersCharacterIdWallet!,
+      contract: getEsiOperationContract('wallet-balance'),
+    } satisfies PlatformExecutableEsiOperationDefinition
+    const inputs = validateModuleEsiOperationInputs(definition, {
+      path: { character_id: 1 },
+      headers: { 'X-Tenant': 'tenant-one' },
+    })
+    const requests: Request[] = []
+    let unavailable = false
+    const transport: typeof fetch = async (input, init) => {
+      requests.push(new Request(input, init))
+      if (unavailable) throw new EsiTransportError(new Error('upstream unavailable'))
+      return new Response('10', {
+        status: 200,
+        headers: {
+          'cache-control': 'max-age=60',
+          'content-type': 'application/json',
+          etag: 'wallet-etag',
+          'last-modified': 'yesterday',
+        },
+      })
+    }
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load: (
+        authority: { accessToken: string; principal: string },
+        revalidation: { ifNoneMatch?: string; ifModifiedSince?: string },
+      ) =>
+        dispatchModuleEsiOperation(definition, {
+          inputs,
+          authorization: { kind: 'character', accessToken: authority.accessToken },
+          revalidation,
+          transport,
+        }),
+    }
+
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({ data: 10, source: 'esi' })
+    await vi.advanceTimersByTimeAsync(60_001)
+    unavailable = true
+
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({
+      data: 10,
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(requests).toHaveLength(2)
+    expect(new URL(requests[1]!.url).pathname).toBe('/characters/1/wallet')
+    expect(requests[1]!.headers.get('if-none-match')).toBe('wallet-etag')
+    expect(requests[1]!.headers.get('if-modified-since')).toBe('yesterday')
+    expect(requests[1]!.headers.get('x-tenant')).toBe('tenant-one')
   })
 
   test.each([

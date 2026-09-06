@@ -1,4 +1,14 @@
 import { describe, expect, test, vi } from 'vitest'
+
+const authMocks = vi.hoisted(() => ({
+  getCharacterCacheAuthorizationForLifecycle: vi.fn(),
+}))
+
+vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/auth/tokens.js')>()),
+  getCharacterCacheAuthorizationForLifecycle: authMocks.getCharacterCacheAuthorizationForLifecycle,
+}))
+
 import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
@@ -56,7 +66,7 @@ describe('platform resource execution guard', () => {
       order.push('eligibility')
       return Promise.resolve(eligible(4))
     })
-    const loadCharacterAuthorization = vi.fn().mockImplementation(() => {
+    authMocks.getCharacterCacheAuthorizationForLifecycle.mockImplementation(() => {
       order.push('token')
       return Promise.resolve({ scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 })
     })
@@ -64,7 +74,6 @@ describe('platform resource execution guard', () => {
     const guarded = await guardInstalledResourceExecution(identity, {
       resources: [privateResource],
       resolveEligibility,
-      loadCharacterCacheAuthorization: loadCharacterAuthorization,
     })
     expect(guarded).toMatchObject({
       outcome: 'ready',
@@ -73,7 +82,7 @@ describe('platform resource execution guard', () => {
     })
     expect(guarded).not.toHaveProperty('authorization.accessToken')
     expect(order).toEqual(['eligibility', 'token'])
-    expect(loadCharacterAuthorization).toHaveBeenCalledWith(
+    expect(authMocks.getCharacterCacheAuthorizationForLifecycle).toHaveBeenCalledWith(
       1404328063,
       identity.subjectLifecycleId,
       'esi-wallet.read_character_wallet.v1',

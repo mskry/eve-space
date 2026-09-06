@@ -1,3 +1,4 @@
+import { exportJWK, generateKeyPair, SignJWT } from 'jose'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 vi.mock('../../src/env.js', () => ({
@@ -36,7 +37,7 @@ function metadataResponse() {
   })
 }
 
-describe('EVE SSO discovery cache', () => {
+describe('EVE SSO requests', () => {
   test('retries after a failed discovery instead of caching the rejection', async () => {
     fetchMock.mockRejectedValueOnce(new Error('The operation was aborted due to timeout'))
     const { createAuthorizationUrl } = await import('../../src/auth/sso.js')
@@ -87,6 +88,47 @@ describe('EVE SSO discovery cache', () => {
     const rateLimit = await sso.createAuthorizationUrl('state-two').catch((error) => error)
     expect(rateLimit).toMatchObject({ name: 'SsoHttpError', status: 429 })
     expect(errors.isTransientSsoError(rateLimit)).toBe(true)
+    expect(errors.isTransientSsoError(new errors.SsoHttpError('test', 600))).toBe(false)
+  })
+
+  test('exchanges authorization codes and preserves HTTP failures', async () => {
+    const token = {
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      expires_in: 1_200,
+      token_type: 'Bearer',
+    }
+    fetchMock
+      .mockResolvedValueOnce(metadataResponse())
+      .mockResolvedValueOnce(new Response(null, { status: 502 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(token), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+    const sso = await import('../../src/auth/sso.js')
+
+    await expect(sso.exchangeAuthorizationCode('first-code')).rejects.toMatchObject({
+      name: 'SsoHttpError',
+      operation: 'EVE token exchange',
+      status: 502,
+    })
+    await expect(sso.exchangeAuthorizationCode('second-code')).resolves.toEqual(token)
+  })
+
+  test('wraps response body failures as SSO transport errors', async () => {
+    const cause = new Error('response stream failed')
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      text: vi.fn().mockRejectedValue(cause),
+    } as unknown as Response)
+    const sso = await import('../../src/auth/sso.js')
+    const errors = await import('../../src/auth/sso-errors.js')
+
+    const failure = await sso.createAuthorizationUrl('state').catch((error) => error)
+    expect(failure).toBeInstanceOf(errors.SsoTransportError)
+    expect(failure).toMatchObject({ cause })
   })
 
   test('distinguishes transient refresh failures from explicit rejection', async () => {
@@ -135,6 +177,48 @@ describe('EVE SSO discovery cache', () => {
     expect(errors.isTransientSsoError(failure)).toBe(false)
   })
 
+  test('accepts refresh responses and distinguishes OAuth rejection codes', async () => {
+    const refreshed = {
+      access_token: 'new-access-token',
+      expires_in: 1_200,
+      token_type: 'Bearer',
+    }
+    fetchMock
+      .mockResolvedValueOnce(metadataResponse())
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(refreshed), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'invalid_token' }), {
+          status: 403,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'temporarily_unavailable' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        }),
+      )
+    const sso = await import('../../src/auth/sso.js')
+    const errors = await import('../../src/auth/sso-errors.js')
+
+    await expect(sso.refreshAccessToken('refresh')).resolves.toEqual(refreshed)
+    await expect(sso.refreshAccessToken('rejected')).rejects.toMatchObject({
+      name: 'SsoTokenRejectedError',
+      status: 401,
+      upstreamStatus: 403,
+    })
+    const unavailable = await sso
+      .refreshAccessToken('temporarily-unavailable')
+      .catch((error) => error)
+    expect(unavailable).toBeInstanceOf(errors.SsoHttpError)
+    expect(unavailable).toMatchObject({ status: 400 })
+  })
+
   test('preserves transient JWKS HTTP status through jose verification', async () => {
     fetchMock
       .mockResolvedValueOnce(metadataResponse())
@@ -150,5 +234,40 @@ describe('EVE SSO discovery cache', () => {
     const failure = await sso.verifyAccessToken(token).catch((error) => error)
     expect(failure).toMatchObject({ name: 'SsoHttpError', status: 503 })
     expect(errors.isTransientSsoError(failure)).toBe(true)
+  })
+
+  test('verifies access tokens through the decoded JWKS response', async () => {
+    const { privateKey, publicKey } = await generateKeyPair('RS256')
+    const publicJwk = await exportJWK(publicKey)
+    const token = await new SignJWT({
+      sub: 'CHARACTER:EVE:1404328063',
+      name: 'Test Character',
+      scp: 'scope.one scope.two',
+    })
+      .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+      .setIssuer(metadata.issuer)
+      .setAudience(['EVE Online', 'test-client'])
+      .setExpirationTime('5m')
+      .sign(privateKey)
+    const jwksBody = JSON.stringify({
+      keys: [{ ...publicJwk, alg: 'RS256', kid: 'test-key', use: 'sig' }],
+    })
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockResolvedValueOnce(
+      new Response(jwksBody, {
+        status: 200,
+        headers: {
+          'content-encoding': 'gzip',
+          'content-length': String(jwksBody.length),
+          'content-type': 'application/json',
+        },
+      }),
+    )
+    const { verifyAccessToken } = await import('../../src/auth/sso.js')
+
+    await expect(verifyAccessToken(token)).resolves.toEqual({
+      characterId: 1404328063,
+      characterName: 'Test Character',
+      scopes: ['scope.one', 'scope.two'],
+    })
   })
 })

@@ -9,11 +9,16 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   createEsiTransport: vi.fn(),
+  getCharacterAuthorizationForLifecycle: vi.fn(),
   getCharacterWithAuthorization: vi.fn(),
   getEsiResilienceLayer: vi.fn(),
   getPublic: vi.fn(),
 }))
 
+vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/auth/tokens.js')>()),
+  getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorizationForLifecycle,
+}))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: mocks.getEsiResilienceLayer,
 }))
@@ -177,6 +182,37 @@ describe('installed resource operation policy', () => {
     ).resolves.toMatchObject({ outcome: 'loaded', authorizationGeneration: 4 })
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
     expect(mocks.createEsiTransport).not.toHaveBeenCalled()
+  })
+
+  test('uses the default lifecycle authorization loader when a refresh needs token material', async () => {
+    mocks.getCharacterAuthorizationForLifecycle.mockResolvedValue({
+      accessToken: 'private',
+      tokenVersion: 5,
+    })
+    mocks.getCharacterWithAuthorization.mockImplementation(async (_operation, authorization) => {
+      const resolved = await authorization.resolve()
+      return { result: cached(123.45), authorizationGeneration: resolved.tokenVersion }
+    })
+    const guardExecution = vi.fn().mockResolvedValue({
+      outcome: 'ready',
+      resource,
+      characterId: 1404328063,
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+    })
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [resource],
+        guardExecution,
+        definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
+        validateInputs: vi.fn((_definition, inputs) => inputs),
+      }),
+    ).resolves.toMatchObject({ outcome: 'loaded', authorizationGeneration: 5 })
+    expect(mocks.getCharacterAuthorizationForLifecycle).toHaveBeenCalledWith(
+      1404328063,
+      identity.subjectLifecycleId,
+      'esi-wallet.read_character_wallet.v1',
+    )
   })
 
   test('does not reach the executor, transport, or module implementation when disabled', async () => {

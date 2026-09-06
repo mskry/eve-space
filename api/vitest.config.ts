@@ -17,7 +17,7 @@ export default defineConfig({
         'src/commands/**/*.ts',
         'src/generated/**/*.ts',
         'src/admin/store.ts',
-        'src/auth/{security,sso,store}.ts',
+        'src/auth/{security,store}.ts',
         'src/characters/{overview,profile,public-routes}.ts',
         'src/corporations/{public-data,routes}.ts',
         'src/db/{client,migrate,migration-runner,module-migration-runner,module-persistence,module-persistence-provisioner,schema,startup-migrations}.ts',

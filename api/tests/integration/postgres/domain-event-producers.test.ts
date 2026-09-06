@@ -121,6 +121,32 @@ describe('transactional domain event producers', () => {
     expect(await readEvents()).toHaveLength(2)
   })
 
+  test('reads minimal cache authorization for the current character lifecycle', async () => {
+    const scopes = ['scope.one', 'scope.two']
+    await saveLogin(authorizationInput(mainCharacterId, scopes), 'main-session')
+    const userId = await findCharacterUserId(mainCharacterId)
+    const character = await authStore.findOwnedCharacter(userId, mainCharacterId)
+    if (!character) throw new Error('Expected owned character')
+
+    await expect(authStore.findCharacterCacheAuthorization(mainCharacterId)).resolves.toEqual({
+      scopes,
+      tokenVersion: 0,
+    })
+    await expect(authStore.findCharacterCacheAuthorization(otherCharacterId)).resolves.toBeNull()
+    await expect(
+      authStore.findCharacterCacheAuthorizationForLifecycle(
+        mainCharacterId,
+        '00000000-0000-4000-8000-000000000001',
+      ),
+    ).resolves.toBeNull()
+    await expect(
+      authStore.findCharacterCacheAuthorizationForLifecycle(
+        mainCharacterId,
+        character.subjectLifecycleId,
+      ),
+    ).resolves.toEqual({ scopes, tokenVersion: 0 })
+  })
+
   test('attachment emits once, compares existing scopes, and rejects cross-user conflicts', async () => {
     await saveLogin(authorizationInput(mainCharacterId, []), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
