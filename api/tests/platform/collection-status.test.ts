@@ -62,6 +62,22 @@ describe('platform collection status', () => {
     })
   })
 
+  test('keeps a retained failed collection stale during retry backoff', async () => {
+    const validatedAt = new Date('2026-08-26T10:00:00.000Z')
+    await expect(
+      getInstalledResourceCollectionStatus(identity, {
+        resources: [resource],
+        resolveEligibility: vi
+          .fn()
+          .mockResolvedValue(eligible(false, { validatedAt, lastFailureClass: 'esi-unavailable' })),
+      }),
+    ).resolves.toEqual({
+      status: 'stale',
+      validatedAt: validatedAt.toISOString(),
+      lastFailureClass: 'esi-unavailable',
+    })
+  })
+
   test('reports a safe character-bound reauthorization path', async () => {
     await expect(
       getInstalledResourceCollectionStatus(identity, {

@@ -734,7 +734,7 @@ function toCachedResult<Data>(
   stale: boolean,
   retryAt?: string,
   quota: EsiCachedResult<Data>['quota'] = {},
-  refreshFailureClass?: EsiCachedResult<Data>['refreshFailureClass'],
+  refreshFailureClass?: NonNullable<EsiCachedResult<Data>['refreshFailureClass']>,
 ): EsiCachedResult<Data> {
   return {
     data: envelope.data,

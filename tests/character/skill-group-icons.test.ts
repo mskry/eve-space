@@ -1,9 +1,7 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { skillGroupIcon, skillGroupIconNames } from '../../app/utils/skill-group-icons'
+import { readWorkspaceFile as source } from '../support/read-workspace-file'
 
-const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 const component = source('app/components/character/skills/GroupIcon.vue')
 
 describe('skillGroupIcon', () => {

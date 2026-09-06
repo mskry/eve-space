@@ -1,4 +1,8 @@
-/* Integration and wallet sections */
+.settings-integrations-stack {
+  display: grid;
+  gap: 3rem;
+}
+
 .settings-subsection-heading {
   margin-bottom: 1rem;
   display: flex;
@@ -70,4 +74,278 @@
 }
 .integration-state.muted {
   color: var(--ui-text-faint);
+}
+
+.authority-separation-note {
+  margin-bottom: 1rem;
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 20px;
+  border-left: 2px solid var(--ui-warning);
+  background: color-mix(in srgb, var(--ui-warning) 6%, var(--panel));
+}
+
+.authority-separation-note strong,
+.authority-separation-note p,
+.authority-feedback {
+  margin: 0;
+  font: 10px/1.6 var(--ui-font-mono);
+}
+
+.authority-separation-note strong {
+  color: var(--ui-warning);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.authority-separation-note p {
+  color: var(--muted);
+}
+
+.authority-feedback {
+  margin-bottom: 1rem;
+  padding: 11px 14px;
+  border-left: 2px solid var(--ui-primary);
+  background: color-mix(in srgb, var(--ui-primary) 6%, transparent);
+  color: var(--ui-primary);
+}
+
+.authority-feedback--error {
+  border-color: var(--ui-danger);
+  background: color-mix(in srgb, var(--ui-danger) 6%, transparent);
+  color: var(--ui-danger);
+}
+
+.authority-console,
+.role-management-grid {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.authority-loading,
+.authority-claimed-state,
+.role-grant-empty {
+  padding: 28px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 10px/1.6 var(--ui-font-mono);
+}
+
+.authority-organization-strip {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ui-primary) 3%, transparent);
+}
+
+.authority-organization-strip div {
+  display: grid;
+  gap: 5px;
+}
+
+.authority-organization-strip div > span,
+.authority-evidence-card > div > span,
+.authority-step,
+.role-grant-row > div > span {
+  color: var(--ui-primary);
+  font: 8px/1 var(--ui-font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.authority-organization-strip strong {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.authority-evidence-card {
+  padding: 30px;
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.authority-evidence-marker {
+  width: 66px;
+  height: 66px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ui-primary) 45%, var(--line));
+  color: var(--ui-primary);
+  font: 800 10px/1 var(--ui-font-mono);
+  letter-spacing: 0.12em;
+  clip-path: polygon(
+    12px 0,
+    100% 0,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    0 100%,
+    0 12px
+  );
+}
+
+.authority-evidence-card h3,
+.authority-claim-panel h3 {
+  margin: 7px 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.authority-evidence-card p,
+.authority-claim-panel p,
+.authority-claimed-state p,
+.role-grant-row p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.authority-evidence-card dl {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.authority-evidence-card dl div {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 12px;
+}
+
+.authority-evidence-card dt,
+.authority-evidence-card dd {
+  margin: 0;
+  font: 9px/1.4 var(--ui-font-mono);
+}
+
+.authority-evidence-card dt {
+  color: var(--ui-text-faint);
+  text-transform: uppercase;
+}
+
+.authority-evidence-card dd {
+  color: var(--ui-primary);
+}
+
+.authority-claim-panel {
+  padding: 30px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.7fr);
+  gap: 40px;
+}
+
+.authority-claim-form,
+.role-grant-form,
+.role-revoke-form {
+  display: grid;
+  gap: 10px;
+}
+
+.authority-claim-form label,
+.role-grant-form label,
+.role-revoke-form label {
+  color: var(--ui-text-faint);
+  font: 8px/1.2 var(--ui-font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.authority-claim-form select,
+.role-grant-form select,
+.role-grant-form input,
+.role-grant-form textarea,
+.role-revoke-form textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  outline: none;
+  background: var(--ui-surface-solid);
+  color: var(--ui-text);
+  font: 10px/1.4 var(--ui-font-mono);
+}
+
+.role-grant-form textarea,
+.role-revoke-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.authority-claim-form select:focus,
+.role-grant-form select:focus,
+.role-grant-form input:focus,
+.role-grant-form textarea:focus,
+.role-revoke-form textarea:focus {
+  border-color: var(--ui-primary);
+}
+
+.authority-claimed-state strong {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--ui-primary);
+}
+
+.role-management-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.5fr);
+}
+
+.role-grant-form {
+  padding: 24px;
+  align-content: start;
+  border-right: 1px solid var(--line);
+}
+
+.role-grant-form .authority-step {
+  margin-bottom: 8px;
+}
+
+.role-grant-list {
+  min-width: 0;
+}
+
+.role-grant-empty {
+  border: 0;
+}
+
+.role-grant-row {
+  padding: 22px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.role-grant-row:last-child {
+  border-bottom: 0;
+}
+
+.role-grant-row strong {
+  margin: 7px 0;
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+
+.role-grant-row p + p {
+  margin-top: 8px;
+}
+
+.role-revoke-form {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.role-revoke-form > div {
+  display: flex;
+  gap: 8px;
 }

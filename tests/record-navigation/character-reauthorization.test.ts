@@ -1,11 +1,6 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { createCharacterReauthorizationCycle } from '../../app/composables/useCharacterReauthorization'
-
-function source(path: string) {
-  return readFileSync(resolve(process.cwd(), path), 'utf8')
-}
+import { readWorkspaceFile as source } from '../support/read-workspace-file'
 
 describe('character reauthorization transitions', () => {
   const shell = source('app/pages/characters/[characterId].vue')

@@ -6,9 +6,10 @@
 [![Live on Railway](https://img.shields.io/badge/Live%20on-Railway-0B0D0E?logo=railway&logoColor=white)](https://eve-space.com)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
-EVE Space is a self-hosted management platform for EVE Online corporations and alliances. It is
-being built for organizations that want a modern member experience without giving up control of
-their data, access rules, or deployment.
+EVE Space is a self-hosted, organization-governed management platform for EVE Online corporations
+and alliances. It combines a managed-organization membership boundary with individually authorized
+character capabilities, giving organizations a modern member experience without giving up control
+of their data, access rules, or deployment.
 
 Members sign in through EVE Online and authorize each character they choose to attach. EVE Space
 uses that verified character state for personal tools and organization access, while keeping hosting
@@ -73,6 +74,7 @@ http://localhost:8788/auth/eve/callback
 The application requests these protected scopes for each attached character:
 
 ```text
+esi-assets.read_assets.v1
 esi-wallet.read_character_wallet.v1
 esi-markets.read_character_orders.v1
 esi-contracts.read_character_contracts.v1
@@ -80,6 +82,8 @@ esi-location.read_location.v1
 esi-location.read_ship_type.v1
 esi-skills.read_skills.v1
 esi-skills.read_skillqueue.v1
+esi-clones.read_clones.v1
+esi-clones.read_implants.v1
 esi-mail.read_mail.v1
 esi-mail.organize_mail.v1
 esi-mail.send_mail.v1

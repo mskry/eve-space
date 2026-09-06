@@ -1,10 +1,12 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
 import { describe, expect, test, vi } from 'vitest'
+import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../../src/esi-resilience/transport.js'
 import { TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
 import {
   classifyPlatformResourceFailure,
+  PlatformResourceAuthorizationError,
   PlatformResourceMappingError,
   PlatformResourcePersistenceError,
   recordInstalledResourceCollectionFailure,
@@ -55,6 +57,19 @@ describe('platform resource failure transitions', () => {
     expect(classifyPlatformResourceFailure(new TokenRefreshUnavailableError(), now)).toEqual({
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
+    })
+  })
+
+  test('stops the current authorization generation after an upstream refusal', () => {
+    expect(
+      classifyPlatformResourceFailure(
+        new PlatformResourceAuthorizationError({ code: 'ESI_HTTP_ERROR', status: 403 }),
+        now,
+      ),
+    ).toEqual({ failureClass: 'authorization-required', nextEligibleAt: null })
+    expect(classifyPlatformResourceFailure(new EveSsoTokenRefreshError(400, true), now)).toEqual({
+      failureClass: 'authorization-required',
+      nextEligibleAt: null,
     })
   })
 

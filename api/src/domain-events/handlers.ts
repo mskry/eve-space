@@ -1,5 +1,9 @@
 import { loadDomainEvent } from './store.js'
 import type { DomainEventEnvelope, DomainEventType } from './definitions.js'
+import {
+  recomputeComplianceForManagedCorporation,
+  recomputeCurrentOrganizationAccountCompliance,
+} from '../organization/compliance.js'
 import { repairPlatformCollectionState } from '../platform/collection-state-repair.js'
 
 const domainEventIdempotencyStrategies = ['event-id-persistence', 'convergent-state'] as const
@@ -25,6 +29,7 @@ const characterCollectionStateEventTypes = [
   'character.attached',
   'character.detached',
   'character.scopes-changed',
+  'character.affiliation-observed',
 ] as const
 
 type CharacterCollectionStateEvent = Extract<
@@ -58,7 +63,69 @@ export function createPlatformCollectionStateEventHandlers(
   }))
 }
 
-const domainEventHandlers = createPlatformCollectionStateEventHandlers()
+type ManagedCorporationComplianceRecompute = typeof recomputeComplianceForManagedCorporation
+const managedCorporationEventTypes = [
+  'organization.managed-corporation-added',
+  'organization.managed-corporation-removed',
+] as const
+type ManagedCorporationEvent = Extract<
+  DomainEventEnvelope,
+  { eventType: (typeof managedCorporationEventTypes)[number] }
+>
+
+function isManagedCorporationEvent(event: DomainEventEnvelope): event is ManagedCorporationEvent {
+  return (managedCorporationEventTypes as readonly DomainEventType[]).includes(event.eventType)
+}
+
+export function createManagedCorporationComplianceEventHandlers(
+  recompute: ManagedCorporationComplianceRecompute = recomputeComplianceForManagedCorporation,
+): readonly DomainEventHandler[] {
+  return managedCorporationEventTypes.map((eventType) => ({
+    eventType,
+    payloadVersion: 1,
+    idempotency: 'convergent-state',
+    async handle(event) {
+      if (!isManagedCorporationEvent(event)) return
+      await recompute(event.payload)
+    },
+  }))
+}
+
+type CharacterComplianceRecompute = typeof recomputeCurrentOrganizationAccountCompliance
+const characterComplianceEventTypes = [
+  'character.attached',
+  'character.detached',
+  'character.scopes-changed',
+  'character.affiliation-observed',
+] as const
+type CharacterComplianceEvent = Extract<
+  DomainEventEnvelope,
+  { eventType: (typeof characterComplianceEventTypes)[number] }
+>
+
+function isCharacterComplianceEvent(event: DomainEventEnvelope): event is CharacterComplianceEvent {
+  return (characterComplianceEventTypes as readonly DomainEventType[]).includes(event.eventType)
+}
+
+export function createCharacterComplianceEventHandlers(
+  recompute: CharacterComplianceRecompute = recomputeCurrentOrganizationAccountCompliance,
+): readonly DomainEventHandler[] {
+  return characterComplianceEventTypes.map((eventType) => ({
+    eventType,
+    payloadVersion: 1,
+    idempotency: 'convergent-state',
+    async handle(event) {
+      if (!isCharacterComplianceEvent(event)) return
+      await recompute(event.payload.userId)
+    },
+  }))
+}
+
+const domainEventHandlers = [
+  ...createPlatformCollectionStateEventHandlers(),
+  ...createCharacterComplianceEventHandlers(),
+  ...createManagedCorporationComplianceEventHandlers(),
+]
 
 export function verifyDomainEventHandlers(
   handlers: readonly Partial<DomainEventHandler>[] = domainEventHandlers,

@@ -10,7 +10,8 @@ import {
   selectDueAffiliationCharacterIds,
 } from '../characters/affiliation-sync.js'
 import { admitQueueWork } from './admission.js'
-import { getJobDefinition, jobOptions, type JobDefinition } from './job-registry.js'
+import { jobOptions } from './job-options.js'
+import { getJobDefinition, type JobDefinition } from './job-registry.js'
 import { affiliationPlannerOutcomeKey, plannerStateKey } from './namespaces.js'
 
 type AffiliationPlannerOutcome =

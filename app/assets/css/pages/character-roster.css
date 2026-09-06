@@ -1,4 +1,9 @@
 /* Character roster and routed records */
+.character-roster-page {
+  display: flex;
+  flex-direction: column;
+}
+
 .roster-heading-copy {
   max-width: 460px;
   display: flex;
@@ -177,10 +182,16 @@
 }
 
 .character-roster {
+  width: 100%;
+  max-width: 1362px;
+  min-height: 280px;
+  flex: 1 0 auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-content: center;
   gap: 14px;
+  margin-inline: auto;
 }
 
 .roster-card {

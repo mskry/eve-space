@@ -29,6 +29,16 @@ export const coreEsiOperationCatalog = {
     cache: sharedPublicCache(),
     retry,
   }),
+  'alliance-corporations': defineContract('alliance-corporations', {
+    identity: { kind: 'ordered', fields: ['allianceId'] },
+    cache: sharedPublicCache(),
+    retry,
+  }),
+  'corporation-members': defineContract('corporation-members', {
+    identity: { kind: 'ordered', fields: ['corporationId'] },
+    cache: sharedPrivateCache(),
+    retry,
+  }),
   'universe-races': defineContract('universe-races', {
     identity: { kind: 'ordered', fields: [] },
     cache: sharedPublicCache(),
@@ -181,6 +191,11 @@ export const coreEsiOperationCatalog = {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: { kind: 'none' },
     mutation: { kind: 'character', appliedOnMissing: false },
+    retry,
+  }),
+  'character-corporation-roles': defineContract('character-corporation-roles', {
+    identity: { kind: 'ordered', fields: ['characterId'] },
+    cache: sharedPrivateCache(),
     retry,
   }),
   attributes: defineContract('attributes', {

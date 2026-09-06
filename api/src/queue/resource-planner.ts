@@ -7,24 +7,26 @@ import {
 import { getEsiRequestCooldowns } from '../esi-resilience/cooldowns.js'
 import { characterEsiPrincipal } from '../esi-resilience/identity.js'
 import { env } from '../env.js'
-import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
-import { findInstalledResource } from '../platform/resource-declarations.js'
+import { platformResources } from '../platform/resources.js'
 import {
   selectDueInstalledResources,
   type DueInstalledResource,
 } from '../platform/resource-eligibility.js'
-import { getQueueAdmissionCapacity } from './admission.js'
 import {
-  getJobDefinition,
-  jobOptions,
-  resourceBatchJobId,
-  resourceRefreshJobId,
-  type JobDefinition,
-  type PlatformResourceBatchJobPayload,
-} from './job-registry.js'
+  findInstalledResource,
+  installedResourceIdentityKey,
+} from '../platform/resource-identity.js'
+import { getQueueAdmissionCapacity } from './admission.js'
+import { jobOptions } from './job-options.js'
+import { getJobDefinition, type JobDefinition } from './job-registry.js'
 import { resourceRefreshPriority } from './policy.js'
 import { plannerInitialDelay } from './scheduler.js'
 import type { QueueRedisConnection } from './redis.js'
+import {
+  resourceBatchJobId,
+  resourceRefreshJobId,
+  type PlatformResourceBatchJobPayload,
+} from './resource-job-contracts.js'
 
 interface ResourcePlannerOptions {
   readonly highWaterMark?: number
@@ -54,7 +56,7 @@ export async function runResourcePlanner(
 ) {
   const dependencies = { ...defaultDependencies, ...options.dependencies }
   signal?.throwIfAborted()
-  const resources = options.resources ?? installedModuleResources
+  const resources = options.resources ?? platformResources
   if (resources.length === 0) return { selected: 0, planned: 0, reason: 'idle' as const }
 
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK
@@ -154,18 +156,10 @@ function createResourceWorkItems(
       throw new Error(
         `Due resource ${candidate.identity.moduleId}/${candidate.identity.resourceId} is not installed`,
       )
-    const batchKey = `${descriptor.moduleId}\0${descriptor.resourceId}\0${descriptor.subjectKind}`
+    const batchKey = installedResourceIdentityKey(descriptor)
     if (descriptor.batch && plannedBatchResources.has(batchKey)) continue
 
-    const operationId = descriptor.batch?.operationId ?? candidate.operationId
-    assertRegisteredEsiOperation(operationId)
-    const authorization = getEsiOperationContract(operationId).authorization
-    const operation = {
-      operation: operationId,
-      ...(authorization.kind === 'character'
-        ? { principal: characterEsiPrincipal(candidate.identity.subjectId) }
-        : {}),
-    }
+    const operation = createCooldownRequest(candidate, descriptor)
     const work = descriptor.batch
       ? createBatchWork(descriptor, descriptor.batch, candidates, batchKey)
       : createScalarWork(candidate)
@@ -173,6 +167,31 @@ function createResourceWorkItems(
     workItems.push({ descriptor, operation, work })
   }
   return workItems
+}
+
+function createCooldownRequest(
+  candidate: DueInstalledResource,
+  descriptor: PlatformInstalledResourceDescriptor,
+) {
+  const operationId = descriptor.batch?.operationId ?? candidate.operationId
+  assertRegisteredEsiOperation(operationId)
+  const authorization = getEsiOperationContract(operationId).authorization
+  const authorizationCharacterId =
+    candidate.authorizationCharacterId ??
+    (descriptor.subjectKind === 'character' ? Number(candidate.identity.subjectId) : null)
+  if (
+    authorization.kind === 'character' &&
+    (!authorizationCharacterId || !Number.isSafeInteger(authorizationCharacterId))
+  )
+    throw new Error(
+      `Character-authorized resource ${descriptor.moduleId}/${descriptor.resourceId} has no authorization source`,
+    )
+  return {
+    operation: operationId,
+    ...(authorization.kind === 'character'
+      ? { principal: characterEsiPrincipal(authorizationCharacterId!) }
+      : {}),
+  }
 }
 
 function createScalarWork(candidate: DueInstalledResource) {
@@ -207,10 +226,7 @@ function createBatchWork(
   if (contract.identity.kind !== 'set')
     throw new Error('Resource batch operation must use set identity')
   const subjects = candidates
-    .filter(
-      ({ identity }) =>
-        `${identity.moduleId}\0${identity.resourceId}\0${identity.subjectKind}` === batchKey,
-    )
+    .filter(({ identity }) => installedResourceIdentityKey(identity) === batchKey)
     .slice(0, contract.identity.maximumItems)
     .map(({ identity }) => ({
       subjectLifecycleId: identity.subjectLifecycleId,
@@ -219,7 +235,7 @@ function createBatchWork(
   const payload: PlatformResourceBatchJobPayload = {
     moduleId: resource.moduleId,
     resourceId: resource.resourceId,
-    subjectKind: resource.subjectKind,
+    subjectKind: 'character',
     subjects,
   }
   return {

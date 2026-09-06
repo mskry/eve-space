@@ -46,6 +46,15 @@ const tokenTimeoutMs = env.EVE_SSO_TIMEOUT_MS
 const discoveryTimeoutMs = Math.ceil(env.EVE_SSO_TIMEOUT_MS / 2)
 let metadataPromise: ReturnType<typeof loadMetadata> | undefined
 
+export class EveSsoTokenRefreshError extends SsoTokenRejectedError {
+  constructor(
+    upstreamStatus: number,
+    readonly authorizationRevoked: boolean,
+  ) {
+    super(upstreamStatus)
+  }
+}
+
 async function loadMetadata() {
   const response = await fetchSso(metadataUrl, {
     signal: AbortSignal.timeout(discoveryTimeoutMs),
@@ -179,7 +188,7 @@ async function throwRefreshError(response: Response): Promise<never> {
   if (response.status === 400 || response.status === 401 || response.status === 403) {
     const parsed = oauthErrorSchema.safeParse(await readErrorJson(response))
     if (parsed.success && ['invalid_grant', 'invalid_token'].includes(parsed.data.error))
-      throw new SsoTokenRejectedError(response.status)
+      throw new EveSsoTokenRefreshError(response.status, true)
   }
   throw new SsoHttpError('EVE token refresh', response.status)
 }

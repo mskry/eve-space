@@ -146,6 +146,39 @@ describe('platform module declarations', () => {
       expect(message).toContain(fragment)
   })
 
+  it('requires organization authorization metadata on every server contribution', () => {
+    const invalid = manifest('alpha')
+    invalid.server.routes[0]!.audience = undefined as never
+    invalid.server.routes[0]!.requiredPermission = undefined as never
+    invalid.server.activityProviders[0]!.audience = 'leadership' as never
+    invalid.server.activityProviders[0]!.requiredPermission = 'Alpha.*'
+
+    const message = validationErrorMessage(invalid)
+    expect(message).toContain('route alpha/alpha-route uses unsupported organization audience')
+    expect(message).toContain('route alpha/alpha-route must declare a valid required permission')
+    expect(message).toContain(
+      'activity provider alpha/alpha-activity uses unsupported organization audience leadership',
+    )
+    expect(message).toContain(
+      'activity provider alpha/alpha-activity must declare a valid required permission',
+    )
+  })
+
+  it('rejects duplicate activity providers and invalid freshness policies', () => {
+    const invalid = manifest('alpha', {
+      activityProvider: { freshness: { staleAfterSeconds: 0 } },
+    })
+    invalid.server.activityProviders.push({ ...invalid.server.activityProviders[0]! })
+
+    const message = validationErrorMessage(invalid)
+    expect(message).toContain(
+      'activity provider identity alpha/alpha-activity conflicts between alpha and alpha',
+    )
+    expect(message).toContain(
+      'activity provider alpha/alpha-activity must use a positive whole stale interval',
+    )
+  })
+
   it('rejects server and Nuxt package identity mismatches', () => {
     const invalid = manifest('alpha')
     invalid.server.package = '@eve-space/wrong-server'
@@ -162,16 +195,50 @@ describe('platform module declarations', () => {
   it('rejects unsupported resource eligibility and scheduling metadata', () => {
     const invalid = manifest('alpha', {
       resource: {
-        subjectKind: 'corporation' as never,
+        subjectKind: 'deployment' as never,
         materializationIntervalSeconds: 0,
         eligibility: { kind: 'module-callback' } as never,
       },
     })
 
     const message = validationErrorMessage(invalid)
-    expect(message).toContain('uses unsupported initial subject kind corporation')
-    expect(message).toContain('must use a positive whole interval')
     expect(message).toContain('uses unsupported eligibility module-callback')
+    expect(message).toContain('must use a positive whole interval')
+    expect(message).toContain('uses unsupported subject kind deployment')
+  })
+
+  it.each([
+    ['alliance', 'current-managed-alliance'],
+    ['corporation', 'current-managed-corporation-source'],
+  ] as const)('accepts scalar %s resource eligibility', (subjectKind, eligibilityKind) => {
+    const declaration = manifest('alpha')
+    declaration.server.resources = [
+      {
+        id: 'alpha-resource',
+        operationId: 'alpha-operation',
+        subjectKind,
+        materializationIntervalSeconds: 900,
+        eligibility: { kind: eligibilityKind },
+        exportName: 'alphaResource',
+      },
+    ]
+
+    expect(() =>
+      validatePlatformModuleManifests([declaration], coreModuleValidationAuthorities),
+    ).not.toThrow()
+  })
+
+  it('rejects a legal resource eligibility paired with the wrong subject kind', () => {
+    const invalid = manifest('alpha', {
+      resource: {
+        subjectKind: 'alliance' as never,
+        eligibility: { kind: 'current-owned-character' } as never,
+      },
+    })
+
+    expect(validationErrorMessage(invalid)).toContain(
+      'eligibility current-owned-character is incompatible with subject kind alliance; expected current-managed-alliance',
+    )
   })
 
   it('validates and renders a pure batch resource descriptor', () => {
@@ -250,12 +317,16 @@ describe('platform module declarations', () => {
         namespace: '/alpha/items/:id',
         exportName: 'firstRoutes',
         authorization: 'authenticated-session',
+        audience: 'member',
+        requiredPermission: 'alpha.view',
       },
       {
         id: 'second-route',
         namespace: '/alpha/items/:itemId',
         exportName: 'secondRoutes',
         authorization: 'authenticated-session',
+        audience: 'member',
+        requiredPermission: 'alpha.view',
       },
     ]
 
@@ -286,6 +357,8 @@ describe('platform module declarations', () => {
       namespace: second,
       exportName: 'ownedCharacterRoutes',
       authorization: 'owned-character',
+      audience: 'member',
+      requiredPermission: 'alpha.view',
     })
 
     expect(() => generateRegistryFiles([invalid])).toThrow(
@@ -302,6 +375,8 @@ describe('platform module declarations', () => {
       namespace: '/alpha/characters/:characterId',
       exportName: 'ownedCharacterRoutes',
       authorization: 'owned-character',
+      audience: 'member',
+      requiredPermission: 'alpha.view',
     })
 
     expect(() => generateRegistryFiles([valid])).not.toThrow()
@@ -318,7 +393,12 @@ describe('platform module registry generation', () => {
     expect(routes).toContain('export const installedModuleRoutes = new Hono()')
     expect(routes).not.toContain('requireInstalledModuleEnabled')
     expect(first.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      'installedModuleResources =\n  [] as const satisfies readonly PlatformInstalledResourceDescriptor<PlatformResourceOperationImplementation>[]',
+      'installedModuleResources =\n  [] as const satisfies readonly PlatformInstalledResourceDescriptor[]',
+    )
+    expect(
+      first.get('api/src/generated/platform/installed-module-activity-providers.ts'),
+    ).toContain(
+      'installedModuleActivityProviders =\n  [] as const satisfies readonly PlatformInstalledActivityProviderDescriptor[]',
     )
     expect(first.get('api/src/generated/platform/installed-module-migrations.ts')).toContain(
       'installedModuleIds = [] as const',
@@ -366,7 +446,13 @@ describe('platform module registry generation', () => {
       api?.indexOf("from '@eve-space/beta-server'") ?? -1,
     )
     expect(api).toContain("module0Route0Factory(createPlatformModuleRouteCapabilities('alpha'))")
-    expect(api).toContain("platformModuleRouteComposers['owned-character']('alpha', module0Route0)")
+    expect(api).toContain("{ audience: 'member', requiredPermission: 'alpha.view' }")
+    expectInOrder(api, [
+      "platformModuleRouteComposers['owned-character'](",
+      "'alpha'",
+      "{ audience: 'member', requiredPermission: 'alpha.view' }",
+      'module0Route0',
+    ])
     expect(api?.indexOf(".route(\n    '/alpha/characters/:characterId'")).toBeLessThan(
       api?.indexOf(".route(\n    '/beta/characters/:characterId'") ?? -1,
     )
@@ -396,6 +482,8 @@ describe('platform module registry generation', () => {
       namespace: '/alpha/summary',
       exportName: 'alphaSummaryRoutes',
       authorization: 'authenticated-session',
+      audience: 'hr',
+      requiredPermission: 'alpha.summary',
     })
 
     const routes = generateRegistryFiles([alpha]).get(
@@ -408,8 +496,26 @@ describe('platform module registry generation', () => {
     expect(routes).not.toContain(".use('*'")
     expectInOrder(routes, [
       "'/alpha/summary'",
-      "platformModuleRouteComposers['authenticated-session']('alpha', module0Route1)",
+      "platformModuleRouteComposers['authenticated-session'](",
+      "{ audience: 'hr', requiredPermission: 'alpha.summary' }",
+      'module0Route1',
     ])
+  })
+
+  it('generates lazy activity providers with authorization and same-module pages', () => {
+    const providers = generateRegistryFiles([manifest('alpha')]).get(
+      'api/src/generated/platform/installed-module-activity-providers.ts',
+    )
+
+    expect(providers).toContain(
+      "import { alphaActivityProvider as module0ActivityProvider0Factory } from '@eve-space/alpha-server'",
+    )
+    expect(providers).toContain("moduleId: 'alpha', providerId: 'alpha-activity'")
+    expect(providers).toContain("audience: 'member', requiredPermission: 'alpha.view'")
+    expect(providers).toContain("pageIds: ['alpha-page']")
+    expect(providers).toContain(
+      "invoke: (context) => module0ActivityProvider0Factory(createPlatformModuleActivityProviderCapabilities('alpha', context.signal))(context)",
+    )
   })
 
   it('aliases repeated package export names in every generated server registry', () => {
@@ -417,11 +523,13 @@ describe('platform module registry generation', () => {
       route: { exportName: 'routes' },
       resource: { exportName: 'resource' },
       operation: { exportName: 'operation' },
+      activityProvider: { exportName: 'activityProvider' },
     })
     const beta = manifest('beta', {
       route: { exportName: 'routes' },
       resource: { exportName: 'resource' },
       operation: { exportName: 'operation' },
+      activityProvider: { exportName: 'activityProvider' },
     })
     const files = generateRegistryFiles([beta, alpha])
 
@@ -439,6 +547,16 @@ describe('platform module registry generation', () => {
     )
     expect(files.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       "'alpha-operation': module0EsiOperation0.contract,\n  'beta-operation': module1EsiOperation0.contract,",
+    )
+    expect(
+      files.get('api/src/generated/platform/installed-module-activity-providers.ts'),
+    ).toContain(
+      "import { activityProvider as module0ActivityProvider0Factory } from '@eve-space/alpha-server'",
+    )
+    expect(
+      files.get('api/src/generated/platform/installed-module-activity-providers.ts'),
+    ).toContain(
+      "import { activityProvider as module1ActivityProvider0Factory } from '@eve-space/beta-server'",
     )
     expect(files.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       'installedModuleEsiOperationCatalog = {',
@@ -523,6 +641,7 @@ interface ManifestOverrides {
   migration?: Partial<PlatformModuleManifest['server']['migrations'][number]>
   resource?: Partial<PlatformModuleManifest['server']['resources'][number]>
   operation?: Partial<PlatformModuleManifest['server']['esiOperations'][number]>
+  activityProvider?: Partial<PlatformModuleManifest['server']['activityProviders'][number]>
   page?: Partial<PlatformModuleManifest['nuxt']['pages'][number]>
   navigation?: Partial<PlatformModuleManifest['nuxt']['navigation'][number]>
   exposed?: PlatformModuleManifest['nuxt']['exposed']
@@ -543,6 +662,8 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
           namespace: `/${id}/characters/:characterId`,
           exportName: `${camelCase(id)}Routes`,
           authorization: 'owned-character',
+          audience: 'member',
+          requiredPermission: `${id}.view`,
           ...overrides.route,
         },
       ],
@@ -563,6 +684,16 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
           id: operationId,
           exportName: `${camelCase(id)}Operation`,
           ...overrides.operation,
+        },
+      ],
+      activityProviders: [
+        {
+          id: `${id}-activity`,
+          exportName: `${camelCase(id)}ActivityProvider`,
+          audience: 'member',
+          requiredPermission: `${id}.view`,
+          freshness: { staleAfterSeconds: 300 },
+          ...overrides.activityProvider,
         },
       ],
     },

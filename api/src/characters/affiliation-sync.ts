@@ -1,9 +1,10 @@
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
-import { and, asc, lte, sql } from 'drizzle-orm'
+import { and, asc, inArray, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db/client.js'
 import { characters } from '../db/schema.js'
 import { env } from '../env.js'
+import { appendDomainEvent } from '../domain-events/store.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
 import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
@@ -29,6 +30,17 @@ export interface AffiliationObservation {
   characterId: number
   corporationId: number
   allianceId: number | null
+}
+
+export async function getCharacterAffiliationObservation(characterId: number) {
+  const result = await lookupAffiliationResult([characterId])
+  const observation = result.data.find((entry) => entry.characterId === characterId)
+  if (!observation) return null
+  return {
+    ...observation,
+    affiliationCheckedAt: new Date(result.validatedAt),
+    stale: result.stale,
+  }
 }
 
 export class AffiliationCooldownError extends Error {
@@ -151,31 +163,47 @@ export async function persistAffiliationObservations(
           ),
         )
     }
+    const affectedCharacters = await transaction
+      .select({ userId: characters.userId, characterId: characters.characterId })
+      .from(characters)
+      .where(inArray(characters.characterId, [...requested]))
+      .orderBy(asc(characters.userId), asc(characters.characterId))
+    for (const character of affectedCharacters)
+      // oxlint-disable-next-line no-await-in-loop -- Event sequence follows stable character order.
+      await appendDomainEvent(transaction, {
+        type: 'character.affiliation-observed',
+        payloadVersion: 1,
+        aggregateId: String(character.characterId),
+        payload: character,
+        occurredAt: observedAt,
+      })
   })
 }
 
 async function lookupAffiliations(characterIds: readonly number[]) {
-  return (
-    await getEsiResilienceLayer().executeNoValue<AffiliationObservation[]>({
-      operation: 'bulk-affiliation',
-      inputs: { characterIds },
-      load: async () => {
-        const response = await createCharacterClient({
-          fetch: createEsiTransport('bulk-affiliation'),
-        })
-          .withMetadata()
-          .lookupAffiliations({ body: [...characterIds] })
-        return {
-          data: response.data.map((affiliation) => ({
-            characterId: affiliation.character_id,
-            corporationId: affiliation.corporation_id,
-            allianceId: affiliation.alliance_id ?? null,
-          })),
-          meta: response.meta,
-        }
-      },
-    })
-  ).data
+  return (await lookupAffiliationResult(characterIds)).data
+}
+
+async function lookupAffiliationResult(characterIds: readonly number[]) {
+  return getEsiResilienceLayer().executeNoValue<AffiliationObservation[]>({
+    operation: 'bulk-affiliation',
+    inputs: { characterIds },
+    load: async () => {
+      const response = await createCharacterClient({
+        fetch: createEsiTransport('bulk-affiliation'),
+      })
+        .withMetadata()
+        .lookupAffiliations({ body: [...characterIds] })
+      return {
+        data: response.data.map((affiliation) => ({
+          characterId: affiliation.character_id,
+          corporationId: affiliation.corporation_id,
+          allianceId: affiliation.alliance_id ?? null,
+        })),
+        meta: response.meta,
+      }
+    },
+  })
 }
 
 function nextAffiliationCheckSql(observedAt: string) {

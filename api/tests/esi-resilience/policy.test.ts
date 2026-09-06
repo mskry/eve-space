@@ -656,7 +656,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-corporations.read_corporation_membership.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -668,9 +668,11 @@ describe('ESI operation policies', () => {
         requestableScopes: [
           'esi-assets.read_assets.v1',
           'esi-characters.read_contacts.v1',
+          'esi-characters.read_corporation_roles.v1',
           'esi-clones.read_clones.v1',
           'esi-clones.read_implants.v1',
           'esi-contracts.read_character_contracts.v1',
+          'esi-corporations.read_corporation_membership.v1',
           'esi-location.read_location.v1',
           'esi-location.read_ship_type.v1',
           'esi-mail.organize_mail.v1',
@@ -695,17 +697,21 @@ describe('ESI operation policies', () => {
 
   test.each([
     'esi-assets.read_assets.v1',
+    'esi-characters.read_corporation_roles.v1',
     'esi-clones.read_clones.v1',
     'esi-clones.read_implants.v1',
     'esi-markets.read_character_orders.v1',
     'esi-contracts.read_character_contracts.v1',
+    'esi-corporations.read_corporation_membership.v1',
   ])('rejects configured SSO when %s is missing', (missingScope) => {
     const requestableScopes = [
       'esi-assets.read_assets.v1',
       'esi-characters.read_contacts.v1',
+      'esi-characters.read_corporation_roles.v1',
       'esi-clones.read_clones.v1',
       'esi-clones.read_implants.v1',
       'esi-contracts.read_character_contracts.v1',
+      'esi-corporations.read_corporation_membership.v1',
       'esi-location.read_location.v1',
       'esi-location.read_ship_type.v1',
       'esi-mail.organize_mail.v1',

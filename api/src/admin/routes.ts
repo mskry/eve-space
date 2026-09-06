@@ -21,8 +21,8 @@ import {
 import { resolveDeploymentOrganization } from '../deployment/organization.js'
 import { env } from '../env.js'
 import { platformNavigationDefaults } from '../generated/platform/installed-module-runtime.js'
+import { isCompleteShellNavigationOrder } from '../platform/module-navigation.js'
 import {
-  isCompleteShellNavigationOrder,
   listInstalledModuleSettings,
   loadInstalledShellNavigationOrder,
   saveInstalledShellNavigationOrder,
@@ -201,7 +201,7 @@ export const adminRoutes = new Hono<AdminEnv>()
           input.organizationType,
           input.organizationId,
         )
-        await updateDeploymentOrganization(organization)
+        await updateDeploymentOrganization(organization, context.var.adminSession!.adminId)
         return context.json({ organization })
       } catch (error) {
         return organizationFailure(context, error)

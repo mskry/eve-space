@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
 import {
   isCompleteShellNavigationOrder,
-  reconcileInstalledModules,
   resolveShellNavigationOrder,
-} from '../../src/platform/module-settings.js'
+} from '../../src/platform/module-navigation.js'
+import { reconcileInstalledModules } from '../../src/platform/module-settings.js'
 import { platformNavigationDefaults } from '../../src/generated/platform/installed-module-runtime.js'
 
 describe('installed module reconciliation', () => {

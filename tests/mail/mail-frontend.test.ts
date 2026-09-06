@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { MailHeader, MailLabel } from '../../app/queries/mail'
 import { formatRelativeTime } from '../../app/utils/format'
@@ -20,8 +18,7 @@ import {
   splitMailBodyParagraphs,
 } from '../../app/utils/mail-view'
 import { ApiQueryError } from '../../app/utils/query-error'
-
-const readWorkspaceFile = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
+import { readWorkspaceFile } from '../support/read-workspace-file'
 
 describe('mail frontend behavior', () => {
   it('filters only loaded headers by subject, sender, known-unread state, and list recipients', () => {

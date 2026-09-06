@@ -147,7 +147,8 @@ describe('durable worker platform', () => {
       vi.fn(),
     )
     const { EsiQuotaError } = await import('../../../src/esi-resilience/cooldowns.js')
-    const { getJobDefinition, jobOptions } = await import('../../../src/queue/job-registry.js')
+    const { jobOptions } = await import('../../../src/queue/job-options.js')
+    const { getJobDefinition } = await import('../../../src/queue/job-registry.js')
     const definition = getJobDefinition('resource-refresh') as unknown as {
       name: string
       process(): Promise<void>
@@ -707,7 +708,7 @@ function migratedConnection() {
   return vi
     .fn()
     .mockResolvedValueOnce([{ exists: true, qualified: true }])
-    .mockResolvedValueOnce([{ module: 'core', name: '001_initial.sql' }])
+    .mockResolvedValueOnce([{ module: 'core', name: '039_refresh_roster_collection_contract.sql' }])
 }
 
 async function flushQueueRedis() {

@@ -7,12 +7,8 @@ import {
 import { categorizeRelayFailure, RelayPublicationError } from '../domain-events/definitions.js'
 import { env } from '../env.js'
 import { admitQueueWork } from './admission.js'
-import {
-  domainEventJobId,
-  getJobDefinition,
-  jobOptions,
-  type JobDefinition,
-} from './job-registry.js'
+import { jobOptions } from './job-options.js'
+import { domainEventJobId, getJobDefinition, type JobDefinition } from './job-registry.js'
 import { outboxRelayOutcomeKey } from './namespaces.js'
 import type { OutboxRelayOutcome } from './status.js'
 

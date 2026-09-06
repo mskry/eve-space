@@ -4,12 +4,24 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { runMigrations } from '../../../src/db/migration-runner.js'
 
-const ssoMocks = vi.hoisted(() => ({
-  refreshAccessToken: vi.fn(),
-  verifyAccessToken: vi.fn(),
-}))
+const ssoMocks = vi.hoisted(() => {
+  class EveSsoTokenRefreshError extends Error {
+    constructor(
+      readonly status: number,
+      readonly authorizationRevoked: boolean,
+    ) {
+      super('refresh failed')
+    }
+  }
+  return {
+    EveSsoTokenRefreshError,
+    refreshAccessToken: vi.fn(),
+    verifyAccessToken: vi.fn(),
+  }
+})
 
 vi.mock('../../../src/auth/sso.js', () => ({
+  EveSsoTokenRefreshError: ssoMocks.EveSsoTokenRefreshError,
   refreshAccessToken: ssoMocks.refreshAccessToken,
   verifyAccessToken: ssoMocks.verifyAccessToken,
 }))

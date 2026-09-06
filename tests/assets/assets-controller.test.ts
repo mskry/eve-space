@@ -1,9 +1,8 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { AssetFilterState, AssetRecord } from '../../app/types/assets'
 import { createAssetWorkspaceController } from '../../app/utils/assets-controller'
 import { buildAssetHierarchy } from '../../app/utils/assets-hierarchy'
+import { readWorkspaceFile } from '../support/read-workspace-file'
 
 const noFilters: AssetFilterState = {
   search: '',
@@ -105,7 +104,7 @@ describe('asset workspace controller', () => {
       'app/utils/assets-filter.ts',
       'app/utils/assets-controller.ts',
     ]) {
-      const source = readFileSync(resolve(process.cwd(), path), 'utf8')
+      const source = readWorkspaceFile(path)
       expect(source).not.toMatch(/hono|route|query|scope|ownership|character|corporation/i)
     }
   })

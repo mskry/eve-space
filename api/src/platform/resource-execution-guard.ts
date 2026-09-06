@@ -1,86 +1,175 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type {
+  PlatformInstalledResourceDescriptor,
+  PlatformResourceSubject,
+} from '@eve-space/platform-module-contract'
 import { CharacterTokenNotFoundError } from '../auth/store.js'
+import {
+  getCharacterAuthorizationForLifecycle,
+  getCharacterCacheAuthorizationForLifecycle,
+  ScopeRequiredError,
+} from '../auth/tokens.js'
 import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
 import type { EsiOperation } from '../esi-resilience/catalog.js'
-import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
-import { isPositiveSafeInteger } from '../type-guards.js'
-import { findInstalledResource } from './resource-declarations.js'
-import { getCharacterCacheAuthorizationForLifecycle, ScopeRequiredError } from '../auth/tokens.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   resolveInstalledResourceEligibility,
+  type PlatformResourceEligibility,
   type PlatformResourceIneligibleStatus,
 } from './resource-eligibility.js'
+import { findInstalledResource } from './resource-identity.js'
+import { toPlatformResourceSubject } from './resource-subject.js'
+import { platformResources } from './resources.js'
 
 type ResourceExecutionNoopReason = 'already-current' | PlatformResourceIneligibleStatus
-type CharacterAuthorization = Awaited<ReturnType<typeof getCharacterCacheAuthorizationForLifecycle>>
+type CharacterAuthorization = { readonly tokenVersion: number }
+type EligibleResource = Extract<PlatformResourceEligibility, { status: 'eligible' }>
 type PlatformResourceExecutionNoop = {
   readonly outcome: 'noop'
   readonly reason: ResourceExecutionNoopReason
 }
+type ResourceExecutionEligibility =
+  | PlatformResourceExecutionNoop
+  | { readonly outcome: 'eligible'; readonly eligibility: EligibleResource }
 
 export type PlatformResourceExecutionGuard =
   | PlatformResourceExecutionNoop
   | {
       readonly outcome: 'ready'
       readonly resource: PlatformInstalledResourceDescriptor
-      readonly characterId: number
+      readonly subject?: PlatformResourceSubject
+      readonly characterId?: number
       readonly authorization: CharacterAuthorization | null
+      readonly authorizationCharacterId?: number | null
+      readonly authorizationCharacterLifecycleId?: string | null
     }
 
 interface ResourceExecutionGuardOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
   readonly loadCharacterCacheAuthorization?: typeof getCharacterCacheAuthorizationForLifecycle
+  readonly loadCharacterAuthorization?: typeof getCharacterAuthorizationForLifecycle
 }
 
 export async function guardInstalledResourceExecution(
   identity: PlatformCollectionStateIdentity,
   options: ResourceExecutionGuardOptions = {},
 ): Promise<PlatformResourceExecutionGuard> {
-  const resources = options.resources ?? installedModuleResources
+  const resources = options.resources ?? platformResources
   const resolveEligibility = options.resolveEligibility ?? resolveInstalledResourceEligibility
-  let eligibility = await resolveEligibility(identity, { resources })
-  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
-  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
+  const initialEligibility = classifyExecutionEligibility(
+    await resolveEligibility(identity, { resources }),
+  )
+  if (initialEligibility.outcome === 'noop') return initialEligibility
+  const eligibility = initialEligibility.eligibility
 
-  // Everything below resolves the subject as a character ID and takes the character
-  // authorization path, so a resource declared for any other subject kind cannot run here.
-  const resource =
-    identity.subjectKind === 'character' ? findInstalledResource(identity, resources) : undefined
+  const resource = findInstalledResource(identity, resources)
   if (!resource) return { outcome: 'noop', reason: 'resource-unavailable' }
-
-  const characterId = Number(identity.subjectId)
-  if (!isPositiveSafeInteger(characterId)) return { outcome: 'noop', reason: 'obsolete' }
+  const subject = toPlatformResourceSubject(
+    identity as Parameters<typeof toPlatformResourceSubject>[0],
+  )
+  if (!subject) return { outcome: 'noop', reason: 'obsolete' }
 
   const operation = getEsiOperationContract(resource.operationId as EsiOperation)
   if (operation.authorization.kind === 'public')
-    return { outcome: 'ready', resource, characterId, authorization: null }
+    return createReadyResourceExecution(resource, subject, null)
+
+  const { authorizationCharacterId, authorizationCharacterLifecycleId } =
+    resolveAuthorizationIdentity(eligibility, subject)
+  if (!authorizationCharacterId || !authorizationCharacterLifecycleId)
+    return { outcome: 'noop', reason: 'authorization-required' }
 
   let authorization: CharacterAuthorization
   try {
     authorization = await (
-      options.loadCharacterCacheAuthorization ?? getCharacterCacheAuthorizationForLifecycle
-    )(characterId, identity.subjectLifecycleId, operation.authorization.scope)
+      options.loadCharacterCacheAuthorization ??
+      options.loadCharacterAuthorization ??
+      getCharacterCacheAuthorizationForLifecycle
+    )(authorizationCharacterId, authorizationCharacterLifecycleId, operation.authorization.scope)
   } catch (error) {
-    return mapCharacterAuthorizationError(error)
+    return mapCharacterAuthorizationError(error, subject.kind)
   }
 
-  const ready = { outcome: 'ready', resource, characterId, authorization } as const
+  const ready = createReadyResourceExecution(
+    resource,
+    subject,
+    authorization,
+    authorizationCharacterId,
+    authorizationCharacterLifecycleId,
+  )
   if (authorization.tokenVersion === eligibility.authorizationGeneration) return ready
 
-  eligibility = await resolveEligibility(identity, { resources })
-  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
-  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
-  if (authorization.tokenVersion !== eligibility.authorizationGeneration)
+  const refreshedEligibility = classifyExecutionEligibility(
+    await resolveEligibility(identity, { resources }),
+  )
+  if (refreshedEligibility.outcome === 'noop') return refreshedEligibility
+  const refreshed = refreshedEligibility.eligibility
+  const refreshedAuthorization = resolveAuthorizationIdentity(refreshed, subject)
+  if (
+    authorization.tokenVersion !== refreshed.authorizationGeneration ||
+    authorizationCharacterId !== refreshedAuthorization.authorizationCharacterId ||
+    authorizationCharacterLifecycleId !== refreshedAuthorization.authorizationCharacterLifecycleId
+  )
     return { outcome: 'noop', reason: 'obsolete' }
 
   return ready
 }
 
-function mapCharacterAuthorizationError(error: unknown): PlatformResourceExecutionNoop {
+function classifyExecutionEligibility(
+  eligibility: PlatformResourceEligibility,
+): ResourceExecutionEligibility {
+  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
+  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
+  return { outcome: 'eligible', eligibility }
+}
+
+function resolveAuthorizationIdentity(
+  eligibility: EligibleResource,
+  subject: PlatformResourceSubject,
+) {
+  const subjectAuthorization =
+    subject.kind === 'character'
+      ? {
+          authorizationCharacterId: subject.characterId,
+          authorizationCharacterLifecycleId: subject.lifecycleId,
+        }
+      : { authorizationCharacterId: null, authorizationCharacterLifecycleId: null }
+  return {
+    authorizationCharacterId:
+      eligibility.authorizationCharacterId ?? subjectAuthorization.authorizationCharacterId,
+    authorizationCharacterLifecycleId:
+      eligibility.authorizationCharacterLifecycleId ??
+      subjectAuthorization.authorizationCharacterLifecycleId,
+  }
+}
+
+function createReadyResourceExecution(
+  resource: PlatformInstalledResourceDescriptor,
+  subject: PlatformResourceSubject,
+  authorization: CharacterAuthorization | null,
+  authorizationCharacterId: number | null = null,
+  authorizationCharacterLifecycleId: string | null = null,
+): PlatformResourceExecutionGuard {
+  return {
+    outcome: 'ready',
+    resource,
+    subject,
+    ...(subject.kind === 'character' ? { characterId: subject.characterId } : {}),
+    authorization,
+    authorizationCharacterId,
+    authorizationCharacterLifecycleId,
+  }
+}
+
+function mapCharacterAuthorizationError(
+  error: unknown,
+  subjectKind: PlatformResourceSubject['kind'],
+): PlatformResourceExecutionNoop {
   if (error instanceof ScopeRequiredError)
     return { outcome: 'noop', reason: 'authorization-required' }
-  if (error instanceof CharacterTokenNotFoundError) return { outcome: 'noop', reason: 'obsolete' }
+  if (error instanceof CharacterTokenNotFoundError)
+    return {
+      outcome: 'noop',
+      reason: subjectKind === 'corporation' ? 'authorization-required' : 'obsolete',
+    }
   throw error
 }

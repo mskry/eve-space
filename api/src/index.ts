@@ -18,6 +18,7 @@ import { statusRoutes } from './system/status-routes.js'
 import { ssoRoutes } from './auth/routes.js'
 import { loadSession, requireSession } from './middleware/auth-session.js'
 import { TokenRefreshUnavailableError } from './auth/tokens.js'
+import { organizationRoutes } from './organization/routes.js'
 import { universeRoutes } from './universe/routes.js'
 
 export const app = new Hono()
@@ -37,6 +38,7 @@ export const app = new Hono()
   .route('/api/me/characters', mailRoutes)
   .route('/api/characters', publicCharacterRoutes)
   .route('/api/corporations', corporationRoutes)
+  .route('/api/organization', organizationRoutes)
   .route('/auth', ssoRoutes)
 
 app.notFound((context) => context.json(routeNotFoundBody, 404))

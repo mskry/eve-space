@@ -1,15 +1,18 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import { EveSsoTokenRefreshError } from '../auth/sso.js'
+import { TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
-import { TokenRefreshUnavailableError } from '../auth/tokens.js'
+import { getNumericProperty, getStringProperty } from '../type-guards.js'
 import type {
   PlatformCollectionFailureClass,
   PlatformCollectionStateIdentity,
 } from './collection-state.js'
 import { upsertPlatformCollectionState } from './collection-state-store.js'
-import { findInstalledResource } from './resource-declarations.js'
 import { resolveInstalledResourceEligibility } from './resource-eligibility.js'
+import { findInstalledResource } from './resource-identity.js'
+import { platformResources } from './resources.js'
 
 const transientFailureBackoffMilliseconds = 5 * 60 * 1_000
 
@@ -24,6 +27,13 @@ export class PlatformResourcePersistenceError extends Error {
   constructor(cause: unknown) {
     super('Platform resource persistence failed', { cause })
     this.name = 'PlatformResourcePersistenceError'
+  }
+}
+
+export class PlatformResourceAuthorizationError extends Error {
+  constructor(cause: unknown) {
+    super('Platform resource authorization failed', { cause })
+    this.name = 'PlatformResourceAuthorizationError'
   }
 }
 
@@ -62,7 +72,7 @@ export async function recordInstalledResourceCollectionFailure(
   error: unknown,
   options: ResourceFailureOptions = {},
 ) {
-  const resources = options.resources
+  const resources = options.resources ?? platformResources
   const resource = findInstalledResource(identity, resources)
   if (!resource) return null
   const now = options.now ?? new Date()
@@ -88,20 +98,26 @@ export async function recordInstalledResourceCollectionFailure(
 }
 
 export function classifyPlatformResourceFailure(error: unknown, now = new Date()) {
+  if (
+    error instanceof PlatformResourceAuthorizationError ||
+    (error instanceof EveSsoTokenRefreshError && error.authorizationRevoked)
+  )
+    return { failureClass: 'authorization-required', nextEligibleAt: null } as const
   if (error instanceof EsiQuotaError)
     return { failureClass: 'esi-cooldown', nextEligibleAt: error.retryAt } as const
   if (
     error instanceof EsiTransportError ||
     error instanceof TokenRefreshUnavailableError ||
-    (getErrorCode(error) === 'ESI_HTTP_ERROR' && getErrorStatus(error) >= 500)
+    (getStringProperty(error, 'code') === 'ESI_HTTP_ERROR' &&
+      getNumericProperty(error, 'status') >= 500)
   )
     return {
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date(now.getTime() + transientFailureBackoffMilliseconds),
     } as const
   if (
-    getErrorCode(error) === 'ESI_RESPONSE_PARSE_ERROR' ||
-    getErrorCode(error) === 'ESI_RESPONSE_VALIDATION_ERROR' ||
+    getStringProperty(error, 'code') === 'ESI_RESPONSE_PARSE_ERROR' ||
+    getStringProperty(error, 'code') === 'ESI_RESPONSE_VALIDATION_ERROR' ||
     error instanceof PlatformResourceResponseInvalidError
   )
     return permanentFailure('response-invalid')
@@ -113,14 +129,4 @@ export function classifyPlatformResourceFailure(error: unknown, now = new Date()
 
 function permanentFailure(failureClass: PlatformCollectionFailureClass) {
   return { failureClass, nextEligibleAt: null }
-}
-
-function getErrorCode(error: unknown) {
-  return typeof error === 'object' && error && 'code' in error && typeof error.code === 'string'
-    ? error.code
-    : undefined
-}
-
-function getErrorStatus(error: unknown) {
-  return typeof error === 'object' && error && 'status' in error ? Number(error.status) : 0
 }

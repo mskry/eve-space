@@ -1,11 +1,10 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { readFileSync } from 'node:fs'
-import { resolve as resolvePath } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref, type Component } from 'vue'
 import UiDialog from '../../layers/ui/app/components/ui/UiDialog.vue'
 import UiProvider from '../../layers/ui/app/components/ui/UiProvider.vue'
 import { useConfirmDialog } from '../../layers/ui/app/composables/useConfirmDialog'
+import { readWorkspaceFile } from '../support/read-workspace-file'
 
 const mountedWrappers: { unmount: () => void }[] = []
 
@@ -66,10 +65,7 @@ afterEach(async () => {
 
 describe('UiDialog', () => {
   it('uses semantic UI variables for its visual treatment', () => {
-    const css = readFileSync(
-      resolvePath(process.cwd(), 'layers/ui/app/assets/css/components.css'),
-      'utf8',
-    )
+    const css = readWorkspaceFile('layers/ui/app/assets/css/components.css')
     const dialogRules = [...css.matchAll(/\.ui-dialog[^{}]*\{([^{}]*)\}/g)]
       .map((match) => match[0])
       .join('\n')

@@ -1,7 +1,14 @@
 .dashboard-content {
   width: min(100%, 1500px);
+  min-height: calc(100dvh - 76px);
   margin: 0 auto;
   padding: 42px clamp(24px, 4vw, 58px) 64px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-content > .section-page {
+  flex: 1 0 auto;
 }
 
 .section-page {

@@ -1,10 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-
-function source(path: string) {
-  return readFileSync(resolve(process.cwd(), path), 'utf8')
-}
+import { readWorkspaceFile as source } from '../support/read-workspace-file'
 
 describe('record page style ownership', () => {
   it('keeps routed navigation styles with RecordSectionNavigation', () => {

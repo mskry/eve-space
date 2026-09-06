@@ -39,7 +39,10 @@ export async function upsertPlatformCollectionState(
   const parsed = platformCollectionStateWriteSchema.parse(input)
   const [stored] = await connection
     .insert(platformCollectionState)
-    .values(parsed)
+    .values({
+      ...parsed,
+      failureStartedAt: parsed.lastFailureClass === null ? null : new Date(),
+    })
     .onConflictDoUpdate({
       target: [
         platformCollectionState.moduleId,
@@ -53,6 +56,13 @@ export async function upsertPlatformCollectionState(
         authorizationGeneration: parsed.authorizationGeneration,
         validatedAt: parsed.validatedAt,
         lastFailureClass: parsed.lastFailureClass,
+        failureStartedAt:
+          parsed.lastFailureClass === null
+            ? null
+            : sql`case
+                when ${platformCollectionState.lastFailureClass} is null then now()
+                else ${platformCollectionState.failureStartedAt}
+              end`,
         updatedAt: sql`now()`,
       },
     })
@@ -76,7 +86,8 @@ export async function upsertPlatformCollectionStateInTransaction(
       next_eligible_at,
       authorization_generation,
       validated_at,
-      last_failure_class
+      last_failure_class,
+      failure_started_at
     ) values (
       ${parsed.moduleId},
       ${parsed.resourceId},
@@ -86,7 +97,8 @@ export async function upsertPlatformCollectionStateInTransaction(
       ${parsed.nextEligibleAt},
       ${parsed.authorizationGeneration},
       ${parsed.validatedAt},
-      ${parsed.lastFailureClass}
+      ${parsed.lastFailureClass},
+      ${parsed.lastFailureClass === null ? null : new Date()}
     )
     on conflict (module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id)
     do update set
@@ -94,6 +106,11 @@ export async function upsertPlatformCollectionStateInTransaction(
       authorization_generation = excluded.authorization_generation,
       validated_at = excluded.validated_at,
       last_failure_class = excluded.last_failure_class,
+      failure_started_at = case
+        when excluded.last_failure_class is null then null
+        when platform_collection_state.last_failure_class is null then now()
+        else platform_collection_state.failure_started_at
+      end,
       updated_at = now()
     returning
       module_id as "moduleId",
@@ -105,6 +122,7 @@ export async function upsertPlatformCollectionStateInTransaction(
       authorization_generation as "authorizationGeneration",
       validated_at as "validatedAt",
       last_failure_class as "lastFailureClass",
+      failure_started_at as "failureStartedAt",
       created_at as "createdAt",
       updated_at as "updatedAt"
   `

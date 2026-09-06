@@ -8,9 +8,15 @@ import { modulePersistenceNames } from './module-persistence-provisioner.js'
 
 export type ModulePersistenceTransaction = postgres.TransactionSql
 
+interface ModulePersistenceOptions {
+  readonly readOnly?: boolean
+  readonly statementTimeoutMilliseconds?: number
+}
+
 export function createModulePersistenceCapability(
   connection: postgres.Sql,
   moduleId: string,
+  options: ModulePersistenceOptions = {},
 ): PlatformModulePersistence<ModulePersistenceTransaction> {
   const { runtimeRoleName, schemaName } = modulePersistenceNames(moduleId)
 
@@ -19,10 +25,19 @@ export function createModulePersistenceCapability(
       operation: (transaction: ModulePersistenceTransaction) => Promise<T>,
     ) => {
       const result = await connection.begin(async (transaction) => {
+        if (options.readOnly) await transaction`set transaction read only`
         await transaction`set local role ${transaction(runtimeRoleName)}`
         await transaction`
           select set_config('search_path', ${`pg_catalog, ${schemaName}`}, true)
         `
+        if (options.statementTimeoutMilliseconds !== undefined)
+          await transaction`
+            select set_config(
+              'statement_timeout',
+              ${String(options.statementTimeoutMilliseconds)},
+              true
+            )
+          `
         return operation(transaction)
       })
       return result as T

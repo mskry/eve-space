@@ -12,11 +12,11 @@ import {
   categorizeRelayFailure,
   DomainEventValidationError,
   listDomainEventDefinitions,
-  normalizeScopeSet,
   RelayPublicationError,
   validateDomainEventInput,
   validateStoredDomainEvent,
 } from '../../src/domain-events/definitions.js'
+import { normalizeScopeSet } from '../../src/scopes.js'
 
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
@@ -28,6 +28,25 @@ describe('domain event registry', () => {
       { type: 'character.detached', payloadVersion: 1, aggregateType: 'character' },
       { type: 'character.main-changed', payloadVersion: 1, aggregateType: 'user' },
       { type: 'character.scopes-changed', payloadVersion: 1, aggregateType: 'character' },
+      { type: 'character.affiliation-observed', payloadVersion: 1, aggregateType: 'character' },
+      { type: 'organization.changed', payloadVersion: 1, aggregateType: 'deployment' },
+      { type: 'organization.member-blocked', payloadVersion: 1, aggregateType: 'user' },
+      { type: 'organization.member-unblocked', payloadVersion: 1, aggregateType: 'user' },
+      {
+        type: 'organization.managed-corporation-added',
+        payloadVersion: 1,
+        aggregateType: 'deployment',
+      },
+      {
+        type: 'organization.managed-corporation-removed',
+        payloadVersion: 1,
+        aggregateType: 'deployment',
+      },
+      {
+        type: 'organization.compliance-transitioned',
+        payloadVersion: 1,
+        aggregateType: 'user',
+      },
     ])
   })
 
@@ -64,6 +83,20 @@ describe('domain event registry', () => {
         characterId: 1404328063,
         addedScopes: ['scope-z', 'scope-a'],
         removedScopes: ['scope-old'],
+      },
+    },
+    {
+      type: 'organization.changed',
+      payloadVersion: 1,
+      aggregateId: '1',
+      payload: {
+        actorAdminId: userId,
+        previousOrganizationType: 'corporation',
+        previousOrganizationId: 98_000_001,
+        previousOrganizationVersion: 1,
+        organizationType: 'alliance',
+        organizationId: 99_000_001,
+        organizationVersion: 2,
       },
     },
   ] as const)('validates $type v$payloadVersion', (input) => {

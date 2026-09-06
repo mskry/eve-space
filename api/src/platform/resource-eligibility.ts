@@ -6,7 +6,6 @@ import {
   getOptionalCharacterEsiScope,
 } from '../esi-resilience/catalog-access.js'
 import type { EsiOperation } from '../esi-resilience/catalog.js'
-import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import {
   platformCollectionFailureClasses,
@@ -14,6 +13,8 @@ import {
   type PlatformCollectionFailureClass,
   type PlatformCollectionStateIdentity,
 } from './collection-state.js'
+import { installedResourceIdentityKey } from './resource-identity.js'
+import { platformResources } from './resources.js'
 
 const platformResourceDueReasons = [
   'never-collected',
@@ -31,6 +32,8 @@ export type PlatformResourceEligibility =
       readonly dueReason: PlatformResourceDueReason
       readonly schedulingKey: Date
       readonly authorizationGeneration: number | null
+      readonly authorizationCharacterId?: number | null
+      readonly authorizationCharacterLifecycleId?: string | null
       readonly nextEligibleAt: Date | null
       readonly validatedAt: Date | null
       readonly lastFailureClass: PlatformCollectionFailureClass | null
@@ -38,6 +41,8 @@ export type PlatformResourceEligibility =
   | {
       readonly status: 'authorization-required'
       readonly authorizationGeneration: number | null
+      readonly authorizationCharacterId?: number | null
+      readonly authorizationCharacterLifecycleId?: string | null
       readonly requiredScope: string
       readonly dueReason: null
       readonly schedulingKey: null
@@ -48,6 +53,8 @@ export type PlatformResourceEligibility =
   | {
       readonly status: 'disabled' | 'suppressed'
       readonly authorizationGeneration: number | null
+      readonly authorizationCharacterId?: number | null
+      readonly authorizationCharacterLifecycleId?: string | null
       readonly dueReason: null
       readonly schedulingKey: null
       readonly nextEligibleAt: Date | null
@@ -70,6 +77,8 @@ interface ClassificationRow {
   readonly operationId: string
   readonly eligibilityStatus: string
   readonly expectedAuthorizationGeneration: number | null
+  readonly authorizationCharacterId: number | string | null
+  readonly authorizationCharacterLifecycleId: string | null
   readonly requiredScope: string | null
   readonly dueReason: string | null
   readonly schedulingKey: DatabaseTimestamp
@@ -89,6 +98,7 @@ interface EligibilityOptions {
 export interface DueInstalledResource {
   readonly identity: PlatformCollectionStateIdentity
   readonly operationId: EsiOperation
+  readonly authorizationCharacterId?: number | null
 }
 
 interface SelectDueResourcesOptions extends EligibilityOptions {
@@ -100,7 +110,7 @@ export async function resolveInstalledResourceEligibility(
   options: EligibilityOptions = {},
 ): Promise<PlatformResourceEligibility> {
   const parsed = platformCollectionStateIdentitySchema.parse(identity)
-  const resources = options.resources ?? installedModuleResources
+  const resources = options.resources ?? platformResources
   const resource = resources.find(
     ({ moduleId, resourceId }) => moduleId === parsed.moduleId && resourceId === parsed.resourceId,
   )
@@ -117,6 +127,8 @@ export async function resolveInstalledResourceEligibility(
       operation_id as "operationId",
       eligibility_status as "eligibilityStatus",
       expected_authorization_generation as "expectedAuthorizationGeneration",
+      authorization_character_id as "authorizationCharacterId",
+      authorization_character_lifecycle_id as "authorizationCharacterLifecycleId",
       required_scope as "requiredScope",
       due_reason as "dueReason",
       scheduling_key as "schedulingKey",
@@ -141,7 +153,7 @@ export async function selectDueInstalledResources(
 ): Promise<readonly DueInstalledResource[]> {
   if (!isPositiveSafeInteger(options.limit))
     throw new Error('Resource planning limit must be a positive safe integer')
-  const resources = options.resources ?? installedModuleResources
+  const resources = options.resources ?? platformResources
   if (resources.length === 0) return []
 
   const connection = options.connection ?? sql
@@ -155,6 +167,8 @@ export async function selectDueInstalledResources(
       operation_id as "operationId",
       eligibility_status as "eligibilityStatus",
       expected_authorization_generation as "expectedAuthorizationGeneration",
+      authorization_character_id as "authorizationCharacterId",
+      authorization_character_lifecycle_id as "authorizationCharacterLifecycleId",
       required_scope as "requiredScope",
       due_reason as "dueReason",
       scheduling_key as "schedulingKey",
@@ -177,7 +191,7 @@ export async function selectDueInstalledResources(
     if (classification.status !== 'eligible' || !classification.due)
       throw new Error('Resource classifier returned a non-due planning row')
     assertRegisteredEsiOperation(row.operationId)
-    return {
+    const due: DueInstalledResource = {
       identity: platformCollectionStateIdentitySchema.parse({
         moduleId: row.moduleId,
         resourceId: row.resourceId,
@@ -187,13 +201,18 @@ export async function selectDueInstalledResources(
       }),
       operationId: row.operationId,
     }
+    return row.subjectKind === 'corporation'
+      ? Object.assign(due, {
+          authorizationCharacterId: parseAuthorizationCharacterId(row.authorizationCharacterId),
+        })
+      : due
   })
 }
 
 function toPlanningResources(resources: readonly PlatformInstalledResourceDescriptor[]) {
   const seen = new Set<string>()
   return resources.map((resource) => {
-    const identity = `${resource.moduleId}\0${resource.resourceId}\0${resource.subjectKind}`
+    const identity = installedResourceIdentityKey(resource)
     if (seen.has(identity))
       throw new Error(
         `Duplicate installed resource planning identity: ${resource.moduleId}/${resource.resourceId}/${resource.subjectKind}`,
@@ -206,6 +225,7 @@ function toPlanningResources(resources: readonly PlatformInstalledResourceDescri
       subject_kind: resource.subjectKind,
       operation_id: resource.operationId,
       required_scope: getOptionalCharacterEsiScope(resource.operationId),
+      eligibility_kind: resource.eligibility.kind,
     }
   })
 }
@@ -213,6 +233,12 @@ function toPlanningResources(resources: readonly PlatformInstalledResourceDescri
 function parseClassification(row: ClassificationRow): PlatformResourceEligibility {
   const state = {
     authorizationGeneration: row.expectedAuthorizationGeneration,
+    ...(row.subjectKind === 'corporation'
+      ? {
+          authorizationCharacterId: parseAuthorizationCharacterId(row.authorizationCharacterId),
+          authorizationCharacterLifecycleId: row.authorizationCharacterLifecycleId ?? null,
+        }
+      : {}),
     nextEligibleAt: toDate(row.nextEligibleAt),
     validatedAt: toDate(row.validatedAt),
     lastFailureClass: parseFailureClass(row.lastFailureClass),
@@ -243,6 +269,14 @@ function parseClassification(row: ClassificationRow): PlatformResourceEligibilit
     schedulingKey,
     ...state,
   }
+}
+
+function parseAuthorizationCharacterId(value: number | string | null | undefined) {
+  if (value == null) return null
+  const parsed = Number(value)
+  if (!isPositiveSafeInteger(parsed))
+    throw new Error(`Resource classifier returned invalid authorization character ${value}`)
+  return parsed
 }
 
 function toDate(value: Date | string | null) {

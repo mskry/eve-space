@@ -7,8 +7,8 @@
 dist
 coverage
 coverage-postgres
-coverage-registry
 coverage-redis
+coverage-registry
 .scannerwork
 
 # Node dependencies

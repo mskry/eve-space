@@ -6,11 +6,9 @@ import {
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { describe, expect, test, vi } from 'vitest'
-import {
-  processInstalledResourceBatch,
-  validatePlatformResourceBatchClassifications,
-} from '../../src/platform/resource-batch.js'
-import { resourceRefreshJobId } from '../../src/queue/job-registry.js'
+import { validatePlatformResourceBatchClassifications } from '../../src/platform/resource-batch.js'
+import { processInstalledResourceBatch } from '../../src/queue/resource-batch-processor.js'
+import { resourceRefreshJobId } from '../../src/queue/resource-job-contracts.js'
 
 const lifecycleIds = [
   '35acd527-9539-44ad-aacf-9f8e45232267',

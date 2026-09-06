@@ -220,7 +220,7 @@ describe('deployment administration routes', () => {
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual({ organization })
-    expect(mocks.updateOrganization).toHaveBeenCalledWith(organization)
+    expect(mocks.updateOrganization).toHaveBeenCalledWith(organization, account.adminId)
   })
 
   test('requires a local owner session before listing installed modules', async () => {

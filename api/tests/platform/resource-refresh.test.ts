@@ -4,22 +4,41 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   begin: vi.fn(),
   createPersistence: vi.fn(),
+  databaseTransaction: vi.fn(),
+  execute: vi.fn(),
+  loadState: vi.fn(),
+  materializeCoreResourceObservation: vi.fn(),
   recordSuccess: vi.fn(),
+  recomputeAllAccounts: vi.fn(),
+  recomputeManagedCorporations: vi.fn(),
   resolveEligibility: vi.fn(),
   transaction: vi.fn(),
+  upsertState: vi.fn(),
 }))
 
-vi.mock('../../src/db/client.js', () => ({ sql: { begin: mocks.begin } }))
+vi.mock('../../src/db/client.js', () => ({
+  db: { transaction: mocks.databaseTransaction },
+  sql: { begin: mocks.begin },
+}))
 vi.mock('../../src/db/module-persistence.js', () => ({
   createTransactionScopedModulePersistenceCapability: mocks.createPersistence,
 }))
+vi.mock('../../src/organization/compliance.js', () => ({
+  recomputeAllOrganizationAccountsInTransaction: mocks.recomputeAllAccounts,
+  recomputeComplianceForManagedCorporationsInTransaction: mocks.recomputeManagedCorporations,
+}))
 vi.mock('../../src/platform/collection-status.js', () => ({
   recordInstalledResourceCollectionSuccess: mocks.recordSuccess,
+}))
+vi.mock('../../src/platform/core-resource-materialization.js', () => ({
+  materializeCoreResourceObservation: mocks.materializeCoreResourceObservation,
 }))
 vi.mock('../../src/platform/resource-eligibility.js', () => ({
   resolveInstalledResourceEligibility: mocks.resolveEligibility,
 }))
 vi.mock('../../src/platform/collection-state-store.js', () => ({
+  loadPlatformCollectionState: mocks.loadState,
+  upsertPlatformCollectionState: mocks.upsertState,
   upsertPlatformCollectionStateInTransaction: vi.fn(),
 }))
 
@@ -45,6 +64,10 @@ describe('local resource observations', () => {
     vi.clearAllMocks()
     mocks.transaction.mockResolvedValue([])
     mocks.begin.mockImplementation((operation) => operation(mocks.transaction))
+    mocks.databaseTransaction.mockImplementation((operation) =>
+      operation({ execute: mocks.execute }),
+    )
+    mocks.loadState.mockResolvedValue(null)
     mocks.resolveEligibility.mockResolvedValue({
       status: 'eligible',
       due: true,
@@ -160,6 +183,85 @@ describe('local resource observations', () => {
       expect.any(PlatformResourcePersistenceError),
     )
   })
+
+  test('materializes core observations and recomputes every account when required', async () => {
+    mocks.materializeCoreResourceObservation.mockResolvedValue({
+      organizationVersion: 8,
+      affectedCorporationIds: [],
+      recomputeAllAccounts: true,
+    })
+
+    await applyInstalledResourceObservation(coreObservation())
+
+    expect(mocks.recordSuccess).toHaveBeenCalledOnce()
+    expect(mocks.recomputeAllAccounts).toHaveBeenCalledWith(expect.anything(), {
+      deploymentId: 1,
+      organizationVersion: 8,
+      now: expect.any(Date),
+    })
+    expect(mocks.recomputeManagedCorporations).not.toHaveBeenCalled()
+  })
+
+  test('recomputes only accounts affected by a core corporation observation', async () => {
+    mocks.materializeCoreResourceObservation.mockResolvedValue({
+      organizationVersion: 9,
+      affectedCorporationIds: [98_000_001, 98_000_002],
+      recomputeAllAccounts: false,
+    })
+
+    await applyInstalledResourceObservation(coreObservation())
+
+    expect(mocks.recomputeManagedCorporations).toHaveBeenCalledWith(expect.anything(), {
+      deploymentId: 1,
+      organizationVersion: 9,
+      corporationIds: [98_000_001, 98_000_002],
+      now: expect.any(Date),
+    })
+  })
+
+  test('does not advance collection state for obsolete or invalid core observations', async () => {
+    mocks.materializeCoreResourceObservation.mockResolvedValue(null)
+    await applyInstalledResourceObservation(coreObservation())
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+
+    await expect(
+      applyInstalledResourceObservation({
+        ...coreObservation(),
+        validatedAt: 'invalid',
+      }),
+    ).rejects.toThrow('ESI representation validation time is invalid')
+
+    mocks.materializeCoreResourceObservation.mockResolvedValue({
+      organizationVersion: 10,
+      affectedCorporationIds: [],
+      recomputeAllAccounts: false,
+    })
+    await applyInstalledResourceObservation(coreObservation())
+    expect(mocks.recomputeAllAccounts).not.toHaveBeenCalled()
+    expect(mocks.recomputeManagedCorporations).not.toHaveBeenCalled()
+  })
+
+  test('discards a core observation older than the serialized collection state', async () => {
+    mocks.loadState.mockResolvedValue({
+      validatedAt: new Date('2026-08-26T15:00:00.000Z'),
+    })
+
+    await applyInstalledResourceObservation(coreObservation())
+
+    expect(mocks.materializeCoreResourceObservation).not.toHaveBeenCalled()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+    expect(mocks.recomputeAllAccounts).not.toHaveBeenCalled()
+    expect(mocks.recomputeManagedCorporations).not.toHaveBeenCalled()
+  })
+
+  test('ignores unchanged core observations', async () => {
+    await applyInstalledResourceObservation({
+      ...coreObservation(),
+      outcome: 'unchanged',
+    })
+
+    expect(mocks.databaseTransaction).not.toHaveBeenCalled()
+  })
 })
 
 function observation(materialize: PlatformResourceOperationImplementation['materialize']) {
@@ -193,5 +295,24 @@ function scopedPersistence(failure?: unknown) {
   return {
     capability: { transaction: vi.fn(async (operation) => operation({ query: vi.fn() })) },
     suppressedFailure: () => (failure === undefined ? undefined : { error: failure }),
+  }
+}
+
+function coreObservation() {
+  const input = observation(vi.fn())
+  return {
+    ...input,
+    resource: {
+      ...input.resource,
+      moduleId: 'core',
+      resourceId: 'managed-corporations',
+    },
+    subject: {
+      kind: 'alliance' as const,
+      allianceId: 99_000_001,
+      lifecycleId: input.subject.lifecycleId,
+    },
+    outcome: 'complete' as const,
+    data: { corporationIds: [98_000_001] },
   }
 }

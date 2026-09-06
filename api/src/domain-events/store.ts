@@ -15,7 +15,7 @@ import {
   sql,
 } from 'drizzle-orm'
 import { z } from 'zod'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
 import { domainEvents, type DomainEventRow } from '../db/schema.js'
 import {
   relayFailureCategories,
@@ -26,7 +26,6 @@ import {
   validateStoredDomainEvent,
 } from './definitions.js'
 
-export type DomainEventTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type TransactionalDatabase = Pick<typeof db, 'transaction'>
 type EventReader = Pick<typeof db, 'select'>
 type EventWriter = Pick<typeof db, 'update'>
@@ -77,7 +76,7 @@ export type ClaimedDomainEvent =
   | (DomainEventClaim & { valid: false; event: { eventId: string } })
 
 export async function appendDomainEvent(
-  transaction: DomainEventTransaction,
+  transaction: Pick<DatabaseTransaction, 'insert'>,
   input: RegisteredDomainEventInput,
 ) {
   const event = validateDomainEventInput(input)
