@@ -23,6 +23,7 @@
   "dependencies": {
     "@eve-space/platform-module-nuxt": "workspace:*",
     "@nuxt/kit": "catalog:",
+    "@nuxt/schema": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {

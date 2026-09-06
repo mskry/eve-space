@@ -161,6 +161,7 @@ function linkFixtureDependencies() {
     [serverRoot, 'zod', 'api/node_modules/zod'],
     [nuxtRoot, '@eve-space/platform-module-nuxt', 'node_modules/@eve-space/platform-module-nuxt'],
     [nuxtRoot, '@nuxt/kit', 'node_modules/@nuxt/kit'],
+    [nuxtRoot, '@nuxt/schema', 'packages/platform-module-nuxt/node_modules/@nuxt/schema'],
     [nuxtRoot, 'vue', 'node_modules/vue'],
   ] as const
   for (const [packageRoot, name, source] of dependencies) {

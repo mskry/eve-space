@@ -3,6 +3,7 @@ import type { ApplyGlobalResponse } from 'hono/client'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
+import type { PlatformModuleErrorBody } from '@eve-space/platform-module-contract'
 import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { env } from './env.js'
 import { CharacterTokenNotFoundError } from './auth/store.js'
@@ -21,6 +22,8 @@ import { loadSession, requireSession } from './middleware/auth-session.js'
 import { TokenRefreshUnavailableError } from './auth/tokens.js'
 import { organizationRoutes } from './organization/routes.js'
 import { universeRoutes } from './universe/routes.js'
+
+type GlobalErrorBody = { message: string } | PlatformModuleErrorBody
 
 export const app = new Hono()
   .use('*', secureHeaders())
@@ -68,11 +71,15 @@ app.onError((error, context) => {
 export type AppType = ApplyGlobalResponse<
   typeof app,
   {
-    400: { json: { message: string } }
-    404: { json: { message: string } }
+    400: { json: GlobalErrorBody }
+    403: { json: GlobalErrorBody }
+    404: { json: GlobalErrorBody }
+    409: { json: GlobalErrorBody }
+    422: { json: GlobalErrorBody }
+    429: { json: GlobalErrorBody }
     500: { json: { message: string } }
-    502: { json: { message: string } }
-    503: { json: { message: string } }
+    502: { json: GlobalErrorBody }
+    503: { json: GlobalErrorBody }
   }
 >
 

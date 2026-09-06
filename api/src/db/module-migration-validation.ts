@@ -14,6 +14,8 @@ const relationAliasPattern = new RegExp(
   String.raw`\b(?:from|join|update|into)\s+(?:only\s+)?(?:(${identifier})\s*\.\s*)?(${identifier})(?=\s+(?:as\s+)?(${identifier}))`,
   'gi',
 )
+const derivedRelationStartPattern = /\b(?:from|join)\s+(?:lateral\s+)?/gi
+const identifierPattern = new RegExp(`^${identifier}`)
 const ctePattern = new RegExp(String.raw`(?:\bwith|,)\s*(${identifier})\s+as\s*\(`, 'gi')
 const reservedAliasKeywords = new Set([
   'cross',
@@ -137,7 +139,80 @@ function collectLocalQualifiers(statement: string, schemaName: string) {
     )
       qualifiers.add(alias)
   }
+  for (const alias of collectDerivedRelationAliases(statement)) qualifiers.add(alias)
   return qualifiers
+}
+
+function collectDerivedRelationAliases(statement: string) {
+  const aliases = new Set<string>()
+  for (const match of statement.matchAll(derivedRelationStartPattern)) {
+    let index = skipWhitespace(statement, match.index + match[0].length)
+    if (statement[index] === '(') {
+      const end = skipParenthesizedExpression(statement, index)
+      const alias = readRelationAlias(statement, end)
+      if (alias) aliases.add(alias)
+      continue
+    }
+
+    const relation = readIdentifier(statement, index)
+    if (!relation) continue
+    index = skipWhitespace(statement, relation.end)
+    if (statement[index] === '.') {
+      const member = readIdentifier(statement, skipWhitespace(statement, index + 1))
+      if (!member) continue
+      index = skipWhitespace(statement, member.end)
+    }
+    if (statement[index] !== '(') continue
+    const alias = readRelationAlias(statement, skipParenthesizedExpression(statement, index))
+    if (alias) aliases.add(alias)
+  }
+  return aliases
+}
+
+function readRelationAlias(statement: string, index: number) {
+  index = skipWhitespace(statement, index)
+  if (/^as\b/i.test(statement.slice(index))) index = skipWhitespace(statement, index + 2)
+  const alias = readIdentifier(statement, index)
+  if (!alias) return undefined
+  const normalized = normalizeIdentifier(alias.value)
+  return reservedAliasKeywords.has(normalized) ? undefined : normalized
+}
+
+function skipParenthesizedExpression(statement: string, start: number) {
+  let depth = 0
+  for (let index = start; index < statement.length; index += 1) {
+    if (statement[index] === '"') {
+      index = skipQuotedIdentifier(statement, index)
+      continue
+    }
+    if (statement[index] === '(') depth += 1
+    if (statement[index] !== ')') continue
+    depth -= 1
+    if (depth === 0) return index + 1
+  }
+  return statement.length
+}
+
+function skipQuotedIdentifier(statement: string, start: number) {
+  for (let index = start + 1; index < statement.length; index += 1) {
+    if (statement[index] !== '"') continue
+    if (statement[index + 1] === '"') {
+      index += 1
+      continue
+    }
+    return index
+  }
+  return statement.length - 1
+}
+
+function readIdentifier(statement: string, index: number) {
+  const value = identifierPattern.exec(statement.slice(index))?.[0]
+  return value ? { value, end: index + value.length } : undefined
+}
+
+function skipWhitespace(statement: string, index: number) {
+  while (/\s/.test(statement[index] ?? '')) index += 1
+  return index
 }
 
 function normalizeIdentifier(value: string) {

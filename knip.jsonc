@@ -27,7 +27,7 @@
         "@pinia/colada-nuxt",
         "@pinia/nuxt",
         "@hono/zod-validator",
-        "@nuxt/kit",
+        "@nuxt/schema",
         "zod",
       ],
       // Generated transiently by test:module-conformance and removed after verification.

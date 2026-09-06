@@ -92,6 +92,11 @@ describe('module migration SQL validation', () => {
         update records as target set value = target.value;
         select source.id from records as source;
         select source.id, joined.id from records as source join records joined on joined.id = source.id;
+        select derived.id from (select id from records) as derived;
+        select nested.id from (select derived.id from (select id from records) derived) nested;
+        select generated.value from generate_series(1, 3) as generated(value);
+        select generated.value from generate_series(1, 3) generated(value);
+        select value_rows.id from (values (1), (2)) as value_rows(id);
         create index records_created_at_idx on eve_module_alpha.records (created_at);
       `),
     ).not.toThrow()
@@ -125,6 +130,11 @@ describe('module migration SQL validation', () => {
     ],
     ['an arbitrary schema', 'drop table private.records', 'cross-schema reference private'],
     ['a quoted schema', 'select * from "public"."users"', 'cross-schema reference public'],
+    [
+      'a cross-schema reference inside a derived table',
+      'select derived.id from (select id from public.records) derived',
+      'cross-schema reference public',
+    ],
     ['privilege changes', 'grant select on records to public', 'role, privilege'],
     ['ownership changes', 'alter table records owner to eve_space', 'role, privilege'],
     ['role changes', 'create role elevated', 'role, privilege'],
