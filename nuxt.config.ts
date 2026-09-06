@@ -6,6 +6,7 @@ import { installedNuxtContributions } from './generated/platform/installed-nuxt-
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   app: {
+    viewTransition: false,
     head: {
       title: 'EVE Space // Capsuleer Operations',
       htmlAttrs: { lang: 'en' },
@@ -38,6 +39,9 @@ export default defineNuxtConfig({
     timeline: {
       enabled: true,
     },
+  },
+  experimental: {
+    viewTransition: true,
   },
   modules: [
     [platformNuxtModule, { contributions: installedNuxtContributions }],

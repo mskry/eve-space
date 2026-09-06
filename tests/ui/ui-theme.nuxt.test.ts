@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
+import UiThemeSwitcher from '../../layers/ui/app/components/ui/UiThemeSwitcher.vue'
 import { useTheme } from '../../layers/ui/app/composables/useTheme'
 
 const ThemeHost = defineComponent({
@@ -32,6 +33,7 @@ const ThemeHost = defineComponent({
 
 afterEach(() => {
   document.cookie = 'eve-space-theme=; Max-Age=0; path=/'
+  document.body.replaceChildren()
 })
 
 describe('UI themes', () => {
@@ -43,10 +45,10 @@ describe('UI themes', () => {
 
     expect(wrapper.get('button').attributes('data-theme')).toBe('gallente')
     expect(wrapper.get('button').attributes('data-options')).toBe(
-      'gallente,amarr,caldari,minmatar,high-sec',
+      'amarr,gallente,caldari,high-sec,minmatar',
     )
     expect(wrapper.get('button').attributes('data-labels')).toBe(
-      'Gallente Green,Amarr Gold,Caldari Steel,Minmatar Rust,CONCORD Daylight',
+      'Amarr Gold,Gallente Green,Caldari Steel,CONCORD Daylight,Minmatar Rust',
     )
 
     await wrapper.get('button').trigger('click')
@@ -64,5 +66,18 @@ describe('UI themes', () => {
     })
 
     expect(wrapper.get('button').attributes('data-theme')).toBe('gallente')
+  })
+
+  it('labels the theme options without a visible menu heading', async () => {
+    const wrapper = await mountSuspended(UiThemeSwitcher, {
+      attachTo: document.body,
+      route: false,
+    })
+
+    await wrapper.get('.ui-theme-trigger').trigger('click')
+    await nextTick()
+
+    expect(document.querySelector('[aria-label="Interface theme"]')).not.toBeNull()
+    expect(document.body.textContent).not.toContain('INTERFACE THEME')
   })
 })

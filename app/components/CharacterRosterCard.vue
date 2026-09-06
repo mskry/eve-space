@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CharacterRosterEntry } from '../queries/characters'
+import { characterPortraitViewTransitionName } from '../utils/view-transition'
 
 defineProps<{
   character: CharacterRosterEntry
@@ -37,7 +38,12 @@ function locationLabel(location: CharacterRosterEntry['location']) {
       @pointerenter="emit('prefetch', character.characterId)"
       @focus="emit('prefetch', character.characterId)"
     >
-      <span class="roster-portrait">
+      <span
+        class="roster-portrait"
+        :style="{
+          viewTransitionName: characterPortraitViewTransitionName(character.characterId),
+        }"
+      >
         <UiEveImage
           kind="character"
           :id="character.characterId"

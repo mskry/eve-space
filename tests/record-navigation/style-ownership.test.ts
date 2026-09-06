@@ -10,6 +10,8 @@ describe('record page style ownership', () => {
     expect(component).toContain('.record-section-navigation')
     expect(component).toContain('overflow-x: auto')
     expect(component).toContain('overflow-y: hidden')
+    expect(component).toContain('draggable="false"')
+    expect(component).toContain('user-select: none')
     expect(component).toContain('focus-visible')
     expect(component).not.toContain('25%')
     expect(record).not.toContain('.character-tabs')

@@ -4,8 +4,9 @@ import {
   type ReauthorizeStatus,
 } from '../../composables/useCharacterReauthorization'
 import { parseRouteId } from '../../utils/route-id'
+import { characterPortraitViewTransitionName } from '../../utils/view-transition'
 
-definePageMeta({ title: 'Characters', layout: 'headerless' })
+definePageMeta({ title: 'Characters', layout: 'headerless', viewTransition: true })
 
 const route = useRoute()
 const router = useRouter()
@@ -136,7 +137,21 @@ useHead({
       <header class="character-shell-header">
         <NuxtLink class="character-shell-back" to="/characters">← ALL CHARACTERS</NuxtLink>
         <div class="character-shell-identity">
-          <UiEveImage kind="character" :id="selectedCharacter.characterId" :dimension="72" alt="" />
+          <span
+            class="character-shell-portrait"
+            :style="{
+              viewTransitionName: characterPortraitViewTransitionName(
+                selectedCharacter.characterId,
+              ),
+            }"
+          >
+            <UiEveImage
+              kind="character"
+              :id="selectedCharacter.characterId"
+              :dimension="72"
+              alt=""
+            />
+          </span>
           <div>
             <p class="ui-eyebrow">{{ characterBreadcrumb }}</p>
             <h1>

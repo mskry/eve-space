@@ -1,9 +1,9 @@
 export const uiThemes = [
-  { value: 'gallente', label: 'Gallente Green' },
   { value: 'amarr', label: 'Amarr Gold' },
+  { value: 'gallente', label: 'Gallente Green' },
   { value: 'caldari', label: 'Caldari Steel' },
-  { value: 'minmatar', label: 'Minmatar Rust' },
   { value: 'high-sec', label: 'CONCORD Daylight' },
+  { value: 'minmatar', label: 'Minmatar Rust' },
 ] as const
 
 export type UiTheme = (typeof uiThemes)[number]['value']

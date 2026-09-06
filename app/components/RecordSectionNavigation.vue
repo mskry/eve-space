@@ -79,6 +79,7 @@ onBeforeUnmount(() => resizeObserver?.disconnect())
       :to="entry.to"
       :class="{ 'is-current': isCurrent(entry) }"
       :aria-current="isCurrent(entry) ? 'page' : undefined"
+      draggable="false"
       prefetch-on="interaction"
       @pointerenter="emit('intent', entry)"
       @focus="emit('intent', entry)"
@@ -113,7 +114,9 @@ onBeforeUnmount(() => resizeObserver?.disconnect())
   letter-spacing: 0.12em;
   text-align: center;
   text-decoration: none;
+  user-select: none;
   white-space: nowrap;
+  -webkit-user-drag: none;
 }
 
 .record-section-navigation-indicator {

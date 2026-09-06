@@ -510,6 +510,13 @@ describe('character Skills components', () => {
     expect(wrapper.find('.skill-queue-current-meta').exists()).toBe(false)
     expect(wrapper.find('.skill-queue-unallocated strong').exists()).toBe(true)
     expect(wrapper.find('.skill-queue-unallocated-label').exists()).toBe(true)
+    const queueScroll = wrapper.get('.skill-queue-scroll')
+    expect(queueScroll.find('.skill-queue-list').exists()).toBe(true)
+    expect(queueScroll.find('.skill-queue-current').exists()).toBe(false)
+    expect(queueScroll.find('.skill-queue-summary-panel').exists()).toBe(false)
+    expect(wrapper.get('.skill-queue-summary-panel').find('.skill-queue-totals').exists()).toBe(
+      true,
+    )
     const activeLevelCells = wrapper.findAll('.skill-queue-current-levels i')
     expect(activeLevelCells).toHaveLength(5)
     expect(
@@ -528,6 +535,30 @@ describe('character Skills components', () => {
     })
     expect(wrapper.get('.esi-authorization-required a').attributes('href')).toBe('/reauthorize')
     expect(wrapper.find('.skill-queue-unallocated').exists()).toBe(true)
+  })
+
+  it('scrolls a paused queue without rendering an empty summary panel', async () => {
+    const skillQueue = trainingQueue()
+    skillQueue.entries = skillQueue.entries.map((entry) => ({
+      ...entry,
+      startDate: null,
+      finishDate: null,
+    }))
+    const wrapper = await mountSuspended(CharacterSkillsQueue, {
+      props: {
+        authorizeUrl: '',
+        message: '',
+        skillQueue,
+        status: 'idle',
+        unallocatedSp: 0,
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    expect(wrapper.get('.skill-queue-idle').text()).toContain('Training is paused')
+    expect(wrapper.get('.skill-queue-scroll').findAll('.skill-queue-list li')).toHaveLength(3)
+    expect(wrapper.find('.skill-queue-summary-panel').exists()).toBe(false)
   })
 
   it('shows summary attributes and retains independent retry behavior', async () => {
