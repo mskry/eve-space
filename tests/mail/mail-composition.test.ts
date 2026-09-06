@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { http, HttpResponse } from 'msw'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -15,8 +13,7 @@ import type { MailDetail } from '../../app/queries/mail'
 import { createApiClient } from '../../app/utils/api-client'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
-
-const readWorkspaceFile = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
+import { readWorkspaceFile } from '../support/read-workspace-file'
 
 describe('mail composition', () => {
   it('seeds reply from the addressable sender and quotes plain text', () => {

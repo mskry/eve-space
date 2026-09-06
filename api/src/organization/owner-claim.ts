@@ -10,7 +10,7 @@ import {
 } from '../db/schema.js'
 import { appendOrganizationAuditEvent } from './audit.js'
 import { recomputeOrganizationAccountCompliance } from './compliance.js'
-import { isOrganizationOwnerClaimAvailable } from './role-store.js'
+import { isOrganizationOwnerClaimAvailable } from './owner-claim-policy.js'
 
 export class OrganizationOwnerClaimError extends Error {
   constructor(

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   grants: [] as unknown[],
 }))
 
-vi.mock('../../src/organization/group-store.js', () => ({
+vi.mock('../../src/organization/group-permissions.js', () => ({
   getOrganizationGroupPermissions: mocks.getOrganizationGroupPermissions,
 }))
 vi.mock('../../src/db/client.js', () => ({

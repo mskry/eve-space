@@ -1,5 +1,5 @@
 import { and, asc, eq, gt, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   characters,
   deploymentSettings,
@@ -7,24 +7,24 @@ import {
   organizationAccountCompliance,
   organizationCharacterExceptions,
   organizationComplianceIssues,
-  organizationGroupAssignments,
-  organizationGroupPermissionBundles,
   organizationManagedCorporations,
-  organizationMemberBlocks,
-  organizationPermissionBundleEntries,
   platformCollectionState,
   platformSubjectLifecycles,
   users,
 } from '../db/schema.js'
 import { appendDomainEvent } from '../domain-events/store.js'
-import { appendOrganizationAuditEvent, appendOrganizationAuditEvents } from './audit.js'
+import { appendOrganizationAuditEvent } from './audit.js'
+import {
+  resolveOrganizationEntitlementScope,
+  type OrganizationEntitlementScope,
+} from './access-policy.js'
 import {
   evaluateAccountCompliance,
   type AccountComplianceEvaluation,
   type AccountComplianceIssue,
 } from './compliance-evaluator.js'
-import type { OrganizationEntitlementScope } from './compliance-access.js'
-import { convergeRegistrationComplianceGroupsInTransaction } from './group-store.js'
+import { appendExternalServiceEntitlementTransitions } from './entitlement-transitions.js'
+import { convergeRegistrationComplianceGroupsInTransaction } from './group-compliance.js'
 
 interface RecomputeAccountComplianceInput {
   deploymentId: 1
@@ -33,7 +33,7 @@ interface RecomputeAccountComplianceInput {
   now?: Date
 }
 
-type ComplianceTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type ComplianceTransaction = DatabaseTransaction
 
 export function recomputeOrganizationAccountCompliance(
   input: RecomputeAccountComplianceInput,
@@ -171,6 +171,7 @@ export function recomputeOrganizationAccountCompliance(
     const evaluation = evaluateAccountCompliance({
       characters: characterRows.map((character) =>
         Object.assign(character, {
+          hasAuthorization: character.scopes !== null,
           scopes: character.scopes ?? [],
           hasActiveException: activeExceptions.has(character.characterId),
           activeExceptionExpiresAt: activeExceptions.get(character.characterId) ?? null,
@@ -254,7 +255,7 @@ export function recomputeOrganizationAccountCompliance(
           occurredAt: now,
         })
       : null
-    const nextEntitlementScope = projectedEntitlementScope(evaluation, now)
+    const nextEntitlementScope = resolveOrganizationEntitlementScope(evaluation, now)
     const previousEntitlementScope = projectedPreviousEntitlementScope(
       previous,
       nextEntitlementScope,
@@ -317,139 +318,6 @@ export function recomputeOrganizationAccountCompliance(
     return { outcome: changed ? ('changed' as const) : ('unchanged' as const), evaluation }
   }
   return outerTransaction ? recompute(outerTransaction) : db.transaction(recompute)
-}
-
-function projectedEntitlementScope(
-  projection:
-    | Pick<typeof organizationAccountCompliance.$inferSelect, 'state' | 'accessValidUntil'>
-    | AccountComplianceEvaluation
-    | null,
-  now: Date,
-): OrganizationEntitlementScope {
-  if (!projection?.accessValidUntil || projection.accessValidUntil <= now) return 'none'
-  if (projection.state === 'compliant') return 'all'
-  if (projection.state === 'review_required') return 'review'
-  return 'none'
-}
-
-function projectedPreviousEntitlementScope(
-  previous: typeof organizationAccountCompliance.$inferSelect | null,
-  next: OrganizationEntitlementScope,
-  now: Date,
-): OrganizationEntitlementScope {
-  const projected = projectedEntitlementScope(previous, now)
-  if (projected !== 'none' || !previous?.accessValidUntil) return projected
-  if (previous.state === 'compliant' && next !== 'all') return 'all'
-  if (previous.state === 'review_required' && next === 'none') return 'review'
-  return projected
-}
-
-function changedPermissionScope(
-  from: OrganizationEntitlementScope,
-  to: OrganizationEntitlementScope,
-): 'all' | 'review' | 'non-review' | null {
-  if (from === 'all' && to === 'review') return 'non-review'
-  if (from === 'all' && to === 'none') return 'all'
-  if (from === 'review' && to === 'none') return 'review'
-  return null
-}
-
-export async function appendExternalServiceEntitlementTransitions(
-  transaction: ComplianceTransaction,
-  input: {
-    organizationVersion: number
-    policyVersion: number
-    userId: string
-    granted: boolean
-    causationAuditId: string
-    now: Date
-    reason: string
-    permissionScope: 'all' | 'review' | 'non-review'
-    ignoreBlock?: boolean
-  },
-) {
-  if (!input.ignoreBlock) {
-    const [block] = await transaction
-      .select({ blockId: organizationMemberBlocks.blockId })
-      .from(organizationMemberBlocks)
-      .where(
-        and(
-          eq(organizationMemberBlocks.deploymentId, 1),
-          eq(organizationMemberBlocks.organizationVersion, input.organizationVersion),
-          eq(organizationMemberBlocks.userId, input.userId),
-          isNull(organizationMemberBlocks.unblockedAt),
-        ),
-      )
-      .limit(1)
-    if (block) return
-  }
-  const serviceEntries = await transaction
-    .selectDistinct({
-      permissionKey: organizationPermissionBundleEntries.permissionKey,
-      reviewAllowed: organizationPermissionBundleEntries.reviewAllowed,
-    })
-    .from(organizationGroupAssignments)
-    .innerJoin(
-      organizationGroupPermissionBundles,
-      and(
-        eq(organizationGroupPermissionBundles.groupId, organizationGroupAssignments.groupId),
-        eq(
-          organizationGroupPermissionBundles.organizationVersion,
-          organizationGroupAssignments.organizationVersion,
-        ),
-      ),
-    )
-    .innerJoin(
-      organizationPermissionBundleEntries,
-      eq(organizationPermissionBundleEntries.bundleId, organizationGroupPermissionBundles.bundleId),
-    )
-    .where(
-      and(
-        eq(organizationGroupAssignments.deploymentId, 1),
-        eq(organizationGroupAssignments.organizationVersion, input.organizationVersion),
-        eq(organizationGroupAssignments.userId, input.userId),
-        isNull(organizationGroupAssignments.revokedAt),
-        or(
-          isNull(organizationGroupAssignments.expiresAt),
-          gt(organizationGroupAssignments.expiresAt, input.now),
-        ),
-        eq(organizationPermissionBundleEntries.permissionType, 'service'),
-      ),
-    )
-    .orderBy(asc(organizationPermissionBundleEntries.permissionKey))
-  const reviewAccessByService = new Map<string, boolean>()
-  for (const { permissionKey, reviewAllowed } of serviceEntries)
-    reviewAccessByService.set(
-      permissionKey,
-      Boolean(reviewAccessByService.get(permissionKey) || reviewAllowed),
-    )
-  const services = [...reviewAccessByService]
-    .filter(
-      ([, reviewAllowed]) =>
-        input.permissionScope === 'all' ||
-        (input.permissionScope === 'review' && reviewAllowed) ||
-        (input.permissionScope === 'non-review' && !reviewAllowed),
-    )
-    .map(([permissionKey]) => permissionKey)
-  await appendOrganizationAuditEvents(
-    transaction,
-    services.map((permissionKey) => ({
-      deploymentId: 1 as const,
-      organizationVersion: input.organizationVersion,
-      policyVersion: input.policyVersion,
-      eventType: input.granted
-        ? ('entitlement.granted' as const)
-        : ('entitlement.revoked' as const),
-      actorType: 'system' as const,
-      actorId: null,
-      subjectType: 'external_service' as const,
-      subjectId: permissionKey,
-      reason: input.reason,
-      outcome: input.granted ? ('granted' as const) : ('revoked' as const),
-      causationAuditId: input.causationAuditId,
-      occurredAt: input.now,
-    })),
-  )
 }
 
 export async function recomputeComplianceForManagedCorporation(input: {
@@ -540,6 +408,28 @@ export async function recomputeComplianceForManagedCorporationsInTransaction(
     input,
     affectedUsers.map(({ userId }) => userId),
   )
+}
+
+function projectedPreviousEntitlementScope(
+  previous: typeof organizationAccountCompliance.$inferSelect | null,
+  next: OrganizationEntitlementScope,
+  now: Date,
+): OrganizationEntitlementScope {
+  const projected = resolveOrganizationEntitlementScope(previous, now)
+  if (projected !== 'none' || !previous?.accessValidUntil) return projected
+  if (previous.state === 'compliant' && next !== 'all') return 'all'
+  if (previous.state === 'review_required' && next === 'none') return 'review'
+  return projected
+}
+
+function changedPermissionScope(
+  from: OrganizationEntitlementScope,
+  to: OrganizationEntitlementScope,
+): 'all' | 'review' | 'non-review' | null {
+  if (from === 'all' && to === 'review') return 'non-review'
+  if (from === 'all' && to === 'none') return 'all'
+  if (from === 'review' && to === 'none') return 'review'
+  return null
 }
 
 async function recomputeAccountsInTransaction(

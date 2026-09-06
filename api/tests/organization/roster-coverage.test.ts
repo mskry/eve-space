@@ -17,7 +17,7 @@ describe('organization roster coverage', () => {
     vi.clearAllMocks()
   })
 
-  test('projects configured corporation coverage and unregistered roster observations', async () => {
+  test('projects configured corporation coverage and current unregistered observations', async () => {
     selectResults(
       [
         {
@@ -58,10 +58,10 @@ describe('organization roster coverage', () => {
       ],
     )
     mocks.getCollectionStatus.mockResolvedValue({
-      status: 'authorization-required',
-      validatedAt: null,
+      status: 'current',
+      validatedAt: '2026-09-01T10:15:00.000Z',
       attemptedAt: '2026-09-01T11:00:00.000Z',
-      lastFailureClass: 'authorization',
+      lastFailureClass: null,
     })
 
     await expect(listOrganizationRosterCoverage()).resolves.toEqual({
@@ -77,10 +77,10 @@ describe('organization roster coverage', () => {
           corporationId: 98_000_001,
           managedLastObservedAt: '2026-09-01T10:00:00.000Z',
           source: { sourceId: 'source-1', characterId: 1_404_328_063 },
-          status: 'unauthorized',
-          validatedAt: null,
+          status: 'current',
+          validatedAt: '2026-09-01T10:15:00.000Z',
           attemptedAt: '2026-09-01T11:00:00.000Z',
-          lastFailureClass: 'authorization',
+          lastFailureClass: null,
           unregisteredCharacters: [
             {
               characterId: 1_404_328_064,

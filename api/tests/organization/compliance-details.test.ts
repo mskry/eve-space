@@ -50,6 +50,11 @@ describe('organization compliance details', () => {
       [
         { issueCode: 'no-managed-organization-character', characterId: null, requiredScope: null },
         {
+          issueCode: 'character-authorization-missing',
+          characterId: 90_000_001,
+          requiredScope: null,
+        },
+        {
           issueCode: 'required-scope-missing',
           characterId: 90_000_001,
           requiredScope: 'esi-wallet.read_character_wallet.v1',
@@ -78,6 +83,7 @@ describe('organization compliance details', () => {
           characterId: 90_000_001,
           affiliationFreshness: 'stale',
           reasons: [
+            { code: 'character-authorization-missing', requiredScope: null },
             {
               code: 'required-scope-missing',
               requiredScope: 'esi-wallet.read_character_wallet.v1',

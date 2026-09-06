@@ -1,26 +1,12 @@
 import { and, eq, gt, or } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { organizationAccountCompliance, users } from '../db/schema.js'
+import {
+  resolveOrganizationEntitlementScope,
+  type OrganizationEntitlementScope,
+} from './access-policy.js'
 
 type Database = Pick<typeof db, 'select'>
-export type OrganizationEntitlementScope = 'all' | 'review' | 'none'
-
-export function isComplianceProjectionDue(
-  projection: {
-    state: 'pending' | 'compliant' | 'review_required' | 'suspended'
-    reviewDeadline: Date | null
-    accessValidUntil: Date | null
-  },
-  now = new Date(),
-) {
-  if (projection.state === 'compliant')
-    return !projection.accessValidUntil || projection.accessValidUntil <= now
-  if (projection.state !== 'review_required') return false
-  return (
-    (projection.accessValidUntil !== null && projection.accessValidUntil <= now) ||
-    (projection.reviewDeadline !== null && projection.reviewDeadline <= now)
-  )
-}
 
 export async function loadCurrentEntitlementScope(
   database: Database,
@@ -33,6 +19,7 @@ export async function loadCurrentEntitlementScope(
       userId: users.id,
       state: organizationAccountCompliance.state,
       reviewDeadline: organizationAccountCompliance.reviewDeadline,
+      accessValidUntil: organizationAccountCompliance.accessValidUntil,
     })
     .from(users)
     .innerJoin(
@@ -55,14 +42,7 @@ export async function loadCurrentEntitlementScope(
       ),
     )
     .for('update')
-  if (account?.state === 'compliant') return 'all'
-  if (
-    account?.state === 'review_required' &&
-    account.reviewDeadline !== null &&
-    account.reviewDeadline > now
-  )
-    return 'review'
-  return 'none'
+  return resolveOrganizationEntitlementScope(account, now)
 }
 
 export async function hasCurrentComplianceAccess(

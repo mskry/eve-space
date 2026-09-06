@@ -1,8 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-
-const readWorkspaceFile = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
+import { readWorkspaceFile } from '../support/read-workspace-file'
 
 describe('UiToast', () => {
   it('composes a controlled toast from Reka UI primitives', () => {

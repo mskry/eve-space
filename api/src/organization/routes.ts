@@ -30,11 +30,11 @@ import {
   assignOrganizationGroup,
   createOrganizationGroup,
   createOrganizationPermissionBundle,
-  hasCurrentOrganizationManagerAuthority,
   listCurrentOrganizationGroups,
-  OrganizationGroupMutationError,
   revokeOrganizationGroupAssignment,
 } from './group-store.js'
+import { OrganizationGroupMutationError } from './group-mutation-error.js'
+import { hasCurrentOrganizationManagerAuthority } from './management-authority.js'
 import {
   grantOrganizationRole,
   getOrganizationAccessContext,
@@ -46,7 +46,11 @@ import {
 } from './role-store.js'
 import { listOrganizationRosterCoverage } from './roster-coverage.js'
 import { aggregateOrganizationActivities } from './activity.js'
-import { resolveOrganizationEntitlementScope } from './module-authorization.js'
+import { resolveOrganizationEntitlementScope } from './access-policy.js'
+import {
+  maximumStaleEvidenceGraceDurationSeconds,
+  maximumStrictRemediationDurationSeconds,
+} from './registration-policy.js'
 import {
   OrganizationRegistrationPolicyMutationError,
   updateOrganizationRegistrationPolicy,
@@ -142,12 +146,12 @@ const registrationPolicySchema = z
       .number()
       .int()
       .min(0)
-      .max(30 * 24 * 60 * 60),
+      .max(maximumStrictRemediationDurationSeconds),
     staleEvidenceGraceDurationSeconds: z
       .number()
       .int()
       .min(0)
-      .max(24 * 60 * 60),
+      .max(maximumStaleEvidenceGraceDurationSeconds),
     reason: reasonSchema,
   })
   .strict()
@@ -228,7 +232,7 @@ const requireOrganizationActivityAccess: MiddlewareHandler<OrganizationSessionEn
       },
       403,
     )
-  if (!resolveOrganizationEntitlementScope(organization))
+  if (resolveOrganizationEntitlementScope(organization) === 'none')
     return context.json(
       {
         code: 'ORGANIZATION_COMPLIANCE_REQUIRED',
@@ -670,6 +674,14 @@ function corporationSourceMutationFailure(context: Context, error: unknown) {
         {
           code: 'CORPORATION_SOURCE_INELIGIBLE',
           message: 'The selected character is not eligible as this corporation data source.',
+        },
+        409,
+      )
+    case 'source-character-affiliation-stale':
+      return context.json(
+        {
+          code: 'CORPORATION_SOURCE_AFFILIATION_STALE',
+          message: 'The selected character affiliation is stale. Try again after it is refreshed.',
         },
         409,
       )

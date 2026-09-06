@@ -1,10 +1,19 @@
 import { defineQueryOptions } from '@pinia/colada'
+import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
-export type DelegatedOrganizationRole = 'hr_auditor' | 'director'
+type OrganizationClient = ApiClient['api']['organization']
+
+export type OrganizationContext = InferResponseType<OrganizationClient['context']['$get'], 200>
+export type OrganizationRoles = InferResponseType<OrganizationClient['roles']['$get'], 200>
+export type OrganizationRosterCoverage = InferResponseType<
+  OrganizationClient['roster-coverage']['$get'],
+  200
+>
+export type DelegatedOrganizationRole = OrganizationRoles['grants'][number]['role']
 
 export const organizationContextQuery = defineQueryOptions((apiClient: ApiClient) => ({
   key: PRIVATE_QUERY_KEYS.organizationContext(),

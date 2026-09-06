@@ -70,7 +70,7 @@ export interface EsiResilienceTelemetry {
 
 export interface EsiUpstreamObservation {
   status: 'operational' | 'degraded' | 'unavailable' | 'stale'
-  refreshFailureClass?: EsiCachedResult<unknown>['refreshFailureClass']
+  refreshFailureClass?: NonNullable<EsiCachedResult<unknown>['refreshFailureClass']>
 }
 
 export async function probeEsiResilienceTelemetry(

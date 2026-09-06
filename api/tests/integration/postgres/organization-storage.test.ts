@@ -27,11 +27,11 @@ let claimOrganizationOwnership: typeof import('../../../src/organization/owner-c
 let refreshOrganizationOwnerEvidence: typeof import('../../../src/organization/owner-evidence.js').refreshOrganizationOwnerEvidence
 let selectDueOrganizationOwnerEvidence: typeof import('../../../src/organization/owner-evidence.js').selectDueOrganizationOwnerEvidence
 let assignOrganizationGroup: typeof import('../../../src/organization/group-store.js').assignOrganizationGroup
-let hasCurrentOrganizationManagerAuthority: typeof import('../../../src/organization/group-store.js').hasCurrentOrganizationManagerAuthority
-let convergeRegistrationComplianceGroupAssignment: typeof import('../../../src/organization/group-store.js').convergeRegistrationComplianceGroupAssignment
+let hasCurrentOrganizationManagerAuthority: typeof import('../../../src/organization/management-authority.js').hasCurrentOrganizationManagerAuthority
+let convergeRegistrationComplianceGroupAssignment: typeof import('../../../src/organization/group-compliance.js').convergeRegistrationComplianceGroupAssignment
 let createOrganizationGroup: typeof import('../../../src/organization/group-store.js').createOrganizationGroup
 let createOrganizationPermissionBundle: typeof import('../../../src/organization/group-store.js').createOrganizationPermissionBundle
-let getOrganizationGroupPermissions: typeof import('../../../src/organization/group-store.js').getOrganizationGroupPermissions
+let getOrganizationGroupPermissions: typeof import('../../../src/organization/group-permissions.js').getOrganizationGroupPermissions
 let revokeOrganizationGroupAssignment: typeof import('../../../src/organization/group-store.js').revokeOrganizationGroupAssignment
 let blockOrganizationMember: typeof import('../../../src/organization/block-store.js').blockOrganizationMember
 let hasCurrentOrganizationMemberBlock: typeof import('../../../src/organization/block-store.js').hasCurrentOrganizationMemberBlock
@@ -53,6 +53,7 @@ let updateOrganizationRegistrationPolicy: typeof import('../../../src/organizati
 let repairOrganizationCompliance: typeof import('../../../src/organization/compliance-repair.js').repairOrganizationCompliance
 let getOrganizationAccountComplianceDetails: typeof import('../../../src/organization/compliance-details.js').getOrganizationAccountComplianceDetails
 let loadOrganizationSessionContext: typeof import('../../../src/middleware/organization-session.js').loadOrganizationSessionContext
+let listOrganizationRosterCoverage: typeof import('../../../src/organization/roster-coverage.js').listOrganizationRosterCoverage
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
 const adminId = randomUUID()
@@ -86,13 +87,16 @@ beforeAll(async () => {
     await import('../../../src/organization/owner-evidence.js'))
   ;({
     assignOrganizationGroup,
-    convergeRegistrationComplianceGroupAssignment,
     createOrganizationGroup,
     createOrganizationPermissionBundle,
-    getOrganizationGroupPermissions,
-    hasCurrentOrganizationManagerAuthority,
     revokeOrganizationGroupAssignment,
   } = await import('../../../src/organization/group-store.js'))
+  ;({ convergeRegistrationComplianceGroupAssignment } =
+    await import('../../../src/organization/group-compliance.js'))
+  ;({ getOrganizationGroupPermissions } =
+    await import('../../../src/organization/group-permissions.js'))
+  ;({ hasCurrentOrganizationManagerAuthority } =
+    await import('../../../src/organization/management-authority.js'))
   ;({ blockOrganizationMember, hasCurrentOrganizationMemberBlock, unblockOrganizationMember } =
     await import('../../../src/organization/block-store.js'))
   ;({
@@ -123,6 +127,8 @@ beforeAll(async () => {
     await import('../../../src/organization/compliance-details.js'))
   ;({ loadOrganizationSessionContext } =
     await import('../../../src/middleware/organization-session.js'))
+  ;({ listOrganizationRosterCoverage } =
+    await import('../../../src/organization/roster-coverage.js'))
   dbClient = await import('../../../src/db/client.js')
 })
 
@@ -226,6 +232,39 @@ describe('organization storage invariants', () => {
           where event_type = 'organization.compliance-transitioned') as events
     `
     expect(counts).toEqual({ projections: 1, issues: 0, audits: 1, events: 1 })
+  })
+
+  test('suspends an account when an attached character authorization is removed', async () => {
+    await expect(
+      recomputeOrganizationAccountCompliance({
+        deploymentId: 1,
+        organizationVersion: 1,
+        userId,
+      }),
+    ).resolves.toMatchObject({ evaluation: { state: 'compliant' } })
+
+    await connection`delete from eve_tokens where character_id = ${characterId}`
+
+    await expect(
+      recomputeOrganizationAccountCompliance({
+        deploymentId: 1,
+        organizationVersion: 1,
+        userId,
+      }),
+    ).resolves.toMatchObject({
+      evaluation: {
+        state: 'suspended',
+        accessValidUntil: null,
+        issues: [
+          {
+            issueKey: `character:${characterId}:authorization-missing`,
+            issueCode: 'character-authorization-missing',
+            characterId,
+            requiredScope: null,
+          },
+        ],
+      },
+    })
   })
 
   test('prevents owner lockout and permits a verified owner to recover a bad policy', async () => {
@@ -765,6 +804,119 @@ describe('organization storage invariants', () => {
     expect(stored).toMatchObject({
       lifecycle_source_id: stored?.source_id,
       audit_type: 'corporation-source.registered',
+    })
+  })
+
+  test('rejects source registration after the candidate affiliation evidence expires', async () => {
+    await connection`
+      update eve_tokens
+      set scopes = '[
+        "esi-characters.read_corporation_roles.v1",
+        "esi-corporations.read_corporation_membership.v1"
+      ]'::jsonb
+      where character_id = ${characterId}
+    `
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    await connection`
+      update characters
+      set next_affiliation_check = now() - interval '1 second'
+      where character_id = ${characterId}
+    `
+
+    await expect(
+      registerOrganizationCorporationSource({
+        actorUserId: userId,
+        corporationId: 98_000_001,
+        characterId,
+      }),
+    ).rejects.toMatchObject({ code: 'source-character-affiliation-stale' })
+
+    const [stored] = await connection<{ count: number }[]>`
+      select count(*)::integer as count from organization_corporation_sources
+    `
+    expect(stored?.count).toBe(0)
+  })
+
+  test('withholds roster observations after the source authorization generation changes', async () => {
+    const { observedCharacterId } = await establishRosterObservation()
+
+    await expect(listOrganizationRosterCoverage()).resolves.toMatchObject({
+      corporations: [
+        {
+          unregisteredCharacters: [
+            { characterId: observedCharacterId, observedAt: expect.any(String) },
+          ],
+        },
+      ],
+    })
+
+    await connection`
+      update eve_tokens
+      set token_version = token_version + 1
+      where character_id = ${characterId}
+    `
+
+    await expect(listOrganizationRosterCoverage()).resolves.toMatchObject({
+      corporations: [{ unregisteredCharacters: [] }],
+    })
+  })
+
+  test('withholds roster observations collected by a replaced source', async () => {
+    await establishRosterObservation()
+    const replacementCharacterId = characterId + 1
+    await connection`
+      insert into characters (
+        character_id,
+        user_id,
+        name,
+        corporation_id,
+        affiliation_checked_at,
+        next_affiliation_check,
+        affiliation_resolution_state,
+        is_main
+      ) values (
+        ${replacementCharacterId},
+        ${userId},
+        'Replacement Source',
+        98000001,
+        now(),
+        now() + interval '1 hour',
+        'resolved',
+        false
+      )
+    `
+    await connection`
+      insert into eve_tokens (character_id, encrypted_tokens, access_token_expires_at, scopes)
+      values (
+        ${replacementCharacterId},
+        'encrypted-test-token',
+        now() + interval '1 hour',
+        '["esi-corporations.read_corporation_membership.v1"]'::jsonb
+      )
+    `
+    await connection`
+      insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+      values ('character', ${String(replacementCharacterId)}, ${replacementCharacterId})
+    `
+
+    await expect(
+      registerOrganizationCorporationSource({
+        actorUserId: userId,
+        corporationId: 98_000_001,
+        characterId: replacementCharacterId,
+      }),
+    ).resolves.toMatchObject({ replaced: true })
+
+    await expect(listOrganizationRosterCoverage()).resolves.toMatchObject({
+      corporations: [
+        {
+          source: { characterId: replacementCharacterId },
+          status: 'pending',
+          unregisteredCharacters: [],
+        },
+      ],
     })
   })
 
@@ -2216,6 +2368,77 @@ describe('organization storage invariants', () => {
     })
   })
 })
+
+async function establishRosterObservation() {
+  await connection`
+    update eve_tokens
+    set scopes = '[
+      "esi-characters.read_corporation_roles.v1",
+      "esi-corporations.read_corporation_membership.v1"
+    ]'::jsonb
+    where character_id = ${characterId}
+  `
+  await claimOrganizationOwnership(
+    ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+  )
+  const registration = await registerOrganizationCorporationSource({
+    actorUserId: userId,
+    corporationId: 98_000_001,
+    characterId,
+  })
+  const [identity] = await connection<
+    { subject_lifecycle_id: string; authorization_generation: number }[]
+  >`
+    select lifecycle.subject_lifecycle_id, token.token_version as authorization_generation
+    from platform_subject_lifecycles lifecycle
+    join eve_tokens token on token.character_id = ${characterId}
+    where lifecycle.corporation_source_id = ${registration.source.sourceId}
+  `
+  if (!identity) throw new Error('Corporation source lifecycle is missing')
+  const observedAt = new Date()
+  const observedCharacterId = characterId + 100
+  await connection`
+    insert into platform_collection_state (
+      module_id,
+      resource_id,
+      subject_kind,
+      subject_lifecycle_id,
+      subject_id,
+      next_eligible_at,
+      authorization_generation,
+      validated_at
+    ) values (
+      'core',
+      'corporation-roster',
+      'corporation',
+      ${identity.subject_lifecycle_id},
+      '98000001',
+      ${new Date(observedAt.getTime() + 3_600_000)},
+      ${identity.authorization_generation},
+      ${observedAt}
+    )
+  `
+  await connection`
+    insert into organization_corporation_roster_observations (
+      deployment_id,
+      organization_version,
+      corporation_id,
+      character_id,
+      source_id,
+      authorization_generation,
+      observed_at
+    ) values (
+      1,
+      1,
+      98000001,
+      ${observedCharacterId},
+      ${registration.source.sourceId},
+      ${identity.authorization_generation},
+      ${observedAt}
+    )
+  `
+  return { observedCharacterId }
+}
 
 async function seedDeployment() {
   await connection`

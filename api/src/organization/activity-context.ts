@@ -8,6 +8,7 @@ import {
   organizationManagedCorporations,
   platformSubjectLifecycles,
 } from '../db/schema.js'
+import { resolveAffiliationFreshness } from './affiliation-freshness.js'
 
 export async function loadOrganizationActivityCharacters(
   userId: string,
@@ -80,23 +81,8 @@ export async function loadOrganizationActivityCharacters(
       allianceId: row.allianceId,
       isMain: row.isMain,
       membership: row.managedCorporationId === null ? 'approved-external' : 'managed',
-      affiliationFreshness: affiliationFreshness(row, now),
+      affiliationFreshness: resolveAffiliationFreshness(row, now),
       affiliationCheckedAt: row.affiliationCheckedAt?.toISOString() ?? null,
     }
   })
-}
-
-function affiliationFreshness(
-  character: {
-    readonly affiliationResolutionState: 'pending' | 'resolved' | 'unresolvable'
-    readonly affiliationCheckedAt: Date | null
-    readonly nextAffiliationCheck: Date | null
-  },
-  now: Date,
-) {
-  if (character.affiliationResolutionState !== 'resolved' || !character.affiliationCheckedAt)
-    return 'unavailable' as const
-  return character.nextAffiliationCheck && character.nextAffiliationCheck > now
-    ? ('fresh' as const)
-    : ('stale' as const)
 }

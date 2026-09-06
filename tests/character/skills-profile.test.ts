@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { readWorkspaceFile as source } from '../support/read-workspace-file'
 
-const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 const route = source('app/pages/characters/[characterId]/skills.vue')
 const summary = source('app/components/character/skills/SummaryCard.vue')
 const queue = source('app/components/character/skills/Queue.vue')

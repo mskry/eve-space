@@ -25,7 +25,7 @@ vi.mock('../../src/organization/audit.js', () => ({
   appendOrganizationAuditEvents: mocks.appendAudits,
 }))
 vi.mock('../../src/domain-events/store.js', () => ({ appendDomainEvent: mocks.appendEvent }))
-vi.mock('../../src/organization/group-store.js', () => ({
+vi.mock('../../src/organization/group-compliance.js', () => ({
   convergeRegistrationComplianceGroupsInTransaction: mocks.convergeGroups,
 }))
 

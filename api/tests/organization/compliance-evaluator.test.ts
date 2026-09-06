@@ -8,6 +8,27 @@ const now = new Date('2026-09-01T12:00:00.000Z')
 const checkedAt = new Date('2026-09-01T11:55:00.000Z')
 
 describe('organization account compliance evaluation', () => {
+  test('requires every disclosed character to retain an authorization record', () => {
+    const result = evaluateAccountCompliance({
+      ...baseInput(),
+      characters: [character({ hasAuthorization: false, scopes: [] })],
+    })
+
+    expect(result).toMatchObject({
+      state: 'suspended',
+      evidenceFreshness: 'fresh',
+      accessValidUntil: null,
+      issues: [
+        {
+          issueKey: 'character:1:authorization-missing',
+          issueCode: 'character-authorization-missing',
+          characterId: 1,
+          requiredScope: null,
+        },
+      ],
+    })
+  })
+
   test('requires one managed character and every disclosed character to satisfy policy', () => {
     const result = evaluateAccountCompliance({
       ...baseInput(),
@@ -335,6 +356,7 @@ function characterDefaults() {
     affiliationCheckedAt: checkedAt as Date | null,
     nextAffiliationCheck: new Date('2026-09-01T12:15:00.000Z') as Date | null,
     affiliationResolutionState: 'resolved' as 'pending' | 'resolved' | 'unresolvable',
+    hasAuthorization: true,
     scopes: ['esi-skills.read_skills.v1'] as string[],
     hasActiveException: false,
     activeExceptionExpiresAt: null as Date | null,

@@ -12,8 +12,8 @@ import {
 } from '@eve-space/platform-module-contract'
 import { z } from 'zod'
 import { installedModuleActivityProviders } from '../generated/platform/installed-module-activity-providers.js'
-import type { OrganizationSessionContext } from '../middleware/organization-session.js'
 import { loadModuleRuntimeState } from '../platform/module-settings.js'
+import type { OrganizationSessionContext } from './access-policy.js'
 import { loadOrganizationActivityCharacters } from './activity-context.js'
 import { authorizeOrganizationContribution } from './module-authorization.js'
 

@@ -8,7 +8,8 @@ import {
   organizationCorporationSources,
   organizationManagedCorporations,
 } from '../db/schema.js'
-import { corporationMembershipScope } from './corporation-sources.js'
+import { resolveAffiliationFreshness } from './affiliation-freshness.js'
+import { corporationMembershipScope } from './corporation-membership.js'
 
 type Transaction = Pick<typeof db, 'delete' | 'insert' | 'select'>
 
@@ -30,6 +31,8 @@ export async function materializeCorporationRoster(
       characterId: organizationCorporationSources.characterId,
       corporationId: characters.corporationId,
       affiliationResolutionState: characters.affiliationResolutionState,
+      affiliationCheckedAt: characters.affiliationCheckedAt,
+      nextAffiliationCheck: characters.nextAffiliationCheck,
       tokenVersion: eveTokens.tokenVersion,
       scopes: eveTokens.scopes,
     })
@@ -65,7 +68,7 @@ export async function materializeCorporationRoster(
   if (
     source?.characterId !== input.characterId ||
     source.corporationId !== input.corporationId ||
-    source.affiliationResolutionState !== 'resolved' ||
+    resolveAffiliationFreshness(source, new Date()) !== 'fresh' ||
     source.tokenVersion !== input.tokenVersion ||
     !source.scopes.includes(corporationMembershipScope)
   )
@@ -91,6 +94,7 @@ export async function materializeCorporationRoster(
         corporationId: input.corporationId,
         characterId,
         sourceId: input.sourceId,
+        authorizationGeneration: input.tokenVersion,
         observedAt: input.validatedAt,
       })),
     )

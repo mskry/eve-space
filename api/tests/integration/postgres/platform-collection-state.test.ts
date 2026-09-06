@@ -956,8 +956,11 @@ describe('platform collection state PostgreSQL persistence', () => {
       await connection`
         insert into characters (
           character_id, user_id, name, corporation_id, is_main,
-          affiliation_resolution_state, affiliation_checked_at
-        ) values (${characterId}, ${userId}, 'Source Pilot', 98000001, true, 'resolved', now())
+          affiliation_resolution_state, affiliation_checked_at, next_affiliation_check
+        ) values (
+          ${characterId}, ${userId}, 'Source Pilot', 98000001, true,
+          'resolved', now(), now() + interval '1 hour'
+        )
       `
       const characterLifecycleId = await connection<{ subject_lifecycle_id: string }[]>`
         insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
@@ -1055,7 +1058,22 @@ describe('platform collection state PostgreSQL persistence', () => {
         }),
       ).resolves.toMatchObject({ status: 'authorization-required' })
       await connection`
-        update characters set affiliation_resolution_state = 'resolved'
+        update characters
+        set affiliation_resolution_state = 'resolved',
+            next_affiliation_check = now() - interval '1 second'
+        where character_id = ${characterId}
+      `
+      await expect(
+        resolveInstalledResourceEligibility(identity, {
+          connection,
+          resources: [coreResources[1]],
+        }),
+      ).resolves.toMatchObject({ status: 'authorization-required' })
+      await expect(
+        selectDueInstalledResources({ connection, limit: 10, resources: [coreResources[1]] }),
+      ).resolves.toEqual([])
+      await connection`
+        update characters set next_affiliation_check = now() + interval '1 hour'
         where character_id = ${characterId}
       `
 

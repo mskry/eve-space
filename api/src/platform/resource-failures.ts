@@ -4,6 +4,7 @@ import { TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
+import { getNumericProperty, getStringProperty } from '../type-guards.js'
 import type {
   PlatformCollectionFailureClass,
   PlatformCollectionStateIdentity,
@@ -106,15 +107,16 @@ export function classifyPlatformResourceFailure(error: unknown, now = new Date()
   if (
     error instanceof EsiTransportError ||
     error instanceof TokenRefreshUnavailableError ||
-    (getErrorCode(error) === 'ESI_HTTP_ERROR' && getErrorStatus(error) >= 500)
+    (getStringProperty(error, 'code') === 'ESI_HTTP_ERROR' &&
+      getNumericProperty(error, 'status') >= 500)
   )
     return {
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date(now.getTime() + transientFailureBackoffMilliseconds),
     } as const
   if (
-    getErrorCode(error) === 'ESI_RESPONSE_PARSE_ERROR' ||
-    getErrorCode(error) === 'ESI_RESPONSE_VALIDATION_ERROR' ||
+    getStringProperty(error, 'code') === 'ESI_RESPONSE_PARSE_ERROR' ||
+    getStringProperty(error, 'code') === 'ESI_RESPONSE_VALIDATION_ERROR' ||
     error instanceof PlatformResourceResponseInvalidError
   )
     return permanentFailure('response-invalid')
@@ -126,14 +128,4 @@ export function classifyPlatformResourceFailure(error: unknown, now = new Date()
 
 function permanentFailure(failureClass: PlatformCollectionFailureClass) {
   return { failureClass, nextEligibleAt: null }
-}
-
-function getErrorCode(error: unknown) {
-  return typeof error === 'object' && error && 'code' in error && typeof error.code === 'string'
-    ? error.code
-    : undefined
-}
-
-function getErrorStatus(error: unknown) {
-  return typeof error === 'object' && error && 'status' in error ? Number(error.status) : 0
 }

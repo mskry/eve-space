@@ -16,7 +16,7 @@ import {
   lockCurrentOrganizationVersionForCompliance,
   recomputeOrganizationAccountCompliance,
 } from '../organization/compliance.js'
-import { normalizeScopeSet } from '../domain-events/definitions.js'
+import { normalizeScopeSet } from '../scopes.js'
 import { env } from '../env.js'
 import { EveSsoTokenRefreshError, refreshAccessToken, verifyAccessToken } from './sso.js'
 import { isTransientSsoError, SsoTokenRejectedError } from './sso-errors.js'
@@ -223,15 +223,13 @@ async function refreshLockedCharacterToken(
       await deleteRevokedCharacterAuthorization(characterId, stored, transaction)
       return { authorizationRevoked: error }
     }
-    if (isTransientSsoError(error)) throw new TokenRefreshUnavailableError()
-    throw error
+    rethrowRefreshError(error)
   }
   let identity: Awaited<ReturnType<typeof verifyAccessToken>>
   try {
     identity = await verifyAccessToken(refreshed.access_token)
   } catch (error) {
-    if (isTransientSsoError(error)) throw new TokenRefreshUnavailableError()
-    throw error
+    rethrowRefreshError(error)
   }
   if (identity.characterId !== characterId)
     throw new Error('Refreshed token belongs to a different character')
@@ -260,29 +258,56 @@ async function refreshLockedCharacterToken(
     },
     transaction,
   )
-  if (updated) {
-    if (scopesChanged) {
-      await appendDomainEvent(transaction, {
-        type: 'character.scopes-changed',
-        payloadVersion: 1,
-        aggregateId: String(characterId),
-        payload: { userId: stored.userId, characterId, addedScopes, removedScopes },
-      })
-      if (organizationVersion)
-        await recomputeOrganizationAccountCompliance(
-          { deploymentId: 1, organizationVersion, userId: stored.userId },
-          transaction,
-        )
-    }
-    return {
-      authorization: { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 },
-      scopes: nextScopes,
-    }
-  }
+  if (!updated) return readRefreshWinner(findWinner, requiredScope)
 
+  if (scopesChanged)
+    await recordRefreshedScopeChange(
+      characterId,
+      stored,
+      addedScopes,
+      removedScopes,
+      organizationVersion,
+      transaction,
+    )
+  return {
+    authorization: { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 },
+    scopes: nextScopes,
+  }
+}
+
+function rethrowRefreshError(error: unknown): never {
+  if (isTransientSsoError(error)) throw new TokenRefreshUnavailableError()
+  throw error
+}
+
+async function readRefreshWinner(
+  findWinner: () => Promise<StoredCharacterToken | null>,
+  requiredScope: string,
+) {
   const winner = await findWinner()
   if (!winner) throw new CharacterTokenNotFoundError()
   return toRefreshedCharacterAuthorization(winner, requiredScope)
+}
+
+async function recordRefreshedScopeChange(
+  characterId: number,
+  stored: StoredCharacterToken,
+  addedScopes: string[],
+  removedScopes: string[],
+  organizationVersion: number | null,
+  transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
+) {
+  await appendDomainEvent(transaction, {
+    type: 'character.scopes-changed',
+    payloadVersion: 1,
+    aggregateId: String(characterId),
+    payload: { userId: stored.userId, characterId, addedScopes, removedScopes },
+  })
+  if (organizationVersion)
+    await recomputeOrganizationAccountCompliance(
+      { deploymentId: 1, organizationVersion, userId: stored.userId },
+      transaction,
+    )
 }
 
 async function deleteRevokedCharacterAuthorization(

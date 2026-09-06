@@ -1,5 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   deploymentSettings,
   organizationMemberBlocks,
@@ -9,8 +9,11 @@ import {
 import { appendOrganizationAuditEvent } from './audit.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { loadCurrentEntitlementScope } from './compliance-access.js'
-import { appendExternalServiceEntitlementTransitions } from './compliance.js'
-import { loadManagementAuthority } from './group-store.js'
+import { appendExternalServiceEntitlementTransitions } from './entitlement-transitions.js'
+import { loadManagementAuthority } from './management-authority.js'
+import { lockCurrentOrganization } from './organization-lock.js'
+
+type Transaction = DatabaseTransaction
 
 export class OrganizationMemberBlockMutationError extends Error {
   constructor(
@@ -239,21 +242,6 @@ export async function listCurrentOrganizationMemberBlocks() {
     )
     .where(and(eq(deploymentSettings.id, 1), isNull(organizationMemberBlocks.unblockedAt)))
   return { blocks: blocks.map(({ organization_member_blocks: block }) => toMemberBlock(block)) }
-}
-
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
-async function lockCurrentOrganization(transaction: Transaction) {
-  const [organization] = await transaction
-    .select({
-      organizationVersion: deploymentSettings.organizationVersion,
-      policyVersion: deploymentSettings.registrationPolicyVersion,
-    })
-    .from(deploymentSettings)
-    .where(eq(deploymentSettings.id, 1))
-    .for('update')
-  if (!organization) throw new Error('Deployment organization is not configured')
-  return organization
 }
 
 async function requireManager(

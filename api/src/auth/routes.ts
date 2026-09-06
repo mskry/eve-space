@@ -25,12 +25,12 @@ import { createOpaqueToken, tokensMatch } from './security.js'
 import { setPrivateHeaders } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { loadCurrentOrganizationIdentity } from '../organization/context.js'
+import { resolveOrganizationAuthorityCorporation } from '../organization/authority.js'
 import {
   assertOrganizationOwnerDirectorRole,
   assertOrganizationOwnerScope,
   OrganizationAuthorityError,
-  resolveOrganizationAuthorityCorporation,
-} from '../organization/authority.js'
+} from '../organization/authority-policy.js'
 import {
   characterCorporationRolesScope,
   getCharacterCorporationRoles,

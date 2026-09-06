@@ -92,33 +92,18 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 
 ## Module Organization
 
-These rules apply to every source directory. A directory is flat by default: sibling modules with no `index.ts` barrel, as in `api/src/queue` and `api/src/platform`. Adopt subdirectories or a façade repository-wide rather than in one directory.
+These rules apply to every source directory. Keep a directory flat by default, with sibling modules and no `index.ts` barrel. Introduce subdirectories or a facade only when they express a durable boundary within a cohesive subsystem, not to organize one isolated file.
 
 ### Dependency Direction
 
-- Every source directory has a dependency direction: pure types and utilities, then domain contracts and their validation, then adapters that own a connection or socket, then orchestration, with observability readable from all of them. Add a file at the tier its imports already imply.
-- Keep the pure tiers pure. Type, key-building, contract, envelope, and transformation modules must not import connection, transport, or client modules, so they stay unit-testable without Redis, PostgreSQL, or network access.
-- A module that owns a connection or socket must not import an orchestration module. Orchestration depends on adapters, never the reverse.
-- Observability modules such as telemetry, metrics, and measurement recorders may be imported from any tier, and must not import orchestration.
+- Give every cohesive subsystem an explicit dependency direction appropriate to its responsibilities. Do not force every directory into one fixed tier vocabulary or infer that an example taxonomy is exhaustive.
+- Dependencies point from orchestration and side-effect-owning adapters toward domain contracts, representations, types, and utilities. Lower tiers must not import the higher tiers that coordinate them.
+- Keep pure modules independent of databases, sockets, transports, clients, and process state so they remain unit-testable without infrastructure.
+- A module that owns a connection, transport, client, or other external side effect must not import the orchestration that uses it. Orchestration depends on adapters, never the reverse.
+- Keep recorder-only observability leaves free of orchestration dependencies so any tier can emit through them. Read-model or aggregate observability may inspect higher-tier state when the subsystem explicitly declares that direction, but it must not initiate or own execution.
 - Module-level mutable state is a boundary. Give counters, in-process caches, and degraded-mode fallback state their own module rather than interleaving them with the code that reads them, so they can be reset and asserted in isolation.
-- Document a directory's intended tier order here when file names do not make it obvious, and enforce a boundary worth keeping through a `scripts/verify-*` check rather than through review.
-
-#### ESI Resilience Tiers
-
-`api/src/esi-resilience` uses these ownership tiers:
-
-- Support: `numeric.ts` and `timing.ts`. These import no other ESI resilience modules.
-- Representation: `types.ts`, `keys.ts`, `identity.ts`, `envelope.ts`, `l1-cache.ts`, and `cache-redaction.ts`.
-- Contract: `operation-metadata.ts`, `catalog-validation.ts`, `contract-types.ts`, `catalog.ts`, `catalog-access.ts`, and `policy.ts`.
-- Infrastructure: `cache-redis.ts`, `coordination.ts`, and `transport.ts`. These own connections, sockets, and raw transport behavior.
-- Execution: `layer.ts`, `resource-revision.ts`, `cooldowns.ts`, `permits.ts`, `local-quota.ts`, `errors.ts`, `module-operation-dispatcher.ts`, and `request-transport.ts`.
-- Observability: `telemetry.ts`, `telemetry-counters.ts`, `rate-measurement.ts`, and `result-metadata.ts`. These may read lower tiers but must not own execution.
-
-Representation and contract form the pure tier group: they may depend on support and each other, but never on infrastructure. Infrastructure may depend on the pure tiers but never on execution. Execution orchestrates infrastructure and the pure tiers.
-
-Observability recording is the standard dependency-direction exception. Any tier may emit through a recorder-only observability leaf, and observability may read the lower tiers. In particular, `resource-revision.ts` may import `telemetry-counters.ts`; injecting that recorder would add indirection without changing the boundary. Recorder-only modules must not import execution, which prevents this exception from creating a cycle.
-
-`scripts/verify-esi-resilience-boundaries.ts` enforces each tier's allowed dependency destinations and requires every ESI resilience module to declare a tier.
+- Document subsystem-specific tiers and exceptions in the nearest scoped `AGENTS.md`. Keep exact file membership in the mechanical verifier that enforces it, rather than duplicating a current file inventory in prose.
+- Enforce dependency boundaries worth preserving through a `scripts/verify-*` check rather than relying on review alone.
 
 ### File Composition
 

@@ -17,6 +17,12 @@ vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
 }))
 
+import { resolveOrganizationAuthorityCorporation } from '../../src/organization/authority.js'
+import {
+  assertOrganizationOwnerAuthorization,
+  OrganizationAuthorityError,
+} from '../../src/organization/authority-policy.js'
+
 const requiredScope = 'esi-characters.read_corporation_roles.v1'
 const corporationId = 98_000_001
 const allianceId = 99_000_001
@@ -36,9 +42,6 @@ beforeEach(() => {
 
 describe('organization owner authority', () => {
   test('accepts fresh affiliation with the managed corporation', async () => {
-    const { resolveOrganizationAuthorityCorporation } =
-      await import('../../src/organization/authority.js')
-
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'corporation', organizationId: corporationId },
@@ -49,9 +52,6 @@ describe('organization owner authority', () => {
   })
 
   test('requires alliance claimants to belong to the current executor corporation', async () => {
-    const { resolveOrganizationAuthorityCorporation } =
-      await import('../../src/organization/authority.js')
-
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'alliance', organizationId: allianceId },
@@ -66,9 +66,6 @@ describe('organization owner authority', () => {
   })
 
   test('rejects a corporation outside the managed organization authority', async () => {
-    const { OrganizationAuthorityError, resolveOrganizationAuthorityCorporation } =
-      await import('../../src/organization/authority.js')
-
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'corporation', organizationId: corporationId },
@@ -84,9 +81,6 @@ describe('organization owner authority', () => {
   })
 
   test('rejects a character outside the managed alliance before executor lookup', async () => {
-    const { OrganizationAuthorityError, resolveOrganizationAuthorityCorporation } =
-      await import('../../src/organization/authority.js')
-
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'alliance', organizationId: allianceId },
@@ -101,9 +95,6 @@ describe('organization owner authority', () => {
       const loaded = await resource.load({})
       return { data: loaded.data, cachedUntil: '', quota: {}, source: 'stale', stale: true }
     })
-    const { OrganizationAuthorityError, resolveOrganizationAuthorityCorporation } =
-      await import('../../src/organization/authority.js')
-
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'alliance', organizationId: allianceId },
@@ -114,9 +105,6 @@ describe('organization owner authority', () => {
 
   test('treats an alliance without a current executor as unavailable evidence', async () => {
     mocks.getPublicInfo.mockResolvedValueOnce(response({ name: 'Alliance' }))
-    const { OrganizationAuthorityError, resolveOrganizationAuthorityCorporation } =
-      await import('../../src/organization/authority.js')
-
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'alliance', organizationId: allianceId },
@@ -126,8 +114,6 @@ describe('organization owner authority', () => {
   })
 
   test('requires the corporation-role scope and current Director role', async () => {
-    const { assertOrganizationOwnerAuthorization, OrganizationAuthorityError } =
-      await import('../../src/organization/authority.js')
     const roles = {
       roles: ['Director'],
       rolesAtBase: [],

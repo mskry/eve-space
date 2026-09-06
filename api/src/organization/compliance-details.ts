@@ -6,8 +6,9 @@ import {
   organizationAccountCompliance,
   organizationComplianceIssues,
 } from '../db/schema.js'
+import { resolveAffiliationFreshness } from './affiliation-freshness.js'
+import { isComplianceProjectionDue } from './access-policy.js'
 import { recomputeCurrentOrganizationAccountCompliance } from './compliance.js'
-import { isComplianceProjectionDue } from './compliance-access.js'
 
 export async function getOrganizationAccountComplianceDetails(userId: string) {
   const organization = await loadOrganizationVersion()
@@ -68,7 +69,7 @@ export async function getOrganizationAccountComplianceDetails(userId: string) {
       return {
         characterId: character.characterId,
         characterName: character.characterName,
-        affiliationFreshness: characterAffiliationFreshness(character),
+        affiliationFreshness: resolveAffiliationFreshness(character, now),
         affiliationCheckedAt: character.affiliationCheckedAt?.toISOString() ?? null,
         nextAffiliationCheck: character.nextAffiliationCheck?.toISOString() ?? null,
         reasons: characterIssues.map(({ issueCode, requiredScope }) => ({
@@ -123,24 +124,17 @@ function accountRemediationActions(issues: { issueCode: string; characterId: num
   return actions
 }
 
-function characterAffiliationFreshness(character: {
-  affiliationCheckedAt: Date | null
-  nextAffiliationCheck: Date | null
-  affiliationResolutionState: 'pending' | 'resolved' | 'unresolvable'
-}) {
-  if (character.affiliationResolutionState !== 'resolved' || !character.affiliationCheckedAt)
-    return 'unavailable' as const
-  return character.nextAffiliationCheck && character.nextAffiliationCheck > new Date()
-    ? ('fresh' as const)
-    : ('stale' as const)
-}
-
 function remediationActions(
   characterId: number,
   issues: { issueCode: string; requiredScope: string | null }[],
 ) {
   const actions: { type: string; path: string | null }[] = []
-  if (issues.some(({ issueCode }) => issueCode === 'required-scope-missing'))
+  if (
+    issues.some(
+      ({ issueCode }) =>
+        issueCode === 'character-authorization-missing' || issueCode === 'required-scope-missing',
+    )
+  )
     actions.push({
       type: 'reauthorize-character',
       path: `/auth/eve/reauthorize/${characterId}`,

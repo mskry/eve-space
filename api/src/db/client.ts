@@ -3,6 +3,8 @@ import postgres from 'postgres'
 import { env } from '../env.js'
 import * as schema from './schema.js'
 
+export type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
 // Raw client: kept for connectivity pings (system/health-routes.ts, system/status.ts)
 // and graceful shutdown (server.ts). All table queries go through `db`.
 export const sql = postgres(env.DATABASE_URL, {

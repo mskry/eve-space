@@ -90,10 +90,13 @@ vi.mock('../../src/organization/context.js', () => ({
 }))
 
 vi.mock('../../src/organization/authority.js', () => ({
+  resolveOrganizationAuthorityCorporation: mocks.resolveOrganizationAuthorityCorporation,
+}))
+
+vi.mock('../../src/organization/authority-policy.js', () => ({
   OrganizationAuthorityError: class OrganizationAuthorityError extends Error {},
   assertOrganizationOwnerDirectorRole: mocks.assertOrganizationOwnerDirectorRole,
   assertOrganizationOwnerScope: mocks.assertOrganizationOwnerScope,
-  resolveOrganizationAuthorityCorporation: mocks.resolveOrganizationAuthorityCorporation,
 }))
 
 vi.mock('../../src/organization/owner-claim.js', () => ({

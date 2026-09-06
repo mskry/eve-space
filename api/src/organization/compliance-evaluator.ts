@@ -1,5 +1,4 @@
-type AccountComplianceState = 'pending' | 'compliant' | 'review_required' | 'suspended'
-type AccountEvidenceFreshness = 'fresh' | 'stale' | 'unavailable'
+import type { OrganizationComplianceState, OrganizationEvidenceFreshness } from './access-policy.js'
 
 export interface AccountComplianceIssue {
   issueKey: string
@@ -9,8 +8,8 @@ export interface AccountComplianceIssue {
 }
 
 export interface AccountComplianceEvaluation {
-  state: AccountComplianceState
-  evidenceFreshness: AccountEvidenceFreshness
+  state: OrganizationComplianceState
+  evidenceFreshness: OrganizationEvidenceFreshness
   evidenceAt: Date | null
   reviewDeadline: Date | null
   accessValidUntil: Date | null
@@ -24,13 +23,14 @@ interface ComplianceCharacter {
   affiliationCheckedAt: Date | null
   nextAffiliationCheck: Date | null
   affiliationResolutionState: 'pending' | 'resolved' | 'unresolvable'
+  hasAuthorization: boolean
   scopes: readonly string[]
   hasActiveException: boolean
   activeExceptionExpiresAt: Date | null
 }
 
 interface ManagedCorporationEvidence {
-  freshness: AccountEvidenceFreshness
+  freshness: OrganizationEvidenceFreshness
   evidenceAt: Date | null
   freshUntil: Date | null
   staleSince: Date | null
@@ -194,6 +194,16 @@ function evaluateOrganizationPolicy(
 function evaluateRequiredScopePolicy(input: Parameters<typeof evaluateAccountCompliance>[0]) {
   const issues: AccountComplianceIssue[] = []
   for (const character of input.characters) {
+    if (!character.hasAuthorization) {
+      issues.push(
+        issue(
+          `character:${character.characterId}:authorization-missing`,
+          'character-authorization-missing',
+          character.characterId,
+        ),
+      )
+      continue
+    }
     const scopes = new Set(character.scopes)
     for (const requiredScope of input.requiredScopes)
       if (!scopes.has(requiredScope))
@@ -221,7 +231,7 @@ function evaluatePolicyViolation(
     input.strictRemediationDurationSeconds,
     input.now,
   )
-  let evidenceFreshness: AccountEvidenceFreshness = 'unavailable'
+  let evidenceFreshness: OrganizationEvidenceFreshness = 'unavailable'
   if (evidenceIssues.length === 0) evidenceFreshness = 'fresh'
   else if (evidenceTimes.length > 0) evidenceFreshness = 'stale'
 

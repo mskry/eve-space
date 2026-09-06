@@ -5,6 +5,7 @@ import {
   check,
   foreignKey,
   index,
+  integer,
   pgTable,
   primaryKey,
   smallint,
@@ -14,6 +15,10 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import type {
+  OrganizationComplianceState,
+  OrganizationEvidenceFreshness,
+} from '../../organization/access-policy.js'
 import { characters, users } from './identity.js'
 import { organizationEpochs } from './organization-epochs.js'
 import { auditTimestamps } from './shared.js'
@@ -136,6 +141,7 @@ export const organizationCorporationRosterObservations = pgTable(
     corporationId: bigint('corporation_id', { mode: 'number' }).notNull(),
     characterId: bigint('character_id', { mode: 'number' }).notNull(),
     sourceId: uuid('source_id').notNull(),
+    authorizationGeneration: integer('authorization_generation').notNull(),
     observedAt: timestamp('observed_at', { withTimezone: true, mode: 'date' }).notNull(),
     ...auditTimestamps(),
   },
@@ -159,13 +165,13 @@ export const organizationCorporationRosterObservations = pgTable(
       name: 'organization_corporation_roster_source_fkey',
     }).onDelete('restrict'),
     check('organization_corporation_roster_character_id_check', sql`character_id > 0`),
+    check(
+      'organization_corporation_roster_authorization_generation_check',
+      sql`authorization_generation >= 0`,
+    ),
     index('organization_corporation_roster_source_idx').on(table.sourceId),
   ],
 )
-
-export type OrganizationComplianceState = 'pending' | 'compliant' | 'review_required' | 'suspended'
-
-export type OrganizationEvidenceFreshness = 'fresh' | 'stale' | 'unavailable'
 
 export const organizationAccountCompliance = pgTable(
   'organization_account_compliance',

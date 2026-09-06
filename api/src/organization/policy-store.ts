@@ -1,13 +1,14 @@
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { deploymentSettings, organizationAccountCompliance } from '../db/schema.js'
-import { normalizeScopeSet } from '../domain-events/definitions.js'
+import { normalizeScopeSet } from '../scopes.js'
 import { appendOrganizationAuditEvent } from './audit.js'
 import { recomputeAllOrganizationAccountsInTransaction } from './compliance.js'
 import { hasCurrentOrganizationOwnerAuthorityInTransaction } from './role-store.js'
-
-const maximumStrictRemediationDurationSeconds = 30 * 24 * 60 * 60
-const maximumStaleEvidenceGraceDurationSeconds = 24 * 60 * 60
+import {
+  maximumStaleEvidenceGraceDurationSeconds,
+  maximumStrictRemediationDurationSeconds,
+} from './registration-policy.js'
 
 export class OrganizationRegistrationPolicyMutationError extends Error {
   constructor(

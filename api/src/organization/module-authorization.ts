@@ -9,8 +9,11 @@ import {
   organizationAuthorityEvidence,
   organizationRoleGrants,
 } from '../db/schema.js'
-import type { OrganizationSessionContext } from '../middleware/organization-session.js'
-import { getOrganizationGroupPermissions } from './group-store.js'
+import {
+  resolveOrganizationEntitlementScope,
+  type OrganizationSessionContext,
+} from './access-policy.js'
+import { getOrganizationGroupPermissions } from './group-permissions.js'
 
 export type OrganizationContributionAuthorizationResult =
   | { readonly authorized: true; readonly context: PlatformAuthorizedOrganizationContext }
@@ -27,7 +30,7 @@ export async function authorizeOrganizationContribution(
 ): Promise<OrganizationContributionAuthorizationResult> {
   if (organization.blocked) return { authorized: false, reason: 'blocked' }
   const entitlementScope = resolveOrganizationEntitlementScope(organization, now)
-  if (!entitlementScope) return { authorized: false, reason: 'compliance' }
+  if (entitlementScope === 'none') return { authorized: false, reason: 'compliance' }
   if (
     declaration.audience !== 'member' &&
     !(await hasOrganizationAudienceAuthority(
@@ -56,21 +59,6 @@ export async function authorizeOrganizationContribution(
       entitlementScope,
     },
   }
-}
-
-export function resolveOrganizationEntitlementScope(
-  organization: OrganizationSessionContext,
-  now = new Date(),
-) {
-  if (!organization.accessValidUntil || organization.accessValidUntil <= now) return null
-  if (organization.state === 'compliant') return 'all' as const
-  if (
-    organization.state === 'review_required' &&
-    organization.reviewDeadline &&
-    organization.reviewDeadline > now
-  )
-    return 'review' as const
-  return null
 }
 
 async function hasOrganizationAudienceAuthority(

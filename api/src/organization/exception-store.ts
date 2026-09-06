@@ -1,5 +1,5 @@
 import { and, asc, eq, gt, inArray, isNull, lte, notExists, or, sql } from 'drizzle-orm'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   characters,
   deploymentSettings,
@@ -14,6 +14,9 @@ import {
 import { appendOrganizationAuditEvent, appendOrganizationAuditEvents } from './audit.js'
 import { hasCurrentComplianceAccess } from './compliance-access.js'
 import { recomputeOrganizationAccountCompliance } from './compliance.js'
+import { lockCurrentOrganization } from './organization-lock.js'
+
+type Transaction = DatabaseTransaction
 
 export class OrganizationCharacterExceptionMutationError extends Error {
   constructor(
@@ -75,7 +78,7 @@ export async function approveOrganizationCharacterException(input: {
   expiresAt: Date | null
 }) {
   return db.transaction(async (transaction) => {
-    const organization = await lockCurrentOrganization(transaction)
+    const organization = await lockCurrentOrganization(transaction, 'key share')
     if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId)))
       throw new OrganizationCharacterExceptionMutationError('hr-authority-required')
     const now = new Date()
@@ -223,7 +226,7 @@ export async function revokeOrganizationCharacterException(input: {
   reason: string
 }) {
   return db.transaction(async (transaction) => {
-    const organization = await lockCurrentOrganization(transaction)
+    const organization = await lockCurrentOrganization(transaction, 'key share')
     if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId)))
       throw new OrganizationCharacterExceptionMutationError('hr-authority-required')
     const [candidate] = await transaction
@@ -298,7 +301,7 @@ export async function expireOrganizationCharacterException(input: {
   reason: string
 }) {
   return db.transaction(async (transaction) => {
-    const organization = await lockCurrentOrganization(transaction)
+    const organization = await lockCurrentOrganization(transaction, 'key share')
     if (!(await hasHrAuthority(transaction, organization.organizationVersion, input.actorUserId)))
       throw new OrganizationCharacterExceptionMutationError('hr-authority-required')
     const [candidate] = await transaction
@@ -364,7 +367,7 @@ export async function expireOrganizationCharacterException(input: {
 
 export async function expireOrganizationCharacterExceptions(now = new Date(), limit = 100) {
   return db.transaction(async (transaction) => {
-    const organization = await lockCurrentOrganization(transaction)
+    const organization = await lockCurrentOrganization(transaction, 'key share')
     const due = await transaction
       .select({
         exceptionId: organizationCharacterExceptions.exceptionId,
@@ -445,22 +448,6 @@ export async function expireOrganizationCharacterExceptions(now = new Date(), li
       )
     return expired
   })
-}
-
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
-async function lockCurrentOrganization(transaction: Transaction) {
-  const [organization] = await transaction
-    .select({
-      organizationVersion: deploymentSettings.organizationVersion,
-      policyVersion: deploymentSettings.registrationPolicyVersion,
-      organizationType: deploymentSettings.organizationType,
-    })
-    .from(deploymentSettings)
-    .where(eq(deploymentSettings.id, 1))
-    .for('key share')
-  if (!organization) throw new Error('Deployment organization is not configured')
-  return organization
 }
 
 async function hasHrAuthority(

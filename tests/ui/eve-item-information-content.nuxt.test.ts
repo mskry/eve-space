@@ -1,9 +1,8 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { h } from 'vue'
 import EveItemInformationContent from '../../app/components/EveItemInformationContent.vue'
+import { readWorkspaceFile } from '../support/read-workspace-file'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const item = {
@@ -67,10 +66,7 @@ describe('EveItemInformationContent', () => {
   })
 
   it('stays surface-neutral and constrains unbroken content at narrow widths', () => {
-    const source = readFileSync(
-      resolve(process.cwd(), 'app/components/EveItemInformationContent.vue'),
-      'utf8',
-    )
+    const source = readWorkspaceFile('app/components/EveItemInformationContent.vue')
 
     expect(source).toContain('max-width: 100%')
     expect(source).toContain('overflow-wrap: anywhere')

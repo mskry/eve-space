@@ -6,18 +6,12 @@ import {
   organizationAccountCompliance,
   organizationMemberBlocks,
 } from '../db/schema.js'
-import type { SessionEnv } from './auth-session.js'
-import { isComplianceProjectionDue } from '../organization/compliance-access.js'
+import {
+  isComplianceProjectionDue,
+  type OrganizationSessionContext,
+} from '../organization/access-policy.js'
 import { recomputeOrganizationAccountCompliance } from '../organization/compliance.js'
-
-export interface OrganizationSessionContext {
-  organizationVersion: number
-  state: 'pending' | 'compliant' | 'review_required' | 'suspended'
-  evidenceFreshness: 'fresh' | 'stale' | 'unavailable'
-  reviewDeadline: Date | null
-  accessValidUntil: Date | null
-  blocked: boolean
-}
+import type { SessionEnv } from './auth-session.js'
 
 export type OrganizationSessionEnv = {
   Variables: SessionEnv['Variables'] & {

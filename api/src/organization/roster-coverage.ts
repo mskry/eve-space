@@ -1,8 +1,10 @@
-import { and, asc, eq, isNull, notExists, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, notExists, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { db } from '../db/client.js'
 import {
   characters,
   deploymentSettings,
+  eveTokens,
   organizationCorporationRosterObservations,
   organizationCorporationSources,
   organizationManagedCorporations,
@@ -10,8 +12,13 @@ import {
   platformSubjectLifecycles,
 } from '../db/schema.js'
 import { getInstalledResourceCollectionStatus } from '../platform/collection-status.js'
+import { corporationMembershipScope } from './corporation-membership.js'
+
+const sourceCharacters = alias(characters, 'source_characters')
+const sourceTokens = alias(eveTokens, 'source_tokens')
 
 export async function listOrganizationRosterCoverage() {
+  const now = new Date()
   const corporations = await db
     .select({
       organizationVersion: organizationManagedCorporations.organizationVersion,
@@ -103,6 +110,72 @@ export async function listOrganizationRosterCoverage() {
         eq(
           organizationCorporationRosterObservations.corporationId,
           organizationManagedCorporations.corporationId,
+        ),
+      ),
+    )
+    .innerJoin(
+      organizationCorporationSources,
+      and(
+        eq(
+          organizationCorporationSources.sourceId,
+          organizationCorporationRosterObservations.sourceId,
+        ),
+        eq(
+          organizationCorporationSources.deploymentId,
+          organizationCorporationRosterObservations.deploymentId,
+        ),
+        eq(
+          organizationCorporationSources.organizationVersion,
+          organizationCorporationRosterObservations.organizationVersion,
+        ),
+        eq(
+          organizationCorporationSources.corporationId,
+          organizationCorporationRosterObservations.corporationId,
+        ),
+        isNull(organizationCorporationSources.revokedAt),
+      ),
+    )
+    .innerJoin(
+      sourceCharacters,
+      and(
+        eq(sourceCharacters.characterId, organizationCorporationSources.characterId),
+        eq(sourceCharacters.corporationId, organizationCorporationRosterObservations.corporationId),
+        eq(sourceCharacters.affiliationResolutionState, 'resolved'),
+        gt(sourceCharacters.nextAffiliationCheck, now),
+      ),
+    )
+    .innerJoin(
+      sourceTokens,
+      and(
+        eq(sourceTokens.characterId, sourceCharacters.characterId),
+        eq(
+          sourceTokens.tokenVersion,
+          organizationCorporationRosterObservations.authorizationGeneration,
+        ),
+        sql`${sourceTokens.scopes} @> ${JSON.stringify([corporationMembershipScope])}::jsonb`,
+      ),
+    )
+    .innerJoin(
+      platformSubjectLifecycles,
+      eq(platformSubjectLifecycles.corporationSourceId, organizationCorporationSources.sourceId),
+    )
+    .innerJoin(
+      platformCollectionState,
+      and(
+        eq(platformCollectionState.moduleId, 'core'),
+        eq(platformCollectionState.resourceId, 'corporation-roster'),
+        eq(platformCollectionState.subjectKind, 'corporation'),
+        eq(
+          platformCollectionState.subjectLifecycleId,
+          platformSubjectLifecycles.subjectLifecycleId,
+        ),
+        eq(
+          platformCollectionState.authorizationGeneration,
+          organizationCorporationRosterObservations.authorizationGeneration,
+        ),
+        eq(
+          platformCollectionState.validatedAt,
+          organizationCorporationRosterObservations.observedAt,
         ),
       ),
     )

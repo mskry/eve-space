@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gt, isNull, lte, or, sql } from 'drizzle-orm'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
 import { characterLockKey, characterLockNamespace } from '../db/locks.js'
 import {
   characters,
@@ -15,12 +15,12 @@ import {
   users,
 } from '../db/schema.js'
 import { appendDomainEvent } from '../domain-events/store.js'
-import { normalizeScopeSet } from '../domain-events/definitions.js'
 import { env } from '../env.js'
 import {
   lockCurrentOrganizationVersionForCompliance,
   recomputeOrganizationAccountCompliance,
 } from '../organization/compliance.js'
+import { normalizeScopeSet } from '../scopes.js'
 import { encryptTokens, hashToken } from './security.js'
 
 export interface CharacterSummary {
@@ -77,7 +77,6 @@ export class CharacterTokenNotFoundError extends Error {
   }
 }
 
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type TokenReader = Pick<DatabaseTransaction, 'select'>
 type TokenWriter = Pick<DatabaseTransaction, 'update'>
 type TokenDeleter = Pick<DatabaseTransaction, 'delete'>

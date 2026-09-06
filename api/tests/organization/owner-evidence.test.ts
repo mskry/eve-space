@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
 import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
-import { OrganizationAuthorityError } from '../../src/organization/authority.js'
+import { OrganizationAuthorityError } from '../../src/organization/authority-policy.js'
 import { classifyOrganizationAuthorityFailure } from '../../src/organization/owner-evidence.js'
 
 describe('organization owner evidence failures', () => {

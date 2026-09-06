@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { DatabaseTransaction } from '../db/client.js'
 import {
   organizationAuditActorTypes,
   organizationAuditEvents,
@@ -7,7 +8,6 @@ import {
   organizationAuditSubjectTypes,
   type OrganizationAuditEventRow,
 } from '../db/schema.js'
-import type { DomainEventTransaction } from '../domain-events/store.js'
 
 export const organizationAuditInputSchema = z
   .object({
@@ -105,7 +105,7 @@ const organizationAuditEventSchema = z
 export type OrganizationAuditInput = z.input<typeof organizationAuditInputSchema>
 
 export async function appendOrganizationAuditEvent(
-  transaction: DomainEventTransaction,
+  transaction: DatabaseTransaction,
   input: OrganizationAuditInput,
 ) {
   const [stored] = await appendOrganizationAuditEvents(transaction, [input])
@@ -114,7 +114,7 @@ export async function appendOrganizationAuditEvent(
 }
 
 export async function appendOrganizationAuditEvents(
-  transaction: DomainEventTransaction,
+  transaction: DatabaseTransaction,
   inputs: OrganizationAuditInput[],
 ) {
   if (inputs.length === 0) return []

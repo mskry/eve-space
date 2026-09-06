@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { materializeCorporationRoster } from '../../src/organization/roster-collection.js'
-import { corporationMembershipScope } from '../../src/organization/corporation-sources.js'
+import { corporationMembershipScope } from '../../src/organization/corporation-membership.js'
 
 const input = {
   organizationVersion: 4,
@@ -20,6 +20,8 @@ describe('corporation roster materialization', () => {
         characterId: input.characterId,
         corporationId: input.corporationId,
         affiliationResolutionState: 'resolved',
+        affiliationCheckedAt: new Date('2099-09-01T11:00:00.000Z'),
+        nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
         tokenVersion: input.tokenVersion,
         scopes: [corporationMembershipScope],
       },
@@ -36,6 +38,7 @@ describe('corporation roster materialization', () => {
           corporationId: input.corporationId,
           characterId,
           sourceId: input.sourceId,
+          authorizationGeneration: input.tokenVersion,
         }),
       ),
     ])
@@ -48,6 +51,48 @@ describe('corporation roster materialization', () => {
     })
     expect(obsolete.deletes).toBe(0)
     expect(obsolete.inserts).toHaveLength(0)
+  })
+
+  test('rejects a source whose affiliation evidence has expired', async () => {
+    const stale = transaction([
+      {
+        sourceId: input.sourceId,
+        characterId: input.characterId,
+        corporationId: input.corporationId,
+        affiliationResolutionState: 'resolved',
+        affiliationCheckedAt: new Date('2026-09-01T11:00:00.000Z'),
+        nextAffiliationCheck: new Date(0),
+        tokenVersion: input.tokenVersion,
+        scopes: [corporationMembershipScope],
+      },
+    ])
+
+    await expect(materializeCorporationRoster(stale.database, input)).resolves.toEqual({
+      outcome: 'obsolete',
+    })
+    expect(stale.deletes).toBe(0)
+    expect(stale.inserts).toHaveLength(0)
+  })
+
+  test('rejects resolved affiliation without checked evidence', async () => {
+    const unavailable = transaction([
+      {
+        sourceId: input.sourceId,
+        characterId: input.characterId,
+        corporationId: input.corporationId,
+        affiliationResolutionState: 'resolved',
+        affiliationCheckedAt: null,
+        nextAffiliationCheck: new Date('2099-09-01T12:00:00.000Z'),
+        tokenVersion: input.tokenVersion,
+        scopes: [corporationMembershipScope],
+      },
+    ])
+
+    await expect(materializeCorporationRoster(unavailable.database, input)).resolves.toEqual({
+      outcome: 'obsolete',
+    })
+    expect(unavailable.deletes).toBe(0)
+    expect(unavailable.inserts).toHaveLength(0)
   })
 })
 

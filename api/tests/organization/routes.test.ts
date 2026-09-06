@@ -110,13 +110,17 @@ vi.mock('../../src/organization/block-store.js', () => ({
   unblockOrganizationMember: mocks.unblockOrganizationMember,
 }))
 vi.mock('../../src/organization/group-store.js', () => ({
-  OrganizationGroupMutationError: mocks.GroupMutationError,
   assignOrganizationGroup: mocks.assignOrganizationGroup,
   createOrganizationGroup: mocks.createOrganizationGroup,
   createOrganizationPermissionBundle: mocks.createOrganizationPermissionBundle,
-  hasCurrentOrganizationManagerAuthority: mocks.hasCurrentOrganizationManagerAuthority,
   listCurrentOrganizationGroups: mocks.listCurrentOrganizationGroups,
   revokeOrganizationGroupAssignment: mocks.revokeOrganizationGroupAssignment,
+}))
+vi.mock('../../src/organization/group-mutation-error.js', () => ({
+  OrganizationGroupMutationError: mocks.GroupMutationError,
+}))
+vi.mock('../../src/organization/management-authority.js', () => ({
+  hasCurrentOrganizationManagerAuthority: mocks.hasCurrentOrganizationManagerAuthority,
 }))
 vi.mock('../../src/organization/corporation-sources.js', () => ({
   OrganizationCorporationSourceMutationError: mocks.CorporationSourceMutationError,
@@ -896,6 +900,27 @@ describe('organization corporation roster routes', () => {
       actorUserId,
       corporationId: 98_000_001,
       characterId: 1_404_328_063,
+    })
+  })
+
+  test('reports stale source affiliation as a transient conflict', async () => {
+    mocks.registerOrganizationCorporationSource.mockRejectedValueOnce(
+      new mocks.CorporationSourceMutationError('source-character-affiliation-stale'),
+    )
+
+    const response = await organizationRoutes.request('/corporations/98000001/source', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: 'eve_space_session=session-token',
+        Origin: 'http://localhost:3000',
+      },
+      body: JSON.stringify({ characterId: 1_404_328_063 }),
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'CORPORATION_SOURCE_AFFILIATION_STALE',
     })
   })
 

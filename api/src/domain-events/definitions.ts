@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { normalizeScopeSet } from '../scopes.js'
 
 const positiveIdentifier = z.number().int().positive()
 const scope = z.string().trim().min(1)
@@ -242,10 +243,6 @@ const storedEnvelope = z
     occurredAt: z.date(),
   })
   .strict()
-
-export function normalizeScopeSet(scopes: readonly string[]) {
-  return [...new Set(scopes)].toSorted((left, right) => left.localeCompare(right))
-}
 
 export function listDomainEventDefinitions() {
   return Object.entries(domainEventRegistry).flatMap(([type, definition]) =>

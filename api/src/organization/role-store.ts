@@ -1,5 +1,5 @@
 import { and, asc, eq, gt, isNull, notExists, or, sql } from 'drizzle-orm'
-import { db } from '../db/client.js'
+import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   characters,
   deploymentSettings,
@@ -11,25 +11,12 @@ import {
 } from '../db/schema.js'
 import { appendOrganizationAuditEvent } from './audit.js'
 import { hasCurrentComplianceAccess } from './compliance-access.js'
+import { lockCurrentOrganization } from './organization-lock.js'
+import { isOrganizationOwnerClaimAvailable } from './owner-claim-policy.js'
 
 export type DelegatedOrganizationRole = Exclude<ElevatedOrganizationRole, 'organization_owner'>
 type Database = Pick<typeof db, 'select'>
-
-interface OrganizationOwnerClaimState {
-  failureClass: string | null
-  reviewDeadline: Date | null
-}
-
-export function isOrganizationOwnerClaimAvailable(
-  owner: OrganizationOwnerClaimState | undefined,
-  now = new Date(),
-) {
-  return (
-    !owner ||
-    owner.failureClass?.startsWith('strict:') === true ||
-    (owner.reviewDeadline !== null && owner.reviewDeadline <= now)
-  )
-}
+type Transaction = DatabaseTransaction
 
 export class OrganizationRoleMutationError extends Error {
   constructor(
@@ -382,21 +369,6 @@ export async function revokeOrganizationRole(input: {
     })
     return toRoleGrant(revoked)
   })
-}
-
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
-async function lockCurrentOrganization(transaction: Transaction) {
-  const [organization] = await transaction
-    .select({
-      organizationVersion: deploymentSettings.organizationVersion,
-      policyVersion: deploymentSettings.registrationPolicyVersion,
-    })
-    .from(deploymentSettings)
-    .where(eq(deploymentSettings.id, 1))
-    .for('update')
-  if (!organization) throw new Error('Deployment organization is not configured')
-  return organization
 }
 
 async function requireOwnerAuthority(

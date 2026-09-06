@@ -17,12 +17,13 @@ import {
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import { env } from '../env.js'
+import { getNumericProperty, getStringProperty } from '../type-guards.js'
+import { resolveOrganizationAuthorityCorporation } from './authority.js'
+import { appendOrganizationAuditEvent } from './audit.js'
 import {
   assertOrganizationOwnerDirectorRole,
   OrganizationAuthorityError,
-  resolveOrganizationAuthorityCorporation,
-} from './authority.js'
-import { appendOrganizationAuditEvent } from './audit.js'
+} from './authority-policy.js'
 
 const evidenceRefreshIntervalMilliseconds = 60 * 60 * 1_000
 const failedEvidenceRetryIntervalMilliseconds = 5 * 60 * 1_000
@@ -32,6 +33,16 @@ type AuthorityFailureKind = 'strict' | 'transient'
 interface AuthorityFailure {
   kind: AuthorityFailureKind
   failureClass: string
+}
+
+interface SuccessfulEvidenceRefresh {
+  grantId: string
+  organizationVersion: number
+  characterId: number
+  authorityCorporationId: number
+  observedAllianceId: number | null
+  observedAt: Date
+  checkedAt: Date
 }
 
 export async function selectDueOrganizationOwnerEvidence(
@@ -149,8 +160,8 @@ export function classifyOrganizationAuthorityFailure(error: unknown): AuthorityF
     error instanceof TokenRefreshUnavailableError
   )
     return { kind: 'transient', failureClass: 'esi-unavailable' }
-  const code = getErrorCode(error)
-  const status = getErrorStatus(error)
+  const code = getStringProperty(error, 'code')
+  const status = getNumericProperty(error, 'status')
   if (code === 'ESI_HTTP_ERROR' && (status === 401 || status === 403))
     return { kind: 'strict', failureClass: 'authorization-rejected' }
   if (code === 'ESI_HTTP_ERROR' && status >= 500)
@@ -188,16 +199,6 @@ async function loadRefreshSnapshot(grantId: string) {
       ),
     )
   return snapshot ?? null
-}
-
-interface SuccessfulEvidenceRefresh {
-  grantId: string
-  organizationVersion: number
-  characterId: number
-  authorityCorporationId: number
-  observedAllianceId: number | null
-  observedAt: Date
-  checkedAt: Date
 }
 
 async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) {
@@ -357,14 +358,4 @@ async function applyEvidenceFailure(
       .where(eq(organizationAuthorityEvidence.grantId, grantId))
     return 'review-required' as const
   })
-}
-
-function getErrorCode(error: unknown) {
-  return typeof error === 'object' && error && 'code' in error && typeof error.code === 'string'
-    ? error.code
-    : undefined
-}
-
-function getErrorStatus(error: unknown) {
-  return typeof error === 'object' && error && 'status' in error ? Number(error.status) : 0
 }

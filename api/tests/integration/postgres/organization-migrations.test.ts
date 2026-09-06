@@ -108,6 +108,106 @@ describe('organization foundation migration', () => {
     expect(ownerGrants?.count).toBe(0)
   })
 
+  test('requires roster observations to identify a valid authorization generation', async () => {
+    const sourceId = randomUUID()
+    await connection`
+      insert into organization_corporation_sources (
+        source_id,
+        deployment_id,
+        organization_version,
+        corporation_id,
+        character_id,
+        evidence_character_id,
+        registered_by_user_id
+      ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
+    `
+
+    await expect(
+      connection`
+        insert into organization_corporation_roster_observations (
+          deployment_id,
+          organization_version,
+          corporation_id,
+          character_id,
+          source_id,
+          observed_at
+        ) values (1, 1, 98000001, 90000001, ${sourceId}, now())
+      `,
+    ).rejects.toMatchObject({ code: '23502', column_name: 'authorization_generation' })
+    await expect(
+      connection`
+        insert into organization_corporation_roster_observations (
+          deployment_id,
+          organization_version,
+          corporation_id,
+          character_id,
+          source_id,
+          authorization_generation,
+          observed_at
+        ) values (1, 1, 98000001, 90000001, ${sourceId}, -1, now())
+      `,
+    ).rejects.toMatchObject({
+      code: '23514',
+      constraint_name: 'organization_corporation_roster_authorization_generation_check',
+    })
+  })
+
+  test('invalidates roster collection state after legacy observations are reset', async () => {
+    const [source] = await connection<{ source_id: string }[]>`
+      select source_id
+      from organization_corporation_sources
+      where deployment_id = 1 and organization_version = 1 and corporation_id = 98000001
+      limit 1
+    `
+    if (!source) throw new Error('Corporation source fixture is missing')
+    const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+      insert into platform_subject_lifecycles (
+        subject_kind,
+        subject_id,
+        corporation_source_id
+      ) values ('corporation', '98000001', ${source.source_id})
+      on conflict (corporation_source_id) do update set subject_id = excluded.subject_id
+      returning subject_lifecycle_id
+    `
+    if (!lifecycle) throw new Error('Corporation lifecycle fixture is missing')
+    await connection`
+      insert into platform_collection_state (
+        module_id,
+        resource_id,
+        subject_kind,
+        subject_lifecycle_id,
+        subject_id,
+        next_eligible_at,
+        authorization_generation,
+        validated_at
+      ) values (
+        'core',
+        'corporation-roster',
+        'corporation',
+        ${lifecycle.subject_lifecycle_id},
+        '98000001',
+        now() + interval '1 hour',
+        7,
+        now()
+      )
+    `
+    const migration = (await loadMigrations()).find(
+      ({ name }) => name === '039_refresh_roster_collection_contract.sql',
+    )
+    if (!migration) throw new Error('Roster collection contract migration is missing')
+
+    await connection.unsafe(migration.sql).simple()
+
+    const [state] = await connection<{ count: number }[]>`
+      select count(*)::integer as count
+      from platform_collection_state
+      where module_id = 'core'
+        and resource_id = 'corporation-roster'
+        and subject_kind = 'corporation'
+    `
+    expect(state?.count).toBe(0)
+  })
+
   test('rejects foreign references that mix organization versions', async () => {
     await connection`
       insert into organization_epochs (

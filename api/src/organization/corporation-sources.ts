@@ -8,17 +8,16 @@ import {
   organizationManagedCorporations,
   platformSubjectLifecycles,
 } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
 import { appendOrganizationAuditEvent } from './audit.js'
-import { loadManagementAuthority } from './group-store.js'
-
-export const corporationMembershipScope = getCharacterEsiScope('corporation-members')
+import { corporationMembershipScope } from './corporation-membership.js'
+import { loadManagementAuthority } from './management-authority.js'
 
 export class OrganizationCorporationSourceMutationError extends Error {
   constructor(
     readonly code:
       | 'manager-authority-required'
       | 'corporation-not-managed'
+      | 'source-character-affiliation-stale'
       | 'source-character-ineligible',
   ) {
     super(code)
@@ -67,6 +66,7 @@ export async function registerOrganizationCorporationSource(input: {
         userId: characters.userId,
         corporationId: characters.corporationId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
+        nextAffiliationCheck: characters.nextAffiliationCheck,
         affiliationResolutionState: characters.affiliationResolutionState,
         scopes: eveTokens.scopes,
       })
@@ -74,6 +74,7 @@ export async function registerOrganizationCorporationSource(input: {
       .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
       .where(eq(characters.characterId, input.characterId))
       .for('update')
+    const now = new Date()
     if (
       character?.userId !== input.actorUserId ||
       character.corporationId !== input.corporationId ||
@@ -82,6 +83,8 @@ export async function registerOrganizationCorporationSource(input: {
       !character.scopes.includes(corporationMembershipScope)
     )
       throw new OrganizationCorporationSourceMutationError('source-character-ineligible')
+    if (!character.nextAffiliationCheck || character.nextAffiliationCheck <= now)
+      throw new OrganizationCorporationSourceMutationError('source-character-affiliation-stale')
 
     const [existing] = await transaction
       .select()
@@ -98,7 +101,6 @@ export async function registerOrganizationCorporationSource(input: {
     if (existing?.characterId === input.characterId)
       return { source: toCorporationSource(existing), replaced: false }
 
-    const now = new Date()
     if (existing)
       await transaction
         .update(organizationCorporationSources)
