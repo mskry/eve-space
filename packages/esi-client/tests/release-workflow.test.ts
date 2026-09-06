@@ -28,6 +28,12 @@ describe('ESI client trusted publication workflow', () => {
     expect(validate).toContain("node-version-file: '.node-version'");
     expect(validate).toContain('fetch-depth: 0');
     expect(validate).toContain('persist-credentials: false');
+    expect(validate).toContain(
+      'git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"',
+    );
+    expect(validate.indexOf('Restore annotated release tag')).toBeLessThan(
+      validate.indexOf('release:validate'),
+    );
     expect(validate).toContain('pnpm install --frozen-lockfile');
     expect(validate).toContain('release:validate');
     expect(validate).toContain('release:candidate');
