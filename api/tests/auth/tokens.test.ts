@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => {
     appendDomainEvent: vi.fn(),
     decryptTokens: vi.fn(),
     encryptTokens: vi.fn(),
+    findCharacterCacheAuthorization: vi.fn(),
+    findCharacterCacheAuthorizationForLifecycle: vi.fn(),
     findCharacterToken: vi.fn(),
     findCharacterTokenForLifecycle: vi.fn(),
     refreshAccessToken: vi.fn(),
@@ -22,6 +24,8 @@ const mocks = vi.hoisted(() => {
 vi.mock('../../src/auth/store.js', () => ({
   CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
   TokenRefreshLockUnavailableError: mocks.TokenRefreshLockUnavailableError,
+  findCharacterCacheAuthorization: mocks.findCharacterCacheAuthorization,
+  findCharacterCacheAuthorizationForLifecycle: mocks.findCharacterCacheAuthorizationForLifecycle,
   findCharacterToken: mocks.findCharacterToken,
   findCharacterTokenForLifecycle: mocks.findCharacterTokenForLifecycle,
   updateCharacterToken: mocks.updateCharacterToken,
@@ -47,9 +51,12 @@ import {
   getCharacterAccessToken,
   getCharacterAuthorization,
   getCharacterAuthorizationForLifecycle,
+  getCharacterCacheAuthorization,
+  getCharacterCacheAuthorizationForLifecycle,
   ScopeRequiredError,
   TokenRefreshUnavailableError,
 } from '../../src/auth/tokens.js'
+import { SsoTokenRejectedError, SsoTransportError } from '../../src/auth/sso-errors.js'
 
 const characterId = 1404328063
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
@@ -71,6 +78,8 @@ beforeEach(() => {
   mocks.encryptTokens.mockReturnValue('refreshed')
   mocks.findCharacterToken.mockResolvedValue(expired)
   mocks.findCharacterTokenForLifecycle.mockResolvedValue(expired)
+  mocks.findCharacterCacheAuthorization.mockResolvedValue(expired)
+  mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValue(expired)
   mocks.refreshAccessToken.mockResolvedValue({
     access_token: 'new-access',
     refresh_token: 'new-refresh',
@@ -81,6 +90,45 @@ beforeEach(() => {
 })
 
 describe('token refresh', () => {
+  test('reads direct and lifecycle cache authorization without token material', async () => {
+    const subjectLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
+
+    await expect(getCharacterCacheAuthorization(characterId, scope)).resolves.toEqual({
+      scopes: [scope],
+      tokenVersion: 1,
+    })
+    await expect(
+      getCharacterCacheAuthorizationForLifecycle(characterId, subjectLifecycleId, scope),
+    ).resolves.toEqual({ scopes: [scope], tokenVersion: 1 })
+
+    expect(mocks.findCharacterCacheAuthorization).toHaveBeenCalledWith(characterId)
+    expect(mocks.findCharacterCacheAuthorizationForLifecycle).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+    )
+    expect(mocks.decryptTokens).not.toHaveBeenCalled()
+    expect(mocks.refreshAccessToken).not.toHaveBeenCalled()
+    expect(mocks.verifyAccessToken).not.toHaveBeenCalled()
+    expect(mocks.withCharacterTokenRefreshLock).not.toHaveBeenCalled()
+    expect(mocks.withCharacterTokenLifecycleLock).not.toHaveBeenCalled()
+  })
+
+  test('rejects missing cache tokens and scopes before token material access', async () => {
+    mocks.findCharacterCacheAuthorization.mockResolvedValueOnce(null)
+    await expect(getCharacterCacheAuthorization(characterId, scope)).rejects.toBeInstanceOf(
+      mocks.CharacterTokenNotFoundError,
+    )
+
+    mocks.findCharacterCacheAuthorizationForLifecycle.mockResolvedValueOnce({
+      scopes: [],
+      tokenVersion: 2,
+    })
+    await expect(
+      getCharacterCacheAuthorizationForLifecycle(characterId, 'lifecycle', scope),
+    ).rejects.toBeInstanceOf(ScopeRequiredError)
+    expect(mocks.decryptTokens).not.toHaveBeenCalled()
+  })
+
   test('binds fresh authorization to the requested ownership lifecycle', async () => {
     const subjectLifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
     const fresh = { ...expired, accessTokenExpiresAt: new Date(Date.now() + 120_000) }
@@ -302,15 +350,38 @@ describe('token refresh', () => {
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })
 
-  test('does not mutate or emit an event for a transient SSO refresh failure', async () => {
+  test.each([
+    ['refresh transport', 'refreshAccessToken'],
+    ['verification transport', 'verifyAccessToken'],
+  ] as const)(
+    'maps a transient %s failure without mutating token state',
+    async (_stage, method) => {
+      mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
+        operation(expired, {}),
+      )
+      mocks[method].mockRejectedValue(new SsoTransportError(new Error('temporary SSO failure')))
+
+      await expect(getCharacterAccessToken(characterId, scope)).rejects.toBeInstanceOf(
+        TokenRefreshUnavailableError,
+      )
+      expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+      expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+    },
+  )
+
+  test('preserves explicit token rejection and unexpected SSO failures', async () => {
     mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
       operation(expired, {}),
     )
-    mocks.refreshAccessToken.mockRejectedValue(new Error('temporary SSO failure'))
+    const rejection = new SsoTokenRejectedError(400)
+    mocks.refreshAccessToken.mockRejectedValueOnce(rejection)
 
-    await expect(getCharacterAccessToken(characterId, scope)).rejects.toThrow(
-      'temporary SSO failure',
-    )
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBe(rejection)
+
+    const unexpected = new Error('unexpected SSO failure')
+    mocks.refreshAccessToken.mockRejectedValueOnce(unexpected)
+
+    await expect(getCharacterAccessToken(characterId, scope)).rejects.toBe(unexpected)
     expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })

@@ -1,4 +1,5 @@
 import type { EsiResponseMetadata } from '@evespace/esi-client'
+import { TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { EsiQuotaError } from './cooldowns.js'
 import type { EsiOperationContract } from './contract-types.js'
 import { esiCooldownFallbackSeconds } from './policy.js'
@@ -44,6 +45,7 @@ export function classifyStaleRefreshFailure(
   error: unknown,
 ): NonNullable<EsiCachedResult<unknown>['refreshFailureClass']> {
   if (error instanceof EsiQuotaError) return 'esi-cooldown'
+  if (error instanceof TokenRefreshUnavailableError) return 'esi-unavailable'
   if (isRetryableEsiError(error)) return 'esi-unavailable'
   if (isEsiResponseContractError(error)) return 'response-invalid'
   return 'unknown'

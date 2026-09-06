@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { EsiHttpError, EsiResponseParseError } from '@evespace/esi-client'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 
 const mocks = vi.hoisted(() => ({
   acquire: vi.fn(),
@@ -26,8 +28,15 @@ vi.mock('../../src/esi-resilience/coordination.js', () => ({
 }))
 
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
+import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
 import { cacheResourceRevisionRepairKey } from '../../src/esi-resilience/keys.js'
+import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
 import { EsiResilienceLayer } from '../../src/esi-resilience/layer.js'
+import {
+  dispatchModuleEsiOperation,
+  validateModuleEsiOperationInputs,
+} from '../../src/esi-resilience/module-operation-dispatcher.js'
 import { EsiTransportError } from '../../src/esi-resilience/transport.js'
 
 const now = Date.parse('2026-08-20T12:00:00.000Z')
@@ -243,11 +252,11 @@ describe('ESI resilience layer', () => {
 
   test('rejects a private envelope populated under another token generation', async () => {
     let generation = 1
-    const authorizeCharacter = vi.fn(async () => ({
-      accessToken: 'token',
-      tokenVersion: generation,
-    }))
-    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizeCharacter)
+    const authorizers = {
+      cache: vi.fn(async () => ({ scopes: ['scope'], tokenVersion: generation })),
+      full: vi.fn(async () => ({ accessToken: 'token', tokenVersion: generation })),
+    }
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
     const load = vi.fn().mockResolvedValue(result(1))
     const resource = {
       operation: 'wallet-balance' as const,
@@ -262,11 +271,12 @@ describe('ESI resilience layer', () => {
     expect(load).toHaveBeenCalledTimes(2)
   })
 
-  test('resolves current character authorization before cache access', async () => {
+  test('resolves current cache authorization before cache access', async () => {
     const cache = redis()
-    const scopeError = new Error('Scope revoked')
-    const authorizeCharacter = vi.fn().mockRejectedValue(scopeError)
-    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizeCharacter)
+    const scopeError = new ScopeRequiredError('esi-wallet.read_character_wallet.v1')
+    const authorizers = authorize()
+    authorizers.cache.mockRejectedValue(scopeError)
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizers)
 
     await expect(
       layer.getCharacter({
@@ -275,8 +285,297 @@ describe('ESI resilience layer', () => {
         load: vi.fn(),
       }),
     ).rejects.toBe(scopeError)
-    expect(authorizeCharacter).toHaveBeenCalledWith(2, 'esi-wallet.read_character_wallet.v1')
-    expect(cache.ping).not.toHaveBeenCalled()
+    expect(authorizers.cache).toHaveBeenCalledWith(2, 'esi-wallet.read_character_wallet.v1')
+    expect(authorizers.full).not.toHaveBeenCalled()
+    expect(cache.get).not.toHaveBeenCalled()
+  })
+
+  test('serves a fresh private snapshot without resolving full authorization', async () => {
+    const authorizers = authorize()
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
+    const load = vi.fn().mockResolvedValue(result({ balance: 1 }))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    authorizers.full.mockClear()
+
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({
+      data: { balance: 1 },
+      source: 'cache',
+      stale: false,
+    })
+    expect(authorizers.cache).toHaveBeenCalledTimes(3)
+    expect(authorizers.full).not.toHaveBeenCalled()
+    expect(load).toHaveBeenCalledOnce()
+  })
+
+  test('rechecks the token generation before returning a fresh private snapshot', async () => {
+    const authorizers = {
+      cache: vi
+        .fn()
+        .mockResolvedValueOnce({ scopes: ['scope'], tokenVersion: 1 })
+        .mockResolvedValueOnce({ scopes: ['scope'], tokenVersion: 1 })
+        .mockResolvedValueOnce({ scopes: ['scope'], tokenVersion: 2 }),
+      full: vi
+        .fn()
+        .mockResolvedValueOnce({ accessToken: 'token-1', tokenVersion: 1 })
+        .mockResolvedValueOnce({ accessToken: 'token-2', tokenVersion: 2 }),
+    }
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
+    const load = vi.fn().mockResolvedValueOnce(result(1)).mockResolvedValueOnce(result(2))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({ data: 2, source: 'esi' })
+
+    expect(authorizers.cache).toHaveBeenCalledTimes(3)
+    expect(authorizers.full).toHaveBeenCalledTimes(2)
+    expect(load).toHaveBeenCalledTimes(2)
+  })
+
+  test('uses lifecycle cache authorization before lazy token resolution and outage fallback', async () => {
+    const resolve = vi.fn().mockResolvedValue({ accessToken: 'token', tokenVersion: 1 })
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2)
+    const load = vi.fn().mockResolvedValue(result({ balance: 1 }))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+    const authorization = {
+      cacheAuthorization: {
+        kind: 'character' as const,
+        principal: 'character-1-lifecycle-current',
+        generation: 1,
+      },
+      transportPrincipal: 'character-1',
+      resolve,
+      recheckCacheAuthorization: vi.fn().mockResolvedValue(1),
+    }
+
+    await layer.getCharacterWithAuthorization(resource, authorization)
+    resolve.mockClear()
+
+    await expect(
+      layer.getCharacterWithAuthorization(resource, authorization),
+    ).resolves.toMatchObject({
+      result: { data: { balance: 1 }, source: 'cache', stale: false },
+      authorizationGeneration: 1,
+    })
+    expect(resolve).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(60_001)
+    resolve.mockRejectedValueOnce(new TokenRefreshUnavailableError())
+    await expect(
+      layer.getCharacterWithAuthorization(resource, authorization),
+    ).resolves.toMatchObject({
+      result: {
+        data: { balance: 1 },
+        source: 'cache',
+        stale: true,
+        refreshFailureClass: 'esi-unavailable',
+      },
+    })
+    expect(load).toHaveBeenCalledOnce()
+  })
+
+  test('serves retained private data when lazy token refresh is unavailable', async () => {
+    const authorizers = authorize()
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
+    const load = vi.fn().mockResolvedValue(result({ balance: 1 }))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await vi.advanceTimersByTimeAsync(60_001)
+    authorizers.full.mockRejectedValueOnce(new TokenRefreshUnavailableError())
+
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({
+      data: { balance: 1 },
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(load).toHaveBeenCalledOnce()
+  })
+
+  test.each([
+    new CharacterTokenNotFoundError(),
+    new ScopeRequiredError('esi-wallet.read_character_wallet.v1'),
+  ])('does not read a retained snapshot after cache authorization fails', async (failure) => {
+    const cache = redis()
+    cache.get.mockResolvedValue(
+      serializedEnvelope({
+        authorization: { kind: 'character', principal: 'character-1', generation: 1 },
+        freshUntil: now - 1,
+        retainUntil: now + 60_000,
+      }),
+    )
+    const authorizers = authorize()
+    authorizers.cache.mockRejectedValue(failure)
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizers)
+
+    await expect(
+      layer.getCharacter({
+        operation: 'wallet-balance',
+        inputs: { characterId: 1 },
+        load: vi.fn(),
+      }),
+    ).rejects.toBe(failure)
+    expect(cache.get).not.toHaveBeenCalled()
+    expect(authorizers.full).not.toHaveBeenCalled()
+  })
+
+  test('does not release retained data after explicit token rejection', async () => {
+    const authorizers = authorize()
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
+    const load = vi.fn().mockResolvedValue(result({ balance: 1 }))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await vi.advanceTimersByTimeAsync(60_001)
+    const rejection = new Error('Token rejected')
+    authorizers.full.mockRejectedValueOnce(rejection)
+
+    await expect(layer.getCharacter(resource)).rejects.toBe(rejection)
+    expect(load).toHaveBeenCalledOnce()
+  })
+
+  test('does not release a retained snapshot from an obsolete cache generation', async () => {
+    let generation = 1
+    const authorizers = {
+      cache: vi.fn(async () => ({ scopes: ['scope'], tokenVersion: generation })),
+      full: vi.fn(async () => ({ accessToken: 'token', tokenVersion: generation })),
+    }
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
+    const failure = esiUnavailable()
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce(result({ balance: 1 }))
+      .mockRejectedValue(failure)
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    generation = 2
+    const pending = layer.getCharacter(resource).catch((error: unknown) => error)
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toBe(failure)
+    expect(load).toHaveBeenCalledTimes(4)
+  })
+
+  test('removes an old-generation envelope from fallback after lazy authorization changes', async () => {
+    const authorizers = authorize()
+    authorizers.full
+      .mockResolvedValueOnce({ accessToken: 'token-1', tokenVersion: 1 })
+      .mockResolvedValueOnce({ accessToken: 'token-2', tokenVersion: 2 })
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
+    const failure = esiUnavailable()
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce(result({ balance: 1 }))
+      .mockRejectedValue(failure)
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await vi.advanceTimersByTimeAsync(60_001)
+    const pending = layer.getCharacter(resource).catch((error: unknown) => error)
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toBe(failure)
+    expect(load).toHaveBeenCalledTimes(4)
+  })
+
+  test('publishes a successful lazy refresh under the observed generation', async () => {
+    const cache = redis()
+    const authorizers = authorize()
+    authorizers.full
+      .mockResolvedValueOnce({ accessToken: 'token-1', tokenVersion: 1 })
+      .mockResolvedValueOnce({ accessToken: 'token-2', tokenVersion: 2 })
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizers)
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce(result({ balance: 1 }))
+      .mockResolvedValueOnce(result({ balance: 2 }))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await vi.advanceTimersByTimeAsync(60_001)
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({
+      data: { balance: 2 },
+      source: 'esi',
+    })
+
+    expect(JSON.parse(cache.set.mock.calls[1]?.[1] as string)).toMatchObject({
+      authorization: { generation: 2 },
+    })
+  })
+
+  test('rebinds a 304 response to the generation observed by lazy authorization', async () => {
+    const cache = redis()
+    const authorizers = authorize()
+    authorizers.full
+      .mockResolvedValueOnce({ accessToken: 'token-1', tokenVersion: 1 })
+      .mockResolvedValueOnce({ accessToken: 'token-2', tokenVersion: 2 })
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizers)
+    const notModified = Object.assign(new Error('Not modified'), {
+      status: 304,
+      metadata: { status: 304, headers: {}, cache: { cacheControl: 'max-age=60' } },
+    })
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ...result({ balance: 1 }),
+        meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=60', etag: 'v1' } },
+      })
+      .mockRejectedValueOnce(notModified)
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await vi.advanceTimersByTimeAsync(60_001)
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({
+      data: { balance: 1 },
+      source: 'not-modified',
+    })
+
+    expect(load).toHaveBeenLastCalledWith(
+      { accessToken: 'token-2', principal: 'character-1' },
+      { ifNoneMatch: 'v1' },
+    )
+    expect(JSON.parse(cache.set.mock.calls[1]?.[1] as string)).toMatchObject({
+      authorization: { generation: 2 },
+    })
   })
 
   test('retries eligible network failures with bounded attempts', async () => {
@@ -414,6 +713,64 @@ describe('ESI resilience layer', () => {
       { accessToken: 'token', principal: 'character-1' },
       { ifNoneMatch: '"etag"', ifModifiedSince: 'yesterday' },
     )
+  })
+
+  test('revalidates a registered generic operation before serving retained outage data', async () => {
+    const definition = {
+      sdkOperationId: 'GetCharactersCharacterIdWallet',
+      descriptor: operationRegistry.GetCharactersCharacterIdWallet!,
+      contract: getEsiOperationContract('wallet-balance'),
+    } satisfies PlatformExecutableEsiOperationDefinition
+    const inputs = validateModuleEsiOperationInputs(definition, {
+      path: { character_id: 1 },
+      headers: { 'X-Tenant': 'tenant-one' },
+    })
+    const requests: Request[] = []
+    let unavailable = false
+    const transport: typeof fetch = async (input, init) => {
+      requests.push(new Request(input, init))
+      if (unavailable) throw new EsiTransportError(new Error('upstream unavailable'))
+      return new Response('10', {
+        status: 200,
+        headers: {
+          'cache-control': 'max-age=60',
+          'content-type': 'application/json',
+          etag: 'wallet-etag',
+          'last-modified': 'yesterday',
+        },
+      })
+    }
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load: (
+        authority: { accessToken: string; principal: string },
+        revalidation: { ifNoneMatch?: string; ifModifiedSince?: string },
+      ) =>
+        dispatchModuleEsiOperation(definition, {
+          inputs,
+          authorization: { kind: 'character', accessToken: authority.accessToken },
+          revalidation,
+          transport,
+        }),
+    }
+
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({ data: 10, source: 'esi' })
+    await vi.advanceTimersByTimeAsync(60_001)
+    unavailable = true
+
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({
+      data: 10,
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(requests).toHaveLength(2)
+    expect(new URL(requests[1]!.url).pathname).toBe('/characters/1/wallet')
+    expect(requests[1]!.headers.get('if-none-match')).toBe('wallet-etag')
+    expect(requests[1]!.headers.get('if-modified-since')).toBe('yesterday')
+    expect(requests[1]!.headers.get('x-tenant')).toBe('tenant-one')
   })
 
   test.each([
@@ -674,15 +1031,15 @@ describe('ESI resilience layer', () => {
 
   test('executes non-idempotent character mutations once and invalidates after ambiguity', async () => {
     const cache = redis()
-    const authorizeCharacter = authorize()
-    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizeCharacter)
+    const authorizers = authorize()
+    const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizers)
     const load = vi.fn().mockRejectedValue(new EsiTransportError(new Error('delivery unknown')))
 
     await expect(
       layer.executeCharacterMutation({ operation: 'mail-send', characterId: 1, load }),
     ).rejects.toBeInstanceOf(EsiTransportError)
 
-    expect(authorizeCharacter).toHaveBeenCalledWith(1, 'esi-mail.send_mail.v1')
+    expect(authorizers.full).toHaveBeenCalledWith(1, 'esi-mail.send_mail.v1')
     expect(load).toHaveBeenCalledOnce()
     expect(load).toHaveBeenCalledWith({ accessToken: 'token', principal: 'character-1' })
     expect(cache.get).not.toHaveBeenCalled()
@@ -746,8 +1103,8 @@ describe('ESI resilience layer', () => {
   })
 
   test('retries an uncached CSPA read without advancing mailbox revision', async () => {
-    const authorizeCharacter = authorize()
-    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizeCharacter)
+    const authorizers = authorize()
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
     const load = vi
       .fn()
       .mockRejectedValueOnce(new EsiTransportError(new Error('network unavailable')))
@@ -761,7 +1118,7 @@ describe('ESI resilience layer', () => {
     await vi.runAllTimersAsync()
 
     await expect(pending).resolves.toMatchObject({ data: 12.5 })
-    expect(authorizeCharacter).toHaveBeenCalledWith(1, 'esi-characters.read_contacts.v1')
+    expect(authorizers.full).toHaveBeenCalledWith(1, 'esi-characters.read_contacts.v1')
     expect(load).toHaveBeenCalledTimes(2)
     expect(mocks.incrementRevision).not.toHaveBeenCalled()
   })
@@ -985,7 +1342,10 @@ function result<Data>(data: Data) {
 }
 
 function authorize(tokenVersion = 1) {
-  return vi.fn(async () => ({ accessToken: 'token', tokenVersion }))
+  return {
+    cache: vi.fn(async () => ({ scopes: ['scope'], tokenVersion })),
+    full: vi.fn(async () => ({ accessToken: 'token', tokenVersion })),
+  }
 }
 
 function serializedEnvelope(overrides: Partial<Record<string, unknown>>) {

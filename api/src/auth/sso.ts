@@ -1,6 +1,7 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose'
+import { createRemoteJWKSet, customFetch, jwtVerify } from 'jose'
 import { z } from 'zod'
 import { env, getSsoConfig } from '../env.js'
+import { SsoHttpError, SsoTokenRejectedError, SsoTransportError } from './sso-errors.js'
 
 const metadataSchema = z.object({
   issuer: z.url(),
@@ -19,6 +20,8 @@ const tokenResponseSchema = z.object({
 const refreshResponseSchema = tokenResponseSchema.extend({
   refresh_token: z.string().min(1).optional(),
 })
+
+const oauthErrorSchema = z.object({ error: z.string() })
 
 const scopesSchema = z
   .union([z.string(), z.array(z.string())])
@@ -44,9 +47,11 @@ const discoveryTimeoutMs = Math.ceil(env.EVE_SSO_TIMEOUT_MS / 2)
 let metadataPromise: ReturnType<typeof loadMetadata> | undefined
 
 async function loadMetadata() {
-  const response = await fetch(metadataUrl, { signal: AbortSignal.timeout(discoveryTimeoutMs) })
-  if (!response.ok) throw new Error(`EVE SSO metadata returned HTTP ${response.status}`)
-  return metadataSchema.parse(await response.json())
+  const response = await fetchSso(metadataUrl, {
+    signal: AbortSignal.timeout(discoveryTimeoutMs),
+  })
+  if (!response.ok) throw new SsoHttpError('EVE SSO metadata', response.status)
+  return metadataSchema.parse(await readJson(response))
 }
 
 function getEveMetadata() {
@@ -76,7 +81,7 @@ export async function exchangeAuthorizationCode(code: string) {
   const config = getSsoConfig()
   const metadata = await getEveMetadata()
   const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')
-  const response = await fetch(metadata.token_endpoint, {
+  const response = await fetchSso(metadata.token_endpoint, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -88,15 +93,15 @@ export async function exchangeAuthorizationCode(code: string) {
     }),
   })
 
-  if (!response.ok) throw new Error(`EVE token exchange returned HTTP ${response.status}`)
-  return tokenResponseSchema.parse(await response.json())
+  if (!response.ok) throw new SsoHttpError('EVE token exchange', response.status)
+  return tokenResponseSchema.parse(await readJson(response))
 }
 
 export async function refreshAccessToken(refreshToken: string) {
   const config = getSsoConfig()
   const metadata = await getEveMetadata()
   const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')
-  const response = await fetch(metadata.token_endpoint, {
+  const response = await fetchSso(metadata.token_endpoint, {
     method: 'POST',
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -109,8 +114,8 @@ export async function refreshAccessToken(refreshToken: string) {
     }),
   })
 
-  if (!response.ok) throw new Error(`EVE token refresh returned HTTP ${response.status}`)
-  return refreshResponseSchema.parse(await response.json())
+  if (!response.ok) await throwRefreshError(response)
+  return refreshResponseSchema.parse(await readJson(response))
 }
 
 export async function verifyAccessToken(accessToken: string) {
@@ -118,6 +123,7 @@ export async function verifyAccessToken(accessToken: string) {
   const metadata = await getEveMetadata()
   const jwks = createRemoteJWKSet(new URL(metadata.jwks_uri), {
     timeoutDuration: discoveryTimeoutMs,
+    [customFetch]: fetchJwks,
   })
   const { payload } = await jwtVerify(accessToken, jwks, {
     issuer: [metadata.issuer, 'https://login.eveonline.com/', 'login.eveonline.com'],
@@ -136,4 +142,59 @@ export async function verifyAccessToken(accessToken: string) {
     characterName: claims.name,
     scopes: claims.scp,
   }
+}
+
+async function fetchSso(input: string | URL, init?: RequestInit) {
+  try {
+    return await fetch(input, init)
+  } catch (cause) {
+    throw new SsoTransportError(cause)
+  }
+}
+
+async function readResponseBody(response: Response) {
+  try {
+    return await response.text()
+  } catch (cause) {
+    throw new SsoTransportError(cause)
+  }
+}
+
+async function readJson(response: Response) {
+  return JSON.parse(await readResponseBody(response)) as unknown
+}
+
+// Intermediaries answer 4xx with empty or HTML bodies, so an unparseable body must degrade to the
+// status-based classification instead of throwing a SyntaxError past isTransientSsoError.
+async function readErrorJson(response: Response) {
+  const body = await readResponseBody(response)
+  try {
+    return JSON.parse(body) as unknown
+  } catch {
+    return undefined
+  }
+}
+
+async function throwRefreshError(response: Response): Promise<never> {
+  if (response.status === 400 || response.status === 401 || response.status === 403) {
+    const parsed = oauthErrorSchema.safeParse(await readErrorJson(response))
+    if (parsed.success && ['invalid_grant', 'invalid_token'].includes(parsed.data.error))
+      throw new SsoTokenRejectedError(response.status)
+  }
+  throw new SsoHttpError('EVE token refresh', response.status)
+}
+
+async function fetchJwks(url: string, options: Parameters<typeof fetch>[1]) {
+  const response = await fetchSso(url, options)
+  if (!response.ok) throw new SsoHttpError('EVE SSO JWKS', response.status)
+  const body = await readResponseBody(response)
+  // The body is already decoded here, so the upstream transfer headers no longer describe it.
+  const headers = new Headers(response.headers)
+  headers.delete('content-encoding')
+  headers.delete('content-length')
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
 }

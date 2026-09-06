@@ -693,7 +693,10 @@ function wait(milliseconds: number) {
 }
 
 function authorize(tokenVersion: number) {
-  return async () => ({ accessToken: 'token', tokenVersion })
+  return {
+    cache: async () => ({ scopes: ['scope'], tokenVersion }),
+    full: async () => ({ accessToken: 'token', tokenVersion }),
+  }
 }
 
 function privateResource(
