@@ -1,4 +1,4 @@
-const localOrigin = 'http://nuxt.local'
+const localOrigin = 'https://nuxt.invalid'
 
 export function getLocalAuthRedirect(value: unknown): string | undefined {
   if (typeof value !== 'string' || !value.startsWith('/')) return
