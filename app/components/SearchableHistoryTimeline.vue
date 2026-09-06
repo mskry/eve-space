@@ -64,68 +64,70 @@ function formatHistoryDate(value: string) {
 
 <template>
   <div class="history-content">
-    <UiToolbar class="history-toolbar" :label="`${entityLabel} history controls`">
-      <input
-        class="ui-input"
-        v-model="search"
-        type="search"
-        autocomplete="off"
-        :placeholder="`Search ${entityLabel} name or ID`"
-        :aria-label="`Search ${entityLabel} history by name or ID`"
-      />
-      <span class="app-search-status" aria-live="polite">
-        <template v-if="!searchTerm">&nbsp;</template>
-        <template v-else-if="matches.size === 0">NO MATCHES</template>
-        <template v-else>{{ matches.size }} / {{ entries.length }} MATCHED</template>
-      </span>
-      <slot name="controls" />
-    </UiToolbar>
+    <div class="history-content-inner">
+      <UiToolbar class="history-toolbar" :label="`${entityLabel} history controls`">
+        <input
+          class="ui-input"
+          v-model="search"
+          type="search"
+          autocomplete="off"
+          :placeholder="`Search ${entityLabel} name or ID`"
+          :aria-label="`Search ${entityLabel} history by name or ID`"
+        />
+        <span class="app-search-status" aria-live="polite">
+          <template v-if="!searchTerm">&nbsp;</template>
+          <template v-else-if="matches.size === 0">NO MATCHES</template>
+          <template v-else>{{ matches.size }} / {{ entries.length }} MATCHED</template>
+        </span>
+        <slot name="controls" />
+      </UiToolbar>
 
-    <UiScrollArea ref="scroller" class="employment-scroller">
-      <p v-if="entries.length === 0" class="history-empty-results">
-        <slot name="empty">No {{ entityLabel }} history</slot>
-      </p>
-      <ol v-else class="employment-timeline">
-        <li
-          v-for="entry in entries"
-          :key="entry.recordId"
-          :data-record-id="entry.recordId"
-          :class="{
-            'is-match': matches.has(entry.recordId),
-            'is-muted': Boolean(searchTerm) && !matches.has(entry.recordId),
-          }"
-        >
-          <span
-            class="employment-marker"
-            :class="{ 'is-current': !entry.endDate }"
-            aria-hidden="true"
-          />
-          <UiEveImage
-            v-if="!entry.isDeleted && entry.entityId"
-            :kind="entityKind"
-            :id="entry.entityId"
-            :dimension="48"
-            :alt="`${entry.entityName} ${entityLabel} logo`"
-          />
-          <span v-else class="employment-deleted-mark" aria-hidden="true">X</span>
-          <div>
-            <h3>
-              <slot name="entry-name" :entry="entry">{{ entry.entityName }}</slot
-              ><template v-if="entry.isDeleted">{{ deletedSuffix }}</template>
-            </h3>
-            <p>{{ entry.entityId ?? '—' }}</p>
-          </div>
-          <p class="employment-period">
-            <time :datetime="entry.startDate">{{ formatHistoryDate(entry.startDate) }}</time>
-            <span aria-hidden="true">→</span>
-            <time v-if="entry.endDate" :datetime="entry.endDate">
-              {{ formatHistoryDate(entry.endDate) }}
-            </time>
-            <strong v-else>CURRENT</strong>
-          </p>
-        </li>
-      </ol>
-    </UiScrollArea>
+      <UiScrollArea ref="scroller" class="employment-scroller">
+        <p v-if="entries.length === 0" class="history-empty-results">
+          <slot name="empty">No {{ entityLabel }} history</slot>
+        </p>
+        <ol v-else class="employment-timeline">
+          <li
+            v-for="entry in entries"
+            :key="entry.recordId"
+            :data-record-id="entry.recordId"
+            :class="{
+              'is-match': matches.has(entry.recordId),
+              'is-muted': Boolean(searchTerm) && !matches.has(entry.recordId),
+            }"
+          >
+            <span
+              class="employment-marker"
+              :class="{ 'is-current': !entry.endDate }"
+              aria-hidden="true"
+            />
+            <UiEveImage
+              v-if="!entry.isDeleted && entry.entityId"
+              :kind="entityKind"
+              :id="entry.entityId"
+              :dimension="48"
+              :alt="`${entry.entityName} ${entityLabel} logo`"
+            />
+            <span v-else class="employment-deleted-mark" aria-hidden="true">X</span>
+            <div>
+              <h3>
+                <slot name="entry-name" :entry="entry">{{ entry.entityName }}</slot
+                ><template v-if="entry.isDeleted">{{ deletedSuffix }}</template>
+              </h3>
+              <p>{{ entry.entityId ?? '—' }}</p>
+            </div>
+            <p class="employment-period">
+              <time :datetime="entry.startDate">{{ formatHistoryDate(entry.startDate) }}</time>
+              <span aria-hidden="true">→</span>
+              <time v-if="entry.endDate" :datetime="entry.endDate">
+                {{ formatHistoryDate(entry.endDate) }}
+              </time>
+              <strong v-else>CURRENT</strong>
+            </p>
+          </li>
+        </ol>
+      </UiScrollArea>
+    </div>
   </div>
 </template>
 

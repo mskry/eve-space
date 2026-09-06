@@ -140,58 +140,67 @@ const resourceState = computed<EsiResourceState>(() => {
           </p>
         </div>
 
-        <ul v-if="upcomingQueueEntries.length" class="skill-queue-list">
-          <li v-for="entry in upcomingQueueEntries" :key="entry.queuePosition">
-            <span class="skill-queue-entry-name">{{ entry.name }}</span>
-            <span class="skill-queue-entry-level">{{ romanLevel(entry.finishedLevel) }}</span>
-            <span class="skill-queue-entry-time">
-              {{ formatQueueDuration(entryRemainingMs(entry, nowMs)) }}
-            </span>
-          </li>
-        </ul>
+        <UiScrollArea v-if="upcomingQueueEntries.length" class="skill-queue-scroll">
+          <ul class="skill-queue-list">
+            <li v-for="entry in upcomingQueueEntries" :key="entry.queuePosition">
+              <span class="skill-queue-entry-name">{{ entry.name }}</span>
+              <span class="skill-queue-entry-level">{{ romanLevel(entry.finishedLevel) }}</span>
+              <span class="skill-queue-entry-time">
+                {{ formatQueueDuration(entryRemainingMs(entry, nowMs)) }}
+              </span>
+            </li>
+          </ul>
+        </UiScrollArea>
       </template>
 
       <div v-else-if="skillQueue" class="skill-queue-idle">
         <p>{{ queueIdleCopy }}</p>
-        <ul v-if="queueEntries.length" class="skill-queue-list">
-          <li v-for="entry in queueEntries" :key="entry.queuePosition">
-            <span class="skill-queue-entry-name">{{ entry.name }}</span>
-            <span class="skill-queue-entry-level">{{ romanLevel(entry.finishedLevel) }}</span>
-          </li>
-        </ul>
+        <UiScrollArea v-if="queueEntries.length" class="skill-queue-scroll">
+          <ul class="skill-queue-list">
+            <li v-for="entry in queueEntries" :key="entry.queuePosition">
+              <span class="skill-queue-entry-name">{{ entry.name }}</span>
+              <span class="skill-queue-entry-level">{{ romanLevel(entry.finishedLevel) }}</span>
+            </li>
+          </ul>
+        </UiScrollArea>
       </div>
     </EsiResourceBoundary>
 
-    <p v-if="unallocatedSp > 0" class="skill-queue-unallocated">
-      <strong>{{ formatNumber(unallocatedSp) }}</strong>
-      <span class="skill-queue-unallocated-label">unallocated skill points.</span>
-    </p>
-
     <div
-      v-if="skillQueue && queueState === 'training' && activeQueueEntry"
-      class="skill-queue-totals"
+      v-if="unallocatedSp > 0 || (skillQueue && queueState === 'training' && activeQueueEntry)"
+      class="skill-queue-summary-panel"
     >
-      <div>
-        <span class="ui-eyebrow">TRAINING TIME</span>
-        <strong>{{ formatQueueDuration(queueTotalRemaining) }}</strong>
+      <p v-if="unallocatedSp > 0" class="skill-queue-unallocated">
+        <strong>{{ formatNumber(unallocatedSp) }}</strong>
+        <span class="skill-queue-unallocated-label">unallocated skill points.</span>
+      </p>
+
+      <div
+        v-if="skillQueue && queueState === 'training' && activeQueueEntry"
+        class="skill-queue-totals"
+      >
+        <div>
+          <span class="ui-eyebrow">TRAINING TIME</span>
+          <strong>{{ formatQueueDuration(queueTotalRemaining) }}</strong>
+        </div>
+        <span v-if="queueBarSegments.length" class="skill-queue-segments" aria-hidden="true">
+          <i
+            v-for="segment in queueBarSegments"
+            :key="segment.queuePosition"
+            :style="{ flex: segment.flex }"
+            :class="{ 'is-current': segment.queuePosition === queueStatus.activeQueuePosition }"
+          />
+        </span>
+        <p v-if="queueTotalSp !== null" class="skill-queue-sp-summary">
+          {{ formatNumber(queueTotalSp) }} skill points in queue
+        </p>
+        <p v-if="queueEndsSoon" class="skill-queue-warning is-warning">
+          ! UNDER 3 DAYS — TOP UP THE QUEUE
+        </p>
+        <p v-else-if="queueTotalSp === null" class="skill-queue-warning">
+          QUEUE RUNS {{ formatQueueDuration(queueTotalRemaining) }}
+        </p>
       </div>
-      <span v-if="queueBarSegments.length" class="skill-queue-segments" aria-hidden="true">
-        <i
-          v-for="segment in queueBarSegments"
-          :key="segment.queuePosition"
-          :style="{ flex: segment.flex }"
-          :class="{ 'is-current': segment.queuePosition === queueStatus.activeQueuePosition }"
-        />
-      </span>
-      <p v-if="queueTotalSp !== null" class="skill-queue-sp-summary">
-        {{ formatNumber(queueTotalSp) }} skill points in queue
-      </p>
-      <p v-if="queueEndsSoon" class="skill-queue-warning is-warning">
-        ! UNDER 3 DAYS — TOP UP THE QUEUE
-      </p>
-      <p v-else-if="queueTotalSp === null" class="skill-queue-warning">
-        QUEUE RUNS {{ formatQueueDuration(queueTotalRemaining) }}
-      </p>
     </div>
   </aside>
 </template>

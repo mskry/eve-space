@@ -43,10 +43,10 @@ describe('UI themes', () => {
 
     expect(wrapper.get('button').attributes('data-theme')).toBe('gallente')
     expect(wrapper.get('button').attributes('data-options')).toBe(
-      'gallente,amarr,caldari,minmatar,high-sec',
+      'amarr,gallente,caldari,high-sec,minmatar',
     )
     expect(wrapper.get('button').attributes('data-labels')).toBe(
-      'Gallente Green,Amarr Gold,Caldari Steel,Minmatar Rust,CONCORD Daylight',
+      'Amarr Gold,Gallente Green,Caldari Steel,CONCORD Daylight,Minmatar Rust',
     )
 
     await wrapper.get('button').trigger('click')

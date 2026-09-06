@@ -134,7 +134,10 @@ describe('training queue markup', () => {
     expect(page).toContain('aria-labelledby="skill-queue-title"')
     expect(page).toContain('Training Queue')
     expect(features).toContain('grid-template-columns: minmax(0, 1fr) minmax(18.75rem, 22rem)')
-    expect(responsive).toContain('min-height: min(42rem, calc(100dvh - 12rem))')
+    expect(features).toContain('max-height: 53rem')
+    expect(features).toContain('max-height: 39rem')
+    expect(features).toContain(":has(.ui-scroll-area-scrollbar[data-state='visible'])")
+    expect(responsive).toContain('min-height: min(35rem, calc(100dvh - 12rem))')
   })
 
   it('renders the training state with level indicators, remaining time and totals', () => {
@@ -159,6 +162,8 @@ describe('training queue markup', () => {
     expect(route).toContain(':unallocated-sp="skills.unallocatedSp"')
     expect(queue).toContain('class="skill-queue-unallocated"')
     expect(queue).toContain('class="skill-queue-unallocated-label"')
+    expect(queue).toContain('<UiScrollArea v-if="upcomingQueueEntries.length"')
+    expect(queue).toContain('class="skill-queue-summary-panel"')
   })
 
   it('covers every queue state including lapsed', () => {

@@ -2,6 +2,8 @@
   font-family: var(--ui-font-body);
   background: var(--ui-canvas);
   color: var(--ink);
+  scrollbar-color: var(--ui-border-strong) var(--ui-canvas);
+  scrollbar-gutter: stable;
 }
 
 * {

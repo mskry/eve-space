@@ -2,7 +2,6 @@
 import {
   DropdownMenuContent,
   DropdownMenuItemIndicator,
-  DropdownMenuLabel,
   DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -28,8 +27,11 @@ const activeTheme = computed(
 
     <DropdownMenuPortal>
       <DropdownMenuContent class="ui-theme-menu" align="end" :side-offset="8">
-        <DropdownMenuLabel class="ui-theme-menu-label"> INTERFACE THEME </DropdownMenuLabel>
-        <DropdownMenuRadioGroup :model-value="theme" @update:model-value="setTheme">
+        <DropdownMenuRadioGroup
+          aria-label="Interface theme"
+          :model-value="theme"
+          @update:model-value="setTheme"
+        >
           <DropdownMenuRadioItem
             v-for="option in themes"
             :key="option.value"

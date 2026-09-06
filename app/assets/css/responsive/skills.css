@@ -1,6 +1,6 @@
 @media (min-width: 1101px) {
   .skill-queue-rail {
-    min-height: min(42rem, calc(100dvh - 12rem));
+    min-height: min(35rem, calc(100dvh - 12rem));
   }
 }
 
@@ -9,7 +9,7 @@
     grid-template-columns: 1fr;
   }
 
-  .skill-queue-list {
+  .skill-queue-scroll {
     max-height: 22rem;
   }
 }

@@ -510,6 +510,13 @@ describe('character Skills components', () => {
     expect(wrapper.find('.skill-queue-current-meta').exists()).toBe(false)
     expect(wrapper.find('.skill-queue-unallocated strong').exists()).toBe(true)
     expect(wrapper.find('.skill-queue-unallocated-label').exists()).toBe(true)
+    const queueScroll = wrapper.get('.skill-queue-scroll')
+    expect(queueScroll.find('.skill-queue-list').exists()).toBe(true)
+    expect(queueScroll.find('.skill-queue-current').exists()).toBe(false)
+    expect(queueScroll.find('.skill-queue-summary-panel').exists()).toBe(false)
+    expect(wrapper.get('.skill-queue-summary-panel').find('.skill-queue-totals').exists()).toBe(
+      true,
+    )
     const activeLevelCells = wrapper.findAll('.skill-queue-current-levels i')
     expect(activeLevelCells).toHaveLength(5)
     expect(

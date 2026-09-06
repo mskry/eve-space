@@ -1,10 +1,14 @@
 .history-content {
   width: 100%;
-  max-width: 720px;
-  margin: 22px auto 0;
+  margin-top: 22px;
+}
+
+.history-content-inner {
+  width: 100%;
 }
 
 .history-toolbar {
+  margin: 0 auto;
   padding: 12px 16px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -21,10 +25,16 @@
 .employment-scroller {
   position: relative;
   isolation: isolate;
+  width: 100%;
   max-height: min(58vh, 520px);
   border: 1px solid var(--ui-border);
   border-top: 0;
   background: var(--ui-surface);
+}
+
+.employment-scroller > .ui-scroll-area-viewport {
+  width: min(100%, 720px);
+  margin-inline: auto;
 }
 
 .employment-scroller::before,
@@ -70,11 +80,20 @@
   grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
-  border-bottom: 1px solid var(--ui-border);
 }
 
-.employment-timeline li:last-child {
-  border-bottom: 0;
+.employment-timeline li::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 17px;
+  height: 1px;
+  background: var(--ui-border);
+}
+
+.employment-timeline li:last-child::after {
+  display: none;
 }
 
 .employment-timeline li.is-muted {

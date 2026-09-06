@@ -32,7 +32,11 @@
   gap: 1.25rem;
 }
 
-.character-shell-identity > img {
+.character-shell-portrait {
+  width: 4.5rem;
+  height: 4.5rem;
+  display: block;
+  overflow: hidden;
   border: 0.0625rem solid color-mix(in srgb, var(--ui-primary) 40%, transparent);
 }
 
