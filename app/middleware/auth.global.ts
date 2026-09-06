@@ -1,3 +1,5 @@
+import { getLocalAuthRedirect } from '../utils/auth-redirect'
+
 export default defineNuxtRouteMiddleware(async (to) => {
   const isAuthorizationRoute = to.path === '/auth'
   if (to.meta.platformAudience === 'public') return
@@ -13,7 +15,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
       },
     )
     if (session.authenticated) {
-      if (isAuthorizationRoute) return navigateTo('/')
+      if (isAuthorizationRoute)
+        return navigateTo(getLocalAuthRedirect(to.query.redirect) ?? '/', { replace: true })
       return
     }
   } catch {

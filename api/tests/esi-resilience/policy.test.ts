@@ -126,7 +126,7 @@ describe('ESI operation policies', () => {
     })
     expect(getEsiOperationContract('wallet-balance')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-wallet.read_character_wallet.v1' },
-      cache: { kind: 'shared', stale: { kind: 'outage', milliseconds: 3_600_000 } },
+      cache: { kind: 'shared', stale: { kind: 'outage', milliseconds: 86_400_000 } },
     })
     expect(getEsiOperationContract('wallet-transactions')).toMatchObject({
       representationVersion: 'v3',
@@ -267,7 +267,7 @@ describe('ESI operation policies', () => {
       cache: {
         kind: 'shared',
         revalidate: true,
-        stale: { kind: 'outage', milliseconds: 3_600_000 },
+        stale: { kind: 'outage', milliseconds: 86_400_000 },
       },
       retry: { kind: 'idempotent' },
     })
@@ -284,7 +284,7 @@ describe('ESI operation policies', () => {
       cache: {
         kind: 'shared',
         revalidate: true,
-        stale: { kind: 'outage', milliseconds: 3_600_000 },
+        stale: { kind: 'outage', milliseconds: 86_400_000 },
       },
     })
     expect([
@@ -374,7 +374,7 @@ describe('ESI operation policies', () => {
           kind: 'shared',
           collapse: true,
           revalidate: true,
-          stale: { kind: 'outage', milliseconds: 3_600_000 },
+          stale: { kind: 'outage', milliseconds: 86_400_000 },
         },
         rateGroup,
         retry: { kind: 'idempotent' },
@@ -420,8 +420,8 @@ describe('ESI operation policies', () => {
           kind: 'shared',
           collapse: true,
           revalidate: true,
-          stale: { kind: 'outage', milliseconds: 3_600_000 },
-          retentionMilliseconds: 3_600_000,
+          stale: { kind: 'outage', milliseconds: 86_400_000 },
+          retentionMilliseconds: 86_400_000,
         },
         rateGroup,
         retry: { kind: 'idempotent' },
@@ -480,8 +480,8 @@ describe('ESI operation policies', () => {
           kind: 'shared',
           collapse: true,
           revalidate: true,
-          stale: { kind: 'outage', milliseconds: 3_600_000 },
-          retentionMilliseconds: 3_600_000,
+          stale: { kind: 'outage', milliseconds: 86_400_000 },
+          retentionMilliseconds: 86_400_000,
         },
         rateGroup: {
           kind: 'declared',
@@ -538,7 +538,7 @@ describe('ESI operation policies', () => {
       cache: {
         kind: 'shared',
         revalidate: true,
-        stale: { kind: 'outage', milliseconds: 3_600_000 },
+        stale: { kind: 'outage', milliseconds: 86_400_000 },
       },
       retry: { kind: 'idempotent' },
     })

@@ -715,6 +715,33 @@ describe('ESI resilience layer', () => {
     )
   })
 
+  test('serves a private snapshot older than one hour during an outage', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorize())
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ...result({ name: 'cached' }),
+        meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=60' } },
+      })
+      .mockRejectedValueOnce(esiUnavailable())
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await vi.advanceTimersByTimeAsync(3_660_001)
+
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({
+      data: { name: 'cached' },
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(load).toHaveBeenCalledTimes(2)
+  })
+
   test('revalidates a registered generic operation before serving retained outage data', async () => {
     const definition = {
       sdkOperationId: 'GetCharactersCharacterIdWallet',

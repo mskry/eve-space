@@ -32,7 +32,7 @@ export interface SessionAccount {
 }
 
 export type OAuthStateContext =
-  | { intent: 'login' }
+  | { intent: 'login'; returnPath?: string }
   | { intent: 'attach'; userId: string }
   | { intent: 'reauthorize'; userId: string; characterId: number; returnPath?: string }
 
@@ -109,7 +109,10 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
     intent: context.intent,
     userId: context.intent === 'login' ? null : context.userId,
     characterId: context.intent === 'reauthorize' ? context.characterId : null,
-    returnPath: context.intent === 'reauthorize' ? (context.returnPath ?? null) : null,
+    returnPath:
+      context.intent === 'login' || context.intent === 'reauthorize'
+        ? (context.returnPath ?? null)
+        : null,
     expiresAt: new Date(Date.now() + oauthStateTtlMs),
   })
 }
@@ -126,7 +129,11 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
     })
 
   if (!record) return null
-  if (record.intent === 'login') return { intent: 'login' }
+  if (record.intent === 'login')
+    return {
+      intent: 'login',
+      ...(record.returnPath ? { returnPath: record.returnPath } : {}),
+    }
   if (record.intent === 'attach' && record.userId)
     return { intent: 'attach', userId: record.userId }
   if (record.intent === 'reauthorize' && record.userId && record.characterId)

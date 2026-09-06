@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { esiOperationCatalog } from '../../src/esi-resilience/catalog.js'
 import { ESI_CACHE_ENVELOPE_VERSION } from '../../src/esi-resilience/envelope.js'
 import { probeEsiResilienceTelemetry } from '../../src/esi-resilience/telemetry.js'
@@ -10,21 +10,49 @@ import {
   recordCacheConnectionError,
 } from '../../src/esi-resilience/telemetry-counters.js'
 
+const operationalObservation = { status: 'operational' as const }
+
 describe('ESI resilience telemetry', () => {
+  test('starts dependency probes before a pending upstream observation settles', async () => {
+    let resolveObservation!: (observation: typeof operationalObservation) => void
+    const observationPending = new Promise<typeof operationalObservation>((resolve) => {
+      resolveObservation = resolve
+    })
+    const dependencies = availableDependencies()
+    const probeCache = vi.fn(dependencies.probeCache)
+    const probeCoordination = vi.fn(dependencies.probeCoordination)
+
+    const telemetryPending = probeEsiResilienceTelemetry(observationPending, {
+      ...dependencies,
+      probeCache,
+      probeCoordination,
+    })
+
+    expect(probeCache).toHaveBeenCalledOnce()
+    expect(probeCoordination).toHaveBeenCalledOnce()
+
+    resolveObservation(operationalObservation)
+    await expect(telemetryPending).resolves.toMatchObject({
+      upstream: { status: 'operational' },
+    })
+  })
+
   test('marks dependency failures degraded before three consecutive failed probes mark them unavailable', async () => {
     const dependencies = {
       probeCache: async () => false,
       probeCoordination: async () => false,
     }
 
-    await expect(probeEsiResilienceTelemetry(dependencies)).resolves.toMatchObject({
+    await expect(
+      probeEsiResilienceTelemetry(operationalObservation, dependencies),
+    ).resolves.toMatchObject({
       cache: { status: 'degraded' },
       coordination: { status: 'degraded' },
       cooldown: { status: 'unavailable' },
-      upstream: { status: 'unavailable' },
+      upstream: { status: 'operational' },
     })
-    await probeEsiResilienceTelemetry(dependencies)
-    const telemetry = await probeEsiResilienceTelemetry(dependencies)
+    await probeEsiResilienceTelemetry(operationalObservation, dependencies)
+    const telemetry = await probeEsiResilienceTelemetry(operationalObservation, dependencies)
 
     expect(telemetry).toMatchObject({
       cache: { status: 'unavailable' },
@@ -44,7 +72,7 @@ describe('ESI resilience telemetry', () => {
         key.endsWith(':status') ? { success: '3', checkedAt: '2026-08-20T12:00:00.000Z' } : {},
     }
 
-    const telemetry = await probeEsiResilienceTelemetry({
+    const telemetry = await probeEsiResilienceTelemetry(operationalObservation, {
       probeCache: async () => true,
       probeCoordination: async () => true,
       cacheConnection: cacheConnection as never,
@@ -116,7 +144,7 @@ describe('ESI resilience telemetry', () => {
     const coordinationConnection = { mget: async () => [], get: async () => null }
     const cacheConnection = { hgetall: async () => ({}) }
 
-    const telemetry = await probeEsiResilienceTelemetry({
+    const telemetry = await probeEsiResilienceTelemetry(operationalObservation, {
       probeCache: async () => true,
       probeCoordination: async () => true,
       cacheConnection: cacheConnection as never,
@@ -137,13 +165,13 @@ describe('ESI resilience telemetry', () => {
       probeCoordination: async () => false,
       cacheConnection: { hgetall: async () => ({}) } as never,
     }
-    const before = await probeEsiResilienceTelemetry(dependencies)
+    const before = await probeEsiResilienceTelemetry(operationalObservation, dependencies)
 
     recordEsiCacheEnvelopeRejection({ success: false, reason: 'versionMismatch', found: 2 })
     recordEsiCacheEnvelopeRejection({ success: false, reason: 'invalidShape' })
     recordEsiCacheEnvelopeRejection({ success: false, reason: 'invalidShape' })
 
-    const after = await probeEsiResilienceTelemetry(dependencies)
+    const after = await probeEsiResilienceTelemetry(operationalObservation, dependencies)
     expect(after.cache.envelopeRejections).toEqual({
       versionMismatch: before.cache.envelopeRejections.versionMismatch + 1,
       invalidShape: before.cache.envelopeRejections.invalidShape + 2,
@@ -159,7 +187,7 @@ describe('ESI resilience telemetry', () => {
   })
 
   test('reports cache telemetry independently when coordination is unavailable', async () => {
-    const telemetry = await probeEsiResilienceTelemetry({
+    const telemetry = await probeEsiResilienceTelemetry(operationalObservation, {
       probeCache: async () => true,
       probeCoordination: async () => false,
       cacheConnection: { hgetall: async () => ({}) } as never,
@@ -169,9 +197,49 @@ describe('ESI resilience telemetry', () => {
     expect(telemetry.upstream.status).toBe('operational')
   })
 
+  test('reports a stale upstream-unavailable observation as unavailable', async () => {
+    const telemetry = await probeEsiResilienceTelemetry(
+      { status: 'stale', refreshFailureClass: 'esi-unavailable' },
+      availableDependencies(),
+    )
+
+    expect(telemetry.upstream.status).toBe('unavailable')
+  })
+
+  test('reports a stale cooldown observation as degraded', async () => {
+    const telemetry = await probeEsiResilienceTelemetry(
+      { status: 'stale', refreshFailureClass: 'esi-cooldown' },
+      availableDependencies(),
+    )
+
+    expect(telemetry.upstream.status).toBe('degraded')
+  })
+
+  test('reports a directly degraded observation as degraded', async () => {
+    const telemetry = await probeEsiResilienceTelemetry(
+      { status: 'degraded' },
+      availableDependencies(),
+    )
+
+    expect(telemetry.upstream.status).toBe('degraded')
+  })
+
+  test('preserves probe impairment while the telemetry store is readable', async () => {
+    const telemetry = await probeEsiResilienceTelemetry(
+      { status: 'unavailable' },
+      availableDependencies(),
+    )
+
+    expect(telemetry.upstream).toMatchObject({
+      status: 'unavailable',
+      operations: expect.any(Array),
+    })
+    expect(telemetry.upstream.operations).toHaveLength(Object.keys(esiOperationCatalog).length)
+  })
+
   test('reports request-path coordination failures without corrupting probe streaks', async () => {
     recordEsiCoordinationFailure()
-    const telemetry = await probeEsiResilienceTelemetry({
+    const telemetry = await probeEsiResilienceTelemetry(operationalObservation, {
       probeCache: async () => true,
       probeCoordination: async () => true,
       cacheConnection: { hgetall: async () => ({}) } as never,
@@ -186,7 +254,7 @@ describe('ESI resilience telemetry', () => {
 
   test('reports sanitized cache connection error counts', async () => {
     recordCacheConnectionError('ECONNREFUSED')
-    const telemetry = await probeEsiResilienceTelemetry({
+    const telemetry = await probeEsiResilienceTelemetry(operationalObservation, {
       probeCache: async () => true,
       probeCoordination: async () => true,
       cacheConnection: { hgetall: async () => ({}) } as never,
@@ -196,3 +264,12 @@ describe('ESI resilience telemetry', () => {
     expect(telemetry.cache.connectionErrors).toMatchObject({ ECONNREFUSED: 1 })
   })
 })
+
+function availableDependencies() {
+  return {
+    probeCache: async () => true,
+    probeCoordination: async () => true,
+    cacheConnection: { hgetall: async () => ({}) } as never,
+    coordinationConnection: { mget: async () => [], get: async () => null } as never,
+  }
+}

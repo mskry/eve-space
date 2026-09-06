@@ -6,8 +6,10 @@ definePageMeta({
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
+const route = useRoute()
 const { authConfig, authFeedback, authFeedbackIsError, authLoading, authSession, logout } =
   useAuthSession(apiClient)
+const loginUrl = computed(() => getAuthLoginUrl(authConfig.value.loginUrl, route.query.redirect))
 
 async function handleLogout() {
   await logout()
@@ -56,7 +58,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
     </div>
 
     <div v-else-if="authConfig?.configured" class="auth-connect">
-      <a class="eve-login" :href="authConfig.loginUrl">
+      <a class="eve-login" :href="loginUrl">
         <img
           src="https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-white-large.png"
           alt="Log in with EVE Online"
