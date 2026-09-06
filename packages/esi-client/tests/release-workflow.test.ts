@@ -48,6 +48,7 @@ describe('ESI client trusted publication workflow', () => {
     expect(publish).toContain('needs: validate');
     expect(publish).toContain('environment: npm');
     expect(publish).toContain("node-version-file: '.node-version'");
+    expect(publish).toContain("registry-url: 'https://registry.npmjs.org'");
     expect(publish).toContain('actions/download-artifact@v4');
     expect(publish).toContain('Require npm 11.5.1 or newer');
     expect(workflow.match(/name: esi-client-release-candidate/g)).toHaveLength(2);
