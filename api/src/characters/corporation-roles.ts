@@ -1,8 +1,8 @@
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
-import type { GetCharactersCharacterIdRolesOutput } from '@evespace/esi-client/schemas'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import type { GetCharactersCharacterIdRolesResponse } from '@evespace/esi-client/types'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 
 export const characterCorporationRolesScope = getCharacterEsiScope('character-corporation-roles')
 
@@ -34,7 +34,7 @@ export async function getCharacterCorporationRoles(
 }
 
 function mapCharacterCorporationRoles(
-  result: GetCharactersCharacterIdRolesOutput,
+  result: GetCharactersCharacterIdRolesResponse,
 ): CharacterCorporationRoles {
   return {
     roles: result.roles ?? [],

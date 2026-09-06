@@ -90,6 +90,49 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 - Mark independent asynchronous plugins with `parallel: true`; leave ordering dependencies explicit rather than relying on incidental registration order.
 - Use `.client`/`.server` plugin suffixes for environment-specific behavior and keep browser-only side effects out of universal plugins.
 
+## Module Organization
+
+These rules apply to every source directory. A directory is flat by default: sibling modules with no `index.ts` barrel, as in `api/src/queue` and `api/src/platform`. Adopt subdirectories or a façade repository-wide rather than in one directory.
+
+### Dependency Direction
+
+- Every source directory has a dependency direction: pure types and utilities, then domain contracts and their validation, then adapters that own a connection or socket, then orchestration, with observability readable from all of them. Add a file at the tier its imports already imply.
+- Keep the pure tiers pure. Type, key-building, contract, envelope, and transformation modules must not import connection, transport, or client modules, so they stay unit-testable without Redis, PostgreSQL, or network access.
+- A module that owns a connection or socket must not import an orchestration module. Orchestration depends on adapters, never the reverse.
+- Observability modules such as telemetry, metrics, and measurement recorders may be imported from any tier, and must not import orchestration.
+- Module-level mutable state is a boundary. Give counters, in-process caches, and degraded-mode fallback state their own module rather than interleaving them with the code that reads them, so they can be reset and asserted in isolation.
+- Document a directory's intended tier order here when file names do not make it obvious, and enforce a boundary worth keeping through a `scripts/verify-*` check rather than through review.
+
+#### ESI Resilience Tiers
+
+`api/src/esi-resilience` uses these ownership tiers:
+
+- Support: `numeric.ts` and `timing.ts`. These import no other ESI resilience modules.
+- Representation: `types.ts`, `keys.ts`, `identity.ts`, `envelope.ts`, `l1-cache.ts`, and `cache-redaction.ts`.
+- Contract: `operation-metadata.ts`, `catalog-validation.ts`, `contract-types.ts`, `catalog.ts`, `catalog-access.ts`, and `policy.ts`.
+- Infrastructure: `cache-redis.ts`, `coordination.ts`, and `transport.ts`. These own connections, sockets, and raw transport behavior.
+- Execution: `layer.ts`, `resource-revision.ts`, `cooldowns.ts`, `permits.ts`, `local-quota.ts`, `errors.ts`, `module-operation-dispatcher.ts`, and `request-transport.ts`.
+- Observability: `telemetry.ts`, `telemetry-counters.ts`, `rate-measurement.ts`, and `result-metadata.ts`. These may read lower tiers but must not own execution.
+
+Representation and contract form the pure tier group: they may depend on support and each other, but never on infrastructure. Infrastructure may depend on the pure tiers but never on execution. Execution orchestrates infrastructure and the pure tiers.
+
+Observability recording is the standard dependency-direction exception. Any tier may emit through a recorder-only observability leaf, and observability may read the lower tiers. In particular, `resource-revision.ts` may import `telemetry-counters.ts`; injecting that recorder would add indirection without changing the boundary. Recorder-only modules must not import execution, which prevents this exception from creating a cycle.
+
+`scripts/verify-esi-resilience-boundaries.ts` enforces each tier's allowed dependency destinations and requires every ESI resilience module to declare a tier.
+
+### File Composition
+
+- Order every module: imports, module constants, exported types and interfaces, the primary export (the class or entry function), remaining exports, then non-exported helpers.
+- Place each non-exported helper below its first caller and keep leaf helpers last, so a file reads top-down from its entry point.
+- If a file needs a banner or section comment to separate its parts, split it into one file per part instead.
+
+### Shared Helpers
+
+- Promote a helper the moment a second file needs it, and import it from the module that owns it. Do not copy it, and do not re-export it from whichever caller uses it most.
+- Promote to the narrowest shared scope: a leaf module in the same directory first, and a repository-level module such as `api/src/type-guards.ts` only when callers span directories.
+- A leaf helper module holds one kind of helper and imports nothing from its own directory.
+- Treat a helper duplicated across files, or one type declared twice under different names, as a defect to remove rather than a style preference.
+
 ## Runtime Architecture
 
 - Nuxt renders the UI and may fetch public API data during SSR. Browser-side auth and character-owned requests call Hono directly with credentials enabled.
@@ -97,7 +140,7 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 - Managed-organization identity, organization-version isolation, account compliance, role/group/block decisions, and organization authorization middleware are core security capabilities. Activity collection and presentation remain module-owned and cannot weaken the core gate.
 - A corporation deployment manages one corporation. An alliance deployment manages its current member corporations, but private roster and corporation-resource coverage requires a separate eligible data-source character in each corporation.
 - Changing the configured organization increments the organization version transactionally. Old-version grants, compliance, scheduling eligibility, and private snapshots must become unable to authorize current access while retained audit history remains attributable to its original version.
-- Queue/coordination Redis is a dedicated durable BullMQ instance: AOF with `appendfsync always`, `noeviction`, capacity health checks, and a persistent volume. It must remain separate from a future disposable cache Redis instance.
+- Queue/coordination Redis is a dedicated durable BullMQ instance: AOF with `appendfsync always`, `noeviction`, capacity health checks, and a persistent volume. It must remain separate from the disposable Cache Redis instance.
 - The worker is a separate Node process built from the `api` workspace. It never runs migrations or an HTTP socket, verifies its required database migration directly, and has a non-HTTP dependency healthcheck. Backlog age degrades `/api/status` but not worker liveness; restarting the worker cannot be the response to work only that worker can drain.
 - PostgreSQL `domain_events` rows are the acceptance and queue-loss recovery record for occurrence-based work. Material state and its event commit in one transaction; Redis jobs contain only the stable event ID.
 - Domain-event relay and worker execution are at-least-once. Every event consumer must persist by event ID or converge from current PostgreSQL state; provider delivery ledgers and RBAC audit retention belong to their own capabilities.
@@ -175,21 +218,26 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 ## ESI And Caching
 
 - Use `@evespace/esi-client` rather than ad hoc ESI fetch calls.
+- Core API code must construct generated SDK domain clients with `fetch: createEsiTransport(operation, principal?)`. Do not use the SDK default transport or call ESI through raw `fetch`; `scripts/verify-esi-egress.mjs` enforces this boundary. Feature server modules use platform ESI dispatch and must not import the SDK at runtime.
 - Discover endpoint paths, required scopes, route-specific cache behavior, and OpenAPI `x-rate-limit` metadata through the EVE API Explorer before implementing an ESI integration.
 - The reviewed organization operation catalog is recorded in `docs/organization-platform.md`. Re-review it before implementation when the requested compatibility date or SDK version changes.
+- Register every ESI call in the reviewed operation metadata and executable catalog, and bind it to the matching generated SDK operation descriptor. Preserve startup validation of operation IDs, compatibility dates, scopes, executable definitions, and catalog contracts.
 - Enrich character skills from local `sde_types` and `sde_groups` in one bounded query; retain ESI records with deterministic unknown labels when static rows are missing.
 - Preserve the configured identifiable ESI user agent and SDK response validation. Browser requests that must identify themselves use `X-User-Agent`; server requests use `User-Agent`.
 - Preserve `X-Compatibility-Date` on ESI requests. The compatibility date is not a future date and API changes take effect at 11:00 UTC.
-- Live `GetUniverseBloodlines` data can contain nullable `ship_type_id` values that conflict with the SDK 2.0.0 schema. Response validation is disabled only for that operation; do not broaden the exception.
+- Live `GetUniverseBloodlines` data can contain nullable `ship_type_id` values that conflict with the SDK 3.0.0 schema. Response validation is disabled only for that operation; do not broaden the exception.
 - `PostUniverseNames` can return `404 Ensure all IDs are valid before resolving` for an otherwise valid character that `GetCharactersCharacterId` returns successfully; character ID `90666561` was observed exhibiting this ESI inconsistency. Keep per-item positive caching for `PostUniverseNames` and `PostUniverseIds`, retain a stale successful value during bounded negative suppression, and never let a later `404` overwrite a previously resolved value.
-- Wallet cache expiry follows ESI `Expires` or `Cache-Control` metadata.
+- Cacheable ESI resources derive freshness from ESI `Expires` or `Cache-Control` metadata and use their reviewed operation contract only as the fallback when response metadata provides no usable boundary.
 - Preserve conditional requests using ETag or Last-Modified and reuse cached data on `304`.
 - Do not refresh ESI resources before their expiry. Respect `Expires`, `ETag`/`If-None-Match`, and `Last-Modified`; bypassing ESI caching can result in a ban.
 - Preserve concurrent request collapsing, `429` cooldowns using `Retry-After`, ESI error-budget cooldowns, and stale fallback behavior.
+- Distributed operation concurrency permits cover the complete upstream response body lifecycle. Keep renewing a permit until the body closes, errors, or is cancelled; fetch returning response headers is not completion. Preserve the configured request timeout and compose it with any caller cancellation signal.
 - Account for both ESI rate-limit systems: route-group floating-window buckets and the legacy global error limit. Do not operate at either limit; spread periodic work and slow down as `X-Ratelimit-Remaining` approaches zero.
 - Avoid preventable ESI errors: 2xx costs 2 bucket tokens, 3xx costs 1, 4xx costs 5 (except 429), and 5xx costs 0. Legacy error-limit headers are `X-ESI-Error-Limit-Remain` and `X-ESI-Error-Limit-Reset`.
 - For cursor-paginated routes, treat `before` and `after` tokens as opaque. Initial collection pages backward with `before`; persist the initial `after` token for incremental updates. Deduplicate by keeping existing records from `before` pages and replacing them from `after` pages.
 - Public and character-owned resource DTOs use bounded L1 plus disposable shared Cache Redis envelopes; private entries are generation-bound and are never served stale in normal operation.
+- Treat serialized Cache Redis envelopes as untrusted input. Reject malformed JSON, unsupported envelope versions, invalid shapes, incoherent freshness windows, mismatched authorization generations or resource revisions, and uncommitted fences as cache misses.
+- Cache Redis owns disposable shared envelopes and lossy ESI telemetry. Queue/coordination Redis owns durable cooldowns, concurrency permits, request-collapse leases, and fencing; do not move those responsibilities between Redis instances.
 - Private entries carry an outage-only stale window bounded by their retention. It is released solely when the refresh failure classifies as `esi-unavailable` or `esi-cooldown`, never on ordinary expiry or on `response-invalid`. Generation binding still applies, so a refreshed or revoked token invalidates the entry regardless.
 
 ## Persistence
@@ -202,7 +250,7 @@ These rules compile Nuxt 4's official best-practice guidance for [accessibility]
 
 ## Tooling And Verification
 
-- Required runtime: Node.js 22.18 or newer, ESM only.
+- Required runtime: Node.js 24.20 or newer, ESM only.
 - API TypeScript uses `NodeNext`; retain `.js` extensions in relative TypeScript imports.
 - pnpm is the only package manager for this repository. The root `pnpm-lock.yaml` is authoritative; do not add npm or Yarn lockfiles.
 - Use Corepack rather than a separately versioned global pnpm installation.

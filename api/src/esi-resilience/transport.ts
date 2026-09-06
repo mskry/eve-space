@@ -1,10 +1,5 @@
 import { env } from '../env.js'
 import { createProducerRedisConnection, type QueueRedisConnection } from '../queue/redis.js'
-import { getSharedCacheRedisConnection } from './cache-redis.js'
-import type { EsiOperation } from './catalog.js'
-import { acquireEsiRequestPermit, recordEsiResponse } from './cooldowns.js'
-import { recordEsiRateMeasurement } from './rate-measurement.js'
-import { recordEsiUpstreamOutcome } from './telemetry.js'
 
 let coordinationConnection: QueueRedisConnection | undefined
 
@@ -18,71 +13,49 @@ export class EsiTransportError extends Error {
   }
 }
 
-export function createEsiTransport(
-  operation: EsiOperation,
-  principal?: string,
+export function createRawEsiTransport(
+  options: { onResponseBodySettled?: () => void } = {},
 ): typeof globalThis.fetch {
   return async (input, init) => {
     const headers = new Headers(init?.headers)
     headers.set('User-Agent', env.ESI_USER_AGENT)
     headers.set('X-Compatibility-Date', env.ESI_COMPATIBILITY_DATE)
-    const permit = await acquireEsiRequestPermit({
-      connection: getCoordinationConnection(),
-      operation,
-      principal,
-      concurrency: env.ESI_OPERATION_CONCURRENCY,
-    })
-    const renewal = setInterval(() => {
-      void permit.renew().catch(() => {})
-    }, 15_000)
-    renewal.unref()
+    const timeoutSignal = AbortSignal.timeout(env.ESI_REQUEST_TIMEOUT_MS)
+    const callerSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined)
+    const signal = callerSignal ? AbortSignal.any([callerSignal, timeoutSignal]) : timeoutSignal
+    let response: Response
     try {
-      let response: Response
-      try {
-        response = await globalThis.fetch(input, { ...init, headers })
-      } catch (error) {
-        throw new EsiTransportError(error)
-      }
-      const cache = getSharedCacheRedisConnection()
-      void Promise.all([
-        recordEsiRateMeasurement(cache, {
-          operation,
-          principal,
-          status: response.status,
-        }),
-        recordEsiUpstreamOutcome(
-          cache,
-          operation,
-          response.status,
-          response.headers.get('x-ratelimit-group'),
-        ),
-      ]).catch(() => {})
-      await recordEsiResponse({
-        connection: getCoordinationConnection(),
-        operation,
-        principal,
-        status: response.status,
-        headers: response.headers,
-      }).catch(() => {})
-      return wrapEsiErrorResponseBody(response)
-    } finally {
-      clearInterval(renewal)
-      await permit.release().catch(() => {})
+      response = await globalThis.fetch(input, {
+        ...init,
+        headers,
+        signal,
+      })
+    } catch (error) {
+      throw new EsiTransportError(error)
     }
+    return wrapEsiResponseBody(response, options.onResponseBodySettled)
   }
 }
 
-function wrapEsiErrorResponseBody(response: Response) {
-  if (response.ok || !response.body) return response
-  return new Response(wrapStreamErrors(response.body, response.status), {
+function wrapEsiResponseBody(response: Response, onSettled?: () => void) {
+  if (!response.body) {
+    onSettled?.()
+    return response
+  }
+  return new Response(wrapStreamErrors(response.body, response.status, onSettled), {
     status: response.status,
     statusText: response.statusText,
     headers: response.headers,
   })
 }
 
-function wrapStreamErrors(body: ReadableStream<Uint8Array>, status: number) {
+function wrapStreamErrors(
+  body: ReadableStream<Uint8Array>,
+  status: number,
+  onSettled?: () => void,
+) {
   const reader = body.getReader()
+  if (onSettled) void reader.closed.then(onSettled, onSettled)
   let released = false
   const release = () => {
     if (released) return

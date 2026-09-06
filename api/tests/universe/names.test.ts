@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { EsiHttpError } from '@evespace/esi-client'
 
 const mocks = vi.hoisted(() => ({
   getPublic: vi.fn(),
@@ -17,10 +18,10 @@ vi.mock('@evespace/esi-client/domains/universe', () => ({
     withMetadata: () => ({ resolveIds: mocks.resolveIds, resolveNames: mocks.resolveNames }),
   }),
 }))
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.getPublic }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 vi.mock('../../src/universe/resolution-cache.js', () => ({
   readUniverseIds: mocks.readUniverseIds,
   readUniverseNames: mocks.readUniverseNames,
@@ -31,6 +32,11 @@ vi.mock('../../src/universe/resolution-cache.js', () => ({
 }))
 
 const emptyCache = () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() })
+const postUniverseNamesCharacter90666561Fixture = {
+  id: 90_666_561,
+  error: 'Ensure all IDs are valid before resolving',
+  cached: { category: 'character', id: 90_666_561, name: 'CCP Bartender' },
+} as const
 
 beforeEach(() => {
   mocks.readUniverseIds.mockImplementation(emptyCache)
@@ -66,6 +72,23 @@ describe('universe name resolver', () => {
       body: [2, 1],
       ifNoneMatch: '"names"',
     })
+  })
+
+  test('bounds concurrent resolution batches', async () => {
+    let active = 0
+    let maximumActive = 0
+    mocks.resolveNames.mockImplementation(async ({ body }: { body: number[] }) => {
+      active += 1
+      maximumActive = Math.max(maximumActive, active)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      active -= 1
+      return response(body.map((id) => ({ category: 'station', id, name: `Station ${id}` })))
+    })
+    const { resolveUniverseNames } = await import('../../src/universe/names.js')
+
+    await resolveUniverseNames(Array.from({ length: 2_501 }, (_, index) => index + 1))
+
+    expect(maximumActive).toBe(4)
   })
 
   test('splits only unavailable identifier batches', async () => {
@@ -132,6 +155,44 @@ describe('universe name resolver', () => {
     expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([2])
   })
 
+  test('PostUniverseNames 90666561 retains stale success and never overwrites it after the exact structured 404', async () => {
+    mocks.readUniverseNames.mockResolvedValue({
+      fresh: new Map(),
+      stale: new Map([
+        [
+          postUniverseNamesCharacter90666561Fixture.id,
+          postUniverseNamesCharacter90666561Fixture.cached,
+        ],
+      ]),
+      suppressed: new Set(),
+    })
+    mocks.resolveNames.mockRejectedValue(
+      new EsiHttpError({
+        operationId: 'PostUniverseNames',
+        status: 404,
+        responseBodyText: JSON.stringify({
+          error: postUniverseNamesCharacter90666561Fixture.error,
+        }),
+      }),
+    )
+    const { resolveUniverseNames } = await import('../../src/universe/names.js')
+
+    await expect(
+      resolveUniverseNames([postUniverseNamesCharacter90666561Fixture.id]),
+    ).resolves.toEqual(
+      new Map([
+        [
+          postUniverseNamesCharacter90666561Fixture.id,
+          postUniverseNamesCharacter90666561Fixture.cached,
+        ],
+      ]),
+    )
+    expect(mocks.writeUniverseNames).not.toHaveBeenCalled()
+    expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([
+      postUniverseNamesCharacter90666561Fixture.id,
+    ])
+  })
+
   test('records missing IDs before rethrowing a sibling split failure', async () => {
     mocks.resolveNames.mockImplementation(async ({ body }: { body: number[] }) => {
       if (body.length > 1) throw Object.assign(new Error('Unavailable identifier'), { status: 404 })
@@ -142,6 +203,23 @@ describe('universe name resolver', () => {
 
     await expect(resolveUniverseNames([1, 2])).rejects.toMatchObject({ status: 503 })
     expect(mocks.suppressUniverseNameIds).toHaveBeenCalledWith([1])
+  })
+
+  test('offers successful name batches to best-effort enrichment when another batch fails', async () => {
+    mocks.resolveNames.mockImplementation(async ({ body }: { body: number[] }) => {
+      if (body[0] === 501) throw Object.assign(new Error('Unavailable'), { status: 503 })
+      return response(body.map((id) => ({ category: 'station', id, name: `Station ${id}` })))
+    })
+    const { resolveUniverseNamesBestEffort } = await import('../../src/universe/names.js')
+
+    const result = await resolveUniverseNamesBestEffort(
+      Array.from({ length: 501 }, (_, index) => index + 1),
+    )
+
+    expect(result.complete).toBe(false)
+    expect(result.names.size).toBe(500)
+    expect(result.names.get(1)?.name).toBe('Station 1')
+    expect(result.names.has(501)).toBe(false)
   })
 
   test('does not refresh per-item entries from a stale aggregate response', async () => {

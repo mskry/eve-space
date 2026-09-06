@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import CharacterSkillsCatalogue from '../../app/components/character/skills/Catalogue.vue'
+import CharacterSkillsGroupIcon from '../../app/components/character/skills/GroupIcon.vue'
 import CharacterSkillsQueue from '../../app/components/character/skills/Queue.vue'
 import CharacterSkillsSummaryCard from '../../app/components/character/skills/SummaryCard.vue'
 import type {
@@ -8,6 +9,7 @@ import type {
   CharacterSkillQueue,
   CharacterSkills,
 } from '../../app/queries/characters'
+import { skillGroupIconNames } from '../../app/utils/skill-group-icons'
 
 const mountedWrappers: { unmount: () => void }[] = []
 const skills = {
@@ -178,18 +180,45 @@ function trainingQueue(): CharacterSkillQueue {
 
 afterEach(() => {
   for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  vi.useRealTimers()
 })
 
 describe('character Skills components', () => {
-  it('filters the catalogue through native labelled groups', async () => {
+  it('renders a distinct glyph for every published skill group and the unknown fallback', async () => {
+    const wrapper = await mountSuspended(CharacterSkillsGroupIcon, {
+      props: { name: 'unknown' },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    const svg = wrapper.get('svg')
+    const glyphs = new Set<string>()
+
+    expect(svg.attributes('viewBox')).toBe('0 0 24 24')
+    expect(svg.attributes('fill')).toBe('none')
+    expect(svg.attributes('aria-hidden')).toBe('true')
+
+    for (const name of [...skillGroupIconNames, 'unknown'] as const) {
+      await wrapper.setProps({ name })
+      expect(svg.element.children.length).toBeGreaterThan(0)
+      glyphs.add(svg.element.innerHTML)
+    }
+
+    expect(glyphs.size).toBe(skillGroupIconNames.length + 1)
+    expect(wrapper.get('circle').attributes('r')).toBe('8.6')
+  })
+
+  it('filters the catalogue through labelled groups', async () => {
     const wrapper = await mountSuspended(CharacterSkillsCatalogue, {
       props: { skillQueue: undefined, skillQueueStatus: 'idle', skills },
       route: false,
     })
     mountedWrappers.push(wrapper)
 
-    expect(wrapper.get('.skills-level-filter').element.tagName).toBe('FIELDSET')
-    expect(wrapper.get('.skills-level-filter legend').text()).toBe('Filter skills by trained level')
+    expect(wrapper.get('.skills-level-filter').attributes('role')).toBe('group')
+    expect(wrapper.get('.skills-level-filter').attributes('aria-label')).toBe(
+      'Filter skills by trained level',
+    )
+    expect(wrapper.get('.skills-level-filter [data-state="on"]').text()).toBe('ALL')
     expect(wrapper.get('.skill-group-chips').element.tagName).toBe('FIELDSET')
     expect(wrapper.findAll('.skill-row')).toHaveLength(3)
     expect(wrapper.get('.skill-group-chip.is-selected').text()).toContain('Gunnery')
@@ -409,9 +438,12 @@ describe('character Skills components', () => {
     const status = wrapper.get('.skills-match-status')
     const announcement = wrapper.get('.skills-result-announcement')
     const queuedOnly = wrapper.get('.skills-queued-filter')
+    expect(queuedOnly.classes()).toContain('ui-toggle-group-item')
+    expect(queuedOnly.attributes('data-state')).toBe('off')
     expect(queuedOnly.attributes('aria-pressed')).toBe('false')
 
     await queuedOnly.trigger('click')
+    expect(queuedOnly.attributes('data-state')).toBe('on')
     expect(queuedOnly.attributes('aria-pressed')).toBe('true')
     expect(status.text()).toBe('3 SKILLS / 2 GROUPS')
     expect(announcement.text()).toBe('3 CATALOGUE SKILLS ACROSS 2 GROUPS')
@@ -452,6 +484,7 @@ describe('character Skills components', () => {
         message: '',
         skillQueue,
         status: 'idle',
+        unallocatedSp: 100_000,
       },
       route: false,
     })
@@ -459,23 +492,32 @@ describe('character Skills components', () => {
     expect(queue.text()).toContain('Weapon Upgrades')
   })
 
-  it('renders native progress and a compact queue authorization state', async () => {
+  it('renders training metadata and a compact queue authorization state', async () => {
     const wrapper = await mountSuspended(CharacterSkillsQueue, {
       props: {
         authorizeUrl: '',
         message: '',
         skillQueue: trainingQueue(),
         status: 'idle',
+        unallocatedSp: 100_000,
       },
       route: false,
     })
     mountedWrappers.push(wrapper)
 
-    const progress = wrapper.get('progress')
-    expect(progress.attributes('max')).toBe('100')
-    expect(Number(progress.attributes('value'))).toBeGreaterThan(0)
-    expect(wrapper.text()).toContain('SP/MIN')
-    expect(wrapper.text()).not.toContain('OMEGA SP/MIN')
+    expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('SP/MIN')
+    expect(wrapper.find('.skill-queue-current-meta').exists()).toBe(false)
+    expect(wrapper.find('.skill-queue-unallocated strong').exists()).toBe(true)
+    expect(wrapper.find('.skill-queue-unallocated-label').exists()).toBe(true)
+    const activeLevelCells = wrapper.findAll('.skill-queue-current-levels i')
+    expect(activeLevelCells).toHaveLength(5)
+    expect(
+      activeLevelCells.slice(0, 4).every((cell) => cell.classes().includes('is-trained')),
+    ).toBe(true)
+    expect(activeLevelCells[4]?.classes()).toContain('is-active')
+    expect(wrapper.find('.skill-queue-sp-summary').exists()).toBe(true)
+    expect(wrapper.find('.skill-queue-sp-summary strong').exists()).toBe(false)
     expect(wrapper.text()).toContain('3/50')
 
     await wrapper.setProps({
@@ -484,10 +526,8 @@ describe('character Skills components', () => {
       skillQueue: undefined,
       status: 'scope-required',
     })
-    expect(wrapper.get('.character-authorization-state').classes()).toContain(
-      'character-authorization-state--compact',
-    )
-    expect(wrapper.get('.character-authorization-state a').attributes('href')).toBe('/reauthorize')
+    expect(wrapper.get('.esi-authorization-required a').attributes('href')).toBe('/reauthorize')
+    expect(wrapper.find('.skill-queue-unallocated').exists()).toBe(true)
   })
 
   it('shows summary attributes and retains independent retry behavior', async () => {
@@ -504,8 +544,9 @@ describe('character Skills components', () => {
     mountedWrappers.push(wrapper)
 
     expect(wrapper.text()).toContain('1,500,000 SP')
-    expect(wrapper.text()).toContain('REMAPS AVAILABLE: 1')
-    expect(wrapper.findAll('.skills-hero-stats dd')[1]?.text()).toBe('2')
+    expect(wrapper.text()).not.toContain('UNALLOCATED')
+    expect(wrapper.text()).not.toContain('AT LEVEL V')
+    expect(wrapper.get('.character-summary-stats dd').text()).toBe('1')
     expect(wrapper.findAll('.skill-attribute-cells > div')).toHaveLength(5)
 
     await wrapper.setProps({

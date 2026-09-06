@@ -37,9 +37,12 @@ describe('RecordSectionNavigation', () => {
     expect(links[0]?.classes()).not.toContain('is-current')
     expect(links[1]?.attributes('aria-current')).toBe('page')
     expect(links[1]?.classes()).toContain('is-current')
+    expect(wrapper.get('.record-section-navigation-indicator').attributes('aria-hidden')).toBe(
+      'true',
+    )
   })
 
-  it('keeps entries keyboard focusable and emits focus intent', async () => {
+  it('emits preload intent for pointer and keyboard navigation', async () => {
     currentRoute.path = '/characters/42'
     const wrapper = await mountSuspended(RecordSectionNavigation, {
       attachTo: document.body,
@@ -50,13 +53,18 @@ describe('RecordSectionNavigation', () => {
     mountedWrappers.push(wrapper)
 
     const historyLink = wrapper.findAll('a')[1]
-    expect(wrapper.findAllComponents(RouterLinkStub)[1]?.props('to')).toBe('/characters/42/history')
+    const historyLinkComponent = wrapper.findAllComponents(RouterLinkStub)[1]
+    expect(historyLinkComponent?.props('to')).toBe('/characters/42/history')
+    expect(historyLinkComponent?.attributes('prefetch-on')).toBe('interaction')
+
+    await historyLink?.trigger('pointerenter')
+    expect(wrapper.emitted('intent')?.[0]?.[0]).toEqual(entries[1])
 
     historyLink?.element.focus()
     await historyLink?.trigger('focus')
 
     expect(document.activeElement).toBe(historyLink?.element)
-    expect(wrapper.emitted('intent')?.[0]?.[0]).toEqual(entries[1])
+    expect(wrapper.emitted('intent')?.[1]?.[0]).toEqual(entries[1])
   })
 
   it('renders additional contributed sections without assuming a fixed count', async () => {
@@ -64,7 +72,7 @@ describe('RecordSectionNavigation', () => {
     const extendedEntries = [
       ...entries,
       { id: 'skills', label: 'SKILLS', to: '/characters/42/skills' },
-      { id: 'wallet', label: 'WALLET', to: '/characters/42/wallet' },
+      { id: 'finance', label: 'FINANCE', to: '/characters/42/finance' },
       { id: 'mail', label: 'MAIL', to: '/characters/42/mail' },
       {
         id: 'module-intelligence',

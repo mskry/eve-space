@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
     get: vi.fn(),
     smembers: vi.fn(),
     mget: vi.fn(),
+    info: vi.fn(),
+    config: vi.fn(),
   },
   queue: {
     close: vi.fn(),
@@ -40,11 +42,15 @@ beforeEach(() => {
   mocks.connection.get.mockReset()
   mocks.connection.smembers.mockReset()
   mocks.connection.mget.mockReset()
+  mocks.connection.info.mockReset()
+  mocks.connection.config.mockReset()
   mocks.queue.close.mockReset()
   mocks.queue.getJobCounts.mockReset()
   mocks.queue.getJobs.mockReset()
   mocks.close.mockReset()
   mocks.connection.ping.mockResolvedValue('PONG')
+  mocks.connection.info.mockResolvedValue('# Memory\r\nused_memory:53687091\r\n')
+  mocks.connection.config.mockResolvedValue(['maxmemory', '536870912'])
   withHeartbeats({ 'worker-a': '2026-08-20T12:00:00.000Z' })
   mocks.connection.get
     .mockResolvedValueOnce(null)
@@ -93,6 +99,9 @@ describe('queue telemetry probe', () => {
       active: 3,
       retrying: 1,
       failed: 4,
+      memoryUsedBytes: 53_687_091,
+      memoryMaxBytes: 536_870_912,
+      memoryUsedPercent: 10,
       plannerPaused: false,
       outboxRelayPaused: false,
       latestOutboxRelayOutcome: {
@@ -126,6 +135,9 @@ describe('queue telemetry probe', () => {
       active: null,
       retrying: null,
       failed: null,
+      memoryUsedBytes: null,
+      memoryMaxBytes: null,
+      memoryUsedPercent: null,
       plannerPaused: false,
       outboxRelayPaused: false,
       latestOutboxRelayOutcome: null,
@@ -168,6 +180,21 @@ describe('queue telemetry probe', () => {
       status: 'degraded',
       retrying: 0,
       workerHeartbeatAt: 'not-a-date',
+    })
+  })
+
+  test('degrades before queue Redis reaches its noeviction limit', async () => {
+    withHeartbeats({ 'worker-a': new Date().toISOString() })
+    mocks.connection.info.mockResolvedValue('# Memory\r\nused_memory:483183821\r\n')
+    mocks.queue.getJobCounts.mockResolvedValue({ waiting: 0, delayed: 0, active: 0, failed: 0 })
+    mocks.queue.getJobs.mockResolvedValue([])
+    const { probeQueueStatus } = await import('../../src/queue/status.js')
+
+    await expect(probeQueueStatus()).resolves.toMatchObject({
+      status: 'degraded',
+      memoryUsedBytes: 483_183_821,
+      memoryMaxBytes: 536_870_912,
+      memoryUsedPercent: 90,
     })
   })
 

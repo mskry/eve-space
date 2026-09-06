@@ -72,9 +72,12 @@ describe('UiToast', () => {
     expect(toastRules).not.toMatch(/#[\da-f]{3,8}\b|rgba?\(|hsla?\(|\[data-theme=/i)
   })
 
-  it('resolves toast palette tokens under both data-theme values', () => {
+  it('resolves toast palette tokens under every data-theme value', () => {
     const tokens = readWorkspaceFile('layers/ui/app/assets/css/tokens.css')
-    const voidTheme = tokens.match(/\[data-theme='void'\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const gallenteTheme = tokens.match(/\[data-theme='gallente'\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const amarrTheme = tokens.match(/\[data-theme='amarr'\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const caldariTheme = tokens.match(/\[data-theme='caldari'\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
+    const minmatarTheme = tokens.match(/\[data-theme='minmatar'\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
     const highSecTheme = tokens.match(/\[data-theme='high-sec'\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? ''
     const paletteTokens = [
       '--ui-border',
@@ -89,7 +92,10 @@ describe('UiToast', () => {
     ]
 
     for (const token of paletteTokens) {
-      expect(voidTheme, `${token} is missing from the void theme`).toContain(`${token}:`)
+      expect(gallenteTheme, `${token} is missing from the gallente theme`).toContain(`${token}:`)
+      expect(amarrTheme, `${token} is missing from the amarr theme`).toContain(`${token}:`)
+      expect(caldariTheme, `${token} is missing from the caldari theme`).toContain(`${token}:`)
+      expect(minmatarTheme, `${token} is missing from the minmatar theme`).toContain(`${token}:`)
       expect(highSecTheme, `${token} is missing from the high-sec theme`).toContain(`${token}:`)
     }
   })

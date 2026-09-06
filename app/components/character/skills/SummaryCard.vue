@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CharacterAttributes, CharacterSkills } from '../../../queries/characters'
+import type { EsiResourceState } from '../../../types/esi-resource'
 
 const props = defineProps<{
   skills: CharacterSkills
@@ -12,14 +13,6 @@ const props = defineProps<{
 const emit = defineEmits<{ retryAttributes: [] }>()
 
 const totalSpLabel = computed(() => props.skills.totalSp.toLocaleString('en-US'))
-const unallocatedSpLabel = computed(() => props.skills.unallocatedSp.toLocaleString('en-US'))
-const levelFiveCount = computed(() => {
-  let count = 0
-  for (const group of props.skills.groups) {
-    for (const skill of group.skills) if (skill.trainedLevel === 5) count += 1
-  }
-  return count
-})
 
 const attributeDefinitions = [
   { key: 'intelligence', label: 'INT' },
@@ -50,6 +43,31 @@ const remapAvailability = computed(() => {
     return { kind: 'cooldown' as const, date: cooldown }
   return { kind: 'available' as const }
 })
+const attributesResourceState = computed<EsiResourceState>(() => {
+  if (props.attributesStatus === 'loading') {
+    return { status: 'loading', title: '', message: 'Loading attributes...' }
+  }
+  if (props.attributesStatus === 'scope-required') {
+    return {
+      status: 'authorization-required',
+      code: 'ESI 403 / ATTRIBUTES',
+      title: 'Attributes not authorized',
+      message: props.attributesMessage,
+      action: props.attributesAuthorizeUrl
+        ? { href: props.attributesAuthorizeUrl, label: 'AUTHORIZE' }
+        : null,
+    }
+  }
+  if (props.attributesStatus === 'error') {
+    return {
+      status: 'error',
+      title: 'Attributes unavailable',
+      message: props.attributesMessage,
+      retryLabel: 'RETRY',
+    }
+  }
+  return { status: 'ready' }
+})
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('en-GB', {
@@ -64,7 +82,7 @@ function formatDate(value: string) {
 </script>
 
 <template>
-  <CharacterSummaryCard class="skills-hero">
+  <AppSummaryCard class="skills-hero">
     <template #icon>
       <UiEveImage kind="type-icon" :id="3300" :dimension="42" alt="" aria-hidden="true" />
     </template>
@@ -73,51 +91,54 @@ function formatDate(value: string) {
     <template #label>TOTAL SKILL POINTS</template>
 
     <div class="skills-hero-details">
-      <div class="skills-hero-metrics">
-        <dl class="skills-hero-stats">
-          <div>
-            <dt>UNALLOCATED</dt>
-            <dd class="is-primary">{{ unallocatedSpLabel }}</dd>
-          </div>
-          <div>
-            <dt>AT LEVEL V</dt>
-            <dd>{{ levelFiveCount }}</dd>
-          </div>
-        </dl>
-      </div>
+      <dl v-if="remapAvailability" class="character-summary-stats">
+        <div v-if="remapAvailability.kind === 'bonus'">
+          <dt>REMAPS AVAILABLE</dt>
+          <dd>{{ remapAvailability.count }}</dd>
+        </div>
+        <div v-else-if="remapAvailability.kind === 'cooldown'">
+          <dt>NEXT REMAP</dt>
+          <dd>
+            <time :datetime="remapAvailability.date">
+              {{ formatDate(remapAvailability.date) }}
+            </time>
+          </dd>
+        </div>
+        <div v-else>
+          <dt>REMAP</dt>
+          <dd>AVAILABLE</dd>
+        </div>
+      </dl>
 
-      <div class="skills-hero-profile" aria-labelledby="skill-attribute-band-title">
+      <div
+        class="skills-hero-profile"
+        aria-labelledby="skill-attribute-band-title"
+        :aria-busy="attributesStatus === 'loading'"
+      >
         <span id="skill-attribute-band-title" class="ui-eyebrow">ATTRIBUTES</span>
-        <p v-if="attributesStatus === 'scope-required'" class="skill-attribute-notice">
-          Attributes are not authorized.
-          <a v-if="attributesAuthorizeUrl" :href="attributesAuthorizeUrl">AUTHORIZE</a>
-        </p>
-        <p v-else-if="attributesStatus === 'error'" class="skill-attribute-notice">
-          {{ attributesMessage }}
-          <button type="button" @click="emit('retryAttributes')">RETRY</button>
-        </p>
-        <template v-else-if="attributes">
-          <dl class="skill-attribute-cells">
+        <EsiResourceBoundary
+          :state="attributesResourceState"
+          :has-data="Boolean(attributes)"
+          @retry="emit('retryAttributes')"
+        >
+          <template #loading>
+            <p class="skill-attribute-notice">Loading attributes...</p>
+          </template>
+          <template #error="{ state }">
+            <p class="skill-attribute-notice">
+              {{ state.message }}
+              <button type="button" @click="emit('retryAttributes')">RETRY</button>
+            </p>
+          </template>
+          <dl v-if="attributes" class="skill-attribute-cells">
             <div v-for="attribute in attributeCells" :key="attribute.key">
               <img :src="attribute.icon" alt="" aria-hidden="true" width="18" height="18" />
               <dt>{{ attribute.label }}</dt>
               <dd>{{ attribute.value }}</dd>
             </div>
           </dl>
-          <p v-if="remapAvailability" class="skill-attribute-remaps">
-            <template v-if="remapAvailability.kind === 'bonus'">
-              REMAPS AVAILABLE: {{ remapAvailability.count }}
-            </template>
-            <template v-else-if="remapAvailability.kind === 'cooldown'">
-              NEXT REMAP:
-              <time :datetime="remapAvailability.date">
-                {{ formatDate(remapAvailability.date) }}
-              </time>
-            </template>
-            <template v-else>REMAP: AVAILABLE</template>
-          </p>
-        </template>
+        </EsiResourceBoundary>
       </div>
     </div>
-  </CharacterSummaryCard>
+  </AppSummaryCard>
 </template>

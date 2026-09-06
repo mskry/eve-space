@@ -1,7 +1,7 @@
 import { createAllianceClient } from '@evespace/esi-client/domains/alliance'
 import type { CharacterCorporationRoles } from '../characters/corporation-roles.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 
 export interface OrganizationIdentity {
   organizationType: 'corporation' | 'alliance'

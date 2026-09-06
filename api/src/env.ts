@@ -20,6 +20,10 @@ const cronSchedule = z
   .string()
   .trim()
   .regex(/^(\S+\s+){4,5}\S+$/, 'Expected a five- or six-field cron schedule')
+const optionalEncryptionKey = optionalValue.refine(
+  (value) => value === undefined || /^[A-Za-z0-9+/]{43}=$/.test(value),
+  'Expected a base64-encoded 32-byte key',
+)
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -34,17 +38,19 @@ const schema = z.object({
   ESI_USER_AGENT: z
     .string()
     .min(1)
-    .default('EveSpace/0.1 (eve:Bandera Primary) @evespace/esi-client/2.0.0'),
+    .default('EveSpace/0.1 (eve:Bandera Primary) @evespace/esi-client/3.0.0'),
   ESI_COMPATIBILITY_DATE: z.iso.date().default('2026-08-23'),
-  TOKEN_ENCRYPTION_KEY: optionalValue,
+  TOKEN_ENCRYPTION_KEY: optionalEncryptionKey,
   EVE_SSO_TIMEOUT_MS: positiveInteger.default(15_000),
   TOKEN_REFRESH_LOCK_TIMEOUT_MS: positiveInteger.default(45_000),
   TOKEN_REFRESH_CONCURRENCY: positiveInteger.default(4),
   TOKEN_REFRESH_QUEUE_TIMEOUT_MS: positiveInteger.default(30_000),
   CACHE_REDIS_URL: redisUrl.default('redis://localhost:6380'),
   ESI_CACHE_L1_MAX_ENTRIES: positiveInteger.default(250),
+  ESI_PRIVATE_RETENTION_SECONDS: positiveInteger.default(86_400),
   ESI_CACHE_MAX_RETENTION_SECONDS: positiveInteger.default(86_400),
   MODULE_RUNTIME_CACHE_TTL_MS: positiveInteger.max(30_000).default(5_000),
+  ESI_REQUEST_TIMEOUT_MS: positiveInteger.default(30_000),
   ESI_OPERATION_CONCURRENCY: positiveInteger.default(6),
   ESI_OPERATION_QUEUE_TIMEOUT_MS: positiveInteger.default(30_000),
   AFFILIATION_ACTIVE_INTERVAL_SECONDS: positiveInteger.default(3_600),

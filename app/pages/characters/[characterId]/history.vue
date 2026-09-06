@@ -192,7 +192,7 @@ function formatDuration(milliseconds: number) {
       <p>ESI returned no corporation history records for this character.</p>
     </UiStatePanel>
     <template v-else>
-      <CharacterSummaryCard>
+      <AppSummaryCard>
         <template #icon>
           <UiEveImage kind="type-icon" :id="29205" :dimension="42" alt="" aria-hidden="true" />
         </template>
@@ -200,7 +200,7 @@ function formatDuration(milliseconds: number) {
         <template #value>{{ currentCorporation?.name ?? 'NO RECORDS' }}</template>
         <template #label>CURRENT CORPORATION</template>
 
-        <dl class="history-summary-stats">
+        <dl class="character-summary-stats">
           <div>
             <dt>RECORDS</dt>
             <dd>{{ timeline.length }}</dd>
@@ -239,7 +239,7 @@ function formatDuration(milliseconds: number) {
             </div>
           </UiTooltip>
         </dl>
-      </CharacterSummaryCard>
+      </AppSummaryCard>
       <SearchableHistoryTimeline
         :entries="searchableTimeline"
         entity-kind="corporation"

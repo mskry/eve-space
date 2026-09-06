@@ -11,9 +11,12 @@ import {
   characterSkillsQuery,
   type CharacterOverview,
 } from '../../app/queries/characters'
+import {
+  characterFinanceBalanceQuery,
+  characterFinanceTransactionsQuery,
+} from '../../app/queries/finance'
 import { removeCharacterQueries } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
-import { walletQuery, walletTransactionsQuery } from '../../app/queries/wallet'
 import { createApiClient } from '../../app/utils/api-client'
 import { ApiQueryError } from '../../app/utils/query-error'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
@@ -100,9 +103,12 @@ describe('protected character queries', () => {
       })
       queryCache.ensure(historyOptions)
       queryCache.setQueryData(historyOptions.key, { characterId, history: [] })
-      const transactionOptions = walletTransactionsQuery({
+      const transactionOptions = characterFinanceTransactionsQuery({
         apiClient: createApiClient('http://localhost'),
         characterId,
+        access: { isClient: true, authenticated: true, ownsCharacter: true },
+        requested: true,
+        fromId: null,
       })
       queryCache.ensure(transactionOptions)
       queryCache.setQueryData(transactionOptions.key, {
@@ -127,7 +133,9 @@ describe('protected character queries', () => {
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterOverview(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAttributes(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterHistory(7))).toBeUndefined()
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.walletTransactions(7))).toBeUndefined()
+    expect(
+      queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterFinanceTransactions(7)),
+    ).toBeUndefined()
     expect(
       queryCache.getQueryData(
         PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records'),
@@ -136,7 +144,9 @@ describe('protected character queries', () => {
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterOverview(8))).toBeDefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAttributes(8))).toBeDefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterHistory(8))).toBeDefined()
-    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.walletTransactions(8))).toBeDefined()
+    expect(
+      queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterFinanceTransactions(8)),
+    ).toBeDefined()
     expect(
       queryCache.getQueryData(
         PRIVATE_QUERY_KEYS.characterModuleResource(8, 'member-audit', 'records'),
@@ -161,7 +171,13 @@ describe('protected character queries', () => {
     const apiClient = createApiClient('http://localhost')
     const Root = defineComponent({
       setup() {
-        const result = useQuery(walletQuery({ apiClient, characterId: 7 }))
+        const result = useQuery(
+          characterFinanceBalanceQuery({
+            apiClient,
+            characterId: 7,
+            access: { isClient: true, authenticated: true, ownsCharacter: true },
+          }),
+        )
         return () => h('span', result.data.value?.stale ? result.data.value.validatedAt : 'loading')
       },
     })
@@ -189,7 +205,14 @@ describe('protected character queries', () => {
     const queryError = ref<Error | null>(null)
     const Root = defineComponent({
       setup() {
-        const result = useQuery({ ...walletQuery({ apiClient, characterId: 7 }), retry: 0 })
+        const result = useQuery({
+          ...characterFinanceBalanceQuery({
+            apiClient,
+            characterId: 7,
+            access: { isClient: true, authenticated: true, ownsCharacter: true },
+          }),
+          retry: 0,
+        })
         return () => {
           queryError.value = result.error.value
           return h('span')
@@ -202,7 +225,7 @@ describe('protected character queries', () => {
 
     expect(queryError.value).toMatchObject({
       status: 409,
-      code: 'WALLET_IDENTITY_MISMATCH',
+      code: 'FINANCE_IDENTITY_MISMATCH',
     })
     wrapper.unmount()
   })
@@ -214,6 +237,8 @@ describe('protected character queries', () => {
         requests()
         return HttpResponse.json({
           characterId: 7,
+          fromId: null,
+          nextFromId: null,
           transactions: [
             {
               transactionId: 1,
@@ -239,10 +264,15 @@ describe('protected character queries', () => {
     const enabled = ref(false)
     const Root = defineComponent({
       setup() {
-        const result = useQuery(() => ({
-          ...walletTransactionsQuery({ apiClient, characterId: 7 }),
-          enabled: enabled.value,
-        }))
+        const result = useQuery(() =>
+          characterFinanceTransactionsQuery({
+            apiClient,
+            characterId: 7,
+            access: { isClient: true, authenticated: true, ownsCharacter: true },
+            requested: enabled.value,
+            fromId: null,
+          }),
+        )
         return () => h('span', result.data.value?.transactions[0]?.typeName ?? 'not loaded')
       },
     })

@@ -41,6 +41,7 @@ describe('character mailbox', () => {
         apiClient: {} as never,
         authenticated: computed(() => true),
         characterId: computed(() => 7),
+        ownsCharacter: computed(() => true),
         createdLabels: ref([]),
         deletedLabelIds,
         deletedMailIds: ref(new Set()),

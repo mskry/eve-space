@@ -22,10 +22,10 @@ vi.mock('@evespace/esi-client/domains/skills', () => ({
   createSkillsClient: mocks.createSkillsClient,
 }))
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 const characterId = 1404328063
 const esiMetadata = {

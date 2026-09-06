@@ -5,10 +5,11 @@ import type {
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import {
-  getEsiOperationContract,
-  getExecutableEsiOperationDefinition,
-  type EsiOperation,
-} from '../esi-resilience/catalog.js'
+  getCharacterAuthorizationForLifecycle,
+  getCharacterCacheAuthorizationForLifecycle,
+} from '../auth/tokens.js'
+import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
+import type { EsiOperation } from '../esi-resilience/catalog.js'
 import {
   dispatchModuleEsiOperation,
   validateModuleEsiOperationInputs,
@@ -19,14 +20,16 @@ import {
 } from '../esi-resilience/identity.js'
 import {
   getEsiResilienceLayer,
+  type CharacterEsiExecutionResult,
   type CharacterEsiOperation,
   type PublicEsiOperation,
-} from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+} from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { platformResources } from './resources.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import { toPlatformResourceSubject } from './core-resources.js'
+import { getInstalledResourceEsiOperationDefinition } from './resource-declarations.js'
 import {
   guardInstalledResourceExecution,
   type PlatformResourceExecutionGuard,
@@ -53,6 +56,7 @@ interface ResourceOperationExecutorOptions {
   readonly definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
   readonly validateInputs?: typeof validateModuleEsiOperationInputs
   readonly dispatchOperation?: typeof dispatchModuleEsiOperation
+  readonly loadCharacterAuthorization?: typeof getCharacterAuthorizationForLifecycle
 }
 
 export async function executeInstalledResourceOperation(
@@ -78,7 +82,7 @@ export async function executeInstalledResourceOperation(
     PlatformResourceSubject
   >
   const operation = guarded.resource.operationId as EsiOperation
-  const definition = getExecutableEsiOperationDefinition(operation, options.definitions)
+  const definition = getInstalledResourceEsiOperationDefinition(operation, options.definitions)
   let inputs: Readonly<Record<string, unknown>>
   try {
     inputs = (options.validateInputs ?? validateModuleEsiOperationInputs)(
@@ -111,6 +115,7 @@ export async function executeInstalledResourceOperation(
       result: mapResourceResult(result, implementation, subject),
     }
   }
+  const requiredScope = policy.authorization.scope
 
   const authorization = guarded.authorization
   if (!authorization)
@@ -118,7 +123,9 @@ export async function executeInstalledResourceOperation(
       `Character resource ${identity.moduleId}/${identity.resourceId} lacks authorization`,
     )
   const authorizationCharacterId =
-    guarded.authorizationCharacterId ?? (subject.kind === 'character' ? subject.characterId : null)
+    guarded.authorizationCharacterId ??
+    guarded.characterId ??
+    (subject.kind === 'character' ? subject.characterId : null)
   const authorizationCharacterLifecycleId =
     guarded.authorizationCharacterLifecycleId ??
     (subject.kind === 'character' ? subject.lifecycleId : null)
@@ -127,30 +134,47 @@ export async function executeInstalledResourceOperation(
       `Character-authorized resource ${identity.moduleId}/${identity.resourceId} lacks an authorization source`,
     )
   const transportPrincipal = characterEsiPrincipal(authorizationCharacterId)
-  let result: EsiCachedResult<unknown>
+  let execution: CharacterEsiExecutionResult<unknown>
   try {
-    result = await resilience.getCharacterWithAuthorization(
+    execution = await resilience.getCharacterWithAuthorization(
       {
         operation: operation as CharacterEsiOperation,
         inputs,
-        load: (revalidation) =>
+        load: (authority, revalidation) =>
           (options.dispatchOperation ?? dispatchModuleEsiOperation)(definition, {
             inputs,
             authorization: {
               kind: 'character',
-              accessToken: authorization.accessToken,
+              accessToken: authority.accessToken,
             },
             revalidation,
-            transport: createEsiTransport(operation, transportPrincipal),
+            transport: createEsiTransport(operation, authority.principal),
           }),
       },
       {
-        kind: 'character',
-        principal: characterLifecycleEsiPrincipal(
-          authorizationCharacterId,
-          authorizationCharacterLifecycleId,
-        ),
-        generation: authorization.tokenVersion,
+        cacheAuthorization: {
+          kind: 'character',
+          principal: characterLifecycleEsiPrincipal(
+            authorizationCharacterId,
+            authorizationCharacterLifecycleId,
+          ),
+          generation: authorization.tokenVersion,
+        },
+        transportPrincipal,
+        resolve: () =>
+          (options.loadCharacterAuthorization ?? getCharacterAuthorizationForLifecycle)(
+            authorizationCharacterId,
+            authorizationCharacterLifecycleId,
+            requiredScope,
+          ),
+        recheckCacheAuthorization: async () =>
+          (
+            await getCharacterCacheAuthorizationForLifecycle(
+              authorizationCharacterId,
+              authorizationCharacterLifecycleId,
+              requiredScope,
+            )
+          ).tokenVersion,
       },
     )
   } catch (error) {
@@ -161,8 +185,8 @@ export async function executeInstalledResourceOperation(
     outcome: 'loaded',
     resource: guarded.resource,
     subject,
-    authorizationGeneration: authorization.tokenVersion,
-    result: mapResourceResult(result, implementation, subject),
+    authorizationGeneration: execution.authorizationGeneration,
+    result: mapResourceResult(execution.result, implementation, subject),
   }
 }
 

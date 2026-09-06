@@ -10,6 +10,29 @@ function source(path: string) {
 describe('character reauthorization transitions', () => {
   const shell = source('app/pages/characters/[characterId].vue')
 
+  it('prefetches each destination initial data without opening secondary Finance gates', () => {
+    const navigation = source('app/composables/useCharacterRecordNavigation.ts')
+    expect(navigation).toContain('characterSkillsQuery({')
+    expect(navigation).toContain('characterAttributesQuery({')
+    expect(navigation).toContain('characterSkillQueueQuery({')
+    expect(navigation).toContain("'core-character-clones': () =>")
+    expect(navigation).toContain('characterClonesQuery({')
+    expect(navigation).toContain('characterImplantsQuery({')
+    expect(navigation).toContain("'core-character-finance': () =>")
+    expect(navigation).toContain('characterFinanceBalanceQuery({')
+    expect(navigation).toContain('characterFinanceJournalQuery({')
+    expect(navigation).not.toContain('characterFinanceTransactionsQuery')
+    expect(navigation).not.toContain('characterFinanceOpenOrdersQuery')
+    expect(navigation).not.toContain('characterFinanceContractsQuery')
+    expect(navigation).toContain('characterHistoryQuery({')
+    expect(navigation).toContain('mailHeadersQuery({')
+    expect(navigation).toContain('mailLabelsQuery({')
+    expect(navigation).toContain('mailingListsQuery({')
+    expect(navigation).not.toContain('mailDetailQuery')
+    expect(navigation).not.toContain("'core-character-assets': () =>")
+    expect(navigation).not.toContain('characterAssetsQuery')
+  })
+
   it('keys the nested page by route without remounting for the callback parameter', () => {
     expect(shell).toContain('<NuxtPage :key="characterPageKey" />')
     expect(shell).toContain('router.resolve(routeLocationWithoutReauthorization()).fullPath')
@@ -47,10 +70,46 @@ describe('character reauthorization transitions', () => {
     expect(page).toContain(refresh)
   })
 
-  it('only refreshes requested wallet transactions', () => {
-    const wallet = source('app/pages/characters/[characterId]/wallet.vue')
-    expect(wallet).toContain('useCharacterReauthorization(characterId')
-    expect(wallet).toContain('walletQueryResult.refetch()')
-    expect(wallet).toContain('if (transactionsRequested.value) void transactionQuery.refetch()')
+  it('refreshes both independent Clones resources after reauthorization', () => {
+    const clones = source('app/pages/characters/[characterId]/clones.vue')
+    expect(clones).toContain('useCharacterReauthorization(characterId')
+    expect(clones).toContain('Promise.all([clonesQuery.refetch(), implantsQuery.refetch()])')
+  })
+
+  it('refreshes only Finance resources and details whose gates were opened', () => {
+    const finance = source('app/pages/characters/[characterId]/finance.vue')
+    const services = source('app/composables/useCharacterFinanceServices.ts')
+    const details = source('app/composables/useCharacterFinanceContractDetail.ts')
+    expect(finance).toContain('useCharacterReauthorization(characterId, refreshRequestedFinance)')
+    expect(services).toContain('const refreshes: Promise<unknown>[] = [balanceQuery.refetch()]')
+    for (const gate of [
+      'journalRequested',
+      'transactionsRequested',
+      'openOrdersRequested',
+      'orderHistoryRequested',
+      'contractsRequested',
+    ]) {
+      expect(services).toContain(`if (${gate}.value)`)
+    }
+    expect(details).toContain('for (const { contractId, contractPage } of openedItemDetails.value)')
+    expect(details).toContain('for (const { contractId, contractPage } of openedBidDetails.value)')
+  })
+
+  it('opens the order-history request gate only when history mode is selected', () => {
+    const services = source('app/composables/useCharacterFinanceServices.ts')
+    const serviceActivation = services.slice(
+      services.indexOf('function activateService'),
+      services.indexOf('function activateOrderMode'),
+    )
+    const modeActivation = services.slice(
+      services.indexOf('function activateOrderMode'),
+      services.indexOf('function changePage'),
+    )
+
+    expect(serviceActivation).toContain(
+      "if (service === 'orders') openOrdersRequested.value = true",
+    )
+    expect(serviceActivation).not.toContain('orderHistoryRequested.value = true')
+    expect(modeActivation).toContain("if (mode === 'history') orderHistoryRequested.value = true")
   })
 })

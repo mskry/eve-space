@@ -94,6 +94,43 @@ describe('corporation routes', () => {
     })
   })
 
+  test('composes alliance history routes under the corporation router', async () => {
+    const history = [{ allianceId: 99, startDate: '2026-01-01T00:00:00Z' }]
+    mocks.getCorporationAllianceHistory.mockResolvedValue(history)
+
+    const response = await request('/1/alliance-history')
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    await expect(response.json()).resolves.toEqual({ corporationId: 1, history })
+  })
+
+  test.each([404, 422])(
+    'maps ESI %i alliance history failures to the typed corporation 404 outcome',
+    async (status) => {
+      mocks.getCorporationAllianceHistory.mockRejectedValue({ status })
+
+      const response = await request('/1/alliance-history')
+
+      expect(response.status).toBe(404)
+      await expect(response.json()).resolves.toEqual({
+        code: 'CORPORATION_NOT_FOUND',
+        message: 'Corporation not found.',
+      })
+    },
+  )
+
+  test('preserves the alliance history transient failure message', async () => {
+    mocks.getCorporationAllianceHistory.mockRejectedValue({ status: 503 })
+
+    const response = await request('/1/alliance-history')
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toEqual({
+      message: 'Alliance history is temporarily unavailable.',
+    })
+  })
+
   test('keeps direct peer fixed windows isolated', async () => {
     for (let index = 0; index < 60; index += 1) {
       await request(`/${10_000 + index}`, '198.51.100.10')

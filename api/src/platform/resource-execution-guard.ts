@@ -3,19 +3,24 @@ import type {
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract'
 import { CharacterTokenNotFoundError } from '../auth/store.js'
-import { getEsiOperationContract, type EsiOperation } from '../esi-resilience/catalog.js'
-import { platformResources } from './resources.js'
+import {
+  getCharacterAuthorizationForLifecycle,
+  getCharacterCacheAuthorizationForLifecycle,
+  ScopeRequiredError,
+} from '../auth/tokens.js'
+import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
+import type { EsiOperation } from '../esi-resilience/catalog.js'
 import { findInstalledResource } from './resource-declarations.js'
-import { getCharacterAuthorizationForLifecycle, ScopeRequiredError } from '../auth/tokens.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import { toPlatformResourceSubject } from './core-resources.js'
 import {
   resolveInstalledResourceEligibility,
   type PlatformResourceIneligibleStatus,
 } from './resource-eligibility.js'
+import { platformResources } from './resources.js'
 
 type ResourceExecutionNoopReason = 'already-current' | PlatformResourceIneligibleStatus
-type CharacterAuthorization = Awaited<ReturnType<typeof getCharacterAuthorizationForLifecycle>>
+type CharacterAuthorization = { readonly tokenVersion: number }
 type PlatformResourceExecutionNoop = {
   readonly outcome: 'noop'
   readonly reason: ResourceExecutionNoopReason
@@ -26,15 +31,17 @@ export type PlatformResourceExecutionGuard =
   | {
       readonly outcome: 'ready'
       readonly resource: PlatformInstalledResourceDescriptor
-      readonly subject: PlatformResourceSubject
+      readonly subject?: PlatformResourceSubject
+      readonly characterId?: number
       readonly authorization: CharacterAuthorization | null
-      readonly authorizationCharacterId: number | null
-      readonly authorizationCharacterLifecycleId: string | null
+      readonly authorizationCharacterId?: number | null
+      readonly authorizationCharacterLifecycleId?: string | null
     }
 
 interface ResourceExecutionGuardOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
+  readonly loadCharacterCacheAuthorization?: typeof getCharacterCacheAuthorizationForLifecycle
   readonly loadCharacterAuthorization?: typeof getCharacterAuthorizationForLifecycle
 }
 
@@ -61,6 +68,7 @@ export async function guardInstalledResourceExecution(
       outcome: 'ready',
       resource,
       subject,
+      ...(subject.kind === 'character' ? { characterId: subject.characterId } : {}),
       authorization: null,
       authorizationCharacterId: null,
       authorizationCharacterLifecycleId: null,
@@ -78,7 +86,9 @@ export async function guardInstalledResourceExecution(
   let authorization: CharacterAuthorization
   try {
     authorization = await (
-      options.loadCharacterAuthorization ?? getCharacterAuthorizationForLifecycle
+      options.loadCharacterCacheAuthorization ??
+      options.loadCharacterAuthorization ??
+      getCharacterCacheAuthorizationForLifecycle
     )(authorizationCharacterId, authorizationCharacterLifecycleId, operation.authorization.scope)
   } catch (error) {
     return mapCharacterAuthorizationError(error, subject.kind)
@@ -88,6 +98,7 @@ export async function guardInstalledResourceExecution(
     outcome: 'ready',
     resource,
     subject,
+    ...(subject.kind === 'character' ? { characterId: subject.characterId } : {}),
     authorization,
     authorizationCharacterId,
     authorizationCharacterLifecycleId,

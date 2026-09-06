@@ -1,6 +1,8 @@
 import {
   CharacterTokenNotFoundError,
   deleteCharacterTokenAuthorization,
+  findCharacterCacheAuthorization,
+  findCharacterCacheAuthorizationForLifecycle,
   findCharacterToken,
   findCharacterTokenForLifecycle,
   TokenRefreshLockUnavailableError,
@@ -17,10 +19,16 @@ import {
 import { normalizeScopeSet } from '../domain-events/definitions.js'
 import { env } from '../env.js'
 import { EveSsoTokenRefreshError, refreshAccessToken, verifyAccessToken } from './sso.js'
+import { isTransientSsoError, SsoTokenRejectedError } from './sso-errors.js'
 import { decryptTokens, encryptTokens } from './security.js'
 
-interface CharacterAuthorization {
+export interface CharacterAuthorization {
   readonly accessToken: string
+  readonly tokenVersion: number
+}
+
+export interface CharacterCacheAuthorization {
+  readonly scopes: readonly string[]
   readonly tokenVersion: number
 }
 
@@ -30,7 +38,7 @@ interface RefreshedCharacterAuthorization {
 }
 
 interface RevokedCharacterAuthorization {
-  readonly authorizationRevoked: EveSsoTokenRefreshError
+  readonly authorizationRevoked: EveSsoTokenRefreshError | SsoTokenRejectedError
 }
 
 type CharacterRefreshResult = RefreshedCharacterAuthorization | RevokedCharacterAuthorization
@@ -57,6 +65,23 @@ export class TokenRefreshUnavailableError extends Error {
 
 export async function getCharacterAccessToken(characterId: number, requiredScope: string) {
   return (await getCharacterAuthorization(characterId, requiredScope)).accessToken
+}
+
+export async function getCharacterCacheAuthorization(
+  characterId: number,
+  requiredScope: string,
+): Promise<CharacterCacheAuthorization> {
+  const stored = await findCharacterCacheAuthorization(characterId)
+  return readCacheAuthorization(stored, requiredScope)
+}
+
+export async function getCharacterCacheAuthorizationForLifecycle(
+  characterId: number,
+  subjectLifecycleId: string,
+  requiredScope: string,
+): Promise<CharacterCacheAuthorization> {
+  const stored = await findCharacterCacheAuthorizationForLifecycle(characterId, subjectLifecycleId)
+  return readCacheAuthorization(stored, requiredScope)
 }
 
 export async function getCharacterAuthorization(characterId: number, requiredScope: string) {
@@ -190,15 +215,24 @@ async function refreshLockedCharacterToken(
     return toRefreshedCharacterAuthorization(stored, requiredScope)
 
   const currentTokens = decryptTokens(stored.encryptedTokens)
-  let refreshed
+  let refreshed: Awaited<ReturnType<typeof refreshAccessToken>>
   try {
     refreshed = await refreshAccessToken(currentTokens.refreshToken)
   } catch (error) {
-    if (!(error instanceof EveSsoTokenRefreshError) || !error.authorizationRevoked) throw error
-    await deleteRevokedCharacterAuthorization(characterId, stored, transaction)
-    return { authorizationRevoked: error }
+    if (isDefinitiveTokenRejection(error)) {
+      await deleteRevokedCharacterAuthorization(characterId, stored, transaction)
+      return { authorizationRevoked: error }
+    }
+    if (isTransientSsoError(error)) throw new TokenRefreshUnavailableError()
+    throw error
   }
-  const identity = await verifyAccessToken(refreshed.access_token)
+  let identity: Awaited<ReturnType<typeof verifyAccessToken>>
+  try {
+    identity = await verifyAccessToken(refreshed.access_token)
+  } catch (error) {
+    if (isTransientSsoError(error)) throw new TokenRefreshUnavailableError()
+    throw error
+  }
   if (identity.characterId !== characterId)
     throw new Error('Refreshed token belongs to a different character')
   const previousScopes = new Set(normalizeScopeSet(stored.scopes))
@@ -321,6 +355,15 @@ function readStoredAuthorization(
   }
 }
 
+function readCacheAuthorization(
+  stored: CharacterCacheAuthorization | null,
+  requiredScope: string,
+): CharacterCacheAuthorization {
+  if (!stored) throw new CharacterTokenNotFoundError()
+  requireScope(stored.scopes, requiredScope)
+  return { scopes: stored.scopes, tokenVersion: stored.tokenVersion }
+}
+
 function toRefreshedCharacterAuthorization(
   stored: StoredCharacterToken,
   requiredScope: string,
@@ -330,4 +373,12 @@ function toRefreshedCharacterAuthorization(
 
 function requireScope(scopes: readonly string[], requiredScope: string) {
   if (!scopes.includes(requiredScope)) throw new ScopeRequiredError(requiredScope)
+}
+
+function isDefinitiveTokenRejection(
+  error: unknown,
+): error is EveSsoTokenRefreshError | SsoTokenRejectedError {
+  return error instanceof EveSsoTokenRefreshError
+    ? error.authorizationRevoked
+    : error instanceof SsoTokenRejectedError
 }

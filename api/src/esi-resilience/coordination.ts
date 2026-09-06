@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { Redis } from 'ioredis'
+import { isNonnegativeSafeInteger, isPositiveSafeInteger } from '../type-guards.js'
 import type { EsiRepresentationIdentity } from './identity.js'
-import { cacheCoordinationSentinelKey } from './namespaces.js'
+import { cacheCoordinationSentinelKey } from './keys.js'
 
 const coordinationIdentityVersion = 'v2'
 const keyPrefix = `eve-space:${coordinationIdentityVersion}:esi-resilience`
@@ -123,8 +124,7 @@ export async function getEsiResourceRevision(
   const value = await connection.get(resourceRevisionKey(namespace, principal))
   if (value === null) return 0
   const revision = Number(value)
-  if (!Number.isSafeInteger(revision) || revision < 0)
-    throw new Error('Invalid ESI resource revision')
+  if (!isNonnegativeSafeInteger(revision)) throw new Error('Invalid ESI resource revision')
   return revision
 }
 
@@ -141,7 +141,7 @@ export async function incrementEsiResourceRevision(
       Number.MAX_SAFE_INTEGER,
     ),
   )
-  if (!Number.isSafeInteger(value) || value < 1) throw new Error('Invalid ESI resource revision')
+  if (!isPositiveSafeInteger(value)) throw new Error('Invalid ESI resource revision')
   return value
 }
 

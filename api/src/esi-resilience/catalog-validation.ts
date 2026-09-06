@@ -2,13 +2,186 @@ import {
   platformContributionIdPattern,
   platformExportNamePattern,
 } from '@eve-space/platform-module-contract'
-import type { EsiOperationContract } from './catalog.js'
+import { z } from 'zod'
 
 const scopePattern = /^esi-[a-z0-9_-]+\.[a-z0-9_]+\.v[1-9]\d*$/
 const identityFieldPattern = /^[A-Za-z][A-Za-z0-9]*$/
 const representationVersionPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const rateWindowPattern = /^[1-9]\d*[smhd]$/
 const maximumEsiRequestAttempts = 3
+
+const positiveSafeIntegerSchema = z.int().positive()
+const nonnegativeSafeIntegerSchema = z.int().nonnegative()
+const isoCalendarDateSchema = z.iso.date()
+const scopeSchema = z.string().regex(scopePattern)
+const contributionIdSchema = z.string().regex(platformContributionIdPattern)
+
+const freshnessSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('relative'), seconds: positiveSafeIntegerSchema }),
+  z.object({
+    kind: z.literal('daily-utc'),
+    hour: z.number().int().min(0).max(23),
+    minute: z.number().int().min(0).max(59),
+  }),
+  z.object({ kind: z.literal('runtime-only') }),
+  z.object({ kind: z.literal('none') }),
+])
+
+const rateGroupSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('legacy-only') }),
+  z.object({
+    kind: z.literal('declared'),
+    group: contributionIdSchema,
+    maximumTokens: positiveSafeIntegerSchema,
+    window: z.string().regex(rateWindowPattern),
+  }),
+])
+
+const esiOperationMetadataEntrySchema = z.strictObject({
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE']),
+  path: z.string().startsWith('/'),
+  esiOperationId: z.string().regex(platformExportNamePattern),
+  minimumCompatibilityDate: isoCalendarDateSchema,
+  requiredScope: scopeSchema.nullable(),
+  cache: freshnessSchema,
+  supportsConditionalRequests: z.boolean(),
+  rateLimit: rateGroupSchema,
+  maximumBatchSize: positiveSafeIntegerSchema.optional(),
+})
+
+const esiOperationMetadataSchema = z.record(contributionIdSchema, esiOperationMetadataEntrySchema)
+
+const esiMetadataReviewSchema = z.strictObject({
+  explorerUrl: z.url(),
+  reviewedAt: isoCalendarDateSchema,
+  requestedCompatibilityDate: isoCalendarDateSchema,
+  resolvedCompatibilityDate: isoCalendarDateSchema,
+})
+
+function identityFieldSchema(message: string) {
+  return z.string().refine((value) => identityFieldPattern.test(value), { message })
+}
+
+const orderedIdentitySchema = z
+  .object({
+    kind: z.literal('ordered'),
+    fields: z
+      .array(identityFieldSchema('has invalid or duplicate ordered identity fields'))
+      .readonly(),
+  })
+  .superRefine((value, context) => {
+    if (new Set(value.fields).size !== value.fields.length)
+      context.addIssue({
+        code: 'custom',
+        message: 'has invalid or duplicate ordered identity fields',
+      })
+  })
+
+const setIdentitySchema = z.object({
+  kind: z.literal('set'),
+  field: identityFieldSchema('has an invalid set identity field'),
+  maximumItems: positiveSafeIntegerSchema,
+})
+
+const mixedIdentityFieldSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('scalar'),
+    field: identityFieldSchema('has an invalid mixed identity field'),
+    nullable: z.boolean().optional(),
+  }),
+  z.object({
+    kind: z.literal('set'),
+    field: identityFieldSchema('has an invalid mixed identity field'),
+    maximumItems: positiveSafeIntegerSchema,
+    nullable: z.boolean().optional(),
+  }),
+])
+
+const mixedIdentitySchema = z
+  .object({
+    kind: z.literal('mixed'),
+    fields: z.array(mixedIdentityFieldSchema).min(1).readonly(),
+  })
+  .superRefine((value, context) => {
+    const names = value.fields.map((field) => field.field)
+    if (new Set(names).size !== names.length)
+      context.addIssue({ code: 'custom', message: 'has duplicate mixed identity fields' })
+  })
+
+const identitySchema = z.discriminatedUnion('kind', [
+  orderedIdentitySchema,
+  setIdentitySchema,
+  mixedIdentitySchema,
+])
+
+const authorizationSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('public') }),
+  z.object({ kind: z.literal('character'), scope: scopeSchema }),
+])
+
+const staleSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('bounded'), milliseconds: positiveSafeIntegerSchema }),
+  z.object({ kind: z.literal('outage'), milliseconds: positiveSafeIntegerSchema }),
+  z.object({ kind: z.literal('none') }),
+])
+
+const cacheSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('shared'),
+      collapse: z.boolean(),
+      revalidate: z.boolean(),
+      stale: staleSchema,
+      retentionMilliseconds: nonnegativeSafeIntegerSchema,
+    })
+    .superRefine((value, context) => {
+      if (value.stale.kind !== 'none' && value.stale.milliseconds > value.retentionMilliseconds)
+        context.addIssue({ code: 'custom', message: 'stale duration exceeds cache retention' })
+    }),
+  z.object({ kind: z.literal('none') }),
+])
+
+const retrySchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('none') }),
+  z
+    .object({
+      kind: z.literal('idempotent'),
+      attempts: positiveSafeIntegerSchema.max(maximumEsiRequestAttempts),
+      initialDelayMilliseconds: nonnegativeSafeIntegerSchema,
+      maximumDelayMilliseconds: nonnegativeSafeIntegerSchema,
+    })
+    .superRefine((value, context) => {
+      if (value.maximumDelayMilliseconds < value.initialDelayMilliseconds)
+        context.addIssue({ code: 'custom', message: 'has invalid idempotent retry metadata' })
+    }),
+])
+
+const responseValidationSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('enabled') }),
+  z.object({ kind: z.literal('disabled'), reason: z.string().trim().min(1) }),
+])
+
+const esiOperationContractSchema = z.object({
+  audit: z.object({
+    esiOperationId: z.string().regex(platformExportNamePattern),
+    reviewedDate: isoCalendarDateSchema,
+  }),
+  representationVersion: z.string().regex(representationVersionPattern),
+  authorization: authorizationSchema,
+  identity: identitySchema,
+  resourceRevision: z
+    .object({ kind: z.literal('character'), namespace: contributionIdSchema })
+    .optional(),
+  mutation: z.object({ kind: z.literal('character'), appliedOnMissing: z.boolean() }).optional(),
+  freshness: freshnessSchema,
+  cache: cacheSchema,
+  rateGroup: rateGroupSchema,
+  retry: retrySchema,
+  compatibility: z.object({ minimumDate: isoCalendarDateSchema }),
+  responseValidation: responseValidationSchema,
+})
+
+type ValidatedEsiOperationContract = z.infer<typeof esiOperationContractSchema>
 
 interface RateGroupDefinition {
   operation: string
@@ -24,10 +197,24 @@ interface EsiOperationContractValidationState {
   readonly expectedSdkOperationIds: Readonly<Record<string, string>>
 }
 
+export function defineMetadataReview<const Review extends z.input<typeof esiMetadataReviewSchema>>(
+  review: Review,
+) {
+  esiMetadataReviewSchema.parse(review)
+  return review
+}
+
+export function defineOperationMetadata<
+  const Metadata extends z.input<typeof esiOperationMetadataSchema>,
+>(metadata: Metadata) {
+  esiOperationMetadataSchema.parse(metadata)
+  return metadata
+}
+
 export function assertEsiOperationContracts(
   catalog: Readonly<Record<string, unknown>>,
   expectedSdkOperationIds: Readonly<Record<string, string>> = {},
-): asserts catalog is Readonly<Record<string, EsiOperationContract>> {
+): asserts catalog is Readonly<Record<string, ValidatedEsiOperationContract>> {
   const state: EsiOperationContractValidationState = {
     issues: [],
     rateGroups: new Map(),
@@ -52,243 +239,67 @@ function validateEsiOperationContract(
   value: unknown,
   state: EsiOperationContractValidationState,
 ) {
-  const { issues, expectedSdkOperationIds, rateGroups, sdkOperationOwners } = state
   if (!platformContributionIdPattern.test(operation))
-    issues.push(`operation ${operation} must use a lowercase kebab-case identity`)
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} must export a contract object`)
+    state.issues.push(`operation ${operation} must use a lowercase kebab-case identity`)
+
+  const result = esiOperationContractSchema.safeParse(value)
+  if (!result.success) {
+    for (const issue of result.error.issues)
+      state.issues.push(`operation ${operation} ${formatContractIssue(issue)}`)
     return
   }
 
-  const audit = validateAudit(operation, value.audit, issues)
+  validateContractInvariants(operation, result.data, state)
+}
+
+function validateContractInvariants(
+  operation: string,
+  contract: ValidatedEsiOperationContract,
+  state: EsiOperationContractValidationState,
+) {
+  const { issues, expectedSdkOperationIds, rateGroups, sdkOperationOwners } = state
   const expectedSdkOperationId = expectedSdkOperationIds[operation]
+  if (expectedSdkOperationId && contract.audit.esiOperationId !== expectedSdkOperationId)
+    issues.push(
+      `operation ${operation} contract declares ${contract.audit.esiOperationId} instead of manifest SDK operation ${expectedSdkOperationId}`,
+    )
+
+  const owner = sdkOperationOwners.get(contract.audit.esiOperationId)
+  if (owner)
+    issues.push(
+      `operation ${operation} duplicates ESI SDK operation ${contract.audit.esiOperationId} from operation ${owner}`,
+    )
+  else sdkOperationOwners.set(contract.audit.esiOperationId, operation)
+
   if (
-    expectedSdkOperationId &&
-    audit?.esiOperationId &&
-    audit.esiOperationId !== expectedSdkOperationId
+    contract.mutation &&
+    (contract.authorization.kind !== 'character' || contract.cache.kind !== 'none')
   )
     issues.push(
-      `operation ${operation} contract declares ${audit.esiOperationId} instead of manifest SDK operation ${expectedSdkOperationId}`,
+      `operation ${operation} declares a mutation without character authorization and an uncached contract`,
     )
-  if (audit?.esiOperationId) {
-    const owner = sdkOperationOwners.get(audit.esiOperationId)
-    if (owner)
-      issues.push(
-        `operation ${operation} duplicates ESI SDK operation ${audit.esiOperationId} from operation ${owner}`,
-      )
-    else sdkOperationOwners.set(audit.esiOperationId, operation)
-  }
-  const minimumDate = validateCompatibility(operation, value.compatibility, issues)
-  if (audit?.reviewedDate && minimumDate && minimumDate > audit.reviewedDate)
+
+  if (contract.compatibility.minimumDate > contract.audit.reviewedDate)
     issues.push(`operation ${operation} minimum compatibility date exceeds its review date`)
-  if (
-    typeof value.representationVersion !== 'string' ||
-    !representationVersionPattern.test(value.representationVersion)
-  )
-    issues.push(`operation ${operation} has an invalid representation version`)
 
-  const scope = validateAuthorization(operation, value.authorization, issues)
-  validateIdentity(operation, value.identity, issues)
-  validateResourceRevision(operation, value.resourceRevision, issues)
-  validateFreshness(operation, value.freshness, issues)
-  validateCache(operation, value.cache, issues)
-  validateRateGroup(operation, scope, value.rateGroup, rateGroups, issues)
-  validateRetry(operation, value.retry, issues)
-  validateResponseValidation(operation, value.responseValidation, issues)
+  if (contract.rateGroup.kind === 'declared')
+    validateRateGroupConsistency(operation, contract, rateGroups, issues)
 }
 
-function validateAudit(operation: string, value: unknown, issues: string[]) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid audit metadata`)
-    return undefined
-  }
-  const esiOperationId =
-    typeof value.esiOperationId === 'string' && platformExportNamePattern.test(value.esiOperationId)
-      ? value.esiOperationId
-      : undefined
-  if (!esiOperationId)
-    issues.push(`operation ${operation} has an invalid ESI SDK operation identity`)
-  const reviewedDate = validateDate(operation, 'review date', value.reviewedDate, issues)
-  return esiOperationId && reviewedDate ? { esiOperationId, reviewedDate } : undefined
-}
-
-function validateCompatibility(operation: string, value: unknown, issues: string[]) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid compatibility metadata`)
-    return undefined
-  }
-  return validateDate(operation, 'minimum compatibility date', value.minimumDate, issues)
-}
-
-function validateAuthorization(
+function validateRateGroupConsistency(
   operation: string,
-  value: unknown,
-  issues: string[],
-): RateGroupDefinition['scope'] | undefined {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid authorization metadata`)
-    return undefined
-  }
-  if (value.kind === 'public') return 'public'
-  if (value.kind === 'character') {
-    if (typeof value.scope !== 'string' || !scopePattern.test(value.scope))
-      issues.push(`operation ${operation} has an invalid character scope`)
-    return 'character'
-  }
-  issues.push(`operation ${operation} uses an unsupported authorization strategy`)
-  return undefined
-}
-
-function validateIdentity(operation: string, value: unknown, issues: string[]) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid identity metadata`)
-    return
-  }
-  switch (value.kind) {
-    case 'ordered':
-      if (
-        !Array.isArray(value.fields) ||
-        !value.fields.every(
-          (field): field is string => typeof field === 'string' && identityFieldPattern.test(field),
-        ) ||
-        new Set(value.fields).size !== value.fields.length
-      )
-        issues.push(`operation ${operation} has invalid or duplicate ordered identity fields`)
-      return
-    case 'set':
-      if (typeof value.field !== 'string' || !identityFieldPattern.test(value.field))
-        issues.push(`operation ${operation} has an invalid set identity field`)
-      if (!isPositiveSafeInteger(value.maximumItems))
-        issues.push(`operation ${operation} set identity maximum must be a positive safe integer`)
-      return
-    case 'mixed':
-      validateMixedIdentity(operation, value.fields, issues)
-      return
-    default:
-      issues.push(`operation ${operation} uses an unsupported identity strategy`)
-  }
-}
-
-function validateMixedIdentity(operation: string, value: unknown, issues: string[]) {
-  if (!Array.isArray(value) || value.length === 0) {
-    issues.push(`operation ${operation} has invalid mixed identity fields`)
-    return
-  }
-  const names = new Set<string>()
-  for (const field of value) {
-    if (
-      !isRecord(field) ||
-      typeof field.field !== 'string' ||
-      !identityFieldPattern.test(field.field)
-    ) {
-      issues.push(`operation ${operation} has an invalid mixed identity field`)
-      continue
-    }
-    if (names.has(field.field))
-      issues.push(`operation ${operation} has duplicate mixed identity fields`)
-    names.add(field.field)
-    if ('nullable' in field && typeof field.nullable !== 'boolean')
-      issues.push(`operation ${operation} mixed identity nullable flag must be boolean`)
-    if (field.kind === 'scalar') continue
-    if (field.kind !== 'set' || !isPositiveSafeInteger(field.maximumItems))
-      issues.push(`operation ${operation} has an invalid mixed set identity field`)
-  }
-}
-
-function validateResourceRevision(operation: string, value: unknown, issues: string[]) {
-  if (value === undefined) return
-  if (
-    !isRecord(value) ||
-    value.kind !== 'character' ||
-    typeof value.namespace !== 'string' ||
-    !platformContributionIdPattern.test(value.namespace)
-  )
-    issues.push(`operation ${operation} has invalid resource-revision metadata`)
-}
-
-function validateFreshness(operation: string, value: unknown, issues: string[]) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid freshness metadata`)
-    return
-  }
-  if (value.kind === 'relative') {
-    if (!isPositiveSafeInteger(value.seconds))
-      issues.push(`operation ${operation} relative freshness must use positive whole seconds`)
-    return
-  }
-  if (value.kind === 'daily-utc') {
-    if (!isIntegerInRange(value.hour, 0, 23) || !isIntegerInRange(value.minute, 0, 59))
-      issues.push(`operation ${operation} has an invalid daily UTC freshness boundary`)
-    return
-  }
-  if (value.kind !== 'runtime-only' && value.kind !== 'none')
-    issues.push(`operation ${operation} uses an unsupported freshness strategy`)
-}
-
-function validateCache(operation: string, value: unknown, issues: string[]) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid cache metadata`)
-    return
-  }
-  if (value.kind === 'none') return
-  if (value.kind !== 'shared') {
-    issues.push(`operation ${operation} uses an unsupported cache strategy`)
-    return
-  }
-  if (typeof value.collapse !== 'boolean' || typeof value.revalidate !== 'boolean')
-    issues.push(`operation ${operation} shared cache flags must be boolean`)
-  if (!isNonNegativeSafeInteger(value.retentionMilliseconds))
-    issues.push(`operation ${operation} cache retention must be a non-negative whole duration`)
-  if (!isRecord(value.stale)) {
-    issues.push(`operation ${operation} has invalid stale cache metadata`)
-    return
-  }
-  if (value.stale.kind === 'none') return
-  if (
-    (value.stale.kind !== 'bounded' && value.stale.kind !== 'outage') ||
-    !isPositiveSafeInteger(value.stale.milliseconds)
-  ) {
-    issues.push(`operation ${operation} has an invalid bounded stale duration`)
-    return
-  }
-  if (
-    isNonNegativeSafeInteger(value.retentionMilliseconds) &&
-    value.stale.milliseconds > value.retentionMilliseconds
-  )
-    issues.push(`operation ${operation} stale duration exceeds cache retention`)
-}
-
-function validateRateGroup(
-  operation: string,
-  scope: RateGroupDefinition['scope'] | undefined,
-  value: unknown,
+  contract: ValidatedEsiOperationContract,
   groups: Map<string, RateGroupDefinition>,
   issues: string[],
 ) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid rate-group metadata`)
-    return
-  }
-  if (value.kind === 'legacy-only') return
-  if (value.kind !== 'declared') {
-    issues.push(`operation ${operation} uses an unsupported rate-group strategy`)
-    return
-  }
-  const validGroup =
-    typeof value.group === 'string' && platformContributionIdPattern.test(value.group)
-  const validMaximum = isPositiveSafeInteger(value.maximumTokens)
-  const validWindow = typeof value.window === 'string' && rateWindowPattern.test(value.window)
-  if (!validGroup || !validMaximum || !validWindow)
-    issues.push(`operation ${operation} has invalid declared rate-group metadata`)
-  if (!validGroup || !validMaximum || !validWindow || !scope) return
-
+  if (contract.rateGroup.kind !== 'declared') return
   const definition = {
     operation,
-    scope,
-    maximumTokens: value.maximumTokens as number,
-    window: value.window as string,
+    scope: contract.authorization.kind,
+    maximumTokens: contract.rateGroup.maximumTokens,
+    window: contract.rateGroup.window,
   }
-  const current = groups.get(value.group as string)
+  const current = groups.get(contract.rateGroup.group)
   if (
     current &&
     (current.scope !== definition.scope ||
@@ -296,64 +307,86 @@ function validateRateGroup(
       current.window !== definition.window)
   )
     issues.push(
-      `operation ${operation} rate group ${value.group as string} conflicts with operation ${current.operation}`,
+      `operation ${operation} rate group ${contract.rateGroup.group} conflicts with operation ${current.operation}`,
     )
-  else groups.set(value.group as string, definition)
+  else groups.set(contract.rateGroup.group, definition)
 }
 
-function validateRetry(operation: string, value: unknown, issues: string[]) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid retry metadata`)
-    return
+function formatContractIssue(issue: z.core.$ZodIssue) {
+  if (issue.code === 'custom') return issue.message
+  const [field, nestedField] = issue.path
+
+  switch (field) {
+    case 'audit':
+      return formatAuditIssue(nestedField)
+    case 'compatibility':
+      return formatCompatibilityIssue(nestedField)
+    case 'authorization':
+      return formatAuthorizationIssue(nestedField)
+    case 'representationVersion':
+      return 'has an invalid representation version'
+    case 'identity':
+      return formatIdentityIssue(issue.path)
+    case 'resourceRevision':
+      return 'has invalid resource-revision metadata'
+    case 'freshness':
+      return formatFreshnessIssue(issue.path)
+    case 'cache':
+      return formatCacheIssue(issue.path)
+    case 'rateGroup':
+      return 'has invalid declared rate-group metadata'
+    case 'retry':
+      return 'has invalid idempotent retry metadata'
+    case 'responseValidation':
+      return 'has an invalid response-validation exception'
+    default:
+      return 'must export a contract object'
   }
-  if (value.kind === 'none') return
-  if (
-    value.kind !== 'idempotent' ||
-    !isPositiveSafeInteger(value.attempts) ||
-    value.attempts > maximumEsiRequestAttempts ||
-    !isNonNegativeSafeInteger(value.initialDelayMilliseconds) ||
-    !isNonNegativeSafeInteger(value.maximumDelayMilliseconds) ||
-    (typeof value.initialDelayMilliseconds === 'number' &&
-      typeof value.maximumDelayMilliseconds === 'number' &&
-      value.maximumDelayMilliseconds < value.initialDelayMilliseconds)
-  )
-    issues.push(`operation ${operation} has invalid idempotent retry metadata`)
 }
 
-function validateResponseValidation(operation: string, value: unknown, issues: string[]) {
-  if (!isRecord(value)) {
-    issues.push(`operation ${operation} has invalid response-validation metadata`)
-    return
-  }
-  if (value.kind === 'enabled') return
-  if (value.kind !== 'disabled' || typeof value.reason !== 'string' || value.reason.trim() === '')
-    issues.push(`operation ${operation} has an invalid response-validation exception`)
+function formatAuditIssue(field: PropertyKey | undefined) {
+  if (field === 'esiOperationId') return 'has an invalid ESI SDK operation identity'
+  if (field === 'reviewedDate') return 'has an invalid review date'
+  return 'has invalid audit metadata'
 }
 
-function validateDate(operation: string, field: string, value: unknown, issues: string[]) {
-  if (typeof value === 'string' && isIsoCalendarDate(value)) return value
-  issues.push(`operation ${operation} has an invalid ${field}`)
-  return undefined
+function formatCompatibilityIssue(field: PropertyKey | undefined) {
+  if (field === 'minimumDate') return 'has an invalid minimum compatibility date'
+  return 'has invalid compatibility metadata'
+}
+
+function formatAuthorizationIssue(field: PropertyKey | undefined) {
+  if (field === 'scope') return 'has an invalid character scope'
+  return 'uses an unsupported authorization strategy'
+}
+
+function formatIdentityIssue(path: PropertyKey[]) {
+  if (path[1] === 'maximumItems') return 'set identity maximum must be a positive safe integer'
+  if (path[1] === 'field') return 'has an invalid set identity field'
+  if (path[1] === 'fields' && typeof path[2] === 'number')
+    return path[3] === 'maximumItems'
+      ? 'has an invalid mixed set identity field'
+      : 'has an invalid mixed identity field'
+  if (path[1] === 'fields') return 'has invalid mixed identity fields'
+  return 'uses an unsupported identity strategy'
+}
+
+function formatFreshnessIssue(path: PropertyKey[]) {
+  if (path[1] === 'seconds') return 'relative freshness must use positive whole seconds'
+  if (path[1] === 'hour' || path[1] === 'minute')
+    return 'has an invalid daily UTC freshness boundary'
+  return 'uses an unsupported freshness strategy'
+}
+
+function formatCacheIssue(path: PropertyKey[]) {
+  if (path[1] === 'retentionMilliseconds')
+    return 'cache retention must be a non-negative whole duration'
+  if (path[1] === 'stale') return 'has an invalid bounded stale duration'
+  if (path[1] === 'collapse' || path[1] === 'revalidate')
+    return 'shared cache flags must be boolean'
+  return 'uses an unsupported cache strategy'
 }
 
 export function isIsoCalendarDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const parsed = new Date(`${value}T00:00:00.000Z`)
-  return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isPositiveSafeInteger(value: unknown): value is number {
-  return Number.isSafeInteger(value) && Number(value) > 0
-}
-
-function isNonNegativeSafeInteger(value: unknown): value is number {
-  return Number.isSafeInteger(value) && Number(value) >= 0
-}
-
-function isIntegerInRange(value: unknown, minimum: number, maximum: number) {
-  return Number.isSafeInteger(value) && Number(value) >= minimum && Number(value) <= maximum
+  return isoCalendarDateSchema.safeParse(value).success
 }

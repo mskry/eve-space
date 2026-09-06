@@ -6,9 +6,9 @@ import { characters } from '../db/schema.js'
 import { env } from '../env.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { getEsiOperationContract } from '../esi-resilience/catalog.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 
 const affiliationIdentity = getEsiOperationContract('bulk-affiliation').identity
 if (affiliationIdentity.kind !== 'set')

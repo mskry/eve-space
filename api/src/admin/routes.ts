@@ -29,6 +29,7 @@ import {
   setInstalledModuleEnabled,
 } from '../platform/module-settings.js'
 import { createOpaqueToken, hashPassword, tokensMatch, verifyPassword } from '../auth/security.js'
+import { setPrivateHeaders } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 
 type AdminEnv = { Variables: { adminSession: AdminSessionAccount | null } }
@@ -260,13 +261,6 @@ function setAdminSessionCookie(context: Parameters<typeof setCookie>[0], token: 
     priority: 'High',
     maxAge: adminSessionDurationSeconds,
   })
-}
-
-function setPrivateHeaders(context: {
-  header: (name: string, value: string, options?: never) => void
-}) {
-  context.header('Cache-Control', 'private, no-store')
-  context.header('Vary', 'Cookie')
 }
 
 function organizationFailure(context: Parameters<typeof setCookie>[0], error: unknown) {

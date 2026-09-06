@@ -8,7 +8,7 @@ import {
   organizationManagedCorporations,
   platformSubjectLifecycles,
 } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
 import { appendOrganizationAuditEvent } from './audit.js'
 import { loadManagementAuthority } from './group-store.js'
 

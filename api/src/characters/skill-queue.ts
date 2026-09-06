@@ -1,12 +1,12 @@
 import { createSkillsClient } from '@evespace/esi-client/domains/skills'
-import type { GetCharactersCharacterIdSkillqueueOutput } from '@evespace/esi-client/schemas'
+import type { GetCharactersCharacterIdSkillqueueResponse } from '@evespace/esi-client/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
-import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
 import {
   skillAttributeFromDogmaValue,
@@ -89,7 +89,7 @@ export async function getCharacterSkillQueue(characterId: number): Promise<Chara
 }
 
 async function mapCharacterSkillQueue(
-  result: GetCharactersCharacterIdSkillqueueOutput,
+  result: GetCharactersCharacterIdSkillqueueResponse,
 ): Promise<CharacterSkillQueueEntries> {
   if (result.length === 0) return { entries: [] }
 

@@ -14,31 +14,13 @@
   background: var(--ui-surface);
 }
 
-.history-toolbar input[type='search'] {
-  width: 100%;
-  min-width: 0;
-  padding: 9px 11px;
-  border: 1px solid var(--ui-border-strong);
-  outline: none;
-  background: var(--ui-control);
-  color: var(--ui-text);
-  font: 11px/1 var(--ui-font-mono);
-  letter-spacing: 0.06em;
-}
-
-.history-toolbar input[type='search']::placeholder {
-  color: var(--ui-text-faint);
-}
-
-.history-toolbar input[type='search']:focus {
-  border-color: var(--ui-primary);
-  box-shadow: inset 2px 0 0 var(--ui-primary);
+.history-toolbar .ui-input {
+  width: min(18rem, 100%);
 }
 
 .employment-scroller {
   position: relative;
   isolation: isolate;
-  margin-top: 10px;
   max-height: min(58vh, 520px);
   border: 1px solid var(--ui-border);
   border-top: 0;
@@ -135,10 +117,6 @@
   background: var(--ui-surface-raised);
 }
 
-.employment-timeline img {
-  background: var(--ui-logo-background);
-}
-
 .employment-deleted-mark {
   width: 48px;
   height: 48px;
@@ -157,7 +135,7 @@
 .employment-timeline div > p,
 .employment-period {
   color: var(--ui-text-muted);
-  font: 8px/1.5 var(--ui-font-mono);
+  font: 9px/1.5 var(--ui-font-mono);
   letter-spacing: 0.08em;
 }
 

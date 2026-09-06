@@ -35,8 +35,10 @@ describe('environment configuration', () => {
       TOKEN_REFRESH_QUEUE_TIMEOUT_MS: 30_000,
       CACHE_REDIS_URL: 'redis://localhost:6380',
       ESI_CACHE_L1_MAX_ENTRIES: 250,
+      ESI_PRIVATE_RETENTION_SECONDS: 86_400,
       ESI_CACHE_MAX_RETENTION_SECONDS: 86_400,
       MODULE_RUNTIME_CACHE_TTL_MS: 5_000,
+      ESI_REQUEST_TIMEOUT_MS: 30_000,
       ESI_OPERATION_CONCURRENCY: 6,
       AFFILIATION_ACTIVE_INTERVAL_SECONDS: 3_600,
       AFFILIATION_INACTIVE_INTERVAL_SECONDS: 86_400,
@@ -84,6 +86,17 @@ describe('environment configuration', () => {
       'module runtime cache lifetime',
       { MODULE_RUNTIME_CACHE_TTL_MS: '30001' },
       'Too big: expected number to be <=30000',
+    ],
+    [
+      'private ESI retention',
+      { ESI_PRIVATE_RETENTION_SECONDS: '0' },
+      'Too small: expected number to be >0',
+    ],
+    ['ESI request timeout', { ESI_REQUEST_TIMEOUT_MS: '0' }, 'Too small: expected number to be >0'],
+    [
+      'token encryption key',
+      { TOKEN_ENCRYPTION_KEY: 'not-a-base64-key' },
+      'Expected a base64-encoded 32-byte key',
     ],
   ])('rejects an invalid %s', (_, values, message) => {
     expect(() => parseEnvironment({ ...databaseEnvironment, ...values })).toThrow(message)
@@ -174,5 +187,14 @@ describe('environment configuration', () => {
       parseEnvironment({ ...databaseEnvironment, QUEUE_PLANNER_SCHEDULE_OFFSET_MS: '' })
         .QUEUE_PLANNER_SCHEDULE_OFFSET_MS,
     ).toBeUndefined()
+  })
+
+  test('accepts a base64-encoded 32-byte token encryption key', () => {
+    expect(
+      parseEnvironment({
+        ...databaseEnvironment,
+        TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
+      }).TOKEN_ENCRYPTION_KEY,
+    ).toBe('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')
   })
 })

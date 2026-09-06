@@ -1,13 +1,15 @@
 import { createStatusClient } from '@evespace/esi-client/domains/status'
 import { sql } from '../db/client.js'
 import { probeDomainEventStatus, type DomainEventStatus } from '../domain-events/status.js'
+import { classifyStaleRefreshFailure } from '../esi-resilience/errors.js'
 import { esiErrorBudgetFloor } from '../esi-resilience/policy.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
 import {
   probeEsiResilienceTelemetry,
   type EsiResilienceTelemetry,
+  type EsiUpstreamObservation,
 } from '../esi-resilience/telemetry.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import { probeQueueStatus, type QueueStatus } from '../queue/status.js'
 
 const cacheTtlMs = 30_000
@@ -34,6 +36,11 @@ interface EsiStatus {
   vip: boolean | null
   errorBudgetRemaining: number | null
   errorBudgetResetSeconds: number | null
+}
+
+interface EsiStatusProbe {
+  service: EsiStatus
+  observation: EsiUpstreamObservation
 }
 
 export interface SystemStatus {
@@ -69,12 +76,17 @@ export function getSystemStatus() {
 }
 
 async function probeSystemStatus(now: number): Promise<SystemStatus> {
-  const [database, esi, queue, esiResilience] = await Promise.all([
+  const esiPending = probeEsi()
+  const esiResiliencePending = probeEsiResilienceTelemetry(
+    esiPending.then(({ observation }) => observation),
+  )
+  const [database, esiProbe, queue, esiResilience] = await Promise.all([
     probeDatabase(),
-    probeEsi(),
+    esiPending,
     probeQueueStatus(),
-    probeEsiResilienceTelemetry(),
+    esiResiliencePending,
   ])
+  const esi = esiProbe.service
   const eventRelay = await probeDomainEventStatus(queue)
   const unavailableCount =
     Number(database.status === 'unavailable') + Number(esi.status === 'unavailable')
@@ -123,7 +135,7 @@ async function probeDatabase(): Promise<DatabaseStatus> {
   }
 }
 
-async function probeEsi(): Promise<EsiStatus> {
+async function probeEsi(): Promise<EsiStatusProbe> {
   const startedAt = Date.now()
   const checkedAt = new Date(startedAt).toISOString()
 
@@ -146,29 +158,45 @@ async function probeEsi(): Promise<EsiStatus> {
     )
       status = 'degraded'
     return {
-      status,
-      latencyMs: Date.now() - startedAt,
-      checkedAt: response.validatedAt,
-      players: response.data.players,
-      serverVersion: response.data.server_version,
-      startedAt: response.data.start_time,
-      vip: response.data.vip,
-      errorBudgetRemaining,
-      errorBudgetResetSeconds: response.quota.errorResetSeconds ?? null,
-      cachedUntil: response.cachedUntil,
+      service: {
+        status,
+        latencyMs: Date.now() - startedAt,
+        checkedAt: response.validatedAt,
+        players: response.data.players,
+        serverVersion: response.data.server_version,
+        startedAt: response.data.start_time,
+        vip: response.data.vip,
+        errorBudgetRemaining,
+        errorBudgetResetSeconds: response.quota.errorResetSeconds ?? null,
+        cachedUntil: response.cachedUntil,
+      },
+      observation: {
+        status,
+        ...(response.refreshFailureClass
+          ? { refreshFailureClass: response.refreshFailureClass }
+          : {}),
+      },
     }
-  } catch {
+  } catch (error) {
+    const refreshFailureClass = classifyStaleRefreshFailure(error)
+    const status: EsiStatus['status'] =
+      refreshFailureClass === 'esi-cooldown' || refreshFailureClass === 'response-invalid'
+        ? 'degraded'
+        : 'unavailable'
     return {
-      status: 'unavailable',
-      latencyMs: Date.now() - startedAt,
-      checkedAt,
-      players: null,
-      serverVersion: null,
-      startedAt: null,
-      vip: null,
-      errorBudgetRemaining: null,
-      errorBudgetResetSeconds: null,
-      cachedUntil: new Date(startedAt + cacheTtlMs).toISOString(),
+      service: {
+        status,
+        latencyMs: Date.now() - startedAt,
+        checkedAt,
+        players: null,
+        serverVersion: null,
+        startedAt: null,
+        vip: null,
+        errorBudgetRemaining: null,
+        errorBudgetResetSeconds: null,
+        cachedUntil: new Date(startedAt + cacheTtlMs).toISOString(),
+      },
+      observation: { status, refreshFailureClass },
     }
   }
 }

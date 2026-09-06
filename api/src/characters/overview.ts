@@ -1,10 +1,10 @@
 import { createLocationClient } from '@evespace/esi-client/domains/location'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
 import { getCharacterSkillsData } from './skills.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
-import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
 
 export const locationScope = getCharacterEsiScope('location')

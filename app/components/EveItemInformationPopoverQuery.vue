@@ -5,6 +5,8 @@ import { publicTypeDetailQuery, type PublicTypeDetail } from '../queries/univers
 const props = defineProps<{
   descriptionId: string
   detailsLabel?: string
+  imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
+  imageSource?: string
   titleId: string
   typeId: number
 }>()
@@ -28,6 +30,8 @@ const contentStatus = computed<'loaded' | 'loading' | 'unavailable'>(() => {
   <EveItemInformationContent
     :description-id="descriptionId"
     :details-label="detailsLabel"
+    :image-kind="imageKind"
+    :image-source="imageSource"
     :item="item"
     :status="contentStatus"
     :title-id="titleId"

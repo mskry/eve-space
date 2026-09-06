@@ -4,15 +4,16 @@ import { sql } from '../db/client.js'
 import {
   assertRegisteredEsiOperation,
   getOptionalCharacterEsiScope,
-  type EsiOperation,
-} from '../esi-resilience/catalog.js'
-import { platformResources } from './resources.js'
+} from '../esi-resilience/catalog-access.js'
+import type { EsiOperation } from '../esi-resilience/catalog.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
 import {
   platformCollectionFailureClasses,
   platformCollectionStateIdentitySchema,
   type PlatformCollectionFailureClass,
   type PlatformCollectionStateIdentity,
 } from './collection-state.js'
+import { platformResources } from './resources.js'
 
 const platformResourceDueReasons = [
   'never-collected',
@@ -149,7 +150,7 @@ export async function resolveInstalledResourceEligibility(
 export async function selectDueInstalledResources(
   options: SelectDueResourcesOptions,
 ): Promise<readonly DueInstalledResource[]> {
-  if (!Number.isSafeInteger(options.limit) || options.limit <= 0)
+  if (!isPositiveSafeInteger(options.limit))
     throw new Error('Resource planning limit must be a positive safe integer')
   const resources = options.resources ?? platformResources
   if (resources.length === 0) return []
@@ -272,7 +273,7 @@ function parseClassification(row: ClassificationRow): PlatformResourceEligibilit
 function parseAuthorizationCharacterId(value: number | string | null | undefined) {
   if (value == null) return null
   const parsed = Number(value)
-  if (!Number.isSafeInteger(parsed) || parsed <= 0)
+  if (!isPositiveSafeInteger(parsed))
     throw new Error(`Resource classifier returned invalid authorization character ${value}`)
   return parsed
 }

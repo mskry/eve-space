@@ -1,6 +1,9 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
 import type { Queue } from 'bullmq'
-import { assertRegisteredEsiOperation, getEsiOperationContract } from '../esi-resilience/catalog.js'
+import {
+  assertRegisteredEsiOperation,
+  getEsiOperationContract,
+} from '../esi-resilience/catalog-access.js'
 import { getEsiRequestCooldowns } from '../esi-resilience/cooldowns.js'
 import { characterEsiPrincipal } from '../esi-resilience/identity.js'
 import { env } from '../env.js'

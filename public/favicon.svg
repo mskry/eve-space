@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>EVE Space</title>
+  <rect width="64" height="64" fill="#060b0f" />
+  <path d="M5 5h54v54H5z" fill="none" stroke="#51e0c1" stroke-width="2" />
+  <path d="M13 14h37v7H13zm0 14h24v7H13zm0 14h29v7H13z" fill="#e8edf0" />
+  <path d="M52 14h-8L31 49h8z" fill="#51e0c1" />
+</svg>

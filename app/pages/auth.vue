@@ -6,8 +6,10 @@ definePageMeta({
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
+const route = useRoute()
 const { authConfig, authFeedback, authFeedbackIsError, authLoading, authSession, logout } =
   useAuthSession(apiClient)
+const loginUrl = computed(() => getAuthLoginUrl(authConfig.value.loginUrl, route.query.redirect))
 
 async function handleLogout() {
   await logout()
@@ -24,7 +26,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
     <p class="ui-eyebrow">SIGN IN</p>
     <h1>Authorize your capsuleer</h1>
     <p class="auth-intro">
-      Continue to EVE Online to approve identity and wallet access. Your account credentials are
+      Continue to EVE Online to approve identity and character access. Your account credentials are
       handled only by EVE.
     </p>
 
@@ -56,7 +58,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
     </div>
 
     <div v-else-if="authConfig?.configured" class="auth-connect">
-      <a class="eve-login" :href="authConfig.loginUrl">
+      <a class="eve-login" :href="loginUrl">
         <img
           src="https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-white-large.png"
           alt="Log in with EVE Online"
@@ -64,7 +66,7 @@ useHead({ title: 'Authorize Character // EVE Space' })
       </a>
       <div class="scope-list">
         <span><i /> Public character identity</span>
-        <span><i /> Character wallet balance</span>
+        <span><i /> Character wallet, market orders, and contracts</span>
         <span><i /> Local encrypted token storage</span>
       </div>
     </div>

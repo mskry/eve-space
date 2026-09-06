@@ -8,14 +8,22 @@ import {
   assertExecutableEsiOperationDefinitions,
   assertEsiOperationCatalogConfiguration,
   assertRegisteredEsiOperation,
-  coreEsiOperationCatalog,
-  esiOperationCatalog,
   getEsiOperationContract,
-} from '../../src/esi-resilience/catalog.js'
+} from '../../src/esi-resilience/catalog-access.js'
+import { coreEsiOperationCatalog, esiOperationCatalog } from '../../src/esi-resilience/catalog.js'
 import { assertEsiOperationContracts } from '../../src/esi-resilience/catalog-validation.js'
+import { classifyEsiResponse } from '../../src/esi-resilience/policy.js'
 import { installedModuleEsiOperationCatalog } from '../../src/generated/platform/installed-module-esi.js'
 
 describe('ESI operation policies', () => {
+  test('keeps GetUniverseBloodlines as the only API response-validation override', () => {
+    const disabled = Object.entries(esiOperationCatalog)
+      .filter(([, contract]) => contract.responseValidation.kind === 'disabled')
+      .map(([operation, contract]) => [operation, contract.audit.esiOperationId])
+
+    expect(disabled).toEqual([['universe-bloodlines', 'GetUniverseBloodlines']])
+  })
+
   test('requires definitions to own a real matching SDK descriptor and catalog contract', () => {
     const contract = {
       ...validModuleOperation(),
@@ -55,8 +63,16 @@ describe('ESI operation policies', () => {
         'public-alliance',
         'universe-races',
         'universe-bloodlines',
+        'character-assets-page',
+        'character-asset-names',
         'wallet-balance',
+        'wallet-journal',
         'wallet-transactions',
+        'market-orders',
+        'market-order-history',
+        'character-contracts',
+        'character-contract-items',
+        'character-contract-bids',
         'mail-headers',
         'mail-message',
         'mail-labels',
@@ -70,6 +86,8 @@ describe('ESI operation policies', () => {
         'character-cspa-charge',
         'attributes',
         'skill-queue',
+        'character-clones',
+        'character-implants',
         'skills',
         'location',
         'ship',
@@ -108,7 +126,17 @@ describe('ESI operation policies', () => {
     })
     expect(getEsiOperationContract('wallet-balance')).toMatchObject({
       authorization: { kind: 'character', scope: 'esi-wallet.read_character_wallet.v1' },
-      cache: { kind: 'shared', stale: { kind: 'outage', milliseconds: 3_600_000 } },
+      cache: { kind: 'shared', stale: { kind: 'outage', milliseconds: 86_400_000 } },
+    })
+    expect(getEsiOperationContract('wallet-transactions')).toMatchObject({
+      representationVersion: 'v3',
+      identity: {
+        kind: 'mixed',
+        fields: [
+          { kind: 'scalar', field: 'characterId' },
+          { kind: 'scalar', field: 'fromId', nullable: true },
+        ],
+      },
     })
   })
 
@@ -121,7 +149,7 @@ describe('ESI operation policies', () => {
   test('merges the reviewed core and generated installed-module catalogs', () => {
     expect(esiMetadataReview).toEqual({
       explorerUrl: 'https://developers.eveonline.com/api-explorer',
-      reviewedAt: '2026-08-29',
+      reviewedAt: '2026-09-03',
       requestedCompatibilityDate: '2026-08-23',
       resolvedCompatibilityDate: '2026-08-18',
     })
@@ -239,7 +267,7 @@ describe('ESI operation policies', () => {
       cache: {
         kind: 'shared',
         revalidate: true,
-        stale: { kind: 'outage', milliseconds: 3_600_000 },
+        stale: { kind: 'outage', milliseconds: 86_400_000 },
       },
       retry: { kind: 'idempotent' },
     })
@@ -256,11 +284,12 @@ describe('ESI operation policies', () => {
       cache: {
         kind: 'shared',
         revalidate: true,
-        stale: { kind: 'outage', milliseconds: 3_600_000 },
+        stale: { kind: 'outage', milliseconds: 86_400_000 },
       },
     })
     expect([
       esiOperationMetadata['wallet-balance'],
+      esiOperationMetadata['wallet-journal'],
       esiOperationMetadata['wallet-transactions'],
     ]).toEqual([
       expect.objectContaining({
@@ -281,7 +310,198 @@ describe('ESI operation policies', () => {
           window: '15m',
         },
       }),
+      expect.objectContaining({
+        cache: { kind: 'relative', seconds: 3_600 },
+        rateLimit: {
+          kind: 'declared',
+          group: 'char-wallet',
+          maximumTokens: 150,
+          window: '15m',
+        },
+      }),
     ])
+  })
+
+  test('records reviewed Finance operation descriptors and private resilience contracts', () => {
+    const expected = {
+      'wallet-journal': [
+        'GetCharactersCharacterIdWalletJournal',
+        'esi-wallet.read_character_wallet.v1',
+        { kind: 'declared', group: 'char-wallet', maximumTokens: 150, window: '15m' },
+      ],
+      'market-orders': [
+        'GetCharactersCharacterIdOrders',
+        'esi-markets.read_character_orders.v1',
+        { kind: 'legacy-only' },
+      ],
+      'market-order-history': [
+        'GetCharactersCharacterIdOrdersHistory',
+        'esi-markets.read_character_orders.v1',
+        { kind: 'legacy-only' },
+      ],
+      'character-contracts': [
+        'GetCharactersCharacterIdContracts',
+        'esi-contracts.read_character_contracts.v1',
+        { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
+      ],
+      'character-contract-items': [
+        'GetCharactersCharacterIdContractsContractIdItems',
+        'esi-contracts.read_character_contracts.v1',
+        { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
+      ],
+      'character-contract-bids': [
+        'GetCharactersCharacterIdContractsContractIdBids',
+        'esi-contracts.read_character_contracts.v1',
+        { kind: 'declared', group: 'char-contract', maximumTokens: 600, window: '15m' },
+      ],
+    } as const
+
+    for (const [operation, [esiOperationId, scope, rateGroup]] of Object.entries(expected)) {
+      const metadata = esiOperationMetadata[operation as keyof typeof expected]
+      const contract = getEsiOperationContract(operation as keyof typeof expected)
+      expect(operationRegistry[esiOperationId]).toBeDefined()
+      expect(metadata).toMatchObject({
+        method: 'GET',
+        esiOperationId,
+        minimumCompatibilityDate: '2020-01-01',
+        requiredScope: scope,
+        supportsConditionalRequests: true,
+        rateLimit: rateGroup,
+      })
+      expect(contract).toMatchObject({
+        authorization: { kind: 'character', scope },
+        cache: {
+          kind: 'shared',
+          collapse: true,
+          revalidate: true,
+          stale: { kind: 'outage', milliseconds: 86_400_000 },
+        },
+        rateGroup,
+        retry: { kind: 'idempotent' },
+      })
+    }
+  })
+
+  test('records reviewed clone operation descriptors and private resilience contracts', () => {
+    const expected = {
+      'character-clones': [
+        '/characters/{character_id}/clones',
+        'GetCharactersCharacterIdClones',
+        'esi-clones.read_clones.v1',
+        { kind: 'declared', group: 'char-location', maximumTokens: 1_200, window: '15m' },
+      ],
+      'character-implants': [
+        '/characters/{character_id}/implants',
+        'GetCharactersCharacterIdImplants',
+        'esi-clones.read_implants.v1',
+        { kind: 'declared', group: 'char-detail', maximumTokens: 600, window: '15m' },
+      ],
+    } as const
+
+    for (const [operation, [path, esiOperationId, scope, rateGroup]] of Object.entries(expected)) {
+      const metadata = esiOperationMetadata[operation as keyof typeof expected]
+      const contract = getEsiOperationContract(operation as keyof typeof expected)
+      expect(operationRegistry[esiOperationId]).toBeDefined()
+      expect(metadata).toMatchObject({
+        method: 'GET',
+        path,
+        esiOperationId,
+        minimumCompatibilityDate: '2020-01-01',
+        requiredScope: scope,
+        cache: { kind: 'relative', seconds: 120 },
+        supportsConditionalRequests: true,
+        rateLimit: rateGroup,
+      })
+      expect(contract).toMatchObject({
+        authorization: { kind: 'character', scope },
+        identity: { kind: 'ordered', fields: ['characterId'] },
+        freshness: { kind: 'relative', seconds: 120 },
+        cache: {
+          kind: 'shared',
+          collapse: true,
+          revalidate: true,
+          stale: { kind: 'outage', milliseconds: 86_400_000 },
+          retentionMilliseconds: 86_400_000,
+        },
+        rateGroup,
+        retry: { kind: 'idempotent' },
+      })
+    }
+  })
+
+  test('records only the reviewed character asset operations and their shared private policy', () => {
+    const expected = {
+      'character-assets-page': {
+        method: 'GET',
+        path: '/characters/{character_id}/assets',
+        esiOperationId: 'GetCharactersCharacterIdAssets',
+        cache: { kind: 'relative', seconds: 3_600 },
+        identity: { kind: 'ordered', fields: ['characterId', 'page'] },
+      },
+      'character-asset-names': {
+        method: 'POST',
+        path: '/characters/{character_id}/assets/names',
+        esiOperationId: 'PostCharactersCharacterIdAssetsNames',
+        cache: { kind: 'runtime-only' },
+        identity: {
+          kind: 'mixed',
+          fields: [
+            { kind: 'scalar', field: 'characterId' },
+            { kind: 'set', field: 'itemIds', maximumItems: 1_000 },
+          ],
+        },
+      },
+    } as const
+
+    for (const [operation, asset] of Object.entries(expected)) {
+      const metadata = esiOperationMetadata[operation as keyof typeof expected]
+      const contract = getEsiOperationContract(operation as keyof typeof expected)
+      expect(operationRegistry[asset.esiOperationId]).toBeDefined()
+      expect(metadata).toMatchObject({
+        method: asset.method,
+        path: asset.path,
+        esiOperationId: asset.esiOperationId,
+        minimumCompatibilityDate: '2020-01-01',
+        requiredScope: 'esi-assets.read_assets.v1',
+        cache: asset.cache,
+        supportsConditionalRequests: true,
+        rateLimit: {
+          kind: 'declared',
+          group: 'char-asset',
+          maximumTokens: 1_800,
+          window: '15m',
+        },
+      })
+      expect(contract).toMatchObject({
+        authorization: { kind: 'character', scope: 'esi-assets.read_assets.v1' },
+        identity: asset.identity,
+        freshness: asset.cache,
+        cache: {
+          kind: 'shared',
+          collapse: true,
+          revalidate: true,
+          stale: { kind: 'outage', milliseconds: 86_400_000 },
+          retentionMilliseconds: 86_400_000,
+        },
+        rateGroup: {
+          kind: 'declared',
+          group: 'char-asset',
+          maximumTokens: 1_800,
+          window: '15m',
+        },
+        retry: { kind: 'idempotent' },
+      })
+    }
+
+    expect(
+      Object.values(esiOperationMetadata).map(({ esiOperationId }) => esiOperationId),
+    ).not.toEqual(
+      expect.arrayContaining([
+        'PostCharactersCharacterIdAssetsLocations',
+        'GetUniverseStructuresStructureId',
+        'GetCorporationsCorporationIdAssets',
+      ]),
+    )
   })
 
   test('records composition lookup and charge policies', () => {
@@ -318,7 +538,7 @@ describe('ESI operation policies', () => {
       cache: {
         kind: 'shared',
         revalidate: true,
-        stale: { kind: 'outage', milliseconds: 3_600_000 },
+        stale: { kind: 'outage', milliseconds: 86_400_000 },
       },
       retry: { kind: 'idempotent' },
     })
@@ -436,7 +656,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-corporations.read_corporation_membership.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-corporations.read_corporation_membership.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
     )
   })
 
@@ -446,14 +666,19 @@ describe('ESI operation policies', () => {
         compatibilityDate: '2026-08-23',
         ssoEnabled: true,
         requestableScopes: [
+          'esi-assets.read_assets.v1',
           'esi-characters.read_contacts.v1',
           'esi-characters.read_corporation_roles.v1',
+          'esi-clones.read_clones.v1',
+          'esi-clones.read_implants.v1',
+          'esi-contracts.read_character_contracts.v1',
           'esi-corporations.read_corporation_membership.v1',
           'esi-location.read_location.v1',
           'esi-location.read_ship_type.v1',
           'esi-mail.organize_mail.v1',
           'esi-mail.read_mail.v1',
           'esi-mail.send_mail.v1',
+          'esi-markets.read_character_orders.v1',
           'esi-search.search_structures.v1',
           'esi-skills.read_skillqueue.v1',
           'esi-skills.read_skills.v1',
@@ -468,6 +693,44 @@ describe('ESI operation policies', () => {
         requestableScopes: [],
       }),
     ).not.toThrow()
+  })
+
+  test.each([
+    'esi-assets.read_assets.v1',
+    'esi-characters.read_corporation_roles.v1',
+    'esi-clones.read_clones.v1',
+    'esi-clones.read_implants.v1',
+    'esi-markets.read_character_orders.v1',
+    'esi-contracts.read_character_contracts.v1',
+    'esi-corporations.read_corporation_membership.v1',
+  ])('rejects configured SSO when %s is missing', (missingScope) => {
+    const requestableScopes = [
+      'esi-assets.read_assets.v1',
+      'esi-characters.read_contacts.v1',
+      'esi-characters.read_corporation_roles.v1',
+      'esi-clones.read_clones.v1',
+      'esi-clones.read_implants.v1',
+      'esi-contracts.read_character_contracts.v1',
+      'esi-corporations.read_corporation_membership.v1',
+      'esi-location.read_location.v1',
+      'esi-location.read_ship_type.v1',
+      'esi-mail.organize_mail.v1',
+      'esi-mail.read_mail.v1',
+      'esi-mail.send_mail.v1',
+      'esi-markets.read_character_orders.v1',
+      'esi-search.search_structures.v1',
+      'esi-skills.read_skillqueue.v1',
+      'esi-skills.read_skills.v1',
+      'esi-wallet.read_character_wallet.v1',
+    ].filter((scope) => scope !== missingScope)
+
+    expect(() =>
+      assertEsiOperationCatalogConfiguration({
+        compatibilityDate: '2026-08-23',
+        ssoEnabled: true,
+        requestableScopes,
+      }),
+    ).toThrow(`EVE_SCOPES is missing scopes required by registered ESI operations: ${missingScope}`)
   })
 
   test.each([
@@ -661,3 +924,56 @@ function validModuleOperation() {
     responseValidation: { kind: 'enabled' },
   } as const
 }
+
+describe('ESI mutation contracts', () => {
+  test('declares every character mutation and its 404 semantics in the catalog', () => {
+    const mutations = Object.entries(esiOperationCatalog)
+      .filter(([, contract]) => contract.mutation)
+      .map(([operation, contract]) => [operation, contract.mutation?.appliedOnMissing])
+
+    expect(mutations).toEqual([
+      ['mail-send', false],
+      ['mail-create-label', false],
+      ['mail-update', false],
+      ['mail-delete', true],
+      ['mail-delete-label', true],
+      ['character-cspa-charge', false],
+    ])
+  })
+
+  test('requires a mutation to be character-authorized and uncached', () => {
+    expect(() =>
+      assertEsiOperationContracts({
+        'module-operation': {
+          ...validModuleOperation(),
+          cache: { kind: 'none' },
+          mutation: { kind: 'character', appliedOnMissing: false },
+        },
+      }),
+    ).toThrow('declares a mutation without character authorization and an uncached contract')
+  })
+
+  test('keeps every mutation out of the cached read paths', () => {
+    for (const [, contract] of Object.entries(esiOperationCatalog)) {
+      if (!contract.mutation) continue
+      expect(contract.cache.kind).toBe('none')
+      expect(contract.authorization.kind).toBe('character')
+    }
+  })
+})
+
+describe('ESI response classification', () => {
+  test('charges the documented bucket cost for each response class', () => {
+    expect(classifyEsiResponse(200)).toEqual({ outcome: 'success', tokenCost: 2 })
+    expect(classifyEsiResponse(204)).toEqual({ outcome: 'success', tokenCost: 2 })
+    expect(classifyEsiResponse(301)).toEqual({ outcome: 'redirect', tokenCost: 1 })
+    expect(classifyEsiResponse(304)).toEqual({ outcome: 'notModified', tokenCost: 1 })
+    expect(classifyEsiResponse(307)).toEqual({ outcome: 'redirect', tokenCost: 1 })
+    expect(classifyEsiResponse(404)).toEqual({ outcome: 'clientError', tokenCost: 5 })
+    expect(classifyEsiResponse(500)).toEqual({ outcome: 'serverError', tokenCost: 0 })
+  })
+
+  test('exempts 429 from the client-error cost so cooldowns are not self-reinforcing', () => {
+    expect(classifyEsiResponse(429)).toEqual({ outcome: 'rateLimited', tokenCost: 0 })
+  })
+})

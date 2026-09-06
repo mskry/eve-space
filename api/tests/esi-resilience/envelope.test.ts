@@ -2,21 +2,74 @@ import { describe, expect, test } from 'vitest'
 import { env } from '../../src/env.js'
 import {
   createCacheEnvelope,
+  ESI_CACHE_ENVELOPE_VERSION,
   getEsiQuota,
   isEnvelopeFresh,
   isEnvelopeRetained,
   isEnvelopeStaleUsable,
+  parseEnvelope,
   toRevalidation,
   updateNotModifiedEnvelope,
 } from '../../src/esi-resilience/envelope.js'
-import { BoundedEsiL1Cache } from '../../src/esi-resilience/l1.js'
-import { getEsiOperationContract } from '../../src/esi-resilience/catalog.js'
+import { BoundedEsiL1Cache } from '../../src/esi-resilience/l1-cache.js'
+import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
+import { sharedPrivateCache } from '../../src/esi-resilience/contract-types.js'
 
 const policy = getEsiOperationContract('public-character')
 const retentionMilliseconds = policy.cache.kind === 'none' ? 0 : policy.cache.retentionMilliseconds
 const now = Date.parse('2026-08-20T12:00:00.000Z')
 
 describe('ESI cache envelopes', () => {
+  test('validates cache metadata while preserving the original envelope fields', () => {
+    const parsed = parseEnvelope<{ name: string }>(
+      serializedEnvelope({
+        authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+        resourceRevision: { namespace: 'mailbox', value: 4 },
+        futureField: 'preserved',
+      }),
+    )
+
+    expect(parsed).toEqual({
+      success: true,
+      envelope: expect.objectContaining({
+        data: { name: 'cached' },
+        authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+        resourceRevision: { namespace: 'mailbox', value: 4 },
+        futureField: 'preserved',
+      }),
+    })
+  })
+
+  test('distinguishes obsolete versions from malformed envelopes', () => {
+    expect(parseEnvelope(serializedEnvelope({ version: 2 }))).toEqual({
+      success: false,
+      reason: 'versionMismatch',
+      found: 2,
+    })
+    expect(parseEnvelope(serializedEnvelope({ version: undefined }))).toEqual({
+      success: false,
+      reason: 'versionMismatch',
+      found: undefined,
+    })
+    expect(parseEnvelope('{')).toEqual({ success: false, reason: 'malformedJson' })
+    expect(parseEnvelope(serializedEnvelope({ freshUntil: now + 1, staleUntil: now }))).toEqual({
+      success: false,
+      reason: 'incoherentFreshnessWindow',
+    })
+
+    for (const serialized of [
+      'null',
+      serializedEnvelope({ data: undefined }),
+      serializedEnvelope({ validatedAt: 'not-a-date' }),
+      serializedEnvelope({ fence: -1 }),
+      serializedEnvelope({
+        authorization: { kind: 'character', principal: '', generation: 1 },
+      }),
+      serializedEnvelope({ resourceRevision: { namespace: 'mailbox', value: -1 } }),
+    ])
+      expect(parseEnvelope(serialized)).toEqual({ success: false, reason: 'invalidShape' })
+  })
+
   test('uses upstream expiry and retains stale values only within policy bounds', () => {
     const envelope = createCacheEnvelope({
       data: { name: 'Bandera' },
@@ -96,13 +149,14 @@ describe('ESI cache envelopes', () => {
     expect(isEnvelopeRetained(runtimeOnly, now)).toBe(true)
   })
 
-  test('preserves validators and authorization metadata after a 304', () => {
+  test('preserves validators and representation scope after a 304', () => {
     const original = createCacheEnvelope({
       data: { name: 'Bandera' },
       fence: 4,
       policy,
       representationVersion: 'v1',
       authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+      resourceRevision: { namespace: 'mailbox', value: 7 },
       now,
       metadata: {
         status: 200,
@@ -115,11 +169,11 @@ describe('ESI cache envelopes', () => {
       metadata: {
         status: 304,
         headers: { 'x-ratelimit-remaining': '98' },
-        cache: { cacheControl: 'max-age=10' },
+        cache: { cacheControl: 'max-age=10', etag: '"new"' },
       },
       policy,
-      representationVersion: 'v1',
-      authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+      fence: 5,
+      authorization: { kind: 'character', principal: 'character-1', generation: 4 },
       now: now + 1_000,
     })
 
@@ -127,10 +181,13 @@ describe('ESI cache envelopes', () => {
     expect(toRevalidation(original, false)).toEqual({})
     expect(refreshed).toMatchObject({
       data: original.data,
-      etag: '"old"',
+      etag: '"new"',
       lastModified: 'old',
       freshUntil: now + 11_000,
-      authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+      representationVersion: 'v1',
+      authorization: { kind: 'character', principal: 'character-1', generation: 4 },
+      resourceRevision: { namespace: 'mailbox', value: 7 },
+      fence: 5,
     })
     expect(refreshed).not.toHaveProperty('quota')
     expect(getEsiQuota({ status: 304, headers: { 'x-ratelimit-remaining': '98' } })).toEqual({
@@ -207,23 +264,49 @@ describe('ESI cache envelopes', () => {
     expect(at.freshUntil).toBe(Date.parse('2026-08-21T11:05:00.000Z'))
   })
 
-  test('caps stale serving at the configured retention deadline', () => {
+  test('caps configured private retention at the maximum retention deadline', () => {
+    const originalPrivateRetention = env.ESI_PRIVATE_RETENTION_SECONDS
     const originalMaximumRetention = env.ESI_CACHE_MAX_RETENTION_SECONDS
+    env.ESI_PRIVATE_RETENTION_SECONDS = 120
     env.ESI_CACHE_MAX_RETENTION_SECONDS = 30
     try {
+      const walletPolicy = getEsiOperationContract('wallet-balance')
+      const privateCache = sharedPrivateCache()
+      if (walletPolicy.cache.kind === 'none' || privateCache.kind === 'none')
+        throw new Error('Wallet balance must use shared private caching')
+      const privatePolicy = {
+        ...walletPolicy,
+        cache: { ...privateCache, revalidate: walletPolicy.cache.revalidate },
+      }
       const envelope = createCacheEnvelope({
         data: 1,
         fence: 1,
-        policy,
+        policy: privatePolicy,
         representationVersion: 'v1',
         now,
         metadata: { status: 200, headers: {}, cache: { cacheControl: 'max-age=60' } },
       })
 
+      expect(privateCache.retentionMilliseconds).toBe(120_000)
       expect(envelope.retainUntil).toBe(envelope.freshUntil + 30_000)
       expect(envelope.staleUntil).toBe(envelope.retainUntil)
     } finally {
+      env.ESI_PRIVATE_RETENTION_SECONDS = originalPrivateRetention
       env.ESI_CACHE_MAX_RETENTION_SECONDS = originalMaximumRetention
     }
   })
 })
+
+function serializedEnvelope(overrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    version: ESI_CACHE_ENVELOPE_VERSION,
+    representationVersion: 'v1',
+    data: { name: 'cached' },
+    freshUntil: now + 60_000,
+    staleUntil: now + 60_000,
+    retainUntil: now + 60_000,
+    validatedAt: new Date(now).toISOString(),
+    fence: 1,
+    ...overrides,
+  })
+}

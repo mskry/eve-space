@@ -1,5 +1,7 @@
 @media (max-width: 47.5rem) {
   .history-npc-toggle {
-    grid-column: 1 / -1;
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
   }
 }

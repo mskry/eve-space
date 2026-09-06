@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#060b0f" />
+      <stop offset="1" stop-color="#101a20" />
+    </linearGradient>
+    <radialGradient id="signal" cx="0.76" cy="0.48" r="0.55">
+      <stop offset="0" stop-color="#51e0c1" stop-opacity="0.13" />
+      <stop offset="1" stop-color="#51e0c1" stop-opacity="0" />
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0v48" fill="none" stroke="#aac2ce" stroke-opacity="0.055" />
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#background)" />
+  <rect width="1200" height="630" fill="url(#grid)" />
+  <rect width="1200" height="630" fill="url(#signal)" />
+  <path d="M32 80V32h48M1120 32h48v48M1168 550v48h-48M80 598H32v-48" fill="none" stroke="#51e0c1" stroke-width="2" />
+
+  <g transform="translate(78 72) scale(4)" fill="#e8edf0">
+    <path d="M77.7002 3.89551H54.0762L37.5781 24.3818H32.3486L36.5322 19.1729L51.958 0H77.7002V3.89551ZM21.0898 24.3721H0V20.4766H21.0898V24.3721ZM77.7012 20.4766V24.3721H56.6104V20.4766H77.7012ZM17.7744 14.0537H0V10.1582H17.7744V14.0537ZM77.7012 14.0537H59.9268V10.1582H77.7012V14.0537ZM34.7197 3.89551H0V0H34.7197V3.89551Z" />
+  </g>
+  <text x="414" y="153" fill="#51e0c1" font-family="Arial Narrow, Helvetica Neue, Arial, sans-serif" font-size="60" font-weight="700" letter-spacing="13">SPACE</text>
+
+  <text x="80" y="269" fill="#83919b" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" letter-spacing="6">CAPSULEER OPERATIONS DECK</text>
+  <text x="78" y="340" fill="#e8edf0" font-family="Arial Narrow, Helvetica Neue, Arial, sans-serif" font-size="48" font-weight="300" letter-spacing="2">YOUR FLEET. ONE SIGNAL.</text>
+  <text x="80" y="394" fill="#aab6bd" font-family="Arial, Helvetica, sans-serif" font-size="22">Character intelligence, finance, mail, and corporation operations</text>
+  <text x="80" y="426" fill="#aab6bd" font-family="Arial, Helvetica, sans-serif" font-size="22">secured behind EVE Online SSO.</text>
+
+  <g transform="translate(920 318)" fill="none">
+    <circle r="154" stroke="#aac2ce" stroke-opacity="0.12" />
+    <circle r="112" stroke="#aac2ce" stroke-opacity="0.18" />
+    <circle r="70" stroke="#51e0c1" stroke-opacity="0.34" />
+    <path d="M-178 0h356M0-178v356" stroke="#aac2ce" stroke-opacity="0.12" />
+    <path d="M-109-109 109 109M109-109-109 109" stroke="#aac2ce" stroke-opacity="0.08" />
+    <path d="M0-112A112 112 0 0 1 97 56" stroke="#51e0c1" stroke-width="3" />
+    <path d="M0 0 92-64" stroke="#51e0c1" stroke-width="2" />
+    <circle cx="92" cy="-64" r="7" fill="#ff8a44" stroke="none" />
+    <circle r="9" fill="#51e0c1" stroke="none" />
+  </g>
+
+  <path d="M80 516h1040" stroke="#aac2ce" stroke-opacity="0.18" />
+  <text x="80" y="558" fill="#51e0c1" font-family="Courier New, monospace" font-size="17" font-weight="700" letter-spacing="2">EVE-SPACE.COM</text>
+  <text x="1120" y="558" fill="#83919b" font-family="Courier New, monospace" font-size="14" text-anchor="end" letter-spacing="1">SECURE SSO / ENCRYPTED TOKENS</text>
+</svg>

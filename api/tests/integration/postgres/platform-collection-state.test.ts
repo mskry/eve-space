@@ -360,7 +360,7 @@ describe('platform collection state PostgreSQL persistence', () => {
           resources: [resource],
           resolveEligibility: (candidate) =>
             resolveInstalledResourceEligibility(candidate, eligibilityOptions),
-          loadCharacterAuthorization,
+          loadCharacterCacheAuthorization: loadCharacterAuthorization,
         }),
       ).resolves.toEqual({ outcome: 'noop', reason: 'obsolete' })
       expect(loadCharacterAuthorization).not.toHaveBeenCalled()
@@ -558,7 +558,7 @@ describe('platform collection state PostgreSQL persistence', () => {
           {
             resources: [resource],
             resolveEligibility,
-            loadCharacterAuthorization: loadAuthorization,
+            loadCharacterCacheAuthorization: loadAuthorization,
           },
         ),
       ).resolves.toEqual({ outcome: 'noop', reason: 'already-current' })

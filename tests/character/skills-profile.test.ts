@@ -6,8 +6,7 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf
 const route = source('app/pages/characters/[characterId]/skills.vue')
 const summary = source('app/components/character/skills/SummaryCard.vue')
 const queue = source('app/components/character/skills/Queue.vue')
-const queueUtilities = source('app/utils/skill-queue.ts')
-const page = [route, summary, queue, queueUtilities].join('\n')
+const page = [route, summary, queue].join('\n')
 
 describe('character skills profile', () => {
   it('renders every EVE character attribute with its exported icon', () => {
@@ -25,9 +24,9 @@ describe('character skills profile', () => {
     expect(page).toContain("{ kind: 'bonus' as const, count: profile.bonusRemaps }")
     expect(summary).toContain('Date.parse(cooldown) > Date.now()')
     expect(page).toContain("{ kind: 'cooldown' as const, date: cooldown }")
-    expect(page).toContain('REMAPS AVAILABLE: {{ remapAvailability.count }}')
-    expect(page).toContain('NEXT REMAP:')
-    expect(page).toContain('REMAP: AVAILABLE')
+    expect(summary).toContain('class="character-summary-stats"')
+    expect(summary).toContain("remapAvailability.kind === 'bonus'")
+    expect(summary).toContain("remapAvailability.kind === 'cooldown'")
     expect(page).not.toContain('attributes.lastRemapDate')
   })
 
@@ -38,12 +37,11 @@ describe('character skills profile', () => {
     expect(route).toContain('characterId.value')
   })
 
-  it('renders a separately authorized queue with timestamp-derived training rates', () => {
+  it('renders a separately authorized queue with timestamp-derived timing', () => {
     expect(route).toContain('characterSkillQueueQuery')
     expect(queue).toContain('Skill queue authorization required')
-    expect(queue).toContain('trainingRatePerMinute(activeQueueEntry)')
-    expect(queueUtilities).toContain('levelEndSp - trainingStartSp')
+    expect(queue).toContain('entryRemainingMs(activeQueueEntry.value, nowMs.value)')
     expect(queue).not.toContain('cloneState')
-    expect(queue).toContain('SP/MIN')
+    expect(queue).not.toContain('SP/MIN')
   })
 })

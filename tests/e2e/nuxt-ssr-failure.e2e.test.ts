@@ -18,6 +18,29 @@ const apiServer = await startCorsJsonApi((request) => {
     else if (request.url === '/auth/config')
       return { body: { configured: false, loginUrl: '', attachUrl: '' } }
     else if (request.url === '/api/admin/session') return { body: { authenticated: false } }
+    else if (request.url === '/api/status')
+      return {
+        body: {
+          status: 'operational',
+          checkedAt: '2026-09-03T11:00:00.000Z',
+          cachedUntil: '2026-09-03T11:00:15.000Z',
+          services: {
+            api: { status: 'operational', uptimeSeconds: 100 },
+            database: { status: 'operational', latencyMs: 1 },
+            esi: {
+              status: 'operational',
+              latencyMs: 2,
+              checkedAt: '2026-09-03T11:00:00.000Z',
+              players: 20_000,
+              serverVersion: 'test',
+              startedAt: null,
+              vip: false,
+              errorBudgetRemaining: 100,
+              errorBudgetResetSeconds: 10,
+            },
+          },
+        },
+      }
     else if (request.url === '/api/modules')
       return {
         body: {

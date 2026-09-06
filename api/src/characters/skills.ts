@@ -1,12 +1,12 @@
 import { createSkillsClient } from '@evespace/esi-client/domains/skills'
-import type { GetCharactersCharacterIdSkillsOutput } from '@evespace/esi-client/schemas'
+import type { GetCharactersCharacterIdSkillsResponse } from '@evespace/esi-client/types'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog.js'
-import { toEsiResultMetadata } from '../esi-resilience/public-metadata.js'
-import { getEsiResilienceLayer } from '../esi-resilience/resilience.js'
-import { createEsiTransport } from '../esi-resilience/transport.js'
+import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
+import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import { skillCategoryId } from '../skills/training.js'
 
@@ -87,7 +87,7 @@ export async function getCharacterSkills(characterId: number): Promise<Character
 }
 
 function mapCharacterSkillsSnapshot(
-  result: GetCharactersCharacterIdSkillsOutput,
+  result: GetCharactersCharacterIdSkillsResponse,
 ): CharacterSkillsSnapshot {
   return {
     totalSp: result.total_sp,

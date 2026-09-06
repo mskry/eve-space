@@ -41,7 +41,7 @@ export interface SessionAccount {
 }
 
 export type OAuthStateContext =
-  | { intent: 'login' }
+  | { intent: 'login'; returnPath?: string }
   | { intent: 'attach'; userId: string }
   | { intent: 'reauthorize'; userId: string; characterId: number; returnPath?: string }
   | {
@@ -56,6 +56,11 @@ export interface StoredCharacterToken {
   userId: string
   encryptedTokens: string
   accessTokenExpiresAt: Date
+  scopes: string[]
+  tokenVersion: number
+}
+
+export interface StoredCharacterCacheAuthorization {
   scopes: string[]
   tokenVersion: number
 }
@@ -77,6 +82,10 @@ type TokenReader = Pick<DatabaseTransaction, 'select'>
 type TokenWriter = Pick<DatabaseTransaction, 'update'>
 type TokenDeleter = Pick<DatabaseTransaction, 'delete'>
 const incrementTokenVersion = sql`${eveTokens.tokenVersion} + 1`
+const characterCacheAuthorizationSelection = {
+  scopes: eveTokens.scopes,
+  tokenVersion: eveTokens.tokenVersion,
+}
 
 /** How long an unconsumed authorization round-trip stays redeemable. */
 const oauthStateTtlMs = 10 * 60 * 1_000
@@ -121,7 +130,10 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
       context.intent === 'reauthorize' || context.intent === 'claim-organization-owner'
         ? context.characterId
         : null,
-    returnPath: context.intent === 'reauthorize' ? (context.returnPath ?? null) : null,
+    returnPath:
+      context.intent === 'login' || context.intent === 'reauthorize'
+        ? (context.returnPath ?? null)
+        : null,
     organizationDeploymentId: context.intent === 'claim-organization-owner' ? 1 : null,
     organizationId: context.intent === 'claim-organization-owner' ? context.organizationId : null,
     organizationVersion:
@@ -144,7 +156,11 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
     })
 
   if (!record) return null
-  if (record.intent === 'login') return { intent: 'login' }
+  if (record.intent === 'login')
+    return {
+      intent: 'login',
+      ...(record.returnPath ? { returnPath: record.returnPath } : {}),
+    }
   if (record.intent === 'attach' && record.userId)
     return { intent: 'attach', userId: record.userId }
   if (record.intent === 'reauthorize' && record.userId && record.characterId)
@@ -535,6 +551,18 @@ export async function findCharacterToken(
   return record ?? null
 }
 
+export async function findCharacterCacheAuthorization(
+  characterId: number,
+  connection: TokenReader = db,
+): Promise<StoredCharacterCacheAuthorization | null> {
+  const [record] = await connection
+    .select(characterCacheAuthorizationSelection)
+    .from(eveTokens)
+    .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
+    .where(eq(eveTokens.characterId, characterId))
+  return record ?? null
+}
+
 export async function findCharacterTokenForLifecycle(
   characterId: number,
   subjectLifecycleId: string,
@@ -548,6 +576,28 @@ export async function findCharacterTokenForLifecycle(
       scopes: eveTokens.scopes,
       tokenVersion: eveTokens.tokenVersion,
     })
+    .from(eveTokens)
+    .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
+    .innerJoin(
+      platformSubjectLifecycles,
+      eq(platformSubjectLifecycles.characterId, characters.characterId),
+    )
+    .where(
+      and(
+        eq(eveTokens.characterId, characterId),
+        eq(platformSubjectLifecycles.subjectLifecycleId, subjectLifecycleId),
+      ),
+    )
+  return record ?? null
+}
+
+export async function findCharacterCacheAuthorizationForLifecycle(
+  characterId: number,
+  subjectLifecycleId: string,
+  connection: TokenReader = db,
+): Promise<StoredCharacterCacheAuthorization | null> {
+  const [record] = await connection
+    .select(characterCacheAuthorizationSelection)
     .from(eveTokens)
     .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
     .innerJoin(

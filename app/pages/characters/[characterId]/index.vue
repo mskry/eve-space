@@ -2,6 +2,7 @@
 import { useQuery } from '@pinia/colada'
 import { characterOverviewQuery } from '../../../queries/characters'
 import { canRunProtectedQuery } from '../../../queries/query-cache'
+import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
 
@@ -73,6 +74,38 @@ const pendingAuthorization = computed(() =>
     (section) => section?.status === 'scope-required',
   ),
 )
+const overviewResourceState = computed<EsiResourceState>(() => {
+  if (overviewStatus.value === 'loading') {
+    return {
+      status: 'loading',
+      title: '',
+      message: 'Establishing character-specific ESI uplink...',
+    }
+  }
+  if (overviewStatus.value === 'error' || overviewStatus.value === 'not-found') {
+    return {
+      status: 'error',
+      code: overviewStatus.value === 'not-found' ? '404' : 'ERR / ESI',
+      title: 'Record unavailable',
+      message: overviewMessage.value,
+      retryLabel: 'RETRY UPLINK',
+    }
+  }
+  return { status: 'ready' }
+})
+const sectionAuthorizationState = computed<EsiResourceState>(() => {
+  const authorization = pendingAuthorization.value
+  if (!authorization || authorization.status !== 'scope-required') return { status: 'ready' }
+  return {
+    status: 'authorization-required',
+    code: 'ESI 403 / CHARACTER',
+    title: 'Character authorization required',
+    message: authorization.message,
+    action: authorization.authorizeUrl
+      ? { href: authorization.authorizeUrl, label: 'AUTHORIZE ACCESS' }
+      : null,
+  }
+})
 const formattedBirthday = computed(() =>
   character.value ? formatBirthday(character.value.birthday) : '',
 )
@@ -104,198 +137,186 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
 
 <template>
   <div class="character-overview-route">
-    <UiStatePanel v-if="overviewStatus === 'loading' && !character" role="status">
-      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-      <p>Establishing character-specific ESI uplink...</p>
-    </UiStatePanel>
-    <UiStatePanel
-      v-else-if="overviewStatus === 'error' || overviewStatus === 'not-found'"
-      :code="overviewStatus === 'not-found' ? '404' : 'ERR / ESI'"
-      title="Record unavailable"
-      role="alert"
-      tone="error"
+    <EsiResourceBoundary
+      :state="overviewResourceState"
+      :has-data="Boolean(character)"
+      :compact="false"
+      @retry="loadCharacterOverview(true)"
     >
-      <p>{{ overviewMessage }}</p>
-      <template #action>
-        <button class="ui-action-secondary" type="button" @click="loadCharacterOverview(true)">
-          RETRY UPLINK
-        </button>
-      </template>
-    </UiStatePanel>
-
-    <article v-else-if="character" class="dossier">
-      <div class="identity-panel">
-        <div
-          class="character-record-grid"
-          :style="{ '--bio-expanded-height': `${bioExpandedHeight}px` }"
-        >
-          <section
-            class="overview-summary-grid"
-            :class="{ 'overview-summary-grid--single-affiliation': !character.alliance }"
-            aria-label="Character biography and affiliations"
+      <article v-if="character" class="dossier">
+        <div class="identity-panel">
+          <div
+            class="character-record-grid"
+            :style="{ '--bio-expanded-height': `${bioExpandedHeight}px` }"
           >
-            <div
-              ref="bioCard"
-              class="overview-bio-card"
-              :class="{ 'overview-bio-card--expandable': bioIsOverflowing }"
-            >
-              <span class="card-index">01</span>
-              <p>BIO</p>
-              <div ref="bioCopy" class="overview-bio-copy">
-                {{ character.bio || 'No biography recorded.' }}
-              </div>
-            </div>
-            <section class="affiliation-card">
-              <span class="card-index">02</span>
-              <p>CORPORATION</p>
-              <NuxtLink
-                class="affiliation-identity"
-                :to="`/corporation/${character.corporation.id}`"
-              >
-                <UiEveImage
-                  kind="corporation"
-                  :id="character.corporation.id"
-                  :dimension="48"
-                  :alt="`${character.corporation.name} corporation logo`"
-                />
-                <div class="affiliation-copy">
-                  <h2>
-                    <span class="affiliation-ticker">[{{ character.corporation.ticker }}]</span>
-                    {{ character.corporation.name }}
-                  </h2>
-                  <div class="affiliation-meta">
-                    <span
-                      >{{ character.corporation.memberCount.toLocaleString('en-US') }} MEMBERS</span
-                    >
-                  </div>
-                </div>
-              </NuxtLink>
-            </section>
-            <section v-if="character.alliance" class="affiliation-card">
-              <span class="card-index">03</span>
-              <p>ALLIANCE</p>
-              <h2>
-                <span class="affiliation-ticker">[{{ character.alliance.ticker }}]</span>
-                {{ character.alliance.name }}
-              </h2>
-              <div class="affiliation-meta">
-                <span>ACTIVE AFFILIATION</span>
-              </div>
-            </section>
-          </section>
-          <section class="character-detail-groups" aria-label="Character details">
             <section
-              ref="operationsGroup"
-              class="character-detail-group character-detail-group--operations"
+              class="overview-summary-grid"
+              :class="{ 'overview-summary-grid--single-affiliation': !character.alliance }"
+              aria-label="Character biography and affiliations"
             >
-              <h2>OPERATIONS</h2>
-              <dl>
-                <div>
-                  <dt>CURRENT SYSTEM</dt>
-                  <dd>{{ systemLabel }}</dd>
+              <div
+                ref="bioCard"
+                class="overview-bio-card"
+                :class="{ 'overview-bio-card--expandable': bioIsOverflowing }"
+              >
+                <span class="card-index">01</span>
+                <p>BIO</p>
+                <div ref="bioCopy" class="overview-bio-copy">
+                  {{ character.bio || 'No biography recorded.' }}
                 </div>
-                <div>
-                  <dt>DOCKED AT</dt>
-                  <dd :title="locationLabel">{{ locationLabel }}</dd>
-                </div>
-                <div>
-                  <dt>CURRENT SHIP</dt>
-                  <dd class="character-ship-detail" :title="shipNameLabel">
-                    <UiEveImage
-                      v-if="ship?.status === 'ok'"
-                      kind="type-icon"
-                      :id="ship.data.typeId"
-                      :dimension="40"
-                      alt=""
-                    />
-                    <span>{{ shipLabel }}</span>
-                  </dd>
-                </div>
-              </dl>
-            </section>
-            <section class="character-detail-group character-detail-group--identity">
-              <h2>IDENTITY</h2>
-              <dl>
-                <div
-                  :class="
-                    character.factionId
-                      ? 'character-detail-col-start'
-                      : 'character-detail-wide character-detail-col-start'
-                  "
+              </div>
+              <section class="affiliation-card">
+                <span class="card-index">02</span>
+                <p>CORPORATION</p>
+                <NuxtLink
+                  class="affiliation-identity"
+                  :to="`/corporation/${character.corporation.id}`"
                 >
-                  <dt>SECURITY STATUS</dt>
-                  <dd><SecurityStatus :value="character.securityStatus" /></dd>
+                  <UiEveImage
+                    kind="corporation"
+                    :id="character.corporation.id"
+                    :dimension="48"
+                    :alt="`${character.corporation.name} corporation logo`"
+                  />
+                  <div class="affiliation-copy">
+                    <h2>
+                      <span class="affiliation-ticker">[{{ character.corporation.ticker }}]</span>
+                      {{ character.corporation.name }}
+                    </h2>
+                    <div class="affiliation-meta">
+                      <span
+                        >{{
+                          character.corporation.memberCount.toLocaleString('en-US')
+                        }}
+                        MEMBERS</span
+                      >
+                    </div>
+                  </div>
+                </NuxtLink>
+              </section>
+              <section v-if="character.alliance" class="affiliation-card">
+                <span class="card-index">03</span>
+                <p>ALLIANCE</p>
+                <h2>
+                  <span class="affiliation-ticker">[{{ character.alliance.ticker }}]</span>
+                  {{ character.alliance.name }}
+                </h2>
+                <div class="affiliation-meta">
+                  <span>ACTIVE AFFILIATION</span>
                 </div>
-                <div v-if="character.factionId" class="character-detail-col-end">
-                  <dt>FACTION</dt>
-                  <dd>
-                    <UiEveImage
-                      kind="faction"
-                      :id="character.factionId"
-                      :dimension="32"
-                      alt="Faction militia emblem"
-                    />
-                  </dd>
-                </div>
-                <div class="character-detail-col-start">
-                  <dt>RACE</dt>
-                  <dd>{{ character.race }}</dd>
-                </div>
-                <div class="character-detail-col-end">
-                  <dt>BLOODLINE</dt>
-                  <dd>{{ character.bloodline }}</dd>
-                </div>
-                <div class="character-detail-col-start">
-                  <dt>DATE OF BIRTH</dt>
-                  <dd>{{ formattedBirthday }}</dd>
-                </div>
-                <div class="character-detail-col-end">
-                  <dt>GENDER</dt>
-                  <dd>
-                    <span class="gender-symbol" :title="character.gender" aria-hidden="true">
-                      {{ genderSymbol }}
-                    </span>
-                    <span class="sr-only">{{ character.gender }}</span>
-                  </dd>
-                </div>
-                <div v-if="character.corporationTitle" class="character-detail-wide">
-                  <dt>CORPORATION TITLE</dt>
-                  <dd>{{ character.corporationTitle }}</dd>
-                </div>
-              </dl>
+              </section>
             </section>
-            <section class="character-detail-group character-detail-group--progression">
-              <h2>PROGRESSION</h2>
-              <dl>
-                <div class="character-detail-primary">
-                  <dt>TOTAL SKILL POINTS</dt>
-                  <dd>{{ skillPointsLabel }}</dd>
-                </div>
-                <div>
-                  <dt>ACHIEVEMENT SCORE</dt>
-                  <dd>{{ character.achievementScore }}</dd>
-                </div>
-              </dl>
+            <section class="character-detail-groups" aria-label="Character details">
+              <section
+                ref="operationsGroup"
+                class="character-detail-group character-detail-group--operations"
+              >
+                <h2>OPERATIONS</h2>
+                <dl>
+                  <div>
+                    <dt>CURRENT SYSTEM</dt>
+                    <dd>{{ systemLabel }}</dd>
+                  </div>
+                  <div>
+                    <dt>DOCKED AT</dt>
+                    <dd :title="locationLabel">{{ locationLabel }}</dd>
+                  </div>
+                  <div>
+                    <dt>CURRENT SHIP</dt>
+                    <dd class="character-ship-detail" :title="shipNameLabel">
+                      <UiEveImage
+                        v-if="ship?.status === 'ok'"
+                        kind="type-icon"
+                        :id="ship.data.typeId"
+                        :dimension="40"
+                        alt=""
+                      />
+                      <span>{{ shipLabel }}</span>
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+              <section class="character-detail-group character-detail-group--identity">
+                <h2>IDENTITY</h2>
+                <dl>
+                  <div
+                    :class="
+                      character.factionId
+                        ? 'character-detail-col-start'
+                        : 'character-detail-wide character-detail-col-start'
+                    "
+                  >
+                    <dt>SECURITY STATUS</dt>
+                    <dd><SecurityStatus :value="character.securityStatus" /></dd>
+                  </div>
+                  <div v-if="character.factionId" class="character-detail-col-end">
+                    <dt>FACTION</dt>
+                    <dd>
+                      <UiEveImage
+                        kind="faction"
+                        :id="character.factionId"
+                        :dimension="32"
+                        alt="Faction militia emblem"
+                      />
+                    </dd>
+                  </div>
+                  <div class="character-detail-col-start">
+                    <dt>RACE</dt>
+                    <dd>{{ character.race }}</dd>
+                  </div>
+                  <div class="character-detail-col-end">
+                    <dt>BLOODLINE</dt>
+                    <dd>{{ character.bloodline }}</dd>
+                  </div>
+                  <div class="character-detail-col-start">
+                    <dt>DATE OF BIRTH</dt>
+                    <dd>{{ formattedBirthday }}</dd>
+                  </div>
+                  <div class="character-detail-col-end">
+                    <dt>GENDER</dt>
+                    <dd>
+                      <span class="gender-symbol" :title="character.gender" aria-hidden="true">
+                        {{ genderSymbol }}
+                      </span>
+                      <span class="sr-only">{{ character.gender }}</span>
+                    </dd>
+                  </div>
+                  <div v-if="character.corporationTitle" class="character-detail-wide">
+                    <dt>CORPORATION TITLE</dt>
+                    <dd>{{ character.corporationTitle }}</dd>
+                  </div>
+                </dl>
+              </section>
+              <section class="character-detail-group character-detail-group--progression">
+                <h2>PROGRESSION</h2>
+                <dl>
+                  <div class="character-detail-primary">
+                    <dt>TOTAL SKILL POINTS</dt>
+                    <dd>{{ skillPointsLabel }}</dd>
+                  </div>
+                  <div>
+                    <dt>ACHIEVEMENT SCORE</dt>
+                    <dd>{{ character.achievementScore }}</dd>
+                  </div>
+                </dl>
+              </section>
             </section>
-          </section>
+          </div>
+
+          <EsiResourceBoundary :state="sectionAuthorizationState" />
+
+          <footer class="record-footer">
+            <a
+              :href="`https://evewho.com/character/${character.id}`"
+              target="_blank"
+              rel="noreferrer"
+            >
+              EXTERNAL RECORD ↗
+            </a>
+          </footer>
         </div>
-
-        <p v-if="pendingAuthorization" class="wallet-state wallet-authorize">
-          <span>{{ pendingAuthorization.message }}</span>
-          <a :href="pendingAuthorization.authorizeUrl">AUTHORIZE ACCESS</a>
-        </p>
-
-        <footer class="record-footer">
-          <a
-            :href="`https://evewho.com/character/${character.id}`"
-            target="_blank"
-            rel="noreferrer"
-          >
-            EXTERNAL RECORD ↗
-          </a>
-        </footer>
-      </div>
-    </article>
+      </article>
+    </EsiResourceBoundary>
   </div>
 </template>
 

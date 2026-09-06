@@ -69,6 +69,18 @@ describe('MailComposeDialog', () => {
     expect(document.querySelectorAll('.is-over-limit')).toHaveLength(2)
     expect(wrapper.emitted('recoverCharge')).toBeUndefined()
   })
+
+  it('keeps ordinary search failures out of the authorization panel', async () => {
+    await mountDialog({
+      searchAuthorizationMessage: undefined,
+      searchAuthorizationUrl: undefined,
+      searchFeedback: 'Recipient search is temporarily unavailable.',
+    })
+
+    expect(document.body.textContent).toContain('Recipient search is temporarily unavailable.')
+    expect(document.body.textContent).not.toContain('Recipient search not authorized')
+    expect(document.body.textContent).not.toContain('ESI 403 / SEARCH')
+  })
 })
 
 async function mountDialog(overrides: Record<string, unknown> = {}) {
@@ -87,6 +99,7 @@ async function mountDialog(overrides: Record<string, unknown> = {}) {
       resolving: false,
       searchAuthorizationMessage: 'Authorize recipient search.',
       searchAuthorizationUrl: '/authorize-search',
+      searchFeedback: 'Authorize recipient search.',
       searching: false,
       sendAuthorizationMessage: 'Authorize mail sending.',
       sendAuthorizationUrl: '/authorize-send',

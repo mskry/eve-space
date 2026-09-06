@@ -1,0 +1,309 @@
+{
+  "name": "@evespace/esi-client",
+  "version": "3.0.0",
+  "description": "TypeScript client for EVE Online's ESI (EVE Swagger Interface) API",
+  "keywords": [
+    "api",
+    "client",
+    "esi",
+    "eve-online",
+    "fetch",
+    "openapi",
+    "swagger",
+    "typescript"
+  ],
+  "homepage": "https://github.com/mskry/eve-space/tree/main/packages/esi-client#readme",
+  "bugs": {
+    "url": "https://github.com/mskry/eve-space/issues"
+  },
+  "license": "MIT",
+  "author": "Mykola Skrypets",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mskry/eve-space.git",
+    "directory": "packages/esi-client"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/root.js",
+  "types": "./dist/root.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/root.d.ts",
+      "import": "./dist/root.js",
+      "default": "./dist/root.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js",
+      "default": "./dist/types/index.js"
+    },
+    "./zod": {
+      "types": "./dist/zod.d.ts",
+      "import": "./dist/zod.js",
+      "default": "./dist/zod.js"
+    },
+    "./operations": {
+      "types": "./dist/operations/index.d.ts",
+      "import": "./dist/operations/index.js",
+      "default": "./dist/operations/index.js"
+    },
+    "./package.json": "./package.json",
+    "./domains/access-list": {
+      "types": "./dist/domains/access-list.d.ts",
+      "import": "./dist/domains/access-list.js",
+      "default": "./dist/domains/access-list.js"
+    },
+    "./domains/activities": {
+      "types": "./dist/domains/activities.d.ts",
+      "import": "./dist/domains/activities.js",
+      "default": "./dist/domains/activities.js"
+    },
+    "./domains/alliance": {
+      "types": "./dist/domains/alliance.d.ts",
+      "import": "./dist/domains/alliance.js",
+      "default": "./dist/domains/alliance.js"
+    },
+    "./domains/assets": {
+      "types": "./dist/domains/assets.d.ts",
+      "import": "./dist/domains/assets.js",
+      "default": "./dist/domains/assets.js"
+    },
+    "./domains/calendar": {
+      "types": "./dist/domains/calendar.d.ts",
+      "import": "./dist/domains/calendar.js",
+      "default": "./dist/domains/calendar.js"
+    },
+    "./domains/character": {
+      "types": "./dist/domains/character.d.ts",
+      "import": "./dist/domains/character.js",
+      "default": "./dist/domains/character.js"
+    },
+    "./domains/clones": {
+      "types": "./dist/domains/clones.d.ts",
+      "import": "./dist/domains/clones.js",
+      "default": "./dist/domains/clones.js"
+    },
+    "./domains/contacts": {
+      "types": "./dist/domains/contacts.d.ts",
+      "import": "./dist/domains/contacts.js",
+      "default": "./dist/domains/contacts.js"
+    },
+    "./domains/contracts": {
+      "types": "./dist/domains/contracts.d.ts",
+      "import": "./dist/domains/contracts.js",
+      "default": "./dist/domains/contracts.js"
+    },
+    "./domains/corporation-projects": {
+      "types": "./dist/domains/corporation-projects.d.ts",
+      "import": "./dist/domains/corporation-projects.js",
+      "default": "./dist/domains/corporation-projects.js"
+    },
+    "./domains/corporation": {
+      "types": "./dist/domains/corporation.d.ts",
+      "import": "./dist/domains/corporation.js",
+      "default": "./dist/domains/corporation.js"
+    },
+    "./domains/cosmetics": {
+      "types": "./dist/domains/cosmetics.d.ts",
+      "import": "./dist/domains/cosmetics.js",
+      "default": "./dist/domains/cosmetics.js"
+    },
+    "./domains/dogma": {
+      "types": "./dist/domains/dogma.d.ts",
+      "import": "./dist/domains/dogma.js",
+      "default": "./dist/domains/dogma.js"
+    },
+    "./domains/faction-warfare": {
+      "types": "./dist/domains/faction-warfare.d.ts",
+      "import": "./dist/domains/faction-warfare.js",
+      "default": "./dist/domains/faction-warfare.js"
+    },
+    "./domains/fittings": {
+      "types": "./dist/domains/fittings.d.ts",
+      "import": "./dist/domains/fittings.js",
+      "default": "./dist/domains/fittings.js"
+    },
+    "./domains/fleets": {
+      "types": "./dist/domains/fleets.d.ts",
+      "import": "./dist/domains/fleets.js",
+      "default": "./dist/domains/fleets.js"
+    },
+    "./domains/freelance-jobs": {
+      "types": "./dist/domains/freelance-jobs.d.ts",
+      "import": "./dist/domains/freelance-jobs.js",
+      "default": "./dist/domains/freelance-jobs.js"
+    },
+    "./domains/incursions": {
+      "types": "./dist/domains/incursions.d.ts",
+      "import": "./dist/domains/incursions.js",
+      "default": "./dist/domains/incursions.js"
+    },
+    "./domains/industry": {
+      "types": "./dist/domains/industry.d.ts",
+      "import": "./dist/domains/industry.js",
+      "default": "./dist/domains/industry.js"
+    },
+    "./domains/insurance": {
+      "types": "./dist/domains/insurance.d.ts",
+      "import": "./dist/domains/insurance.js",
+      "default": "./dist/domains/insurance.js"
+    },
+    "./domains/killmails": {
+      "types": "./dist/domains/killmails.d.ts",
+      "import": "./dist/domains/killmails.js",
+      "default": "./dist/domains/killmails.js"
+    },
+    "./domains/location": {
+      "types": "./dist/domains/location.d.ts",
+      "import": "./dist/domains/location.js",
+      "default": "./dist/domains/location.js"
+    },
+    "./domains/loyalty": {
+      "types": "./dist/domains/loyalty.d.ts",
+      "import": "./dist/domains/loyalty.js",
+      "default": "./dist/domains/loyalty.js"
+    },
+    "./domains/mail": {
+      "types": "./dist/domains/mail.d.ts",
+      "import": "./dist/domains/mail.js",
+      "default": "./dist/domains/mail.js"
+    },
+    "./domains/market": {
+      "types": "./dist/domains/market.d.ts",
+      "import": "./dist/domains/market.js",
+      "default": "./dist/domains/market.js"
+    },
+    "./domains/meta": {
+      "types": "./dist/domains/meta.d.ts",
+      "import": "./dist/domains/meta.js",
+      "default": "./dist/domains/meta.js"
+    },
+    "./domains/military-campaigns": {
+      "types": "./dist/domains/military-campaigns.d.ts",
+      "import": "./dist/domains/military-campaigns.js",
+      "default": "./dist/domains/military-campaigns.js"
+    },
+    "./domains/paragon-hub": {
+      "types": "./dist/domains/paragon-hub.d.ts",
+      "import": "./dist/domains/paragon-hub.js",
+      "default": "./dist/domains/paragon-hub.js"
+    },
+    "./domains/planetary-interaction": {
+      "types": "./dist/domains/planetary-interaction.d.ts",
+      "import": "./dist/domains/planetary-interaction.js",
+      "default": "./dist/domains/planetary-interaction.js"
+    },
+    "./domains/routes": {
+      "types": "./dist/domains/routes.d.ts",
+      "import": "./dist/domains/routes.js",
+      "default": "./dist/domains/routes.js"
+    },
+    "./domains/search": {
+      "types": "./dist/domains/search.d.ts",
+      "import": "./dist/domains/search.js",
+      "default": "./dist/domains/search.js"
+    },
+    "./domains/skills": {
+      "types": "./dist/domains/skills.d.ts",
+      "import": "./dist/domains/skills.js",
+      "default": "./dist/domains/skills.js"
+    },
+    "./domains/sovereignty": {
+      "types": "./dist/domains/sovereignty.d.ts",
+      "import": "./dist/domains/sovereignty.js",
+      "default": "./dist/domains/sovereignty.js"
+    },
+    "./domains/status": {
+      "types": "./dist/domains/status.d.ts",
+      "import": "./dist/domains/status.js",
+      "default": "./dist/domains/status.js"
+    },
+    "./domains/structures": {
+      "types": "./dist/domains/structures.d.ts",
+      "import": "./dist/domains/structures.js",
+      "default": "./dist/domains/structures.js"
+    },
+    "./domains/universe": {
+      "types": "./dist/domains/universe.d.ts",
+      "import": "./dist/domains/universe.js",
+      "default": "./dist/domains/universe.js"
+    },
+    "./domains/user-interface": {
+      "types": "./dist/domains/user-interface.d.ts",
+      "import": "./dist/domains/user-interface.js",
+      "default": "./dist/domains/user-interface.js"
+    },
+    "./domains/wallet": {
+      "types": "./dist/domains/wallet.d.ts",
+      "import": "./dist/domains/wallet.js",
+      "default": "./dist/domains/wallet.js"
+    },
+    "./domains/wars": {
+      "types": "./dist/domains/wars.d.ts",
+      "import": "./dist/domains/wars.js",
+      "default": "./dist/domains/wars.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "clean": "node scripts/clean.ts",
+    "docs:check": "node scripts/check-documentation.ts",
+    "drift:report": "node scripts/drift-report.ts",
+    "examples:check": "node scripts/check-examples.ts",
+    "format": "oxfmt --write package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/types.ts src/zod.ts src/client scripts tests README.md CHANGELOG.md",
+    "format:check": "oxfmt --check package.json tsconfig.json tsconfig.examples.json tsconfig.test.json tsdown.config.ts vitest.config.ts .oxlintrc.json .oxfmtrc.json src/index.ts src/operations.ts src/types.ts src/zod.ts src/client scripts tests README.md CHANGELOG.md",
+    "generate": "node scripts/generate/source.ts",
+    "generate:check": "node scripts/generate/check.ts",
+    "generate:shadow:check": "node scripts/generate/hey-api-shadow.ts",
+    "generate:source:refresh": "node scripts/generate/source.ts --refresh-snapshot",
+    "lint": "oxlint --type-aware --deny-warnings src/index.ts src/operations.ts src/types.ts src/zod.ts src/client scripts tests tsdown.config.ts vitest.config.ts",
+    "package:check": "node scripts/check-package.ts",
+    "package:budgets:refresh": "pnpm build && node scripts/inspect-pack.ts --refresh-budgets",
+    "pack:inspect": "node scripts/inspect-pack.ts",
+    "prepare": "pnpm build",
+    "prepublishOnly": "pnpm validate",
+    "release:candidate": "node scripts/create-release-candidate.ts",
+    "release:test": "vitest run tests/release-metadata.test.ts tests/release-candidate.test.ts tests/release-workflow.test.ts",
+    "release:validate": "node scripts/validate-release-metadata.ts",
+    "smoke:package": "node scripts/smoke-package.ts",
+    "sonar": "node --env-file-if-exists=.env.sonar ../../node_modules/@sonar/scan/bin/sonar-scanner.js",
+    "sonar:scope:check": "vitest run tests/sonar-configuration.test.ts tests/esi-client-quality-workflow.test.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.test.json --noEmit",
+    "validate": "pnpm generate:check && pnpm docs:check && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm examples:check && pnpm build && pnpm run package:check -- --built"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@arethetypeswrong/core": "catalog:",
+    "@bybrave/fast-json-patch2": "catalog:",
+    "@evespace/esi-client-codegen": "workspace:*",
+    "@scalar/openapi-parser": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest5",
+    "es-module-lexer": "catalog:",
+    "esbuild": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:tsgo",
+    "vitest": "catalog:vitest5",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "zod": "catalog:"
+  },
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "packageManager": "pnpm@11.22.0"
+}

@@ -14,6 +14,7 @@ type ApiMode =
   | 'mailbox'
   | 'mail-rejected'
   | 'label-delete-refused'
+  | 'long-recipients'
   | 'organize-scope-required'
   | 'roster-error'
   | 'search-scope-required'
@@ -51,6 +52,11 @@ const initialMessages = Array.from({ length: 18 }, (_, index) =>
 )
 const archivedMessage = mailHeader(80, 'Archived dispatch', [2])
 const olderMessage = mailHeader(79, 'Older logistics report')
+const longRecipients = Array.from({ length: 12 }, (_, index) => ({
+  id: 1_000 + index,
+  type: 'character',
+  name: `Recipient ${String(index + 1).padStart(2, '0')} With A Long Capsuleer Name`,
+}))
 const recordedRequests: RecordedRequest[] = []
 let apiMode: ApiMode = 'mailbox'
 let apiOrigin = ''
@@ -105,7 +111,7 @@ const apiServer = await startCorsJsonApi(async (request) => {
           character: [
             { ownerId: 'core', navigationId: 'core-character-overview' },
             { ownerId: 'core', navigationId: 'core-character-skills' },
-            { ownerId: 'core', navigationId: 'core-character-wallet' },
+            { ownerId: 'core', navigationId: 'core-character-finance' },
             { ownerId: 'core', navigationId: 'core-character-history' },
             { ownerId: 'core', navigationId: 'core-character-mail' },
           ],
@@ -307,12 +313,18 @@ const apiServer = await startCorsJsonApi(async (request) => {
             apiMode === 'unknown-sender'
               ? { id: 91, type: 'unknown', name: null }
               : { id: 91, type: 'corporation', name: 'Operations Control' },
-          recipients: [{ id: characterId, type: 'character', name: 'Reading Pilot' }],
+          recipients:
+            apiMode === 'long-recipients'
+              ? longRecipients
+              : [{ id: characterId, type: 'character', name: 'Reading Pilot' }],
           subject: mailId === 120 ? 'Priority operations update' : `Mail ${mailId}`,
           sentAt: '2026-08-28T11:55:00.000Z',
           labelIds: [1],
           isRead: false,
-          body: hostileBody,
+          body:
+            apiMode === 'long-recipients'
+              ? Array.from({ length: 80 }, (_, index) => `Message line ${index + 1}`).join('\n\n')
+              : hostileBody,
           ...metadata,
         },
       }
@@ -470,6 +482,91 @@ describe('character mail reading', async () => {
     expect(await page.getByText('19 messages loaded', { exact: true }).isVisible()).toBe(true)
   })
 
+  it('reveals truncated recipients and keeps icon actions visible while reading', async () => {
+    apiMode = 'long-recipients'
+    const page = await openPage(`/characters/${characterId}/mail`)
+    await page.setViewportSize({ width: 1280, height: 600 })
+    await page.locator('.mail-header-row').first().waitFor()
+    await page.getByRole('button', { name: /Priority operations update/ }).click()
+    await page.getByRole('heading', { name: 'Priority operations update' }).waitFor()
+
+    const recipients = page.locator('.mail-reader-recipients')
+    const recipientMetrics = await recipients.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      maximumWidth: (() => {
+        const heading = element.closest<HTMLElement>('.mail-reader-heading')
+        if (!heading) throw new Error('Mail reader heading was not rendered.')
+        const style = getComputedStyle(heading)
+        return (
+          (heading.clientWidth -
+            Number.parseFloat(style.paddingLeft) -
+            Number.parseFloat(style.paddingRight)) /
+          2
+        )
+      })(),
+    }))
+    expect(recipientMetrics.scrollWidth).toBeGreaterThan(recipientMetrics.clientWidth)
+    expect(recipientMetrics.clientWidth).toBeLessThanOrEqual(recipientMetrics.maximumWidth)
+    expect(await recipients.getAttribute('data-full-recipients')).toContain(
+      'Recipient 12 With A Long Capsuleer Name',
+    )
+    expect(await recipients.getAttribute('class')).not.toContain('is-revealed')
+    await recipients.hover()
+    expect(await recipients.getAttribute('class')).toContain('is-revealed')
+
+    const actions = page.locator('.mail-reader-actions button')
+    expect(await actions.count()).toBe(6)
+    expect(await page.locator('.mail-reader-actions .mail-reader-action-icon').count()).toBe(6)
+    expect((await actions.allTextContents()).every((label) => label.trim() === '')).toBe(true)
+    const actionButtonSize = await actions.first().evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      return { height: box.height, width: box.width }
+    })
+    expect(actionButtonSize).toEqual({ height: 32, width: 32 })
+    const actionBottomOffset = await page.locator('.mail-reader-heading').evaluate((element) => {
+      const actionGroup = element.querySelector<HTMLElement>('.mail-reader-actions')
+      if (!actionGroup) throw new Error('Mail reader actions were not rendered.')
+      const headingBox = element.getBoundingClientRect()
+      const actionBox = actionGroup.getBoundingClientRect()
+      const style = getComputedStyle(element)
+      const contentBottom =
+        headingBox.bottom -
+        Number.parseFloat(style.paddingBottom) -
+        Number.parseFloat(style.borderBottomWidth)
+      return Math.abs(contentBottom - actionBox.bottom)
+    })
+    expect(actionBottomOffset).toBeLessThanOrEqual(1)
+    const reply = page.getByRole('button', { name: 'REPLY', exact: true })
+    expect(await reply.isEnabled()).toBe(true)
+    await reply.hover()
+    await expect
+      .poll(
+        async () =>
+          (await page.locator('.ui-tooltip-content').allTextContents()).some((label) =>
+            label.includes('REPLY'),
+          ),
+        { timeout: 2_000 },
+      )
+      .toBe(true)
+
+    const readerViewport = page.locator('.mail-reader-scroll .ui-scroll-area-viewport')
+    const readerHeading = page.locator('.mail-reader-heading')
+    const headingBefore = await readerHeading.boundingBox()
+    const scrollMetrics = await readerViewport.evaluate((element) => {
+      element.scrollTop = element.scrollHeight
+      return { clientHeight: element.clientHeight, scrollHeight: element.scrollHeight }
+    })
+    expect(scrollMetrics.scrollHeight).toBeGreaterThan(scrollMetrics.clientHeight)
+    await expect
+      .poll(async () => await readerViewport.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(0)
+    const headingAfter = await readerHeading.boundingBox()
+    expect(headingBefore).not.toBeNull()
+    expect(headingAfter).not.toBeNull()
+    expect(Math.abs(headingAfter!.y - headingBefore!.y)).toBeLessThanOrEqual(1)
+  })
+
   it('offers character reauthorization when the mail scope is missing', async () => {
     apiMode = 'scope-required'
     const page = await openPage(`/characters/${characterId}/mail`)
@@ -569,7 +666,7 @@ describe('character mail reading', async () => {
 
     const swatches = dialog.getByRole('radio')
     expect(await swatches.count()).toBe(18)
-    for (const theme of ['void', 'high-sec']) {
+    for (const theme of ['gallente', 'amarr', 'caldari', 'minmatar', 'high-sec']) {
       await page.evaluate((value) => {
         document.documentElement.dataset.theme = value
       }, theme)
@@ -1108,7 +1205,7 @@ describe('character mail reading', async () => {
     expect(readerBox).not.toBeNull()
     expect(headersBox!.y).toBeGreaterThan(sidebarBox!.y)
     expect(readerBox!.y).toBeGreaterThan(headersBox!.y)
-    expect(await recordNavigation.getByRole('link').count()).toBe(5)
+    expect(await recordNavigation.getByRole('link').count()).toBe(7)
     expect(navigationMetrics.scrollWidth).toBeGreaterThan(navigationMetrics.clientWidth)
     expect(focusOutline).not.toBe('0px')
     expect(hasHorizontalOverflow).toBe(false)

@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--line);
-  background: color-mix(in srgb, var(--ui-surface-solid) 96%, transparent);
+  background: var(--ui-surface);
   backdrop-filter: blur(18px);
   transition: width 180ms ease;
 }
@@ -484,12 +484,16 @@
 }
 
 .dashboard-workspace {
+  width: calc(100% - 88px);
   min-height: 100vh;
   margin-left: 88px;
-  transition: margin-left 180ms ease;
+  transition:
+    width 180ms ease,
+    margin-left 180ms ease;
 }
 
 .dashboard-shell--sidebar-expanded .dashboard-workspace {
+  width: calc(100% - 264px);
   margin-left: 264px;
 }
 
@@ -497,6 +501,7 @@
   position: sticky;
   z-index: 10;
   top: 0;
+  width: 100%;
   min-height: 76px;
   padding: 0 clamp(24px, 4vw, 58px);
   display: flex;
@@ -657,8 +662,8 @@
 }
 
 .system-status-heading div > span {
-  color: var(--ui-text-faint);
-  font-size: 7px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.15em;
 }
@@ -672,7 +677,7 @@
 
 .system-status-heading > span {
   color: var(--ui-primary);
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -696,7 +701,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--ui-danger) 28%, transparent);
   background: color-mix(in srgb, var(--ui-danger) 7%, transparent);
   color: var(--ui-danger);
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -716,8 +721,8 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: var(--ui-text-faint);
-  font-size: 8px;
+  color: var(--ui-text-muted);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -771,7 +776,7 @@
 
 .system-status-services article strong {
   overflow: hidden;
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -781,7 +786,7 @@
   margin-top: 8px;
   display: block;
   color: var(--ui-primary);
-  font-size: 6px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.09em;
 }
@@ -803,15 +808,15 @@
 .system-status-services dt,
 .system-status-services dd {
   margin: 0;
-  font-size: 6px;
-  line-height: 1.3;
+  font-size: 9px;
+  line-height: 1.4;
 }
 .system-status-services dt {
-  color: var(--ui-text-faint);
+  color: var(--ui-text-muted);
 }
 .system-status-services dd {
   margin-top: 2px;
-  color: var(--ui-text-muted);
+  color: var(--ui-text);
 }
 
 .system-status-readout {
@@ -828,13 +833,13 @@
   display: block;
 }
 .system-status-readout span {
-  color: var(--ui-text-faint);
-  font-size: 6px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
   letter-spacing: 0.09em;
 }
 .system-status-readout strong {
   margin-top: 7px;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.04em;
 }
 
@@ -844,8 +849,8 @@
   justify-content: space-between;
   gap: 12px;
   border-top: 1px solid var(--ui-border);
-  color: var(--ui-text-faint);
-  font-size: 6px;
+  color: var(--ui-text-muted);
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.09em;
 }

@@ -12,6 +12,18 @@ import {
 } from '../skills/training.js'
 import type { SkillAttribute } from '../skills/training.js'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
+import { isPositiveSafeInteger } from '../type-guards.js'
+import type { ImplantBonusAttribute } from './implant-attributes.js'
+import {
+  implantBonusAttributes,
+  implantDogmaAttributeIds,
+  implantSlotAttributeId,
+} from './implant-attributes.js'
+
+const typeDetailDogmaAttributeIds = [
+  ...skillTrainingDogmaAttributeIds,
+  ...implantDogmaAttributeIds,
+] as const
 
 export interface UniverseTypeDetails {
   typeId: number
@@ -19,12 +31,19 @@ export interface UniverseTypeDetails {
   description: string | null
   group: { id: number; name: string }
   category: { id: number; name: string }
-  detail: {
-    kind: 'skill'
-    rank: number | null
-    primaryAttribute: SkillAttribute | null
-    secondaryAttribute: SkillAttribute | null
-  } | null
+  detail:
+    | {
+        kind: 'skill'
+        rank: number | null
+        primaryAttribute: SkillAttribute | null
+        secondaryAttribute: SkillAttribute | null
+      }
+    | {
+        kind: 'implant'
+        slot: number
+        bonuses: Array<{ attribute: ImplantBonusAttribute; value: number }>
+      }
+    | null
 }
 
 interface TypeDetailRow {
@@ -65,7 +84,7 @@ export async function getUniverseTypeDetails(typeId: number): Promise<UniverseTy
       sdeTypeDogmaAttributes,
       and(
         eq(sdeTypeDogmaAttributes.typeId, sdeTypes.typeId),
-        inArray(sdeTypeDogmaAttributes.attributeId, [...skillTrainingDogmaAttributeIds]),
+        inArray(sdeTypeDogmaAttributes.attributeId, [...typeDetailDogmaAttributeIds]),
       ),
     )
     .where(
@@ -76,7 +95,7 @@ export async function getUniverseTypeDetails(typeId: number): Promise<UniverseTy
         eq(sdeCategories.published, true),
       ),
     )
-    .limit(skillTrainingDogmaAttributeIds.length)
+    .limit(typeDetailDogmaAttributeIds.length)
 
   return mapUniverseTypeDetails(rows)
 }
@@ -86,26 +105,8 @@ function mapUniverseTypeDetails(rows: readonly TypeDetailRow[]): UniverseTypeDet
   if (!first || !isRepresentable(first)) return null
   if (rows.some((row) => !sameTypeIdentity(first, row))) return null
 
-  const detail: NonNullable<UniverseTypeDetails['detail']> | null =
-    first.categoryId === skillCategoryId
-      ? {
-          kind: 'skill',
-          rank: null,
-          primaryAttribute: null,
-          secondaryAttribute: null,
-        }
-      : null
-
-  if (detail) {
-    for (const row of rows) {
-      if (row.attributeId === skillRankAttributeId)
-        detail.rank = skillRankFromDogmaValue(row.attributeValue)
-      if (row.attributeId === skillPrimaryAttributeId)
-        detail.primaryAttribute = skillAttributeFromDogmaValue(row.attributeValue)
-      if (row.attributeId === skillSecondaryAttributeId)
-        detail.secondaryAttribute = skillAttributeFromDogmaValue(row.attributeValue)
-    }
-  }
+  const detail =
+    first.categoryId === skillCategoryId ? mapSkillDetail(rows) : mapImplantDetail(rows)
 
   return {
     typeId: first.typeId,
@@ -115,6 +116,40 @@ function mapUniverseTypeDetails(rows: readonly TypeDetailRow[]): UniverseTypeDet
     category: { id: first.categoryId, name: first.categoryName },
     detail,
   }
+}
+
+function mapSkillDetail(rows: readonly TypeDetailRow[]) {
+  const detail: Extract<NonNullable<UniverseTypeDetails['detail']>, { kind: 'skill' }> = {
+    kind: 'skill',
+    rank: null,
+    primaryAttribute: null,
+    secondaryAttribute: null,
+  }
+  for (const row of rows) {
+    if (row.attributeId === skillRankAttributeId)
+      detail.rank = skillRankFromDogmaValue(row.attributeValue)
+    if (row.attributeId === skillPrimaryAttributeId)
+      detail.primaryAttribute = skillAttributeFromDogmaValue(row.attributeValue)
+    if (row.attributeId === skillSecondaryAttributeId)
+      detail.secondaryAttribute = skillAttributeFromDogmaValue(row.attributeValue)
+  }
+  return detail
+}
+
+function mapImplantDetail(
+  rows: readonly TypeDetailRow[],
+): Extract<NonNullable<UniverseTypeDetails['detail']>, { kind: 'implant' }> | null {
+  const values = new Map(rows.map((row) => [row.attributeId, row.attributeValue]))
+  const slot = values.get(implantSlotAttributeId)
+  if (slot === null || slot === undefined || !isPositiveSafeInteger(slot)) return null
+
+  const bonuses = implantBonusAttributes.flatMap(([attributeId, attribute]) => {
+    const value = values.get(attributeId)
+    return value !== null && value !== undefined && Number.isFinite(value) && value !== 0
+      ? [{ attribute, value }]
+      : []
+  })
+  return { kind: 'implant', slot, bonuses }
 }
 
 function isRepresentable(row: TypeDetailRow) {
@@ -144,8 +179,4 @@ function sameTypeIdentity(left: TypeDetailRow, right: TypeDetailRow) {
     left.categoryName === right.categoryName &&
     left.categoryPublished === right.categoryPublished
   )
-}
-
-function isPositiveSafeInteger(value: number) {
-  return Number.isSafeInteger(value) && value > 0
 }

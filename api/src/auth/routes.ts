@@ -22,6 +22,7 @@ import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { loadSession, sessionCookie } from '../middleware/auth-session.js'
 import { createOpaqueToken, tokensMatch } from './security.js'
+import { setPrivateHeaders } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { loadCurrentOrganizationIdentity } from '../organization/context.js'
 import {
@@ -41,13 +42,14 @@ import {
 
 const oauthStateCookie = 'eve_space_oauth_state'
 const sessionDurationSeconds = 7 * 24 * 60 * 60
+const maxReturnPathDecodeDepth = 4
 type CharacterAuthorization = Omit<Parameters<typeof attachCharacter>[0], 'userId'>
 const callbackQuery = z.object({
   code: z.string().min(1, 'EVE SSO returned an empty authorization code.').optional(),
   error: z.string().min(1, 'EVE SSO returned an empty error code.').optional(),
   state: z.string().min(1, 'EVE SSO returned an empty state.').optional(),
 })
-const reauthorizationQuery = z.object({
+const returnDestinationQuery = z.object({
   returnTo: z
     .string()
     .min(1, 'Return destination must not be empty.')
@@ -55,7 +57,7 @@ const reauthorizationQuery = z.object({
     .optional(),
 })
 const invalidReturnDestination = new HTTPException(400, {
-  message: 'Return destination must be a safe route for this character.',
+  message: 'Return destination must be a safe application route.',
 })
 
 export const ssoRoutes = new Hono<OwnedCharacterEnv>()
@@ -66,7 +68,21 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       attachUrl: new URL('/auth/eve/attach', env.EVE_CALLBACK_URL).toString(),
     }),
   )
-  .get('/eve/start', async (context) => startAuthorization(context, { intent: 'login' }))
+  .get(
+    '/eve/start',
+    async (context, next) => {
+      assertUniqueQueryParameters(context.req.url)
+      await next()
+    },
+    zValidator('query', returnDestinationQuery),
+    async (context) => {
+      const { returnTo } = context.req.valid('query')
+      return startAuthorization(context, {
+        intent: 'login',
+        ...(returnTo ? { returnPath: normalizeLoginReturnPath(returnTo) } : {}),
+      })
+    },
+  )
   .get('/eve/attach', loadSession, async (context) => {
     const session = context.var.session
     setPrivateHeaders(context)
@@ -98,7 +114,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       assertUniqueQueryParameters(context.req.url)
       await next()
     },
-    zValidator('query', reauthorizationQuery),
+    zValidator('query', returnDestinationQuery),
     async (context, next) => {
       const { returnTo } = context.req.valid('query')
       if (returnTo) {
@@ -314,6 +330,7 @@ function redirectForIntent(
     destination.searchParams.set('auth', status === 'conflict' ? 'error' : status)
     if (status === 'success' && characterId)
       destination.searchParams.set('character', String(characterId))
+    if (state.returnPath) destination.searchParams.set('redirect', state.returnPath)
     return context.redirect(destination.toString())
   }
 
@@ -350,11 +367,6 @@ function sessionCookieOptions(maxAge: number) {
   }
 }
 
-function setPrivateHeaders(context: Context) {
-  context.header('Cache-Control', 'private, no-store')
-  context.header('Vary', 'Cookie')
-}
-
 function assertUniqueQueryParameters(url: string) {
   const names = new Set<string>()
   for (const name of new URL(url).searchParams.keys()) {
@@ -368,7 +380,7 @@ function normalizeCharacterReturnPath(value: string, characterId: number) {
     throw invalidReturnDestination
   }
 
-  assertSafelyDecodedReturnPath(value)
+  assertReturnPathLayers(value, checkSafeReturnPathLayer)
   const destination = parseLocalReturnDestination(value)
   assertCharacterReturnDestination(destination, characterId)
   assertUniqueQueryParameters(destination.toString())
@@ -378,18 +390,37 @@ function normalizeCharacterReturnPath(value: string, characterId: number) {
   return normalized
 }
 
-function assertSafelyDecodedReturnPath(value: string) {
-  let decoded = value
-  for (let depth = 0; depth < 4; depth += 1) {
-    assertSafeReturnPathLayer(decoded)
-    if (!/%[\dA-Fa-f]{2}/.test(decoded)) break
+function normalizeLoginReturnPath(value: string) {
+  if (!value.startsWith('/') || value.startsWith('//')) throw invalidReturnDestination
+
+  const destination = parseLocalReturnDestination(value)
+  assertReturnPathLayers(value, checkNonAuthorizationLayer)
+  assertUniqueQueryParameters(destination.toString())
+
+  const normalized = `${destination.pathname}${destination.search}${destination.hash}`
+  if (normalized.length > 512) throw invalidReturnDestination
+  return normalized
+}
+
+// A downstream consumer may decode a return path again, so every decoding layer must also be safe.
+function assertReturnPathLayers(value: string, checkLayer: (layer: string) => string) {
+  let layer = value
+  for (let depth = 0; depth <= maxReturnPathDecodeDepth; depth += 1) {
+    const checked = checkLayer(layer)
+    if (!/%[\dA-Fa-f]{2}/.test(checked)) return
+    if (depth === maxReturnPathDecodeDepth) throw invalidReturnDestination
     try {
-      decoded = decodeURIComponent(decoded)
+      layer = decodeURIComponent(checked)
     } catch {
       throw invalidReturnDestination
     }
-    if (depth === 3 && /%[\dA-Fa-f]{2}/.test(decoded)) throw invalidReturnDestination
   }
+}
+
+function checkNonAuthorizationLayer(value: string) {
+  const destination = parseLocalReturnDestination(value)
+  if (['/auth', '/auth/'].includes(destination.pathname)) throw invalidReturnDestination
+  return destination.pathname
 }
 
 function parseLocalReturnDestination(value: string) {
@@ -414,7 +445,7 @@ function assertCharacterReturnDestination(destination: URL, characterId: number)
   }
 }
 
-function assertSafeReturnPathLayer(value: string) {
+function checkSafeReturnPathLayer(value: string) {
   if (
     [...value].some((character) => {
       const codePoint = character.codePointAt(0)!
@@ -431,4 +462,6 @@ function assertSafeReturnPathLayer(value: string) {
   if (path.split('/').some((segment) => segment === '.' || segment === '..')) {
     throw invalidReturnDestination
   }
+
+  return value
 }

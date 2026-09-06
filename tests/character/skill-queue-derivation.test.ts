@@ -5,6 +5,7 @@ import {
   entryRemainingMs,
   formatQueueDuration,
   queueRemainingMs,
+  queueRemainingSp,
   queueSegments,
   queuedLevelsByType,
   resolveSkillQueueState,
@@ -286,6 +287,44 @@ describe('queue totals', () => {
 
   it('reports no total for a queue with no scheduled entries', () => {
     expect(queueRemainingMs([entry({ queuePosition: 0 })], now)).toBeNull()
+  })
+
+  it('reports remaining skill points across active and upcoming entries', () => {
+    expect(
+      queueRemainingSp(
+        [
+          entry({
+            queuePosition: 0,
+            startDate: '2026-08-29T10:00:00Z',
+            finishDate: '2026-08-29T14:00:00Z',
+          }),
+          entry({
+            queuePosition: 1,
+            startDate: '2026-08-29T14:00:00Z',
+            finishDate: '2026-08-29T18:00:00Z',
+          }),
+        ],
+        now,
+      ),
+    ).toBe(384_000)
+  })
+
+  it('reports no skill-point total when queue boundaries are unavailable', () => {
+    expect(
+      queueRemainingSp([entry({ queuePosition: 0, levelStartSp: null, levelEndSp: null })], now),
+    ).toBeNull()
+  })
+
+  it('does not present a partial total when one queue entry lacks boundaries', () => {
+    expect(
+      queueRemainingSp(
+        [
+          entry({ queuePosition: 0 }),
+          entry({ queuePosition: 1, levelStartSp: null, levelEndSp: null }),
+        ],
+        now,
+      ),
+    ).toBeNull()
   })
 
   it('builds proportional segments and skips undated entries', () => {

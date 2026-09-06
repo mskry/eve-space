@@ -12,6 +12,7 @@ const props = defineProps<{
   open: boolean
   recipients: readonly MailRecipient[]
   resolving: boolean
+  searchFeedback: string
   searching: boolean
   searchAuthorizationMessage?: string
   searchAuthorizationUrl?: string
@@ -100,10 +101,21 @@ const title = computed(() => {
           </button>
         </div>
         <p v-else-if="searching" class="mail-compose-assist">Searching recipients...</p>
-        <p v-if="searchAuthorizationMessage" class="mail-compose-assist">
-          {{ searchAuthorizationMessage }}
-          <a v-if="searchAuthorizationUrl" :href="searchAuthorizationUrl">Authorize search</a>
+        <p
+          v-if="searchFeedback && !searchAuthorizationMessage"
+          class="mail-compose-assist"
+          role="alert"
+        >
+          {{ searchFeedback }}
         </p>
+        <EsiAuthorizationRequired
+          v-if="searchAuthorizationMessage"
+          code="ESI 403 / SEARCH"
+          title="Recipient search not authorized"
+          :message="searchAuthorizationMessage"
+          :authorize-url="searchAuthorizationUrl"
+          action-label="Authorize search"
+        />
       </section>
 
       <label class="mail-compose-field">
@@ -130,10 +142,14 @@ const title = computed(() => {
         Omitted because the recipient type could not be resolved: {{ omitted.join(', ') }}.
       </output>
       <p v-if="feedback" class="mail-compose-feedback" role="alert">{{ feedback }}</p>
-      <p v-if="sendAuthorizationMessage" class="mail-compose-assist">
-        {{ sendAuthorizationMessage }}
-        <a v-if="sendAuthorizationUrl" :href="sendAuthorizationUrl">Authorize character</a>
-      </p>
+      <EsiAuthorizationRequired
+        v-if="sendAuthorizationMessage"
+        code="ESI 403 / MAIL"
+        title="Mail sending not authorized"
+        :message="sendAuthorizationMessage"
+        :authorize-url="sendAuthorizationUrl"
+        action-label="Authorize character"
+      />
       <button
         v-if="chargeRecoveryAvailable"
         class="ui-action-secondary"

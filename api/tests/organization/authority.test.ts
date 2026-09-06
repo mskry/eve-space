@@ -10,10 +10,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@evespace/esi-client/domains/alliance', () => ({
   createAllianceClient: mocks.createAllianceClient,
 }))
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
 }))
 

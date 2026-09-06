@@ -4,12 +4,39 @@ import type {
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import {
+  assertExecutableEsiOperationDefinitions,
   assertRegisteredEsiOperation,
   getEsiOperationContract,
   getExecutableEsiOperationDefinition,
-} from '../esi-resilience/catalog.js'
+} from '../esi-resilience/catalog-access.js'
+import { coreEsiOperationCatalog } from '../esi-resilience/catalog.js'
+import { installedModuleEsiOperationDefinitions } from '../generated/platform/installed-module-esi.js'
 import { platformResources } from './resources.js'
+
+const coreResourceEsiOperationCatalog = {
+  'alliance-corporations': coreEsiOperationCatalog['alliance-corporations'],
+  'corporation-members': coreEsiOperationCatalog['corporation-members'],
+} as const
+
+const coreResourceEsiOperationDefinitions = {
+  'alliance-corporations': {
+    sdkOperationId: 'GetAlliancesAllianceIdCorporations',
+    descriptor: operationRegistry.GetAlliancesAllianceIdCorporations!,
+    contract: coreResourceEsiOperationCatalog['alliance-corporations'],
+  },
+  'corporation-members': {
+    sdkOperationId: 'GetCorporationsCorporationIdMembers',
+    descriptor: operationRegistry.GetCorporationsCorporationIdMembers!,
+    contract: coreResourceEsiOperationCatalog['corporation-members'],
+  },
+} as const satisfies Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
+
+const resourceEsiOperationDefinitions = {
+  ...coreResourceEsiOperationDefinitions,
+  ...installedModuleEsiOperationDefinitions,
+}
 
 export function findInstalledResource(
   identity: {
@@ -31,12 +58,26 @@ export function assertInstalledResourceDeclarations(
   resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
+  if (!definitions)
+    assertExecutableEsiOperationDefinitions(
+      coreResourceEsiOperationCatalog,
+      coreResourceEsiOperationDefinitions,
+    )
   for (const resource of resources) {
     assertRegisteredEsiOperation(resource.operationId)
     assertResourceDefinition(resource, resource.operationId, definitions)
     assertResourceImplementation(resource, resource.implementation)
     assertResourceBatchImplementation(resource, resource.implementation, definitions)
   }
+}
+
+export function getInstalledResourceEsiOperationDefinition(
+  operationId: string,
+  definitions: Readonly<
+    Record<string, PlatformExecutableEsiOperationDefinition>
+  > = resourceEsiOperationDefinitions,
+) {
+  return getExecutableEsiOperationDefinition(operationId, definitions)
 }
 
 function assertResourceImplementation(
@@ -105,7 +146,7 @@ function assertResourceDefinition(
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
   assertRegisteredEsiOperation(operationId)
-  const definition = getExecutableEsiOperationDefinition(operationId, definitions)
+  const definition = getInstalledResourceEsiOperationDefinition(operationId, definitions)
   const contract = getEsiOperationContract(operationId)
   if (
     definition.contract.audit.esiOperationId !== contract.audit.esiOperationId ||

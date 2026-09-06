@@ -1,33 +1,13 @@
-type DocumentedCacheBehavior =
-  | { kind: 'relative'; seconds: number }
-  | { kind: 'daily-utc'; hour: number; minute: number }
-  | { kind: 'runtime-only' }
-  | { kind: 'none' }
+import { defineMetadataReview, defineOperationMetadata } from './catalog-validation.js'
 
-type DocumentedRateLimit =
-  | { kind: 'legacy-only' }
-  | { kind: 'declared'; group: string; maximumTokens: number; window: string }
-
-interface EsiOperationMetadata {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
-  path: string
-  esiOperationId: string
-  minimumCompatibilityDate: string
-  requiredScope: string | null
-  cache: DocumentedCacheBehavior
-  supportsConditionalRequests: boolean
-  rateLimit: DocumentedRateLimit
-  maximumBatchSize?: number
-}
-
-export const esiMetadataReview = {
+export const esiMetadataReview = defineMetadataReview({
   explorerUrl: 'https://developers.eveonline.com/api-explorer',
-  reviewedAt: '2026-08-29',
+  reviewedAt: '2026-09-03',
   requestedCompatibilityDate: '2026-08-23',
   resolvedCompatibilityDate: '2026-08-18',
-} as const
+})
 
-export const esiOperationMetadata = {
+export const esiOperationMetadata = defineOperationMetadata({
   status: {
     method: 'GET',
     path: '/status',
@@ -108,6 +88,37 @@ export const esiOperationMetadata = {
     supportsConditionalRequests: true,
     rateLimit: { kind: 'legacy-only' },
   },
+  'character-assets-page': {
+    method: 'GET',
+    path: '/characters/{character_id}/assets',
+    esiOperationId: 'GetCharactersCharacterIdAssets',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-assets.read_assets.v1',
+    cache: { kind: 'relative', seconds: 3_600 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-asset',
+      maximumTokens: 1_800,
+      window: '15m',
+    },
+  },
+  'character-asset-names': {
+    method: 'POST',
+    path: '/characters/{character_id}/assets/names',
+    esiOperationId: 'PostCharactersCharacterIdAssetsNames',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-assets.read_assets.v1',
+    cache: { kind: 'runtime-only' },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-asset',
+      maximumTokens: 1_800,
+      window: '15m',
+    },
+    maximumBatchSize: 1_000,
+  },
   'wallet-balance': {
     method: 'GET',
     path: '/characters/{character_id}/wallet',
@@ -115,6 +126,21 @@ export const esiOperationMetadata = {
     minimumCompatibilityDate: '2020-01-01',
     requiredScope: 'esi-wallet.read_character_wallet.v1',
     cache: { kind: 'relative', seconds: 120 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-wallet',
+      maximumTokens: 150,
+      window: '15m',
+    },
+  },
+  'wallet-journal': {
+    method: 'GET',
+    path: '/characters/{character_id}/wallet/journal',
+    esiOperationId: 'GetCharactersCharacterIdWalletJournal',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-wallet.read_character_wallet.v1',
+    cache: { kind: 'relative', seconds: 3_600 },
     supportsConditionalRequests: true,
     rateLimit: {
       kind: 'declared',
@@ -135,6 +161,71 @@ export const esiOperationMetadata = {
       kind: 'declared',
       group: 'char-wallet',
       maximumTokens: 150,
+      window: '15m',
+    },
+  },
+  'market-orders': {
+    method: 'GET',
+    path: '/characters/{character_id}/orders',
+    esiOperationId: 'GetCharactersCharacterIdOrders',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-markets.read_character_orders.v1',
+    cache: { kind: 'relative', seconds: 1_200 },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'legacy-only' },
+  },
+  'market-order-history': {
+    method: 'GET',
+    path: '/characters/{character_id}/orders/history',
+    esiOperationId: 'GetCharactersCharacterIdOrdersHistory',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-markets.read_character_orders.v1',
+    cache: { kind: 'relative', seconds: 3_600 },
+    supportsConditionalRequests: true,
+    rateLimit: { kind: 'legacy-only' },
+  },
+  'character-contracts': {
+    method: 'GET',
+    path: '/characters/{character_id}/contracts',
+    esiOperationId: 'GetCharactersCharacterIdContracts',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-contracts.read_character_contracts.v1',
+    cache: { kind: 'relative', seconds: 300 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-contract',
+      maximumTokens: 600,
+      window: '15m',
+    },
+  },
+  'character-contract-items': {
+    method: 'GET',
+    path: '/characters/{character_id}/contracts/{contract_id}/items',
+    esiOperationId: 'GetCharactersCharacterIdContractsContractIdItems',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-contracts.read_character_contracts.v1',
+    cache: { kind: 'relative', seconds: 3_600 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-contract',
+      maximumTokens: 600,
+      window: '15m',
+    },
+  },
+  'character-contract-bids': {
+    method: 'GET',
+    path: '/characters/{character_id}/contracts/{contract_id}/bids',
+    esiOperationId: 'GetCharactersCharacterIdContractsContractIdBids',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-contracts.read_character_contracts.v1',
+    cache: { kind: 'relative', seconds: 300 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-contract',
+      maximumTokens: 600,
       window: '15m',
     },
   },
@@ -300,6 +391,36 @@ export const esiOperationMetadata = {
       window: '15m',
     },
   },
+  'character-clones': {
+    method: 'GET',
+    path: '/characters/{character_id}/clones',
+    esiOperationId: 'GetCharactersCharacterIdClones',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-clones.read_clones.v1',
+    cache: { kind: 'relative', seconds: 120 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-location',
+      maximumTokens: 1_200,
+      window: '15m',
+    },
+  },
+  'character-implants': {
+    method: 'GET',
+    path: '/characters/{character_id}/implants',
+    esiOperationId: 'GetCharactersCharacterIdImplants',
+    minimumCompatibilityDate: '2020-01-01',
+    requiredScope: 'esi-clones.read_implants.v1',
+    cache: { kind: 'relative', seconds: 120 },
+    supportsConditionalRequests: true,
+    rateLimit: {
+      kind: 'declared',
+      group: 'char-detail',
+      maximumTokens: 600,
+      window: '15m',
+    },
+  },
   skills: {
     method: 'GET',
     path: '/characters/{character_id}/skills',
@@ -438,4 +559,4 @@ export const esiOperationMetadata = {
     rateLimit: { kind: 'legacy-only' },
     maximumBatchSize: 1_000,
   },
-} as const satisfies Record<string, EsiOperationMetadata>
+})

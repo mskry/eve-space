@@ -1,4 +1,14 @@
 import { describe, expect, test, vi } from 'vitest'
+
+const authMocks = vi.hoisted(() => ({
+  getCharacterCacheAuthorizationForLifecycle: vi.fn(),
+}))
+
+vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/auth/tokens.js')>()),
+  getCharacterCacheAuthorizationForLifecycle: authMocks.getCharacterCacheAuthorizationForLifecycle,
+}))
+
 import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
@@ -32,7 +42,7 @@ describe('platform resource execution guard', () => {
         guardInstalledResourceExecution(identity, {
           resources: [privateResource],
           resolveEligibility: vi.fn().mockResolvedValue({ status }),
-          loadCharacterAuthorization: loadAuthorization,
+          loadCharacterCacheAuthorization: loadAuthorization,
         }),
       ).resolves.toEqual({ outcome: 'noop', reason: status })
       expect(loadAuthorization).not.toHaveBeenCalled()
@@ -45,7 +55,7 @@ describe('platform resource execution guard', () => {
       guardInstalledResourceExecution(identity, {
         resources: [privateResource],
         resolveEligibility: vi.fn().mockResolvedValue(eligible(4, false)),
-        loadCharacterAuthorization: loadAuthorization,
+        loadCharacterCacheAuthorization: loadAuthorization,
       }),
     ).resolves.toEqual({ outcome: 'noop', reason: 'already-current' })
     expect(loadAuthorization).not.toHaveBeenCalled()
@@ -57,31 +67,30 @@ describe('platform resource execution guard', () => {
       order.push('eligibility')
       return Promise.resolve(eligible(4))
     })
-    const loadCharacterAuthorization = vi.fn().mockImplementation(() => {
+    authMocks.getCharacterCacheAuthorizationForLifecycle.mockImplementation(() => {
       order.push('token')
-      return Promise.resolve({ accessToken: 'private', tokenVersion: 4 })
+      return Promise.resolve({ scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 })
     })
 
-    await expect(
-      guardInstalledResourceExecution(identity, {
-        resources: [privateResource],
-        resolveEligibility,
-        loadCharacterAuthorization,
-      }),
-    ).resolves.toMatchObject({
+    const guarded = await guardInstalledResourceExecution(identity, {
+      resources: [privateResource],
+      resolveEligibility,
+    })
+    expect(guarded).toMatchObject({
       outcome: 'ready',
       resource: privateResource,
       authorization: { tokenVersion: 4 },
     })
+    expect(guarded).not.toHaveProperty('authorization.accessToken')
     expect(order).toEqual(['eligibility', 'token'])
-    expect(loadCharacterAuthorization).toHaveBeenCalledWith(
+    expect(authMocks.getCharacterCacheAuthorizationForLifecycle).toHaveBeenCalledWith(
       1404328063,
       identity.subjectLifecycleId,
       'esi-wallet.read_character_wallet.v1',
     )
   })
 
-  test('rechecks durable state when token refresh advances the generation', async () => {
+  test('rechecks durable state when cache authorization has a newer generation', async () => {
     const resolveEligibility = vi
       .fn()
       .mockResolvedValueOnce(eligible(4))
@@ -91,9 +100,9 @@ describe('platform resource execution guard', () => {
       guardInstalledResourceExecution(identity, {
         resources: [privateResource],
         resolveEligibility,
-        loadCharacterAuthorization: vi
+        loadCharacterCacheAuthorization: vi
           .fn()
-          .mockResolvedValue({ accessToken: 'private', tokenVersion: 5 }),
+          .mockResolvedValue({ scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 5 }),
       }),
     ).resolves.toEqual({ outcome: 'noop', reason: 'obsolete' })
     expect(resolveEligibility).toHaveBeenCalledTimes(2)
@@ -109,7 +118,7 @@ describe('platform resource execution guard', () => {
         guardInstalledResourceExecution(identity, {
           resources: [privateResource],
           resolveEligibility: vi.fn().mockResolvedValue(eligible(4)),
-          loadCharacterAuthorization: vi.fn().mockRejectedValue(error),
+          loadCharacterCacheAuthorization: vi.fn().mockRejectedValue(error),
         }),
       ).resolves.toEqual({ outcome: 'noop', reason })
     },
@@ -123,7 +132,7 @@ describe('platform resource execution guard', () => {
       guardInstalledResourceExecution(identity, {
         resources: [publicResource],
         resolveEligibility: vi.fn().mockResolvedValue(eligible(null)),
-        loadCharacterAuthorization,
+        loadCharacterCacheAuthorization: loadCharacterAuthorization,
       }),
     ).resolves.toMatchObject({ outcome: 'ready', authorization: null })
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()

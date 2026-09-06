@@ -20,7 +20,8 @@ export interface EsiCacheAuthorization {
   generation: number
 }
 
-export interface EsiCacheResourceRevision {
+/** Monotonic per-principal revision that invalidates every representation derived from it. */
+export interface EsiResourceRevision {
   namespace: string
   value: number
 }
@@ -36,7 +37,7 @@ export interface EsiCacheEnvelope<Data> {
   etag?: string
   lastModified?: string
   authorization?: EsiCacheAuthorization
-  resourceRevision?: EsiCacheResourceRevision
+  resourceRevision?: EsiResourceRevision
   fence: number
 }
 

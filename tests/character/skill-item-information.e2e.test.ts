@@ -152,6 +152,17 @@ describe('Skills item-information geometry', async () => {
     const dialog = page.getByRole('dialog')
     await dialog.getByRole('heading', { name: 'Surgical Strike' }).waitFor()
     await expect.poll(() => dialog.getAttribute('data-side')).toBe('top')
+    await expect
+      .poll(async () => {
+        const [dialogBox, triggerBox] = await Promise.all([
+          dialog.boundingBox(),
+          trigger.boundingBox(),
+        ])
+        return Boolean(
+          dialogBox && triggerBox && dialogBox.y + dialogBox.height <= triggerBox.y + 1,
+        )
+      })
+      .toBe(true)
 
     const dialogBox = await dialog.boundingBox()
     const triggerBox = await trigger.boundingBox()

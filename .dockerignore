@@ -6,7 +6,7 @@ node_modules
 coverage
 coverage-redis
 dist
-features/*/nuxt
+sde-ingest/target
 .env
 .env.*
 *.log

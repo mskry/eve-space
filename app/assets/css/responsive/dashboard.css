@@ -10,6 +10,7 @@
 
   .dashboard-workspace,
   .dashboard-shell--sidebar-expanded .dashboard-workspace {
+    width: 100%;
     margin-left: 0;
     padding-bottom: 0;
   }

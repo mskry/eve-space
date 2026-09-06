@@ -47,7 +47,7 @@ vi.mock('@evespace/esi-client/domains/search', () => ({
   createSearchClient: mocks.createSearchClient,
 }))
 
-vi.mock('../../src/esi-resilience/resilience.js', () => ({
+vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({
     getCharacter: mocks.getCharacter,
     executeCharacterMutation: mocks.executeCharacterMutation,
@@ -56,6 +56,9 @@ vi.mock('../../src/esi-resilience/resilience.js', () => ({
 
 vi.mock('../../src/esi-resilience/transport.js', () => ({
   EsiTransportError: mocks.EsiTransportError,
+}))
+
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
 }))
 

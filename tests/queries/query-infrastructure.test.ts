@@ -170,7 +170,9 @@ describe('query infrastructure', () => {
   })
 
   it('keys private resources by character identity', () => {
-    expect(PRIVATE_QUERY_KEYS.wallet(7)).not.toEqual(PRIVATE_QUERY_KEYS.wallet(8))
+    expect(PRIVATE_QUERY_KEYS.characterFinance(7)).not.toEqual(
+      PRIVATE_QUERY_KEYS.characterFinance(8),
+    )
     expect(PRIVATE_QUERY_KEYS.characterHistory(7)).not.toEqual(
       PRIVATE_QUERY_KEYS.characterHistory(8),
     )

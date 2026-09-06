@@ -1,0 +1,28 @@
+{
+  "name": "@evespace/esi-client-codegen",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@hey-api/openapi-ts": "catalog:",
+    "typescript": "catalog:tsapi"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@typescript/native": "catalog:"
+  }
+}

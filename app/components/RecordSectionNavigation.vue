@@ -11,6 +11,9 @@ const emit = defineEmits<{
 }>()
 
 const route = useRoute()
+const navigation = useTemplateRef<HTMLElement>('navigation')
+const indicatorStyle = ref<Record<string, string>>()
+let resizeObserver: ResizeObserver | undefined
 
 function normalizedPath(path: string) {
   return path.length > 1 ? path.replace(/\/$/, '') : path
@@ -23,10 +26,53 @@ function isCurrent(entry: RecordSectionNavigationEntry) {
     ? currentPath === targetPath
     : currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
 }
+
+function updateIndicator() {
+  const currentLink = navigation.value?.querySelector<HTMLElement>('a[aria-current="page"]')
+  if (!currentLink) {
+    indicatorStyle.value = { opacity: '0' }
+    return
+  }
+
+  indicatorStyle.value = {
+    '--record-section-indicator-position': `${currentLink.offsetLeft}px`,
+    '--record-section-indicator-size': `${currentLink.offsetWidth}px`,
+  }
+}
+
+function observeNavigation() {
+  resizeObserver?.disconnect()
+  if (!navigation.value || typeof ResizeObserver === 'undefined') return
+
+  resizeObserver = new ResizeObserver(updateIndicator)
+  resizeObserver.observe(navigation.value)
+  for (const link of navigation.value.querySelectorAll('a')) resizeObserver.observe(link)
+}
+
+watch(
+  [() => route.path, () => props.entries],
+  async () => {
+    await nextTick()
+    updateIndicator()
+    observeNavigation()
+  },
+  { flush: 'post' },
+)
+
+onMounted(() => {
+  updateIndicator()
+  observeNavigation()
+})
+onBeforeUnmount(() => resizeObserver?.disconnect())
 </script>
 
 <template>
-  <nav class="record-section-navigation" :aria-label="label">
+  <nav ref="navigation" class="record-section-navigation" :aria-label="label">
+    <span
+      class="record-section-navigation-indicator"
+      :style="indicatorStyle"
+      aria-hidden="true"
+    ></span>
     <NuxtLink
       v-for="entry in props.entries"
       :key="entry.id"
@@ -44,6 +90,7 @@ function isCurrent(entry: RecordSectionNavigationEntry) {
 
 <style scoped>
 .record-section-navigation {
+  position: relative;
   width: 100%;
   max-width: 100%;
   margin-bottom: 1.375rem;
@@ -69,14 +116,20 @@ function isCurrent(entry: RecordSectionNavigationEntry) {
   white-space: nowrap;
 }
 
-.record-section-navigation a::after {
-  content: '';
+.record-section-navigation-indicator {
   position: absolute;
-  inset: auto 1.125rem -0.0625rem;
+  z-index: 1;
+  bottom: -0.0625rem;
+  left: 0;
+  width: calc(var(--record-section-indicator-size, 0px) - 2.25rem);
   height: 0.125rem;
+  pointer-events: none;
   background: var(--ui-primary);
   box-shadow: 0 0 0.625rem color-mix(in srgb, var(--ui-primary) 65%, transparent);
-  opacity: 0;
+  transform: translateX(calc(var(--record-section-indicator-position, 0px) + 1.125rem));
+  transition:
+    width 180ms ease,
+    transform 180ms ease;
 }
 
 .record-section-navigation a:hover,
@@ -85,14 +138,16 @@ function isCurrent(entry: RecordSectionNavigationEntry) {
   color: var(--ui-primary);
 }
 
-.record-section-navigation a.is-current::after {
-  opacity: 1;
-}
-
 .record-section-navigation a:focus-visible {
   z-index: 1;
   outline: 0.125rem solid var(--ui-primary);
   outline-offset: -0.1875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .record-section-navigation-indicator {
+    transition: none;
+  }
 }
 
 @media (max-width: 32.5rem) {

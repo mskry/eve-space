@@ -2,10 +2,11 @@
   "name": "@eve-space/platform-module-server",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "sideEffects": false,
   "engines": {
-    "node": ">=22.18.0"
+    "node": ">=24.20.0"
   },
   "exports": {
     ".": {
@@ -22,10 +23,10 @@
   },
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
-    "@evespace/esi-client": "^2.0.0",
-    "zod": "^4.4.3"
+    "@evespace/esi-client": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "typescript": "~5.9.3"
+    "typescript": "catalog:tsgo"
   }
 }

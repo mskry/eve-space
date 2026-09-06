@@ -7,7 +7,18 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   app: {
     head: {
+      title: 'EVE Space // Capsuleer Operations',
       htmlAttrs: { lang: 'en' },
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+      ],
+      meta: [
+        { name: 'theme-color', content: '#060b0f' },
+        { name: 'application-name', content: 'EVE Space' },
+        { name: 'apple-mobile-web-app-title', content: 'EVE Space' },
+      ],
     },
   },
   css: [
@@ -17,7 +28,6 @@ export default defineNuxtConfig({
     '~/assets/css/shared/public-content.css',
     '~/assets/css/shared/async-state.css',
     '~/assets/css/shared/search-status.css',
-    '~/assets/css/shared/wallet-state.css',
     '~/assets/css/pages/dashboard-overview.css',
     '~/assets/css/responsive.css',
     '~/assets/css/responsive/reduced-motion.css',

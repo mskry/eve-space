@@ -26,6 +26,12 @@ const emit = defineEmits<{
 }>()
 
 const senderName = computed(() => mailPartyName(props.detail?.sender ?? null, 'sender'))
+const recipientsLabel = computed(() => {
+  const names =
+    props.detail?.recipients.map((party) => mailPartyName(party, 'recipient')).join(', ') ?? ''
+  return `TO ${names || 'Unknown recipients'}`
+})
+const recipientsRevealed = ref(false)
 const labelChips = computed(() => {
   const byId = new Map(
     props.labels.flatMap((label) =>
@@ -54,6 +60,15 @@ const readerTitleId = computed(() => {
   if (props.detail) return 'mail-reader-message-title'
   return undefined
 })
+
+watch(recipientsLabel, () => {
+  recipientsRevealed.value = false
+})
+
+function revealTruncatedRecipients(event: MouseEvent) {
+  const recipients = event.currentTarget as HTMLElement
+  recipientsRevealed.value = recipients.scrollWidth > recipients.clientWidth
+}
 </script>
 
 <template>
@@ -77,7 +92,7 @@ const readerTitleId = computed(() => {
               </span>
             </div>
             <div class="mail-reader-skeleton-actions">
-              <span v-for="index in 5" :key="index" class="mail-skeleton-block" />
+              <span v-for="index in 6" :key="index" class="mail-skeleton-block" />
             </div>
           </header>
           <section class="mail-reader-content mail-reader-skeleton-content">
@@ -127,46 +142,72 @@ const readerTitleId = computed(() => {
             <div>
               <span>FROM</span>
               <strong>{{ senderName }}</strong>
-              <p>
-                TO
-                <template v-if="detail.recipients.length > 0">
-                  {{
-                    detail.recipients.map((party) => mailPartyName(party, 'recipient')).join(', ')
-                  }}
-                </template>
-                <template v-else>Unknown recipients</template>
+              <p
+                class="mail-reader-recipients"
+                :class="{ 'is-revealed': recipientsRevealed }"
+                :data-full-recipients="recipientsLabel"
+                @mouseenter="revealTruncatedRecipients"
+                @mouseleave="recipientsRevealed = false"
+              >
+                {{ recipientsLabel }}
               </p>
             </div>
           </div>
           <div class="mail-reader-actions" aria-label="Message actions">
-            <button
-              type="button"
-              :disabled="!canReply"
-              :title="replyUnavailableReason"
-              @click="emit('reply')"
-            >
-              REPLY
-            </button>
-            <button type="button" @click="emit('replyAll')">REPLY ALL</button>
-            <button type="button" @click="emit('forward')">FORWARD</button>
-            <button type="button" :disabled="mutationPending" @click="emit('manageLabels')">
-              LABELS
-            </button>
-            <button
-              type="button"
-              :disabled="mutationPending"
-              @click="emit('changeRead', isMailUnread(readState))"
-            >
-              {{ isMailUnread(readState) ? 'MARK READ' : 'MARK UNREAD' }}
-            </button>
-            <button
-              class="mail-reader-action--danger"
-              type="button"
-              :disabled="mutationPending"
-              @click="emit('delete')"
-            >
-              DELETE
-            </button>
+            <UiTooltip content="REPLY">
+              <button
+                type="button"
+                aria-label="REPLY"
+                :disabled="!canReply"
+                :title="replyUnavailableReason"
+                @click="emit('reply')"
+              >
+                <MailReaderActionIcon name="reply" />
+              </button>
+            </UiTooltip>
+            <UiTooltip content="REPLY ALL">
+              <button type="button" aria-label="REPLY ALL" @click="emit('replyAll')">
+                <MailReaderActionIcon name="reply-all" />
+              </button>
+            </UiTooltip>
+            <UiTooltip content="FORWARD">
+              <button type="button" aria-label="FORWARD" @click="emit('forward')">
+                <MailReaderActionIcon name="forward" />
+              </button>
+            </UiTooltip>
+            <UiTooltip content="LABELS">
+              <button
+                type="button"
+                aria-label="LABELS"
+                :disabled="mutationPending"
+                @click="emit('manageLabels')"
+              >
+                <MailReaderActionIcon name="labels" />
+              </button>
+            </UiTooltip>
+            <UiTooltip :content="isMailUnread(readState) ? 'MARK READ' : 'MARK UNREAD'">
+              <button
+                type="button"
+                :aria-label="isMailUnread(readState) ? 'MARK READ' : 'MARK UNREAD'"
+                :disabled="mutationPending"
+                @click="emit('changeRead', isMailUnread(readState))"
+              >
+                <MailReaderActionIcon
+                  :name="isMailUnread(readState) ? 'mark-read' : 'mark-unread'"
+                />
+              </button>
+            </UiTooltip>
+            <UiTooltip content="DELETE">
+              <button
+                class="mail-reader-action--danger"
+                type="button"
+                aria-label="DELETE"
+                :disabled="mutationPending"
+                @click="emit('delete')"
+              >
+                <MailReaderActionIcon name="delete" />
+              </button>
+            </UiTooltip>
           </div>
         </header>
         <section class="mail-reader-content">

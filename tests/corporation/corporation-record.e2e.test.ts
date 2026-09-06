@@ -161,7 +161,9 @@ describe('corporation record routes', async () => {
     await page.goBack()
     await page.waitForURL((url) => url.pathname === `/corporation/${corporationId}`)
     await expect
-      .poll(() => page.getByRole('link', { name: 'OVERVIEW' }).getAttribute('aria-current'))
+      .poll(() =>
+        page.getByRole('link', { name: 'OVERVIEW', exact: true }).getAttribute('aria-current'),
+      )
       .toBe('page')
 
     await page.goForward()
