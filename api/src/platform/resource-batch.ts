@@ -83,6 +83,7 @@ export async function executeInstalledResourceBatchOperation(
   payload: PlatformResourceBatchPayload,
   options: BatchExecutionOptions = {},
 ): Promise<BatchExecution> {
+  // Queue intake owns the configured planner page bound; this tier enforces the ESI operation cap.
   const parsed = platformResourceBatchPayloadSchema.parse(payload)
   const resources = options.resources ?? installedModuleResources
   const resource = findInstalledResource(parsed, resources)
