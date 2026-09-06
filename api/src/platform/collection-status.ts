@@ -1,40 +1,16 @@
-import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import type {
+  PlatformCollectionStatus,
+  PlatformInstalledResourceDescriptor,
+} from '@eve-space/platform-module-contract'
 import { platformResources } from './resources.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { findInstalledResource } from './resource-identity.js'
-import {
-  type PlatformCollectionFailureClass,
-  type PlatformCollectionStateIdentity,
-} from './collection-state.js'
+import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import { upsertPlatformCollectionState } from './collection-state-store.js'
 import {
   resolveInstalledResourceEligibility,
   type PlatformResourceEligibility,
 } from './resource-eligibility.js'
-
-type PlatformCollectionStatus =
-  | {
-      readonly status: 'current' | 'stale'
-      readonly validatedAt: string
-      readonly lastFailureClass: PlatformCollectionFailureClass | null
-    }
-  | {
-      readonly status: 'never-collected'
-      readonly validatedAt: null
-      readonly lastFailureClass: PlatformCollectionFailureClass | null
-    }
-  | {
-      readonly status: 'unavailable'
-      readonly validatedAt: string | null
-      readonly lastFailureClass: PlatformCollectionFailureClass | null
-    }
-  | {
-      readonly status: 'authorization-required'
-      readonly validatedAt: string | null
-      readonly lastFailureClass: 'authorization-required'
-      readonly requiredScope: string
-      readonly reauthorizationPath: string
-    }
 
 interface CollectionStatusOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
@@ -89,9 +65,12 @@ function projectCollectionStatus(
   const validatedAt =
     'validatedAt' in eligibility ? (eligibility.validatedAt?.toISOString() ?? null) : null
   const lastFailureClass = 'lastFailureClass' in eligibility ? eligibility.lastFailureClass : null
+  const authorizationGeneration =
+    'authorizationGeneration' in eligibility ? eligibility.authorizationGeneration : null
   if (eligibility.status === 'authorization-required')
     return {
       status: 'authorization-required',
+      authorizationGeneration,
       validatedAt,
       lastFailureClass: 'authorization-required',
       requiredScope: eligibility.requiredScope,
@@ -100,15 +79,28 @@ function projectCollectionStatus(
   if (eligibility.status !== 'eligible')
     return {
       status: 'unavailable',
+      authorizationGeneration,
       validatedAt,
       lastFailureClass,
     }
   if (validatedAt)
     return {
       status: eligibility.due || lastFailureClass ? 'stale' : 'current',
+      authorizationGeneration,
       validatedAt,
       lastFailureClass,
     }
-  if (lastFailureClass) return { status: 'unavailable', validatedAt: null, lastFailureClass }
-  return { status: 'never-collected', validatedAt: null, lastFailureClass: null }
+  if (lastFailureClass)
+    return {
+      status: 'unavailable',
+      authorizationGeneration,
+      validatedAt: null,
+      lastFailureClass,
+    }
+  return {
+    status: 'never-collected',
+    authorizationGeneration,
+    validatedAt: null,
+    lastFailureClass: null,
+  }
 }

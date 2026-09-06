@@ -5,6 +5,9 @@ import {
   type StableOperationId,
 } from '@evespace/esi-client/operations'
 
+export * from './errors.js'
+export * from './validation.js'
+
 export type PlatformEsiOperationPolicy = Omit<PlatformEsiOperationContract, 'audit'> & {
   readonly audit: Omit<PlatformEsiOperationContract['audit'], 'esiOperationId'>
 }

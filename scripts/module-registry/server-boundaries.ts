@@ -1,4 +1,4 @@
-import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
+import { serverSourceBoundaryViolations } from './feature-boundaries.js'
 
 export interface ModuleServerSource {
   readonly path: string
@@ -6,17 +6,13 @@ export interface ModuleServerSource {
 }
 
 export function moduleServerImportViolations(sources: readonly ModuleServerSource[]) {
-  const violations: string[] = []
-  for (const { path, source } of sources) {
-    for (const specifier of typescriptModuleSpecifiers(path, source)) {
-      const normalized = specifier.replaceAll('\\', '/')
-      if (
-        normalized === '@eve-space/api' ||
-        normalized.startsWith('@eve-space/api/') ||
-        /(?:^|\/)api\/src(?:\/|$)/.test(normalized)
-      )
-        violations.push(`${path}: feature server code cannot import core API source ${specifier}`)
-    }
-  }
-  return violations.toSorted((left, right) => left.localeCompare(right))
+  return sources
+    .flatMap(({ path, source }) =>
+      serverSourceBoundaryViolations({ moduleId: moduleIdFromPath(path), path, source }),
+    )
+    .toSorted((left, right) => left.localeCompare(right))
+}
+
+function moduleIdFromPath(path: string) {
+  return path.replaceAll('\\', '/').split('/')[1] ?? 'unknown'
 }

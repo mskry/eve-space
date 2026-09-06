@@ -1,3 +1,8 @@
+import {
+  platformModuleQueryKey,
+  platformModuleSubjectQueryKey,
+} from '@eve-space/platform-module-nuxt/runtime'
+
 export const PUBLIC_QUERY_KEYS = {
   root: ['public'] as const,
   systemStatus: () => [...PUBLIC_QUERY_KEYS.root, 'system-status'] as const,
@@ -27,9 +32,9 @@ export const PRIVATE_QUERY_KEYS = {
   characterModules: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'modules'] as const,
   characterModule: (characterId: number, moduleId: string) =>
-    [...PRIVATE_QUERY_KEYS.characterModules(characterId), moduleId] as const,
+    platformModuleSubjectQueryKey(moduleId, { kind: 'character', characterId }),
   characterModuleResource: (characterId: number, moduleId: string, resourceId: string) =>
-    [...PRIVATE_QUERY_KEYS.characterModule(characterId, moduleId), resourceId] as const,
+    platformModuleQueryKey(moduleId, { kind: 'character', characterId }, [resourceId]),
   characterOverview: (characterId: number) =>
     [...PRIVATE_QUERY_KEYS.character(characterId), 'overview'] as const,
   characterAttributes: (characterId: number) =>

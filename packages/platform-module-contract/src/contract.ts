@@ -255,11 +255,71 @@ export interface SdeCoreReads {
   loadPublishedTypeGroups(typeIds: readonly number[]): Promise<readonly PublishedSdeTypeGroup[]>
 }
 
+export const platformModuleLogLevels = ['info', 'warn', 'error'] as const
+export type PlatformModuleLogLevel = (typeof platformModuleLogLevels)[number]
+export type PlatformModuleLogValue = string | number | boolean | null
+export type PlatformModuleLogFields = Readonly<Record<string, PlatformModuleLogValue>>
+
+export interface PlatformModuleLogger {
+  info(event: string, fields?: PlatformModuleLogFields): void
+  warn(event: string, fields?: PlatformModuleLogFields): void
+  error(event: string, fields?: PlatformModuleLogFields): void
+}
+
+export const platformCollectionFailureClasses = [
+  'authorization-required',
+  'esi-cooldown',
+  'esi-unavailable',
+  'response-invalid',
+  'mapping-failed',
+  'persistence-failed',
+  'unknown',
+] as const
+export type PlatformCollectionFailureClass = (typeof platformCollectionFailureClasses)[number]
+
+interface PlatformCollectionStatusBase {
+  readonly authorizationGeneration: number | null
+  readonly lastFailureClass: PlatformCollectionFailureClass | null
+  readonly validatedAt: string | null
+}
+
+export type PlatformCollectionStatus =
+  | (PlatformCollectionStatusBase & { readonly status: 'current' | 'stale' })
+  | (PlatformCollectionStatusBase & { readonly status: 'never-collected' | 'unavailable' })
+  | (PlatformCollectionStatusBase & {
+      readonly status: 'authorization-required'
+      readonly lastFailureClass: 'authorization-required'
+      readonly requiredScope: string
+      readonly reauthorizationPath: string
+    })
+
+export type PlatformCollectionStatusSubject =
+  | { readonly kind: 'character'; readonly characterId: number }
+  | { readonly kind: 'corporation'; readonly corporationId: number }
+  | { readonly kind: 'alliance'; readonly allianceId: number }
+
+export interface PlatformModuleCollectionStatusReads {
+  read(
+    resourceId: string,
+    subject: PlatformCollectionStatusSubject,
+  ): Promise<PlatformCollectionStatus>
+}
+
+export interface PlatformSafeErrorBody {
+  readonly message: string
+  readonly code?: string
+}
+
+export interface PlatformModuleErrorBody extends PlatformSafeErrorBody {
+  readonly code: string
+}
+
 export interface PlatformModulePersistence<Transaction> {
   transaction<T>(operation: (transaction: Transaction) => Promise<T>): Promise<T>
 }
 
 export interface PlatformModuleRouteCapabilities<Transaction> {
+  readonly logger: PlatformModuleLogger
   readonly persistence: PlatformModulePersistence<Transaction>
   readonly sde: SdeCoreReads
 }
@@ -279,6 +339,7 @@ export interface PlatformModuleResourceTransaction {
 }
 
 export interface PlatformModuleResourceCapabilities {
+  readonly logger: PlatformModuleLogger
   readonly persistence: PlatformModulePersistence<PlatformModuleResourceTransaction>
   readonly sde: SdeCoreReads
 }
@@ -288,6 +349,7 @@ export interface PlatformAuthenticatedSessionRouteContext {
     readonly strategy: 'authenticated-session'
     readonly userId: string
   }
+  readonly collectionStatus: PlatformModuleCollectionStatusReads
   readonly organization: PlatformAuthorizedOrganizationContext
 }
 
@@ -298,6 +360,7 @@ export interface PlatformOwnedCharacterRouteContext {
     readonly characterId: number
     readonly subjectLifecycleId: string
   }
+  readonly collectionStatus: PlatformModuleCollectionStatusReads
   readonly organization: PlatformAuthorizedOrganizationContext
   readonly coreReads: OwnedCharacterCoreReads
 }
@@ -684,6 +747,8 @@ export interface PlatformActivityProviderContext {
 }
 
 export interface PlatformActivityProviderCapabilities<Transaction> {
+  readonly collectionStatus: PlatformModuleCollectionStatusReads
+  readonly logger: PlatformModuleLogger
   readonly persistence: PlatformModulePersistence<Transaction>
 }
 

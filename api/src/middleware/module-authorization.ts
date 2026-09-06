@@ -7,6 +7,7 @@ import type {
 import { createMiddleware } from 'hono/factory'
 import { authRequiredBody } from '../http/contracts.js'
 import { createOwnedCharacterCoreReads } from '../platform/core-read-capabilities.js'
+import { createPlatformModuleCollectionStatusReads } from '../platform/module-collection-status-capabilities.js'
 import { authorizeOrganizationContribution } from '../organization/module-authorization.js'
 import type { OrganizationSessionEnv } from './organization-session.js'
 import type { OwnedCharacterEnv } from './owned-character.js'
@@ -102,27 +103,34 @@ export function requireModuleOrganizationAuthorization(
   })
 }
 
-export const exposeAuthenticatedSessionModuleContext =
-  createMiddleware<AuthenticatedSessionModuleEnv>(async (context, next) => {
+export function exposeAuthenticatedSessionModuleContext(moduleId: string) {
+  return createMiddleware<AuthenticatedSessionModuleEnv>(async (context, next) => {
     const session = context.var.session
     if (!session) return context.json(authRequiredBody, 401)
+    const organization = context.var.moduleOrganizationAuthorization!
 
     context.set('platform', {
       authorization: {
         strategy: 'authenticated-session',
         userId: session.userId,
       },
-      organization: context.var.moduleOrganizationAuthorization!,
+      collectionStatus: createPlatformModuleCollectionStatusReads({
+        moduleId,
+        organizationVersion: organization.organizationVersion,
+      }),
+      organization,
     })
     await next()
   })
+}
 
-export const exposeOwnedCharacterModuleContext = createMiddleware<OwnedCharacterModuleEnv>(
-  async (context, next) => {
+export function exposeOwnedCharacterModuleContext(moduleId: string) {
+  return createMiddleware<OwnedCharacterModuleEnv>(async (context, next) => {
     const session = context.var.session
     if (!session) return context.json(authRequiredBody, 401)
 
     const { characterId, subjectLifecycleId } = context.var.ownedCharacter
+    const organization = context.var.moduleOrganizationAuthorization!
     context.set('platform', {
       authorization: {
         strategy: 'owned-character',
@@ -130,7 +138,12 @@ export const exposeOwnedCharacterModuleContext = createMiddleware<OwnedCharacter
         characterId,
         subjectLifecycleId,
       },
-      organization: context.var.moduleOrganizationAuthorization!,
+      collectionStatus: createPlatformModuleCollectionStatusReads({
+        moduleId,
+        organizationVersion: organization.organizationVersion,
+        characters: [{ characterId, subjectLifecycleId }],
+      }),
+      organization,
       coreReads: createOwnedCharacterCoreReads({
         userId: session.userId,
         characterId,
@@ -138,5 +151,5 @@ export const exposeOwnedCharacterModuleContext = createMiddleware<OwnedCharacter
       }),
     })
     await next()
-  },
-)
+  })
+}

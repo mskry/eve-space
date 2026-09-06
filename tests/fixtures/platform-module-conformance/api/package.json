@@ -1,0 +1,10 @@
+{
+  "name": "@eve-space/module-conformance-api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eve-space/conformance-server": "workspace:*",
+    "@eve-space/platform-module-contract": "workspace:*",
+    "hono": "catalog:"
+  }
+}

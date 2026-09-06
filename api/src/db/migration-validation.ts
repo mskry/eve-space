@@ -1,6 +1,12 @@
+import { maskSqlLiteralsAndComments } from './sql-validation.js'
+
 export interface Migration {
   name: string
   sql: string
+}
+
+interface TransactionalMigrationValidationOptions {
+  readonly rejectUnterminated?: boolean
 }
 
 const nonTransactionalStatements = [
@@ -21,10 +27,13 @@ const nonTransactionalStatements = [
   },
   { name: 'VACUUM', pattern: /\bvacuum\b/i },
 ]
-const dollarQuoteDelimiterPattern = /^\$[A-Za-z_]\w*\$|^\$\$/
-
-export function assertTransactionalMigration(migration: Migration) {
-  const statement = stripSqlLiteralsAndComments(migration.sql)
+export function assertTransactionalMigration(
+  migration: Migration,
+  options: TransactionalMigrationValidationOptions = {},
+) {
+  const statement = maskSqlLiteralsAndComments(migration.sql, {
+    rejectUnterminated: options.rejectUnterminated,
+  })
   const unsupported = nonTransactionalStatements.find(({ pattern }) => pattern.test(statement))
 
   if (unsupported) {
@@ -32,71 +41,4 @@ export function assertTransactionalMigration(migration: Migration) {
       `Migration ${migration.name} contains a statement that cannot run in a transaction: ${unsupported.name}`,
     )
   }
-}
-
-function stripSqlLiteralsAndComments(sql: string) {
-  let result = ''
-  let index = 0
-
-  while (index < sql.length) {
-    const skipped = skipNonExecutableSql(sql, index)
-    if (skipped !== undefined) {
-      result += ' '
-      index = skipped
-      continue
-    }
-
-    result += sql[index]
-    index += 1
-  }
-
-  return result
-}
-
-function skipNonExecutableSql(sql: string, index: number) {
-  return (
-    skipLineComment(sql, index) ??
-    skipBlockComment(sql, index) ??
-    skipQuotedLiteral(sql, index) ??
-    skipDollarQuotedLiteral(sql, index)
-  )
-}
-
-function skipLineComment(sql: string, index: number) {
-  if (!sql.startsWith('--', index)) return undefined
-  const end = sql.indexOf('\n', index + 2)
-  return end === -1 ? sql.length : end
-}
-
-function skipBlockComment(sql: string, index: number) {
-  if (!sql.startsWith('/*', index)) return undefined
-  const end = sql.indexOf('*/', index + 2)
-  return end === -1 ? sql.length : end + 2
-}
-
-function skipQuotedLiteral(sql: string, index: number) {
-  const quote = sql[index]
-  if (quote !== "'" && quote !== '"') return undefined
-
-  index += 1
-  while (index < sql.length) {
-    if (sql[index] === quote && sql[index + 1] === quote) {
-      index += 2
-      continue
-    }
-    if (sql[index] === quote) return index + 1
-    index += 1
-  }
-
-  return index
-}
-
-function skipDollarQuotedLiteral(sql: string, index: number) {
-  if (sql[index] !== '$') return undefined
-
-  const delimiter = dollarQuoteDelimiterPattern.exec(sql.slice(index))?.[0]
-  if (!delimiter) return undefined
-
-  const end = sql.indexOf(delimiter, index + delimiter.length)
-  return end === -1 ? sql.length : end + delimiter.length
 }

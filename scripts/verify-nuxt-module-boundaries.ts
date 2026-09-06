@@ -1,10 +1,12 @@
 import { fileURLToPath } from 'node:url'
+import { assertInstalledFeatureBoundaries } from './module-registry/feature-boundaries.js'
 import {
   loadFeatureNuxtSources,
   moduleNuxtBoundaryViolations,
 } from './module-registry/nuxt-boundaries.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
+await assertInstalledFeatureBoundaries(root)
 const sources = await loadFeatureNuxtSources(root)
 const violations = moduleNuxtBoundaryViolations(sources)
 

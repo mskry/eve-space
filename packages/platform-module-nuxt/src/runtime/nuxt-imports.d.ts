@@ -1,6 +1,12 @@
 declare module '#imports' {
   export const computed: (typeof import('vue'))['computed']
-  export function useRuntimeConfig(): { readonly public: { readonly apiBase: string } }
+  export function useRuntimeConfig(): {
+    readonly public: { readonly apiBase: string; readonly eveImageBase: string }
+  }
+  export function useAnnouncer(): {
+    assertive(message: string): void
+    polite(message: string): void
+  }
   export function abortNavigation(error?: Error): false
   export function createError(input: {
     readonly statusCode: number

@@ -427,6 +427,12 @@ importers:
       '@pinia/colada':
         specifier: 'catalog:'
         version: 1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2))
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.3
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.41(@typescript/typescript6@6.0.2)
     devDependencies:
       '@nuxt/test-utils':
         specifier: 'catalog:'
@@ -458,13 +464,25 @@ importers:
       '@evespace/esi-client':
         specifier: workspace:*
         version: link:../esi-client
-      zod:
+      '@hono/zod-validator':
         specifier: 'catalog:'
-        version: 4.5.4
+        version: 0.9.0(hono@4.13.3)(zod@4.5.4)
     devDependencies:
+      '@vitest/coverage-v8':
+        specifier: catalog:vitest4
+        version: 4.1.11(vitest@4.1.11)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.3
       typescript:
         specifier: catalog:tsgo
         version: 7.0.2
+      vitest:
+        specifier: catalog:vitest4
+        version: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(typescript@7.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
 
 packages:
 

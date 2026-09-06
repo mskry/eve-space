@@ -4,7 +4,9 @@
   "private": true,
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.vue"
+  ],
   "engines": {
     "node": ">=24.20.0"
   },
@@ -12,17 +14,25 @@
     ".": {
       "types": "./dist/module.d.ts",
       "import": "./dist/module.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    },
+    "./runtime/platform-api": {
+      "types": "./dist/runtime/platform-api.d.ts",
+      "import": "./dist/runtime/platform-api.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node ../../scripts/copy-platform-nuxt-runtime-assets.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:fixtures": "vitest run test/platform-module.nuxt.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && nuxt typecheck test/fixtures/basic"
   },
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
@@ -39,6 +49,8 @@
     "vitest": "catalog:vitest4"
   },
   "peerDependencies": {
-    "@pinia/colada": "catalog:"
+    "@pinia/colada": "catalog:",
+    "hono": "catalog:",
+    "vue": "catalog:"
   }
 }

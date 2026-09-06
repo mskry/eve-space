@@ -43,6 +43,7 @@ const coladaDevtools = import.meta.dev
 <template>
   <UiProvider>
     <NuxtRouteAnnouncer />
+    <NuxtAnnouncer />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>

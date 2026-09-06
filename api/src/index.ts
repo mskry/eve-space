@@ -3,6 +3,7 @@ import type { ApplyGlobalResponse } from 'hono/client'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
+import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { env } from './env.js'
 import { CharacterTokenNotFoundError } from './auth/store.js'
 import { installedModuleRoutes } from './generated/platform/installed-module-routes.js'
@@ -50,11 +51,17 @@ app.onError((error, context) => {
   if (error instanceof TokenRefreshUnavailableError) {
     return context.json({ message: 'EVE token refresh is temporarily unavailable.' }, 503)
   }
+  if (error instanceof PlatformModuleHttpError) {
+    return context.json(error.body, error.status)
+  }
   if (error instanceof HTTPException) {
     return context.json({ message: error.message }, error.status)
   }
 
-  console.error('Unhandled API error', error)
+  console.error(
+    'Unhandled API error',
+    unexpectedErrorDetails(error, context.req.method, context.req.path),
+  )
   return context.json({ message: 'Internal server error' }, 500)
 })
 
@@ -68,3 +75,24 @@ export type AppType = ApplyGlobalResponse<
     503: { json: { message: string } }
   }
 >
+
+function unexpectedErrorDetails(error: unknown, method: string, path: string) {
+  const request = { category: 'unexpected application failure', method, path }
+  if (!(error instanceof Error)) return { ...request, thrownType: typeof error }
+
+  return {
+    ...request,
+    errorName: error.name,
+    stack: errorStackLocations(error),
+    cause:
+      error.cause instanceof Error
+        ? { errorName: error.cause.name, stack: errorStackLocations(error.cause) }
+        : error.cause === undefined
+          ? undefined
+          : { thrownType: typeof error.cause },
+  }
+}
+
+function errorStackLocations(error: Error) {
+  return error.stack?.split('\n').slice(1).join('\n').trim() || undefined
+}

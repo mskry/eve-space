@@ -1,0 +1,33 @@
+{
+  "name": "@eve-space/conformance-nuxt",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.vue"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.ts",
+      "import": "./dist/module.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/runtime/app/pages"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "nuxt typecheck ../../.."
+  },
+  "dependencies": {
+    "@eve-space/platform-module-nuxt": "workspace:*",
+    "@nuxt/kit": "catalog:",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "nuxt": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

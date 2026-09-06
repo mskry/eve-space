@@ -1,0 +1,14 @@
+{
+  "name": "@eve-space/module-conformance-host",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@eve-space/conformance-nuxt": "workspace:*",
+    "@eve-space/platform-module-nuxt": "workspace:*",
+    "@pinia/colada": "catalog:",
+    "@pinia/colada-nuxt": "catalog:",
+    "@pinia/nuxt": "catalog:",
+    "nuxt": "catalog:",
+    "vue": "catalog:"
+  }
+}

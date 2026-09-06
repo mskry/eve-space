@@ -47,13 +47,19 @@ describe('UiToast', () => {
   it('hosts shared confirmation dialogs and scopes controller ownership', () => {
     const provider = readWorkspaceFile('layers/ui/app/components/ui/UiProvider.vue')
     const composable = readWorkspaceFile('layers/ui/app/composables/useConfirmDialog.ts')
+    const platformComposable = readWorkspaceFile(
+      'packages/platform-module-nuxt/src/runtime/confirm-dialog.ts',
+    )
 
     expect(provider).toContain('const confirmDialog = provideConfirmDialog()')
     expect(provider).toContain('<UiConfirmDialog')
     expect(provider).toContain('@confirm="confirmDialog.confirmDialog"')
-    expect(composable).toContain('function openConfirmDialog(options: UiConfirmDialogOptions)')
-    expect(composable).toContain('const ownedDialogs = new Set<number>()')
-    expect(composable).toContain('onScopeDispose(() => {')
+    expect(composable).toContain('usePlatformConfirmDialog as useConfirmDialog')
+    expect(platformComposable).toContain(
+      'function openConfirmDialog(options: PlatformConfirmDialogOptions)',
+    )
+    expect(platformComposable).toContain('const ownedDialogs = new Set<number>()')
+    expect(platformComposable).toContain('onScopeDispose(() => {')
   })
 
   it('styles toast elements only with semantic UI variables', () => {
