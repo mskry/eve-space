@@ -121,6 +121,7 @@ export function updateNotModifiedEnvelope<Data>(options: {
   policy: EsiOperationContract
   now?: number
   fence?: number
+  authorization?: EsiCacheAuthorization
 }): EsiCacheEnvelope<Data> {
   const now = options.now ?? Date.now()
   const metadata: EsiResponseMetadata = {
@@ -134,13 +135,13 @@ export function updateNotModifiedEnvelope<Data>(options: {
     },
   }
 
-  // A 304 refreshes the existing representation; it cannot change its identity or scope.
+  // A 304 preserves representation identity while allowing authorization generation rebinding.
   return createCacheEnvelope({
     data: options.envelope.data,
     metadata,
     policy: options.policy,
     representationVersion: options.envelope.representationVersion,
-    authorization: options.envelope.authorization,
+    authorization: options.authorization ?? options.envelope.authorization,
     resourceRevision: options.envelope.resourceRevision,
     fence: options.fence ?? options.envelope.fence,
     now,

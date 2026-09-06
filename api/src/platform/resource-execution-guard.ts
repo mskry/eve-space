@@ -5,7 +5,7 @@ import type { EsiOperation } from '../esi-resilience/catalog.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { findInstalledResource } from './resource-declarations.js'
-import { getCharacterAuthorizationForLifecycle, ScopeRequiredError } from '../auth/tokens.js'
+import { getCharacterCacheAuthorizationForLifecycle, ScopeRequiredError } from '../auth/tokens.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   resolveInstalledResourceEligibility,
@@ -13,7 +13,7 @@ import {
 } from './resource-eligibility.js'
 
 type ResourceExecutionNoopReason = 'already-current' | PlatformResourceIneligibleStatus
-type CharacterAuthorization = Awaited<ReturnType<typeof getCharacterAuthorizationForLifecycle>>
+type CharacterAuthorization = Awaited<ReturnType<typeof getCharacterCacheAuthorizationForLifecycle>>
 type PlatformResourceExecutionNoop = {
   readonly outcome: 'noop'
   readonly reason: ResourceExecutionNoopReason
@@ -31,7 +31,7 @@ export type PlatformResourceExecutionGuard =
 interface ResourceExecutionGuardOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
-  readonly loadCharacterAuthorization?: typeof getCharacterAuthorizationForLifecycle
+  readonly loadCharacterCacheAuthorization?: typeof getCharacterCacheAuthorizationForLifecycle
 }
 
 export async function guardInstalledResourceExecution(
@@ -60,7 +60,7 @@ export async function guardInstalledResourceExecution(
   let authorization: CharacterAuthorization
   try {
     authorization = await (
-      options.loadCharacterAuthorization ?? getCharacterAuthorizationForLifecycle
+      options.loadCharacterCacheAuthorization ?? getCharacterCacheAuthorizationForLifecycle
     )(characterId, identity.subjectLifecycleId, operation.authorization.scope)
   } catch (error) {
     return mapCharacterAuthorizationError(error)

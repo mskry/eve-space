@@ -4,6 +4,7 @@ import type {
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import { getCharacterAuthorizationForLifecycle } from '../auth/tokens.js'
 import {
   getEsiOperationContract,
   getExecutableEsiOperationDefinition,
@@ -51,6 +52,7 @@ interface ResourceOperationExecutorOptions {
   readonly definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
   readonly validateInputs?: typeof validateModuleEsiOperationInputs
   readonly dispatchOperation?: typeof dispatchModuleEsiOperation
+  readonly loadCharacterAuthorization?: typeof getCharacterAuthorizationForLifecycle
 }
 
 export async function executeInstalledResourceOperation(
@@ -103,6 +105,7 @@ export async function executeInstalledResourceOperation(
       result: mapResourceResult(result, implementation, subject),
     }
   }
+  const requiredScope = policy.authorization.scope
 
   const authorization = guarded.authorization
   if (!authorization)
@@ -110,33 +113,42 @@ export async function executeInstalledResourceOperation(
       `Character resource ${identity.moduleId}/${identity.resourceId} lacks authorization`,
     )
   const transportPrincipal = characterEsiPrincipal(guarded.characterId)
-  const result = await resilience.getCharacterWithAuthorization(
+  const execution = await resilience.getCharacterWithAuthorization(
     {
       operation: operation as CharacterEsiOperation,
       inputs,
-      load: (revalidation) =>
+      load: (authority, revalidation) =>
         (options.dispatchOperation ?? dispatchModuleEsiOperation)(definition, {
           inputs,
           authorization: {
             kind: 'character',
-            accessToken: authorization.accessToken,
+            accessToken: authority.accessToken,
           },
           revalidation,
-          transport: createEsiTransport(operation, transportPrincipal),
+          transport: createEsiTransport(operation, authority.principal),
         }),
     },
     {
-      kind: 'character',
-      principal: characterLifecycleEsiPrincipal(guarded.characterId, identity.subjectLifecycleId),
-      generation: authorization.tokenVersion,
+      cacheAuthorization: {
+        kind: 'character',
+        principal: characterLifecycleEsiPrincipal(guarded.characterId, identity.subjectLifecycleId),
+        generation: authorization.tokenVersion,
+      },
+      transportPrincipal,
+      resolve: () =>
+        (options.loadCharacterAuthorization ?? getCharacterAuthorizationForLifecycle)(
+          guarded.characterId,
+          identity.subjectLifecycleId,
+          requiredScope,
+        ),
     },
   )
   return {
     outcome: 'loaded',
     resource: guarded.resource,
     subject,
-    authorizationGeneration: authorization.tokenVersion,
-    result: mapResourceResult(result, implementation, subject),
+    authorizationGeneration: execution.authorizationGeneration,
+    result: mapResourceResult(execution.result, implementation, subject),
   }
 }
 

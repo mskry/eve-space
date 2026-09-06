@@ -44,6 +44,11 @@ export interface StoredCharacterToken {
   tokenVersion: number
 }
 
+export interface StoredCharacterCacheAuthorization {
+  scopes: string[]
+  tokenVersion: number
+}
+
 export class TokenRefreshLockUnavailableError extends Error {
   constructor() {
     super('Token refresh coordination is unavailable')
@@ -60,6 +65,10 @@ type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type TokenReader = Pick<DatabaseTransaction, 'select'>
 type TokenWriter = Pick<DatabaseTransaction, 'update'>
 const incrementTokenVersion = sql`${eveTokens.tokenVersion} + 1`
+const characterCacheAuthorizationSelection = {
+  scopes: eveTokens.scopes,
+  tokenVersion: eveTokens.tokenVersion,
+}
 
 /** How long an unconsumed authorization round-trip stays redeemable. */
 const oauthStateTtlMs = 10 * 60 * 1_000
@@ -411,6 +420,18 @@ export async function findCharacterToken(
   return record ?? null
 }
 
+export async function findCharacterCacheAuthorization(
+  characterId: number,
+  connection: TokenReader = db,
+): Promise<StoredCharacterCacheAuthorization | null> {
+  const [record] = await connection
+    .select(characterCacheAuthorizationSelection)
+    .from(eveTokens)
+    .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
+    .where(eq(eveTokens.characterId, characterId))
+  return record ?? null
+}
+
 export async function findCharacterTokenForLifecycle(
   characterId: number,
   subjectLifecycleId: string,
@@ -424,6 +445,28 @@ export async function findCharacterTokenForLifecycle(
       scopes: eveTokens.scopes,
       tokenVersion: eveTokens.tokenVersion,
     })
+    .from(eveTokens)
+    .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
+    .innerJoin(
+      platformSubjectLifecycles,
+      eq(platformSubjectLifecycles.characterId, characters.characterId),
+    )
+    .where(
+      and(
+        eq(eveTokens.characterId, characterId),
+        eq(platformSubjectLifecycles.subjectLifecycleId, subjectLifecycleId),
+      ),
+    )
+  return record ?? null
+}
+
+export async function findCharacterCacheAuthorizationForLifecycle(
+  characterId: number,
+  subjectLifecycleId: string,
+  connection: TokenReader = db,
+): Promise<StoredCharacterCacheAuthorization | null> {
+  const [record] = await connection
+    .select(characterCacheAuthorizationSelection)
     .from(eveTokens)
     .innerJoin(characters, eq(characters.characterId, eveTokens.characterId))
     .innerJoin(

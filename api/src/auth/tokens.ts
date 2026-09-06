@@ -1,5 +1,7 @@
 import {
   CharacterTokenNotFoundError,
+  findCharacterCacheAuthorization,
+  findCharacterCacheAuthorizationForLifecycle,
   findCharacterToken,
   findCharacterTokenForLifecycle,
   TokenRefreshLockUnavailableError,
@@ -12,10 +14,16 @@ import { appendDomainEvent } from '../domain-events/store.js'
 import { normalizeScopeSet } from '../domain-events/definitions.js'
 import { env } from '../env.js'
 import { refreshAccessToken, verifyAccessToken } from './sso.js'
+import { isTransientSsoError } from './sso-errors.js'
 import { decryptTokens, encryptTokens } from './security.js'
 
-interface CharacterAuthorization {
+export interface CharacterAuthorization {
   readonly accessToken: string
+  readonly tokenVersion: number
+}
+
+export interface CharacterCacheAuthorization {
+  readonly scopes: readonly string[]
   readonly tokenVersion: number
 }
 
@@ -46,6 +54,23 @@ export class TokenRefreshUnavailableError extends Error {
 
 export async function getCharacterAccessToken(characterId: number, requiredScope: string) {
   return (await getCharacterAuthorization(characterId, requiredScope)).accessToken
+}
+
+export async function getCharacterCacheAuthorization(
+  characterId: number,
+  requiredScope: string,
+): Promise<CharacterCacheAuthorization> {
+  const stored = await findCharacterCacheAuthorization(characterId)
+  return readCacheAuthorization(stored, requiredScope)
+}
+
+export async function getCharacterCacheAuthorizationForLifecycle(
+  characterId: number,
+  subjectLifecycleId: string,
+  requiredScope: string,
+): Promise<CharacterCacheAuthorization> {
+  const stored = await findCharacterCacheAuthorizationForLifecycle(characterId, subjectLifecycleId)
+  return readCacheAuthorization(stored, requiredScope)
 }
 
 export async function getCharacterAuthorization(characterId: number, requiredScope: string) {
@@ -175,8 +200,15 @@ async function refreshLockedCharacterToken(
     return toRefreshedCharacterAuthorization(stored, requiredScope)
 
   const currentTokens = decryptTokens(stored.encryptedTokens)
-  const refreshed = await refreshAccessToken(currentTokens.refreshToken)
-  const identity = await verifyAccessToken(refreshed.access_token)
+  let refreshed: Awaited<ReturnType<typeof refreshAccessToken>>
+  let identity: Awaited<ReturnType<typeof verifyAccessToken>>
+  try {
+    refreshed = await refreshAccessToken(currentTokens.refreshToken)
+    identity = await verifyAccessToken(refreshed.access_token)
+  } catch (error) {
+    if (isTransientSsoError(error)) throw new TokenRefreshUnavailableError()
+    throw error
+  }
   if (identity.characterId !== characterId)
     throw new Error('Refreshed token belongs to a different character')
   requireScope(identity.scopes, requiredScope)
@@ -256,6 +288,15 @@ function readStoredAuthorization(
     accessToken: decryptTokens(stored.encryptedTokens).accessToken,
     tokenVersion: stored.tokenVersion,
   }
+}
+
+function readCacheAuthorization(
+  stored: CharacterCacheAuthorization | null,
+  requiredScope: string,
+): CharacterCacheAuthorization {
+  if (!stored) throw new CharacterTokenNotFoundError()
+  requireScope(stored.scopes, requiredScope)
+  return { scopes: stored.scopes, tokenVersion: stored.tokenVersion }
 }
 
 function toRefreshedCharacterAuthorization(

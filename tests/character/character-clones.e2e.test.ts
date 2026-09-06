@@ -304,11 +304,16 @@ describe('character Clones production route', async () => {
     expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true)
 
     await page.setViewportSize({ width: 390, height: 844 })
-    const mobileFirstBox = await cards.nth(0).boundingBox()
-    const mobileSecondBox = await cards.nth(1).boundingBox()
-    expect(mobileFirstBox).not.toBeNull()
-    expect(mobileSecondBox).not.toBeNull()
-    expect(mobileSecondBox!.y).toBeGreaterThan(mobileFirstBox!.y + mobileFirstBox!.height - 1)
+    await expect
+      .poll(() =>
+        cards.evaluateAll((elements) => {
+          const first = elements[0]?.getBoundingClientRect()
+          const second = elements[1]?.getBoundingClientRect()
+          if (!first || !second) return Number.NEGATIVE_INFINITY
+          return second.y - first.bottom
+        }),
+      )
+      .toBeGreaterThan(-1)
     expect(await hasHorizontalOverflow(page)).toBe(false)
 
     await trigger.click()

@@ -172,6 +172,7 @@ describe('ESI cache envelopes', () => {
       },
       policy,
       fence: 5,
+      authorization: { kind: 'character', principal: 'character-1', generation: 4 },
       now: now + 1_000,
     })
 
@@ -183,7 +184,7 @@ describe('ESI cache envelopes', () => {
       lastModified: 'old',
       freshUntil: now + 11_000,
       representationVersion: 'v1',
-      authorization: { kind: 'character', principal: 'character-1', generation: 3 },
+      authorization: { kind: 'character', principal: 'character-1', generation: 4 },
       resourceRevision: { namespace: 'mailbox', value: 7 },
       fence: 5,
     })
