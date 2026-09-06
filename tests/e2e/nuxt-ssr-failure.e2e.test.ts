@@ -76,10 +76,10 @@ describe('Nuxt anonymous SSR boundary', async () => {
     setupTimeout: 120_000,
   })
 
-  it('renders the authorization route instead of anonymous dashboard content', async () => {
+  it('renders a neutral session state instead of anonymous dashboard content', async () => {
     const html = await $fetch('/')
 
-    expect(html).toContain('Authorize your capsuleer')
+    expect(html).toContain('Verifying account identity...')
     expect(html).not.toContain('Command overview')
     expect(html).toContain('data-ssr="true"')
     expect(html).toContain('ApiQueryError')
@@ -117,6 +117,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
     await page.setViewportSize({ width: 1280, height: 800 })
 
     expect(await page.content()).toContain('dashboard-shell')
+    expect(await page.locator('.auth-shell').count()).toBe(0)
     expect(await page.locator('.dashboard-sidebar--persistent').isVisible()).toBe(true)
     expect(await page.getByRole('button', { name: 'Open navigation' }).isHidden()).toBe(true)
   })

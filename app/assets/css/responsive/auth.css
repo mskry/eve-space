@@ -1,5 +1,7 @@
 @media (max-width: 760px) {
-  .auth-shell {
+  .auth-shell > .auth-header,
+  .auth-shell > .auth-stage,
+  .auth-shell > .auth-footer {
     width: min(100% - 28px, 620px);
   }
 
