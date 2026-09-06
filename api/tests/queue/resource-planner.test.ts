@@ -2,13 +2,10 @@ import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-mo
 import { describe, expect, test, vi } from 'vitest'
 import { getQueueAdmissionCapacity } from '../../src/queue/admission.js'
 import { runAffiliationPlanner } from '../../src/queue/affiliation-planner.js'
-import {
-  getJobDefinition,
-  jobOptions,
-  resourceBatchJobId,
-  resourceRefreshJobId,
-} from '../../src/queue/job-registry.js'
+import { jobOptions } from '../../src/queue/job-options.js'
+import { getJobDefinition } from '../../src/queue/job-registry.js'
 import { derivedResourcePriorityBand, resourceRefreshPriority } from '../../src/queue/policy.js'
+import { resourceBatchJobId, resourceRefreshJobId } from '../../src/queue/resource-job-contracts.js'
 import { runResourcePlanner } from '../../src/queue/resource-planner.js'
 import { coreResources } from '../../src/platform/core-resources.js'
 

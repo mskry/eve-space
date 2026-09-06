@@ -10,21 +10,26 @@ import {
 } from '../auth/tokens.js'
 import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
 import type { EsiOperation } from '../esi-resilience/catalog.js'
-import { findInstalledResource } from './resource-declarations.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
-import { toPlatformResourceSubject } from './core-resources.js'
 import {
   resolveInstalledResourceEligibility,
+  type PlatformResourceEligibility,
   type PlatformResourceIneligibleStatus,
 } from './resource-eligibility.js'
+import { findInstalledResource } from './resource-identity.js'
+import { toPlatformResourceSubject } from './resource-subject.js'
 import { platformResources } from './resources.js'
 
 type ResourceExecutionNoopReason = 'already-current' | PlatformResourceIneligibleStatus
 type CharacterAuthorization = { readonly tokenVersion: number }
+type EligibleResource = Extract<PlatformResourceEligibility, { status: 'eligible' }>
 type PlatformResourceExecutionNoop = {
   readonly outcome: 'noop'
   readonly reason: ResourceExecutionNoopReason
 }
+type ResourceExecutionEligibility =
+  | PlatformResourceExecutionNoop
+  | { readonly outcome: 'eligible'; readonly eligibility: EligibleResource }
 
 export type PlatformResourceExecutionGuard =
   | PlatformResourceExecutionNoop
@@ -51,9 +56,11 @@ export async function guardInstalledResourceExecution(
 ): Promise<PlatformResourceExecutionGuard> {
   const resources = options.resources ?? platformResources
   const resolveEligibility = options.resolveEligibility ?? resolveInstalledResourceEligibility
-  let eligibility = await resolveEligibility(identity, { resources })
-  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
-  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
+  const initialEligibility = classifyExecutionEligibility(
+    await resolveEligibility(identity, { resources }),
+  )
+  if (initialEligibility.outcome === 'noop') return initialEligibility
+  const eligibility = initialEligibility.eligibility
 
   const resource = findInstalledResource(identity, resources)
   if (!resource) return { outcome: 'noop', reason: 'resource-unavailable' }
@@ -64,22 +71,10 @@ export async function guardInstalledResourceExecution(
 
   const operation = getEsiOperationContract(resource.operationId as EsiOperation)
   if (operation.authorization.kind === 'public')
-    return {
-      outcome: 'ready',
-      resource,
-      subject,
-      ...(subject.kind === 'character' ? { characterId: subject.characterId } : {}),
-      authorization: null,
-      authorizationCharacterId: null,
-      authorizationCharacterLifecycleId: null,
-    }
+    return createReadyResourceExecution(resource, subject, null)
 
-  const authorizationCharacterId =
-    eligibility.authorizationCharacterId ??
-    (subject.kind === 'character' ? subject.characterId : null)
-  const authorizationCharacterLifecycleId =
-    eligibility.authorizationCharacterLifecycleId ??
-    (subject.kind === 'character' ? subject.lifecycleId : null)
+  const { authorizationCharacterId, authorizationCharacterLifecycleId } =
+    resolveAuthorizationIdentity(eligibility, subject)
   if (!authorizationCharacterId || !authorizationCharacterLifecycleId)
     return { outcome: 'noop', reason: 'authorization-required' }
 
@@ -94,7 +89,67 @@ export async function guardInstalledResourceExecution(
     return mapCharacterAuthorizationError(error, subject.kind)
   }
 
-  const ready = {
+  const ready = createReadyResourceExecution(
+    resource,
+    subject,
+    authorization,
+    authorizationCharacterId,
+    authorizationCharacterLifecycleId,
+  )
+  if (authorization.tokenVersion === eligibility.authorizationGeneration) return ready
+
+  const refreshedEligibility = classifyExecutionEligibility(
+    await resolveEligibility(identity, { resources }),
+  )
+  if (refreshedEligibility.outcome === 'noop') return refreshedEligibility
+  const refreshed = refreshedEligibility.eligibility
+  const refreshedAuthorization = resolveAuthorizationIdentity(refreshed, subject)
+  if (
+    authorization.tokenVersion !== refreshed.authorizationGeneration ||
+    authorizationCharacterId !== refreshedAuthorization.authorizationCharacterId ||
+    authorizationCharacterLifecycleId !== refreshedAuthorization.authorizationCharacterLifecycleId
+  )
+    return { outcome: 'noop', reason: 'obsolete' }
+
+  return ready
+}
+
+function classifyExecutionEligibility(
+  eligibility: PlatformResourceEligibility,
+): ResourceExecutionEligibility {
+  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
+  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
+  return { outcome: 'eligible', eligibility }
+}
+
+function resolveAuthorizationIdentity(
+  eligibility: EligibleResource,
+  subject: PlatformResourceSubject,
+) {
+  const subjectAuthorization =
+    subject.kind === 'character'
+      ? {
+          authorizationCharacterId: subject.characterId,
+          authorizationCharacterLifecycleId: subject.lifecycleId,
+        }
+      : { authorizationCharacterId: null, authorizationCharacterLifecycleId: null }
+  return {
+    authorizationCharacterId:
+      eligibility.authorizationCharacterId ?? subjectAuthorization.authorizationCharacterId,
+    authorizationCharacterLifecycleId:
+      eligibility.authorizationCharacterLifecycleId ??
+      subjectAuthorization.authorizationCharacterLifecycleId,
+  }
+}
+
+function createReadyResourceExecution(
+  resource: PlatformInstalledResourceDescriptor,
+  subject: PlatformResourceSubject,
+  authorization: CharacterAuthorization | null,
+  authorizationCharacterId: number | null = null,
+  authorizationCharacterLifecycleId: string | null = null,
+): PlatformResourceExecutionGuard {
+  return {
     outcome: 'ready',
     resource,
     subject,
@@ -102,26 +157,7 @@ export async function guardInstalledResourceExecution(
     authorization,
     authorizationCharacterId,
     authorizationCharacterLifecycleId,
-  } as const
-  if (authorization.tokenVersion === eligibility.authorizationGeneration) return ready
-
-  eligibility = await resolveEligibility(identity, { resources })
-  if (eligibility.status !== 'eligible') return { outcome: 'noop', reason: eligibility.status }
-  if (!eligibility.due) return { outcome: 'noop', reason: 'already-current' }
-  const refreshedAuthorizationCharacterId =
-    eligibility.authorizationCharacterId ??
-    (subject.kind === 'character' ? subject.characterId : null)
-  const refreshedAuthorizationCharacterLifecycleId =
-    eligibility.authorizationCharacterLifecycleId ??
-    (subject.kind === 'character' ? subject.lifecycleId : null)
-  if (
-    authorization.tokenVersion !== eligibility.authorizationGeneration ||
-    authorizationCharacterId !== refreshedAuthorizationCharacterId ||
-    authorizationCharacterLifecycleId !== refreshedAuthorizationCharacterLifecycleId
-  )
-    return { outcome: 'noop', reason: 'obsolete' }
-
-  return ready
+  }
 }
 
 function mapCharacterAuthorizationError(

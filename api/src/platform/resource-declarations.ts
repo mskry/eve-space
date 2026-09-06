@@ -38,22 +38,6 @@ const resourceEsiOperationDefinitions = {
   ...installedModuleEsiOperationDefinitions,
 }
 
-export function findInstalledResource(
-  identity: {
-    readonly moduleId: string
-    readonly resourceId: string
-    readonly subjectKind: string
-  },
-  resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
-) {
-  return resources.find(
-    (resource) =>
-      resource.moduleId === identity.moduleId &&
-      resource.resourceId === identity.resourceId &&
-      resource.subjectKind === identity.subjectKind,
-  )
-}
-
 export function assertInstalledResourceDeclarations(
   resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,

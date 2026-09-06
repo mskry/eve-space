@@ -10,8 +10,9 @@ import type {
   PlatformCollectionStateIdentity,
 } from './collection-state.js'
 import { upsertPlatformCollectionState } from './collection-state-store.js'
-import { findInstalledResource } from './resource-declarations.js'
 import { resolveInstalledResourceEligibility } from './resource-eligibility.js'
+import { findInstalledResource } from './resource-identity.js'
+import { platformResources } from './resources.js'
 
 const transientFailureBackoffMilliseconds = 5 * 60 * 1_000
 
@@ -71,7 +72,7 @@ export async function recordInstalledResourceCollectionFailure(
   error: unknown,
   options: ResourceFailureOptions = {},
 ) {
-  const resources = options.resources
+  const resources = options.resources ?? platformResources
   const resource = findInstalledResource(identity, resources)
   if (!resource) return null
   const now = options.now ?? new Date()

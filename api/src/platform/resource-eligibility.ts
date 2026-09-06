@@ -13,6 +13,7 @@ import {
   type PlatformCollectionFailureClass,
   type PlatformCollectionStateIdentity,
 } from './collection-state.js'
+import { installedResourceIdentityKey } from './resource-identity.js'
 import { platformResources } from './resources.js'
 
 const platformResourceDueReasons = [
@@ -211,7 +212,7 @@ export async function selectDueInstalledResources(
 function toPlanningResources(resources: readonly PlatformInstalledResourceDescriptor[]) {
   const seen = new Set<string>()
   return resources.map((resource) => {
-    const identity = `${resource.moduleId}\0${resource.resourceId}\0${resource.subjectKind}`
+    const identity = installedResourceIdentityKey(resource)
     if (seen.has(identity))
       throw new Error(
         `Duplicate installed resource planning identity: ${resource.moduleId}/${resource.resourceId}/${resource.subjectKind}`,

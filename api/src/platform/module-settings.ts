@@ -2,20 +2,23 @@ import {
   platformNavigationPlacements,
   type PlatformInstalledModuleDefinition,
   type PlatformNavigationDefault,
-  type PlatformNavigationPlacement,
 } from '@eve-space/platform-module-contract'
 import type postgres from 'postgres'
 import {
   installedModuleDefinitions,
   platformNavigationDefaults,
 } from '../generated/platform/installed-module-runtime.js'
-
-type NavigationIdentity = Pick<PlatformNavigationDefault, 'ownerId' | 'navigationId'>
-
-interface ShellNavigationOrder {
-  readonly dashboard: readonly NavigationIdentity[]
-  readonly character: readonly NavigationIdentity[]
-}
+import {
+  isCompleteShellNavigationOrder,
+  resolveShellNavigationOrder,
+  type NavigationOrderRow,
+  type ShellNavigationOrder,
+} from './module-navigation.js'
+import {
+  invalidateModuleRuntimeState,
+  loadCachedModuleRuntimeState,
+  type ModuleRuntimeState,
+} from './module-runtime-cache.js'
 
 type InstalledModuleSetting = PlatformInstalledModuleDefinition & {
   readonly enabled: boolean
@@ -27,22 +30,6 @@ interface DeploymentModuleRow {
   readonly enabled: boolean
   readonly updated_at: Date
 }
-
-interface NavigationOrderRow {
-  readonly owner_id: string
-  readonly navigation_id: string
-  readonly position: number
-}
-
-interface ModuleRuntimeState {
-  readonly enabledModuleIds: readonly string[]
-  readonly shellNavigationOrder: ShellNavigationOrder
-}
-
-let runtimeStateCache: { value: ModuleRuntimeState; expiresAt: number } | undefined
-let runtimeStateLoad: { generation: number; promise: Promise<ModuleRuntimeState> } | undefined
-let runtimeStateGeneration = 0
-let runtimeStateCacheTtl: Promise<number> | undefined
 
 export async function reconcileInstalledModules(
   connection: postgres.Sql,
@@ -124,73 +111,19 @@ export async function loadModuleRuntimeState(
       defaults,
     )
 
-  return loadCachedModuleRuntimeState(definitions, defaults)
+  return loadCachedModuleRuntimeState(
+    () =>
+      connectionOrDefault().then((database) =>
+        loadUncachedModuleRuntimeState(database, definitions, defaults),
+      ),
+    async () => (await import('../env.js')).env.MODULE_RUNTIME_CACHE_TTL_MS,
+  )
 }
 
 export async function isInstalledModuleEnabled(moduleId: string) {
   const definitions = installedModuleDefinitions as readonly PlatformInstalledModuleDefinition[]
   if (!definitions.some((definition) => definition.moduleId === moduleId)) return false
   return (await loadModuleRuntimeState()).enabledModuleIds.includes(moduleId)
-}
-
-async function loadUncachedModuleRuntimeState(
-  database: postgres.Sql,
-  definitions: readonly PlatformInstalledModuleDefinition[],
-  defaults: readonly PlatformNavigationDefault[],
-): Promise<ModuleRuntimeState> {
-  const [modules, rows] = await Promise.all([
-    loadDeploymentModuleRows(database),
-    loadNavigationOrderRows(database),
-  ])
-  const enabledRows = new Set(
-    modules.filter(({ enabled }) => enabled).map(({ module_id }) => module_id),
-  )
-  const enabledModuleIds = definitions
-    .map(({ moduleId }) => moduleId)
-    .filter((moduleId) => enabledRows.has(moduleId))
-  return {
-    enabledModuleIds,
-    shellNavigationOrder: resolveShellNavigationOrder(
-      defaults,
-      rows,
-      new Set(['core', ...enabledModuleIds]),
-    ),
-  }
-}
-
-async function loadCachedModuleRuntimeState(
-  definitions: readonly PlatformInstalledModuleDefinition[],
-  defaults: readonly PlatformNavigationDefault[],
-): Promise<ModuleRuntimeState> {
-  const now = Date.now()
-  if (runtimeStateCache && runtimeStateCache.expiresAt > now) return runtimeStateCache.value
-
-  const generation = runtimeStateGeneration
-  const load =
-    runtimeStateLoad ??
-    (runtimeStateLoad = {
-      generation,
-      promise: connectionOrDefault().then((database) =>
-        loadUncachedModuleRuntimeState(database, definitions, defaults),
-      ),
-    })
-
-  let loaded: [ModuleRuntimeState, number]
-  try {
-    loaded = await Promise.all([load.promise, moduleRuntimeCacheTtlMs()])
-  } catch (error) {
-    if (runtimeStateLoad === load) runtimeStateLoad = undefined
-    if (load.generation === runtimeStateGeneration) throw error
-    return loadCachedModuleRuntimeState(definitions, defaults)
-  }
-
-  if (runtimeStateLoad === load) runtimeStateLoad = undefined
-  if (load.generation !== runtimeStateGeneration)
-    return loadCachedModuleRuntimeState(definitions, defaults)
-
-  const [value, cacheTtlMs] = loaded
-  runtimeStateCache = { value, expiresAt: Date.now() + cacheTtlMs }
-  return value
 }
 
 export async function saveInstalledShellNavigationOrder(
@@ -230,58 +163,29 @@ export async function saveInstalledShellNavigationOrder(
   return loadInstalledShellNavigationOrder(database, definitions, defaults)
 }
 
-export function resolveShellNavigationOrder(
+async function loadUncachedModuleRuntimeState(
+  database: postgres.Sql,
+  definitions: readonly PlatformInstalledModuleDefinition[],
   defaults: readonly PlatformNavigationDefault[],
-  rows: readonly NavigationOrderRow[],
-  availableOwners: ReadonlySet<string>,
-): ShellNavigationOrder {
-  const positions = new Map(
-    rows.map((row) => [navigationKey(row.owner_id, row.navigation_id), row.position]),
+): Promise<ModuleRuntimeState> {
+  const [modules, rows] = await Promise.all([
+    loadDeploymentModuleRows(database),
+    loadNavigationOrderRows(database),
+  ])
+  const enabledRows = new Set(
+    modules.filter(({ enabled }) => enabled).map(({ module_id }) => module_id),
   )
-  const defaultRanks = new Map(
-    defaults.map((entry, index) => [navigationKey(entry.ownerId, entry.navigationId), index]),
-  )
-  const resolvePlacement = (placement: PlatformNavigationPlacement) =>
-    defaults
-      .filter((entry) => entry.placement === placement && availableOwners.has(entry.ownerId))
-      .toSorted((left, right) => {
-        const leftPosition = positions.get(navigationKey(left.ownerId, left.navigationId))
-        const rightPosition = positions.get(navigationKey(right.ownerId, right.navigationId))
-        if (leftPosition !== undefined && rightPosition !== undefined)
-          return (
-            leftPosition - rightPosition ||
-            defaultRank(left, defaultRanks) - defaultRank(right, defaultRanks)
-          )
-        if (leftPosition !== undefined) return -1
-        if (rightPosition !== undefined) return 1
-        return defaultRank(left, defaultRanks) - defaultRank(right, defaultRanks)
-      })
-      .map(({ ownerId, navigationId }) => ({ ownerId, navigationId }))
+  const enabledModuleIds = definitions
+    .map(({ moduleId }) => moduleId)
+    .filter((moduleId) => enabledRows.has(moduleId))
   return {
-    dashboard: resolvePlacement('dashboard'),
-    character: resolvePlacement('character'),
+    enabledModuleIds,
+    shellNavigationOrder: resolveShellNavigationOrder(
+      defaults,
+      rows,
+      new Set(['core', ...enabledModuleIds]),
+    ),
   }
-}
-
-export function isCompleteShellNavigationOrder(
-  order: ShellNavigationOrder,
-  defaults: readonly PlatformNavigationDefault[],
-) {
-  const expected = new Map(
-    defaults.map(({ ownerId, navigationId, placement }) => [
-      navigationKey(ownerId, navigationId),
-      placement,
-    ]),
-  )
-  const submitted = new Set<string>()
-  for (const placement of platformNavigationPlacements) {
-    for (const { ownerId, navigationId } of order[placement]) {
-      const key = navigationKey(ownerId, navigationId)
-      if (submitted.has(key) || expected.get(key) !== placement) return false
-      submitted.add(key)
-    }
-  }
-  return submitted.size === expected.size
 }
 
 async function loadDeploymentModuleRows(connection: postgres.Sql) {
@@ -306,31 +210,6 @@ function toModuleSetting(
     defaultEnabled: definition.defaultEnabled,
     updatedAt: row.updated_at.toISOString(),
   }
-}
-
-function defaultRank(entry: NavigationIdentity, ranks: ReadonlyMap<string, number>) {
-  return ranks.get(navigationKey(entry.ownerId, entry.navigationId)) ?? Number.MAX_SAFE_INTEGER
-}
-
-function navigationKey(ownerId: string, navigationId: string) {
-  return `${ownerId}\0${navigationId}`
-}
-
-function invalidateModuleRuntimeState() {
-  runtimeStateGeneration += 1
-  runtimeStateCache = undefined
-}
-
-/**
- * `env` and the database pool are imported lazily: integration tests populate `process.env` in
- * `beforeAll`, so binding either at module-load time would capture the pre-test configuration.
- */
-function moduleRuntimeCacheTtlMs() {
-  const cached = runtimeStateCacheTtl
-  if (cached) return cached
-  const loaded = import('../env.js').then(({ env }) => env.MODULE_RUNTIME_CACHE_TTL_MS)
-  runtimeStateCacheTtl = loaded
-  return loaded
 }
 
 async function connectionOrDefault(connection?: postgres.Sql) {

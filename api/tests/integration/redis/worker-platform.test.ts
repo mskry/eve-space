@@ -147,7 +147,8 @@ describe('durable worker platform', () => {
       vi.fn(),
     )
     const { EsiQuotaError } = await import('../../../src/esi-resilience/cooldowns.js')
-    const { getJobDefinition, jobOptions } = await import('../../../src/queue/job-registry.js')
+    const { jobOptions } = await import('../../../src/queue/job-options.js')
+    const { getJobDefinition } = await import('../../../src/queue/job-registry.js')
     const definition = getJobDefinition('resource-refresh') as unknown as {
       name: string
       process(): Promise<void>

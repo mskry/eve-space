@@ -7,7 +7,6 @@ import type {
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
-import type { Queue } from 'bullmq'
 import {
   assertRegisteredEsiOperation,
   getEsiOperationContract,
@@ -21,24 +20,16 @@ import {
   validateModuleEsiOperationInputs,
 } from '../esi-resilience/module-operation-dispatcher.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
-import { getQueueAdmissionCapacity, QueueAdmissionError } from '../queue/admission.js'
 import { isPositiveSafeInteger, isRecord } from '../type-guards.js'
 import {
-  getJobDefinition,
-  jobOptions,
-  platformResourceBatchJobPayloadSchema,
-  type JobDefinition,
-  type PlatformResourceBatchJobPayload,
-} from '../queue/job-registry.js'
-import { resourceRefreshPriority } from '../queue/policy.js'
-import { findInstalledResource } from './resource-declarations.js'
+  platformResourceBatchPayloadSchema,
+  type PlatformResourceBatchPayload,
+} from './resource-batch-contract.js'
 import { resolveInstalledResourceEligibility } from './resource-eligibility.js'
-import { applyInstalledResourceObservation } from './resource-refresh.js'
+import { findInstalledResource } from './resource-identity.js'
 import {
   assertPlatformResourceRefreshSucceeded,
   PlatformResourceMappingError,
-  PlatformResourcePersistenceError,
-  recordInstalledResourceCollectionFailure,
 } from './resource-failures.js'
 
 type BatchClassification<Data = unknown> =
@@ -48,7 +39,7 @@ type BatchClassification<Data = unknown> =
       readonly outcome: 'changed'
     }
 
-interface EligibleBatchSubject {
+export interface EligibleBatchSubject {
   readonly identity: {
     readonly moduleId: string
     readonly resourceId: string
@@ -60,7 +51,7 @@ interface EligibleBatchSubject {
   readonly authorizationGeneration: number | null
 }
 
-type BatchExecution =
+export type BatchExecution =
   | { readonly outcome: 'noop'; readonly reason: 'resource-unavailable' | 'no-due-subjects' }
   | {
       readonly outcome: 'loaded'
@@ -68,9 +59,7 @@ type BatchExecution =
       readonly validatedAt: string
       readonly classifications: readonly (BatchClassification & EligibleBatchSubject)[]
     }
-type LoadedBatchExecution = Extract<BatchExecution, { readonly outcome: 'loaded' }>
-
-class PlatformResourceBatchExecutionError extends Error {
+export class PlatformResourceBatchExecutionError extends Error {
   constructor(
     readonly cause: unknown,
     readonly attempted: readonly EligibleBatchSubject[],
@@ -80,7 +69,7 @@ class PlatformResourceBatchExecutionError extends Error {
   }
 }
 
-interface BatchExecutionOptions {
+export interface BatchExecutionOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
   readonly resilience?: Pick<ReturnType<typeof getEsiResilienceLayer>, 'getPublic'>
@@ -90,18 +79,11 @@ interface BatchExecutionOptions {
   readonly dispatchOperation?: typeof dispatchModuleEsiOperation
 }
 
-interface BatchProcessingOptions extends BatchExecutionOptions {
-  readonly executeBatch?: typeof executeInstalledResourceBatchOperation
-  readonly applyObservation?: typeof applyInstalledResourceObservation
-  readonly getCapacity?: typeof getQueueAdmissionCapacity
-  readonly recordFailure?: typeof recordInstalledResourceCollectionFailure
-}
-
-async function executeInstalledResourceBatchOperation(
-  payload: PlatformResourceBatchJobPayload,
+export async function executeInstalledResourceBatchOperation(
+  payload: PlatformResourceBatchPayload,
   options: BatchExecutionOptions = {},
 ): Promise<BatchExecution> {
-  const parsed = platformResourceBatchJobPayloadSchema.parse(payload)
+  const parsed = platformResourceBatchPayloadSchema.parse(payload)
   const resources = options.resources ?? installedModuleResources
   const resource = findInstalledResource(parsed, resources)
   if (!resource?.batch) return { outcome: 'noop', reason: 'resource-unavailable' }
@@ -196,90 +178,6 @@ async function executeInstalledResourceBatchOperation(
   }
 }
 
-export async function processInstalledResourceBatch(
-  payload: PlatformResourceBatchJobPayload,
-  queue: Queue,
-  options: BatchProcessingOptions = {},
-) {
-  let execution: Awaited<ReturnType<typeof executeInstalledResourceBatchOperation>>
-  try {
-    execution = await (options.executeBatch ?? executeInstalledResourceBatchOperation)(
-      payload,
-      options,
-    )
-  } catch (error) {
-    const failure = error instanceof PlatformResourceBatchExecutionError ? error.cause : error
-    const attempted = error instanceof PlatformResourceBatchExecutionError ? error.attempted : []
-    await Promise.all(
-      attempted.map(({ identity }) =>
-        (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure, {
-          resources: options.resources,
-        }),
-      ),
-    )
-    throw failure
-  }
-  if (execution.outcome === 'noop') return
-
-  const changed = await applyBatchClassifications(execution, options)
-
-  if (changed.length === 0) return
-  let admission: Awaited<ReturnType<typeof getQueueAdmissionCapacity>>
-  try {
-    admission = await (options.getCapacity ?? getQueueAdmissionCapacity)(queue, 'on-demand')
-  } catch (error) {
-    if (error instanceof QueueAdmissionError) return
-    throw error
-  }
-  const definition = getJobDefinition('resource-refresh') as JobDefinition<
-    EligibleBatchSubject['identity']
-  >
-  for (const subject of changed.slice(0, admission.remainingCapacity)) {
-    // oxlint-disable-next-line no-await-in-loop
-    await queue.add(definition.name, subject.identity, {
-      ...jobOptions(definition),
-      deduplication: { id: definition.operationIdentity(subject.identity) },
-      priority: resourceRefreshPriority(execution.resource.materializationIntervalSeconds),
-    })
-  }
-}
-
-async function applyBatchClassifications(
-  execution: LoadedBatchExecution,
-  options: BatchProcessingOptions,
-) {
-  const changed = [] as EligibleBatchSubject[]
-  for (const classification of execution.classifications) {
-    if (classification.outcome === 'changed') {
-      changed.push(classification)
-      continue
-    }
-    try {
-      // oxlint-disable-next-line no-await-in-loop
-      await (options.applyObservation ?? applyInstalledResourceObservation)({
-        identity: classification.identity,
-        resource: execution.resource,
-        subject: classification.subject,
-        authorizationGeneration: classification.authorizationGeneration,
-        validatedAt: execution.validatedAt,
-        ...(classification.outcome === 'complete'
-          ? { outcome: 'complete', data: classification.data }
-          : { outcome: 'unchanged' }),
-      })
-    } catch (error) {
-      const failure = new PlatformResourcePersistenceError(error)
-      // oxlint-disable-next-line no-await-in-loop
-      await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(
-        classification.identity,
-        failure,
-        { resources: options.resources },
-      )
-      throw failure
-    }
-  }
-  return changed
-}
-
 export function validatePlatformResourceBatchClassifications<Data>(
   mode: PlatformResourceBatchMode,
   subjects: readonly PlatformCharacterResourceSubject[],
@@ -341,8 +239,8 @@ function assertBatchClassificationOutcome(
 }
 
 function toEligibleBatchSubject(
-  payload: PlatformResourceBatchJobPayload,
-  subjectIdentity: PlatformResourceBatchJobPayload['subjects'][number],
+  payload: PlatformResourceBatchPayload,
+  subjectIdentity: PlatformResourceBatchPayload['subjects'][number],
 ): Omit<EligibleBatchSubject, 'authorizationGeneration'> {
   const characterId = Number(subjectIdentity.subjectId)
   if (!isPositiveSafeInteger(characterId))

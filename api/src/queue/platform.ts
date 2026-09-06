@@ -13,9 +13,9 @@ import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { env } from '../env.js'
 import { admitQueueWork } from './admission.js'
 import { sanitizeJobFailure } from './failures.js'
+import { jobOptions } from './job-options.js'
 import {
   getJobDefinition,
-  jobOptions,
   type JobDefinition,
   validateJobPayload,
   verifyJobRegistry,

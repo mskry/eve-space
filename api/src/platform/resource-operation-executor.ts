@@ -28,7 +28,6 @@ import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { platformResources } from './resources.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
-import { toPlatformResourceSubject } from './core-resources.js'
 import { getInstalledResourceEsiOperationDefinition } from './resource-declarations.js'
 import {
   guardInstalledResourceExecution,
@@ -39,6 +38,7 @@ import {
   PlatformResourceAuthorizationError,
   PlatformResourceMappingError,
 } from './resource-failures.js'
+import { toPlatformResourceSubject } from './resource-subject.js'
 
 type PlatformResourceOperationExecution =
   | Extract<PlatformResourceExecutionGuard, { outcome: 'noop' }>

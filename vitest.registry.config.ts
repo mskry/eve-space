@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       'tests/platform/esi-resilience-boundaries.test.ts',
       'tests/platform/organization-boundaries.test.ts',
+      'tests/platform/platform-boundaries.test.ts',
       'tests/platform/platform-module-registry.test.ts',
     ],
     coverage: {

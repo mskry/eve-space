@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { UnrecoverableError, type Queue } from 'bullmq'
 import { z } from 'zod'
 import { affiliationJobPayload, processAffiliationBatch } from '../characters/affiliation-sync.js'
@@ -6,12 +5,13 @@ import { sql } from '../db/client.js'
 import { DomainEventNotFoundError } from '../domain-events/handlers.js'
 import { DomainEventValidationError } from '../domain-events/definitions.js'
 import { env } from '../env.js'
-import {
-  collectionStateIdentityJson,
-  platformCollectionStateIdentitySchema,
-  type PlatformCollectionStateIdentity,
-} from '../platform/collection-state.js'
+import type { PlatformCollectionStateIdentity } from '../platform/collection-state.js'
 import { operationsQueueName } from './namespaces.js'
+import {
+  resourceBatchJobContract,
+  resourceRefreshJobContract,
+  type PlatformResourceBatchJobPayload,
+} from './resource-job-contracts.js'
 
 type RetryClassification = 'retryable' | 'permanent'
 
@@ -160,12 +160,9 @@ const organizationOwnerEvidenceJob: JobDefinition<
 }
 
 const resourceRefreshJob: JobDefinition<PlatformCollectionStateIdentity> = {
-  name: 'resource-refresh',
+  ...resourceRefreshJobContract,
   queueName: operationsQueueName,
-  payload: platformCollectionStateIdentitySchema,
   durability: 'derived',
-  attempts: 1,
-  operationIdentity: resourceRefreshJobId,
   classifyError: () => 'permanent',
   async process(identity) {
     const { processInstalledResourceRefresh } = await import('../platform/resource-refresh.js')
@@ -173,38 +170,14 @@ const resourceRefreshJob: JobDefinition<PlatformCollectionStateIdentity> = {
   },
 }
 
-export const platformResourceBatchJobPayloadSchema = z
-  .object({
-    moduleId: platformCollectionStateIdentitySchema.shape.moduleId,
-    resourceId: platformCollectionStateIdentitySchema.shape.resourceId,
-    subjectKind: z.literal('character'),
-    subjects: z
-      .array(
-        z
-          .object({
-            subjectLifecycleId: platformCollectionStateIdentitySchema.shape.subjectLifecycleId,
-            subjectId: platformCollectionStateIdentitySchema.shape.subjectId,
-          })
-          .strict(),
-      )
-      .min(1)
-      .max(env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE),
-  })
-  .strict()
-
-export type PlatformResourceBatchJobPayload = z.infer<typeof platformResourceBatchJobPayloadSchema>
-
 const resourceBatchJob: JobDefinition<PlatformResourceBatchJobPayload> = {
-  name: 'resource-batch',
+  ...resourceBatchJobContract,
   queueName: operationsQueueName,
-  payload: platformResourceBatchJobPayloadSchema,
   durability: 'derived',
-  attempts: 1,
-  operationIdentity: resourceBatchJobId,
   classifyError: () => 'permanent',
   async process(payload, _signal, context) {
     if (!context) throw new Error('Resource batch queue context is unavailable')
-    const { processInstalledResourceBatch } = await import('../platform/resource-batch.js')
+    const { processInstalledResourceBatch } = await import('./resource-batch-processor.js')
     await processInstalledResourceBatch(payload, context.queue)
   },
 }
@@ -249,36 +222,6 @@ export function validateJobPayload(job: JobDefinition<unknown>, payload: unknown
 
 export function domainEventJobId(eventId: string) {
   return `domain-event-${z.uuid().parse(eventId)}`
-}
-
-export function resourceRefreshJobId(identity: PlatformCollectionStateIdentity) {
-  const parsed = platformCollectionStateIdentitySchema.parse(identity)
-  const digest = createHash('sha256').update(collectionStateIdentityJson(parsed)).digest('hex')
-  return `resource-refresh-${digest}`
-}
-
-export function resourceBatchJobId(payload: PlatformResourceBatchJobPayload) {
-  const parsed = platformResourceBatchJobPayloadSchema.parse(payload)
-  const digest = createHash('sha256')
-    .update(JSON.stringify([parsed.moduleId, parsed.resourceId, parsed.subjectKind]))
-    .digest('hex')
-  return `resource-batch-${digest}`
-}
-
-export function jobOptions(definition: JobDefinition<unknown>, jobId?: string) {
-  return {
-    attempts: definition.attempts,
-    backoff: { type: 'exponential' as const, delay: 1_000, jitter: 0.25 },
-    ...(jobId ? { jobId } : {}),
-    removeOnComplete: {
-      age: env.QUEUE_COMPLETED_RETENTION_AGE_SECONDS,
-      count: env.QUEUE_COMPLETED_RETENTION_COUNT,
-    },
-    removeOnFail: {
-      age: env.QUEUE_FAILED_RETENTION_AGE_SECONDS,
-      count: env.QUEUE_FAILED_RETENTION_COUNT,
-    },
-  }
 }
 
 export function assertSafeJobPayload(payload: unknown) {

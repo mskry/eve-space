@@ -21,8 +21,8 @@ import {
 import { resolveDeploymentOrganization } from '../deployment/organization.js'
 import { env } from '../env.js'
 import { platformNavigationDefaults } from '../generated/platform/installed-module-runtime.js'
+import { isCompleteShellNavigationOrder } from '../platform/module-navigation.js'
 import {
-  isCompleteShellNavigationOrder,
   listInstalledModuleSettings,
   loadInstalledShellNavigationOrder,
   saveInstalledShellNavigationOrder,

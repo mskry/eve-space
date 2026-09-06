@@ -1,7 +1,7 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
 import { platformResources } from './resources.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
-import { findInstalledResource } from './resource-declarations.js'
+import { findInstalledResource } from './resource-identity.js'
 import {
   type PlatformCollectionFailureClass,
   type PlatformCollectionStateIdentity,
@@ -64,7 +64,7 @@ export async function recordInstalledResourceCollectionSuccess(
   authorizationGeneration: number | null,
   options: CollectionSuccessOptions = {},
 ) {
-  const resource = findInstalledResource(identity, options.resources)
+  const resource = findInstalledResource(identity, options.resources ?? platformResources)
   if (!resource) throw new Error('Installed platform resource is unavailable')
   const validatedAt = new Date(result.validatedAt)
   if (Number.isNaN(validatedAt.getTime()))

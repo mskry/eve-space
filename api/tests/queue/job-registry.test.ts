@@ -4,11 +4,10 @@ import {
   domainEventJobId,
   getJobDefinition,
   listJobDefinitions,
-  resourceBatchJobId,
-  resourceRefreshJobId,
   validateJobPayload,
   verifyJobRegistry,
 } from '../../src/queue/job-registry.js'
+import { resourceBatchJobId, resourceRefreshJobId } from '../../src/queue/resource-job-contracts.js'
 
 describe('job registry', () => {
   test('registers classified jobs with stable identities and authoritative recovery', () => {

@@ -8,23 +8,25 @@ import { getEsiRequestCooldowns } from '../esi-resilience/cooldowns.js'
 import { characterEsiPrincipal } from '../esi-resilience/identity.js'
 import { env } from '../env.js'
 import { platformResources } from '../platform/resources.js'
-import { findInstalledResource } from '../platform/resource-declarations.js'
 import {
   selectDueInstalledResources,
   type DueInstalledResource,
 } from '../platform/resource-eligibility.js'
-import { getQueueAdmissionCapacity } from './admission.js'
 import {
-  getJobDefinition,
-  jobOptions,
-  resourceBatchJobId,
-  resourceRefreshJobId,
-  type JobDefinition,
-  type PlatformResourceBatchJobPayload,
-} from './job-registry.js'
+  findInstalledResource,
+  installedResourceIdentityKey,
+} from '../platform/resource-identity.js'
+import { getQueueAdmissionCapacity } from './admission.js'
+import { jobOptions } from './job-options.js'
+import { getJobDefinition, type JobDefinition } from './job-registry.js'
 import { resourceRefreshPriority } from './policy.js'
 import { plannerInitialDelay } from './scheduler.js'
 import type { QueueRedisConnection } from './redis.js'
+import {
+  resourceBatchJobId,
+  resourceRefreshJobId,
+  type PlatformResourceBatchJobPayload,
+} from './resource-job-contracts.js'
 
 interface ResourcePlannerOptions {
   readonly highWaterMark?: number
@@ -154,7 +156,7 @@ function createResourceWorkItems(
       throw new Error(
         `Due resource ${candidate.identity.moduleId}/${candidate.identity.resourceId} is not installed`,
       )
-    const batchKey = `${descriptor.moduleId}\0${descriptor.resourceId}\0${descriptor.subjectKind}`
+    const batchKey = installedResourceIdentityKey(descriptor)
     if (descriptor.batch && plannedBatchResources.has(batchKey)) continue
 
     const operation = createCooldownRequest(candidate, descriptor)
@@ -224,10 +226,7 @@ function createBatchWork(
   if (contract.identity.kind !== 'set')
     throw new Error('Resource batch operation must use set identity')
   const subjects = candidates
-    .filter(
-      ({ identity }) =>
-        `${identity.moduleId}\0${identity.resourceId}\0${identity.subjectKind}` === batchKey,
-    )
+    .filter(({ identity }) => installedResourceIdentityKey(identity) === batchKey)
     .slice(0, contract.identity.maximumItems)
     .map(({ identity }) => ({
       subjectLifecycleId: identity.subjectLifecycleId,

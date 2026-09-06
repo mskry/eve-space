@@ -10,6 +10,7 @@ import {
 } from '../db/schema.js'
 import { materializeManagedAllianceCorporations } from '../organization/managed-corporations.js'
 import { materializeCorporationRoster } from '../organization/roster-collection.js'
+import { normalizePositiveSafeIntegerIds } from './resource-id-list.js'
 
 export async function materializeCoreResourceObservation(
   database: Pick<typeof db, 'delete' | 'insert' | 'select' | 'update'>,
@@ -148,8 +149,5 @@ export async function materializeCoreResourceObservation(
 
 function parseIds(value: unknown) {
   if (!Array.isArray(value)) throw new Error('Core organization resource data must be an ID array')
-  const ids = value.map(Number)
-  if (ids.some((id) => !Number.isSafeInteger(id) || id <= 0))
-    throw new Error('Core organization resource data contains an invalid ID')
-  return [...new Set(ids)].toSorted((left, right) => left - right)
+  return normalizePositiveSafeIntegerIds(value, 'Core organization resource data')
 }

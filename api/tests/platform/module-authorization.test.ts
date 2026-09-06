@@ -78,13 +78,16 @@ vi.mock('../../src/admin/store.js', () => ({
 }))
 
 vi.mock('../../src/platform/module-settings.js', () => ({
-  isCompleteShellNavigationOrder: () => true,
   isInstalledModuleEnabled: mocks.isInstalledModuleEnabled,
   listInstalledModuleSettings: vi.fn(),
   loadInstalledShellNavigationOrder: vi.fn(),
   loadModuleRuntimeState: mocks.loadModuleRuntimeState,
   saveInstalledShellNavigationOrder: mocks.saveInstalledShellNavigationOrder,
   setInstalledModuleEnabled: vi.fn(),
+}))
+vi.mock('../../src/platform/module-navigation.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  isCompleteShellNavigationOrder: () => true,
 }))
 
 vi.mock('../../src/platform/core-read-capabilities.js', () => ({
@@ -352,8 +355,8 @@ describe('full-root platform module authorization', () => {
 describe('full-root platform shell boundaries', () => {
   test('serves resolved defaults with new entries appended and unavailable owners omitted', async () => {
     const { resolveShellNavigationOrder } = await vi.importActual<
-      typeof import('../../src/platform/module-settings.js')
-    >('../../src/platform/module-settings.js')
+      typeof import('../../src/platform/module-navigation.js')
+    >('../../src/platform/module-navigation.js')
     const defaults = [
       { ownerId: 'core', navigationId: 'overview', placement: 'dashboard', order: 10 },
       { ownerId: 'alpha', navigationId: 'saved', placement: 'dashboard', order: 20 },

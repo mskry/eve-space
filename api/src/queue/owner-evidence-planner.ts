@@ -1,7 +1,8 @@
 import type { Queue } from 'bullmq'
 import { selectDueOrganizationOwnerEvidence } from '../organization/owner-evidence.js'
 import { admitQueueWork } from './admission.js'
-import { getJobDefinition, jobOptions, type JobDefinition } from './job-registry.js'
+import { jobOptions } from './job-options.js'
+import { getJobDefinition, type JobDefinition } from './job-registry.js'
 
 export async function runOrganizationOwnerEvidencePlanner(
   queue: Queue,
