@@ -13,6 +13,7 @@ import {
 } from '../../src/esi-resilience/envelope.js'
 import { BoundedEsiL1Cache } from '../../src/esi-resilience/l1-cache.js'
 import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
+import { sharedPrivateCache } from '../../src/esi-resilience/contract-types.js'
 
 const policy = getEsiOperationContract('public-character')
 const retentionMilliseconds = policy.cache.kind === 'none' ? 0 : policy.cache.retentionMilliseconds
@@ -263,22 +264,34 @@ describe('ESI cache envelopes', () => {
     expect(at.freshUntil).toBe(Date.parse('2026-08-21T11:05:00.000Z'))
   })
 
-  test('caps stale serving at the configured retention deadline', () => {
+  test('caps configured private retention at the maximum retention deadline', () => {
+    const originalPrivateRetention = env.ESI_PRIVATE_RETENTION_SECONDS
     const originalMaximumRetention = env.ESI_CACHE_MAX_RETENTION_SECONDS
+    env.ESI_PRIVATE_RETENTION_SECONDS = 120
     env.ESI_CACHE_MAX_RETENTION_SECONDS = 30
     try {
+      const walletPolicy = getEsiOperationContract('wallet-balance')
+      const privateCache = sharedPrivateCache()
+      if (walletPolicy.cache.kind === 'none' || privateCache.kind === 'none')
+        throw new Error('Wallet balance must use shared private caching')
+      const privatePolicy = {
+        ...walletPolicy,
+        cache: { ...privateCache, revalidate: walletPolicy.cache.revalidate },
+      }
       const envelope = createCacheEnvelope({
         data: 1,
         fence: 1,
-        policy,
+        policy: privatePolicy,
         representationVersion: 'v1',
         now,
         metadata: { status: 200, headers: {}, cache: { cacheControl: 'max-age=60' } },
       })
 
+      expect(privateCache.retentionMilliseconds).toBe(120_000)
       expect(envelope.retainUntil).toBe(envelope.freshUntil + 30_000)
       expect(envelope.staleUntil).toBe(envelope.retainUntil)
     } finally {
+      env.ESI_PRIVATE_RETENTION_SECONDS = originalPrivateRetention
       env.ESI_CACHE_MAX_RETENTION_SECONDS = originalMaximumRetention
     }
   })

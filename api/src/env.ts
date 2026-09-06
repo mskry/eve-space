@@ -47,6 +47,7 @@ const schema = z.object({
   TOKEN_REFRESH_QUEUE_TIMEOUT_MS: positiveInteger.default(30_000),
   CACHE_REDIS_URL: redisUrl.default('redis://localhost:6380'),
   ESI_CACHE_L1_MAX_ENTRIES: positiveInteger.default(250),
+  ESI_PRIVATE_RETENTION_SECONDS: positiveInteger.default(86_400),
   ESI_CACHE_MAX_RETENTION_SECONDS: positiveInteger.default(86_400),
   MODULE_RUNTIME_CACHE_TTL_MS: positiveInteger.max(30_000).default(5_000),
   ESI_REQUEST_TIMEOUT_MS: positiveInteger.default(30_000),

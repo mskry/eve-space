@@ -4,6 +4,7 @@ import type {
   PlatformEsiResponseValidationContract,
   PlatformEsiRetryContract,
 } from '@eve-space/platform-module-contract'
+import { env } from '../env.js'
 import { esiMetadataReview, esiOperationMetadata } from './operation-metadata.js'
 
 type EsiIdentityContract =
@@ -195,7 +196,9 @@ export function sharedPublicCache(): EsiCacheConfiguration {
   }
 }
 
-export function sharedPrivateCache(retentionMilliseconds = hour): EsiCacheConfiguration {
+export function sharedPrivateCache(
+  retentionMilliseconds = env.ESI_PRIVATE_RETENTION_SECONDS * 1_000,
+): EsiCacheConfiguration {
   return {
     kind: 'shared',
     collapse: true,

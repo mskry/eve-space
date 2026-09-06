@@ -80,6 +80,31 @@ describe('system status service', () => {
       operation: 'status',
       inputs: {},
     })
+    expect(mocks.get).toHaveBeenCalledOnce()
+    expect(mocks.probeEsiResilienceTelemetry).toHaveBeenCalledWith({ status: 'operational' })
+  })
+
+  test('passes stale refresh failure details to telemetry without exposing them in the service DTO', async () => {
+    mocks.get.mockResolvedValue({
+      data: statusResponse().data,
+      cachedUntil: '2026-08-20T12:01:00.000Z',
+      validatedAt: '2026-08-20T11:59:00.000Z',
+      quota: { errorRemaining: 99, errorResetSeconds: 10 },
+      source: 'cache',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
+    })
+    const { getSystemStatus } = await import('../../src/system/status.js')
+
+    const status = await getSystemStatus()
+
+    expect(mocks.get).toHaveBeenCalledOnce()
+    expect(mocks.probeEsiResilienceTelemetry).toHaveBeenCalledOnce()
+    expect(mocks.probeEsiResilienceTelemetry).toHaveBeenCalledWith({
+      status: 'stale',
+      refreshFailureClass: 'esi-unavailable',
+    })
+    expect(status.services.esi).not.toHaveProperty('refreshFailureClass')
   })
 
   test('uses the least-fresh ESI deadline for the composed status response', async () => {

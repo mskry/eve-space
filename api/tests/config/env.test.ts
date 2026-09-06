@@ -35,6 +35,7 @@ describe('environment configuration', () => {
       TOKEN_REFRESH_QUEUE_TIMEOUT_MS: 30_000,
       CACHE_REDIS_URL: 'redis://localhost:6380',
       ESI_CACHE_L1_MAX_ENTRIES: 250,
+      ESI_PRIVATE_RETENTION_SECONDS: 86_400,
       ESI_CACHE_MAX_RETENTION_SECONDS: 86_400,
       MODULE_RUNTIME_CACHE_TTL_MS: 5_000,
       ESI_REQUEST_TIMEOUT_MS: 30_000,
@@ -85,6 +86,11 @@ describe('environment configuration', () => {
       'module runtime cache lifetime',
       { MODULE_RUNTIME_CACHE_TTL_MS: '30001' },
       'Too big: expected number to be <=30000',
+    ],
+    [
+      'private ESI retention',
+      { ESI_PRIVATE_RETENTION_SECONDS: '0' },
+      'Too small: expected number to be >0',
     ],
     ['ESI request timeout', { ESI_REQUEST_TIMEOUT_MS: '0' }, 'Too small: expected number to be >0'],
     [

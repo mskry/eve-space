@@ -11,6 +11,7 @@ import { getSharedEsiCooldownStatus, type EsiCooldownStatus } from './cooldowns.
 import type { EsiCacheEnvelopeRejectionReason } from './envelope.js'
 import { parseCount } from './numeric.js'
 import type { EsiResponseOutcome } from './policy.js'
+import type { EsiCachedResult } from './types.js'
 import {
   getCacheConnectionErrorCounts,
   getEsiCacheEnvelopeCounterSnapshot,
@@ -61,13 +62,19 @@ export interface EsiResilienceTelemetry {
   coordination: EsiDependencyTelemetry
   cooldown: EsiCooldownStatus
   upstream: {
-    status: 'operational' | 'unavailable'
+    status: 'operational' | 'degraded' | 'unavailable'
     checkedAt: string
     operations: EsiUpstreamOperationTelemetry[]
   }
 }
 
+export interface EsiUpstreamObservation {
+  status: 'operational' | 'degraded' | 'unavailable' | 'stale'
+  refreshFailureClass?: EsiCachedResult<unknown>['refreshFailureClass']
+}
+
 export async function probeEsiResilienceTelemetry(
+  upstreamObservation: EsiUpstreamObservation,
   dependencies: {
     probeCache?: () => Promise<boolean>
     probeCoordination?: () => Promise<boolean>
@@ -110,6 +117,7 @@ export async function probeEsiResilienceTelemetry(
       coordination = coordinationTelemetry(false, checkedAt)
     if (cacheAvailable && upstreamResult.status === 'rejected')
       cache = cacheDependencyTelemetry(false, checkedAt)
+    const upstreamStatus = getUpstreamStatus(upstreamObservation)
     return {
       checkedAt,
       cache,
@@ -124,8 +132,8 @@ export async function probeEsiResilienceTelemetry(
         EsiResilienceTelemetry['upstream']
       >(
         upstreamResult,
-        (operations) => ({ status: 'operational', checkedAt, operations }),
-        () => ({ status: 'unavailable', checkedAt, operations: emptyUpstreamOperations() }),
+        (operations) => ({ status: upstreamStatus, checkedAt, operations }),
+        () => ({ status: upstreamStatus, checkedAt, operations: emptyUpstreamOperations() }),
       ),
     }
   } finally {
@@ -134,6 +142,18 @@ export async function probeEsiResilienceTelemetry(
       closeOwnedConnection(coordinationConnection, closeQueueRedisConnection),
     ])
   }
+}
+
+function getUpstreamStatus(
+  observation: EsiUpstreamObservation,
+): EsiResilienceTelemetry['upstream']['status'] {
+  if (observation.status === 'operational') return 'operational'
+  if (
+    observation.status === 'unavailable' ||
+    (observation.status === 'stale' && observation.refreshFailureClass === 'esi-unavailable')
+  )
+    return 'unavailable'
+  return 'degraded'
 }
 
 function createOwnedConnection(
