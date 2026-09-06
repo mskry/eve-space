@@ -8,9 +8,9 @@ export class SsoTransportError extends Error {
 export class SsoHttpError extends Error {
   constructor(
     readonly operation: string,
-    readonly status: number,
+    readonly upstreamStatus: number,
   ) {
-    super(`${operation} returned HTTP ${status}`)
+    super(`${operation} returned HTTP ${upstreamStatus}`)
     this.name = 'SsoHttpError'
   }
 }
@@ -28,6 +28,6 @@ export function isTransientSsoError(error: unknown) {
   return (
     error instanceof SsoTransportError ||
     (error instanceof SsoHttpError &&
-      (error.status === 429 || (error.status >= 500 && error.status < 600)))
+      (error.upstreamStatus === 429 || (error.upstreamStatus >= 500 && error.upstreamStatus < 600)))
   )
 }

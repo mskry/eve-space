@@ -117,6 +117,7 @@ export interface CharacterEsiAuthorizationResolver {
   readonly cacheAuthorization: EsiCacheAuthorization
   readonly transportPrincipal: string
   resolve(): Promise<CharacterAuthorization>
+  recheckCacheAuthorization(): Promise<number>
 }
 
 export interface CharacterEsiExecutionResult<Data> {
@@ -231,6 +232,9 @@ export class EsiResilienceLayer {
       },
       transportPrincipal: principal,
       resolve: () => this.#authorizeCharacter(Number(characterId), policy.authorization.scope),
+      recheckCacheAuthorization: async () =>
+        (await this.#authorizeCharacterCache(Number(characterId), policy.authorization.scope))
+          .tokenVersion,
     })
     return execution.result
   }
@@ -242,34 +246,10 @@ export class EsiResilienceLayer {
     const policy = getEsiOperationContract(resource.operation)
     if (policy.authorization.kind !== 'character')
       throw new Error(`ESI operation ${resource.operation} is not character-authorized`)
-    let authorizationGeneration = authorization.cacheAuthorization.generation
-    const result = await this.#recordResult(
+    return this.#recordCharacterResult(
       resource.operation,
-      this.#get({
-        operation: resource.operation,
-        inputs: resource.inputs,
-        authorization: authorization.cacheAuthorization,
-        resolveAuthorization: async () => {
-          const resolved = await authorization.resolve()
-          authorizationGeneration = resolved.tokenVersion
-          return {
-            authorization: {
-              ...authorization.cacheAuthorization,
-              generation: resolved.tokenVersion,
-            },
-            load: (revalidation) =>
-              resource.load(
-                {
-                  accessToken: resolved.accessToken,
-                  principal: authorization.transportPrincipal,
-                },
-                revalidation,
-              ),
-          }
-        },
-      }),
+      this.#getCharacterAuthorized(resource, authorization),
     )
-    return { result, authorizationGeneration }
   }
 
   executeNoValue<Data>(
@@ -308,6 +288,59 @@ export class EsiResilienceLayer {
       if (shouldAdvanceRevisionAfterMutationError(policy, error))
         await this.#resourceRevisions.advance(policy, principal)
       throw toEsiQuotaError(error)
+    }
+  }
+
+  async #getCharacterAuthorized<Data>(
+    resource: CharacterEsiResource<Data>,
+    authorization: CharacterEsiAuthorizationResolver,
+    cacheAuthorization = authorization.cacheAuthorization,
+  ): Promise<CharacterEsiExecutionResult<Data>> {
+    let authorizationGeneration = cacheAuthorization.generation
+    const result = await this.#get({
+      operation: resource.operation,
+      inputs: resource.inputs,
+      authorization: cacheAuthorization,
+      resolveAuthorization: async () => {
+        const resolved = await authorization.resolve()
+        authorizationGeneration = resolved.tokenVersion
+        return {
+          authorization: {
+            ...cacheAuthorization,
+            generation: resolved.tokenVersion,
+          },
+          load: (revalidation) =>
+            resource.load(
+              {
+                accessToken: resolved.accessToken,
+                principal: authorization.transportPrincipal,
+              },
+              revalidation,
+            ),
+        }
+      },
+    })
+    if (result.source !== 'cache') return { result, authorizationGeneration }
+
+    const currentGeneration = await authorization.recheckCacheAuthorization()
+    if (currentGeneration === authorizationGeneration) return { result, authorizationGeneration }
+    return this.#getCharacterAuthorized(resource, authorization, {
+      ...cacheAuthorization,
+      generation: currentGeneration,
+    })
+  }
+
+  async #recordCharacterResult<Data>(
+    operation: EsiOperation,
+    pending: Promise<CharacterEsiExecutionResult<Data>>,
+  ) {
+    try {
+      const execution = await pending
+      recordEsiCacheSource(operation, execution.result.source, execution.result.stale)
+      return execution
+    } catch (error) {
+      markEsiOperationErrorCompleted(error)
+      throw error
     }
   }
 

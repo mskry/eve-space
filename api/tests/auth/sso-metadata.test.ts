@@ -86,7 +86,7 @@ describe('EVE SSO requests', () => {
     sso = await import('../../src/auth/sso.js')
     errors = await import('../../src/auth/sso-errors.js')
     const rateLimit = await sso.createAuthorizationUrl('state-two').catch((error) => error)
-    expect(rateLimit).toMatchObject({ name: 'SsoHttpError', status: 429 })
+    expect(rateLimit).toMatchObject({ name: 'SsoHttpError', upstreamStatus: 429 })
     expect(errors.isTransientSsoError(rateLimit)).toBe(true)
     expect(errors.isTransientSsoError(new errors.SsoHttpError('test', 600))).toBe(false)
   })
@@ -112,7 +112,7 @@ describe('EVE SSO requests', () => {
     await expect(sso.exchangeAuthorizationCode('first-code')).rejects.toMatchObject({
       name: 'SsoHttpError',
       operation: 'EVE token exchange',
-      status: 502,
+      upstreamStatus: 502,
     })
     await expect(sso.exchangeAuthorizationCode('second-code')).resolves.toEqual(token)
   })
@@ -139,7 +139,7 @@ describe('EVE SSO requests', () => {
     let errors = await import('../../src/auth/sso-errors.js')
 
     const unavailable = await sso.refreshAccessToken('refresh').catch((error) => error)
-    expect(unavailable).toMatchObject({ name: 'SsoHttpError', status: 503 })
+    expect(unavailable).toMatchObject({ name: 'SsoHttpError', upstreamStatus: 503 })
     expect(errors.isTransientSsoError(unavailable)).toBe(true)
 
     vi.resetModules()
@@ -173,7 +173,8 @@ describe('EVE SSO requests', () => {
 
     const failure = await sso.refreshAccessToken('refresh').catch((error) => error)
     expect(failure).toBeInstanceOf(errors.SsoHttpError)
-    expect(failure).toMatchObject({ name: 'SsoHttpError', status: 401 })
+    expect(failure).toMatchObject({ name: 'SsoHttpError', upstreamStatus: 401 })
+    expect(failure).not.toHaveProperty('status')
     expect(errors.isTransientSsoError(failure)).toBe(false)
   })
 
@@ -216,7 +217,7 @@ describe('EVE SSO requests', () => {
       .refreshAccessToken('temporarily-unavailable')
       .catch((error) => error)
     expect(unavailable).toBeInstanceOf(errors.SsoHttpError)
-    expect(unavailable).toMatchObject({ status: 400 })
+    expect(unavailable).toMatchObject({ upstreamStatus: 400 })
   })
 
   test('preserves transient JWKS HTTP status through jose verification', async () => {
@@ -232,7 +233,7 @@ describe('EVE SSO requests', () => {
     ].join('.')
 
     const failure = await sso.verifyAccessToken(token).catch((error) => error)
-    expect(failure).toMatchObject({ name: 'SsoHttpError', status: 503 })
+    expect(failure).toMatchObject({ name: 'SsoHttpError', upstreamStatus: 503 })
     expect(errors.isTransientSsoError(failure)).toBe(true)
   })
 

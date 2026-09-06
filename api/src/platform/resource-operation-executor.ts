@@ -4,7 +4,10 @@ import type {
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
-import { getCharacterAuthorizationForLifecycle } from '../auth/tokens.js'
+import {
+  getCharacterAuthorizationForLifecycle,
+  getCharacterCacheAuthorizationForLifecycle,
+} from '../auth/tokens.js'
 import {
   getEsiOperationContract,
   getExecutableEsiOperationDefinition,
@@ -141,6 +144,14 @@ export async function executeInstalledResourceOperation(
           identity.subjectLifecycleId,
           requiredScope,
         ),
+      recheckCacheAuthorization: async () =>
+        (
+          await getCharacterCacheAuthorizationForLifecycle(
+            guarded.characterId,
+            identity.subjectLifecycleId,
+            requiredScope,
+          )
+        ).tokenVersion,
     },
   )
   return {

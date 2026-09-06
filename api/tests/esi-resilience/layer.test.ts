@@ -308,9 +308,37 @@ describe('ESI resilience layer', () => {
       source: 'cache',
       stale: false,
     })
-    expect(authorizers.cache).toHaveBeenCalledTimes(2)
+    expect(authorizers.cache).toHaveBeenCalledTimes(3)
     expect(authorizers.full).not.toHaveBeenCalled()
     expect(load).toHaveBeenCalledOnce()
+  })
+
+  test('rechecks the token generation before returning a fresh private snapshot', async () => {
+    const authorizers = {
+      cache: vi
+        .fn()
+        .mockResolvedValueOnce({ scopes: ['scope'], tokenVersion: 1 })
+        .mockResolvedValueOnce({ scopes: ['scope'], tokenVersion: 1 })
+        .mockResolvedValueOnce({ scopes: ['scope'], tokenVersion: 2 }),
+      full: vi
+        .fn()
+        .mockResolvedValueOnce({ accessToken: 'token-1', tokenVersion: 1 })
+        .mockResolvedValueOnce({ accessToken: 'token-2', tokenVersion: 2 }),
+    }
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 2, authorizers)
+    const load = vi.fn().mockResolvedValueOnce(result(1)).mockResolvedValueOnce(result(2))
+    const resource = {
+      operation: 'wallet-balance' as const,
+      inputs: { characterId: 1 },
+      load,
+    }
+
+    await layer.getCharacter(resource)
+    await expect(layer.getCharacter(resource)).resolves.toMatchObject({ data: 2, source: 'esi' })
+
+    expect(authorizers.cache).toHaveBeenCalledTimes(3)
+    expect(authorizers.full).toHaveBeenCalledTimes(2)
+    expect(load).toHaveBeenCalledTimes(2)
   })
 
   test('uses lifecycle cache authorization before lazy token resolution and outage fallback', async () => {
@@ -330,6 +358,7 @@ describe('ESI resilience layer', () => {
       },
       transportPrincipal: 'character-1',
       resolve,
+      recheckCacheAuthorization: vi.fn().mockResolvedValue(1),
     }
 
     await layer.getCharacterWithAuthorization(resource, authorization)
