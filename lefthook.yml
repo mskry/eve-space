@@ -11,7 +11,8 @@
 # `typecheck` runs on push only. It is the slowest check (~20s for vue-tsc across
 # the Nuxt app) and it is the one that catches `.vue` and type-level regressions
 # that lint, knip, and Vitest all miss, so it guards the shared branch without
-# taxing every local commit.
+# taxing every local commit. Coverage remains a CI concern; pre-push adds only
+# type checking and integration suites to the unit tests already run on commit.
 
 glob_matcher: doublestar
 
@@ -94,20 +95,8 @@ pre-push:
     - name: typecheck
       run: pnpm typecheck
 
-    - name: test:frontend:coverage
-      run: pnpm test:frontend:coverage
-
-    - name: test:registry
-      run: pnpm test:registry
-
-    - name: test:modules:coverage
-      run: pnpm test:modules:coverage
-
-    - name: test:api:coverage
-      run: pnpm test:api:coverage
-
     - name: test:redis
-      run: pnpm test:redis
+      run: pnpm test:redis:no-coverage
 
     - name: test:postgres
       run: pnpm test:postgres

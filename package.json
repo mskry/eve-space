@@ -50,6 +50,7 @@
     "test:postgres": "pnpm --filter @eve-space/api test:postgres && tsx scripts/run-installed-module-package-script.ts server test:postgres",
     "test:packaging": "pnpm --filter @eve-space/api test:packaging && pnpm build",
     "test:redis": "pnpm --filter @eve-space/api test:redis",
+    "test:redis:no-coverage": "pnpm --filter @eve-space/api test:redis:no-coverage",
     "test:e2e": "node -e \"require('node:fs').rmSync('.output', { recursive: true, force: true })\" && nuxt build && vitest run --config vitest.e2e.config.ts",
     "typecheck": "pnpm build:nuxt:dependencies && pnpm typecheck:nuxt:local && pnpm --filter @eve-space/api typecheck:local",
     "typecheck:nuxt": "pnpm build:nuxt:dependencies && pnpm typecheck:nuxt:local",
