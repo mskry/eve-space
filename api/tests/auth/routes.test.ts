@@ -135,14 +135,14 @@ describe('EVE SSO start routes', () => {
   test('rejects login start before state is stored when SSO is not configured', async () => {
     mocks.isSsoConfigured.mockReturnValue(false)
 
-    const response = await client.auth.eve.start.$get()
+    const response = await client.auth.eve.start.$get({ query: {} })
 
     expect(response.status).toBe(503)
     expect(mocks.storeOAuthState).not.toHaveBeenCalled()
   })
 
   test('starts login with hash-backed state and a secure callback cookie', async () => {
-    const response = await client.auth.eve.start.$get()
+    const response = await client.auth.eve.start.$get({ query: {} })
     const state = mocks.storeOAuthState.mock.calls[0]?.[0] as string
 
     expect(response.status).toBe(302)
@@ -152,6 +152,41 @@ describe('EVE SSO start routes', () => {
     expect(response.headers.get('set-cookie')).toContain('HttpOnly')
     expect(response.headers.get('set-cookie')).toContain('SameSite=Lax')
     expect(response.headers.get('set-cookie')).toContain('Priority=High')
+  })
+
+  test('stores a validated login return path in OAuth state', async () => {
+    const returnTo = `/characters/${mainCharacter.characterId}?tab=wallet#activity`
+
+    const response = await client.auth.eve.start.$get({ query: { returnTo } })
+    const state = mocks.storeOAuthState.mock.calls[0]?.[0] as string
+
+    expect(response.status).toBe(302)
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, {
+      intent: 'login',
+      returnPath: returnTo,
+    })
+  })
+
+  test.each([
+    ['an external destination', 'https://example.com/characters/7'],
+    ['a protocol-relative destination', '//example.com/characters/7'],
+    ['the authorization route', '/auth'],
+    ['an encoded authorization route', '/%61uth'],
+    ['a duplicate destination query', '/characters/7/mail?label=1&label=2'],
+  ])('rejects %s before storing login state', async (_label, returnTo) => {
+    const response = await app.request(`/auth/eve/start?returnTo=${encodeURIComponent(returnTo)}`)
+
+    expect(response.status).toBe(400)
+    expect(mocks.storeOAuthState).not.toHaveBeenCalled()
+  })
+
+  test('rejects repeated login return paths', async () => {
+    const response = await app.request(
+      '/auth/eve/start?returnTo=%2Fcharacters%2F7&returnTo=%2Fcharacters%2F8',
+    )
+
+    expect(response.status).toBe(400)
+    expect(mocks.storeOAuthState).not.toHaveBeenCalled()
   })
 
   test('requires a session to start attachment', async () => {
@@ -336,6 +371,17 @@ describe('EVE SSO callback intents', () => {
     expect(mocks.attachCharacter).not.toHaveBeenCalled()
     expect(response.headers.get('set-cookie')).toContain('eve_space_session=')
     expect(response.headers.get('set-cookie')).toContain('HttpOnly')
+  })
+
+  test('returns a successful login to its state-bound deep link', async () => {
+    const returnPath = `/characters/${mainCharacter.characterId}?tab=wallet#activity`
+    mocks.consumeOAuthState.mockResolvedValue({ intent: 'login', returnPath })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code')
+
+    expect(response.headers.get('location')).toBe(
+      `http://localhost:3000/auth?auth=success&character=${mainCharacter.characterId}&redirect=%2Fcharacters%2F${mainCharacter.characterId}%3Ftab%3Dwallet%23activity`,
+    )
   })
 
   test('requires the attachment callback session to match its immutable state user', async () => {

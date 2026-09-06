@@ -74,7 +74,7 @@ export interface EsiUpstreamObservation {
 }
 
 export async function probeEsiResilienceTelemetry(
-  upstreamObservation: EsiUpstreamObservation,
+  upstreamObservation: EsiUpstreamObservation | PromiseLike<EsiUpstreamObservation>,
   dependencies: {
     probeCache?: () => Promise<boolean>
     probeCoordination?: () => Promise<boolean>
@@ -83,7 +83,8 @@ export async function probeEsiResilienceTelemetry(
   } = {},
 ): Promise<EsiResilienceTelemetry> {
   const checkedAt = new Date().toISOString()
-  const [cacheAvailable, coordinationAvailable] = await Promise.all([
+  const [resolvedUpstreamObservation, cacheAvailable, coordinationAvailable] = await Promise.all([
+    upstreamObservation,
     (dependencies.probeCache ?? probeCache)(),
     (dependencies.probeCoordination ?? probeCoordination)(),
   ])
@@ -117,7 +118,7 @@ export async function probeEsiResilienceTelemetry(
       coordination = coordinationTelemetry(false, checkedAt)
     if (cacheAvailable && upstreamResult.status === 'rejected')
       cache = cacheDependencyTelemetry(false, checkedAt)
-    const upstreamStatus = getUpstreamStatus(upstreamObservation)
+    const upstreamStatus = getUpstreamStatus(resolvedUpstreamObservation)
     return {
       checkedAt,
       cache,

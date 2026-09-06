@@ -1,6 +1,7 @@
 import { createStatusClient } from '@evespace/esi-client/domains/status'
 import { sql } from '../db/client.js'
 import { probeDomainEventStatus, type DomainEventStatus } from '../domain-events/status.js'
+import { classifyStaleRefreshFailure } from '../esi-resilience/errors.js'
 import { esiErrorBudgetFloor } from '../esi-resilience/policy.js'
 import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
 import {
@@ -76,11 +77,14 @@ export function getSystemStatus() {
 
 async function probeSystemStatus(now: number): Promise<SystemStatus> {
   const esiPending = probeEsi()
+  const esiResiliencePending = probeEsiResilienceTelemetry(
+    esiPending.then(({ observation }) => observation),
+  )
   const [database, esiProbe, queue, esiResilience] = await Promise.all([
     probeDatabase(),
     esiPending,
     probeQueueStatus(),
-    esiPending.then(({ observation }) => probeEsiResilienceTelemetry(observation)),
+    esiResiliencePending,
   ])
   const esi = esiProbe.service
   const eventRelay = await probeDomainEventStatus(queue)
@@ -173,10 +177,15 @@ async function probeEsi(): Promise<EsiStatusProbe> {
           : {}),
       },
     }
-  } catch {
+  } catch (error) {
+    const refreshFailureClass = classifyStaleRefreshFailure(error)
+    const status: EsiStatus['status'] =
+      refreshFailureClass === 'esi-cooldown' || refreshFailureClass === 'response-invalid'
+        ? 'degraded'
+        : 'unavailable'
     return {
       service: {
-        status: 'unavailable',
+        status,
         latencyMs: Date.now() - startedAt,
         checkedAt,
         players: null,
@@ -187,7 +196,7 @@ async function probeEsi(): Promise<EsiStatusProbe> {
         errorBudgetResetSeconds: null,
         cachedUntil: new Date(startedAt + cacheTtlMs).toISOString(),
       },
-      observation: { status: 'unavailable' },
+      observation: { status, refreshFailureClass },
     }
   }
 }

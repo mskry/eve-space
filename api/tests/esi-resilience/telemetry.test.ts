@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { esiOperationCatalog } from '../../src/esi-resilience/catalog.js'
 import { ESI_CACHE_ENVELOPE_VERSION } from '../../src/esi-resilience/envelope.js'
 import { probeEsiResilienceTelemetry } from '../../src/esi-resilience/telemetry.js'
@@ -13,6 +13,30 @@ import {
 const operationalObservation = { status: 'operational' as const }
 
 describe('ESI resilience telemetry', () => {
+  test('starts dependency probes before a pending upstream observation settles', async () => {
+    let resolveObservation!: (observation: typeof operationalObservation) => void
+    const observationPending = new Promise<typeof operationalObservation>((resolve) => {
+      resolveObservation = resolve
+    })
+    const dependencies = availableDependencies()
+    const probeCache = vi.fn(dependencies.probeCache)
+    const probeCoordination = vi.fn(dependencies.probeCoordination)
+
+    const telemetryPending = probeEsiResilienceTelemetry(observationPending, {
+      ...dependencies,
+      probeCache,
+      probeCoordination,
+    })
+
+    expect(probeCache).toHaveBeenCalledOnce()
+    expect(probeCoordination).toHaveBeenCalledOnce()
+
+    resolveObservation(operationalObservation)
+    await expect(telemetryPending).resolves.toMatchObject({
+      upstream: { status: 'operational' },
+    })
+  })
+
   test('marks dependency failures degraded before three consecutive failed probes mark them unavailable', async () => {
     const dependencies = {
       probeCache: async () => false,

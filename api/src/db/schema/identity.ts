@@ -129,7 +129,7 @@ export const oauthStates = pgTable(
     ),
     check(
       'oauth_states_return_path_context_check',
-      sql`return_path is null or intent = 'reauthorize'`,
+      sql`return_path is null or intent in ('login', 'reauthorize')`,
     ),
   ],
 )

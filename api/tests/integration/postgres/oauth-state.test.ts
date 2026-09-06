@@ -36,7 +36,12 @@ beforeAll(async () => {
   const returnPathMigrationIndex = migrations.findIndex(
     ({ name }) => name === '020_oauth_state_return_path.sql',
   )
+  const loginReturnPathMigrationIndex = migrations.findIndex(
+    ({ name }) => name === '025_login_oauth_return_path.sql',
+  )
   if (returnPathMigrationIndex < 0) throw new Error('OAuth return-path migration is missing')
+  if (loginReturnPathMigrationIndex < 0)
+    throw new Error('Login OAuth return-path migration is missing')
   await runMigrations(connection, migrations.slice(0, returnPathMigrationIndex))
   const userId = await insertOwnedCharacter()
   await connection`
@@ -48,6 +53,7 @@ beforeAll(async () => {
     select return_path from oauth_states where state_hash = ${'a'.repeat(64)}
   `
   legacyReturnPath = legacyState?.return_path
+  await runMigrations(connection, [migrations[loginReturnPathMigrationIndex]!])
 
   authStore = await import('../../../src/auth/store.js')
   dbClient = await import('../../../src/db/client.js')
@@ -107,7 +113,7 @@ describe('OAuth state return path persistence', () => {
     expect(legacyReturnPath).toBeNull()
   })
 
-  test('enforces the return-path bound and reauthorization-only context constraint', async () => {
+  test('enforces the return-path bound and login-or-reauthorization context constraint', async () => {
     const userId = await insertOwnedCharacter()
     await expect(
       connection`
@@ -158,6 +164,19 @@ describe('OAuth state return path persistence', () => {
       select count(*)::integer as count from oauth_states
     `
     expect(remaining?.count).toBe(0)
+  })
+
+  test('atomically round-trips a login return path', async () => {
+    const state = 'login-oauth-state'
+    const returnPath = `/characters/${characterId}?tab=wallet#activity`
+
+    await authStore.storeOAuthState(state, { intent: 'login', returnPath })
+
+    await expect(authStore.consumeOAuthState(state)).resolves.toEqual({
+      intent: 'login',
+      returnPath,
+    })
+    await expect(authStore.consumeOAuthState(state)).resolves.toBeNull()
   })
 
   test('preserves legacy omitted paths and stores null for other intents', async () => {
