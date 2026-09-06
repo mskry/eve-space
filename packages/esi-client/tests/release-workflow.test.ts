@@ -53,7 +53,7 @@ describe('ESI client trusted publication workflow', () => {
     expect(workflow.match(/name: esi-client-release-candidate/g)).toHaveLength(2);
     expect(workflow).not.toContain('name: esi-client-release-${{ github.ref_name }}');
     expect(publish.indexOf('verify-release-candidate.ts')).toBeLessThan(
-      publish.indexOf('npm publish release/package.tgz --access public'),
+      publish.indexOf('npm publish ./release/package.tgz --access public'),
     );
   });
 
