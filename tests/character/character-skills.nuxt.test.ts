@@ -537,6 +537,30 @@ describe('character Skills components', () => {
     expect(wrapper.find('.skill-queue-unallocated').exists()).toBe(true)
   })
 
+  it('scrolls a paused queue without rendering an empty summary panel', async () => {
+    const skillQueue = trainingQueue()
+    skillQueue.entries = skillQueue.entries.map((entry) => ({
+      ...entry,
+      startDate: null,
+      finishDate: null,
+    }))
+    const wrapper = await mountSuspended(CharacterSkillsQueue, {
+      props: {
+        authorizeUrl: '',
+        message: '',
+        skillQueue,
+        status: 'idle',
+        unallocatedSp: 0,
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    expect(wrapper.get('.skill-queue-idle').text()).toContain('Training is paused')
+    expect(wrapper.get('.skill-queue-scroll').findAll('.skill-queue-list li')).toHaveLength(3)
+    expect(wrapper.find('.skill-queue-summary-panel').exists()).toBe(false)
+  })
+
   it('shows summary attributes and retains independent retry behavior', async () => {
     const wrapper = await mountSuspended(CharacterSkillsSummaryCard, {
       props: {

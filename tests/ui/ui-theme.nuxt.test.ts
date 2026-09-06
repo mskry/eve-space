@@ -1,6 +1,7 @@
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { afterEach, describe, expect, it } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
+import UiThemeSwitcher from '../../layers/ui/app/components/ui/UiThemeSwitcher.vue'
 import { useTheme } from '../../layers/ui/app/composables/useTheme'
 
 const ThemeHost = defineComponent({
@@ -32,6 +33,7 @@ const ThemeHost = defineComponent({
 
 afterEach(() => {
   document.cookie = 'eve-space-theme=; Max-Age=0; path=/'
+  document.body.replaceChildren()
 })
 
 describe('UI themes', () => {
@@ -64,5 +66,18 @@ describe('UI themes', () => {
     })
 
     expect(wrapper.get('button').attributes('data-theme')).toBe('gallente')
+  })
+
+  it('labels the theme options without a visible menu heading', async () => {
+    const wrapper = await mountSuspended(UiThemeSwitcher, {
+      attachTo: document.body,
+      route: false,
+    })
+
+    await wrapper.get('.ui-theme-trigger').trigger('click')
+    await nextTick()
+
+    expect(document.querySelector('[aria-label="Interface theme"]')).not.toBeNull()
+    expect(document.body.textContent).not.toContain('INTERFACE THEME')
   })
 })

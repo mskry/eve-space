@@ -334,9 +334,13 @@ describe('character Finance production route', async () => {
     expect(await closeDetails.evaluate((element) => document.activeElement === element)).toBe(true)
     await waitForAnimations(details)
     const detailBox = await details.boundingBox()
+    const overlayBox = await page.locator('.ui-drawer-overlay').boundingBox()
     expect(detailBox).not.toBeNull()
+    expect(overlayBox).not.toBeNull()
     expect(detailBox!.width).toBeLessThanOrEqual(440)
-    expect(Math.abs(detailBox!.x + detailBox!.width - 1440)).toBeLessThan(2)
+    expect(
+      Math.abs(detailBox!.x + detailBox!.width - (overlayBox!.x + overlayBox!.width)),
+    ).toBeLessThan(2)
 
     await details.getByText('Mexallon', { exact: true }).waitFor()
     await details.getByText('250,000 ISK', { exact: true }).waitFor()
@@ -382,9 +386,13 @@ describe('character Finance production route', async () => {
     await details.waitFor()
     await waitForAnimations(details)
     const detailBox = await details.boundingBox()
+    const overlayBox = await page.locator('.ui-drawer-overlay').boundingBox()
     expect(detailBox).not.toBeNull()
-    expect(Math.abs(detailBox!.x)).toBeLessThan(2)
-    expect(Math.abs(detailBox!.width - 390)).toBeLessThan(2)
+    expect(overlayBox).not.toBeNull()
+    expect(
+      Math.abs(detailBox!.x + detailBox!.width - (overlayBox!.x + overlayBox!.width)),
+    ).toBeLessThan(2)
+    expect(Math.abs(detailBox!.width - page.viewportSize()!.width)).toBeLessThan(2)
 
     await details.getByRole('button', { name: 'Close contract details', exact: true }).click()
     await details.waitFor({ state: 'detached' })
