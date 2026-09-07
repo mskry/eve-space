@@ -94,6 +94,8 @@ describe('Assets workspace resource states', () => {
     )
 
     expect(wrapper.text()).toContain('Jita IV - Moon 4')
+    expect(wrapper.get('.assets-location-count').text()).toBe('1 items - 1.5 m³')
+    expect(wrapper.find('.assets-location-kind').exists()).toBe(false)
     expect(wrapper.get('[role="alert"]').text()).toContain('retained inventory shown')
     expect(wrapper.get('[role="alert"] time').attributes('datetime')).toBe(
       '2026-09-03T12:00:00.000Z',

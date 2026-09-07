@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AssetLocationGroup, AssetVisibleLocation } from '../../types/assets'
 import { ASSET_REVEAL_INCREMENT } from '../../utils/assets-controller'
+import { formatAssetVolume } from '../../utils/assets-format'
 
 const props = defineProps<{
   containerExpansion: ReadonlySet<number>
@@ -53,10 +54,12 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
         >
           <span class="assets-location-chevron" aria-hidden="true">{{ expanded ? '▾' : '▸' }}</span>
           <span class="assets-location-name">{{ group.label }}</span>
-          <span class="assets-location-count"
-            >{{ group.assetCount.toLocaleString('en-US') }} items</span
-          >
+          <span class="assets-location-count">
+            {{ group.assetCount.toLocaleString('en-US') }} items -
+            {{ formatAssetVolume(group.knownVolume) }}
+          </span>
           <span
+            v-if="locationKind !== 'STATION'"
             class="assets-location-kind"
             :class="{ 'assets-location-kind--alert': exceptional }"
             >{{ locationKind }}</span
@@ -142,7 +145,7 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
   width: 0.75rem;
   flex: 0 0 0.75rem;
   color: var(--ui-text-subtle);
-  font: 400 0.56rem/1 var(--ui-font-mono);
+  font: 400 0.75rem/1 var(--ui-font-mono);
 }
 
 .assets-location--open .assets-location-chevron {
@@ -167,7 +170,7 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
   padding: 0.19rem 0.31rem;
   border: 0.0625rem solid var(--ui-border);
   color: var(--ui-text-faint);
-  font: 700 0.5rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.09em;
 }
 

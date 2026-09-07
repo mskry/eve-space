@@ -4,7 +4,10 @@ import {
   type ReauthorizeStatus,
 } from '../../composables/useCharacterReauthorization'
 import { parseRouteId } from '../../utils/route-id'
-import { characterPortraitViewTransitionName } from '../../utils/view-transition'
+import {
+  characterNameViewTransitionName,
+  characterPortraitViewTransitionName,
+} from '../../utils/view-transition'
 
 definePageMeta({ title: 'Characters', layout: 'headerless', viewTransition: true })
 
@@ -155,8 +158,16 @@ useHead({
           <div>
             <p class="ui-eyebrow">{{ characterBreadcrumb }}</p>
             <h1>
-              <span>{{ selectedCharacter.name }}</span>
-              <UiMainCharacterMark v-if="selectedCharacter.isMain" variant="badge" />
+              <span
+                :style="{
+                  viewTransitionName: characterNameViewTransitionName(
+                    selectedCharacter.characterId,
+                  ),
+                }"
+              >
+                {{ selectedCharacter.name }}
+              </span>
+              <UiMainCharacterMark v-if="selectedCharacter.isMain" variant="icon" />
             </h1>
             <p>
               {{ selectedCharacter.corporation.name }}

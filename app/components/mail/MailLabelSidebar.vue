@@ -63,7 +63,7 @@ function labelName(label: MailLabel, index: number) {
       </nav>
 
       <section class="mail-list-nav" aria-labelledby="mailing-lists-title">
-        <h3 id="mailing-lists-title">Mailing lists · loaded messages</h3>
+        <h3 id="mailing-lists-title">Mailing lists</h3>
         <button
           class="mail-nav-row"
           :class="{ 'is-active': selectedMailingListId === null }"

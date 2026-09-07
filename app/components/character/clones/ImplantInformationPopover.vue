@@ -80,7 +80,7 @@ function bonusValue(value: number) {
 .character-clones-implant-details dd,
 .character-clones-implant-details-unavailable {
   margin: 0;
-  font: 500 11px/1.3 var(--ui-font-mono);
+  font: 500 12px/1.3 var(--ui-font-mono);
 }
 
 .character-clones-implant-details dt,

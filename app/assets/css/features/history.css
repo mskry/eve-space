@@ -3,7 +3,7 @@
   align-items: center;
   gap: 0.4375rem;
   color: var(--ui-text-muted);
-  font: 700 0.5rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.1em;
   white-space: nowrap;
   cursor: pointer;
@@ -50,6 +50,7 @@
 .history-interlude-tooltip {
   display: grid;
   gap: 0.25rem;
+  font-size: 0.75rem;
 }
 
 .history-interlude-tooltip-dates {

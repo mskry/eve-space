@@ -82,6 +82,23 @@ export function flattenAssetRows(
   return flattened
 }
 
+export function assetRowsKnownVolume(rows: readonly AssetHierarchyRow[]) {
+  let total = 0
+  const pending = [...rows]
+  while (pending.length > 0) {
+    const row = pending.pop()!
+    if (
+      row.asset.totalVolume !== null &&
+      Number.isFinite(row.asset.totalVolume) &&
+      row.asset.totalVolume >= 0
+    ) {
+      total += row.asset.totalVolume
+    }
+    for (const child of row.children) pending.push(child)
+  }
+  return total
+}
+
 function deduplicateAssets(source: readonly AssetRecord[]) {
   const sorted = source.toSorted(compareDuplicateCandidates)
   const assets: AssetRecord[] = []
@@ -198,6 +215,7 @@ function groupHierarchyRoots(
   for (const group of groups) {
     group.rows.sort(compareRows)
     group.assetCount = countRows(group.rows)
+    group.knownVolume = assetRowsKnownVolume(group.rows)
   }
   return groups.toSorted(compareGroups)
 }
@@ -270,6 +288,7 @@ function locationGroup(asset: AssetRecord): AssetLocationGroup {
     placement: 'location',
     rows: [],
     assetCount: 0,
+    knownVolume: 0,
   }
 }
 
@@ -283,6 +302,7 @@ function exceptionalGroup(placement: Exclude<AssetGroupPlacement, 'location'>): 
     placement,
     rows: [],
     assetCount: 0,
+    knownVolume: 0,
   }
 }
 

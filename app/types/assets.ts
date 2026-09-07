@@ -62,6 +62,7 @@ export interface AssetLocationGroup {
   placement: AssetGroupPlacement
   rows: AssetHierarchyRow[]
   assetCount: number
+  knownVolume: number
 }
 
 export interface AssetFilterState {

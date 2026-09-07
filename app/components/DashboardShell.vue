@@ -212,70 +212,41 @@ async function handleLogout() {
 
             <section class="system-status-panel" aria-live="polite">
               <header class="system-status-heading">
-                <div>
-                  <span>NETWORK DIAGNOSTICS</span>
-                  <strong>System telemetry</strong>
-                </div>
+                <strong>System status</strong>
                 <span :data-status="systemStatusState">{{ systemStatusLabel }}</span>
               </header>
 
               <div v-if="statusError" class="system-status-notice" data-status="unavailable">
-                {{
-                  systemStatus
-                    ? 'REFRESH FAILED / DISPLAYING LAST READING'
-                    : 'TELEMETRY LINK UNAVAILABLE'
-                }}
+                {{ systemStatus ? 'LATEST CHECK FAILED' : 'STATUS UNAVAILABLE' }}
                 <button type="button" @click="statusQuery.refetch()">RETRY</button>
               </div>
 
               <div v-if="!systemStatus" class="system-status-empty">
                 <span :class="{ 'system-status-pulse': statusLoading }" aria-hidden="true" />
-                {{ statusLoading ? 'ESTABLISHING TELEMETRY LINK' : 'OPEN LINK TO LOAD STATUS' }}
+                {{ statusLoading ? 'CHECKING STATUS' : 'NO STATUS AVAILABLE' }}
               </div>
 
               <template v-else>
                 <div class="system-status-services">
-                  <article data-status="operational">
-                    <div><i aria-hidden="true" /><strong>API GATEWAY</strong></div>
-                    <span>{{ stateLabel(systemStatus.services.api.status) }}</span>
-                    <dl>
-                      <div>
-                        <dt>NUXT / API</dt>
-                        <dd>{{ apiLatencyMs ?? '--' }} MS</dd>
-                      </div>
-                      <div>
-                        <dt>UPTIME</dt>
-                        <dd>{{ formatUptime(systemStatus.services.api.uptimeSeconds) }}</dd>
-                      </div>
-                    </dl>
+                  <article :data-status="systemStatus.services.api.status">
+                    <div><i aria-hidden="true" /><strong>API</strong></div>
+                    <span>
+                      {{ stateLabel(systemStatus.services.api.status) }} / {{ apiLatencyMs }} MS
+                    </span>
                   </article>
                   <article :data-status="systemStatus.services.database.status">
                     <div><i aria-hidden="true" /><strong>DATABASE</strong></div>
-                    <span>{{ stateLabel(systemStatus.services.database.status) }}</span>
-                    <dl>
-                      <div>
-                        <dt>QUERY</dt>
-                        <dd>{{ systemStatus.services.database.latencyMs }} MS</dd>
-                      </div>
-                      <div>
-                        <dt>CHANNEL</dt>
-                        <dd>PRIMARY</dd>
-                      </div>
-                    </dl>
+                    <span>
+                      {{ stateLabel(systemStatus.services.database.status) }} /
+                      {{ systemStatus.services.database.latencyMs }} MS
+                    </span>
                   </article>
                   <article :data-status="systemStatus.services.esi.status">
                     <div><i aria-hidden="true" /><strong>TRANQUILITY</strong></div>
-                    <span>{{ stateLabel(systemStatus.services.esi.status) }}</span>
-                    <dl>
-                      <div>
-                        <dt>RESPONSE</dt>
-                        <dd>{{ systemStatus.services.esi.latencyMs }} MS</dd>
-                      </div>
-                      <div>
-                        <dt>ERROR BUDGET</dt>
-                        <dd>{{ systemStatus.services.esi.errorBudgetRemaining ?? '--' }}</dd>
-                      </div>
-                    </dl>
+                    <span>
+                      {{ stateLabel(systemStatus.services.esi.status) }} /
+                      {{ systemStatus.services.esi.latencyMs }} MS
+                    </span>
                   </article>
                 </div>
 
@@ -285,27 +256,12 @@ async function handleLogout() {
                     ><strong>{{ formatNumber(systemStatus.services.esi.players) }}</strong>
                   </div>
                   <div>
-                    <span>SERVER BUILD</span
-                    ><strong>{{ systemStatus.services.esi.serverVersion ?? '--' }}</strong>
-                  </div>
-                  <div>
-                    <span>VIP MODE</span
-                    ><strong>{{
-                      systemStatus.services.esi.vip === null
-                        ? '--'
-                        : systemStatus.services.esi.vip
-                          ? 'ACTIVE'
-                          : 'CLEAR'
-                    }}</strong>
+                    <span>CHECKED</span>
+                    <strong :class="{ 'system-status-refreshing': statusLoading }">
+                      {{ statusLoading ? 'REFRESHING' : formatCheckedAt(systemStatus.checkedAt) }}
+                    </strong>
                   </div>
                 </div>
-
-                <footer class="system-status-footer">
-                  <span>CHECKED {{ formatCheckedAt(systemStatus.checkedAt) }}</span>
-                  <span :class="{ 'system-status-refreshing': statusLoading }">
-                    {{ statusLoading ? 'REFRESHING' : 'REFRESH / ON OPEN' }}
-                  </span>
-                </footer>
               </template>
             </section>
           </UiStatusPopover>

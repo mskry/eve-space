@@ -173,7 +173,7 @@ function itemClassification(item: EveItemInformationItem) {
 .eve-item-information-header .ui-eyebrow {
   margin-top: 5px;
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.06em;
 }
 
@@ -189,7 +189,7 @@ function itemClassification(item: EveItemInformationItem) {
   display: block;
   border-bottom: 2px solid var(--ui-warning);
   color: var(--ui-text);
-  font: 500 10px/1 var(--ui-font-body);
+  font: 500 12px/1 var(--ui-font-body);
   letter-spacing: 0.02em;
 }
 
@@ -198,7 +198,7 @@ function itemClassification(item: EveItemInformationItem) {
 .eve-item-information-state > span:last-child {
   margin: 0;
   color: color-mix(in srgb, var(--ui-text) 82%, var(--ui-text-muted));
-  font: 400 11px/1.5 var(--ui-font-body);
+  font: 400 12px/1.5 var(--ui-font-body);
   white-space: pre-line;
 }
 

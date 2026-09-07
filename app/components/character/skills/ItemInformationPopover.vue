@@ -111,12 +111,12 @@ function attributeIcon(attribute: string | null) {
   place-items: center;
   border: 1px solid var(--ui-border);
   color: var(--ui-text-faint);
-  font: 500 9px/1 var(--ui-font-mono);
+  font: 500 12px/1 var(--ui-font-mono);
 }
 
 .skill-item-information-details dt {
   color: var(--ui-text-subtle);
-  font: 500 8px/1.2 var(--ui-font-mono);
+  font: 500 12px/1.2 var(--ui-font-mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -124,7 +124,7 @@ function attributeIcon(attribute: string | null) {
 .skill-item-information-details dd {
   margin: 0;
   color: var(--ui-text);
-  font: 500 11px/1.2 var(--ui-font-mono);
+  font: 500 12px/1.2 var(--ui-font-mono);
   text-align: right;
 }
 </style>
