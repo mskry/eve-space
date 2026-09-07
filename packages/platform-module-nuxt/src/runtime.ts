@@ -5,3 +5,8 @@ export * from './runtime/query-error.js'
 export * from './runtime/query-keys.js'
 export * from './runtime/query-lifecycle.js'
 export * from './runtime/resource-state.js'
+export type {
+  PlatformNavigationEntry,
+  PlatformNavigationIdentity,
+  PlatformPageMetadata,
+} from './runtime/navigation.js'

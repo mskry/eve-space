@@ -5,12 +5,11 @@ import {
   platformModuleIdMaxLength,
   platformModuleIdPattern,
   platformSubjectKinds,
-  type PlatformCollectionFailureClass,
 } from '@eve-space/platform-module-contract'
 import { z } from 'zod'
 
 export { platformCollectionFailureClasses }
-export type { PlatformCollectionFailureClass }
+export type { PlatformCollectionFailureClass } from '@eve-space/platform-module-contract'
 
 const installedModuleIdSchema = z
   .string()

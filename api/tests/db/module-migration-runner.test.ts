@@ -113,6 +113,21 @@ describe('module migration SQL validation', () => {
   })
 
   test.each([
+    'create table "a--b" (id int); select * from public.users;',
+    'create table "a/*b" (id int); select * from public.users; create table "c*/d" (id int);',
+    `create table "a'b" (id int); select * from public.users; create table "c'd" (id int);`,
+    'create table "a""--b;𐐷" (id int); select * from public.users;',
+  ])('rejects schema escapes following quoted identifier contents: %s', (sql) => {
+    expect(() => validateModuleSql(sql)).toThrow('cross-schema reference public')
+  })
+
+  test('keeps quoted parentheses out of derived relation nesting', () => {
+    expect(() =>
+      validateModuleSql('select derived.id from (select id from "a)""(b") derived;'),
+    ).not.toThrow()
+  })
+
+  test.each([
     ["select 'masked; grant all on records to public", 'string literal'],
     ['select $$masked; grant all on records to public', 'dollar-quoted literal'],
     ['select 1 /* masked; grant all on records to public', 'block comment'],

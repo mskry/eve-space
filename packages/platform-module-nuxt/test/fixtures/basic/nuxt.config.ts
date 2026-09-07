@@ -53,7 +53,7 @@ export default defineNuxtConfig({
                 label: 'Alpha override',
                 description: 'Entry icon override',
                 to: '/alpha',
-                icon: 'status',
+                icon: 'settings',
                 audience: 'public',
                 placement: 'dashboard',
                 order: 50,

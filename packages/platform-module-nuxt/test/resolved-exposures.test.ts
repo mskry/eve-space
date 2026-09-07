@@ -50,4 +50,19 @@ describe('resolved Nuxt exposure validation', () => {
       ),
     ).toThrow('Nuxt composable useEveAlphaData from alpha must resolve exactly once')
   })
+
+  it.each([
+    '/workspace/features/alpha/nuxt-other/src/card.vue',
+    '/workspace/features/alpha/nuxt/../server/src/card.vue',
+    '/workspace/features/alpha/nuxt',
+  ])('rejects an exposure outside the package: %s', (from) => {
+    expect(() =>
+      validateResolvedExposures(
+        [contribution],
+        roots,
+        [{ name: 'EveAlphaCard', from }],
+        'components',
+      ),
+    ).toThrow('Nuxt component EveAlphaCard from alpha must resolve exactly once')
+  })
 })

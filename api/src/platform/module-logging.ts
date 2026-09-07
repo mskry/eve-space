@@ -7,7 +7,7 @@ import {
 } from '@eve-space/platform-module-contract'
 
 const eventPattern = /^[a-z][a-z0-9]*(?:[.:-][a-z0-9]+)*$/
-const fieldNamePattern = /^[A-Za-z][A-Za-z0-9_]*$/
+const fieldNamePattern = /^[A-Za-z]\w*$/
 const sensitiveFieldPattern = /(?:authorization|cookie|credential|password|secret|token)/i
 const maximumFieldCount = 20
 const maximumStringLength = 200

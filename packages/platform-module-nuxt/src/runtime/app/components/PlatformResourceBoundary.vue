@@ -27,11 +27,11 @@ defineSlots<{
   <slot v-if="hasData || state.status === 'ready'" />
 
   <slot v-if="!hasData && state.status === 'loading'" name="loading" :state="state">
-    <section class="platform-resource-state" role="status">
+    <output class="platform-resource-state">
       <span v-if="state.code">{{ state.code }}</span>
-      <h2>{{ state.title }}</h2>
-      <p v-if="state.message">{{ state.message }}</p>
-    </section>
+      <strong class="platform-resource-title">{{ state.title }}</strong>
+      <span v-if="state.message" class="platform-resource-message">{{ state.message }}</span>
+    </output>
   </slot>
 
   <PlatformAuthorizationRequired
@@ -66,31 +66,28 @@ defineSlots<{
     </section>
   </slot>
 
-  <section
-    v-else-if="!hasData && state.status === 'stale'"
-    class="platform-resource-state"
-    role="status"
-  >
+  <output v-else-if="!hasData && state.status === 'stale'" class="platform-resource-state">
     <span v-if="state.code">{{ state.code }}</span>
-    <h2>{{ state.title }}</h2>
-    <p v-if="state.message">{{ state.message }}</p>
+    <strong class="platform-resource-title">{{ state.title }}</strong>
+    <span v-if="state.message" class="platform-resource-message">{{ state.message }}</span>
     <button v-if="state.retryLabel" type="button" @click="emit('retry')">
       {{ state.retryLabel }}
     </button>
-  </section>
+  </output>
 
   <slot v-else-if="hasData && state.status !== 'ready'" name="retained" :state="state">
-    <p v-if="state.status === 'stale'" class="platform-resource-retained" role="status">
+    <output v-if="state.status === 'stale'" class="platform-resource-retained">
       {{ state.message ?? state.title }}
       <button v-if="state.retryLabel" type="button" @click="emit('retry')">
         {{ state.retryLabel }}
       </button>
-    </p>
+    </output>
   </slot>
 </template>
 
 <style scoped>
 .platform-resource-state {
+  display: block;
   padding: 0.75rem;
   border: 0.0625rem solid var(--ui-border);
   background: var(--ui-surface);
@@ -103,11 +100,23 @@ defineSlots<{
 
 .platform-resource-state h2,
 .platform-resource-state p,
+.platform-resource-title,
+.platform-resource-message,
 .platform-resource-retained {
   margin: 0.25rem 0 0;
 }
 
-.platform-resource-state span {
+.platform-resource-title,
+.platform-resource-message,
+.platform-resource-retained {
+  display: block;
+}
+
+.platform-resource-title {
+  font-size: 1.5em;
+}
+
+.platform-resource-state > span:not(.platform-resource-message) {
   color: var(--ui-text-muted);
   font: 700 0.5rem/1.2 var(--ui-font-mono);
   letter-spacing: 0.08em;

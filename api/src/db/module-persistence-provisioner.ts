@@ -334,16 +334,22 @@ async function transferModuleObjectOwnership(
   `
   // oxlint-disable no-await-in-loop
   for (const relation of relations) {
-    if (relation.kind === 'S')
-      await connection`alter sequence ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
-    else if (relation.kind === 'v')
-      await connection`alter view ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
-    else if (relation.kind === 'm')
-      await connection`alter materialized view ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
-    else if (relation.kind === 'f')
-      await connection`alter foreign table ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
-    else
-      await connection`alter table ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
+    switch (relation.kind) {
+      case 'S':
+        await connection`alter sequence ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
+        break
+      case 'v':
+        await connection`alter view ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
+        break
+      case 'm':
+        await connection`alter materialized view ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
+        break
+      case 'f':
+        await connection`alter foreign table ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
+        break
+      default:
+        await connection`alter table ${connection(schemaName)}.${connection(relation.name)} owner to ${connection(migrationRoleName)}`
+    }
   }
 
   const routines = await connection<{ arguments: string; kind: string; name: string }[]>`
@@ -358,8 +364,9 @@ async function transferModuleObjectOwnership(
     order by routine.proname, routine.oid
   `
   for (const routine of routines) {
-    const kind =
-      routine.kind === 'p' ? 'procedure' : routine.kind === 'a' ? 'aggregate' : 'function'
+    let kind = 'function'
+    if (routine.kind === 'p') kind = 'procedure'
+    else if (routine.kind === 'a') kind = 'aggregate'
     await connection
       .unsafe(
         `alter ${kind} ${quoteIdentifier(schemaName)}.${quoteIdentifier(routine.name)}(${routine.arguments}) owner to ${quoteIdentifier(migrationRoleName)}`,

@@ -1,13 +1,13 @@
 import type { QueryCache, UseQueryOptions } from '@pinia/colada'
 import {
   canRunPlatformProtectedQuery,
-  clearAuthenticatedQueries,
   prefetchQuery,
   removePlatformQueryScope,
 } from '@eve-space/platform-module-nuxt/runtime'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 
-export { clearAuthenticatedQueries, prefetchQuery }
+export { clearAuthenticatedQueries } from '@eve-space/platform-module-nuxt/runtime'
+export { prefetchQuery }
 
 export function canRunProtectedQuery(
   isClient: boolean,

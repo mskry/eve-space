@@ -148,12 +148,10 @@ function assertActive(signal: AbortSignal | undefined) {
 }
 
 function assertPositiveSubjectId(subject: PlatformCollectionStatusSubject) {
-  const subjectId =
-    subject.kind === 'character'
-      ? subject.characterId
-      : subject.kind === 'corporation'
-        ? subject.corporationId
-        : subject.allianceId
+  let subjectId: number
+  if (subject.kind === 'character') subjectId = subject.characterId
+  else if (subject.kind === 'corporation') subjectId = subject.corporationId
+  else subjectId = subject.allianceId
   if (!Number.isSafeInteger(subjectId) || subjectId <= 0)
     throw new Error('Module collection subject must use a positive safe integer')
 }

@@ -1,7 +1,7 @@
 import type { Migration } from './migration-validation.js'
 import { maskSqlLiteralsAndComments } from './sql-validation.js'
 
-const identifier = String.raw`(?:"(?:""|[^"])+"|[A-Za-z_][A-Za-z0-9_$]*)`
+const identifier = `(?:"(?:""|[^"])+"|[A-Za-z_][A-Za-z0-9_$]*)`
 const qualifiedIdentifierPattern = new RegExp(
   String.raw`(${identifier})\s*\.\s*(?:${identifier}|\*)`,
   'g',
@@ -53,27 +53,40 @@ const allowedStatements = [
 const prohibitedOperations = [
   {
     name: 'role, privilege, or ownership changes',
-    pattern:
+    patterns: [
       /\b(?:grant|revoke)\b|\b(?:create|alter|drop)\s+(?:role|user|group)\b|\balter\s+default\s+privileges\b|\bowner\s+to\b/i,
+    ],
   },
   {
     name: 'role or session authorization changes',
-    pattern:
-      /\b(?:set|reset)\s+(?:local\s+|session\s+)?role\b|\b(?:set|reset)\s+session\s+authorization\b|\bset_config\s*\(/i,
+    patterns: [
+      /\b(?:set|reset)\s+(?:(?:local|session)\s+)?role\b/i,
+      /\b(?:set|reset)\s+session\s+authorization\b/i,
+      /\bset_config\s*\(/i,
+    ],
   },
   {
     name: 'extension management',
-    pattern: /\b(?:create|alter|drop)\s+extension\b/i,
+    patterns: [/\b(?:create|alter|drop)\s+extension\b/i],
   },
   {
     name: 'deployment-wide operations',
-    pattern:
-      /\b(?:create|alter|drop)\s+(?:schema|database|tablespace|subscription|publication|server|foreign\s+data\s+wrapper|user\s+mapping|event\s+trigger|language|access\s+method)\b|\balter\s+system\b|\bset\s+schema\b|\btablespace\b|\b(?:copy|vacuum|cluster|discard|do|call)\b|\b(?:create|alter|drop)\s+(?:function|procedure|routine|aggregate)\b/i,
+    patterns: [
+      /\b(?:create|alter|drop)\s+(?:schema|database|tablespace|subscription|publication|server|language)\b/i,
+      /\b(?:create|alter|drop)\s+foreign\s+data\s+wrapper\b/i,
+      /\b(?:create|alter|drop)\s+user\s+mapping\b/i,
+      /\b(?:create|alter|drop)\s+event\s+trigger\b/i,
+      /\b(?:create|alter|drop)\s+access\s+method\b/i,
+      /\balter\s+system\b/i,
+      /\bset\s+schema\b/i,
+      /\btablespace\b/i,
+      /\b(?:copy|vacuum|cluster|discard|do|call)\b/i,
+      /\b(?:create|alter|drop)\s+(?:function|procedure|routine|aggregate)\b/i,
+    ],
   },
   {
     name: 'temporary object operations',
-    pattern:
-      /\bcreate\s+(?:global\s+|local\s+)?temp(?:orary)?\b|\binto\s+(?:global\s+|local\s+)?temp(?:orary)?\b/i,
+    patterns: [/\b(?:create|into)\s+(?:(?:global|local)\s+)?temp(?:orary)?\b/i],
   },
 ]
 
@@ -83,7 +96,9 @@ export function assertModuleMigrationSql(
   migration: Migration,
 ) {
   const policySql = maskSqlLiteralsAndComments(migration.sql, { rejectUnterminated: true })
-  const prohibited = prohibitedOperations.find(({ pattern }) => pattern.test(policySql))
+  const prohibited = prohibitedOperations.find(({ patterns }) =>
+    patterns.some((pattern) => pattern.test(policySql)),
+  )
   if (prohibited) throw violation(moduleId, migration.name, prohibited.name)
 
   const qualificationSql = maskSqlLiteralsAndComments(migration.sql, {
@@ -146,27 +161,27 @@ function collectLocalQualifiers(statement: string, schemaName: string) {
 function collectDerivedRelationAliases(statement: string) {
   const aliases = new Set<string>()
   for (const match of statement.matchAll(derivedRelationStartPattern)) {
-    let index = skipWhitespace(statement, match.index + match[0].length)
-    if (statement[index] === '(') {
-      const end = skipParenthesizedExpression(statement, index)
-      const alias = readRelationAlias(statement, end)
-      if (alias) aliases.add(alias)
-      continue
-    }
-
-    const relation = readIdentifier(statement, index)
-    if (!relation) continue
-    index = skipWhitespace(statement, relation.end)
-    if (statement[index] === '.') {
-      const member = readIdentifier(statement, skipWhitespace(statement, index + 1))
-      if (!member) continue
-      index = skipWhitespace(statement, member.end)
-    }
-    if (statement[index] !== '(') continue
-    const alias = readRelationAlias(statement, skipParenthesizedExpression(statement, index))
+    const alias = readDerivedRelationAlias(statement, match.index + match[0].length)
     if (alias) aliases.add(alias)
   }
   return aliases
+}
+
+function readDerivedRelationAlias(statement: string, start: number) {
+  let index = skipWhitespace(statement, start)
+  if (statement[index] === '(')
+    return readRelationAlias(statement, skipParenthesizedExpression(statement, index))
+
+  const relation = readIdentifier(statement, index)
+  if (!relation) return undefined
+  index = skipWhitespace(statement, relation.end)
+  if (statement[index] === '.') {
+    const member = readIdentifier(statement, skipWhitespace(statement, index + 1))
+    if (!member) return undefined
+    index = skipWhitespace(statement, member.end)
+  }
+  if (statement[index] !== '(') return undefined
+  return readRelationAlias(statement, skipParenthesizedExpression(statement, index))
 }
 
 function readRelationAlias(statement: string, index: number) {
@@ -180,11 +195,7 @@ function readRelationAlias(statement: string, index: number) {
 
 function skipParenthesizedExpression(statement: string, start: number) {
   let depth = 0
-  for (let index = start; index < statement.length; index += 1) {
-    if (statement[index] === '"') {
-      index = skipQuotedIdentifier(statement, index)
-      continue
-    }
+  for (let index = start; index < statement.length; index = skipExpressionToken(statement, index)) {
     if (statement[index] === '(') depth += 1
     if (statement[index] !== ')') continue
     depth -= 1
@@ -193,16 +204,17 @@ function skipParenthesizedExpression(statement: string, start: number) {
   return statement.length
 }
 
-function skipQuotedIdentifier(statement: string, start: number) {
+function skipExpressionToken(statement: string, start: number) {
+  if (statement[start] !== '"') return start + 1
   for (let index = start + 1; index < statement.length; index += 1) {
     if (statement[index] !== '"') continue
     if (statement[index + 1] === '"') {
       index += 1
       continue
     }
-    return index
+    return index + 1
   }
-  return statement.length - 1
+  return statement.length
 }
 
 function readIdentifier(statement: string, index: number) {

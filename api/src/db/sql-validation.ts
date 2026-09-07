@@ -15,11 +15,12 @@ export function maskSqlLiteralsAndComments(sql: string, options: MaskSqlOptions 
       skipBlockComment(sql, index, options.rejectUnterminated) ??
       skipSingleQuotedLiteral(sql, index, options.rejectUnterminated) ??
       skipDollarQuotedLiteral(sql, index, options.rejectUnterminated) ??
-      (options.preserveQuotedIdentifiers
-        ? undefined
-        : skipQuotedIdentifier(sql, index, options.rejectUnterminated))
+      skipQuotedIdentifier(sql, index, options.rejectUnterminated)
     if (skipped !== undefined) {
-      result += ' '.repeat(skipped - index)
+      result +=
+        options.preserveQuotedIdentifiers && sql[index] === '"'
+          ? sql.slice(index, skipped)
+          : ' '.repeat(skipped - index)
       index = skipped
       continue
     }

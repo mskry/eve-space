@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => {
     loadModuleRuntimeState: vi.fn(),
     saveInstalledShellNavigationOrder: vi.fn(),
     sessionHandler: vi.fn(),
+    unexpectedError: new Error('refresh-token private-host'),
     ownedHandler: vi.fn(),
     createOwnedCharacterCoreReads: vi.fn(),
     createPlatformModuleCollectionStatusReads: vi.fn(),
@@ -154,7 +155,7 @@ vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
       })
     })
     .get('/unexpected-error', () => {
-      throw new Error('refresh-token private-host')
+      throw mocks.unexpectedError
     })
   const ownedRoutes = new Hono<PlatformOwnedCharacterRouteEnv>().get('/', (context) => {
     mocks.events.push('owned-handler')
@@ -209,6 +210,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.events = []
   mocks.enabled = true
+  mocks.unexpectedError = new Error('refresh-token private-host')
   mocks.hasOrganizationContext = true
   mocks.findAdminSession.mockResolvedValue(null)
   mocks.isInstalledModuleEnabled.mockImplementation(async () => {
@@ -395,6 +397,44 @@ describe('full-root platform module authorization', () => {
     expect(response.headers.get('vary')).toContain('Cookie')
     consoleError.mockRestore()
   })
+
+  test.each([
+    [true, expect.stringMatching(/^at /)],
+    [false, undefined],
+  ] as const)(
+    'omits multiline messages from logs with stack frames: %s',
+    async (withFrames, expectedStack) => {
+      const cause = new Error('connection failed\ndsn=postgres://user:pw@private-host')
+      mocks.unexpectedError = new Error('request failed\nrefresh-token=private-value', { cause })
+      if (!withFrames) {
+        cause.stack = `Error: ${cause.message}`
+        mocks.unexpectedError.stack = `Error: ${mocks.unexpectedError.message}`
+      }
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      try {
+        const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
+          headers: sessionCookie,
+        })
+        expect(response.status).toBe(500)
+        await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
+        expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
+          /dsn=|postgres:|user:pw|private-host|refresh-token|private-value/,
+        )
+        expect(consoleError).toHaveBeenCalledWith(
+          'Unhandled API error',
+          expect.objectContaining({
+            stack: expectedStack,
+            cause: {
+              errorName: 'Error',
+              stack: expectedStack,
+            },
+          }),
+        )
+      } finally {
+        consoleError.mockRestore()
+      }
+    },
+  )
 
   test.each([
     ['blocked', 'ORGANIZATION_MEMBER_BLOCKED'],

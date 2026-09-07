@@ -61,6 +61,8 @@
     },
     "packages/platform-module-nuxt": {
       "entry": [
+        // Imported by a generated Nuxt type template through a resolved filesystem path.
+        "src/runtime/config.ts",
         "src/runtime/app/{composables,middleware}/**/*.ts",
         "test/**/*.test.ts",
         "test/fixtures/*/{app.vue,app/**/*.{ts,vue}}",

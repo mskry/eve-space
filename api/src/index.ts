@@ -91,15 +91,18 @@ function unexpectedErrorDetails(error: unknown, method: string, path: string) {
     ...request,
     errorName: error.name,
     stack: errorStackLocations(error),
-    cause:
-      error.cause instanceof Error
-        ? { errorName: error.cause.name, stack: errorStackLocations(error.cause) }
-        : error.cause === undefined
-          ? undefined
-          : { thrownType: typeof error.cause },
+    cause: errorCauseDetails(error.cause),
   }
 }
 
+function errorCauseDetails(cause: unknown) {
+  if (cause instanceof Error) return { errorName: cause.name, stack: errorStackLocations(cause) }
+  if (cause === undefined) return undefined
+  return { thrownType: typeof cause }
+}
+
 function errorStackLocations(error: Error) {
-  return error.stack?.split('\n').slice(1).join('\n').trim() || undefined
+  const lines = error.stack?.split('\n')
+  const firstFrame = lines?.findIndex((line) => /^\s*at /.test(line)) ?? -1
+  return firstFrame === -1 ? undefined : lines?.slice(firstFrame).join('\n').trim()
 }

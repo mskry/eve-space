@@ -136,7 +136,7 @@ describe('platform Nuxt module fixture', async () => {
     expect(navigation).toContain('"navigationId":"alpha-default-icon"')
     expect(navigation).toContain('"icon":"character"')
     expect(navigation).toContain('"navigationId":"alpha-icon-override"')
-    expect(navigation).toContain('"icon":"status"')
+    expect(navigation).toContain('"icon":"settings"')
     expect(navigation).toContain(
       '{"moduleId":"alpha","pageName":"eve-alpha-record","audience":"authenticated"}',
     )

@@ -1,13 +1,9 @@
 import { useQuery, useQueryCache } from '@pinia/colada'
 import { computed, useRuntimeConfig } from '#imports'
 import { watch } from 'vue'
+import type { PlatformNavigationIdentity } from '../../navigation.js'
 import { removePlatformModuleQueries } from '../../query-lifecycle.js'
 import { toApiQueryError } from '../../query-error.js'
-
-export interface PlatformNavigationIdentity {
-  readonly ownerId: string
-  readonly navigationId: string
-}
 
 export interface PlatformModuleRuntimeState {
   readonly enabledModuleIds: readonly string[]

@@ -1,4 +1,5 @@
 import { abortNavigation, createError, defineNuxtRouteMiddleware, useRuntimeConfig } from '#imports'
+import { effectScope } from 'vue'
 import {
   loadPlatformModuleRuntimeState,
   usePlatformModuleRuntime,
@@ -23,14 +24,19 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const { enabledModuleIds, ensureRuntimeState } = usePlatformModuleRuntime()
+  const scope = effectScope()
   try {
-    await ensureRuntimeState()
-  } catch {
-    return abortNavigation(
-      createError({ statusCode: 503, statusMessage: 'Module state unavailable' }),
-    )
+    const { enabledModuleIds, ensureRuntimeState } = scope.run(usePlatformModuleRuntime)!
+    try {
+      await ensureRuntimeState()
+    } catch {
+      return abortNavigation(
+        createError({ statusCode: 503, statusMessage: 'Module state unavailable' }),
+      )
+    }
+    if (!enabledModuleIds.value.has(moduleId))
+      return abortNavigation(createError({ statusCode: 404, statusMessage: 'Page not found' }))
+  } finally {
+    scope.stop()
   }
-  if (!enabledModuleIds.value.has(moduleId))
-    return abortNavigation(createError({ statusCode: 404, statusMessage: 'Page not found' }))
 })

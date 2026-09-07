@@ -240,9 +240,96 @@ describe('feature source import allowlists', () => {
       ]),
     )
   })
+
+  it('ignores commented-out Vue scripts', () => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(
+          `<!-- <script setup>import { secret } from 'node:fs'</script> -->
+          <template><div></div></template>`,
+          'FeaturePage.vue',
+        ),
+      ),
+    ).toEqual([])
+  })
+
+  it('parses Vue script attributes and TSX with the compiler grammar', () => {
+    expect(
+      nuxtSourceBoundaryViolations(
+        nuxtRuntimeSource(
+          `<script setup lang="tsx" data-label=">">
+          import { ref } from 'vue'
+          const content = <div>{ref('alpha').value}</div>
+          </script>`,
+          'FeaturePage.vue',
+        ),
+      ),
+    ).toEqual([])
+  })
+
+  it.each([
+    '<script setup>const value = 1',
+    '<script>const a = 1</script><script>const b = 2</script>',
+    '<script src="../../../../../../app/private.js"></script><template><div></div></template>',
+    '<script lang="coffee">value = 1</script>',
+  ])('rejects Vue scripts that cannot be fully checked: %s', (source) => {
+    expect(nuxtSourceBoundaryViolations(nuxtRuntimeSource(source, 'FeaturePage.vue'))).not.toEqual(
+      [],
+    )
+  })
 })
 
 describe('descriptor and composition purity', () => {
+  it.each([
+    ['export default buildManifest(); export default {}', []],
+    [
+      'export default {}; export default buildManifest()',
+      ['module descriptor must be a static serializable object'],
+    ],
+  ])(
+    'validates the last default export after collecting ordered diagnostics: %s',
+    (exports, finalErrors) => {
+      const path = 'features/alpha/module.config.ts'
+      expect(
+        descriptorBoundaryViolations({
+          moduleId: 'alpha',
+          path,
+          source: `
+          import 'unapproved'
+          let mutable = {}
+          const { invalid } = {}, valid = {}
+          ${exports}
+        `,
+        }),
+      ).toEqual(
+        [
+          'module descriptor may only type-import @eve-space/platform-module-contract',
+          'module descriptor declarations must be const',
+          'module descriptor declarations must be initialized names',
+          'module descriptor must have one default export',
+          ...finalErrors,
+        ].map((message) => `${path}: ${message}`),
+      )
+    },
+  )
+
+  it('reports every eager initializer in source order while allowing deferred methods', () => {
+    const source = serverSource(`
+      const first = connect(), second = connect()
+      const deferred = { run() { connect() } }
+      export default connect()
+      connect()
+    `)
+    expect(serverSourceBoundaryViolations(source)).toEqual(
+      [
+        'feature package entry or definition has an executable initializer',
+        'feature package entry or definition has an executable initializer',
+        'feature package default export has an executable initializer',
+        'feature package entry contains executable top-level code',
+      ].map((message) => `${source.path}: ${message}`),
+    )
+  })
+
   it('accepts a static serializable descriptor with a type-only contract import', () => {
     expect(
       descriptorBoundaryViolations({

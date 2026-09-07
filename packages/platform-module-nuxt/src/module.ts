@@ -1,328 +1,63 @@
-import { existsSync } from 'node:fs'
-import { dirname, relative, resolve } from 'node:path'
-import {
-  addTemplate,
-  addTypeTemplate,
-  addComponent,
-  addImports,
-  addRouteMiddleware,
-  createResolver,
-  defineNuxtModule,
-  resolvePath,
-} from '@nuxt/kit'
-import type { NuxtModule, NuxtPage } from '@nuxt/schema'
+import { defineNuxtModule, extendPages } from '@nuxt/kit'
 import {
   compareStable,
-  platformCoreNavigation,
   type PlatformNuxtContributionDescriptor,
 } from '@eve-space/platform-module-contract'
+import { resolveContributionPackages, resolveContributionPages } from './contribution-resolution.js'
+import { composePlatformPages } from './pages.js'
 import { validateResolvedExposures } from './resolved-exposures.js'
+import { registerPlatformRuntime } from './runtime-registration.js'
+import { registerPlatformTemplates } from './templates.js'
 
-interface PlatformNuxtModuleOptions {
+export interface PlatformNuxtModuleOptions {
   readonly contributions?: readonly PlatformNuxtContributionDescriptor[]
 }
 
-interface ResolvedContributionPage {
-  readonly moduleId: string
-  readonly page: PlatformNuxtContributionDescriptor['pages'][number]
-  readonly file: string
-}
-
-interface ResolvedPage {
-  readonly page: NuxtPage
-  readonly fullPath: string
-}
-
-const platformNuxtModule: NuxtModule<PlatformNuxtModuleOptions> =
-  defineNuxtModule<PlatformNuxtModuleOptions>({
-    meta: {
-      name: '@eve-space/platform-module-nuxt',
-      compatibility: {
-        nuxt: '>=4.5.2 <5',
-      },
+export default defineNuxtModule<PlatformNuxtModuleOptions>({
+  meta: {
+    name: '@eve-space/platform-module-nuxt',
+    compatibility: {
+      nuxt: '>=4.5.2 <5',
     },
-    moduleDependencies: {
-      '@pinia/nuxt': {
-        version: '>=1.0.2 <2',
-      },
-      '@pinia/colada-nuxt': {
-        version: '>=1.0.2 <2',
-      },
+  },
+  moduleDependencies: {
+    '@pinia/nuxt': {
+      version: '>=1.0.2 <2',
     },
-    defaults: {
-      contributions: [],
+    '@pinia/colada-nuxt': {
+      version: '>=1.0.2 <2',
     },
-    async setup(options, nuxt) {
-      const resolver = createResolver(import.meta.url)
-      const contributions = [...(options.contributions ?? [])].toSorted((left, right) =>
-        compareStable(left.moduleId, right.moduleId),
-      )
-      const navigation = [
-        ...platformCoreNavigation.map((entry) => ({
-          ownerId: entry.ownerId,
-          navigationId: entry.navigationId,
-          label: entry.label,
-          description: entry.description,
-          to: entry.path,
-          icon: entry.icon,
-          audience: entry.audience,
-          placement: entry.placement,
-          order: entry.order,
+  },
+  defaults: {
+    contributions: [],
+  },
+  async setup(options, nuxt) {
+    const contributions = [...(options.contributions ?? [])].toSorted((left, right) =>
+      compareStable(left.moduleId, right.moduleId),
+    )
+    registerPlatformTemplates(contributions)
+    registerPlatformRuntime()
+    const packageRoots = await resolveContributionPackages(contributions)
+    const contributionPages = await resolveContributionPages(contributions, packageRoots)
+    extendPages((pages) => composePlatformPages(pages, contributionPages))
+    nuxt.hook('components:extend', (components) => {
+      validateResolvedExposures(
+        contributions,
+        packageRoots,
+        components.map((component) => ({
+          name: component.pascalName,
+          from: component.filePath,
         })),
-        ...contributions.flatMap((contribution) =>
-          contribution.navigation.map((entry) => ({
-            ownerId: contribution.moduleId,
-            navigationId: entry.id,
-            label: entry.label,
-            description: entry.description,
-            to: entry.to,
-            icon: entry.icon ?? contribution.defaultIcon,
-            audience: entry.audience,
-            placement: entry.placement,
-            order: entry.order,
-          })),
-        ),
-      ].toSorted(compareNavigation)
-      const pages = contributions
-        .flatMap((contribution) =>
-          contribution.pages.map((page) => ({
-            moduleId: contribution.moduleId,
-            pageName: page.name,
-            audience: page.audience,
-          })),
-        )
-        .toSorted(
-          (left, right) =>
-            compareStable(left.moduleId, right.moduleId) ||
-            compareStable(left.pageName, right.pageName),
-        )
-      addTemplate({
-        filename: 'eve-space-platform/navigation.ts',
-        getContents: () =>
-          `export const platformNavigation = ${JSON.stringify(navigation)}\n\nexport const platformPageMetadata = ${JSON.stringify(pages)}\n`,
-      })
-      addTypeTemplate({
-        filename: 'types/eve-space-platform-page-meta.d.ts',
-        getContents: () => pageMetaTypes,
-      })
-      addImports([
-        {
-          name: 'providePlatformConfirmDialog',
-          from: resolver.resolve('./runtime/confirm-dialog'),
-        },
-        {
-          name: 'usePlatformConfirmDialog',
-          from: resolver.resolve('./runtime/confirm-dialog'),
-        },
-        {
-          name: 'usePlatformApi',
-          from: resolver.resolve('./runtime/app/composables/usePlatformApi'),
-        },
-        {
-          name: 'usePlatformEveImages',
-          from: resolver.resolve('./runtime/app/composables/usePlatformEveImages'),
-        },
-        {
-          name: 'usePlatformModuleRuntime',
-          from: resolver.resolve('./runtime/app/composables/usePlatformModuleRuntime'),
-        },
-        {
-          name: 'usePlatformMutationAnnouncement',
-          from: resolver.resolve('./runtime/app/composables/usePlatformMutationAnnouncement'),
-        },
-        {
-          name: 'usePlatformNavigation',
-          from: resolver.resolve('./runtime/app/composables/usePlatformNavigation'),
-        },
-        {
-          name: 'usePlatformProtectedQuery',
-          from: resolver.resolve('./runtime/app/composables/usePlatformProtectedQuery'),
-        },
-      ])
-      for (const name of [
-        'PlatformAuthorizationRequired',
-        'PlatformEveImage',
-        'PlatformPagination',
-        'PlatformResourceBoundary',
-      ]) {
-        addComponent({
-          name,
-          filePath: resolver.resolve(`./runtime/app/components/${name}.vue`),
-        })
-      }
-      addRouteMiddleware({
-        name: 'eve-space-platform-module-enablement',
-        path: resolver.resolve('./runtime/app/middleware/platform-module-enablement.global'),
-        global: true,
-      })
-      const contributionPages = await resolveContributionPages(contributions)
-      const packageRoots = new Map(
-        await Promise.all(
-          contributions.map(
-            async (contribution) =>
-              [contribution.moduleId, await resolveNuxtPackageRoot(contribution.moduleId)] as const,
-          ),
-        ),
+        'components',
       )
-      nuxt.hook('pages:extend', (registeredPages) => {
-        const pageNames = new Set(
-          flattenPages(registeredPages).flatMap(({ page }) => (page.name ? [page.name] : [])),
-        )
-        const pagePaths = new Set(flattenPages(registeredPages).map(({ fullPath }) => fullPath))
-
-        for (const contribution of contributionPages) {
-          const canonicalPath = canonicalizePath(contribution.page.path)
-          if (pageNames.has(contribution.page.name))
-            throw new Error(`Nuxt page name ${contribution.page.name} is already registered`)
-          if (pagePaths.has(canonicalPath))
-            throw new Error(`Nuxt page path ${contribution.page.path} is already registered`)
-
-          const page: NuxtPage = {
-            name: contribution.page.name,
-            path: contribution.page.path,
-            file: contribution.file,
-            meta: {
-              platformModuleId: contribution.moduleId,
-              platformAudience: contribution.page.audience,
-            },
-          }
-          if (contribution.page.extensionPoint === 'character-shell') {
-            const parent = resolveCharacterShell(registeredPages)
-            page.path = relativeChildPath(parent.path, contribution.page.path)
-            parent.children ??= []
-            parent.children.push(page)
-          } else {
-            registeredPages.push(page)
-          }
-
-          pageNames.add(contribution.page.name)
-          pagePaths.add(canonicalPath)
-        }
-      })
-      nuxt.hook('components:extend', (components) => {
-        validateResolvedExposures(
-          contributions,
-          packageRoots,
-          components.map((component) => ({
-            name: component.pascalName,
-            from: component.filePath,
-          })),
-          'components',
-        )
-      })
-      nuxt.hook('imports:extend', (imports) => {
-        validateResolvedExposures(
-          contributions,
-          packageRoots,
-          imports.map((entry) => ({ name: entry.as ?? entry.name, from: entry.from })),
-          'composables',
-        )
-      })
-    },
-  })
-
-export default platformNuxtModule
-
-const pageMetaTypes = `import type { PlatformNavigationAudience } from '@eve-space/platform-module-contract'
-
-declare module '@nuxt/schema' {
-  interface NuxtPageMeta {
-    platformModuleId?: string
-    platformAudience?: PlatformNavigationAudience
-  }
-}
-
-declare module 'vue-router' {
-  interface RouteMeta {
-    platformModuleId?: string
-    platformAudience?: PlatformNavigationAudience
-  }
-}
-
-export {}
-`
-
-function compareNavigation(
-  left: {
-    placement: string
-    order: number
-    ownerId: string
-    navigationId: string
+    })
+    nuxt.hook('imports:extend', (imports) => {
+      validateResolvedExposures(
+        contributions,
+        packageRoots,
+        imports.map((entry) => ({ name: entry.as ?? entry.name, from: entry.from })),
+        'composables',
+      )
+    })
   },
-  right: {
-    placement: string
-    order: number
-    ownerId: string
-    navigationId: string
-  },
-) {
-  return (
-    compareStable(left.placement, right.placement) ||
-    left.order - right.order ||
-    compareStable(left.ownerId, right.ownerId) ||
-    compareStable(left.navigationId, right.navigationId)
-  )
-}
-
-async function resolveContributionPages(
-  contributions: readonly PlatformNuxtContributionDescriptor[],
-): Promise<readonly ResolvedContributionPage[]> {
-  return Promise.all(
-    contributions.flatMap((contribution) =>
-      contribution.pages.map(async (page) => {
-        const packageRoot = await resolveNuxtPackageRoot(contribution.moduleId)
-        const pagesRoot = resolve(packageRoot, 'src/runtime/app/pages')
-        const file = resolve(packageRoot, page.file)
-        if (relative(pagesRoot, file).startsWith('..'))
-          throw new Error(
-            `Nuxt page ${contribution.moduleId}/${page.id} must remain under src/runtime/app/pages`,
-          )
-        if (!existsSync(file))
-          throw new Error(`Nuxt page ${contribution.moduleId}/${page.id} is missing ${page.file}`)
-        return { moduleId: contribution.moduleId, page, file }
-      }),
-    ),
-  )
-}
-
-async function resolveNuxtPackageRoot(moduleId: string) {
-  const entrypoint = await resolvePath(`@eve-space/${moduleId}-nuxt`)
-  return resolve(dirname(entrypoint), '..')
-}
-
-function flattenPages(pages: readonly NuxtPage[], parentPath = ''): readonly ResolvedPage[] {
-  return pages.flatMap((page) => {
-    const fullPath = resolveRoutePath(parentPath, page.path)
-    return [{ page, fullPath }, ...flattenPages(page.children ?? [], fullPath)]
-  })
-}
-
-function resolveCharacterShell(pages: readonly NuxtPage[]) {
-  const matches = flattenPages(pages).filter(
-    ({ fullPath }) => canonicalizePath(fullPath) === '/characters/:parameter',
-  )
-  if (matches.length !== 1)
-    throw new Error(`Expected one character-shell page, found ${matches.length}`)
-  return matches[0]!.page
-}
-
-function relativeChildPath(parentPath: string, path: string) {
-  const parentSegments = canonicalizePath(parentPath).split('/').filter(Boolean)
-  const childSegments = canonicalizePath(path).split('/').filter(Boolean)
-  if (
-    childSegments.length <= parentSegments.length ||
-    parentSegments.some((segment, index) => segment !== childSegments[index])
-  )
-    throw new Error(`Character-shell page ${path} must extend ${parentPath}`)
-  return path.split('/').filter(Boolean).slice(parentSegments.length).join('/')
-}
-
-function resolveRoutePath(parentPath: string, path: string | undefined) {
-  if (!path) return parentPath || '/'
-  if (path.startsWith('/')) return canonicalizePath(path)
-  return canonicalizePath(`${parentPath.replace(/\/$/, '')}/${path}`)
-}
-
-function canonicalizePath(path: string) {
-  return path.replace(/:[^/]+/g, ':parameter').replace(/\/$/, '') || '/'
-}
+})

@@ -32,7 +32,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:fixtures": "vitest run test/platform-module.nuxt.test.ts",
-    "typecheck": "tsc --noEmit && nuxt typecheck test/fixtures/basic"
+    "typecheck": "tsc --noEmit && nuxt prepare test/fixtures/basic && vue-tsc --noEmit -p tsconfig.runtime.json && nuxt typecheck test/fixtures/basic"
   },
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
@@ -46,7 +46,8 @@
     "@vitest/coverage-v8": "catalog:vitest4",
     "nuxt": "catalog:",
     "typescript": "catalog:tsapi",
-    "vitest": "catalog:vitest4"
+    "vitest": "catalog:vitest4",
+    "vue-tsc": "catalog:"
   },
   "peerDependencies": {
     "@pinia/colada": "catalog:",
