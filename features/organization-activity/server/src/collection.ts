@@ -5,8 +5,13 @@ import type {
 import {
   isPlatformEsiUnavailableItem,
   advancePlatformCursor,
+  type PlatformCursorCheckpoint,
 } from '@eve-space/platform-module-server'
-import { mapCollectionResponse, type CollectionRequest } from './collection-response.js'
+import {
+  mapCollectionResponse,
+  type CollectionRequest,
+  type CollectionResponse,
+} from './collection-response.js'
 import type {
   ActivityResourceProfile,
   ActivityObservation,
@@ -29,45 +34,17 @@ export async function collectActivityResource(
 
   for (let attempt = 0; attempt < context.requestBudget && requests.length > 0; attempt++) {
     const request = requests.shift()!
-    const cursor =
-      request.cursor ?? (request.cursorKey ? cursors[request.cursorKey] : undefined) ?? {}
-    const query = request.cursorKey
-      ? {
-          limit: 100,
-          ...(cursor.before ? { before: cursor.before } : {}),
-          ...(cursor.after ? { after: cursor.after } : {}),
-        }
-      : undefined
     // Each request can reveal the next opaque cursor or a dependent detail request.
     // oxlint-disable-next-line no-await-in-loop
-    const result = await context
-      .execute(`organization-activity-${request.operation}`, {
-        ...(Object.keys(request.path).length ? { path: request.path } : {}),
-        ...(query ? { query } : {}),
-      })
-      .catch((error: unknown) => {
-        if (request.validatedAt === undefined || !isPlatformEsiUnavailableItem(error)) throw error
-        return null
-      })
+    const { cursor, result } = await executeCollectionRequest(request, cursors, context)
     if (!result) {
-      if (request.snapshot && request.validatedAt)
-        snapshots.push({
-          snapshot: request.snapshot,
-          validatedAt: request.validatedAt,
-          replace: request.replace,
-        })
+      restoreUnavailableSnapshot(request, snapshots)
       continue
     }
     const mapped = mapCollectionResponse(request, result.data, profile.id)
     if (mapped.retainedIds) retainedIds = mapped.retainedIds
     if (mapped.retainedCampaignIds) retainedCampaignIds = mapped.retainedCampaignIds
-    let replace = request.replace
-    if (request.cursorKey) {
-      const advanced = advancePlatformCursor(cursor, mapped.cursor, mapped.count)
-      replace = advanced.replaceExisting
-      cursors[request.cursorKey] = advanced.checkpoint
-      if (!advanced.complete) requests.push({ ...request, cursor: advanced.checkpoint })
-    }
+    const replace = advanceRequestCursor(request, cursor, mapped, cursors, requests)
     snapshots.push(
       ...mapped.snapshots.map((snapshot) => ({
         snapshot,
@@ -77,7 +54,7 @@ export async function collectActivityResource(
     )
     requests.unshift(
       ...mapped.requests.map((dependent) =>
-        Object.assign({}, dependent, { replace, validatedAt: result.validatedAt }),
+        scheduleRequest(dependent, replace, result.validatedAt),
       ),
     )
   }
@@ -91,6 +68,58 @@ export async function collectActivityResource(
       snapshots,
     } satisfies ActivityObservation,
   }
+}
+
+async function executeCollectionRequest(
+  request: CollectionRequest,
+  cursors: Readonly<Record<string, PlatformCursorCheckpoint>>,
+  context: PlatformResourceCollectionContext<PlatformResourceSubject>,
+) {
+  const cursor =
+    request.cursor ?? (request.cursorKey ? cursors[request.cursorKey] : undefined) ?? {}
+  const query = createCursorQuery(request.cursorKey, cursor)
+  const result = await context
+    .execute(`organization-activity-${request.operation}`, {
+      ...(Object.keys(request.path).length ? { path: request.path } : {}),
+      ...(query ? { query } : {}),
+    })
+    .catch((error: unknown) => {
+      if (request.validatedAt === undefined || !isPlatformEsiUnavailableItem(error)) throw error
+      return null
+    })
+  return { cursor, result }
+}
+
+function createCursorQuery(cursorKey: string | undefined, cursor: PlatformCursorCheckpoint) {
+  if (!cursorKey) return undefined
+  return {
+    limit: 100,
+    ...(cursor.before ? { before: cursor.before } : {}),
+    ...(cursor.after ? { after: cursor.after } : {}),
+  }
+}
+
+function restoreUnavailableSnapshot(request: CollectionRequest, snapshots: CollectedSnapshot[]) {
+  if (!request.snapshot || !request.validatedAt) return
+  snapshots.push({
+    snapshot: request.snapshot,
+    validatedAt: request.validatedAt,
+    replace: request.replace,
+  })
+}
+
+function advanceRequestCursor(
+  request: CollectionRequest,
+  cursor: PlatformCursorCheckpoint,
+  mapped: CollectionResponse,
+  cursors: Record<string, PlatformCursorCheckpoint>,
+  requests: CollectionRequest[],
+) {
+  if (!request.cursorKey) return request.replace
+  const advanced = advancePlatformCursor(cursor, mapped.cursor, mapped.count)
+  cursors[request.cursorKey] = advanced.checkpoint
+  if (!advanced.complete) requests.push({ ...request, cursor: advanced.checkpoint })
+  return advanced.replaceExisting
 }
 
 function initialRequest(
@@ -113,4 +142,12 @@ function initialRequest(
     cursorKey: profile.paginated ? 'root' : undefined,
     replace: initialized,
   }
+}
+
+function scheduleRequest(
+  request: CollectionRequest,
+  replace: boolean,
+  validatedAt: string,
+): CollectionRequest {
+  return { ...request, replace, validatedAt }
 }

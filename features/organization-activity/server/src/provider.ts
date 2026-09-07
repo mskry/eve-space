@@ -53,7 +53,7 @@ export const organizationActivityProvider: PlatformActivityProviderFactory =
     const collectedAt =
       sources
         .flatMap((source) => (source.status.validatedAt ? [source.status.validatedAt] : []))
-        .toSorted()[0] ?? null
+        .toSorted((left, right) => left.localeCompare(right))[0] ?? null
     return {
       activities: combineActivitySources(sources, characters, participation),
       freshness: { state: sourceFreshness(sources, collectedAt), collectedAt },

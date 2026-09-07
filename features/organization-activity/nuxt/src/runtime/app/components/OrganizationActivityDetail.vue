@@ -79,12 +79,15 @@ function selectCharacter(event: Event) {
         :authorize-url="authorizationUrl"
         message="This character needs additional authorization to show participation."
       />
-      <p v-else-if="participationUnavailable" role="status">
+      <output v-else-if="participationUnavailable" class="organization-activity-status">
         Participation is unavailable or stale for {{ selectedCharacter.name }}.
-      </p>
-      <p v-else-if="!participation.data.value?.participation.length" role="status">
+      </output>
+      <output
+        v-else-if="!participation.data.value?.participation.length"
+        class="organization-activity-status"
+      >
         No participation is recorded for {{ selectedCharacter.name }}.
-      </p>
+      </output>
       <ul v-else>
         <li v-for="entry in participation.data.value?.participation" :key="entry.activityId">
           {{ selectedCharacter.name }} contributed {{ entry.contributed ?? 0 }}.
@@ -124,5 +127,9 @@ function selectCharacter(event: Event) {
 .organization-activity-detail select:focus-visible {
   outline: 2px solid var(--ui-primary);
   outline-offset: 2px;
+}
+.organization-activity-status {
+  display: block;
+  margin-block: 1em;
 }
 </style>

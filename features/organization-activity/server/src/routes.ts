@@ -14,6 +14,16 @@ const activityParams = z.object({
   activityId: z.uuid(),
 })
 const detailQuery = z.object({ corporationId: z.coerce.number().int().positive().optional() })
+const publicResourceIds = {
+  project: 'corporation-projects',
+  job: 'public-jobs',
+  campaign: 'campaigns',
+} as const
+const characterResourceIds = {
+  project: 'character-projects',
+  job: 'character-jobs',
+  campaign: 'character-campaigns',
+} as const
 
 export function activityRoutes(
   capabilities: PlatformModuleRouteCapabilities<PlatformModuleResourceTransaction>,
@@ -27,12 +37,7 @@ export function activityRoutes(
       const { corporationId } = context.req.valid('query')
       if (kind === 'project' && !corporationId)
         return context.json({ message: 'A corporation is required for project detail.' }, 400)
-      const resourceId =
-        kind === 'project'
-          ? 'corporation-projects'
-          : kind === 'campaign'
-            ? 'campaigns'
-            : 'public-jobs'
+      const resourceId = publicResourceIds[kind]
       const platform = context.var.platform
       let source = await readActivitySnapshots(
         { ...capabilities, collectionStatus: platform.collectionStatus },
@@ -85,11 +90,7 @@ export function participationRoutes(
       const source = await readActivitySnapshots(
         { ...capabilities, collectionStatus: platform.collectionStatus },
         platform.organization.organizationVersion,
-        kind === 'project'
-          ? 'character-projects'
-          : kind === 'job'
-            ? 'character-jobs'
-            : 'character-campaigns',
+        characterResourceIds[kind],
         { kind: 'character', characterId },
         activityId,
       )
