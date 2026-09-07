@@ -82,12 +82,62 @@ describe('module persistence names', () => {
 })
 
 describe('module migration SQL validation', () => {
+  test.each([
+    'EXCLUDED.value',
+    'excluded.value',
+    '"excluded"."value"',
+    'coalesce(EXCLUDED.value, records.value)',
+    '(select EXCLUDED.value)',
+  ])('accepts the upsert pseudo-relation in %s', (value) => {
+    expect(() =>
+      validateModuleSql(`
+      insert into records (id, value) values (1, 'new')
+      on conflict (id) do update set value = ${value}
+      where EXCLUDED.value <> records.value returning records.id;
+    `),
+    ).not.toThrow()
+  })
+
+  test('supports upserts inside CTEs and masked conflict-clause comments', () => {
+    expect(() =>
+      validateModuleSql(`
+      with updated as (
+        insert into records (id, value) values (1, 'new')
+        on /* conflict */ conflict on constraint records_pkey
+        do update set value = excluded.value returning id
+      ) select updated.id from updated;
+    `),
+    ).not.toThrow()
+  })
+
+  test.each([
+    'select * from excluded.records',
+    'select excluded.value',
+    'update records set value = excluded.value',
+    'insert into excluded.records values (1) on conflict (id) do update set id = excluded.id',
+    'insert into records values (1) on conflict (id) do update set id = excluded.read_value()',
+    'insert into records values (1) on conflict (id) do update set id = (select id from excluded.records)',
+    'insert into records values (1) on conflict (id) do update set id = excluded.records.id',
+    'insert into records values (1) on conflict (id) do update set id = 1::excluded.value',
+    'insert into records values (1) on conflict (id) do update set id = cast(1 as excluded.value)',
+    'insert into records values (1) on conflict (id) do update set id = 1 returning excluded.id',
+    'insert into records values (1) on conflict (id) do nothing returning excluded.id',
+    'insert into records values (1) on conflict (id) do update set id = excluded.id; select excluded.id',
+    'with updated as (insert into records values (1) on conflict (id) do update set id = excluded.id returning id) select excluded.id',
+    "select 'insert on conflict do update set', excluded.value",
+    'select "insert on conflict do update set", excluded.value',
+    'insert into records values (1) on conflict (id) do update set id = "EXCLUDED".id',
+  ])('does not allow a schema or out-of-scope pseudo-relation: %s', (sql) => {
+    expect(() => validateModuleSql(sql)).toThrow(/cross-schema reference (excluded|EXCLUDED)/)
+  })
+
   test('accepts schema-local DDL and data changes', () => {
     expect(() =>
       validateModuleSql(`
         create table records (id bigint generated always as identity primary key, value text);
         alter table records add column created_at timestamptz default now();
         insert into records (value) values ('public.users; grant admin');
+        insert into records (id) values (1) on conflict (id) do nothing;
         update records set value = 'kept';
         update records as target set value = target.value;
         select source.id from records as source;

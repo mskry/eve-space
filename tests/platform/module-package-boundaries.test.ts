@@ -375,6 +375,66 @@ describe('descriptor and composition purity', () => {
     expect(serverSourceBoundaryViolations(serverSource(statement))).not.toEqual([])
   })
 
+  it.each([
+    'const request = fetch; await request(url)',
+    'const request = fetch; const send = request; await send(url)',
+    'let request; request = fetch; await request(url)',
+    'const request = (fetch as typeof fetch); await request(url)',
+    'const client = { request: fetch }; await client.request(url)',
+    'const client = { fetch }; await client.fetch(url)',
+    'await execute(fetch, url)',
+    'const request = globalThis.fetch; await request(url)',
+    'const request = globalThis["fetch"]; await request(url)',
+    'const { fetch: request } = globalThis; await request(url)',
+    'const globals = globalThis; const { fetch: request } = globals; await request(url)',
+    'const globals = globalThis; const request = globals.fetch; await request(url)',
+    'const request = fetch.bind(globalThis); await request(url)',
+    'const schedule = setTimeout; schedule(work, 1)',
+    'const schedule = setInterval; schedule(work, 1)',
+    'const schedule = setImmediate; schedule(work)',
+    'const schedule = queueMicrotask; schedule(work)',
+  ])('rejects captured server globals: %s', (statement) => {
+    expect(
+      serverSourceBoundaryViolations(
+        serverSource(`
+      export async function run(url, work) { ${statement} }
+    `),
+      ),
+    ).toContainEqual(expect.stringContaining('must not reference'))
+  })
+
+  it.each([
+    'const fetch = async () => {}; const request = fetch; await request(url)',
+    'const client = { fetch: async () => {} }; await client.fetch(url)',
+    'const fetch = async () => {}; const client = { fetch }; await client.fetch(url)',
+    'const globalThis = { fetch: async () => {} }; const request = globalThis.fetch; await request(url)',
+    'const fetch = async () => {}; const { fetch: request } = { fetch }; await request(url)',
+    'type Request = typeof fetch',
+    'const left = right; const right = left; left.fetch(url)',
+  ])('allows local server references: %s', (statement) => {
+    expect(
+      serverSourceBoundaryViolations(
+        serverSource(`
+      export async function run(url) { ${statement} }
+    `),
+      ),
+    ).toEqual([])
+  })
+
+  it('resolves forbidden globals independently of nested shadowing', () => {
+    expect(
+      serverSourceBoundaryViolations(
+        serverSource(`
+      export async function run(url) {
+        function local(fetch) { return fetch(url) }
+        const request = fetch
+        await request(url)
+      }
+    `),
+      ),
+    ).toContainEqual(expect.stringContaining('must not reference fetch'))
+  })
+
   it('allows deferred route and provider work but rejects factory-time work', () => {
     const cleanSources = [
       serverSource(`

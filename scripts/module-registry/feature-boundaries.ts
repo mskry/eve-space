@@ -3,8 +3,17 @@ import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path
 import ts from 'typescript'
 import { parse as parseVue } from 'vue/compiler-sfc'
 import type { PlatformModuleManifest } from '../../packages/platform-module-contract/src/index.js'
+import { forbiddenGlobalReferences } from './forbidden-global-references.js'
+import { unwrapExpression } from './typescript-expressions.js'
 
 const sourceExtensions = new Set(['.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx', '.vue'])
+const forbiddenServerGlobals = new Set([
+  'fetch',
+  'queueMicrotask',
+  'setImmediate',
+  'setInterval',
+  'setTimeout',
+])
 
 const serverRuntimePackages = new Set([
   '@eve-space/platform-module-contract',
@@ -353,7 +362,9 @@ function collectDescriptorConstants(
   constants: Map<string, ts.Expression>,
   violations: string[],
 ) {
+  // NodeFlags is a bitmask; logical AND would change this test.
   if ((statement.declarationList.flags & ts.NodeFlags.Const) === 0) {
+    // NOSONAR
     violations.push(`${path}: module descriptor declarations must be const`)
     return
   }
@@ -702,6 +713,8 @@ function validateServerRuntimeBoundaries(
   sourceFile: ts.SourceFile,
   violations: string[],
 ) {
+  for (const name of forbiddenGlobalReferences(sourceFile, forbiddenServerGlobals))
+    violations.push(`${path}: feature server code must not reference ${name}`)
   visit(sourceFile, (node) => {
     if (isEnvironmentReference(node))
       violations.push(`${path}: feature server code must not read process environment`)
@@ -710,13 +723,6 @@ function validateServerRuntimeBoundaries(
       if (name && ['EventSource', 'SharedWorker', 'WebSocket', 'Worker'].includes(name))
         violations.push(`${path}: feature server code must not construct network or worker clients`)
     }
-    if (!ts.isCallExpression(node)) return
-    const name = calledName(node.expression)
-    if (
-      name &&
-      ['fetch', 'queueMicrotask', 'setImmediate', 'setInterval', 'setTimeout'].includes(name)
-    )
-      violations.push(`${path}: feature server code must not call ${name}`)
   })
 }
 
@@ -1181,19 +1187,6 @@ function isEmptyExport(statement: ts.Statement) {
     ts.isNamedExports(statement.exportClause) &&
     statement.exportClause.elements.length === 0
   )
-}
-
-function unwrapExpression(expression: ts.Expression): ts.Expression {
-  let value = expression
-  while (
-    ts.isParenthesizedExpression(value) ||
-    ts.isAsExpression(value) ||
-    ts.isTypeAssertionExpression(value) ||
-    ts.isNonNullExpression(value) ||
-    ts.isSatisfiesExpression(value)
-  )
-    value = value.expression
-  return value
 }
 
 function scriptKind(path: string) {

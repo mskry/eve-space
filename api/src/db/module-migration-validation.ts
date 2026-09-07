@@ -80,7 +80,8 @@ const prohibitedOperations = [
       /\balter\s+system\b/i,
       /\bset\s+schema\b/i,
       /\btablespace\b/i,
-      /\b(?:copy|vacuum|cluster|discard|do|call)\b/i,
+      /\b(?:copy|vacuum|cluster|discard|call)\b/i,
+      /\bdo\b(?!\s+(?:update|nothing)\b)/i,
       /\b(?:create|alter|drop)\s+(?:function|procedure|routine|aggregate)\b/i,
     ],
   },
@@ -89,6 +90,17 @@ const prohibitedOperations = [
     patterns: [/\b(?:create|into)\s+(?:(?:global|local)\s+)?temp(?:orary)?\b/i],
   },
 ]
+
+interface SqlRange {
+  start: number
+  end: number
+}
+
+interface UpsertFrame {
+  insert?: boolean
+  conflict?: boolean
+  start?: number
+}
 
 export function assertModuleMigrationSql(
   moduleId: string,
@@ -107,17 +119,79 @@ export function assertModuleMigrationSql(
   })
   for (const { policy, qualification } of splitStatements(policySql, qualificationSql)) {
     const localQualifiers = collectLocalQualifiers(qualification, schemaName)
+    const upsertRanges = collectUpsertRanges(policy)
     for (const match of qualification.matchAll(qualifiedIdentifierPattern)) {
       const qualifier = normalizeIdentifier(match[1]!)
+      if (qualifier === 'excluded' && isExcludedColumnReference(qualification, match, upsertRanges))
+        continue
       if (qualifier !== schemaName && !localQualifiers.has(qualifier))
         throw violation(moduleId, migration.name, `cross-schema reference ${qualifier}`)
     }
 
     const statement = policy.trim()
-    if (!statement) continue
-    if (!allowedStatements.some((pattern) => pattern.test(statement)))
+    if (statement && !allowedStatements.some((pattern) => pattern.test(statement)))
       throw violation(moduleId, migration.name, 'unsupported SQL statement')
   }
+}
+
+function collectUpsertRanges(statement: string) {
+  const ranges: SqlRange[] = []
+  const frames: UpsertFrame[] = [{}]
+  for (const match of statement.matchAll(/[A-Za-z_][A-Za-z0-9_$]*|[()]/g))
+    applyUpsertToken(statement, match, frames, ranges)
+  for (const frame of frames)
+    if (frame.start !== undefined) ranges.push({ start: frame.start, end: statement.length })
+  return ranges
+}
+
+function applyUpsertToken(
+  statement: string,
+  match: RegExpExecArray,
+  frames: UpsertFrame[],
+  ranges: SqlRange[],
+) {
+  const frame = frames.at(-1)!
+  const token = match[0].toLowerCase()
+  if (token === '(') {
+    frames.push({})
+    return
+  }
+  if (token === ')' || token === 'returning') {
+    if (frame.start !== undefined) {
+      ranges.push({ start: frame.start, end: match.index })
+      frame.start = undefined
+    }
+    if (token === ')' && frames.length > 1) frames.pop()
+    return
+  }
+  if (token === 'insert') {
+    frame.insert = true
+    return
+  }
+  if (frame.insert && /^on\s+conflict\b/i.test(statement.slice(match.index))) {
+    frame.conflict = true
+    return
+  }
+  if (frame.conflict && /^do\s+update\s+set\b/i.test(statement.slice(match.index)))
+    frame.start = match.index + match[0].length
+}
+
+function isExcludedColumnReference(
+  statement: string,
+  match: RegExpExecArray,
+  ranges: readonly SqlRange[],
+) {
+  if (!ranges.some(({ start, end }) => match.index >= start && match.index < end)) return false
+  if (/^\s*[.(]/.test(statement.slice(match.index + match[0].length))) return false
+  if (/(?:::|\b(?:as|collate))\s*$/i.test(statement.slice(0, match.index))) return false
+  for (const relation of statement.matchAll(relationReferencePattern))
+    if (
+      relation[1] &&
+      match.index >= relation.index &&
+      match.index < relation.index + relation[0].length
+    )
+      return false
+  return true
 }
 
 function splitStatements(policySql: string, qualificationSql: string) {
