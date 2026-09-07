@@ -15,9 +15,17 @@ describe('organization frontend source contracts', () => {
   it('keeps protected organization reads client-gated', () => {
     const composable = readWorkspaceFile('app/composables/useOrganizationAuthority.ts')
 
-    expect(composable).toContain('import.meta.client && authSession.value.authenticated')
+    expect(composable).toContain('adminSetupQuery(apiClient)')
+    expect(composable).toContain('deploymentConfigured.value === true')
     expect(composable).toContain('contextQuery.data.value?.isOrganizationOwner === true')
     expect(composable).toContain('rolesQuery.error.value')
+  })
+
+  it('presents unconfigured deployments without loading organization authority', () => {
+    const component = readWorkspaceFile('app/components/settings/SettingsIntegrations.vue')
+
+    expect(component).toContain('!loading && deploymentConfigured === false')
+    expect(component).toContain('Deployment organization is not configured.')
   })
 
   it('presents per-corporation source, freshness, and unregistered observations', () => {

@@ -7,10 +7,13 @@ definePageMeta({ title: 'Corporation Alliance History', layout: 'headerless' })
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { corporationId } = useCorporationRecord()
+const { corporationId, corporation } = useCorporationRecord()
 const historyQuery = useQuery(() => ({
   ...corporationAllianceHistoryQuery({ apiClient, corporationId: corporationId.value ?? 0 }),
-  enabled: import.meta.client && corporationId.value !== undefined,
+  enabled:
+    import.meta.client &&
+    corporationId.value !== undefined &&
+    corporation.value?.type === 'player_owned',
 }))
 const historyStatus = computed(() => {
   if (historyQuery.data.value) return 'idle'
@@ -33,6 +36,15 @@ const searchableHistory = computed(() =>
     entityName:
       entry.allianceName ?? (entry.allianceId ? `Alliance ${entry.allianceId}` : 'No alliance'),
   })),
+)
+
+watch(
+  corporation,
+  (value) => {
+    if (value?.type !== 'npc_owned' || corporationId.value === undefined) return
+    return navigateTo(`/corporation/${corporationId.value}`, { replace: true })
+  },
+  { immediate: true },
 )
 </script>
 

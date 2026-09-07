@@ -6,6 +6,7 @@ const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const {
   authorityContext,
+  deploymentConfigured,
   errorMessage,
   grantRole,
   initialize,
@@ -160,7 +161,13 @@ function roleLabel(role: DelegatedOrganizationRole) {
       <p v-if="errorMessage" class="ui-inline-error" role="alert">{{ errorMessage }}</p>
       <p class="sr-only" aria-live="polite">{{ actionMessage }}</p>
 
-      <div v-if="loading && !authorityContext" class="authority-loading">Loading authority...</div>
+      <div v-if="!loading && deploymentConfigured === false" class="authority-loading">
+        Deployment organization is not configured. Organization authority becomes available after
+        deployment setup.
+      </div>
+      <div v-else-if="loading && !authorityContext" class="authority-loading">
+        Loading authority...
+      </div>
       <div v-else-if="authorityContext" class="authority-console">
         <div class="authority-organization-strip">
           <div>

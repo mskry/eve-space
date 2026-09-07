@@ -32,8 +32,11 @@ const detailMessage = computed(() =>
 const navigation = computed<readonly RecordSectionNavigationEntry[]>(() => {
   if (corporationId.value === undefined) return []
   const overviewPath = `/corporation/${corporationId.value}`
+  const overview = { id: 'overview', label: 'OVERVIEW', to: overviewPath, exact: true }
+  if (corporation.value?.type !== 'player_owned') return [overview]
+
   return [
-    { id: 'overview', label: 'OVERVIEW', to: overviewPath, exact: true },
+    overview,
     {
       id: 'alliance-history',
       label: 'ALLIANCE HISTORY',

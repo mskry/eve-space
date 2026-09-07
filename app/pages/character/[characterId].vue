@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@pinia/colada'
+import type { RecordSectionNavigationEntry } from '../../types/record-navigation'
 import { publicCharacterQuery } from '../../queries/characters'
 import { ApiQueryError } from '../../utils/query-error'
 import { parseRouteId } from '../../utils/route-id'
@@ -37,6 +38,18 @@ const genderSymbol = computed(() => {
   if (gender === 'male') return '♂'
   return '—'
 })
+const navigation = computed<readonly RecordSectionNavigationEntry[]>(() =>
+  characterId.value === undefined
+    ? []
+    : [
+        {
+          id: 'overview',
+          label: 'OVERVIEW',
+          to: `/character/${characterId.value}`,
+          exact: true,
+        },
+      ],
+)
 
 useHead({
   title: computed(() =>
@@ -98,6 +111,8 @@ useHead({
           </div>
         </div>
       </header>
+
+      <RecordSectionNavigation :entries="navigation" label="Character record sections" />
 
       <article class="dossier">
         <div class="identity-panel">
