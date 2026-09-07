@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "pnpm build:nuxt:dependencies && nuxt build",
-    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts nuxt build",
+    "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
     "dev": "nuxt dev",
     "dev:api": "pnpm --filter @eve-space/api dev",
     "db:migrate": "pnpm --filter @eve-space/api migrate",
