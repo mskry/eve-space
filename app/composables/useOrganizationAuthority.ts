@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
+import { adminSetupQuery } from '../queries/admin'
 import {
   organizationContextQuery,
   organizationRolesQuery,
@@ -16,9 +17,17 @@ interface GrantOrganizationRoleInput {
 export function useOrganizationAuthority(apiClient: ApiClient) {
   const queryCache = useQueryCache()
   const { authSession, initializeAuth } = useAuthSession(apiClient)
+  const setupQuery = useQuery(() => ({
+    ...adminSetupQuery(apiClient),
+    enabled: import.meta.client,
+  }))
+  const deploymentConfigured = computed(() =>
+    setupQuery.data.value ? !setupQuery.data.value.required : undefined,
+  )
   const contextQuery = useQuery({
     ...organizationContextQuery(apiClient),
-    enabled: () => import.meta.client && authSession.value.authenticated,
+    enabled: () =>
+      import.meta.client && authSession.value.authenticated && deploymentConfigured.value === true,
   })
   const rolesQuery = useQuery({
     ...organizationRolesQuery(apiClient),
@@ -53,7 +62,8 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   const roleGrants = computed(() => rolesQuery.data.value?.grants ?? [])
   const loading = computed(
     () =>
-      contextQuery.asyncStatus.value === 'loading' ||
+      setupQuery.asyncStatus.value === 'loading' ||
+      (deploymentConfigured.value === true && contextQuery.asyncStatus.value === 'loading') ||
       (authorityContext.value?.isOrganizationOwner && rolesQuery.asyncStatus.value === 'loading'),
   )
   const mutationPending = computed(
@@ -65,14 +75,15 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     const error =
       grantMutation.error.value ??
       revokeMutation.error.value ??
+      setupQuery.error.value ??
       contextQuery.error.value ??
       rolesQuery.error.value
     return error instanceof Error ? error.message : ''
   })
 
   async function initialize() {
-    const authenticated = await initializeAuth()
-    if (authenticated) await contextQuery.refresh()
+    const [authenticated, setupState] = await Promise.all([initializeAuth(), setupQuery.refresh()])
+    if (authenticated && setupState.data?.required === false) await contextQuery.refresh()
   }
 
   async function refreshRoles() {
@@ -94,6 +105,7 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
 
   return {
     authorityContext,
+    deploymentConfigured,
     errorMessage,
     grantRole,
     initialize,

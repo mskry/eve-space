@@ -15,6 +15,14 @@ const routePages = [
 ]
 
 describe('record route page ID gates', () => {
+  it('gives the public character record an overview section tab', () => {
+    const publicCharacter = readWorkspaceFile('app/pages/character/[characterId].vue')
+
+    expect(publicCharacter).toContain("label: 'OVERVIEW'")
+    expect(publicCharacter).toContain('<RecordSectionNavigation')
+    expect(publicCharacter).toContain('label="Character record sections"')
+  })
+
   it('exposes the titled Finance route without retaining a Wallet route file', () => {
     const financePath = resolve(process.cwd(), 'app/pages/characters/[characterId]/finance.vue')
     const walletPath = resolve(process.cwd(), 'app/pages/characters/[characterId]/wallet.vue')

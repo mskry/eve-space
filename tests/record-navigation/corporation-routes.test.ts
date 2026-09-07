@@ -12,6 +12,7 @@ describe('corporation record route ownership', () => {
     expect(parent).toContain('<RecordSectionNavigation')
     expect(parent).toContain('<NuxtPage />')
     expect(parent).toContain('to: `${overviewPath}/alliance-history`')
+    expect(parent).toContain("corporation.value?.type !== 'player_owned'")
   })
 
   it('keeps overview presentation free of alliance-history requests and local tabs', () => {
@@ -23,7 +24,9 @@ describe('corporation record route ownership', () => {
 
   it('loads alliance history only from its routed child and preserves cached data', () => {
     expect(allianceHistory).toContain('corporationAllianceHistoryQuery({')
-    expect(allianceHistory).toContain('enabled: import.meta.client')
+    expect(allianceHistory).toContain('import.meta.client &&')
+    expect(allianceHistory).toContain("corporation.value?.type === 'player_owned'")
+    expect(allianceHistory).toContain("value?.type !== 'npc_owned'")
     expect(allianceHistory).toContain("if (historyQuery.data.value) return 'idle'")
     expect(allianceHistory).toContain('historyQuery.refetch()')
     expect(allianceHistory).toContain('title="No alliance history"')

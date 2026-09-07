@@ -13,6 +13,7 @@ export default defineVitestConfig({
       'tests/assets/**/*.nuxt.test.ts',
       'tests/character/**/*.nuxt.test.ts',
       'tests/finance/**/*.nuxt.test.ts',
+      'tests/organization/**/*.nuxt.test.ts',
       'tests/ui/**/*.nuxt.test.ts',
     ],
     maxWorkers: 1,

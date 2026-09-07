@@ -7,11 +7,13 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startCorsJsonApi } from '../support/cors-json-api'
 
 type HistoryMode = 'data' | 'empty' | 'error'
+type CorporationType = 'player_owned' | 'npc_owned'
 
 const corporationId = 98_000_001
 const recordedPaths: string[] = []
 let apiOrigin = ''
 let historyMode: HistoryMode = 'data'
+let corporationType: CorporationType = 'player_owned'
 
 const apiServer = await startCorsJsonApi((request) => {
   const url = new URL(request.url ?? '/', 'http://mock-api.invalid')
@@ -66,9 +68,9 @@ const apiServer = await startCorsJsonApi((request) => {
           homeStationId: null,
           homeStationName: null,
           shares: null,
-          allianceId: 99_000_001,
-          allianceName: 'Route Alliance',
-          type: 'player_owned',
+          allianceId: corporationType === 'player_owned' ? 99_000_001 : null,
+          allianceName: corporationType === 'player_owned' ? 'Route Alliance' : null,
+          type: corporationType,
           state: 'active',
           warEligible: true,
           warHistory: [],
@@ -128,6 +130,7 @@ describe('corporation record routes', async () => {
 
   beforeEach(() => {
     historyMode = 'data'
+    corporationType = 'player_owned'
     recordedPaths.length = 0
     apiServer.setAllowedOrigin(useTestContext().url)
   })
@@ -209,6 +212,18 @@ describe('corporation record routes', async () => {
     const requestsBeforeRetry = historyRequests().length
     await errorPage.getByRole('button', { name: 'RETRY UPLINK' }).click()
     await expect.poll(() => historyRequests().length).toBeGreaterThan(requestsBeforeRetry)
+  })
+
+  it('keeps NPC corporations on overview without requesting alliance history', async () => {
+    corporationType = 'npc_owned'
+    const page = await openPage(`/corporation/${corporationId}/alliance-history`)
+
+    await page.waitForURL((url) => url.pathname === `/corporation/${corporationId}`)
+    await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
+
+    const navigation = page.getByRole('navigation', { name: 'Corporation record sections' })
+    expect(await navigation.getByRole('link').allTextContents()).toEqual(['OVERVIEW'])
+    expect(historyRequests()).toHaveLength(0)
   })
 
   it('rejects malformed IDs without requesting a normalized corporation', async () => {
