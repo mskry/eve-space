@@ -1,7 +1,8 @@
 {
   "appliedCorrections": [
     "contracts-public-bids-204-content",
-    "contracts-public-items-204-content"
+    "contracts-public-items-204-content",
+    "corporation-project-configuration-required-variant"
   ],
   "compatibilityDate": "2026-08-18",
   "facadeCatalog": {
@@ -10,9 +11,9 @@
   },
   "facadeReviewReport": {
     "path": "docs/generated/facade-naming-review.md",
-    "sha256": "b18b6a4c46fb09220b9eae4fd539a400fd34db7a610a2c40d44c4f83a6f1d110"
+    "sha256": "54708a6a26e88303a8fd09bef280a419ba73d50f620b4bd9a8dfb0d632dbe3bd"
   },
-  "sha256": "d109f3a545525dd98ac0d8237c7838b3bfcb30cb1d971166959b633bac22d599",
+  "sha256": "7d3f738c3c363b400a5cdf78db4432c19ae75c13de2b7816f21970e8c7ea9c2c",
   "sourceSha256": "d1da68ddc104ff09412f161c21eb1e8cdf9d08261a72b2cac842f2a5e8ba74e9",
   "specificationUrl": "https://esi.evetech.net/meta/openapi.json"
 }

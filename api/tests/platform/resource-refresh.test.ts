@@ -78,6 +78,31 @@ describe('local resource observations', () => {
     mocks.createPersistence.mockReturnValue(scopedPersistence())
   })
 
+  test('persists a partial checkpoint without announcing successful collection', async () => {
+    const materialize = vi.fn(async () => undefined)
+    await applyInstalledResourceObservation({
+      ...observation(materialize),
+      outcome: 'complete',
+      data: { cursor: 'opaque' },
+      complete: false,
+    })
+    expect(materialize).toHaveBeenCalledOnce()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+  })
+
+  test('rejects an observation from a superseded organization before module writes', async () => {
+    const materialize = vi.fn(async () => undefined)
+    mocks.transaction.mockResolvedValue([{ version: 3 }])
+    await applyInstalledResourceObservation({
+      ...observation(materialize),
+      outcome: 'complete',
+      data: {},
+      organizationVersion: 2,
+    })
+    expect(materialize).not.toHaveBeenCalled()
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+  })
+
   test('advances unchanged checked state without rewriting module data', async () => {
     const materialize = vi.fn(async () => undefined)
 

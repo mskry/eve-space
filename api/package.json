@@ -42,7 +42,8 @@
     "ioredis": "catalog:",
     "jose": "catalog:",
     "postgres": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@eve-space/organization-activity-server": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

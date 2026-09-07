@@ -11,6 +11,7 @@
         "layers/*/nuxt.config.ts",
         "layers/*/app/components/**/*.vue",
         "layers/*/app/{composables,plugins,utils}/**/*.ts",
+        "features/organization-activity/module.config.ts",
         "generated/platform/*.ts",
         "scripts/copy-platform-nuxt-runtime-assets.mjs",
         "scripts/module-registry/source-extensions.d.mts",
@@ -46,6 +47,17 @@
         "tests/**/*.types.ts",
       ],
       "project": ["src/**/*.ts", "tests/**/*.ts"],
+    },
+    "features/organization-activity/server": {
+      "entry": ["src/schema.ts"],
+    },
+    "features/organization-activity/nuxt": {
+      "entry": [
+        "src/runtime/app/pages/OrganizationActivityCampaignPage.vue",
+        "src/runtime/app/pages/OrganizationActivityJobPage.vue",
+        "src/runtime/app/pages/OrganizationActivityProjectPage.vue",
+        "test/fixtures/basic/nuxt.config.ts",
+      ],
     },
     "packages/esi-client": {
       // Generated artifacts and generator helpers are validated by this package's dedicated suite.

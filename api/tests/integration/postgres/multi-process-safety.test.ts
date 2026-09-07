@@ -142,6 +142,7 @@ describe('multi-process safety', () => {
       expect(new Set(applied.map((migration) => migration.module))).toEqual(new Set(['core']))
 
       const { checkWorkerReadiness } = await import('../../../src/worker/readiness.js')
+      await runStartupMigrations(inspector)
       await expect(checkWorkerReadiness(inspector)).resolves.toEqual({ healthy: true })
     } finally {
       await Promise.all([first.end(), second.end(), inspector.end()])
@@ -966,7 +967,7 @@ describe('multi-process safety', () => {
         const expired = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
         const escaped = await expired.capability.transaction(async (scoped) => scoped)
         await expect(escaped.query('select 1')).rejects.toThrow(
-          'Module resource transaction is no longer active',
+          'Module query transaction is no longer active',
         )
       })
     } finally {

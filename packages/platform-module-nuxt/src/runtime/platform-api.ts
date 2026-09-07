@@ -18,7 +18,7 @@ export function createPlatformApiClient<App extends Hono<any, any, any> = Platfo
   })
 }
 
-export type PlatformApiClient = ReturnType<typeof createPlatformApiClient>
+export type PlatformApiClient = ReturnType<typeof createPlatformApiClient<PlatformApiApp>>
 
 export type PlatformApiSuccessBody<Response> = Response extends {
   readonly ok: true

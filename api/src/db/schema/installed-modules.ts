@@ -92,6 +92,7 @@ export const platformSubjectLifecycles = pgTable(
   (table) => [
     uniqueIndex('platform_subject_lifecycles_character_id_key').on(table.characterId),
     uniqueIndex('platform_subject_lifecycles_organization_epoch_key').on(
+      table.subjectKind,
       table.organizationDeploymentId,
       table.organizationVersion,
     ),
@@ -122,7 +123,7 @@ export const platformSubjectLifecycles = pgTable(
     subjectIdCheck('platform_subject_lifecycles_subject_id_check'),
     check(
       'platform_subject_lifecycles_binding_check',
-      sql`(is_character_subject_kind(subject_kind) and character_id is not null and subject_id = character_id::text and organization_deployment_id is null and organization_version is null and corporation_source_id is null) or (subject_kind = 'alliance' and character_id is null and organization_deployment_id is not null and organization_version is not null and corporation_source_id is null) or (subject_kind = 'corporation' and character_id is null and organization_deployment_id is null and organization_version is null and corporation_source_id is not null) or (subject_kind = 'deployment' and character_id is null and organization_deployment_id is null and organization_version is null and corporation_source_id is null)`,
+      sql`(is_character_subject_kind(subject_kind) and character_id is not null and subject_id = character_id::text and organization_deployment_id is null and organization_version is null and corporation_source_id is null) or (subject_kind = 'alliance' and character_id is null and organization_deployment_id is not null and organization_version is not null and corporation_source_id is null) or (subject_kind = 'corporation' and character_id is null and organization_deployment_id is null and organization_version is null and corporation_source_id is not null) or (subject_kind = 'deployment' and character_id is null and subject_id = organization_deployment_id::text and organization_deployment_id is not null and organization_version is not null and corporation_source_id is null)`,
     ),
   ],
 )

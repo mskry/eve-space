@@ -23,7 +23,10 @@ vi.mock('../../src/platform/module-logging.js', () => ({
   createPlatformModuleLogger: vi.fn(() => mocks.logger),
 }))
 
-import { createPlatformModuleRouteCapabilities } from '../../src/platform/module-route-capabilities.js'
+import {
+  createPlatformModuleRouteCapabilities,
+  createPlatformResourceReadCapabilities,
+} from '../../src/platform/module-route-capabilities.js'
 import { createPlatformModuleActivityProviderCapabilities } from '../../src/platform/module-activity-provider-capabilities.js'
 
 beforeEach(() => {
@@ -32,16 +35,47 @@ beforeEach(() => {
 })
 
 describe('platform module route capabilities', () => {
-  test('provides only module-scoped persistence and bounded SDE reads', () => {
+  test('provides only module-scoped persistence and bounded SDE reads', async () => {
+    const unsafe = vi.fn().mockResolvedValue([{ type_id: 34 }])
+    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
     const capabilities = createPlatformModuleRouteCapabilities('alpha')
 
     expect(capabilities).toEqual({
       logger: mocks.logger,
-      persistence: mocks.persistence,
+      persistence: { transaction: expect.any(Function) },
       sde: mocks.sdeCoreReads,
     })
     expect(Object.keys(capabilities)).toEqual(['logger', 'persistence', 'sde'])
     expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha')
+    await expect(
+      capabilities.persistence.transaction((transaction) =>
+        transaction.query('select type_id from types', [34]),
+      ),
+    ).resolves.toEqual([{ type_id: 34 }])
+    expect(unsafe).toHaveBeenCalledWith('select type_id from types', [34])
+  })
+
+  test('provides resource collectors read-only bounded persistence', async () => {
+    const unsafe = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
+    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
+
+    const capabilities = createPlatformResourceReadCapabilities('alpha')
+
+    await expect(
+      capabilities.persistence.transaction((transaction) =>
+        transaction.query('select activity_id from activities'),
+      ),
+    ).resolves.toEqual([{ activity_id: 'one' }])
+    expect(capabilities).toEqual({
+      logger: mocks.logger,
+      persistence: { transaction: expect.any(Function) },
+      sde: mocks.sdeCoreReads,
+    })
+    expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha', {
+      readOnly: true,
+      statementTimeoutMilliseconds: 2_000,
+    })
+    expect(unsafe).toHaveBeenCalledWith('select activity_id from activities', [])
   })
 
   test('provides activity providers bounded status, logging, and persistence', async () => {
@@ -72,7 +106,7 @@ describe('platform module route capabilities', () => {
     })
     expect(unsafe).toHaveBeenCalledWith('select activity_id from activities', ['one'])
     await expect(retainedTransaction!.query('select 1')).rejects.toThrow(
-      'Module activity transaction is no longer active',
+      'Module query transaction is no longer active',
     )
 
     controller.abort()

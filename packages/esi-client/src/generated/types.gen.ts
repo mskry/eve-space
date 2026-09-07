@@ -3114,103 +3114,103 @@ export type CorporationsProjectsDetail = {
         /**
          * Capture factional warfare complex
          */
-        capture_fw_complex?: CorporationsProjectsDetailConfigurationcapturefwcomplex;
+        capture_fw_complex: CorporationsProjectsDetailConfigurationcapturefwcomplex;
         [key: string]: unknown;
     } | {
         /**
          * Damage ship
          */
-        damage_ship?: CorporationsProjectsDetailConfigurationdamageship;
+        damage_ship: CorporationsProjectsDetailConfigurationdamageship;
         [key: string]: unknown;
     } | {
         /**
          * Defend factional warfare complex
          */
-        defend_fw_complex?: CorporationsProjectsDetailConfigurationdefendfwcomplex;
+        defend_fw_complex: CorporationsProjectsDetailConfigurationdefendfwcomplex;
         [key: string]: unknown;
     } | {
         /**
          * Deliver item
          */
-        deliver_item?: CorporationsProjectsDetailConfigurationdeliveritem;
+        deliver_item: CorporationsProjectsDetailConfigurationdeliveritem;
         [key: string]: unknown;
     } | {
         /**
          * Destroy NPC
          */
-        destroy_npc?: CorporationsProjectsDetailConfigurationdestroynpc;
+        destroy_npc: CorporationsProjectsDetailConfigurationdestroynpc;
         [key: string]: unknown;
     } | {
         /**
          * Destroy ship
          */
-        destroy_ship?: CorporationsProjectsDetailConfigurationdestroyship;
+        destroy_ship: CorporationsProjectsDetailConfigurationdestroyship;
         [key: string]: unknown;
     } | {
         /**
          * Earn loyalty point
          */
-        earn_loyalty_point?: CorporationsProjectsDetailConfigurationearnloyaltypoints;
+        earn_loyalty_point: CorporationsProjectsDetailConfigurationearnloyaltypoints;
         [key: string]: unknown;
     } | {
         /**
          * Lost ship
          */
-        lost_ship?: CorporationsProjectsDetailConfigurationlostship;
+        lost_ship: CorporationsProjectsDetailConfigurationlostship;
         [key: string]: unknown;
     } | {
         /**
          * Manual contribution
          */
-        manual?: CorporationsProjectsDetailConfigurationmanual;
+        manual: CorporationsProjectsDetailConfigurationmanual;
         [key: string]: unknown;
     } | {
         /**
          * Manufacture item
          */
-        manufacture_item?: CorporationsProjectsDetailConfigurationmanufactureitem;
+        manufacture_item: CorporationsProjectsDetailConfigurationmanufactureitem;
         [key: string]: unknown;
     } | {
         /**
          * Mine material
          */
-        mine_material?: CorporationsProjectsDetailConfigurationminematerial;
+        mine_material: CorporationsProjectsDetailConfigurationminematerial;
         [key: string]: unknown;
     } | {
         /**
          * Remote boost shield
          */
-        remote_boost_shield?: CorporationsProjectsDetailConfigurationremoteboostshield;
+        remote_boost_shield: CorporationsProjectsDetailConfigurationremoteboostshield;
         [key: string]: unknown;
     } | {
         /**
          * Remote repair armor
          */
-        remote_repair_armor?: CorporationsProjectsDetailConfigurationremoterepairarmor;
+        remote_repair_armor: CorporationsProjectsDetailConfigurationremoterepairarmor;
         [key: string]: unknown;
     } | {
         /**
          * Salvage wreck
          */
-        salvage_wreck?: CorporationsProjectsDetailConfigurationsalvagewreck;
+        salvage_wreck: CorporationsProjectsDetailConfigurationsalvagewreck;
         [key: string]: unknown;
     } | {
         /**
          * Scan signature
          */
-        scan_signature?: CorporationsProjectsDetailConfigurationscansignature;
+        scan_signature: CorporationsProjectsDetailConfigurationscansignature;
         [key: string]: unknown;
     } | {
         /**
          * Ship insurance
          */
-        ship_insurance?: CorporationsProjectsDetailConfigurationshipinsurance;
+        ship_insurance: CorporationsProjectsDetailConfigurationshipinsurance;
         [key: string]: unknown;
     } | {
         /**
          * Unknown
          */
-        unknown?: CorporationsProjectsDetailConfigurationunknown;
+        unknown: CorporationsProjectsDetailConfigurationunknown;
         [key: string]: unknown;
     };
     /**

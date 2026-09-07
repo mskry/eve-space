@@ -24,8 +24,11 @@ import {
   type CharacterEsiOperation,
   type PublicEsiOperation,
 } from '../esi-resilience/layer.js'
+import { isRecord } from '../type-guards.js'
 import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
+import { createPlatformResourceReadCapabilities } from './module-route-capabilities.js'
+import { loadResourceCollectionContext } from './resource-collection-context.js'
 import { platformResources } from './resources.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import { getInstalledResourceEsiOperationDefinition } from './resource-declarations.js'
@@ -47,10 +50,18 @@ type PlatformResourceOperationExecution =
       readonly resource: PlatformInstalledResourceDescriptor
       readonly subject: PlatformResourceSubject
       readonly authorizationGeneration: number | null
+      readonly organizationVersion?: number
+      readonly complete?: boolean
       readonly result: EsiCachedResult<unknown>
     }
 
 interface ResourceOperationExecutorOptions {
+  readonly request?: {
+    readonly operationId: string
+    readonly inputs: Readonly<Record<string, unknown>>
+  }
+  readonly loadCollectionContext?: typeof loadResourceCollectionContext
+  readonly createCapabilities?: typeof createPlatformResourceReadCapabilities
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly guardExecution?: typeof guardInstalledResourceExecution
   readonly definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
@@ -81,13 +92,69 @@ export async function executeInstalledResourceOperation(
     unknown,
     PlatformResourceSubject
   >
-  const operation = guarded.resource.operationId as EsiOperation
+  if (implementation.collect && !options.request) {
+    const context = await (options.loadCollectionContext ?? loadResourceCollectionContext)(subject)
+    let requests = 0
+    let latest: EsiCachedResult<unknown> | undefined
+    const collected = await implementation.collect({
+      ...context,
+      subject,
+      authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
+      capabilities: (options.createCapabilities ?? createPlatformResourceReadCapabilities)(
+        guarded.resource.moduleId,
+      ),
+      requestBudget: 32,
+      async execute(operationId, inputs) {
+        if (++requests > 32) throw new Error('Resource collection request budget exceeded')
+        if (
+          operationId !== guarded.resource.operationId &&
+          !guarded.resource.dependentOperationIds?.includes(operationId)
+        )
+          throw new Error('Resource collection operation is undeclared')
+        if (isRecord(inputs.path)) {
+          if (
+            'character_id' in inputs.path &&
+            (subject.kind !== 'character' || inputs.path.character_id !== subject.characterId)
+          )
+            throw new Error('Resource collection character is outside its subject')
+          if (
+            'corporation_id' in inputs.path &&
+            subject.kind !== 'deployment' &&
+            inputs.path.corporation_id !== context.corporationId
+          )
+            throw new Error('Resource collection corporation is outside its subject')
+        }
+        const result = await executeInstalledResourceOperation(identity, {
+          ...options,
+          request: { operationId, inputs },
+        })
+        if (
+          result.outcome !== 'loaded' ||
+          result.authorizationGeneration !== (guarded.authorization?.tokenVersion ?? null)
+        )
+          throw new Error('Resource collection authority changed')
+        if (!latest || result.result.validatedAt < latest.validatedAt) latest = result.result
+        return { data: result.result.data, validatedAt: result.result.validatedAt }
+      },
+    })
+    if (!latest) throw new Error('Resource collection must validate an observation')
+    return {
+      outcome: 'loaded',
+      resource: guarded.resource,
+      subject,
+      authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
+      organizationVersion: context.organizationVersion,
+      complete: collected.complete,
+      result: { ...latest, data: collected.data },
+    }
+  }
+  const operation = (options.request?.operationId ?? guarded.resource.operationId) as EsiOperation
   const definition = getInstalledResourceEsiOperationDefinition(operation, options.definitions)
   let inputs: Readonly<Record<string, unknown>>
   try {
     inputs = (options.validateInputs ?? validateModuleEsiOperationInputs)(
       definition,
-      implementation.request(subject),
+      options.request?.inputs ?? implementation.request(subject),
     )
   } catch (error) {
     throw new PlatformResourceMappingError(error)
@@ -112,7 +179,7 @@ export async function executeInstalledResourceOperation(
       resource: guarded.resource,
       subject,
       authorizationGeneration: null,
-      result: mapResourceResult(result, implementation, subject),
+      result: mapResourceResult(result, implementation, subject, !!options.request),
     }
   }
   const requiredScope = policy.authorization.scope
@@ -186,7 +253,7 @@ export async function executeInstalledResourceOperation(
     resource: guarded.resource,
     subject,
     authorizationGeneration: execution.authorizationGeneration,
-    result: mapResourceResult(execution.result, implementation, subject),
+    result: mapResourceResult(execution.result, implementation, subject, !!options.request),
   }
 }
 
@@ -201,8 +268,10 @@ function mapResourceResult(
     PlatformResourceSubject
   >,
   subject: PlatformResourceSubject,
+  raw = false,
 ): EsiCachedResult<unknown> {
   assertPlatformResourceRefreshSucceeded(result)
+  if (raw) return result
   try {
     return { ...result, data: implementation.map({ subject, data: result.data }) }
   } catch (error) {

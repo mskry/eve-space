@@ -20,6 +20,7 @@ const serverRuntimePackages = new Set([
   '@eve-space/platform-module-server',
   'hono',
   'zod',
+  'drizzle-orm',
 ])
 
 const nuxtRuntimePackages = new Set([
@@ -39,7 +40,11 @@ const sharedDevelopmentPackages = new Set([
   'vitest',
 ])
 
-const serverDevelopmentPackages = new Set(sharedDevelopmentPackages)
+const serverDevelopmentPackages = new Set([
+  ...sharedDevelopmentPackages,
+  'postgres',
+  'testcontainers',
+])
 
 const nuxtDevelopmentPackages = new Set([
   ...sharedDevelopmentPackages,
@@ -514,7 +519,12 @@ function validateDependencyField(
         `${path}: ${field} dependency ${dependency} is not allowed for this feature package`,
       )
     const expectedVersion = dependency.startsWith('@eve-space/') ? 'workspace:*' : 'catalog:'
-    if (version !== expectedVersion)
+    const namedCatalog =
+      (dependency === 'typescript' &&
+        (version === 'catalog:tsapi' || version === 'catalog:tsgo')) ||
+      ((dependency === 'vitest' || dependency === '@vitest/coverage-v8') &&
+        version === 'catalog:vitest4')
+    if (version !== expectedVersion && !namedCatalog)
       violations.push(`${path}: ${field} dependency ${dependency} must use ${expectedVersion}`)
   }
 }
@@ -683,6 +693,8 @@ function validateSpecifier(
     return
   }
   const packageName = packageNameFromSpecifier(normalized)
+  if (packageName === 'drizzle-orm' && normalized !== 'drizzle-orm/pg-core')
+    violations.push(`${source.path}: only pure Drizzle schema declarations are allowed in features`)
   const allowed = environment === 'server' ? serverRuntimePackages : nuxtRuntimePackages
   if (!allowed.has(packageName))
     violations.push(
@@ -952,7 +964,8 @@ function isPureCompositionExpression(expression: ts.Expression): boolean {
     const name = identifierText(value.expression)
     return (
       (!!name && definitionCalls.has(name) && value.arguments.every(isPureCompositionExpression)) ||
-      (isZodCall(value) && value.arguments.every(isPureCompositionExpression))
+      (isZodCall(value) && value.arguments.every(isPureCompositionExpression)) ||
+      isDrizzleSchemaCall(value)
     )
   }
   return false
@@ -1107,6 +1120,23 @@ function isEnvironmentReference(node: ts.Node) {
     ts.isMetaProperty(node.expression) &&
     node.expression.keywordToken === ts.SyntaxKind.ImportKeyword &&
     node.name.text === 'env'
+  )
+}
+
+function isDrizzleSchemaCall(call: ts.CallExpression): boolean {
+  const expression = call.expression
+  if (ts.isIdentifier(expression))
+    return (
+      ['pgTable', 'text', 'uuid', 'bigint', 'integer', 'jsonb', 'timestamp', 'primaryKey'].includes(
+        expression.text,
+      ) && call.arguments.every(isPureCompositionExpression)
+    )
+  return (
+    ts.isPropertyAccessExpression(expression) &&
+    ['notNull', 'default'].includes(expression.name.text) &&
+    ts.isCallExpression(expression.expression) &&
+    call.arguments.every(isPureCompositionExpression) &&
+    isDrizzleSchemaCall(expression.expression)
   )
 }
 

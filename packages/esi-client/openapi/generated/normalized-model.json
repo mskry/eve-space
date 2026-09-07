@@ -703,7 +703,7 @@
       },
       {
         "construct": "keyword:required",
-        "count": 331
+        "count": 348
       },
       {
         "construct": "keyword:title",
@@ -10335,6 +10335,9 @@
                     "description": "Capture factional warfare complex"
                   }
                 },
+                "required": [
+                  "capture_fw_complex"
+                ],
                 "title": "capture_fw_complex",
                 "type": "object"
               },
@@ -10345,6 +10348,9 @@
                     "description": "Damage ship"
                   }
                 },
+                "required": [
+                  "damage_ship"
+                ],
                 "title": "damage_ship",
                 "type": "object"
               },
@@ -10355,6 +10361,9 @@
                     "description": "Defend factional warfare complex"
                   }
                 },
+                "required": [
+                  "defend_fw_complex"
+                ],
                 "title": "defend_fw_complex",
                 "type": "object"
               },
@@ -10365,6 +10374,9 @@
                     "description": "Deliver item"
                   }
                 },
+                "required": [
+                  "deliver_item"
+                ],
                 "title": "deliver_item",
                 "type": "object"
               },
@@ -10375,6 +10387,9 @@
                     "description": "Destroy NPC"
                   }
                 },
+                "required": [
+                  "destroy_npc"
+                ],
                 "title": "destroy_npc",
                 "type": "object"
               },
@@ -10385,6 +10400,9 @@
                     "description": "Destroy ship"
                   }
                 },
+                "required": [
+                  "destroy_ship"
+                ],
                 "title": "destroy_ship",
                 "type": "object"
               },
@@ -10395,6 +10413,9 @@
                     "description": "Earn loyalty point"
                   }
                 },
+                "required": [
+                  "earn_loyalty_point"
+                ],
                 "title": "earn_loyalty_point",
                 "type": "object"
               },
@@ -10405,6 +10426,9 @@
                     "description": "Lost ship"
                   }
                 },
+                "required": [
+                  "lost_ship"
+                ],
                 "title": "lost_ship",
                 "type": "object"
               },
@@ -10415,6 +10439,9 @@
                     "description": "Manual contribution"
                   }
                 },
+                "required": [
+                  "manual"
+                ],
                 "title": "manual",
                 "type": "object"
               },
@@ -10425,6 +10452,9 @@
                     "description": "Manufacture item"
                   }
                 },
+                "required": [
+                  "manufacture_item"
+                ],
                 "title": "manufacture_item",
                 "type": "object"
               },
@@ -10435,6 +10465,9 @@
                     "description": "Mine material"
                   }
                 },
+                "required": [
+                  "mine_material"
+                ],
                 "title": "mine_material",
                 "type": "object"
               },
@@ -10445,6 +10478,9 @@
                     "description": "Remote boost shield"
                   }
                 },
+                "required": [
+                  "remote_boost_shield"
+                ],
                 "title": "remote_boost_shield",
                 "type": "object"
               },
@@ -10455,6 +10491,9 @@
                     "description": "Remote repair armor"
                   }
                 },
+                "required": [
+                  "remote_repair_armor"
+                ],
                 "title": "remote_repair_armor",
                 "type": "object"
               },
@@ -10465,6 +10504,9 @@
                     "description": "Salvage wreck"
                   }
                 },
+                "required": [
+                  "salvage_wreck"
+                ],
                 "title": "salvage_wreck",
                 "type": "object"
               },
@@ -10475,6 +10517,9 @@
                     "description": "Scan signature"
                   }
                 },
+                "required": [
+                  "scan_signature"
+                ],
                 "title": "scan_signature",
                 "type": "object"
               },
@@ -10485,6 +10530,9 @@
                     "description": "Ship insurance"
                   }
                 },
+                "required": [
+                  "ship_insurance"
+                ],
                 "title": "ship_insurance",
                 "type": "object"
               },
@@ -10495,6 +10543,9 @@
                     "description": "Unknown"
                   }
                 },
+                "required": [
+                  "unknown"
+                ],
                 "title": "unknown",
                 "type": "object"
               }

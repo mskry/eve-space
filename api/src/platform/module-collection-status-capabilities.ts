@@ -61,6 +61,13 @@ export function createPlatformModuleCollectionStatusReads(
               subject,
             )
       if (!lifecycle) throw new Error('Collection subject is outside the authorized module context')
+      if (!lifecycle.subjectLifecycleId)
+        return {
+          status: 'never-configured',
+          authorizationGeneration: null,
+          validatedAt: null,
+          lastFailureClass: null,
+        }
 
       const status = await (options.readStatus ?? getInstalledResourceCollectionStatus)(
         {
@@ -73,7 +80,7 @@ export function createPlatformModuleCollectionStatusReads(
         { resources: [resource] },
       )
       assertActive(binding.signal)
-      return status
+      return { ...status, subjectLifecycleId: lifecycle.subjectLifecycleId }
     },
   }
 }
@@ -90,19 +97,20 @@ async function loadOrganizationSubjectLifecycle(
   organizationVersion: number,
   subject: Exclude<PlatformCollectionStatusSubject, { kind: 'character' }>,
 ) {
-  if (subject.kind === 'alliance') {
+  if (subject.kind === 'alliance' || subject.kind === 'deployment') {
+    const subjectId = subject.kind === 'alliance' ? subject.allianceId : subject.deploymentId
     const [lifecycle] = await db
       .select({ subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId })
       .from(platformSubjectLifecycles)
       .where(
         and(
-          eq(platformSubjectLifecycles.subjectKind, 'alliance'),
-          eq(platformSubjectLifecycles.subjectId, String(subject.allianceId)),
+          eq(platformSubjectLifecycles.subjectKind, subject.kind),
+          eq(platformSubjectLifecycles.subjectId, String(subjectId)),
           eq(platformSubjectLifecycles.organizationDeploymentId, 1),
           eq(platformSubjectLifecycles.organizationVersion, organizationVersion),
         ),
       )
-    return lifecycle ? { ...lifecycle, subjectId: String(subject.allianceId) } : null
+    return lifecycle ? { ...lifecycle, subjectId: String(subjectId) } : null
   }
 
   const [lifecycle] = await db
@@ -140,7 +148,21 @@ async function loadOrganizationSubjectLifecycle(
         eq(organizationManagedCorporations.isCurrent, true),
       ),
     )
-  return lifecycle ? { ...lifecycle, subjectId: String(subject.corporationId) } : null
+  if (lifecycle) return { ...lifecycle, subjectId: String(subject.corporationId) }
+  const [corporation] = await db
+    .select({ corporationId: organizationManagedCorporations.corporationId })
+    .from(organizationManagedCorporations)
+    .where(
+      and(
+        eq(organizationManagedCorporations.deploymentId, 1),
+        eq(organizationManagedCorporations.organizationVersion, organizationVersion),
+        eq(organizationManagedCorporations.corporationId, subject.corporationId),
+        eq(organizationManagedCorporations.isCurrent, true),
+      ),
+    )
+  return corporation
+    ? { subjectLifecycleId: null, subjectId: String(corporation.corporationId) }
+    : null
 }
 
 function assertActive(signal: AbortSignal | undefined) {
@@ -151,7 +173,8 @@ function assertPositiveSubjectId(subject: PlatformCollectionStatusSubject) {
   let subjectId: number
   if (subject.kind === 'character') subjectId = subject.characterId
   else if (subject.kind === 'corporation') subjectId = subject.corporationId
-  else subjectId = subject.allianceId
+  else if (subject.kind === 'alliance') subjectId = subject.allianceId
+  else subjectId = subject.deploymentId
   if (!Number.isSafeInteger(subjectId) || subjectId <= 0)
     throw new Error('Module collection subject must use a positive safe integer')
 }

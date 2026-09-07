@@ -1,0 +1,39 @@
+{
+  "name": "@eve-space/organization-activity-nuxt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "**/*.vue"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.ts",
+      "import": "./dist/module.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/runtime/app"
+  ],
+  "scripts": {
+    "build": "tsc6",
+    "typecheck": "tsc6 --noEmit && nuxt prepare test/fixtures/basic && vue-tsc --noEmit -p tsconfig.runtime.json",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:fixtures": "vitest run"
+  },
+  "dependencies": {
+    "@eve-space/platform-module-nuxt": "workspace:*",
+    "@nuxt/kit": "catalog:",
+    "@nuxt/schema": "catalog:",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "nuxt": "catalog:",
+    "typescript": "catalog:tsapi",
+    "vue-tsc": "catalog:",
+    "vitest": "catalog:vitest4",
+    "@vitest/coverage-v8": "catalog:vitest4"
+  }
+}

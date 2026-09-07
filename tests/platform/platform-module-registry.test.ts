@@ -195,7 +195,7 @@ describe('platform module declarations', () => {
   it('rejects unsupported resource eligibility and scheduling metadata', () => {
     const invalid = manifest('alpha', {
       resource: {
-        subjectKind: 'deployment' as never,
+        subjectKind: 'solar-system' as never,
         materializationIntervalSeconds: 0,
         eligibility: { kind: 'module-callback' } as never,
       },
@@ -204,7 +204,7 @@ describe('platform module declarations', () => {
     const message = validationErrorMessage(invalid)
     expect(message).toContain('uses unsupported eligibility module-callback')
     expect(message).toContain('must use a positive whole interval')
-    expect(message).toContain('uses unsupported subject kind deployment')
+    expect(message).toContain('uses unsupported subject kind solar-system')
   })
 
   it.each([
@@ -516,6 +516,60 @@ describe('platform module registry generation', () => {
     expect(providers).toContain(
       "invoke: (context) => module0ActivityProvider0Factory(createPlatformModuleActivityProviderCapabilities('alpha', context))(context)",
     )
+  })
+
+  it('combines ESI operation imports from the same server package', () => {
+    const declaration = manifest('alpha')
+    declaration.server.esiOperations.push({
+      id: 'alpha-secondary-operation',
+      exportName: 'alphaSecondaryOperation',
+    })
+
+    const esi = generateRegistryFiles([declaration]).get(
+      'api/src/generated/platform/installed-module-esi.ts',
+    )
+
+    expect(esi).toContain(
+      "import {\n  alphaOperation as module0EsiOperation0,\n  alphaSecondaryOperation as module0EsiOperation1,\n} from '@eve-space/alpha-server'",
+    )
+    expect(esi?.match(/from '@eve-space\/alpha-server'/g)).toHaveLength(1)
+  })
+
+  it('combines same-package imports in every server registry', () => {
+    const declaration = manifest('alpha')
+    declaration.server.routes.push({
+      id: 'alpha-secondary-route',
+      namespace: '/alpha/secondary',
+      exportName: 'alphaSecondaryRoutes',
+      authorization: 'authenticated-session',
+      audience: 'member',
+      requiredPermission: 'alpha.view',
+    })
+    declaration.server.resources.push({
+      id: 'alpha-secondary-resource',
+      operationId: 'alpha-operation',
+      dependentOperationIds: [],
+      subjectKind: 'character',
+      materializationIntervalSeconds: 900,
+      eligibility: { kind: 'current-owned-character' },
+      exportName: 'alphaSecondaryResource',
+    })
+    declaration.server.activityProviders.push({
+      id: 'alpha-secondary-activity',
+      exportName: 'alphaSecondaryActivityProvider',
+      audience: 'member',
+      requiredPermission: 'alpha.view',
+      freshness: { staleAfterSeconds: 900 },
+    })
+
+    const files = generateRegistryFiles([declaration])
+    for (const path of [
+      'api/src/generated/platform/installed-module-routes.ts',
+      'api/src/generated/platform/installed-module-worker.ts',
+      'api/src/generated/platform/installed-module-activity-providers.ts',
+      'api/src/generated/platform/installed-module-esi.ts',
+    ])
+      expect(files.get(path)?.match(/from '@eve-space\/alpha-server'/g)).toHaveLength(1)
   })
 
   it('aliases repeated package export names in every generated server registry', () => {

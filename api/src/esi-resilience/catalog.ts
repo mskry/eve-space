@@ -50,7 +50,7 @@ export const coreEsiOperationCatalog = {
     retry,
     responseValidation: {
       kind: 'disabled',
-      reason: 'Live ship_type_id values may be null despite the SDK 3.0.0 schema.',
+      reason: 'Live ship_type_id values may be null despite the SDK 3.0.1 schema.',
     },
   }),
   'character-assets-page': defineContract('character-assets-page', {

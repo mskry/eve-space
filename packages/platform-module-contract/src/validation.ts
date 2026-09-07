@@ -176,6 +176,7 @@ function validateResources(
   issues: string[],
 ) {
   const eligibilityBySubject = {
+    deployment: 'current-deployment',
     character: 'current-owned-character',
     corporation: 'current-managed-corporation-source',
     alliance: 'current-managed-alliance',
@@ -207,8 +208,22 @@ function validateResources(
       )
     if (!esiOperationIds.has(normalizeIdentity(resource.operationId)))
       issues.push(`resource ${identity} references unknown ESI operation ${resource.operationId}`)
+    validateDependentEsiOperations(manifest, resource, identity, issues)
     validateResourceBatch(resource, identity, esiOperationIds, issues)
   }
+}
+
+function validateDependentEsiOperations(
+  manifest: PlatformModuleManifest,
+  resource: PlatformResourceContribution,
+  identity: string,
+  issues: string[],
+) {
+  for (const operationId of resource.dependentOperationIds ?? [])
+    if (!manifest.server.esiOperations.some((operation) => operation.id === operationId))
+      issues.push(
+        `resource ${identity} references undeclared dependent ESI operation ${operationId}`,
+      )
 }
 
 function validateResourceBatch(

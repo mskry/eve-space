@@ -28,6 +28,11 @@ describe('managed corporation materialization', () => {
     )
     expect(alliance.inserts).toEqual([
       expect.objectContaining({
+        subjectKind: 'deployment',
+        subjectId: '1',
+        organizationVersion: 4,
+      }),
+      expect.objectContaining({
         subjectKind: 'alliance',
         subjectId: '99000001',
         organizationVersion: 4,
@@ -47,6 +52,11 @@ describe('managed corporation materialization', () => {
       observedAt,
     )
     expect(corporation.inserts).toEqual([
+      expect.objectContaining({
+        subjectKind: 'deployment',
+        subjectId: '1',
+        organizationVersion: 4,
+      }),
       expect.objectContaining({ corporationId: 98000001, organizationVersion: 4 }),
     ])
     expect(mocks.appendEvent).toHaveBeenCalledWith(

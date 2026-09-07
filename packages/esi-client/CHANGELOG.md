@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+## 3.0.1 - 2026-09-07
+
+### Fixed
+
+- Correct the pinned corporation project configuration schema to require each variant's identifying property. Valid project responses now pass validation while missing, ambiguous, and malformed variants remain rejected.
+
 ## 3.0.0 - 2026-09-05
 
 Initial package contract for the EVE Space deployment.

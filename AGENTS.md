@@ -210,7 +210,7 @@ These rules apply to every source directory. Keep a directory flat by default, w
 - Enrich character skills from local `sde_types` and `sde_groups` in one bounded query; retain ESI records with deterministic unknown labels when static rows are missing.
 - Preserve the configured identifiable ESI user agent and SDK response validation. Browser requests that must identify themselves use `X-User-Agent`; server requests use `User-Agent`.
 - Preserve `X-Compatibility-Date` on ESI requests. The compatibility date is not a future date and API changes take effect at 11:00 UTC.
-- Live `GetUniverseBloodlines` data can contain nullable `ship_type_id` values that conflict with the SDK 3.0.0 schema. Response validation is disabled only for that operation; do not broaden the exception.
+- Live `GetUniverseBloodlines` data can contain nullable `ship_type_id` values that conflict with the SDK 3.0.1 schema. Response validation is disabled only for that operation; do not broaden the exception.
 - `PostUniverseNames` can return `404 Ensure all IDs are valid before resolving` for an otherwise valid character that `GetCharactersCharacterId` returns successfully; character ID `90666561` was observed exhibiting this ESI inconsistency. Keep per-item positive caching for `PostUniverseNames` and `PostUniverseIds`, retain a stale successful value during bounded negative suppression, and never let a later `404` overwrite a previously resolved value.
 - Cacheable ESI resources derive freshness from ESI `Expires` or `Cache-Control` metadata and use their reviewed operation contract only as the fallback when response metadata provides no usable boundary.
 - Preserve conditional requests using ETag or Last-Modified and reuse cached data on `304`.

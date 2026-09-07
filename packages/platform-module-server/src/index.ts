@@ -3,10 +3,15 @@ import {
   operationRegistry,
   type ExecutableOperationRegistryEntry,
   type StableOperationId,
+  type CallOperationResult,
 } from '@evespace/esi-client/operations'
 
+export * from './cursor.js'
 export * from './errors.js'
 export * from './validation.js'
+
+export type PlatformEsiOperationData<Operation extends StableOperationId> =
+  CallOperationResult<Operation>
 
 export type PlatformEsiOperationPolicy = Omit<PlatformEsiOperationContract, 'audit'> & {
   readonly audit: Omit<PlatformEsiOperationContract['audit'], 'esiOperationId'>

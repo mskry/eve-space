@@ -209,6 +209,7 @@ export async function listOrganizationRosterCoverage() {
     .leftJoin(
       platformSubjectLifecycles,
       and(
+        eq(platformSubjectLifecycles.subjectKind, 'alliance'),
         eq(platformSubjectLifecycles.organizationDeploymentId, deploymentSettings.id),
         eq(platformSubjectLifecycles.organizationVersion, deploymentSettings.organizationVersion),
       ),

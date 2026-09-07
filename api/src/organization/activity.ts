@@ -61,6 +61,8 @@ const providerActivitySchema = z
     linkTarget: z
       .object({
         pageId: z.string().regex(platformContributionIdPattern),
+        activityId: z.uuid().optional(),
+        corporationId: positiveCharacterIdSchema.nullable().optional(),
         characterId: positiveCharacterIdSchema.nullable(),
       })
       .strict()
@@ -80,6 +82,8 @@ export interface OrganizationActivity extends Omit<PlatformActivity, 'id' | 'lin
   readonly sourceId: string
   readonly linkTarget: {
     readonly moduleId: string
+    readonly activityId?: string
+    readonly corporationId?: number | null
     readonly pageId: string
     readonly characterId: number | null
   } | null

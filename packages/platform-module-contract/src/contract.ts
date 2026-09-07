@@ -278,6 +278,7 @@ export const platformCollectionFailureClasses = [
 export type PlatformCollectionFailureClass = (typeof platformCollectionFailureClasses)[number]
 
 interface PlatformCollectionStatusBase {
+  readonly subjectLifecycleId?: string
   readonly authorizationGeneration: number | null
   readonly lastFailureClass: PlatformCollectionFailureClass | null
   readonly validatedAt: string | null
@@ -285,7 +286,9 @@ interface PlatformCollectionStatusBase {
 
 export type PlatformCollectionStatus =
   | (PlatformCollectionStatusBase & { readonly status: 'current' | 'stale' })
-  | (PlatformCollectionStatusBase & { readonly status: 'never-collected' | 'unavailable' })
+  | (PlatformCollectionStatusBase & {
+      readonly status: 'never-collected' | 'never-configured' | 'unavailable'
+    })
   | (PlatformCollectionStatusBase & {
       readonly status: 'authorization-required'
       readonly lastFailureClass: 'authorization-required'
@@ -294,6 +297,7 @@ export type PlatformCollectionStatus =
     })
 
 export type PlatformCollectionStatusSubject =
+  | { readonly kind: 'deployment'; readonly deploymentId: number }
   | { readonly kind: 'character'; readonly characterId: number }
   | { readonly kind: 'corporation'; readonly corporationId: number }
   | { readonly kind: 'alliance'; readonly allianceId: number }
@@ -382,6 +386,18 @@ export type PlatformEsiAuthorizationContract =
   | { readonly kind: 'character'; readonly scope: string }
 
 export type PlatformEsiIdentityContract =
+  | {
+      readonly kind: 'mixed'
+      readonly fields: readonly (
+        | { readonly kind: 'scalar'; readonly field: string; readonly nullable?: boolean }
+        | {
+            readonly kind: 'set'
+            readonly field: string
+            readonly maximumItems: number
+            readonly nullable?: boolean
+          }
+      )[]
+    }
   | { readonly kind: 'ordered'; readonly fields: readonly string[] }
   | { readonly kind: 'set'; readonly field: string; readonly maximumItems: number }
 
@@ -459,6 +475,7 @@ export interface PlatformResourceBatchContribution {
 }
 
 interface PlatformResourceContributionBase {
+  dependentOperationIds?: readonly string[]
   id: string
   operationId: string
   materializationIntervalSeconds: number
@@ -466,6 +483,11 @@ interface PlatformResourceContributionBase {
 }
 
 export type PlatformResourceContribution =
+  | (PlatformResourceContributionBase & {
+      batch?: never
+      subjectKind: 'deployment'
+      eligibility: { readonly kind: 'current-deployment' }
+    })
   | (PlatformResourceContributionBase & {
       batch?: PlatformResourceBatchContribution
       subjectKind: 'character'
@@ -500,7 +522,14 @@ export interface PlatformAllianceResourceSubject {
   readonly lifecycleId: string
 }
 
+export interface PlatformDeploymentResourceSubject {
+  readonly kind: 'deployment'
+  readonly deploymentId: number
+  readonly lifecycleId: string
+}
+
 export type PlatformResourceSubject =
+  | PlatformDeploymentResourceSubject
   | PlatformCharacterResourceSubject
   | PlatformCorporationResourceSubject
   | PlatformAllianceResourceSubject
@@ -589,6 +618,27 @@ export type PlatformResourceBatchOperationImplementation<
       }): readonly PlatformChangeHintBatchOutcome[]
     })
 
+export interface PlatformResourceCollectionContext<Subject extends PlatformResourceSubject> {
+  readonly subject: Subject
+  readonly organizationVersion: number
+  readonly corporationId: number | null
+  readonly authorizationGeneration: number | null
+  readonly capabilities: PlatformModuleResourceCapabilities
+  readonly requestBudget: number
+  execute(
+    operationId: string,
+    inputs: Readonly<Record<string, unknown>>,
+  ): Promise<{
+    readonly data: unknown
+    readonly validatedAt: string
+  }>
+}
+
+export interface PlatformResourceCollectionResult<Data> {
+  readonly data: Data
+  readonly complete: boolean
+}
+
 export interface PlatformResourceOperationImplementation<
   Operation extends string = string,
   OperationData = unknown,
@@ -598,10 +648,15 @@ export interface PlatformResourceOperationImplementation<
   Subject extends PlatformResourceSubject = PlatformCharacterResourceSubject,
 > {
   readonly operation: Operation
+  collect?(
+    context: PlatformResourceCollectionContext<Subject>,
+  ): Promise<PlatformResourceCollectionResult<Data>>
   request(subject: Subject): Readonly<Record<string, unknown>>
   map(input: { readonly subject: Subject; readonly data: OperationData }): Data
   /** Repeated delivery for the same subject lifecycle identity must converge. */
-  materialize(context: PlatformResourceMaterializationContext<Data, Subject>): Promise<void>
+  materialize(
+    context: PlatformResourceMaterializationContext<Data, Subject>,
+  ): Promise<void | { readonly outcome: 'obsolete' }>
   readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
 }
 
@@ -630,6 +685,7 @@ export function definePlatformResourceOperation<
 }
 
 interface PlatformInstalledResourceDescriptorBase<Implementation> {
+  readonly dependentOperationIds?: readonly string[]
   readonly moduleId: string
   readonly resourceId: string
   readonly operationId: string
@@ -638,6 +694,11 @@ interface PlatformInstalledResourceDescriptorBase<Implementation> {
 }
 
 export type PlatformInstalledResourceDescriptor<Implementation = unknown> =
+  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+      readonly batch?: never
+      readonly subjectKind: 'deployment'
+      readonly eligibility: { readonly kind: 'current-deployment' }
+    })
   | (PlatformInstalledResourceDescriptorBase<Implementation> & {
       readonly batch?: PlatformResourceBatchContribution
       readonly subjectKind: 'character'
@@ -703,6 +764,8 @@ export interface PlatformActivityParticipation {
 }
 
 export interface PlatformActivityLinkTarget {
+  readonly activityId?: string
+  readonly corporationId?: number | null
   readonly pageId: string
   readonly characterId: number | null
 }

@@ -14,6 +14,13 @@
       "reason": "HTTP 204 responses cannot contain a response body; ESI declares an empty application/json schema for this no-content result.",
       "from": "2020-01-01",
       "through": "2026-08-18"
+    },
+    {
+      "id": "corporation-project-configuration-required-variant",
+      "patch": "corporation-project-configuration-required-variant.json",
+      "reason": "Corporation project configuration oneOf branches omit their identifying required property, so every valid configuration matches multiple branches. Require the declared variant key while retaining exclusive-union and nested response validation.",
+      "from": "2026-08-18",
+      "through": "2026-08-18"
     }
   ],
   "reviewedLegacyWorkarounds": [

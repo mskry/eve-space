@@ -133,7 +133,7 @@ POSTGRES_PASSWORD=your-url-safe-random-postgres-password
 DATABASE_URL=postgres://eve_space:your-url-safe-random-postgres-password@localhost:5432/eve_space
 EVE_CLIENT_ID=your-client-id
 EVE_CLIENT_SECRET=your-client-secret
-ESI_USER_AGENT=EveSpace/0.1 (eve:your-character) @evespace/esi-client/3.0.0
+ESI_USER_AGENT=EveSpace/0.1 (+https://github.com/mskry/eve-space) @evespace/esi-client/3.0.1
 TOKEN_ENCRYPTION_KEY=your-base64-encoded-32-byte-key
 ADMIN_SETUP_SECRET=your-high-entropy-one-time-setup-secret
 ```

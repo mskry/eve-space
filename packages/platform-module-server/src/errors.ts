@@ -30,3 +30,14 @@ function assertPlatformModuleErrorBody(body: PlatformModuleErrorBody) {
   if (body.message.trim().length === 0 || body.message.length > 500)
     throw new TypeError('Platform module error message must be between 1 and 500 characters')
 }
+
+export function isPlatformEsiUnavailableItem(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ESI_HTTP_ERROR' &&
+    'status' in error &&
+    (error.status === 403 || error.status === 404)
+  )
+}

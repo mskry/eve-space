@@ -252,9 +252,17 @@ const privateNoStore: MiddlewareHandler<OrganizationSessionEnv> = async (context
 
 export const organizationRoutes = new Hono<OrganizationSessionEnv>()
   .use('*', privateNoStore, loadSession, requireSession, loadOrganizationSession)
-  .get('/context', async (context) =>
-    context.json(await getOrganizationAccessContext(context.var.session!.userId)),
-  )
+  .get('/context', async (context) => {
+    const access = await getOrganizationAccessContext(context.var.session!.userId)
+    const organization = context.var.organization
+    return context.json({
+      ...access,
+      memberAccess:
+        !organization?.blocked &&
+        organization?.organizationVersion === access.organization.organizationVersion &&
+        resolveOrganizationEntitlementScope(organization) !== 'none',
+    })
+  })
   .get('/compliance', async (context) =>
     context.json(await getOrganizationAccountComplianceDetails(context.var.session!.userId)),
   )

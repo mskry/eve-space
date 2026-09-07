@@ -55,7 +55,7 @@ describe('Sonar project boundaries', () => {
   });
 
   it('retains generated, build, dependency, declaration, and coverage exclusions', () => {
-    expect(csv(rootProperties, 'sonar.exclusions')).toContain('generated/**');
+    expect(csv(rootProperties, 'sonar.exclusions')).toContain('**/generated/**');
     expect(csv(packageProperties, 'sonar.exclusions')).toEqual(
       expect.arrayContaining([
         '**/node_modules/**',
