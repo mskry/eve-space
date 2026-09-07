@@ -1,12 +1,11 @@
-import { useQuery } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 import { computed, useRuntimeConfig } from '#imports'
+import { watch } from 'vue'
+import type { PlatformNavigationIdentity } from '../../navigation.js'
+import { removePlatformModuleQueries } from '../../query-lifecycle.js'
+import { toApiQueryError } from '../../query-error.js'
 
-export interface PlatformNavigationIdentity {
-  readonly ownerId: string
-  readonly navigationId: string
-}
-
-interface PlatformModuleRuntimeState {
+export interface PlatformModuleRuntimeState {
   readonly enabledModuleIds: readonly string[]
   readonly shellNavigationOrder: {
     readonly dashboard: readonly PlatformNavigationIdentity[]
@@ -14,10 +13,11 @@ interface PlatformModuleRuntimeState {
   }
 }
 
-const platformModuleRuntimeQueryKey = ['private', 'modules', 'runtime'] as const
+const platformModuleRuntimeQueryKey = ['public', 'modules', 'runtime'] as const
 
 export function usePlatformModuleRuntime() {
   const runtimeConfig = useRuntimeConfig()
+  const queryCache = useQueryCache()
   const runtimeQuery = useQuery({
     key: platformModuleRuntimeQueryKey,
     enabled: typeof window !== 'undefined',
@@ -25,6 +25,14 @@ export function usePlatformModuleRuntime() {
     query: ({ signal }) => loadPlatformModuleRuntimeState(runtimeConfig.public.apiBase, signal),
   })
   const enabledModuleIds = computed(() => new Set(runtimeQuery.data.value?.enabledModuleIds ?? []))
+  let previousEnabledModuleIds = new Set<string>()
+
+  watch(enabledModuleIds, (currentEnabledModuleIds) => {
+    for (const moduleId of previousEnabledModuleIds) {
+      if (!currentEnabledModuleIds.has(moduleId)) removePlatformModuleQueries(queryCache, moduleId)
+    }
+    previousEnabledModuleIds = new Set(currentEnabledModuleIds)
+  })
 
   async function ensureRuntimeState() {
     await runtimeQuery.refresh(true)
@@ -38,6 +46,6 @@ export async function loadPlatformModuleRuntimeState(apiBase: string, signal?: A
     credentials: 'include',
     signal,
   })
-  if (!response.ok) throw new Error('Module runtime state is unavailable.')
+  if (!response.ok) throw await toApiQueryError(response, 'Module runtime state is unavailable.')
   return (await response.json()) as PlatformModuleRuntimeState
 }

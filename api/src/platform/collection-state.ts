@@ -1,5 +1,6 @@
 import {
   isReservedPlatformModuleId,
+  platformCollectionFailureClasses,
   platformContributionIdPattern,
   platformModuleIdMaxLength,
   platformModuleIdPattern,
@@ -7,17 +8,8 @@ import {
 } from '@eve-space/platform-module-contract'
 import { z } from 'zod'
 
-export const platformCollectionFailureClasses = [
-  'authorization-required',
-  'esi-cooldown',
-  'esi-unavailable',
-  'response-invalid',
-  'mapping-failed',
-  'persistence-failed',
-  'unknown',
-] as const
-
-export type PlatformCollectionFailureClass = (typeof platformCollectionFailureClasses)[number]
+export { platformCollectionFailureClasses }
+export type { PlatformCollectionFailureClass } from '@eve-space/platform-module-contract'
 
 const installedModuleIdSchema = z
   .string()

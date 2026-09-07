@@ -2087,7 +2087,9 @@ describe('organization storage invariants', () => {
     await claimOrganizationOwnership(
       ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
     )
-    const userIds = [randomUUID(), randomUUID()].toSorted()
+    const userIds = [randomUUID(), randomUUID()].toSorted((left, right) =>
+      left.localeCompare(right),
+    )
     const firstUserId = userIds[0]!
     const secondUserId = userIds[1]!
     await establishCompliantAccount(firstUserId, 90_000_001)

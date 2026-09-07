@@ -3,6 +3,8 @@ import type { ApplyGlobalResponse } from 'hono/client'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
+import type { PlatformModuleErrorBody } from '@eve-space/platform-module-contract'
+import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { env } from './env.js'
 import { CharacterTokenNotFoundError } from './auth/store.js'
 import { installedModuleRoutes } from './generated/platform/installed-module-routes.js'
@@ -20,6 +22,8 @@ import { loadSession, requireSession } from './middleware/auth-session.js'
 import { TokenRefreshUnavailableError } from './auth/tokens.js'
 import { organizationRoutes } from './organization/routes.js'
 import { universeRoutes } from './universe/routes.js'
+
+type GlobalErrorBody = { message: string } | PlatformModuleErrorBody
 
 export const app = new Hono()
   .use('*', secureHeaders())
@@ -50,21 +54,55 @@ app.onError((error, context) => {
   if (error instanceof TokenRefreshUnavailableError) {
     return context.json({ message: 'EVE token refresh is temporarily unavailable.' }, 503)
   }
+  if (error instanceof PlatformModuleHttpError) {
+    return context.json(error.body, error.status)
+  }
   if (error instanceof HTTPException) {
     return context.json({ message: error.message }, error.status)
   }
 
-  console.error('Unhandled API error', error)
+  console.error(
+    'Unhandled API error',
+    unexpectedErrorDetails(error, context.req.method, context.req.path),
+  )
   return context.json({ message: 'Internal server error' }, 500)
 })
 
 export type AppType = ApplyGlobalResponse<
   typeof app,
   {
-    400: { json: { message: string } }
-    404: { json: { message: string } }
+    400: { json: GlobalErrorBody }
+    403: { json: GlobalErrorBody }
+    404: { json: GlobalErrorBody }
+    409: { json: GlobalErrorBody }
+    422: { json: GlobalErrorBody }
+    429: { json: GlobalErrorBody }
     500: { json: { message: string } }
-    502: { json: { message: string } }
-    503: { json: { message: string } }
+    502: { json: GlobalErrorBody }
+    503: { json: GlobalErrorBody }
   }
 >
+
+function unexpectedErrorDetails(error: unknown, method: string, path: string) {
+  const request = { category: 'unexpected application failure', method, path }
+  if (!(error instanceof Error)) return { ...request, thrownType: typeof error }
+
+  return {
+    ...request,
+    errorName: error.name,
+    stack: errorStackLocations(error),
+    cause: errorCauseDetails(error.cause),
+  }
+}
+
+function errorCauseDetails(cause: unknown) {
+  if (cause instanceof Error) return { errorName: cause.name, stack: errorStackLocations(cause) }
+  if (cause === undefined) return undefined
+  return { thrownType: typeof cause }
+}
+
+function errorStackLocations(error: Error) {
+  const lines = error.stack?.split('\n')
+  const firstFrame = lines?.findIndex((line) => /^\s*at /.test(line)) ?? -1
+  return firstFrame === -1 ? undefined : lines?.slice(firstFrame).join('\n').trim()
+}

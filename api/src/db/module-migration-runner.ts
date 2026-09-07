@@ -14,6 +14,7 @@ import {
   moduleMigrationLockNamespace,
 } from './locks.js'
 import type { MigrationRunOptions } from './migration-runner.js'
+import { assertModuleMigrationSql } from './module-migration-validation.js'
 import { assertTransactionalMigration, type Migration } from './migration-validation.js'
 import {
   modulePersistenceNames,
@@ -77,8 +78,13 @@ export async function runModuleMigrationSets(
   )
   if (new Set(moduleIds).size !== moduleIds.length)
     throw new Error('Installed module migration sets contain duplicate module owners')
-  for (const { migrations } of migrationSets)
-    for (const migration of migrations) assertTransactionalMigration(migration)
+  for (const { moduleId, migrations } of migrationSets) {
+    const { schemaName } = modulePersistenceNames(moduleId)
+    for (const migration of migrations) {
+      assertTransactionalMigration(migration, { rejectUnterminated: true })
+      assertModuleMigrationSql(moduleId, schemaName, migration)
+    }
+  }
 
   for (const migrationSet of migrationSets) {
     // oxlint-disable-next-line no-await-in-loop
@@ -119,14 +125,16 @@ async function applyModuleMigrationSet(
     return
   }
 
-  const { schemaName } = modulePersistenceNames(moduleId)
-  const searchPath = `${schemaName}, pg_catalog`
+  const { migrationRoleName, schemaName } = modulePersistenceNames(moduleId)
+  const searchPath = schemaName
   for (const [index, migration] of pendingMigrations.entries()) {
     // oxlint-disable-next-line no-await-in-loop
     await runInTransaction(connection, async () => {
       if (index === 0) await provisionModulePersistence(connection, moduleId)
+      await connection`set local role ${connection(migrationRoleName)}`
       await connection`select set_config('search_path', ${searchPath}, true)`
       await connection.unsafe(migration.sql).simple()
+      await connection`reset role`
       await connection`
         insert into public.schema_migrations (module, name)
         values (${moduleId}, ${migration.name})

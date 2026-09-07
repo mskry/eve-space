@@ -5,17 +5,19 @@ import { startCorsJsonApi } from '../../../tests/support/cors-json-api'
 
 let alphaEnabled = true
 let dashboardOrderComplete = true
-const apiServer = await startCorsJsonApi(() => ({
-  body: {
-    enabledModuleIds: alphaEnabled ? ['alpha'] : [],
-    shellNavigationOrder: {
-      dashboard:
-        alphaEnabled && dashboardOrderComplete
-          ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }]
-          : [],
-      character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
-    },
-  },
+const apiServer = await startCorsJsonApi((request) => ({
+  body: request.url?.startsWith('/api/alpha/')
+    ? { characterId: 7, name: 'Alpha Seven' }
+    : {
+        enabledModuleIds: alphaEnabled ? ['alpha'] : [],
+        shellNavigationOrder: {
+          dashboard:
+            alphaEnabled && dashboardOrderComplete
+              ? [{ ownerId: 'alpha', navigationId: 'alpha-icon-override' }]
+              : [],
+          character: alphaEnabled ? [{ ownerId: 'alpha', navigationId: 'alpha-default-icon' }] : [],
+        },
+      },
 }))
 process.env.NUXT_PUBLIC_API_BASE = apiServer.origin
 
@@ -38,12 +40,53 @@ describe('platform Nuxt module fixture', async () => {
     expect(html).toContain('data-testid="alpha-page"')
   })
 
+  it('keeps route-derived invalid subjects inert', async () => {
+    alphaEnabled = true
+
+    await expect($fetch('/characters/not-a-number/alpha')).resolves.toContain(
+      'data-testid="alpha-page"',
+    )
+  })
+
+  it('exposes typed protected queries and shared interaction primitives to a feature', async () => {
+    alphaEnabled = true
+    apiServer.setAllowedOrigin(useTestContext().url)
+    const page = await createPage('/characters/7/alpha')
+
+    await page.getByText('Alpha Seven', { exact: true }).waitFor({ state: 'visible' })
+    expect(await page.getByRole('img', { name: 'Alpha character' }).getAttribute('src')).toMatch(
+      /\/characters\/7\/portrait/,
+    )
+    await page.getByRole('button', { name: 'Next page' }).click()
+    expect(await page.getByText('Page 2 of 2', { exact: true }).isVisible()).toBe(true)
+    await page.getByRole('button', { name: 'Confirm record' }).click()
+    expect(await page.getByRole('dialog').textContent()).toContain('Confirm alpha record')
+    await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click()
+    await page.getByText('Alpha record confirmed.', { exact: true }).waitFor({ state: 'attached' })
+  })
+
+  it('renders shared authorization and stale resource states', async () => {
+    alphaEnabled = true
+
+    await expect($fetch('/characters/7/alpha?state=authorization')).resolves.toContain(
+      'Alpha authorization required',
+    )
+    await expect($fetch('/characters/7/alpha?state=stale')).resolves.toContain(
+      'Showing the last available record.',
+    )
+    const retainedAuthorization = await $fetch(
+      '/characters/7/alpha?state=authorization&retained=true',
+    )
+    expect(retainedAuthorization).toContain('Alpha nested page')
+    expect(retainedAuthorization).not.toContain('Alpha authorization required')
+  })
+
   it('rejects direct disabled-page navigation and restores it without rebuilding', async () => {
     alphaEnabled = false
     await expect($fetch('/characters/7/alpha')).rejects.toMatchObject({ statusCode: 404 })
 
     alphaEnabled = true
-    await expect($fetch('/characters/7/alpha')).resolves.toContain('Alpha nested page')
+    await expect($fetch('/characters/7/alpha')).resolves.toContain('Loading alpha record')
   })
 
   it('filters runtime navigation without rebuilding', async () => {
@@ -93,7 +136,7 @@ describe('platform Nuxt module fixture', async () => {
     expect(navigation).toContain('"navigationId":"alpha-default-icon"')
     expect(navigation).toContain('"icon":"character"')
     expect(navigation).toContain('"navigationId":"alpha-icon-override"')
-    expect(navigation).toContain('"icon":"status"')
+    expect(navigation).toContain('"icon":"settings"')
     expect(navigation).toContain(
       '{"moduleId":"alpha","pageName":"eve-alpha-record","audience":"authenticated"}',
     )

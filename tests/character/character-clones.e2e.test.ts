@@ -170,7 +170,9 @@ describe('character Clones production route', async () => {
 
       if (intent === 'hover') await clonesLink.hover()
       else await clonesLink.focus()
-      await expect.poll(() => cloneResourcePaths().toSorted()).toEqual(clonePaths().toSorted())
+      await expect
+        .poll(() => cloneResourcePaths().toSorted((left, right) => left.localeCompare(right)))
+        .toEqual(clonePaths().toSorted((left, right) => left.localeCompare(right)))
 
       const requestsAfterIntent = cloneResourcePaths().length
       await clonesLink.click()

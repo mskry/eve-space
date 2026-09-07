@@ -13,6 +13,7 @@ import {
 } from '../db/locks.js'
 import { createTransactionScopedModulePersistenceCapability } from '../db/module-persistence.js'
 import { sdeCoreReads } from './core-read-capabilities.js'
+import { createPlatformModuleLogger } from './module-logging.js'
 import { materializeCoreResourceObservation } from './core-resource-materialization.js'
 import {
   recomputeAllOrganizationAccountsInTransaction,
@@ -131,7 +132,11 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
         data: observation.data,
         validatedAt: observation.validatedAt,
         authorizationGeneration: observation.authorizationGeneration,
-        capabilities: { persistence: persistence.capability, sde: sdeCoreReads },
+        capabilities: {
+          logger: createPlatformModuleLogger(observation.resource.moduleId),
+          persistence: persistence.capability,
+          sde: sdeCoreReads,
+        },
       })
       const suppressed = persistence.suppressedFailure()
       if (suppressed) throw suppressed.error

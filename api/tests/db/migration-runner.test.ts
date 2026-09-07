@@ -61,4 +61,13 @@ describe('transactional migration validation', () => {
   ])('handles unterminated or escaped non-executable SQL: %s', (sql) => {
     expect(() => assertTransactionalMigration({ name: 'test.sql', sql })).not.toThrow()
   })
+
+  test('rejects unterminated SQL when strict validation is requested', () => {
+    expect(() =>
+      assertTransactionalMigration(
+        { name: 'module.sql', sql: "select 'masked; commit;" },
+        { rejectUnterminated: true },
+      ),
+    ).toThrow('Unterminated SQL string literal')
+  })
 })

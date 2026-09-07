@@ -23,8 +23,11 @@ const mocks = vi.hoisted(() => {
     loadModuleRuntimeState: vi.fn(),
     saveInstalledShellNavigationOrder: vi.fn(),
     sessionHandler: vi.fn(),
+    unexpectedError: new Error('refresh-token private-host'),
     ownedHandler: vi.fn(),
     createOwnedCharacterCoreReads: vi.fn(),
+    createPlatformModuleCollectionStatusReads: vi.fn(),
+    collectionStatus: { read: vi.fn() },
     organizationContext: {
       organizationVersion: 7,
       state: 'compliant' as 'pending' | 'compliant' | 'review_required' | 'suspended',
@@ -94,6 +97,9 @@ vi.mock('../../src/platform/core-read-capabilities.js', () => ({
   createOwnedCharacterCoreReads: mocks.createOwnedCharacterCoreReads,
   sdeCoreReads: { loadPublishedTypeGroups: vi.fn() },
 }))
+vi.mock('../../src/platform/module-collection-status-capabilities.js', () => ({
+  createPlatformModuleCollectionStatusReads: mocks.createPlatformModuleCollectionStatusReads,
+}))
 
 vi.mock('../../src/middleware/organization-session.js', () => ({
   loadOrganizationSession: async (
@@ -114,15 +120,43 @@ vi.mock('../../src/organization/module-authorization.js', () => ({
 
 vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
   const { Hono } = await import('hono')
+  const { z } = await import('zod')
+  const { platformModuleError, zValidator } = await import('@eve-space/platform-module-server')
   const { platformModuleRouteComposers } =
     await import('../../src/platform/module-route-composition.js')
   const organization = { audience: 'member', requiredPermission: 'alpha.view' } as const
 
-  const sessionRoutes = new Hono<PlatformAuthenticatedSessionRouteEnv>().get('/', (context) => {
-    mocks.events.push('session-handler')
-    mocks.sessionHandler(context.var.platform)
-    return context.json({ platform: context.var.platform }, 200)
-  })
+  const sessionRoutes = new Hono<PlatformAuthenticatedSessionRouteEnv>()
+    .get('/', (context) => {
+      mocks.events.push('session-handler')
+      mocks.sessionHandler(context.var.platform)
+      return context.json(
+        {
+          platform: {
+            authorization: context.var.platform.authorization,
+            organization: context.var.platform.organization,
+          },
+        },
+        200,
+      )
+    })
+    .post(
+      '/validated',
+      zValidator('json', z.object({ name: z.string().min(1, 'Name is required.') })),
+      (context) => {
+        mocks.sessionHandler(context.req.valid('json'))
+        return context.json({ ok: true as const })
+      },
+    )
+    .get('/expected-error', () => {
+      throw platformModuleError(409, {
+        code: 'ACTIVITY_ALREADY_EXISTS',
+        message: 'The activity already exists.',
+      })
+    })
+    .get('/unexpected-error', () => {
+      throw mocks.unexpectedError
+    })
   const ownedRoutes = new Hono<PlatformOwnedCharacterRouteEnv>().get('/', (context) => {
     mocks.events.push('owned-handler')
     mocks.ownedHandler(context.var.platform)
@@ -176,6 +210,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.events = []
   mocks.enabled = true
+  mocks.unexpectedError = new Error('refresh-token private-host')
   mocks.hasOrganizationContext = true
   mocks.findAdminSession.mockResolvedValue(null)
   mocks.isInstalledModuleEnabled.mockImplementation(async () => {
@@ -191,6 +226,7 @@ beforeEach(() => {
     return characterId === ownedCharacter.characterId ? ownedCharacter : null
   })
   mocks.createOwnedCharacterCoreReads.mockReturnValue({ loadAffiliation: vi.fn() })
+  mocks.createPlatformModuleCollectionStatusReads.mockReturnValue(mocks.collectionStatus)
   mocks.organizationContext = {
     organizationVersion: 7,
     state: 'compliant',
@@ -285,6 +321,7 @@ describe('full-root platform module authorization', () => {
     })
     expect(Object.keys(mocks.ownedHandler.mock.calls[0]?.[0] ?? {})).toEqual([
       'authorization',
+      'collectionStatus',
       'organization',
       'coreReads',
     ])
@@ -307,9 +344,97 @@ describe('full-root platform module authorization', () => {
     })
     expect(Object.keys(mocks.sessionHandler.mock.calls[0]?.[0] ?? {})).toEqual([
       'authorization',
+      'collectionStatus',
       'organization',
     ])
   })
+
+  test('uses public canonical validation and safe module error contracts', async () => {
+    const invalid = await app.request('/api/modules/alpha/profile/validated', {
+      method: 'POST',
+      headers: { ...sessionCookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: '' }),
+    })
+    expect(invalid.status).toBe(400)
+    await expect(invalid.json()).resolves.toEqual({ message: 'Name is required.' })
+    expect(invalid.headers.get('cache-control')).toBe('private, no-store')
+    expect(invalid.headers.get('vary')).toContain('Cookie')
+    expect(mocks.sessionHandler).not.toHaveBeenCalled()
+
+    const expected = await app.request('/api/modules/alpha/profile/expected-error', {
+      headers: sessionCookie,
+    })
+    expect(expected.status).toBe(409)
+    await expect(expected.json()).resolves.toEqual({
+      code: 'ACTIVITY_ALREADY_EXISTS',
+      message: 'The activity already exists.',
+    })
+    expect(expected.headers.get('cache-control')).toBe('private, no-store')
+    expect(expected.headers.get('vary')).toContain('Cookie')
+  })
+
+  test('sanitizes unexpected module failures in responses and logs', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
+      headers: sessionCookie,
+    })
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
+    expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/refresh-token|private-host/)
+    expect(consoleError).toHaveBeenCalledWith(
+      'Unhandled API error',
+      expect.objectContaining({
+        category: 'unexpected application failure',
+        errorName: 'Error',
+        method: 'GET',
+        path: '/api/modules/alpha/profile/unexpected-error',
+        stack: expect.any(String),
+      }),
+    )
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(response.headers.get('vary')).toContain('Cookie')
+    consoleError.mockRestore()
+  })
+
+  test.each([
+    [true, expect.stringMatching(/^at /)],
+    [false, undefined],
+  ] as const)(
+    'omits multiline messages from logs with stack frames: %s',
+    async (withFrames, expectedStack) => {
+      const cause = new Error('connection failed\ndsn=postgres://user:pw@private-host')
+      mocks.unexpectedError = new Error('request failed\nrefresh-token=private-value', { cause })
+      if (!withFrames) {
+        cause.stack = `Error: ${cause.message}`
+        mocks.unexpectedError.stack = `Error: ${mocks.unexpectedError.message}`
+      }
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      try {
+        const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
+          headers: sessionCookie,
+        })
+        expect(response.status).toBe(500)
+        await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
+        expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
+          /dsn=|postgres:|user:pw|private-host|refresh-token|private-value/,
+        )
+        expect(consoleError).toHaveBeenCalledWith(
+          'Unhandled API error',
+          expect.objectContaining({
+            stack: expectedStack,
+            cause: {
+              errorName: 'Error',
+              stack: expectedStack,
+            },
+          }),
+        )
+      } finally {
+        consoleError.mockRestore()
+      }
+    },
+  )
 
   test.each([
     ['blocked', 'ORGANIZATION_MEMBER_BLOCKED'],

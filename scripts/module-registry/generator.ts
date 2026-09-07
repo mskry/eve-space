@@ -14,6 +14,10 @@ import {
   type PlatformNuxtContributionDescriptor,
 } from '../../packages/platform-module-contract/src/index.js'
 import { coreModuleValidationAuthorities, coreNavigationDefaults } from './authorities.js'
+import {
+  assertInstalledFeatureBoundaries,
+  assertManifestCompositionBoundaries,
+} from './feature-boundaries.js'
 
 export const generatedRegistryPaths = [
   'api/src/generated/platform/installed-module-routes.ts',
@@ -39,6 +43,7 @@ export async function loadInstalledModuleManifests(root: string) {
     throw new Error('features/installed-modules.json must contain a string modules array')
 
   const ids = installed.modules
+  await assertInstalledFeatureBoundaries(root)
   const manifests = await Promise.all(
     ids.map(async (id) => {
       const featureDirectory = join(root, 'features', id)
@@ -60,6 +65,7 @@ export async function loadInstalledModuleManifests(root: string) {
         manifest.server.migrations.map(({ name }) => name),
       )
       validatePackageManifest(featureDirectory, 'nuxt', manifest.nuxt.package)
+      await assertManifestCompositionBoundaries(root, manifest)
       return manifest
     }),
   )
@@ -227,7 +233,7 @@ function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
     ? `[${descriptors
         .map((descriptor, index) => {
           const binding = providers[index]!.binding
-          return `\n  { moduleId: ${quote(descriptor.moduleId)}, providerId: ${quote(descriptor.providerId)}, audience: ${quote(descriptor.audience)}, requiredPermission: ${quote(descriptor.requiredPermission)}, freshness: { staleAfterSeconds: ${descriptor.freshness.staleAfterSeconds} }, pageIds: [${descriptor.pageIds.map(quote).join(', ')}], invoke: (context) => ${binding}Factory(createPlatformModuleActivityProviderCapabilities(${quote(descriptor.moduleId)}, context.signal))(context) },`
+          return `\n  { moduleId: ${quote(descriptor.moduleId)}, providerId: ${quote(descriptor.providerId)}, audience: ${quote(descriptor.audience)}, requiredPermission: ${quote(descriptor.requiredPermission)}, freshness: { staleAfterSeconds: ${descriptor.freshness.staleAfterSeconds} }, pageIds: [${descriptor.pageIds.map(quote).join(', ')}], invoke: (context) => ${binding}Factory(createPlatformModuleActivityProviderCapabilities(${quote(descriptor.moduleId)}, context))(context) },`
         })
         .join('')}\n]`
     : '[]'

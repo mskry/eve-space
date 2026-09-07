@@ -3,7 +3,8 @@ import type {
   PlatformOrganizationContributionAuthorization,
   PlatformOwnedCharacterRouteEnv,
 } from '@eve-space/platform-module-contract'
-import { Hono, type MiddlewareHandler, type Schema } from 'hono'
+import { Hono, type Schema } from 'hono'
+import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { loadSession, requireSession } from '../middleware/auth-session.js'
 import {
@@ -30,7 +31,7 @@ function composeAuthenticatedSessionModuleRoute<
     .use('*', requireSession)
     .use('*', loadOrganizationSession)
     .use('*', requireModuleOrganizationAuthorization(organization))
-    .use('*', exposeAuthenticatedSessionModuleContext)
+    .use('*', exposeAuthenticatedSessionModuleContext(moduleId))
     .route('/', route)
 }
 
@@ -48,13 +49,8 @@ function composeOwnedCharacterModuleRoute<RouteSchema extends Schema, RouteBaseP
     .use('*', requireModuleOrganizationAuthorization(organization))
     .use('*', zValidator('param', characterIdParams))
     .use('*', loadOwnedCharacter)
-    .use('*', exposeOwnedCharacterModuleContext)
+    .use('*', exposeOwnedCharacterModuleContext(moduleId))
     .route('/', route)
-}
-
-const privateNoStore: MiddlewareHandler = async (context, next) => {
-  context.header('Cache-Control', 'private, no-store')
-  await next()
 }
 
 export const platformModuleRouteComposers = {

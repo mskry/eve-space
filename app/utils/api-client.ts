@@ -1,10 +1,8 @@
 import type { AppType } from '../../api/src/index'
-import { hc } from 'hono/client'
+import { createPlatformApiClient } from '@eve-space/platform-module-nuxt/runtime'
 
 export function createApiClient(baseUrl: string) {
-  return hc<AppType>(baseUrl, {
-    init: { credentials: 'include' },
-  })
+  return createPlatformApiClient<AppType>(baseUrl)
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>

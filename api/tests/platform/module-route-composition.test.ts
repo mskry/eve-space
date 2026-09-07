@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   findOwnedCharacter: vi.fn(),
   findSession: vi.fn(),
   isInstalledModuleEnabled: vi.fn(),
+  createPlatformModuleCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
 }))
 
 vi.mock('../../src/auth/store.js', () => ({
@@ -18,6 +19,9 @@ vi.mock('../../src/auth/store.js', () => ({
 }))
 vi.mock('../../src/platform/module-settings.js', () => ({
   isInstalledModuleEnabled: mocks.isInstalledModuleEnabled,
+}))
+vi.mock('../../src/platform/module-collection-status-capabilities.js', () => ({
+  createPlatformModuleCollectionStatusReads: mocks.createPlatformModuleCollectionStatusReads,
 }))
 vi.mock('../../src/middleware/organization-session.js', () => ({
   loadOrganizationSession: async (
@@ -95,6 +99,7 @@ describe('platform module route composition', () => {
     })
 
     expect(response.status).toBe(200)
+    expectPrivateResponsePolicy(response)
     await expect(response.json()).resolves.toEqual({
       strategy: 'authenticated-session',
       userId: 'user-1',
@@ -115,6 +120,7 @@ describe('platform module route composition', () => {
     })
 
     expect(response.status).toBe(200)
+    expectPrivateResponsePolicy(response)
     await expect(response.json()).resolves.toEqual({
       strategy: 'owned-character',
       userId: 'user-1',
@@ -143,6 +149,49 @@ describe('platform module route composition', () => {
     expect(mocks.findSession).not.toHaveBeenCalled()
   })
 
+  test('retains private response policy when authentication fails', async () => {
+    const handler = vi.fn()
+    const feature = new Hono<PlatformAuthenticatedSessionRouteEnv>().get('/', (context) => {
+      handler()
+      return context.json(context.var.platform.authorization)
+    })
+    const app = new Hono().route(
+      '/alpha',
+      platformModuleRouteComposers['authenticated-session'](
+        'alpha',
+        organizationDeclaration,
+        feature,
+      ),
+    )
+
+    const response = await app.request('/alpha')
+
+    expect(response.status).toBe(401)
+    expectPrivateResponsePolicy(response)
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  test('retains private response policy when owned-character parameters are invalid', async () => {
+    const handler = vi.fn()
+    const feature = new Hono<PlatformOwnedCharacterRouteEnv>().get('/', (context) => {
+      handler()
+      return context.json(context.var.platform.authorization)
+    })
+    const app = new Hono().route(
+      '/alpha/characters/:characterId',
+      platformModuleRouteComposers['owned-character']('alpha', organizationDeclaration, feature),
+    )
+
+    const response = await app.request('/alpha/characters/not-a-character', {
+      headers: { cookie: 'eve_space_session=session-token' },
+    })
+
+    expect(response.status).toBe(400)
+    expectPrivateResponsePolicy(response)
+    expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
+    expect(handler).not.toHaveBeenCalled()
+  })
+
   test('refuses organization access before owned-character lookup and module code', async () => {
     mocks.authorizeOrganizationContribution.mockResolvedValue({
       authorized: false,
@@ -163,7 +212,34 @@ describe('platform module route composition', () => {
     })
 
     expect(response.status).toBe(403)
+    expectPrivateResponsePolicy(response)
     expect(mocks.findOwnedCharacter).not.toHaveBeenCalled()
     expect(handler).not.toHaveBeenCalled()
   })
+
+  test('retains private response policy when character ownership fails', async () => {
+    mocks.findOwnedCharacter.mockResolvedValue(null)
+    const handler = vi.fn()
+    const feature = new Hono<PlatformOwnedCharacterRouteEnv>().get('/', (context) => {
+      handler()
+      return context.json(context.var.platform.authorization)
+    })
+    const app = new Hono().route(
+      '/alpha/characters/:characterId',
+      platformModuleRouteComposers['owned-character']('alpha', organizationDeclaration, feature),
+    )
+
+    const response = await app.request('/alpha/characters/9002', {
+      headers: { cookie: 'eve_space_session=session-token' },
+    })
+
+    expect(response.status).toBe(404)
+    expectPrivateResponsePolicy(response)
+    expect(handler).not.toHaveBeenCalled()
+  })
 })
+
+function expectPrivateResponsePolicy(response: Response) {
+  expect(response.headers.get('cache-control')).toBe('private, no-store')
+  expect(response.headers.get('vary')).toBe('Cookie')
+}

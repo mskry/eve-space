@@ -4,15 +4,20 @@ import alphaNuxtModule from './modules/alpha-nuxt/src/module.js'
 import platformNuxtModule from '../../../src/module.js'
 
 const alphaPackageRoot = fileURLToPath(new URL('./modules/alpha-nuxt', import.meta.url))
+const platformRuntimeEntry = fileURLToPath(new URL('../../../src/runtime.ts', import.meta.url))
+const platformRuntime = fileURLToPath(new URL('../../../src/runtime', import.meta.url))
 
 export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '',
+      eveImageBase: 'https://images.evetech.net',
     },
   },
   alias: {
     '@eve-space/alpha-nuxt': `${alphaPackageRoot}/src/module.js`,
+    '@eve-space/platform-module-nuxt/runtime': platformRuntimeEntry,
+    '@eve-space/platform-module-nuxt/runtime/platform-api': `${platformRuntime}/platform-api.ts`,
   },
   modules: [
     [
@@ -48,7 +53,7 @@ export default defineNuxtConfig({
                 label: 'Alpha override',
                 description: 'Entry icon override',
                 to: '/alpha',
-                icon: 'status',
+                icon: 'settings',
                 audience: 'public',
                 placement: 'dashboard',
                 order: 50,

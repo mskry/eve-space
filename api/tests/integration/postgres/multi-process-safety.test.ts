@@ -102,11 +102,8 @@ async function loadIsolationMigrationSql({ moduleId }: { moduleId: string }) {
       value text not null
     );
 
-    create function ${moduleId}_privileged_count() returns bigint
-    language sql
-    security definer
-    set search_path = pg_catalog
-    as $$ select count(*) from public.users $$;
+    create table ${moduleId}_migration_identity (role_name text not null);
+    insert into ${moduleId}_migration_identity (role_name) values (current_user);
   `
 }
 
@@ -421,6 +418,79 @@ describe('multi-process safety', () => {
     }
   })
 
+  test('rejects migration authority escapes without changing targets or the ledger', async () => {
+    const connection = postgres(databaseUrl)
+    const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
+    const prohibited = [
+      ['core schema write', `delete from public.users where id = '${userId}'`],
+      ['cross-module DDL', 'drop table eve_module_beta.beta_records'],
+      ['privilege change', 'grant select on alpha_policy_probe to public'],
+      ['role change', 'alter role eve_module_beta_runtime login'],
+      ['role reset', 'reset role'],
+      ['session authorization', 'set session authorization eve_space'],
+      ['extension operation', 'create extension hstore'],
+      ['deployment schema', 'create schema escaped_module_schema'],
+    ] as const
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'beta', name: 'beta-010-records.sql' }],
+        loadModuleSql: loadIsolationMigrationSql,
+      })
+      await connection`insert into users (id) values (${userId})`
+
+      for (const [name, operation] of prohibited) {
+        await expect(
+          runModuleMigrationSets(connection, [
+            {
+              moduleId: 'alpha',
+              migrations: [
+                {
+                  name: `alpha-${name.replaceAll(' ', '-')}.sql`,
+                  sql: `create table alpha_policy_probe (id integer); ${operation};`,
+                },
+              ],
+            },
+          ]),
+        ).rejects.toThrow('is not schema-contained')
+      }
+
+      const [state] = await connection<
+        {
+          alpha_applied: number
+          alpha_schema_exists: boolean
+          beta_login: boolean
+          beta_table_exists: boolean
+          escaped_schema_exists: boolean
+          extension_exists: boolean
+          user_exists: boolean
+        }[]
+      >`
+        select
+          (select count(*)::integer from schema_migrations where module = 'alpha')
+            as alpha_applied,
+          to_regnamespace('eve_module_alpha') is not null as alpha_schema_exists,
+          (select rolcanlogin from pg_roles where rolname = 'eve_module_beta_runtime')
+            as beta_login,
+          to_regclass('eve_module_beta.beta_records') is not null as beta_table_exists,
+          to_regnamespace('escaped_module_schema') is not null as escaped_schema_exists,
+          exists (select 1 from pg_extension where extname = 'hstore') as extension_exists,
+          exists (select 1 from users where id = ${userId}) as user_exists
+      `
+      expect(state).toEqual({
+        alpha_applied: 0,
+        alpha_schema_exists: false,
+        beta_login: false,
+        beta_table_exists: true,
+        escaped_schema_exists: false,
+        extension_exists: false,
+        user_exists: true,
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('restores the session lock timeout it overrode while migrating', async () => {
     const connection = postgres(databaseUrl, { max: 1, connection: { lock_timeout: 7_000 } })
 
@@ -439,7 +509,36 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('provisions restricted runtime roles for every installed module', async () => {
+  test('retains migration-role data access across separate startup runs', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-001-initial.sql' }],
+        loadModuleSql: async () =>
+          'create table alpha_records (id integer generated always as identity primary key, value text not null);',
+      })
+      await runStartupMigrations(connection, {
+        installed: [
+          { moduleId: 'alpha', name: 'alpha-001-initial.sql' },
+          { moduleId: 'alpha', name: 'alpha-002-data.sql' },
+        ],
+        loadModuleSql: async ({ name }) =>
+          name === 'alpha-001-initial.sql'
+            ? 'create table alpha_records (id integer generated always as identity primary key, value text not null);'
+            : "insert into alpha_records (value) values ('second startup'); update alpha_records set value = 'updated' where value = 'second startup';",
+      })
+
+      const records = await connection<{ value: string }[]>`
+        select value from eve_module_alpha.alpha_records
+      `
+      expect(records).toEqual([{ value: 'updated' }])
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('provisions restricted migration and runtime roles for every installed module', async () => {
     const connection = postgres(databaseUrl)
     const installed = [
       { moduleId: 'alpha', name: 'alpha-010-records.sql' },
@@ -479,6 +578,19 @@ describe('multi-process safety', () => {
           beta_usage: boolean
           empty_schema_exists: boolean
           inherit_option: boolean
+          ledger_insert: boolean
+          migration_admin_option: boolean
+          migration_alpha_create: boolean
+          migration_beta_usage: boolean
+          migration_inherit_option: boolean
+          migration_rolcanlogin: boolean
+          migration_rolcreatedb: boolean
+          migration_rolcreaterole: boolean
+          migration_rolinherit: boolean
+          migration_rolreplication: boolean
+          migration_rolsuper: boolean
+          migration_rolbypassrls: boolean
+          migration_set_option: boolean
           rolcanlogin: boolean
           rolcreatedb: boolean
           rolcreaterole: boolean
@@ -502,15 +614,34 @@ describe('multi-process safety', () => {
           membership.admin_option,
           membership.inherit_option,
           membership.set_option,
+          migration.rolcanlogin as migration_rolcanlogin,
+          migration.rolcreatedb as migration_rolcreatedb,
+          migration.rolcreaterole as migration_rolcreaterole,
+          migration.rolinherit as migration_rolinherit,
+          migration.rolreplication as migration_rolreplication,
+          migration.rolsuper as migration_rolsuper,
+          migration.rolbypassrls as migration_rolbypassrls,
+          migration_membership.admin_option as migration_admin_option,
+          migration_membership.inherit_option as migration_inherit_option,
+          migration_membership.set_option as migration_set_option,
           pg_get_userbyid(alpha_schema.nspowner) as schema_owner,
           pg_get_userbyid(alpha_table.relowner) as table_owner,
           has_schema_privilege(runtime.rolname, 'eve_module_alpha', 'USAGE') as alpha_usage,
           has_schema_privilege(runtime.rolname, 'eve_module_alpha', 'CREATE') as alpha_create,
           has_schema_privilege(runtime.rolname, 'eve_module_beta', 'USAGE') as beta_usage,
+          has_schema_privilege(migration.rolname, 'eve_module_alpha', 'CREATE')
+            as migration_alpha_create,
+          has_schema_privilege(migration.rolname, 'eve_module_beta', 'USAGE')
+            as migration_beta_usage,
+          has_table_privilege(migration.rolname, 'public.schema_migrations', 'INSERT')
+            as ledger_insert,
           to_regnamespace('eve_module_empty_module') is not null as empty_schema_exists
         from pg_roles runtime
         join pg_auth_members membership on membership.roleid = runtime.oid
         join pg_roles login_role on login_role.oid = membership.member
+        join pg_roles migration on migration.rolname = 'eve_module_alpha_migrate'
+        join pg_auth_members migration_membership on migration_membership.roleid = migration.oid
+          and migration_membership.member = login_role.oid
         join pg_namespace alpha_schema on alpha_schema.nspname = 'eve_module_alpha'
         join pg_class alpha_table
           on alpha_table.relnamespace = alpha_schema.oid
@@ -525,6 +656,19 @@ describe('multi-process safety', () => {
         beta_usage: false,
         empty_schema_exists: true,
         inherit_option: false,
+        ledger_insert: false,
+        migration_admin_option: false,
+        migration_alpha_create: true,
+        migration_beta_usage: false,
+        migration_inherit_option: false,
+        migration_rolcanlogin: false,
+        migration_rolcreatedb: false,
+        migration_rolcreaterole: false,
+        migration_rolinherit: false,
+        migration_rolreplication: false,
+        migration_rolsuper: false,
+        migration_rolbypassrls: false,
+        migration_set_option: true,
         rolcanlogin: false,
         rolcreatedb: false,
         rolcreaterole: false,
@@ -534,7 +678,22 @@ describe('multi-process safety', () => {
         rolbypassrls: false,
         set_option: true,
       })
-      expect(security?.schema_owner).toBe(security?.table_owner)
+      expect(security?.schema_owner).toBe('eve_space')
+      expect(security?.table_owner).toBe('eve_module_alpha_migrate')
+      const [migrationIdentity] = await connection<{ role_name: string }[]>`
+        select role_name from eve_module_alpha.alpha_migration_identity
+      `
+      expect(migrationIdentity?.role_name).toBe('eve_module_alpha_migrate')
+
+      await expect(
+        connection.begin(async (transaction) => {
+          await transaction`set local role eve_module_alpha_migrate`
+          await transaction`
+            insert into public.schema_migrations (module, name)
+            values ('alpha', 'alpha-forged.sql')
+          `
+        }),
+      ).rejects.toMatchObject({ code: '42501' })
 
       const alphaPersistence = createModulePersistenceCapability(connection, 'alpha')
       await expect(
@@ -585,11 +744,6 @@ describe('multi-process safety', () => {
       ).rejects.toMatchObject({ code: '42501' })
       await expect(
         alphaPersistence.transaction(
-          async (restricted) => restricted`select eve_module_alpha.alpha_privileged_count()`,
-        ),
-      ).rejects.toMatchObject({ code: '42501' })
-      await expect(
-        alphaPersistence.transaction(
           async (restricted) => restricted`select count(*) from eve_module_beta.beta_records`,
         ),
       ).rejects.toMatchObject({ code: '42501' })
@@ -627,6 +781,66 @@ describe('multi-process safety', () => {
         current_user: 'eve_space',
         rolled_back_rows: 0,
         session_user: 'eve_space',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('transfers existing module objects from the platform to the migration role', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runMigrations(connection)
+      await connection`create schema eve_module_alpha`
+      await connection`
+        create table eve_module_alpha.legacy_records (
+          id bigint generated always as identity primary key
+        )
+      `
+      await connection`create type eve_module_alpha.legacy_state as enum ('ready')`
+      await connection`
+        create function eve_module_alpha.legacy_count() returns bigint
+        language sql
+        as 'select count(*) from eve_module_alpha.legacy_records'
+      `
+
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-001-adopt.sql' }],
+        loadModuleSql: async () => 'alter table legacy_records add column value text;',
+      })
+
+      const relations = await connection<{ name: string; owner: string }[]>`
+        select relation.relname as name, pg_get_userbyid(relation.relowner) as owner
+        from pg_class relation
+        join pg_namespace namespace on namespace.oid = relation.relnamespace
+        where namespace.nspname = 'eve_module_alpha'
+          and relation.relname in ('legacy_records', 'legacy_records_id_seq')
+        order by relation.relname
+      `
+      const [state] = await connection<
+        { routine_owner: string; schema_owner: string; type_owner: string }[]
+      >`
+        select
+          pg_get_userbyid(namespace.nspowner) as schema_owner,
+          pg_get_userbyid(type.typowner) as type_owner,
+          pg_get_userbyid(routine.proowner) as routine_owner
+        from pg_namespace namespace
+        join pg_type type on type.typnamespace = namespace.oid
+          and type.typname = 'legacy_state'
+        join pg_proc routine on routine.pronamespace = namespace.oid
+          and routine.proname = 'legacy_count'
+        where namespace.nspname = 'eve_module_alpha'
+      `
+
+      expect(relations).toEqual([
+        { name: 'legacy_records', owner: 'eve_module_alpha_migrate' },
+        { name: 'legacy_records_id_seq', owner: 'eve_module_alpha_migrate' },
+      ])
+      expect(state).toEqual({
+        routine_owner: 'eve_module_alpha_migrate',
+        schema_owner: 'eve_space',
+        type_owner: 'eve_module_alpha_migrate',
       })
     } finally {
       await connection.end()
@@ -930,16 +1144,27 @@ describe('multi-process safety', () => {
       ).rejects.toThrow('missing_first_function')
 
       const [state] = await connection<
-        { provisioned: boolean; role_exists: boolean; schema_exists: boolean }[]
+        {
+          migration_role_exists: boolean
+          provisioned: boolean
+          role_exists: boolean
+          schema_exists: boolean
+        }[]
       >`
         select
           exists (
             select 1 from module_schema_provisioning where module_id = 'gamma'
           ) as provisioned,
           to_regrole('eve_module_gamma_runtime') is not null as role_exists,
+          to_regrole('eve_module_gamma_migrate') is not null as migration_role_exists,
           to_regnamespace('eve_module_gamma') is not null as schema_exists
       `
-      expect(state).toEqual({ provisioned: false, role_exists: false, schema_exists: false })
+      expect(state).toEqual({
+        migration_role_exists: false,
+        provisioned: false,
+        role_exists: false,
+        schema_exists: false,
+      })
     } finally {
       await connection.end()
     }

@@ -83,4 +83,5 @@ jobs:
             api/coverage-postgres/lcov.info
             api/coverage-redis/lcov.info
             packages/platform-module-nuxt/coverage/lcov.info
+            packages/platform-module-server/coverage/lcov.info
           retention-days: 14

@@ -12,11 +12,26 @@
         "layers/*/app/components/**/*.vue",
         "layers/*/app/{composables,plugins,utils}/**/*.ts",
         "generated/platform/*.ts",
+        "scripts/copy-platform-nuxt-runtime-assets.mjs",
         "scripts/module-registry/source-extensions.d.mts",
+        "tests/fixtures/platform-module-conformance/{nuxt.config.ts,api/src/index.ts,app/**/*.{ts,vue}}",
+        "tests/fixtures/platform-module-conformance/features/conformance/module.config.ts",
+        "tests/fixtures/platform-module-conformance/features/conformance/server/src/index.ts",
+        "tests/fixtures/platform-module-conformance/features/conformance/nuxt/src/{module.ts,runtime/app/pages/**/*.vue}",
+        "vitest.conformance.config.ts",
       ],
-      // vue-tsc is invoked by Nuxt's `typescript.typeCheck`, not by an import.
-      // Pinia's Nuxt modules are selected through generated module registries.
-      "ignoreDependencies": ["vue-tsc", "@pinia/colada-nuxt", "@pinia/nuxt"],
+      // vue-tsc is invoked by Nuxt; Pinia modules are selected through generated registries.
+      // The remaining dependencies belong to fixture manifests outside the pnpm workspace graph.
+      "ignoreDependencies": [
+        "vue-tsc",
+        "@pinia/colada-nuxt",
+        "@pinia/nuxt",
+        "@hono/zod-validator",
+        "@nuxt/schema",
+        "zod",
+      ],
+      // Generated transiently by test:module-conformance and removed after verification.
+      "ignoreUnresolved": ["./generated/platform/installed-nuxt-contributions.js"],
     },
     "api": {
       // Process roots. `AppType` in src/index.ts is consumed by the Nuxt workspace rather than by
@@ -41,10 +56,13 @@
       "project": ["src/**/*.ts"],
     },
     "packages/platform-module-server": {
-      "project": ["src/**/*.ts"],
+      "entry": ["test/**/*.test.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts"],
     },
     "packages/platform-module-nuxt": {
       "entry": [
+        // Imported by a generated Nuxt type template through a resolved filesystem path.
+        "src/runtime/config.ts",
         "src/runtime/app/{composables,middleware}/**/*.ts",
         "test/**/*.test.ts",
         "test/fixtures/*/{app.vue,app/**/*.{ts,vue}}",

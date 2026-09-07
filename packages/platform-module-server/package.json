@@ -19,14 +19,24 @@
   ],
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@eve-space/platform-module-contract": "workspace:*",
     "@evespace/esi-client": "workspace:*",
-    "zod": "catalog:"
+    "@hono/zod-validator": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:tsgo"
+    "@vitest/coverage-v8": "catalog:vitest4",
+    "hono": "catalog:",
+    "typescript": "catalog:tsgo",
+    "vitest": "catalog:vitest4",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "hono": "catalog:",
+    "zod": "catalog:"
   }
 }

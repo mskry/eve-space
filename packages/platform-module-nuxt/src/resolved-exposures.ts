@@ -1,4 +1,5 @@
 import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'
+import { isPathInside } from './path-containment.js'
 
 export function validateResolvedExposures(
   contributions: readonly PlatformNuxtContributionDescriptor[],
@@ -11,7 +12,7 @@ export function validateResolvedExposures(
     if (!packageRoot) throw new Error(`Nuxt package ${contribution.moduleId} could not be resolved`)
     for (const name of contribution.exposed?.[category] ?? []) {
       const matches = registrations.filter((registration) => registration.name === name)
-      if (matches.length !== 1 || !matches[0]!.from.startsWith(packageRoot))
+      if (matches.length !== 1 || !isPathInside(packageRoot, matches[0]!.from))
         throw new Error(
           `Nuxt ${category.slice(0, -1)} ${name} from ${contribution.moduleId} must resolve exactly once`,
         )

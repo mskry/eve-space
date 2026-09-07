@@ -33,7 +33,12 @@ describe('platform collection status', () => {
         resources: [resource],
         resolveEligibility: vi.fn().mockResolvedValue(eligible(due, { validatedAt })),
       }),
-    ).resolves.toEqual({ status, validatedAt: validatedAt.toISOString(), lastFailureClass: null })
+    ).resolves.toEqual({
+      status,
+      authorizationGeneration: 4,
+      validatedAt: validatedAt.toISOString(),
+      lastFailureClass: null,
+    })
   })
 
   test('distinguishes never-collected from an unavailable initial collection', async () => {
@@ -45,6 +50,7 @@ describe('platform collection status', () => {
       }),
     ).resolves.toEqual({
       status: 'never-collected',
+      authorizationGeneration: 4,
       validatedAt: null,
       lastFailureClass: null,
     })
@@ -57,6 +63,7 @@ describe('platform collection status', () => {
       }),
     ).resolves.toEqual({
       status: 'unavailable',
+      authorizationGeneration: 4,
       validatedAt: null,
       lastFailureClass: 'esi-unavailable',
     })
@@ -73,6 +80,7 @@ describe('platform collection status', () => {
       }),
     ).resolves.toEqual({
       status: 'stale',
+      authorizationGeneration: 4,
       validatedAt: validatedAt.toISOString(),
       lastFailureClass: 'esi-unavailable',
     })
@@ -95,6 +103,7 @@ describe('platform collection status', () => {
       }),
     ).resolves.toEqual({
       status: 'authorization-required',
+      authorizationGeneration: 4,
       validatedAt: null,
       lastFailureClass: 'authorization-required',
       requiredScope: 'esi-wallet.read_character_wallet.v1',
@@ -119,6 +128,7 @@ describe('platform collection status', () => {
       }),
     ).resolves.toEqual({
       status: 'unavailable',
+      authorizationGeneration: 4,
       validatedAt: validatedAt.toISOString(),
       lastFailureClass: null,
     })
