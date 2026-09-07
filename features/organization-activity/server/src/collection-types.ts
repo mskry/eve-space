@@ -11,6 +11,7 @@ export interface ActivityResourceProfile {
 
 export interface Checkpoint {
   readonly retainedIds?: readonly string[]
+  readonly retainedCampaignIds?: readonly string[]
   readonly initialized: boolean
   readonly requests: readonly CollectionRequest[]
   readonly cursors: Readonly<Record<string, PlatformCursorCheckpoint>>

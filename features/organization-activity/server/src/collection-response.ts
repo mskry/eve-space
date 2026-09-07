@@ -28,6 +28,7 @@ export interface CollectionResponse {
   readonly cursor?: { readonly before?: string; readonly after?: string }
   readonly count: number
   readonly retainedIds?: readonly string[]
+  readonly retainedCampaignIds?: readonly string[]
 }
 
 export function mapCollectionResponse(
@@ -49,20 +50,20 @@ export function mapCollectionResponse(
   switch (request.operation) {
     case 'campaign-list': {
       const data = value as PlatformEsiOperationData<'GetMilitaryCampaignsListing'>
+      const activeCampaigns = data.campaigns.filter((item) => item.state === 'Active')
       return {
         retainedIds: data.campaigns.map((item) => item.id),
+        retainedCampaignIds: activeCampaigns.map((item) => item.id),
         snapshots: data.campaigns.map(campaignSnapshot),
         count: data.campaigns.length,
-        requests: data.campaigns
-          .filter((item) => item.state === 'Active')
-          .flatMap((item) => [
-            detail('campaign-detail', { campaign_id: item.id }),
-            {
-              ...detail('objective-list', { campaign_id: item.id }),
-              list: 'objectives',
-              cursorKey: item.id,
-            },
-          ]),
+        requests: activeCampaigns.flatMap((item) => [
+          detail('campaign-detail', { campaign_id: item.id }),
+          {
+            ...detail('objective-list', { campaign_id: item.id }),
+            list: 'objectives',
+            cursorKey: item.id,
+          },
+        ]),
       }
     }
     case 'campaign-detail':

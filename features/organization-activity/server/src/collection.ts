@@ -21,6 +21,7 @@ export async function collectActivityResource(
   const stored = await readActivityCheckpoint(profile.id, context)
   const checkpoint = stored?.checkpoint ?? { initialized: false, requests: [], cursors: {} }
   let retainedIds = checkpoint.retainedIds
+  let retainedCampaignIds = checkpoint.retainedCampaignIds
   const cursors = { ...checkpoint.cursors }
   const requests = [...checkpoint.requests]
   const snapshots: CollectedSnapshot[] = []
@@ -45,12 +46,7 @@ export async function collectActivityResource(
         ...(query ? { query } : {}),
       })
       .catch((error: unknown) => {
-        if (
-          request.operation !== 'job-detail' ||
-          !request.snapshot ||
-          !isPlatformEsiUnavailableItem(error)
-        )
-          throw error
+        if (request.validatedAt === undefined || !isPlatformEsiUnavailableItem(error)) throw error
         return null
       })
     if (!result) {
@@ -64,6 +60,7 @@ export async function collectActivityResource(
     }
     const mapped = mapCollectionResponse(request, result.data, profile.id)
     if (mapped.retainedIds) retainedIds = mapped.retainedIds
+    if (mapped.retainedCampaignIds) retainedCampaignIds = mapped.retainedCampaignIds
     let replace = request.replace
     if (request.cursorKey) {
       const advanced = advancePlatformCursor(cursor, mapped.cursor, mapped.count)
@@ -90,7 +87,7 @@ export async function collectActivityResource(
       resourceId: profile.id,
       expectedRevision: stored?.revision ?? 0,
       organizationVersion: context.organizationVersion,
-      checkpoint: { initialized: true, requests, cursors, retainedIds },
+      checkpoint: { initialized: true, requests, cursors, retainedIds, retainedCampaignIds },
       snapshots,
     } satisfies ActivityObservation,
   }

@@ -14,6 +14,7 @@ import {
 import { readActivitySnapshots } from '../../../src/snapshot-reads.js'
 import { summarySnapshot } from '../../../src/snapshot.js'
 import type { ActivityObservation } from '../../../src/collection-types.js'
+import type { ActivitySnapshot } from '../../../src/snapshot.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
@@ -169,6 +170,101 @@ test('complete membership lists prune absent entries only in their own identity'
   })
   expect((await read(resourceId)).snapshots).toEqual([])
   expect((await read(resourceId, 7, 5)).snapshots).toEqual([snapshot])
+})
+
+test('incremental completion does not renew untouched snapshots', async () => {
+  const resourceId = 'incremental-renewal-test'
+  const originalValidatedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+  await write({
+    ...observation(resourceId),
+    checkpoint: {
+      initialized: true,
+      requests: [{ operation: 'job-detail', path: { job_id: activityId }, replace: true }],
+      cursors: { root: { after: 'opaque' } },
+    },
+    snapshots: [{ snapshot, replace: true, validatedAt: originalValidatedAt }],
+  })
+  await write({ ...observation(resourceId, 1), snapshots: [] })
+  const rows = await persistence.transaction((transaction) =>
+    transaction.query<{ unchanged: boolean }>(
+      `select validated_at = $6::timestamptz as unchanged from activity_snapshots
+      where resource_id = $1 and subject_lifecycle_id = $2 and organization_version = $3
+        and authorization_generation = $4 and activity_id = $5`,
+      [resourceId, lifecycleId, 7, 4, activityId, originalValidatedAt],
+    ),
+  )
+  expect(rows).toEqual([{ unchanged: true }])
+})
+
+test('campaign retention prunes objectives whose campaigns are no longer active', async () => {
+  const resourceId = 'campaign-retention-test'
+  const activeCampaignId = randomUUID()
+  const inactiveCampaignId = randomUUID()
+  const activeObjectiveId = randomUUID()
+  const inactiveObjectiveId = randomUUID()
+  const activeCampaign = {
+    ...snapshot,
+    id: activeCampaignId,
+    kind: 'campaign',
+    campaignId: null,
+  } satisfies ActivitySnapshot
+  const inactiveCampaign = {
+    ...activeCampaign,
+    id: inactiveCampaignId,
+  } satisfies ActivitySnapshot
+  const activeObjective = {
+    ...activeCampaign,
+    id: activeObjectiveId,
+    kind: 'objective',
+    campaignId: activeCampaignId,
+  } satisfies ActivitySnapshot
+  const inactiveObjective = {
+    ...activeObjective,
+    id: inactiveObjectiveId,
+    campaignId: inactiveCampaignId,
+  } satisfies ActivitySnapshot
+  await write({
+    ...observation(resourceId),
+    checkpoint: {
+      initialized: true,
+      requests: [],
+      cursors: {},
+      retainedIds: [activeCampaignId, inactiveCampaignId],
+      retainedCampaignIds: [activeCampaignId, inactiveCampaignId],
+    },
+    snapshots: [activeCampaign, inactiveCampaign, activeObjective, inactiveObjective].map(
+      (item) => ({ snapshot: item, replace: true, validatedAt: new Date().toISOString() }),
+    ),
+  })
+  await write({
+    ...observation(resourceId, 1),
+    checkpoint: {
+      initialized: true,
+      requests: [],
+      cursors: {},
+      retainedIds: [activeCampaignId, inactiveCampaignId],
+      retainedCampaignIds: [activeCampaignId],
+    },
+    snapshots: [
+      { snapshot: activeCampaign, replace: true, validatedAt: new Date().toISOString() },
+      {
+        snapshot: { ...inactiveCampaign, state: 'Completed' },
+        replace: true,
+        validatedAt: new Date().toISOString(),
+      },
+    ],
+  })
+  const rows = await persistence.transaction((transaction) =>
+    transaction.query<{ id: string }>(
+      `select activity_id::text as id from activity_snapshots
+      where resource_id = $1 and subject_lifecycle_id = $2 and organization_version = $3
+        and authorization_generation = $4 order by activity_id`,
+      [resourceId, lifecycleId, 7, 4],
+    ),
+  )
+  expect(rows.map(({ id }) => id).toSorted()).toEqual(
+    [activeCampaignId, inactiveCampaignId, activeObjectiveId].toSorted(),
+  )
 })
 
 test('a failed materialization rolls back snapshots and checkpoint together', async () => {

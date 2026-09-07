@@ -47,14 +47,8 @@ export async function materializeActivityResource(
       await transaction.query(
         `delete from activity_snapshots
         where resource_id = $1 and subject_lifecycle_id = $2 and organization_version = $3 and authorization_generation = $4
-          and not (activity_id::text = any($5::text[]) or coalesce(snapshot->>'campaignId', '') = any($5::text[]))`,
-        [...identity, data.checkpoint.retainedIds],
-      )
-    if (data.checkpoint.requests.length === 0)
-      await transaction.query(
-        `update activity_snapshots set validated_at = greatest(validated_at, $5::timestamptz)
-        where resource_id = $1 and subject_lifecycle_id = $2 and organization_version = $3 and authorization_generation = $4`,
-        [...identity, context.validatedAt],
+          and not (activity_id::text = any($5::text[]) or coalesce(snapshot->>'campaignId', '') = any($6::text[]))`,
+        [...identity, data.checkpoint.retainedIds, data.checkpoint.retainedCampaignIds ?? []],
       )
     await transaction.query(
       `delete from activity_snapshots where validated_at < now() - interval '24 hours'`,
