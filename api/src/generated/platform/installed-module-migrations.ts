@@ -2,6 +2,7 @@
 
 import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/platform-module-contract'
 
-export const installedModuleIds = [] as const
-export const installedModuleMigrations =
-  [] as const satisfies readonly PlatformInstalledModuleMigrationDescriptor[]
+export const installedModuleIds = ['organization-activity'] as const
+export const installedModuleMigrations = [
+  { moduleId: 'organization-activity', name: 'organization-activity-001-initial.sql' },
+] as const satisfies readonly PlatformInstalledModuleMigrationDescriptor[]

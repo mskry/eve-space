@@ -656,7 +656,7 @@ describe('ESI operation policies', () => {
         requestableScopes: ['esi-location.read_location.v1'],
       }),
     ).toThrow(
-      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-corporations.read_corporation_membership.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1',
+      'EVE_SCOPES is missing scopes required by registered ESI operations: esi-assets.read_assets.v1 esi-characters.read_contacts.v1 esi-characters.read_corporation_roles.v1 esi-characters.read_freelance_jobs.v1 esi-clones.read_clones.v1 esi-clones.read_implants.v1 esi-contracts.read_character_contracts.v1 esi-corporations.read_corporation_membership.v1 esi-corporations.read_freelance_jobs.v1 esi-corporations.read_projects.v1 esi-location.read_ship_type.v1 esi-mail.organize_mail.v1 esi-mail.read_mail.v1 esi-mail.send_mail.v1 esi-markets.read_character_orders.v1 esi-search.search_structures.v1 esi-skills.read_skillqueue.v1 esi-skills.read_skills.v1 esi-wallet.read_character_wallet.v1 esi.activity.char:read',
     )
   })
 
@@ -683,6 +683,10 @@ describe('ESI operation policies', () => {
           'esi-skills.read_skillqueue.v1',
           'esi-skills.read_skills.v1',
           'esi-wallet.read_character_wallet.v1',
+          'esi-characters.read_freelance_jobs.v1',
+          'esi-corporations.read_freelance_jobs.v1',
+          'esi-corporations.read_projects.v1',
+          'esi.activity.char:read',
         ],
       }),
     ).not.toThrow()
@@ -722,6 +726,10 @@ describe('ESI operation policies', () => {
       'esi-skills.read_skillqueue.v1',
       'esi-skills.read_skills.v1',
       'esi-wallet.read_character_wallet.v1',
+      'esi-characters.read_freelance_jobs.v1',
+      'esi-corporations.read_freelance_jobs.v1',
+      'esi-corporations.read_projects.v1',
+      'esi.activity.char:read',
     ].filter((scope) => scope !== missingScope)
 
     expect(() =>
@@ -928,8 +936,11 @@ function validModuleOperation() {
 describe('ESI mutation contracts', () => {
   test('declares every character mutation and its 404 semantics in the catalog', () => {
     const mutations = Object.entries(esiOperationCatalog)
-      .filter(([, contract]) => contract.mutation)
-      .map(([operation, contract]) => [operation, contract.mutation?.appliedOnMissing])
+      .filter(([, contract]) => 'mutation' in contract && contract.mutation)
+      .map(([operation, contract]) => [
+        operation,
+        'mutation' in contract ? contract.mutation?.appliedOnMissing : undefined,
+      ])
 
     expect(mutations).toEqual([
       ['mail-send', false],
@@ -955,7 +966,7 @@ describe('ESI mutation contracts', () => {
 
   test('keeps every mutation out of the cached read paths', () => {
     for (const [, contract] of Object.entries(esiOperationCatalog)) {
-      if (!contract.mutation) continue
+      if (!('mutation' in contract) || !contract.mutation) continue
       expect(contract.cache.kind).toBe('none')
       expect(contract.authorization.kind).toBe('character')
     }

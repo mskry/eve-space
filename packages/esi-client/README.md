@@ -123,8 +123,8 @@ Package releases use annotated scoped tags named `@evespace/esi-client@<version>
 To release, update this package's version and changelog in a reviewed commit and merge it to `main` only after `CI`, root `Coverage`, and `ESI Client` checks succeed. Create an annotated tag at that exact commit and push it:
 
 ```bash
-git tag -a '@evespace/esi-client@3.0.0' -m '@evespace/esi-client@3.0.0'
-git push origin '@evespace/esi-client@3.0.0'
+git tag -a '@evespace/esi-client@3.0.1' -m '@evespace/esi-client@3.0.1'
+git push origin '@evespace/esi-client@3.0.1'
 ```
 
 The tag-triggered workflow verifies stable tag syntax, package and changelog versions, annotation, `origin/main` ancestry, and registry nonexistence. It runs the complete package validation on Node.js 24.20, transfers exactly one tested tarball and SHA-256 digest, then publishes those bytes from the same Node.js release through npm trusted publishing with automatic provenance. It never uses a long-lived npm write token or republishes a duplicate version.

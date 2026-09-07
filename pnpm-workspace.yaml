@@ -91,7 +91,7 @@ allowBuilds:
   vue-demi: true
 
 minimumReleaseAgeExclude:
-  - '@evespace/esi-client@3.0.0'
+  - '@evespace/esi-client@3.0.1'
   - '@oxfmt/binding-android-arm-eabi@0.64.0'
   - '@oxfmt/binding-android-arm64@0.64.0'
   - '@oxfmt/binding-darwin-arm64@0.64.0'

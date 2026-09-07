@@ -9,19 +9,16 @@ const fixtureRoot = join(repositoryRoot, 'tests/fixtures/platform-module-conform
 const serverRoot = join(fixtureRoot, 'features/conformance/server')
 const nuxtRoot = join(fixtureRoot, 'features/conformance/nuxt')
 const generatedRoot = join(fixtureRoot, 'generated')
-const stableNuxtTsconfig = `${JSON.stringify(
-  {
-    compilerOptions: {
-      target: 'ES2023',
-      module: 'Preserve',
-      moduleResolution: 'Bundler',
-      strict: true,
-    },
-    include: [],
+const stableNuxtTsconfig = `{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
+    "strict": true
   },
-  null,
-  2,
-)}\n`
+  "include": ["features/conformance/module.config.ts"]
+}
+`
 const outputs = [
   generatedRoot,
   join(fixtureRoot, 'api/src/generated'),

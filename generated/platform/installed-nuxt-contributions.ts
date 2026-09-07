@@ -2,5 +2,36 @@
 
 import type { PlatformNuxtContributionDescriptor } from '@eve-space/platform-module-contract'
 
-export const installedNuxtContributions =
-  [] as const satisfies readonly PlatformNuxtContributionDescriptor[]
+export const installedNuxtContributions = [
+  {
+    moduleId: 'organization-activity',
+    defaultIcon: 'corporation',
+    pages: [
+      {
+        id: 'organization-activity-projects',
+        name: 'eve-organization-activity-projects',
+        path: '/organization-activity/projects',
+        file: 'src/runtime/app/pages/OrganizationActivityProjectPage.vue',
+        extensionPoint: 'root',
+        audience: 'authenticated',
+      },
+      {
+        id: 'organization-activity-jobs',
+        name: 'eve-organization-activity-jobs',
+        path: '/organization-activity/jobs',
+        file: 'src/runtime/app/pages/OrganizationActivityJobPage.vue',
+        extensionPoint: 'root',
+        audience: 'authenticated',
+      },
+      {
+        id: 'organization-activity-campaigns',
+        name: 'eve-organization-activity-campaigns',
+        path: '/organization-activity/campaigns',
+        file: 'src/runtime/app/pages/OrganizationActivityCampaignPage.vue',
+        extensionPoint: 'root',
+        audience: 'authenticated',
+      },
+    ],
+    navigation: [],
+  },
+] as const satisfies readonly PlatformNuxtContributionDescriptor[]

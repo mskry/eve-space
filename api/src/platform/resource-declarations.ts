@@ -50,6 +50,21 @@ export function assertInstalledResourceDeclarations(
   for (const resource of resources) {
     assertRegisteredEsiOperation(resource.operationId)
     assertResourceDefinition(resource, resource.operationId, definitions)
+    const primary = getEsiOperationContract(resource.operationId)
+    if (resource.subjectKind === 'deployment' && primary.authorization.kind !== 'public')
+      throw new Error('Deployment resources require public operations')
+    for (const operationId of resource.dependentOperationIds ?? []) {
+      assertResourceDefinition(resource, operationId, definitions)
+      assertRegisteredEsiOperation(operationId)
+      const dependent = getEsiOperationContract(operationId)
+      if (
+        dependent.authorization.kind !== primary.authorization.kind ||
+        (dependent.authorization.kind === 'character' &&
+          primary.authorization.kind === 'character' &&
+          dependent.authorization.scope !== primary.authorization.scope)
+      )
+        throw new Error('Dependent operations must retain the resource authorization contract')
+    }
     assertResourceImplementation(resource, resource.implementation)
     assertResourceBatchImplementation(resource, resource.implementation, definitions)
   }

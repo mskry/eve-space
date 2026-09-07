@@ -588,6 +588,18 @@ describe('organization role routes', () => {
     expect(mocks.hasCurrentOrganizationOwnerAuthority).not.toHaveBeenCalled()
   })
 
+  test('exposes member query access only for an unblocked current entitlement', async () => {
+    expect(await (await get('/context')).json()).toMatchObject({ memberAccess: true })
+    mocks.organizationSession.context.blocked = true
+    expect(await (await get('/context')).json()).toMatchObject({ memberAccess: false })
+    mocks.organizationSession.context.blocked = false
+    mocks.organizationSession.context.state = 'suspended'
+    expect(await (await get('/context')).json()).toMatchObject({ memberAccess: false })
+    mocks.organizationSession.context.state = 'compliant'
+    mocks.organizationSession.context.organizationVersion = 2
+    expect(await (await get('/context')).json()).toMatchObject({ memberAccess: false })
+  })
+
   test('returns active role grants only to the current organization owner', async () => {
     const authorized = await get('/roles')
     expect(authorized.status).toBe(200)

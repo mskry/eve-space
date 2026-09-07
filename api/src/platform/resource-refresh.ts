@@ -59,6 +59,8 @@ export async function processInstalledResourceRefresh(
       subject: execution.subject,
       authorizationGeneration: execution.authorizationGeneration,
       validatedAt: execution.result.validatedAt,
+      organizationVersion: execution.organizationVersion,
+      complete: execution.complete,
       outcome: 'complete',
       data: execution.result.data,
     })
@@ -75,6 +77,8 @@ type PlatformResourceObservation = {
   readonly subject: PlatformResourceSubject
   readonly authorizationGeneration: number | null
   readonly validatedAt: string
+  readonly organizationVersion?: number
+  readonly complete?: boolean
 } & ({ readonly outcome: 'complete'; readonly data: unknown } | { readonly outcome: 'unchanged' })
 
 export async function applyInstalledResourceObservation(observation: PlatformResourceObservation) {
@@ -122,12 +126,19 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
     )
       return
 
+    if (observation.organizationVersion !== undefined) {
+      await transaction`select id from deployment_settings where id = 1 for share`
+      const [settings] = await transaction<{ version: number }[]>`
+        select organization_version::integer as version from deployment_settings where id = 1
+      `
+      if (settings?.version !== observation.organizationVersion) return
+    }
     if (observation.outcome === 'complete') {
       const persistence = createTransactionScopedModulePersistenceCapability(
         transaction,
         observation.resource.moduleId,
       )
-      await implementation.materialize({
+      const materialized = await implementation.materialize({
         subject: observation.subject,
         data: observation.data,
         validatedAt: observation.validatedAt,
@@ -140,8 +151,30 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       })
       const suppressed = persistence.suppressedFailure()
       if (suppressed) throw suppressed.error
+      if (materialized?.outcome === 'obsolete') return
     }
 
+    if (observation.complete === false) {
+      const previous = await transaction<{ validatedAt: Date | null }[]>`
+        select validated_at as "validatedAt" from platform_collection_state
+        where module_id = ${observation.identity.moduleId}
+          and resource_id = ${observation.identity.resourceId}
+          and subject_kind = ${observation.identity.subjectKind}
+          and subject_lifecycle_id = ${observation.identity.subjectLifecycleId}
+          and subject_id = ${observation.identity.subjectId}
+      `
+      await upsertPlatformCollectionStateInTransaction(
+        {
+          ...observation.identity,
+          nextEligibleAt: new Date(0),
+          authorizationGeneration: observation.authorizationGeneration,
+          validatedAt: previous[0]?.validatedAt ?? null,
+          lastFailureClass: null,
+        },
+        transaction,
+      )
+      return
+    }
     await recordInstalledResourceCollectionSuccess(
       observation.identity,
       { validatedAt: observation.validatedAt },

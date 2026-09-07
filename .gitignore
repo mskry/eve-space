@@ -30,6 +30,7 @@ logs
 # Local AI and specification tooling
 .claude/
 .opencode/
+.agents/
 openspec/
 
 # Local env files

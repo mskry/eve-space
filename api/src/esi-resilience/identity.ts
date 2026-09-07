@@ -144,7 +144,7 @@ function normalizeSet(value: unknown, field: string, maximumItems: number) {
 }
 
 function isSdkRequestEnvelope(inputs: Readonly<Record<string, unknown>>) {
-  return ['path', 'query', 'header', 'body'].some((field) => field in inputs)
+  return ['path', 'query', 'header', 'headers', 'body'].some((field) => field in inputs)
 }
 
 function projectSdkRequestIdentity(
@@ -152,7 +152,7 @@ function projectSdkRequestIdentity(
   fields: readonly string[],
 ) {
   const unexpected = Object.keys(inputs).filter(
-    (field) => !['path', 'query', 'header', 'body'].includes(field),
+    (field) => !['path', 'query', 'header', 'headers', 'body'].includes(field),
   )
   if (unexpected.length > 0)
     throw new Error(
@@ -172,7 +172,7 @@ function projectSdkRequestIdentity(
 function findSdkRequestValues(inputs: Readonly<Record<string, unknown>>, field: string) {
   const expectedFields = new Set([field, toSnakeCase(field)])
   const values: unknown[] = []
-  for (const section of ['path', 'query', 'header', 'body'] as const) {
+  for (const section of ['path', 'query', 'header', 'headers', 'body'] as const) {
     const value = inputs[section]
     if (!isRecord(value)) continue
     findValues(value, expectedFields, values)

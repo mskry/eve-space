@@ -19,6 +19,13 @@ export async function initializeManagedOrganization(
   },
   now: Date,
 ) {
+  await transaction.insert(platformSubjectLifecycles).values({
+    subjectKind: 'deployment',
+    subjectId: String(organization.deploymentId),
+    organizationDeploymentId: organization.deploymentId,
+    organizationVersion: organization.organizationVersion,
+    createdAt: now,
+  })
   if (organization.organizationType === 'alliance') {
     await transaction.insert(platformSubjectLifecycles).values({
       subjectKind: 'alliance',

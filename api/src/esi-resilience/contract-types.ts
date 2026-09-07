@@ -1,5 +1,6 @@
 import type {
   PlatformEsiFreshnessContract,
+  PlatformEsiIdentityContract,
   PlatformEsiOperationContract,
   PlatformEsiResponseValidationContract,
   PlatformEsiRetryContract,
@@ -7,16 +8,7 @@ import type {
 import { env } from '../env.js'
 import { esiMetadataReview, esiOperationMetadata } from './operation-metadata.js'
 
-type EsiIdentityContract =
-  | { kind: 'ordered'; fields: readonly string[] }
-  | { kind: 'set'; field: string; maximumItems: number }
-  | {
-      kind: 'mixed'
-      fields: readonly (
-        | { kind: 'scalar'; field: string; nullable?: boolean }
-        | { kind: 'set'; field: string; maximumItems: number; nullable?: boolean }
-      )[]
-    }
+type EsiIdentityContract = PlatformEsiIdentityContract
 
 type EsiIdentityConfiguration =
   | Extract<EsiIdentityContract, { kind: 'ordered' | 'mixed' }>

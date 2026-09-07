@@ -5165,55 +5165,55 @@ const zCharactersParagonHubSkinr = z.looseObject({
 const zCorporationsProjectsDetail = z.looseObject({
   configuration: z.xor([
     z.looseObject({
-      capture_fw_complex: zCorporationsProjectsDetailConfigurationcapturefwcomplex.optional()
+      capture_fw_complex: zCorporationsProjectsDetailConfigurationcapturefwcomplex
     }),
     z.looseObject({
-      damage_ship: zCorporationsProjectsDetailConfigurationdamageship.optional()
+      damage_ship: zCorporationsProjectsDetailConfigurationdamageship
     }),
     z.looseObject({
-      defend_fw_complex: zCorporationsProjectsDetailConfigurationdefendfwcomplex.optional()
+      defend_fw_complex: zCorporationsProjectsDetailConfigurationdefendfwcomplex
     }),
     z.looseObject({
-      deliver_item: zCorporationsProjectsDetailConfigurationdeliveritem.optional()
+      deliver_item: zCorporationsProjectsDetailConfigurationdeliveritem
     }),
     z.looseObject({
-      destroy_npc: zCorporationsProjectsDetailConfigurationdestroynpc.optional()
+      destroy_npc: zCorporationsProjectsDetailConfigurationdestroynpc
     }),
     z.looseObject({
-      destroy_ship: zCorporationsProjectsDetailConfigurationdestroyship.optional()
+      destroy_ship: zCorporationsProjectsDetailConfigurationdestroyship
     }),
     z.looseObject({
-      earn_loyalty_point: zCorporationsProjectsDetailConfigurationearnloyaltypoints.optional()
+      earn_loyalty_point: zCorporationsProjectsDetailConfigurationearnloyaltypoints
     }),
     z.looseObject({
-      lost_ship: zCorporationsProjectsDetailConfigurationlostship.optional()
+      lost_ship: zCorporationsProjectsDetailConfigurationlostship
     }),
     z.looseObject({
-      manual: zCorporationsProjectsDetailConfigurationmanual.optional()
+      manual: zCorporationsProjectsDetailConfigurationmanual
     }),
     z.looseObject({
-      manufacture_item: zCorporationsProjectsDetailConfigurationmanufactureitem.optional()
+      manufacture_item: zCorporationsProjectsDetailConfigurationmanufactureitem
     }),
     z.looseObject({
-      mine_material: zCorporationsProjectsDetailConfigurationminematerial.optional()
+      mine_material: zCorporationsProjectsDetailConfigurationminematerial
     }),
     z.looseObject({
-      remote_boost_shield: zCorporationsProjectsDetailConfigurationremoteboostshield.optional()
+      remote_boost_shield: zCorporationsProjectsDetailConfigurationremoteboostshield
     }),
     z.looseObject({
-      remote_repair_armor: zCorporationsProjectsDetailConfigurationremoterepairarmor.optional()
+      remote_repair_armor: zCorporationsProjectsDetailConfigurationremoterepairarmor
     }),
     z.looseObject({
-      salvage_wreck: zCorporationsProjectsDetailConfigurationsalvagewreck.optional()
+      salvage_wreck: zCorporationsProjectsDetailConfigurationsalvagewreck
     }),
     z.looseObject({
-      scan_signature: zCorporationsProjectsDetailConfigurationscansignature.optional()
+      scan_signature: zCorporationsProjectsDetailConfigurationscansignature
     }),
     z.looseObject({
-      ship_insurance: zCorporationsProjectsDetailConfigurationshipinsurance.optional()
+      ship_insurance: zCorporationsProjectsDetailConfigurationshipinsurance
     }),
     z.looseObject({
-      unknown: zCorporationsProjectsDetailConfigurationunknown.optional()
+      unknown: zCorporationsProjectsDetailConfigurationunknown
     })
   ]),
   contribution: zCorporationsProjectsDetailContribution.optional(),

@@ -10,13 +10,25 @@ import {
   WorkerSchemaNotReadyError,
 } from '../../src/worker/readiness.js'
 
+import {
+  installedModuleIds,
+  installedModuleMigrations,
+} from '../../src/generated/platform/installed-module-migrations.js'
+
+const appliedMigrations = [
+  { module: 'core', name: expectedWorkerMigration },
+  ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),
+]
+const provisionedModules = installedModuleIds.map((module_id) => ({ module_id }))
+
 const expectedWorkerIdentity = `core/${expectedWorkerMigration}`
 
 function appliedMigrationConnection() {
   return vi
     .fn()
     .mockResolvedValueOnce([{ exists: true, qualified: true }])
-    .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+    .mockResolvedValueOnce(appliedMigrations)
+    .mockResolvedValueOnce(provisionedModules)
 }
 
 describe('worker readiness', () => {
@@ -45,7 +57,8 @@ describe('worker readiness', () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce(appliedMigrations)
+      .mockResolvedValueOnce(provisionedModules)
     const queueProbe = vi.fn().mockResolvedValue({
       status: 'degraded',
       workerHeartbeatAt: new Date().toISOString(),
@@ -73,7 +86,8 @@ describe('worker readiness', () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce(appliedMigrations)
+      .mockResolvedValueOnce(provisionedModules)
     const queueProbe = vi.fn().mockResolvedValue({
       status: 'operational',
       workerHeartbeatAt: new Date().toISOString(),
@@ -84,7 +98,8 @@ describe('worker readiness', () => {
     const secondConnection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce(appliedMigrations)
+      .mockResolvedValueOnce(provisionedModules)
     await expect(
       assertWorkerDependencies(secondConnection as never, queueProbe),
     ).resolves.toBeUndefined()
@@ -94,7 +109,8 @@ describe('worker readiness', () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce(appliedMigrations)
+      .mockResolvedValueOnce(provisionedModules)
     const queueProbe = vi.fn().mockResolvedValue({ status: 'unavailable' })
 
     await expect(checkWorkerDependencies(connection as never, queueProbe)).resolves.toEqual({
@@ -163,7 +179,8 @@ describe('worker readiness', () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce(appliedMigrations)
+      .mockResolvedValueOnce(provisionedModules)
     const requirements = [
       { module: 'core', name: expectedWorkerMigration },
       { module: 'alpha', name: 'alpha-001-initial.sql' },
@@ -192,7 +209,7 @@ describe('worker readiness', () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce([])
 
     await expect(
@@ -213,7 +230,7 @@ describe('worker readiness', () => {
     const connection = vi
       .fn()
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
-      .mockResolvedValueOnce([{ module: 'core', name: expectedWorkerMigration }])
+      .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce([{ module_id: 'empty-module' }])
 
     await expect(

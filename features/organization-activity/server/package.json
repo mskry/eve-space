@@ -1,0 +1,40 @@
+{
+  "name": "@eve-space/organization-activity-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./migrations/*": "./migrations/*"
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:postgres": "vitest run --config vitest.postgres.config.ts"
+  },
+  "dependencies": {
+    "@eve-space/platform-module-contract": "workspace:*",
+    "@eve-space/platform-module-server": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest4",
+    "postgres": "catalog:",
+    "testcontainers": "catalog:",
+    "typescript": "catalog:tsgo",
+    "vitest": "catalog:vitest4"
+  }
+}

@@ -33,8 +33,8 @@ try {
   const packageJson: PackageJson = JSON.parse(
     await readFile(join(metadataRoot, 'package.json'), 'utf8'),
   );
-  if (packageJson.version !== '3.0.0') {
-    throw new Error(`Expected package version 3.0.0, received ${packageJson.version}`);
+  if (packageJson.version !== '3.0.1') {
+    throw new Error(`Expected package version 3.0.1, received ${packageJson.version}`);
   }
   for (const subpath of ['./types', './zod']) {
     if (!Object.hasOwn(packageJson.exports, subpath)) {
@@ -168,7 +168,7 @@ import { zGetStatusResponse } from '@evespace/esi-client/zod';
 for (const specifier of ${JSON.stringify(publicCodeSpecifiers)}) await import(specifier);
 const packageMetadata = (await import('@evespace/esi-client/package.json', { with: { type: 'json' } })).default;
 if (packageMetadata.name !== '@evespace/esi-client') throw new Error('Invalid package metadata export');
-if (packageMetadata.version !== '3.0.0') throw new Error('Invalid package metadata version');
+if (packageMetadata.version !== '3.0.1') throw new Error('Invalid package metadata version');
 if (Object.keys(operationRegistry).length !== 233) throw new Error('Incomplete operation registry');
 if (operationManifest.operations.length !== 233) throw new Error('Incomplete operation manifest');
 JSON.stringify(operationManifest);

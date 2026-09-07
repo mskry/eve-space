@@ -1,0 +1,297 @@
+[
+  {
+    "op": "test",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf",
+    "value": [
+      {
+        "properties": {
+          "capture_fw_complex": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationcapturefwcomplex",
+            "description": "Capture factional warfare complex"
+          }
+        },
+        "title": "capture_fw_complex",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "damage_ship": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationdamageship",
+            "description": "Damage ship"
+          }
+        },
+        "title": "damage_ship",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "defend_fw_complex": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationdefendfwcomplex",
+            "description": "Defend factional warfare complex"
+          }
+        },
+        "title": "defend_fw_complex",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "deliver_item": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationdeliveritem",
+            "description": "Deliver item"
+          }
+        },
+        "title": "deliver_item",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "destroy_npc": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationdestroynpc",
+            "description": "Destroy NPC"
+          }
+        },
+        "title": "destroy_npc",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "destroy_ship": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationdestroyship",
+            "description": "Destroy ship"
+          }
+        },
+        "title": "destroy_ship",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "earn_loyalty_point": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationearnloyaltypoints",
+            "description": "Earn loyalty point"
+          }
+        },
+        "title": "earn_loyalty_point",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "lost_ship": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationlostship",
+            "description": "Lost ship"
+          }
+        },
+        "title": "lost_ship",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "manual": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationmanual",
+            "description": "Manual contribution"
+          }
+        },
+        "title": "manual",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "manufacture_item": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationmanufactureitem",
+            "description": "Manufacture item"
+          }
+        },
+        "title": "manufacture_item",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "mine_material": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationminematerial",
+            "description": "Mine material"
+          }
+        },
+        "title": "mine_material",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "remote_boost_shield": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationremoteboostshield",
+            "description": "Remote boost shield"
+          }
+        },
+        "title": "remote_boost_shield",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "remote_repair_armor": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationremoterepairarmor",
+            "description": "Remote repair armor"
+          }
+        },
+        "title": "remote_repair_armor",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "salvage_wreck": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationsalvagewreck",
+            "description": "Salvage wreck"
+          }
+        },
+        "title": "salvage_wreck",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "scan_signature": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationscansignature",
+            "description": "Scan signature"
+          }
+        },
+        "title": "scan_signature",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "ship_insurance": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationshipinsurance",
+            "description": "Ship insurance"
+          }
+        },
+        "title": "ship_insurance",
+        "type": "object"
+      },
+      {
+        "properties": {
+          "unknown": {
+            "$ref": "#/components/schemas/CorporationsProjectsDetailConfigurationunknown",
+            "description": "Unknown"
+          }
+        },
+        "title": "unknown",
+        "type": "object"
+      }
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/0/required",
+    "value": [
+      "capture_fw_complex"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/1/required",
+    "value": [
+      "damage_ship"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/2/required",
+    "value": [
+      "defend_fw_complex"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/3/required",
+    "value": [
+      "deliver_item"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/4/required",
+    "value": [
+      "destroy_npc"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/5/required",
+    "value": [
+      "destroy_ship"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/6/required",
+    "value": [
+      "earn_loyalty_point"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/7/required",
+    "value": [
+      "lost_ship"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/8/required",
+    "value": [
+      "manual"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/9/required",
+    "value": [
+      "manufacture_item"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/10/required",
+    "value": [
+      "mine_material"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/11/required",
+    "value": [
+      "remote_boost_shield"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/12/required",
+    "value": [
+      "remote_repair_armor"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/13/required",
+    "value": [
+      "salvage_wreck"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/14/required",
+    "value": [
+      "scan_signature"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/15/required",
+    "value": [
+      "ship_insurance"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/CorporationsProjectsDetail/properties/configuration/oneOf/16/required",
+    "value": [
+      "unknown"
+    ]
+  }
+]

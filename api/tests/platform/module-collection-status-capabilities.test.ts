@@ -34,7 +34,7 @@ describe('platform module collection-status capabilities', () => {
 
     await expect(
       reads.read('character-activity', { kind: 'character', characterId: 9001 }),
-    ).resolves.toEqual(currentStatus)
+    ).resolves.toEqual({ ...currentStatus, subjectLifecycleId: characterLifecycleId })
     expect(readStatus).toHaveBeenCalledWith(
       {
         moduleId: 'alpha',

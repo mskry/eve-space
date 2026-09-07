@@ -4,6 +4,7 @@ import type {
 } from '@eve-space/platform-module-contract'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type postgres from 'postgres'
+import { withModuleQueryTransaction } from './module-query-transaction.js'
 import { modulePersistenceNames } from './module-persistence-provisioner.js'
 
 export type ModulePersistenceTransaction = postgres.TransactionSql
@@ -83,19 +84,7 @@ export function createTransactionScopedModulePersistenceCapability(
       transaction.savepoint(async (scope) => {
         await scope`set local role ${scope(runtimeRoleName)}`
         await scope`select set_config('search_path', ${searchPath}, true)`
-        let active = true
-        const scopedTransaction: PlatformModuleResourceTransaction = {
-          async query<Row extends object>(statement: string, parameters: readonly unknown[] = []) {
-            if (!active) throw new Error('Module resource transaction is no longer active')
-            const rows = await scope.unsafe(statement, [...parameters] as never[])
-            return rows as unknown as readonly Row[]
-          },
-        }
-        try {
-          return await operation(scopedTransaction)
-        } finally {
-          active = false
-        }
+        return withModuleQueryTransaction(scope, operation)
       }),
     )
 

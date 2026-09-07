@@ -25,8 +25,8 @@ organization permission from that authority.
 
 ## ESI Operation Review
 
-Reviewed against the EVE API Explorer on 2026-08-31 using requested and resolved
-`X-Compatibility-Date: 2026-08-18`, `X-Tenant: tranquility`, and `@evespace/esi-client` 2.0.0. Every
+Re-reviewed against the EVE API Explorer and its official OpenAPI document on 2026-09-07 using requested and resolved
+`X-Compatibility-Date: 2026-08-18`, `X-Tenant: tranquility`, and `@evespace/esi-client` 3.0.1. Every
 listed operation supports `ETag`/`If-None-Match` and `Last-Modified`/`If-Modified-Since`. Runtime
 `Expires` and `Cache-Control` remain authoritative over the documented fallback. Event-based entries
 without a client TTL use runtime metadata only.

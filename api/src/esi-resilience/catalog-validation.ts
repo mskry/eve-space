@@ -13,7 +13,7 @@ const maximumEsiRequestAttempts = 3
 const positiveSafeIntegerSchema = z.int().positive()
 const nonnegativeSafeIntegerSchema = z.int().nonnegative()
 const isoCalendarDateSchema = z.iso.date()
-const scopeSchema = z.string().regex(scopePattern)
+const scopeSchema = z.union([z.string().regex(scopePattern), z.literal('esi.activity.char:read')])
 const contributionIdSchema = z.string().regex(platformContributionIdPattern)
 
 const freshnessSchema = z.discriminatedUnion('kind', [

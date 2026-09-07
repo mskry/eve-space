@@ -10,3 +10,4 @@ export type {
   PlatformNavigationIdentity,
   PlatformPageMetadata,
 } from './runtime/navigation.js'
+export * from './runtime/identity.js'

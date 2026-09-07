@@ -37,7 +37,7 @@ describe('platform module route capabilities', () => {
 
     expect(capabilities).toEqual({
       logger: mocks.logger,
-      persistence: mocks.persistence,
+      persistence: { transaction: expect.any(Function) },
       sde: mocks.sdeCoreReads,
     })
     expect(Object.keys(capabilities)).toEqual(['logger', 'persistence', 'sde'])
@@ -72,7 +72,7 @@ describe('platform module route capabilities', () => {
     })
     expect(unsafe).toHaveBeenCalledWith('select activity_id from activities', ['one'])
     await expect(retainedTransaction!.query('select 1')).rejects.toThrow(
-      'Module activity transaction is no longer active',
+      'Module query transaction is no longer active',
     )
 
     controller.abort()

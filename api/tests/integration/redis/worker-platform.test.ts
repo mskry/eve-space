@@ -508,17 +508,17 @@ describe('durable worker platform', () => {
       workerHeartbeatAt: null,
     })
     await expect(
-      assertWorkerStartupDependencies(migratedConnection() as never, probeQueueStatus),
+      assertWorkerStartupDependencies((await migratedConnection()) as never, probeQueueStatus),
     ).resolves.toBeUndefined()
     await expect(
-      assertWorkerDependencies(migratedConnection() as never, probeQueueStatus),
+      assertWorkerDependencies((await migratedConnection()) as never, probeQueueStatus),
     ).rejects.toThrow('Worker dependency unavailable: Worker heartbeat stale')
 
     platforms.push(await startWorkerPlatform())
 
     await expect(probeQueueStatus()).resolves.toMatchObject({ status: 'operational' })
     await expect(
-      assertWorkerDependencies(migratedConnection() as never, probeQueueStatus),
+      assertWorkerDependencies((await migratedConnection()) as never, probeQueueStatus),
     ).resolves.toBeUndefined()
   })
 
@@ -704,11 +704,18 @@ describe('durable worker platform', () => {
   })
 })
 
-function migratedConnection() {
+async function migratedConnection() {
+  const { expectedWorkerMigration } = await import('../../../src/worker/readiness.js')
+  const { installedModuleMigrations, installedModuleIds } =
+    await import('../../../src/generated/platform/installed-module-migrations.js')
   return vi
     .fn()
     .mockResolvedValueOnce([{ exists: true, qualified: true }])
-    .mockResolvedValueOnce([{ module: 'core', name: '039_refresh_roster_collection_contract.sql' }])
+    .mockResolvedValueOnce([
+      { module: 'core', name: expectedWorkerMigration },
+      ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),
+    ])
+    .mockResolvedValueOnce(installedModuleIds.map((module_id) => ({ module_id })))
 }
 
 async function flushQueueRedis() {

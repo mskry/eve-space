@@ -838,6 +838,93 @@ describe('platform collection state PostgreSQL persistence', () => {
     }
   })
 
+  test('versions public deployment resources independently of alliance coverage', async () => {
+    const resource = {
+      ...coreResources[0],
+      subjectKind: 'deployment',
+      eligibility: { kind: 'current-deployment' },
+    } as const
+    const connection = postgres(databaseUrl)
+    const adminId = randomUUID()
+    const firstLifecycleId = randomUUID()
+    const secondLifecycleId = randomUUID()
+    try {
+      await connection`
+        insert into deployment_admins (id, email, password_hash)
+        values (${adminId}, 'alliance-owner@example.com', 'hash')
+      `
+      await connection`
+        insert into organization_epochs (
+          deployment_id, organization_version, organization_type, organization_id,
+          organization_name, organization_ticker
+        ) values (1, 1, 'alliance', 99000001, 'Managed Alliance', 'ALLY')
+      `
+      await connection`
+        insert into deployment_settings (
+          id, owner_admin_id, organization_type, organization_id,
+          organization_name, organization_ticker, organization_version
+        ) values (1, ${adminId}, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id, subject_kind, subject_id,
+          organization_deployment_id, organization_version
+        ) values (${firstLifecycleId}, 'deployment', '1', 1, 1)
+      `
+      const firstIdentity = {
+        moduleId: 'core',
+        resourceId: 'managed-corporations',
+        subjectKind: 'deployment' as const,
+        subjectLifecycleId: firstLifecycleId,
+        subjectId: '1',
+      }
+
+      await expect(
+        selectDueInstalledResources({ connection, limit: 10, resources: [resource] }),
+      ).resolves.toEqual([{ identity: firstIdentity, operationId: 'alliance-corporations' }])
+
+      await connection.begin(async (transaction) => {
+        await transaction`
+          insert into organization_epochs (
+            deployment_id, organization_version, organization_type, organization_id,
+            organization_name, organization_ticker
+          ) values (1, 2, 'alliance', 99000001, 'Managed Alliance', 'ALLY')
+        `
+        await transaction`
+          update organization_epochs
+          set superseded_at = clock_timestamp()
+          where deployment_id = 1 and organization_version = 1
+        `
+        await transaction`
+          update deployment_settings set organization_version = 2 where id = 1
+        `
+        await transaction`
+          insert into platform_subject_lifecycles (
+            subject_lifecycle_id, subject_kind, subject_id,
+            organization_deployment_id, organization_version
+          ) values (${secondLifecycleId}, 'deployment', '1', 1, 2)
+        `
+      })
+
+      await expect(
+        resolveInstalledResourceEligibility(firstIdentity, {
+          connection,
+          resources: [resource],
+        }),
+      ).resolves.toEqual({ status: 'obsolete' })
+      await expect(
+        selectDueInstalledResources({ connection, limit: 10, resources: [resource] }),
+      ).resolves.toEqual([
+        {
+          identity: { ...firstIdentity, subjectLifecycleId: secondLifecycleId },
+          operationId: 'alliance-corporations',
+        },
+      ])
+    } finally {
+      await connection.end()
+    }
+  })
+
   test('versions alliance resource lifecycles and makes superseded work obsolete', async () => {
     const connection = postgres(databaseUrl)
     const adminId = randomUUID()

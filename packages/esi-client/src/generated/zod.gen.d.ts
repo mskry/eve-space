@@ -5823,7 +5823,7 @@ export declare const zCharactersParagonHubSkinr: z.ZodObject<{
 }, z.core.$loose>;
 export declare const zCorporationsProjectsDetail: z.ZodObject<{
     configuration: z.ZodXor<readonly [z.ZodObject<{
-        capture_fw_complex: z.ZodOptional<z.ZodObject<{
+        capture_fw_complex: z.ZodObject<{
             archetypes: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 archetype_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
@@ -5837,9 +5837,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        damage_ship: z.ZodOptional<z.ZodObject<{
+        damage_ship: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -5861,9 +5861,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        defend_fw_complex: z.ZodOptional<z.ZodObject<{
+        defend_fw_complex: z.ZodObject<{
             archetypes: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 archetype_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
@@ -5877,9 +5877,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        deliver_item: z.ZodOptional<z.ZodObject<{
+        deliver_item: z.ZodObject<{
             docking_locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 structure_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -5891,9 +5891,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
             office_id: z.ZodOptional<z.ZodInt>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        destroy_npc: z.ZodOptional<z.ZodObject<{
+        destroy_npc: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -5901,9 +5901,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        destroy_ship: z.ZodOptional<z.ZodObject<{
+        destroy_ship: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -5925,15 +5925,15 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        earn_loyalty_point: z.ZodOptional<z.ZodObject<{
+        earn_loyalty_point: z.ZodObject<{
             corporations: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 corporation_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        lost_ship: z.ZodOptional<z.ZodObject<{
+        lost_ship: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -5955,11 +5955,11 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        manual: z.ZodOptional<z.ZodObject<{}, z.core.$catchall<z.ZodUnknown>>>;
+        manual: z.ZodObject<{}, z.core.$catchall<z.ZodUnknown>>;
     }, z.core.$loose>, z.ZodObject<{
-        manufacture_item: z.ZodOptional<z.ZodObject<{
+        manufacture_item: z.ZodObject<{
             docking_locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 structure_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -5975,9 +5975,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
                 Character: "Character";
                 Corporation: "Corporation";
             }>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        mine_material: z.ZodOptional<z.ZodObject<{
+        mine_material: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -5990,9 +5990,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        remote_boost_shield: z.ZodOptional<z.ZodObject<{
+        remote_boost_shield: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -6014,9 +6014,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        remote_repair_armor: z.ZodOptional<z.ZodObject<{
+        remote_repair_armor: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -6038,9 +6038,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        salvage_wreck: z.ZodOptional<z.ZodObject<{
+        salvage_wreck: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -6048,9 +6048,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        scan_signature: z.ZodOptional<z.ZodObject<{
+        scan_signature: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -6061,9 +6061,9 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             signatures: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 signature_type_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        ship_insurance: z.ZodOptional<z.ZodObject<{
+        ship_insurance: z.ZodObject<{
             conflict_type: z.ZodEnum<{
                 Any: "Any";
                 Pve: "Pve";
@@ -6091,12 +6091,12 @@ export declare const zCorporationsProjectsDetail: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        unknown: z.ZodOptional<z.ZodObject<{
+        unknown: z.ZodObject<{
             data: z.ZodUnknown;
             type: z.ZodString;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>]>;
     contribution: z.ZodOptional<z.ZodObject<{
         participation_limit: z.ZodOptional<z.ZodInt>;
@@ -11322,7 +11322,7 @@ export declare const zGetCorporationsProjectsDetailPath: z.ZodObject<{
  */
 export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
     configuration: z.ZodXor<readonly [z.ZodObject<{
-        capture_fw_complex: z.ZodOptional<z.ZodObject<{
+        capture_fw_complex: z.ZodObject<{
             archetypes: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 archetype_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
@@ -11336,9 +11336,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        damage_ship: z.ZodOptional<z.ZodObject<{
+        damage_ship: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11360,9 +11360,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        defend_fw_complex: z.ZodOptional<z.ZodObject<{
+        defend_fw_complex: z.ZodObject<{
             archetypes: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 archetype_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
@@ -11376,9 +11376,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        deliver_item: z.ZodOptional<z.ZodObject<{
+        deliver_item: z.ZodObject<{
             docking_locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 structure_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11390,9 +11390,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
             office_id: z.ZodOptional<z.ZodInt>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        destroy_npc: z.ZodOptional<z.ZodObject<{
+        destroy_npc: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11400,9 +11400,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        destroy_ship: z.ZodOptional<z.ZodObject<{
+        destroy_ship: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11424,15 +11424,15 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        earn_loyalty_point: z.ZodOptional<z.ZodObject<{
+        earn_loyalty_point: z.ZodObject<{
             corporations: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 corporation_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        lost_ship: z.ZodOptional<z.ZodObject<{
+        lost_ship: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11454,11 +11454,11 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        manual: z.ZodOptional<z.ZodObject<{}, z.core.$catchall<z.ZodUnknown>>>;
+        manual: z.ZodObject<{}, z.core.$catchall<z.ZodUnknown>>;
     }, z.core.$loose>, z.ZodObject<{
-        manufacture_item: z.ZodOptional<z.ZodObject<{
+        manufacture_item: z.ZodObject<{
             docking_locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 structure_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11474,9 +11474,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
                 Character: "Character";
                 Corporation: "Corporation";
             }>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        mine_material: z.ZodOptional<z.ZodObject<{
+        mine_material: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11489,9 +11489,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        remote_boost_shield: z.ZodOptional<z.ZodObject<{
+        remote_boost_shield: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11513,9 +11513,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        remote_repair_armor: z.ZodOptional<z.ZodObject<{
+        remote_repair_armor: z.ZodObject<{
             identities: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 character_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11537,9 +11537,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        salvage_wreck: z.ZodOptional<z.ZodObject<{
+        salvage_wreck: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11547,9 +11547,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 region_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        scan_signature: z.ZodOptional<z.ZodObject<{
+        scan_signature: z.ZodObject<{
             locations: z.ZodOptional<z.ZodArray<z.ZodUnion<readonly [z.ZodObject<{
                 solar_system_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>, z.ZodObject<{
@@ -11560,9 +11560,9 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             signatures: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 signature_type_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        ship_insurance: z.ZodOptional<z.ZodObject<{
+        ship_insurance: z.ZodObject<{
             conflict_type: z.ZodEnum<{
                 Any: "Any";
                 Pve: "Pve";
@@ -11590,12 +11590,12 @@ export declare const zGetCorporationsProjectsDetailResponse: z.ZodObject<{
             }, z.core.$loose>, z.ZodObject<{
                 group_id: z.ZodOptional<z.ZodInt>;
             }, z.core.$loose>]>>>;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>, z.ZodObject<{
-        unknown: z.ZodOptional<z.ZodObject<{
+        unknown: z.ZodObject<{
             data: z.ZodUnknown;
             type: z.ZodString;
-        }, z.core.$loose>>;
+        }, z.core.$loose>;
     }, z.core.$loose>]>;
     contribution: z.ZodOptional<z.ZodObject<{
         participation_limit: z.ZodOptional<z.ZodInt>;

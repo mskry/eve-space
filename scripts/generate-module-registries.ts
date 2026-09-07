@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { format, type FormatConfig } from 'oxfmt'
 import {
   assertOutputPath,
   generateRegistryFiles,
@@ -15,7 +16,16 @@ if (mode !== '--write' && mode !== '--check')
   throw new Error('Usage: generate-module-registries.ts --write|--check')
 
 const manifests = await loadInstalledModuleManifests(root)
-const files = generateRegistryFiles(manifests)
+const formatOptions: FormatConfig = JSON.parse(readFileSync(resolve(root, '.oxfmtrc.json'), 'utf8'))
+const files = new Map(
+  await Promise.all(
+    [...generateRegistryFiles(manifests)].map(async ([path, source]) => {
+      const result = await format(path, source, formatOptions)
+      if (result.errors.length) throw new Error(`Could not format generated registry ${path}`)
+      return [path, result.code] as const
+    }),
+  ),
+)
 
 if (mode === '--write') {
   for (const [path, content] of files) writeAtomically(assertOutputPath(root, path), content)

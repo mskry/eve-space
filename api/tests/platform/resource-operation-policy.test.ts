@@ -280,6 +280,85 @@ describe('installed resource operation policy', () => {
     ).toThrow('implements wallet-transactions instead of wallet-balance')
   })
 
+  test('executes bounded dependent requests with the same lifecycle authorization', async () => {
+    const collect = vi.fn(
+      async (
+        context: import('@eve-space/platform-module-contract').PlatformResourceCollectionContext<PlatformCharacterResourceSubject>,
+      ): Promise<
+        import('@eve-space/platform-module-contract').PlatformResourceCollectionResult<unknown>
+      > => ({
+        complete: false,
+        data: await context.execute('wallet-balance', { characterId: 1404328063 }),
+      }),
+    )
+    const collectingResource = { ...resource, implementation: { ...implementation, collect } }
+    const guardExecution = vi.fn().mockResolvedValue({
+      outcome: 'ready',
+      resource: collectingResource,
+      characterId: 1404328063,
+      authorization: { tokenVersion: 4 },
+    })
+    mocks.getCharacterWithAuthorization.mockResolvedValue({
+      result: cached(123),
+      authorizationGeneration: 4,
+    })
+    const options = {
+      resources: [collectingResource],
+      guardExecution,
+      definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
+      validateInputs: vi.fn((_definition, inputs) => inputs),
+      loadCollectionContext: vi
+        .fn()
+        .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
+      createCapabilities: vi.fn().mockReturnValue({}),
+    }
+    await expect(executeInstalledResourceOperation(identity, options)).resolves.toMatchObject({
+      complete: false,
+      organizationVersion: 2,
+      authorizationGeneration: 4,
+      result: { data: { data: 123 } },
+    })
+    expect(guardExecution).toHaveBeenCalledTimes(2)
+    expect(implementation.map).not.toHaveBeenCalled()
+    collect.mockImplementation(async (context) => {
+      await context.execute('undeclared', {})
+      return { complete: false, data: null }
+    })
+    await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow('undeclared')
+    collect.mockImplementation(async (context) => ({
+      complete: true,
+      data: await context.execute('wallet-balance', { path: { character_id: 9999 } }),
+    }))
+    await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
+      'character is outside',
+    )
+    collect.mockImplementation(async (context) => ({
+      complete: true,
+      data: await context.execute('wallet-balance', { path: { corporation_id: 9999 } }),
+    }))
+    await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
+      'corporation is outside',
+    )
+    collect.mockImplementation(async (context) => {
+      for (let i = 0; i < 33; i++) await context.execute('wallet-balance', {})
+      return { complete: false, data: null }
+    })
+    await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
+      'budget exceeded',
+    )
+    collect.mockImplementation(async (context) => ({
+      complete: true,
+      data: await context.execute('wallet-balance', {}),
+    }))
+    mocks.getCharacterWithAuthorization.mockResolvedValue({
+      result: cached(123),
+      authorizationGeneration: 5,
+    })
+    await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
+      'authority changed',
+    )
+  })
+
   test('requires batch descriptors and implementations to match a public set operation', () => {
     const definitions = {
       'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet'),

@@ -1,6 +1,6 @@
 {
   "name": "@evespace/esi-client",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "TypeScript client for EVE Online's ESI (EVE Swagger Interface) API",
   "keywords": [
     "api",

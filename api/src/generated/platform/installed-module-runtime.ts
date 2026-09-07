@@ -5,8 +5,9 @@ import type {
   PlatformNavigationDefault,
 } from '@eve-space/platform-module-contract'
 
-export const installedModuleDefinitions =
-  [] as const satisfies readonly PlatformInstalledModuleDefinition[]
+export const installedModuleDefinitions = [
+  { moduleId: 'organization-activity', defaultEnabled: true },
+] as const satisfies readonly PlatformInstalledModuleDefinition[]
 export const platformNavigationDefaults = [
   { ownerId: 'core', navigationId: 'core-overview', placement: 'dashboard', order: 10 },
   { ownerId: 'core', navigationId: 'core-characters', placement: 'dashboard', order: 20 },

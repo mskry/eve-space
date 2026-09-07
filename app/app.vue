@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from 'vue'
+import { providePlatformIdentity } from '@eve-space/platform-module-nuxt/runtime'
+
+providePlatformIdentity(usePlatformHostIdentity)
 
 const siteUrl = 'https://eve-space.com'
 const siteTitle = 'EVE Space // Capsuleer Operations'

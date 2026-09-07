@@ -1,0 +1,10 @@
+{
+  "extends": "./test/fixtures/basic/.nuxt/tsconfig.app.json",
+  "compilerOptions": { "noEmit": true },
+  "include": [
+    "src/runtime/**/*.ts",
+    "src/runtime/**/*.vue",
+    "test/fixtures/basic/app/types/**/*.d.ts",
+    "test/fixtures/basic/.nuxt/nuxt.d.ts"
+  ]
+}

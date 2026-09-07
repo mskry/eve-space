@@ -2,15 +2,70 @@
 
 import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import {
+  campaignListOperation as module0EsiOperation0,
+  campaignDetailOperation as module0EsiOperation1,
+  objectiveListOperation as module0EsiOperation2,
+  objectiveDetailOperation as module0EsiOperation3,
+  jobListOperation as module0EsiOperation4,
+  jobDetailOperation as module0EsiOperation5,
+  corporationJobsOperation as module0EsiOperation6,
+  projectListOperation as module0EsiOperation7,
+  projectDetailOperation as module0EsiOperation8,
+  projectContributionOperation as module0EsiOperation9,
+  characterJobsOperation as module0EsiOperation10,
+  jobParticipationOperation as module0EsiOperation11,
+  characterObjectivesOperation as module0EsiOperation12,
+  objectiveParticipationOperation as module0EsiOperation13,
+} from '@eve-space/organization-activity-server'
 
-export const installedModuleEsiOperationDefinitions = {} as const satisfies Record<
-  string,
-  PlatformExecutableEsiOperationDefinition
->
+export const installedModuleEsiOperationDefinitions = {
+  'organization-activity-campaign-list': module0EsiOperation0,
+  'organization-activity-campaign-detail': module0EsiOperation1,
+  'organization-activity-objective-list': module0EsiOperation2,
+  'organization-activity-objective-detail': module0EsiOperation3,
+  'organization-activity-job-list': module0EsiOperation4,
+  'organization-activity-job-detail': module0EsiOperation5,
+  'organization-activity-corporation-jobs': module0EsiOperation6,
+  'organization-activity-project-list': module0EsiOperation7,
+  'organization-activity-project-detail': module0EsiOperation8,
+  'organization-activity-project-contribution': module0EsiOperation9,
+  'organization-activity-character-jobs': module0EsiOperation10,
+  'organization-activity-job-participation': module0EsiOperation11,
+  'organization-activity-character-objectives': module0EsiOperation12,
+  'organization-activity-objective-participation': module0EsiOperation13,
+} as const satisfies Record<string, PlatformExecutableEsiOperationDefinition>
 
-export const installedModuleEsiOperationCatalog = {} as const satisfies Record<
-  string,
-  PlatformEsiOperationContract
->
+export const installedModuleEsiOperationCatalog = {
+  'organization-activity-campaign-list': module0EsiOperation0.contract,
+  'organization-activity-campaign-detail': module0EsiOperation1.contract,
+  'organization-activity-objective-list': module0EsiOperation2.contract,
+  'organization-activity-objective-detail': module0EsiOperation3.contract,
+  'organization-activity-job-list': module0EsiOperation4.contract,
+  'organization-activity-job-detail': module0EsiOperation5.contract,
+  'organization-activity-corporation-jobs': module0EsiOperation6.contract,
+  'organization-activity-project-list': module0EsiOperation7.contract,
+  'organization-activity-project-detail': module0EsiOperation8.contract,
+  'organization-activity-project-contribution': module0EsiOperation9.contract,
+  'organization-activity-character-jobs': module0EsiOperation10.contract,
+  'organization-activity-job-participation': module0EsiOperation11.contract,
+  'organization-activity-character-objectives': module0EsiOperation12.contract,
+  'organization-activity-objective-participation': module0EsiOperation13.contract,
+} as const satisfies Record<string, PlatformEsiOperationContract>
 
-export const installedModuleEsiSdkOperationIds = {} as const satisfies Record<string, string>
+export const installedModuleEsiSdkOperationIds = {
+  'organization-activity-campaign-list': module0EsiOperation0.sdkOperationId,
+  'organization-activity-campaign-detail': module0EsiOperation1.sdkOperationId,
+  'organization-activity-objective-list': module0EsiOperation2.sdkOperationId,
+  'organization-activity-objective-detail': module0EsiOperation3.sdkOperationId,
+  'organization-activity-job-list': module0EsiOperation4.sdkOperationId,
+  'organization-activity-job-detail': module0EsiOperation5.sdkOperationId,
+  'organization-activity-corporation-jobs': module0EsiOperation6.sdkOperationId,
+  'organization-activity-project-list': module0EsiOperation7.sdkOperationId,
+  'organization-activity-project-detail': module0EsiOperation8.sdkOperationId,
+  'organization-activity-project-contribution': module0EsiOperation9.sdkOperationId,
+  'organization-activity-character-jobs': module0EsiOperation10.sdkOperationId,
+  'organization-activity-job-participation': module0EsiOperation11.sdkOperationId,
+  'organization-activity-character-objectives': module0EsiOperation12.sdkOperationId,
+  'organization-activity-objective-participation': module0EsiOperation13.sdkOperationId,
+} as const satisfies Record<string, string>

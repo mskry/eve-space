@@ -177,9 +177,12 @@ function renderApiRoutes(manifests: readonly PlatformModuleManifest[]) {
       binding: `module${moduleIndex}Route${routeIndex}`,
     })),
   )
-  const imports = routes.map(
-    ({ manifest, route, binding }) =>
-      `import { ${route.exportName} as ${binding}Factory } from ${quote(manifest.server.package)}\n`,
+  const imports = renderServerImports(
+    routes.map(({ manifest, route, binding }) => ({
+      packageName: manifest.server.package,
+      exportName: route.exportName,
+      localName: `${binding}Factory`,
+    })),
   )
   const platformImports = routes.length
     ? [
@@ -197,9 +200,7 @@ function renderApiRoutes(manifests: readonly PlatformModuleManifest[]) {
     ({ manifest, route, binding }) =>
       `\n  .route(\n    ${quote(route.namespace)},\n    platformModuleRouteComposers[${quote(route.authorization)}](\n      ${quote(manifest.id)},\n      { audience: ${quote(route.audience)}, requiredPermission: ${quote(route.requiredPermission)} },\n      ${binding},\n    ),\n  )`,
   )
-  const composition = routes.length
-    ? `${platformImports}${imports.join('')}\n${factories.join('')}\n`
-    : '\n'
+  const composition = routes.length ? `${platformImports}${imports}\n${factories.join('')}\n` : '\n'
   return `${generatedHeader}import { Hono } from 'hono'\n${composition}export const installedModuleRoutes = new Hono()${chain.join('')}\n`
 }
 
@@ -211,9 +212,12 @@ function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
       binding: `module${moduleIndex}ActivityProvider${providerIndex}`,
     })),
   )
-  const imports = providers.map(
-    ({ manifest, provider, binding }) =>
-      `import { ${provider.exportName} as ${binding}Factory } from ${quote(manifest.server.package)}\n`,
+  const imports = renderServerImports(
+    providers.map(({ manifest, provider, binding }) => ({
+      packageName: manifest.server.package,
+      exportName: provider.exportName,
+      localName: `${binding}Factory`,
+    })),
   )
   const platformImport = providers.length
     ? "import { createPlatformModuleActivityProviderCapabilities } from '../../platform/module-activity-provider-capabilities.js'\n"
@@ -237,7 +241,7 @@ function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
         })
         .join('')}\n]`
     : '[]'
-  return `${generatedHeader}import type { PlatformInstalledActivityProviderDescriptor } from '@eve-space/platform-module-contract'\n${platformImport}${imports.join('')}\nexport const installedModuleActivityProviders =\n  ${rendered} as const satisfies readonly PlatformInstalledActivityProviderDescriptor[]\n`
+  return `${generatedHeader}import type { PlatformInstalledActivityProviderDescriptor } from '@eve-space/platform-module-contract'\n${platformImport}${imports}\nexport const installedModuleActivityProviders =\n  ${rendered} as const satisfies readonly PlatformInstalledActivityProviderDescriptor[]\n`
 }
 
 function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
@@ -248,18 +252,24 @@ function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
       binding: `module${moduleIndex}Resource${resourceIndex}`,
     })),
   )
-  const imports = resources.map(
-    ({ manifest, resource, binding }) =>
-      `import { ${resource.exportName} as ${binding} } from ${quote(manifest.server.package)}\n`,
+  const imports = renderServerImports(
+    resources.map(({ manifest, resource, binding }) => ({
+      packageName: manifest.server.package,
+      exportName: resource.exportName,
+      localName: binding,
+    })),
   )
   const descriptors = resources.map(({ manifest, resource, binding }) => {
     const batch = resource.batch
       ? ` batch: { mode: ${quote(resource.batch.mode)}, operationId: ${quote(resource.batch.operationId)} },`
       : ''
-    return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, implementation: ${binding} }`
+    const dependent = resource.dependentOperationIds?.length
+      ? ` dependentOperationIds: ${JSON.stringify(resource.dependentOperationIds)},`
+      : ''
+    return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${dependent}${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, implementation: ${binding} }`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
-  return `${generatedHeader}import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'\n${imports.join('')}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
+  return `${generatedHeader}import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'\n${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
 }
 
 function renderMigrations(manifests: readonly PlatformModuleManifest[]) {
@@ -292,9 +302,12 @@ function renderEsiOperations(manifests: readonly PlatformModuleManifest[]) {
       binding: `module${moduleIndex}EsiOperation${operationIndex}`,
     })),
   )
-  const imports = operations.map(
-    ({ manifest, operation, binding }) =>
-      `import { ${operation.exportName} as ${binding} } from ${quote(manifest.server.package)}\n`,
+  const imports = renderServerImports(
+    operations.map(({ manifest, operation, binding }) => ({
+      packageName: manifest.server.package,
+      exportName: operation.exportName,
+      localName: binding,
+    })),
   )
   const catalog = operations.length
     ? `{${operations
@@ -306,7 +319,7 @@ function renderEsiOperations(manifests: readonly PlatformModuleManifest[]) {
         .map(({ operation, binding }) => `\n  ${quote(operation.id)}: ${binding},`)
         .join('')}\n}`
     : '{}'
-  return `${generatedHeader}import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract'\nimport type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'\n${imports.join('')}\nexport const installedModuleEsiOperationDefinitions = ${definitions} as const satisfies Record<\n  string,\n  PlatformExecutableEsiOperationDefinition\n>\n\nexport const installedModuleEsiOperationCatalog = ${catalog.replaceAll(/(module\d+EsiOperation\d+)/g, '$1.contract')} as const satisfies Record<\n  string,\n  PlatformEsiOperationContract\n>\n\nexport const installedModuleEsiSdkOperationIds = {${operations
+  return `${generatedHeader}import type { PlatformEsiOperationContract } from '@eve-space/platform-module-contract'\nimport type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'\n${imports}\nexport const installedModuleEsiOperationDefinitions = ${definitions} as const satisfies Record<\n  string,\n  PlatformExecutableEsiOperationDefinition\n>\n\nexport const installedModuleEsiOperationCatalog = ${catalog.replaceAll(/(module\d+EsiOperation\d+)/g, '$1.contract')} as const satisfies Record<\n  string,\n  PlatformEsiOperationContract\n>\n\nexport const installedModuleEsiSdkOperationIds = {${operations
     .map(({ operation, binding }) => `\n  ${quote(operation.id)}: ${binding}.sdkOperationId,`)
     .join('')}${operations.length ? '\n' : ''}} as const satisfies Record<string, string>\n`
 }
@@ -409,6 +422,24 @@ function compareRuntimeNavigation(
     compareStable(left.ownerId, right.ownerId) ||
     compareStable(left.navigationId, right.navigationId)
   )
+}
+
+function renderServerImports(
+  imports: readonly { packageName: string; exportName: string; localName: string }[],
+) {
+  const specifiersByPackage = new Map<string, string[]>()
+  for (const { packageName, exportName, localName } of imports) {
+    const specifiers = specifiersByPackage.get(packageName) ?? []
+    specifiers.push(`${exportName} as ${localName}`)
+    specifiersByPackage.set(packageName, specifiers)
+  }
+  return [...specifiersByPackage]
+    .map(([packageName, specifiers]) => {
+      if (specifiers.length === 1) return `import { ${specifiers[0]} } from ${quote(packageName)}\n`
+      const renderedSpecifiers = specifiers.map((specifier) => `  ${specifier},`).join('\n')
+      return `import {\n${renderedSpecifiers}\n} from ${quote(packageName)}\n`
+    })
+    .join('')
 }
 
 function quote(value: string) {

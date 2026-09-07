@@ -21,6 +21,7 @@ const modulesByTier = {
     'module-route-capabilities',
     'module-settings',
     'resource-eligibility',
+    'resource-collection-context',
   ],
   service: [
     'collection-status',
