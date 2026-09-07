@@ -231,9 +231,7 @@ async function handleLogout() {
                   <article :data-status="systemStatus.services.api.status">
                     <div><i aria-hidden="true" /><strong>API</strong></div>
                     <span>
-                      {{ stateLabel(systemStatus.services.api.status) }} /
-                      {{ apiLatencyMs ?? '--' }}
-                      MS
+                      {{ stateLabel(systemStatus.services.api.status) }} / {{ apiLatencyMs }} MS
                     </span>
                   </article>
                   <article :data-status="systemStatus.services.database.status">

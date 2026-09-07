@@ -9,6 +9,7 @@ import {
 } from 'reka-ui'
 
 defineProps<{
+  accessibleLabel?: string
   description?: string
   label: string
 }>()
@@ -21,7 +22,11 @@ defineProps<{
     </ContextMenuTrigger>
 
     <ContextMenuPortal defer>
-      <ContextMenuContent class="ui-context-menu" :collision-padding="8">
+      <ContextMenuContent
+        class="ui-context-menu"
+        :aria-label="accessibleLabel ?? label"
+        :collision-padding="8"
+      >
         <ContextMenuLabel class="ui-context-menu-label">
           <strong>{{ label }}</strong>
           <span v-if="description">{{ description }}</span>

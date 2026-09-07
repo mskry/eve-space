@@ -6,11 +6,18 @@ withDefaults(defineProps<{ variant?: 'icon' | 'badge' }>(), {
 
 <template>
   <UiTooltip content="Main character" :arrow="false">
-    <span v-if="variant === 'icon'" class="main-mark main-mark--icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <span v-if="variant === 'icon'" class="main-mark main-mark--icon">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        aria-hidden="true"
+      >
         <path d="m3.5 8 4.5 4 4-7 4 7 4.5-4-1.5 9H5L3.5 8Z" />
         <path d="M5 20h14" />
       </svg>
+      <span class="sr-only">Main character</span>
     </span>
     <span v-else class="main-mark main-mark--badge">MAIN</span>
   </UiTooltip>
