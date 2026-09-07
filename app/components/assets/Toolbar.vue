@@ -406,6 +406,11 @@ function autocompleteOptions<T extends string | number>(
 .assets-strip-search .ui-input {
   height: 2rem;
   padding: 0.5rem 2.25rem 0.5rem 0.625rem;
+  font-size: 0.75rem;
+}
+
+.assets-filter-toggle :deep(.ui-toggle-group-item) {
+  font-size: 0.75rem;
 }
 
 .assets-strip-clear {
@@ -454,7 +459,7 @@ function autocompleteOptions<T extends string | number>(
 
 .assets-strip-count {
   color: var(--ui-primary);
-  font: 700 0.56rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
 }
 
 .assets-filters {
@@ -492,7 +497,7 @@ function autocompleteOptions<T extends string | number>(
 
 .assets-chips-label {
   color: var(--ui-text-faint);
-  font: 700 0.5rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.11em;
   text-transform: uppercase;
 }
@@ -505,7 +510,7 @@ function autocompleteOptions<T extends string | number>(
   border: 0.0625rem solid color-mix(in srgb, var(--ui-primary) 34%, var(--ui-border));
   background: color-mix(in srgb, var(--ui-primary) 8%, transparent);
   color: var(--ui-primary);
-  font: 700 0.56rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.05em;
   cursor: pointer;
 }
@@ -522,7 +527,7 @@ function autocompleteOptions<T extends string | number>(
 .assets-chips-count {
   margin-left: auto;
   color: var(--ui-text-subtle);
-  font: 700 0.56rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -531,7 +536,7 @@ function autocompleteOptions<T extends string | number>(
   border: 0;
   background: transparent;
   color: var(--ui-text-subtle);
-  font: 700 0.56rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;

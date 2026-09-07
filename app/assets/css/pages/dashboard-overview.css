@@ -60,7 +60,7 @@
 
 .overview-panel-index {
   color: var(--accent);
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.14em;
 }
 
@@ -83,7 +83,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line);
   color: var(--muted);
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.1em;
 }
 
@@ -130,7 +130,7 @@
   top: 27px;
   right: 25px;
   color: var(--ui-text-faint);
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
 }
 
 .section-card strong {
@@ -143,13 +143,13 @@
   min-height: 34px;
   margin: 8px 0 24px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .section-card small {
   color: var(--ui-text-subtle);
-  font: 7px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.1em;
 }
 
@@ -168,7 +168,7 @@
 .status-strip span,
 .status-strip strong {
   display: block;
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.08em;
 }
 

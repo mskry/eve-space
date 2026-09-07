@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { CharacterRosterEntry } from '../queries/characters'
-import { characterPortraitViewTransitionName } from '../utils/view-transition'
+import {
+  characterNameViewTransitionName,
+  characterPortraitViewTransitionName,
+} from '../utils/view-transition'
 
 defineProps<{
   character: CharacterRosterEntry
@@ -53,7 +56,13 @@ function locationLabel(location: CharacterRosterEntry['location']) {
       </span>
       <span class="roster-identity">
         <span class="roster-identity-name">
-          <h2>{{ character.name }}</h2>
+          <h2
+            :style="{
+              viewTransitionName: characterNameViewTransitionName(character.characterId),
+            }"
+          >
+            {{ character.name }}
+          </h2>
           <UiMainCharacterMark v-if="character.isMain" variant="icon" />
         </span>
         <span class="roster-org">
@@ -61,7 +70,7 @@ function locationLabel(location: CharacterRosterEntry['location']) {
             <UiEveImage
               kind="corporation"
               :id="character.corporation.id"
-              :dimension="42"
+              :dimension="50"
               :alt="`${character.corporation.name} corporation logo`"
             />
           </UiTooltip>

@@ -33,6 +33,6 @@
 .sidebar-brand-copy small {
   margin-top: 5px;
   color: var(--muted);
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.15em;
 }

@@ -22,6 +22,7 @@ describe('asset hierarchy', () => {
     expect(hierarchy.map((group) => group.label)).toEqual(['Amarr', 'Jita'])
     const jita = hierarchy[1]!
     expect(jita.assetCount).toBe(3)
+    expect(jita.knownVolume).toBe(3)
     expect(jita.rows.map((row) => row.asset.itemId)).toEqual([1, 3])
     expect(jita.rows[0]?.children.map((row) => row.asset.itemId)).toEqual([2])
     expect(flattenAssetRows(jita.rows, 'all').map(({ row }) => row.asset.itemId)).toEqual([1, 2, 3])
@@ -143,6 +144,7 @@ describe('asset contextual filtering', () => {
   it('normalizes descendant search and retains its location and container ancestors', () => {
     const result = filterAssetHierarchy(hierarchy, filters({ search: '  CAFE   laser ' }))
     expect(result.matchCount).toBe(1)
+    expect(result.groups[0]?.knownVolume).toBe(2)
     expect(result.groups[0]?.label).toBe('Jita IV - Moon 4')
     expect(
       flattenAssetRows(result.groups[0]!.rows, 'all').map(({ row }) => row.asset.itemId),

@@ -167,8 +167,7 @@ useHead({ title: 'Character Roster // EVE Space' })
         <UiContextMenu
           v-for="character in characters"
           :key="character.characterId"
-          :label="character.name"
-          description="CHARACTER ACTIONS"
+          label="Character actions"
         >
           <template #trigger>
             <CharacterRosterCard :character="character" @prefetch="prefetchCharacterOverview" />

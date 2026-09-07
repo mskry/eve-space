@@ -110,7 +110,7 @@ onBeforeUnmount(() => resizeObserver?.disconnect())
   padding: 0.9375rem 1.25rem;
   border-right: 0.0625rem solid var(--ui-border);
   color: var(--ui-text-muted);
-  font: 700 0.5625rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.12em;
   text-align: center;
   text-decoration: none;

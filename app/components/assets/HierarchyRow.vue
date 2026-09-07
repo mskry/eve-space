@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AssetVisibleRow } from '../../types/assets'
+import { formatAssetVolume } from '../../utils/assets-format'
 import {
   assetBlueprintLabel,
   assetImageKind,
@@ -35,10 +36,8 @@ const quantityLabel = computed(() =>
 const blueprintLabel = computed(() => assetBlueprintLabel(asset.value))
 const flagLabel = computed(() => assetPlacementLabel(asset.value.locationFlag))
 
-function formatVolume(value: number | null) {
-  if (value === null || !Number.isFinite(value) || value < 0) return 'Unknown'
-  const digits = value >= 100_000 ? 0 : 2
-  return `${value.toLocaleString('en-US', { maximumFractionDigits: digits })} m³`
+function volumeDigits(value: number | null) {
+  return value !== null && value >= 100_000 ? 0 : 2
 }
 
 function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
@@ -109,8 +108,12 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
     <td>{{ asset.groupName || 'Unknown group' }}</td>
     <td>{{ asset.categoryName || 'Unknown category' }}</td>
     <td>{{ flagLabel }}</td>
-    <td class="assets-hierarchy-number">{{ formatVolume(asset.totalVolume) }}</td>
-    <td class="assets-hierarchy-number">{{ formatVolume(asset.unitVolume) }}</td>
+    <td class="assets-hierarchy-number">
+      {{ formatAssetVolume(asset.totalVolume, volumeDigits(asset.totalVolume)) }}
+    </td>
+    <td class="assets-hierarchy-number">
+      {{ formatAssetVolume(asset.unitVolume, volumeDigits(asset.unitVolume)) }}
+    </td>
   </tr>
 </template>
 
@@ -268,7 +271,7 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
   padding: 0.2rem 0.3rem;
   border: 0.0625rem solid color-mix(in srgb, var(--ui-primary) 35%, var(--ui-border));
   color: var(--ui-primary);
-  font: 700 0.48rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.05em;
 }
 
@@ -285,7 +288,7 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
   padding: 0.2rem 0.3rem;
   border: 0.0625rem solid color-mix(in srgb, var(--ui-warning) 38%, var(--ui-border));
   color: var(--ui-warning);
-  font: 700 0.48rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }

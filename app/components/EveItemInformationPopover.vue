@@ -86,7 +86,11 @@ function updateOpen(value: boolean) {
   border-color: transparent;
   border-radius: 0;
   background: transparent;
-  font-size: 10px;
+  font-size: 12px;
+}
+
+.eve-item-information-popover .ui-tabs-trigger {
+  font-size: 12px;
 }
 
 .eve-item-information-popover > .ui-popover-close:hover,

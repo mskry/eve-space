@@ -7,7 +7,7 @@ import type {
   AssetLocationGroup,
   AssetRecord,
 } from '../types/assets'
-import { isBlueprintAsset, isSkinAsset } from './assets-hierarchy'
+import { assetRowsKnownVolume, isBlueprintAsset, isSkinAsset } from './assets-hierarchy'
 
 const searchableTextByAsset = new WeakMap<AssetRecord, Map<string, string>>()
 const searchIndexByHierarchy = new WeakMap<
@@ -108,11 +108,13 @@ function filterAssetGroup(
   if (directMatches.size === 0) return null
 
   const included = includeAncestors(rows, directMatches)
+  const filteredRows = cloneIncludedRows(rows, included)
   return {
     group: {
       ...group,
-      rows: cloneIncludedRows(rows, included),
+      rows: filteredRows,
       assetCount: included.size,
+      knownVolume: assetRowsKnownVolume(filteredRows),
     },
     matchCount: directMatches.size,
   }

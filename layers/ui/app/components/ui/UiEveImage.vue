@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEveImages, type EveImageSize } from '../../composables/useEveImages'
 
-type EveImageDimension = 32 | 34 | 36 | 40 | 42 | 44 | 48 | 64 | 72 | 84
+type EveImageDimension = 32 | 34 | 36 | 40 | 42 | 44 | 48 | 50 | 64 | 72 | 84
 type EveImageKind =
   | 'alliance'
   | 'character'

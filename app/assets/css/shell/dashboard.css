@@ -361,7 +361,7 @@
   border: 1px solid var(--ui-primary);
   background: var(--ui-canvas);
   color: var(--ui-primary);
-  font: 700 8px/1 var(--ui-font-mono);
+  font: 700 12px/1 var(--ui-font-mono);
   letter-spacing: 0.04em;
 }
 
@@ -374,7 +374,7 @@
 
 .sidebar-label strong {
   color: currentColor;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.06em;
 }
 
@@ -382,14 +382,14 @@
   margin-top: 5px;
   overflow: hidden;
   color: var(--muted);
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .access-mark {
   color: var(--orange);
-  font: 7px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.08em;
 }
 
@@ -452,14 +452,14 @@
 .sidebar-session-copy small,
 .session-pulse {
   color: var(--muted);
-  font: 7px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.1em;
 }
 
 .sidebar-session-copy strong {
   margin-top: 5px;
   overflow: hidden;
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -478,7 +478,7 @@
   align-items: center;
   gap: 10px;
   color: var(--orange);
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.1em;
   text-decoration: none;
 }
@@ -568,7 +568,7 @@
 
 .topbar-kicker {
   color: var(--ui-text-faint);
-  font: 7px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.14em;
 }
 
@@ -584,7 +584,7 @@
   align-items: center;
   gap: 22px;
   color: var(--muted);
-  font: 8px/1 monospace;
+  font: 12px/1 monospace;
   letter-spacing: 0.1em;
 }
 
@@ -656,20 +656,7 @@
   border-bottom: 1px solid var(--ui-border);
 }
 
-.system-status-heading div > span,
-.system-status-heading div > strong {
-  display: block;
-}
-
-.system-status-heading div > span {
-  color: var(--ui-text-muted);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-}
-
-.system-status-heading div > strong {
-  margin-top: 7px;
+.system-status-heading > strong {
   font-size: 13px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -677,7 +664,7 @@
 
 .system-status-heading > span {
   color: var(--ui-primary);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -701,7 +688,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--ui-danger) 28%, transparent);
   background: color-mix(in srgb, var(--ui-danger) 7%, transparent);
   color: var(--ui-danger);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -722,7 +709,7 @@
   justify-content: center;
   gap: 10px;
   color: var(--ui-text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
 }
@@ -776,7 +763,7 @@
 
 .system-status-services article strong {
   overflow: hidden;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -786,7 +773,7 @@
   margin-top: 8px;
   display: block;
   color: var(--ui-primary);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.09em;
 }
@@ -799,30 +786,10 @@
   color: var(--ui-danger);
 }
 
-.system-status-services dl {
-  margin: 14px 0 0;
-}
-.system-status-services dl div + div {
-  margin-top: 7px;
-}
-.system-status-services dt,
-.system-status-services dd {
-  margin: 0;
-  font-size: 9px;
-  line-height: 1.4;
-}
-.system-status-services dt {
-  color: var(--ui-text-muted);
-}
-.system-status-services dd {
-  margin-top: 2px;
-  color: var(--ui-text);
-}
-
 .system-status-readout {
   padding: 14px 18px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   border-top: 1px solid var(--ui-border);
   background: color-mix(in srgb, var(--ui-primary) 3%, transparent);
@@ -834,25 +801,13 @@
 }
 .system-status-readout span {
   color: var(--ui-text-muted);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.09em;
 }
 .system-status-readout strong {
   margin-top: 7px;
   font-size: 12px;
   letter-spacing: 0.04em;
-}
-
-.system-status-footer {
-  padding: 10px 18px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid var(--ui-border);
-  color: var(--ui-text-muted);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
 }
 
 .system-status-refreshing {
@@ -902,7 +857,7 @@
 .upstream-notice-contact {
   margin-left: auto;
   color: var(--ui-text-faint);
-  font: 700 8px/1 var(--ui-font-mono);
+  font: 700 12px/1 var(--ui-font-mono);
   letter-spacing: 0.09em;
   white-space: nowrap;
 }

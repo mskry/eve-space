@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatAssetVolume } from '../../utils/assets-format'
+
 defineProps<{
   assetCount: number
   knownVolume: number
@@ -26,7 +28,7 @@ function formatNumber(value: number) {
       </div>
       <div>
         <dt>Known volume</dt>
-        <dd>{{ formatNumber(knownVolume) }} m³</dd>
+        <dd>{{ formatAssetVolume(knownVolume) }}</dd>
       </div>
     </dl>
   </AppSummaryCard>

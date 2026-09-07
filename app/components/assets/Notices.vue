@@ -113,7 +113,7 @@ function formatValidationTime(value: string) {
 .assets-notice strong {
   margin-right: 0.55rem;
   color: var(--ui-text);
-  font: 700 0.62rem/1.2 var(--ui-font-mono);
+  font: 700 0.75rem/1.2 var(--ui-font-mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -141,7 +141,7 @@ function formatValidationTime(value: string) {
   border: 0.0625rem solid var(--ui-warning);
   color: var(--ui-warning);
   background: transparent;
-  font: 700 0.55rem/1 var(--ui-font-mono);
+  font: 700 0.75rem/1 var(--ui-font-mono);
   letter-spacing: 0.08em;
 }
 

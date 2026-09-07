@@ -295,78 +295,82 @@ function pluralize(count: number, singular: string, plural: string) {
       </fieldset>
 
       <div class="skill-list-panel">
-        <div class="skill-list-header">
-          <h2>{{ listTitle }}</h2>
-          <span class="skill-list-meta">{{ listMeta }}</span>
-          <span class="skill-level-legend" aria-label="Skill level indicator legend">
-            <span><i class="is-active" aria-hidden="true" />ACTIVE</span>
-            <span><i class="is-trained" aria-hidden="true" />TRAINED</span>
-            <span><i class="is-queued" aria-hidden="true" />QUEUED</span>
-            <span><i class="is-injected" aria-hidden="true" />INJECTED</span>
-          </span>
-          <span
-            class="skill-list-sp"
-            :aria-label="`${rowsSp.toLocaleString('en-US')} trained skill points`"
-          >
-            {{ rowsSp.toLocaleString('en-US') }} TRAINED SP
-          </span>
-        </div>
+        <Transition name="skill-table" mode="out-in">
+          <div :key="activeGroupKey ?? 'skills'" class="skill-list-content">
+            <div class="skill-list-header">
+              <h2>{{ listTitle }}</h2>
+              <span class="skill-list-meta">{{ listMeta }}</span>
+              <span class="skill-level-legend" aria-label="Skill level indicator legend">
+                <span><i class="is-active" aria-hidden="true" />ACTIVE</span>
+                <span><i class="is-trained" aria-hidden="true" />TRAINED</span>
+                <span><i class="is-queued" aria-hidden="true" />QUEUED</span>
+                <span><i class="is-injected" aria-hidden="true" />INJECTED</span>
+              </span>
+              <span
+                class="skill-list-sp"
+                :aria-label="`${rowsSp.toLocaleString('en-US')} trained skill points`"
+              >
+                {{ rowsSp.toLocaleString('en-US') }} TRAINED SP
+              </span>
+            </div>
 
-        <ul v-if="rows.length" class="skill-list">
-          <li
-            v-for="skill in rows"
-            :key="skill.typeId"
-            class="skill-row"
-            :class="{ 'is-injected': skillIsInjectedOnly(skill) }"
-          >
-            <CharacterSkillsItemInformationPopover
-              :type-id="skill.typeId"
-              :name="skill.name"
-              :status-description="skillInformationStatusDescription(skill)"
-            >
-              <span class="skill-level-track" :aria-label="skillLevelDescription(skill)">
-                <i
-                  v-for="cell in skillLevelCells(skill)"
-                  :key="cell.level"
-                  :class="{
-                    'is-active': cell.active,
-                    'is-trained': cell.trained,
-                    'is-queued': cell.queued,
-                  }"
-                  aria-hidden="true"
-                />
-              </span>
-              <span
-                class="skill-row-name"
-                :class="{ 'is-revealed': revealedSkillNameId === skill.typeId }"
-                :data-full-name="skill.name"
-                @mouseenter="revealTruncatedSkillName(skill.typeId, $event)"
-                @mouseleave="hideSkillName(skill.typeId)"
+            <ul v-if="rows.length" class="skill-list">
+              <li
+                v-for="skill in rows"
+                :key="skill.typeId"
+                class="skill-row"
+                :class="{ 'is-injected': skillIsInjectedOnly(skill) }"
               >
-                {{ skill.name }}
-              </span>
-              <span
-                class="skill-row-sp"
-                :aria-label="`${skill.skillpoints.toLocaleString('en-US')} trained skill points`"
-              >
-                {{ skill.skillpoints.toLocaleString('en-US') }} SP
-              </span>
-              <span
-                class="skill-row-level"
-                :class="{ 'is-partial': skill.activeLevel < skill.trainedLevel }"
-                :aria-label="`Trained level ${skill.trainedLevel}`"
-              >
-                {{ romanLevel(skill.trainedLevel) }}
-              </span>
-            </CharacterSkillsItemInformationPopover>
-          </li>
-        </ul>
+                <CharacterSkillsItemInformationPopover
+                  :type-id="skill.typeId"
+                  :name="skill.name"
+                  :status-description="skillInformationStatusDescription(skill)"
+                >
+                  <span class="skill-level-track" :aria-label="skillLevelDescription(skill)">
+                    <i
+                      v-for="cell in skillLevelCells(skill)"
+                      :key="cell.level"
+                      :class="{
+                        'is-active': cell.active,
+                        'is-trained': cell.trained,
+                        'is-queued': cell.queued,
+                      }"
+                      aria-hidden="true"
+                    />
+                  </span>
+                  <span
+                    class="skill-row-name"
+                    :class="{ 'is-revealed': revealedSkillNameId === skill.typeId }"
+                    :data-full-name="skill.name"
+                    @mouseenter="revealTruncatedSkillName(skill.typeId, $event)"
+                    @mouseleave="hideSkillName(skill.typeId)"
+                  >
+                    {{ skill.name }}
+                  </span>
+                  <span
+                    class="skill-row-sp"
+                    :aria-label="`${skill.skillpoints.toLocaleString('en-US')} trained skill points`"
+                  >
+                    {{ skill.skillpoints.toLocaleString('en-US') }} SP
+                  </span>
+                  <span
+                    class="skill-row-level"
+                    :class="{ 'is-partial': skill.activeLevel < skill.trainedLevel }"
+                    :aria-label="`Trained level ${skill.trainedLevel}`"
+                  >
+                    {{ romanLevel(skill.trainedLevel) }}
+                  </span>
+                </CharacterSkillsItemInformationPopover>
+              </li>
+            </ul>
 
-        <div v-else class="skill-list-empty">
-          <span class="ui-eyebrow">00 / NO MATCHES</span>
-          <p v-if="searching">No skills match "{{ searchTerm }}".</p>
-          <p v-else>No skills match the current filter.</p>
-        </div>
+            <div v-else class="skill-list-empty">
+              <span class="ui-eyebrow">00 / NO MATCHES</span>
+              <p v-if="searching">No skills match "{{ searchTerm }}".</p>
+              <p v-else>No skills match the current filter.</p>
+            </div>
+          </div>
+        </Transition>
       </div>
     </template>
   </div>

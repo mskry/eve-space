@@ -4,6 +4,10 @@
   flex-direction: column;
 }
 
+.character-roster-page .ui-eyebrow {
+  font-size: 12px;
+}
+
 .roster-heading-copy {
   max-width: 460px;
   display: flex;
@@ -133,7 +137,7 @@
 
 .roster-ghost-separator {
   color: var(--ui-text-muted);
-  font: 10px/1 var(--ui-font-mono);
+  font: 12px/1 var(--ui-font-mono);
 }
 
 .roster-add-overlay {
@@ -143,7 +147,7 @@
   align-items: center;
   justify-content: center;
   background: color-mix(in srgb, var(--ui-surface) 60%, transparent);
-  font: 800 9px/1 monospace;
+  font: 800 12px/1 monospace;
   letter-spacing: 0.1em;
 }
 
@@ -314,7 +318,7 @@
 
 .roster-value-separator {
   color: var(--ui-text-muted);
-  font: 10px/1 var(--ui-font-mono);
+  font: 12px/1 var(--ui-font-mono);
 }
 
 .roster-stat {
@@ -324,9 +328,14 @@
   align-items: center;
   gap: 5px;
   color: var(--ui-text);
-  font: 10px/1.6 var(--ui-font-mono);
+  font: 12px/1.5 var(--ui-font-mono);
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+.character-roster-page .roster-stat .security-status {
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .roster-stat-key {
