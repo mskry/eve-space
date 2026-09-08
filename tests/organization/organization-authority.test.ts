@@ -141,6 +141,7 @@ function organizationOwnerContext() {
     },
     isOrganizationOwner: true,
     isBlocked: false,
+    memberAccess: true,
     capabilities: { reviewRegistration: true, viewRosterCoverage: true },
     claimAvailable: false,
     ownerStatus: 'fresh' as const,

@@ -3,6 +3,9 @@ import type { OrganizationExceptions } from '../../queries/organization'
 import { organizationReasonLabel } from '../../utils/organization-presentation'
 
 type ReviewCandidate = OrganizationExceptions['reviewCandidates'][number]
+type CharacterException = OrganizationExceptions['exceptions'][number]
+
+const maximumTimerDelay = 2_147_483_647
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
@@ -27,12 +30,43 @@ const expiresAt = ref('')
 const selectedCandidateKey = ref<string | null>(null)
 const selectedExceptionId = ref<string | null>(null)
 const decisionReason = ref('')
+const currentTime = ref(Date.now())
+let expirationTimer: ReturnType<typeof setTimeout> | undefined
 
-const activeExceptions = computed(() =>
-  exceptions.value.filter((exception) => !exception.expiredAt && !exception.revokedAt),
-)
+const activeExceptions = computed(() => exceptions.value.filter(isExceptionActive))
 
 onMounted(initialize)
+onBeforeUnmount(() => clearTimeout(expirationTimer))
+
+watch(exceptions, scheduleNextExpiration, { immediate: true })
+
+function isExceptionActive(exception: CharacterException) {
+  return (
+    !exception.expiredAt &&
+    !exception.revokedAt &&
+    (!exception.expiresAt || new Date(exception.expiresAt).getTime() > currentTime.value)
+  )
+}
+
+function scheduleNextExpiration() {
+  clearTimeout(expirationTimer)
+  if (!import.meta.client) return
+  currentTime.value = Date.now()
+  const nextExpiration = exceptions.value.reduce<number | null>((nearest, exception) => {
+    if (exception.expiredAt || exception.revokedAt || !exception.expiresAt) return nearest
+    const expirationTimestamp = new Date(exception.expiresAt).getTime()
+    if (expirationTimestamp <= currentTime.value) return nearest
+    return nearest === null || expirationTimestamp < nearest ? expirationTimestamp : nearest
+  }, null)
+  if (nextExpiration === null) return
+  expirationTimer = setTimeout(
+    () => {
+      currentTime.value = Date.now()
+      scheduleNextExpiration()
+    },
+    Math.min(nextExpiration - currentTime.value + 1, maximumTimerDelay),
+  )
+}
 
 function candidateKey(candidate: ReviewCandidate) {
   return `${candidate.userId}:${candidate.characterId}`
@@ -181,7 +215,7 @@ async function submitDecision(decision: 'expire' | 'revoke') {
             </p>
           </div>
           <button
-            v-if="!exception.expiredAt && !exception.revokedAt"
+            v-if="isExceptionActive(exception)"
             class="ui-action-secondary"
             type="button"
             @click="openDecision(exception.exceptionId)"

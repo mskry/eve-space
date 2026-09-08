@@ -50,6 +50,7 @@ describe('organization frontend source contracts', () => {
     expect(component).toContain('event.actorId')
     expect(component).toContain('event.subjectId')
     expect(composable).toContain('import.meta.client && canReview.value')
+    expect(composable).toContain('memberAccess === true')
     expect(composable).toContain('capabilities.reviewRegistration')
     expect(composable).toContain('adminSetupQuery(apiClient)')
   })

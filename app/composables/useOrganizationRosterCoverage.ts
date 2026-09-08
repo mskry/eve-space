@@ -18,6 +18,7 @@ export function useOrganizationRosterCoverage(apiClient: ApiClient) {
     enabled: () =>
       import.meta.client &&
       authSession.value.authenticated &&
+      contextQuery.data.value?.memberAccess === true &&
       contextQuery.data.value?.capabilities.viewRosterCoverage === true,
   })
 
@@ -37,7 +38,8 @@ export function useOrganizationRosterCoverage(apiClient: ApiClient) {
     const [authenticated, setup] = await Promise.all([initializeAuth(), setupQuery.refresh()])
     if (!authenticated || setup.data?.required !== false) return
     const context = await contextQuery.refresh()
-    if (context.data?.capabilities.viewRosterCoverage) await coverageQuery.refresh()
+    if (context.data?.memberAccess && context.data.capabilities.viewRosterCoverage)
+      await coverageQuery.refresh()
   }
 
   return { coverage, errorMessage, initialize, loading }

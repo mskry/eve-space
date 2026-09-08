@@ -28,7 +28,9 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
       setupQuery.data.value?.required === false,
   })
   const canReview = computed(
-    () => contextQuery.data.value?.capabilities.reviewRegistration === true,
+    () =>
+      contextQuery.data.value?.memberAccess === true &&
+      contextQuery.data.value.capabilities.reviewRegistration === true,
   )
   const exceptionsQuery = useQuery({
     ...organizationExceptionsQuery(apiClient),
@@ -120,7 +122,7 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
     const [authenticated, setup] = await Promise.all([initializeAuth(), setupQuery.refresh()])
     if (!authenticated || setup.data?.required !== false) return
     const context = await contextQuery.refresh()
-    if (!context.data?.capabilities.reviewRegistration) return
+    if (!context.data?.memberAccess || !context.data.capabilities.reviewRegistration) return
     await Promise.all([exceptionsQuery.refresh(), auditQuery.refresh()])
   }
 
@@ -155,7 +157,9 @@ export function useOrganizationHrReview(apiClient: ApiClient) {
 
   function loadOlderAuditEvents() {
     const cursor = auditQuery.data.value?.nextBeforeAuditSequence
-    if (cursor) beforeAuditSequence.value = cursor
+    if (!cursor) return
+    beforeAuditSequence.value = cursor
+    void auditQuery.refetch()
   }
 
   return {

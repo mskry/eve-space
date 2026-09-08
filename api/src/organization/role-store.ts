@@ -168,7 +168,10 @@ export async function getOrganizationAccessContext(userId: string) {
     )
     .limit(1)
   const isOrganizationOwner = await hasCurrentOrganizationOwnerAuthority(userId)
-  const canViewRosterCoverage = await hasCurrentOrganizationHrAuthority(userId)
+  const hasHrAuthority = await hasCurrentOrganizationHrAuthority(userId)
+  const canViewRosterCoverage =
+    hasHrAuthority &&
+    (await hasCurrentComplianceAccess(db, organization.organizationVersion, userId))
   const [memberBlock] = await db
     .select({ blockId: organizationMemberBlocks.blockId })
     .from(organizationMemberBlocks)

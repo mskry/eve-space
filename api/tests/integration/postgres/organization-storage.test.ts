@@ -1415,6 +1415,34 @@ describe('organization storage invariants', () => {
     ])
   })
 
+  test('advertises HR review capabilities only while the grantee is currently compliant', async () => {
+    await claimOrganizationOwnership(
+      ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
+    )
+    const targetUserId = randomUUID()
+    await establishCompliantAccount(targetUserId, 90_000_001)
+    await grantOrganizationRole({
+      actorUserId: userId,
+      targetUserId,
+      role: 'hr_auditor',
+      reason: 'Registration review duty.',
+    })
+
+    await expect(getOrganizationAccessContext(targetUserId)).resolves.toMatchObject({
+      capabilities: { reviewRegistration: true, viewRosterCoverage: true },
+    })
+
+    await connection`
+      update organization_account_compliance
+      set state = 'suspended', access_valid_until = null, updated_at = now()
+      where deployment_id = 1 and organization_version = 1 and user_id = ${targetUserId}
+    `
+
+    await expect(getOrganizationAccessContext(targetUserId)).resolves.toMatchObject({
+      capabilities: { reviewRegistration: false, viewRosterCoverage: false },
+    })
+  })
+
   test('refuses delegated role mutations without current-version owner authority', async () => {
     const targetUserId = randomUUID()
     await connection`insert into users (id) values (${targetUserId})`

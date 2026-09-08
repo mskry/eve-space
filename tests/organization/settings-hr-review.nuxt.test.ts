@@ -50,6 +50,9 @@ describe('SettingsOrganizationHrReview', () => {
 
     expect(wrapper.text()).toContain('Awaiting exception review')
     expect(wrapper.text()).toContain('Approved external character.')
+    expect(wrapper.text()).toContain('Expired Pilot')
+    expect(wrapper.text()).toContain('1 active')
+    expect(wrapper.findAll('.hr-review-row--decision > button')).toHaveLength(1)
     expect(wrapper.text()).toContain('exception.approved')
     expect(wrapper.text()).toContain('Actor: user / db7121b5-a761-41e4-ba5d-217ed1b2fa38')
     expect(wrapper.text()).toContain('Subject: exception / 22c7e94c-9cd3-4dc0-a3af-43117426ebec')
@@ -70,7 +73,7 @@ describe('SettingsOrganizationHrReview', () => {
 
   it('does not request private HR resources without the exact capability', async () => {
     let privateRequests = 0
-    installCommonHandlers(false)
+    installCommonHandlers(true, false)
     queryServer.use(
       http.get('*/api/organization/exceptions', () => {
         privateRequests += 1
@@ -86,7 +89,8 @@ describe('SettingsOrganizationHrReview', () => {
       setup() {
         useQueryCache().setQueryData(PRIVATE_QUERY_KEYS.organizationContext(), {
           ...contextResponse,
-          capabilities: { reviewRegistration: false, viewRosterCoverage: false },
+          memberAccess: false,
+          capabilities: { reviewRegistration: true, viewRosterCoverage: true },
         })
         return () => h(SettingsOrganizationHrReview)
       },
@@ -99,7 +103,7 @@ describe('SettingsOrganizationHrReview', () => {
   })
 })
 
-function installCommonHandlers(canReview: boolean) {
+function installCommonHandlers(canReview: boolean, memberAccess = canReview) {
   queryServer.use(
     http.get('*/auth/config', () =>
       HttpResponse.json({
@@ -121,6 +125,7 @@ function installCommonHandlers(canReview: boolean) {
     http.get('*/api/organization/context', () =>
       HttpResponse.json({
         ...contextResponse,
+        memberAccess,
         capabilities: { reviewRegistration: canReview, viewRosterCoverage: canReview },
       }),
     ),
@@ -139,6 +144,7 @@ const contextResponse = {
   },
   isOrganizationOwner: false,
   isBlocked: false,
+  memberAccess: true,
   capabilities: { reviewRegistration: true, viewRosterCoverage: true },
   claimAvailable: false,
   ownerStatus: 'fresh',
@@ -170,6 +176,21 @@ const exceptionResponse = {
       reason: 'Approved external character.',
       approvedAt: '2026-09-08T10:00:00.000Z',
       expiresAt: null,
+      expiredAt: null,
+      revokedAt: null,
+      revokedByUserId: null,
+      revocationReason: null,
+    },
+    {
+      exceptionId: '670fa8a7-b6ac-45be-b065-4427b9c91fbb',
+      organizationVersion: 1,
+      userId: 'f7b8554a-c5f4-4386-adc8-bba5e233b06a',
+      characterId: 90_000_003,
+      characterName: 'Expired Pilot',
+      approverUserId: 'db7121b5-a761-41e4-ba5d-217ed1b2fa38',
+      reason: 'Temporary approval.',
+      approvedAt: '2020-01-01T10:00:00.000Z',
+      expiresAt: '2020-01-02T10:00:00.000Z',
       expiredAt: null,
       revokedAt: null,
       revokedByUserId: null,
