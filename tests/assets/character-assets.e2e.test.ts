@@ -74,6 +74,16 @@ const apiServer = await startCorsJsonApi((request) => {
     }
     return { body: assetsResponse() }
   }
+  if (url.pathname === '/api/universe/routes') {
+    return {
+      body: {
+        originSystemId: 30_000_142,
+        policy: { kind: 'shortest' },
+        sdeBuildNumber: 1234,
+        routes: [{ destinationSystemId: 30_000_142, jumps: 0 }],
+      },
+    }
+  }
   const typeMatch = url.pathname.match(/^\/api\/universe\/types\/(\d+)$/)
   if (typeMatch) {
     const typeId = Number(typeMatch[1])
@@ -128,6 +138,7 @@ describe('character Assets production route', async () => {
     const html = await $fetch(`/characters/${characterId}/assets`)
     expect(html).toContain('Verifying account identity...')
     expect(assetRequests()).toHaveLength(0)
+    expect(routeRequests()).toHaveLength(0)
     expect(html).not.toContain('Cargo vault')
 
     const page = await openPage(`/characters/${characterId}`)
@@ -158,7 +169,12 @@ describe('character Assets production route', async () => {
 
     await assetsLink.click()
     await page.getByRole('heading', { name: '237 TOTAL ASSETS' }).waitFor()
+    await expect.poll(() => routeRequests().length).toBe(1)
+    await expect
+      .poll(() => page.locator('.assets-location-header').allTextContents())
+      .toEqual([expect.stringContaining('ROUTE: 0 JUMPS')])
     expect(assetRequests()).toHaveLength(1)
+    expect(routeRequests()).toHaveLength(1)
     expect(await assetsLink.getAttribute('aria-current')).toBe('page')
   })
 
@@ -292,6 +308,10 @@ function typeDetailRequests() {
   return recordedRequests.filter((url) => url.pathname.startsWith('/api/universe/types/'))
 }
 
+function routeRequests() {
+  return recordedRequests.filter((url) => url.pathname === '/api/universe/routes')
+}
+
 function hasHorizontalOverflow(page: Page) {
   return page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -347,6 +367,7 @@ function inventoryAssets() {
       locationId: 1,
       locationType: 'item',
       locationName: null,
+      solarSystemId: null,
       solarSystemSecurityStatus: null,
       parentItemId: 1,
       locationFlag: 'Cargo',
@@ -383,6 +404,7 @@ function asset(itemId: number, overrides: Record<string, unknown> = {}) {
     locationId: 60_003_760,
     locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.945,
     locationFlag: 'Hangar',
     parentItemId: null,

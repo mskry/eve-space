@@ -116,6 +116,7 @@ function child(itemId: number, parentItemId: number) {
     locationId: parentItemId,
     locationType: 'item',
     locationName: null,
+    solarSystemId: null,
     parentItemId,
   })
 }
@@ -138,6 +139,7 @@ function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecor
     locationId: 60003760,
     locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.9,
     locationFlag: 'Hangar',
     parentItemId: null,

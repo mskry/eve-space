@@ -85,11 +85,13 @@ describe('Assets workspace resource states', () => {
           locationId: 30_000_142,
           locationType: 'solar_system',
           locationName: 'Jita',
+          solarSystemId: 30_000_142,
           solarSystemSecurityStatus: -0.06,
         }),
         asset(3, {
           locationId: 60_000_002,
           locationName: 'Unresolved security station',
+          solarSystemId: null,
           solarSystemSecurityStatus: null,
         }),
       ]),
@@ -102,6 +104,50 @@ describe('Assets workspace resource states', () => {
     const nullSecurity = statuses.find((status) => status.text() === 'System security: -0.1')
     expect(highSecurity?.classes()).toContain('assets-location-security--9')
     expect(nullSecurity?.classes()).toContain('assets-location-security--0')
+  })
+
+  it('renders zero, singular, and plural route jumps while omitting unavailable routes', async () => {
+    const wrapper = await mountWorkspace(
+      collection([
+        asset(1, { locationName: 'Same system', locationId: 60_000_001 }),
+        asset(2, {
+          locationName: 'One jump',
+          locationId: 60_000_002,
+          solarSystemId: 30_000_143,
+        }),
+        asset(3, {
+          locationName: 'Two jumps',
+          locationId: 60_000_003,
+          solarSystemId: 30_000_144,
+        }),
+        asset(4, {
+          locationName: 'Route unavailable',
+          locationId: 60_000_004,
+          solarSystemId: 30_000_145,
+        }),
+      ]),
+      state(),
+      false,
+      new Map([
+        [30_000_142, 0],
+        [30_000_143, 1],
+        [30_000_144, 2],
+      ]),
+    )
+
+    const headers = wrapper.findAll('.assets-location-header')
+    expect(headers.find((header) => header.text().includes('Same system'))?.text()).toContain(
+      'ROUTE: 0 JUMPS',
+    )
+    expect(headers.find((header) => header.text().includes('One jump'))?.text()).toContain(
+      'ROUTE: 1 JUMP',
+    )
+    expect(headers.find((header) => header.text().includes('Two jumps'))?.text()).toContain(
+      'ROUTE: 2 JUMPS',
+    )
+    expect(
+      headers.find((header) => header.text().includes('Route unavailable'))?.text(),
+    ).not.toContain('ROUTE:')
   })
 
   it('keeps stale retained data primary and reports refresh and partial enrichment context', async () => {
@@ -500,10 +546,11 @@ async function mountWorkspace(
   data: AssetCollection | null,
   resourceState: AssetResourceState,
   attachToBody = false,
+  routeJumpsBySystemId?: ReadonlyMap<number, number>,
 ) {
   const wrapper = await mountSuspended(AssetsWorkspace, {
     attachTo: attachToBody ? document.body : undefined,
-    props: { collection: data, state: resourceState },
+    props: { collection: data, routeJumpsBySystemId, state: resourceState },
     route: false,
   })
   mountedWrappers.push(wrapper)
@@ -565,6 +612,7 @@ function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecor
     locationId: 60_003_760,
     locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    solarSystemId: 30_000_142,
     solarSystemSecurityStatus: 0.945,
     locationFlag: 'Hangar',
     parentItemId: null,

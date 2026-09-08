@@ -76,13 +76,32 @@ describe('SDE location projection', () => {
     expect(result.every((location) => location.solarSystemSecurityStatus !== null)).toBe(true)
     expect(result).toEqual(
       expect.arrayContaining([
-        { id: 60000001, type: 'station', name: null, solarSystemSecurityStatus: -0.06 },
-        { id: 30000001, type: 'solar_system', name: 'System 1', solarSystemSecurityStatus: -0.06 },
-        { id: 60000002, type: 'station', name: null, solarSystemSecurityStatus: 0 },
+        {
+          id: 60000001,
+          type: 'station',
+          name: null,
+          solarSystemId: 30000001,
+          solarSystemSecurityStatus: -0.06,
+        },
+        {
+          id: 30000001,
+          type: 'solar_system',
+          name: 'System 1',
+          solarSystemId: 30000001,
+          solarSystemSecurityStatus: -0.06,
+        },
+        {
+          id: 60000002,
+          type: 'station',
+          name: null,
+          solarSystemId: 30000002,
+          solarSystemSecurityStatus: 0,
+        },
         {
           id: 30000003,
           type: 'solar_system',
           name: 'System 3',
+          solarSystemId: 30000003,
           solarSystemSecurityStatus: 0.945913,
         },
       ]),
@@ -102,6 +121,7 @@ describe('SDE location projection', () => {
         id: location.id,
         type: location.type,
         name: null,
+        solarSystemId: null,
         solarSystemSecurityStatus: null,
       })),
     )
@@ -118,7 +138,13 @@ describe('SDE location projection', () => {
       }),
     ).rejects.toMatchObject({ code: '23514' })
     expect(await getStaticLocations([{ id: 60000001, type: 'station' }])).toEqual([
-      { id: 60000001, type: 'station', name: null, solarSystemSecurityStatus: -0.06 },
+      {
+        id: 60000001,
+        type: 'station',
+        name: null,
+        solarSystemId: 30000001,
+        solarSystemSecurityStatus: -0.06,
+      },
     ])
   })
 })

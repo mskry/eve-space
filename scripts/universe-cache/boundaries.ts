@@ -2,10 +2,11 @@ import { basename, extname } from 'node:path'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  representation: ['static-location-types'],
-  state: ['static-location-cache-state'],
-  adapter: ['static-location-store'],
-  orchestration: ['static-locations'],
+  representation: ['static-location-types', 'route-types'],
+  state: ['static-location-cache-state', 'topology-state'],
+  adapter: ['static-location-store', 'topology-store'],
+  orchestration: ['static-locations', 'topology'],
+  service: ['route-calculator'],
 } as const
 
 type UniverseCacheTier = keyof typeof modulesByTier
@@ -21,6 +22,7 @@ const allowedImportTiers: Record<UniverseCacheTier, readonly UniverseCacheTier[]
   state: ['representation'],
   adapter: ['representation'],
   orchestration: ['representation', 'state', 'adapter'],
+  service: ['representation', 'orchestration'],
 }
 
 export interface UniverseCacheSource {

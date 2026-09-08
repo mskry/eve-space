@@ -99,6 +99,7 @@ function locationResult(snapshot: StaticLocationSnapshot, location: StaticLocati
     id: location.id,
     type: location.type,
     name: location.type === 'solar_system' ? (system?.name ?? null) : null,
+    solarSystemId: system?.id ?? null,
     solarSystemSecurityStatus: system?.securityStatus ?? null,
   }
 }

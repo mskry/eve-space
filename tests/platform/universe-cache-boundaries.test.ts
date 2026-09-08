@@ -11,6 +11,13 @@ describe('universe cache dependency boundaries', () => {
     ['static-locations', 'static-location-types'],
     ['static-locations', 'static-location-cache-state'],
     ['static-locations', 'static-location-store'],
+    ['topology-state', 'route-types'],
+    ['topology-store', 'route-types'],
+    ['topology', 'route-types'],
+    ['topology', 'topology-state'],
+    ['topology', 'topology-store'],
+    ['route-calculator', 'route-types'],
+    ['route-calculator', 'topology'],
   ])('allows %s to import %s', (sourceModule, importedModule) => {
     expect(
       universeCacheImportViolations([source(sourceModule, `import './${importedModule}.js'`)]),
@@ -25,6 +32,17 @@ describe('universe cache dependency boundaries', () => {
     ['static-location-cache-state', 'static-locations'],
     ['static-location-store', 'static-location-cache-state'],
     ['static-location-store', 'static-locations'],
+    ['route-types', 'topology-state'],
+    ['route-types', 'topology-store'],
+    ['route-types', 'topology'],
+    ['route-types', 'route-calculator'],
+    ['topology-state', 'topology-store'],
+    ['topology-state', 'topology'],
+    ['topology-state', 'route-calculator'],
+    ['topology-store', 'topology-state'],
+    ['topology-store', 'topology'],
+    ['topology-store', 'route-calculator'],
+    ['topology', 'route-calculator'],
   ])('rejects %s importing %s', (sourceModule, importedModule) => {
     expect(
       universeCacheImportViolations([source(sourceModule, `import './${importedModule}.js'`)]),

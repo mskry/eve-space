@@ -38,6 +38,8 @@ function authorizeAssets(action: AssetResourceAction) {
   <section class="character-assets-route" aria-label="Character assets">
     <AssetsWorkspace
       :collection="assetsService.assets.value"
+      :hierarchy="assetsService.hierarchy.value"
+      :route-jumps-by-system-id="assetsService.routeJumpsBySystemId.value"
       :state="assetsService.state.value"
       @authorize="authorizeAssets"
       @retry="assetsService.refreshAssets"

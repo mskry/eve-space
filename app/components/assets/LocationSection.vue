@@ -7,6 +7,7 @@ const props = defineProps<{
   containerExpansion: ReadonlySet<number>
   expanded: boolean
   group: AssetLocationGroup
+  jumpCount: number | null
   visible: AssetVisibleLocation
 }>()
 
@@ -40,6 +41,10 @@ const locationKind = computed(() => {
 })
 const exceptional = computed(() => props.group.placement !== 'location')
 const restricted = computed(() => props.group.placement === 'unresolved-container')
+const jumpLabel = computed(() => {
+  if (props.jumpCount === null) return null
+  return `${props.jumpCount.toLocaleString('en-US')} ${props.jumpCount === 1 ? 'JUMP' : 'JUMPS'}`
+})
 </script>
 
 <template>
@@ -62,6 +67,7 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
             {{ group.assetCount.toLocaleString('en-US') }} items -
             {{ formatAssetVolume(group.knownVolume) }}
           </span>
+          <span v-if="jumpLabel" class="assets-location-route">- ROUTE: {{ jumpLabel }}</span>
           <span
             v-if="locationKind !== 'STATION'"
             class="assets-location-kind"
@@ -166,6 +172,12 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
   margin-left: auto;
   flex: 0 0 auto;
   color: var(--ui-text-subtle);
+}
+
+.assets-location-route {
+  flex: 0 0 auto;
+  color: var(--ui-text-subtle);
+  font-family: var(--ui-font-mono);
 }
 
 .assets-location-kind {

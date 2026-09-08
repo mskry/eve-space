@@ -55,6 +55,7 @@ interface CharacterAssetTypeData {
 
 interface CharacterAssetLocationData {
   name: string | null
+  solarSystemId: number | null
   solarSystemSecurityStatus: number | null
 }
 
@@ -62,6 +63,7 @@ export interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAsse
   totalVolume: number | null
   customName: string | null
   locationName: string | null
+  solarSystemId: number | null
   solarSystemSecurityStatus: number | null
 }
 
@@ -119,6 +121,7 @@ export async function getCharacterAssets(characterId: number): Promise<Character
       totalVolume: totalVolume(type.unitVolume, asset.quantity),
       customName: names.values.get(asset.itemId) ?? null,
       locationName: location?.name ?? null,
+      solarSystemId: location?.solarSystemId ?? null,
       solarSystemSecurityStatus: location?.solarSystemSecurityStatus ?? null,
     })
   }
@@ -344,6 +347,7 @@ async function loadAssetLocations(assets: readonly CharacterAssetSnapshot[]) {
         (resolvedName?.category === location.type ? resolvedName.name : null) ??
         matchedDetail?.name ??
         null,
+      solarSystemId: matchedDetail?.solarSystemId ?? null,
       solarSystemSecurityStatus:
         securityStatus != null && Number.isFinite(securityStatus) ? securityStatus : null,
     })
@@ -352,10 +356,16 @@ async function loadAssetLocations(assets: readonly CharacterAssetSnapshot[]) {
   const complete =
     values.size === expected.size &&
     [...values.values()].every(
-      (value) => value.name !== null && value.solarSystemSecurityStatus !== null,
+      (value) =>
+        value.name !== null &&
+        value.solarSystemId !== null &&
+        value.solarSystemSecurityStatus !== null,
     )
   const usable = [...values.values()].some(
-    (value) => value.name !== null || value.solarSystemSecurityStatus !== null,
+    (value) =>
+      value.name !== null ||
+      value.solarSystemId !== null ||
+      value.solarSystemSecurityStatus !== null,
   )
   return { values, status: enrichmentStatus(complete, usable) }
 }

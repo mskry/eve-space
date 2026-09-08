@@ -29,6 +29,7 @@ const sourceAsset = {
   locationId: 123,
   locationType: 'station' as const,
   locationName: 'Jita IV - Moon 4',
+  solarSystemId: 30_000_142,
   solarSystemSecurityStatus: 0.9,
   locationFlag: 'Hangar',
   parentItemId: null,
@@ -56,6 +57,7 @@ describe('character Assets mapper', () => {
           locationId: 123,
           locationType: 'other',
           locationName: null,
+          solarSystemId: null,
           solarSystemSecurityStatus: null,
           locationFlag: 'FutureFlag',
           parentItemId: null,
@@ -88,6 +90,7 @@ describe('character Assets mapper', () => {
           locationId: 123,
           locationType: 'other',
           locationName: null,
+          solarSystemId: null,
           solarSystemSecurityStatus: null,
           locationFlag: 'FutureFlag',
           parentItemId: null,
@@ -323,6 +326,50 @@ describe('character Assets adapter', () => {
     expect(requests).toBe(2)
     mounted.unmount()
   })
+
+  it('recalculates route jumps for origin changes without affecting retained assets on failure', async () => {
+    const requestedOrigins: number[] = []
+    queryServer.use(
+      http.get('http://localhost/api/me/characters/7/assets', () => HttpResponse.json(response(7))),
+      http.post('http://localhost/api/universe/routes', async ({ request }) => {
+        const body = (await request.json()) as {
+          originSystemId: number
+          destinationSystemIds: number[]
+        }
+        requestedOrigins.push(body.originSystemId)
+        if (body.originSystemId === 30_000_143) {
+          return HttpResponse.json(
+            { code: 'UNIVERSE_TOPOLOGY_UNAVAILABLE', message: 'Routes unavailable.' },
+            { status: 503 },
+          )
+        }
+        return HttpResponse.json({
+          originSystemId: body.originSystemId,
+          policy: { kind: 'shortest' },
+          sdeBuildNumber: 1234,
+          routes: body.destinationSystemIds.map((destinationSystemId) => ({
+            destinationSystemId,
+            jumps: 0,
+          })),
+        })
+      }),
+    )
+    const mounted = mountAdapter()
+    mounted.characters.value = [{ characterId: 7, location: { solarSystemId: 30_000_142 } }]
+    await settle()
+
+    expect(requestedOrigins).toEqual([30_000_142])
+    expect(mounted.adapter.routeJumpsBySystemId.value.get(30_000_142)).toBe(0)
+
+    mounted.characters.value = [{ characterId: 7, location: { solarSystemId: 30_000_143 } }]
+    await settle()
+
+    expect(requestedOrigins).toEqual([30_000_142, 30_000_143])
+    expect(mounted.adapter.assets.value?.assets[0]?.itemId).toBe(70)
+    expect(mounted.adapter.state.value.phase).toBe('ready')
+    expect(mounted.adapter.routeJumpsBySystemId.value.size).toBe(0)
+    mounted.unmount()
+  })
 })
 
 function mountAdapter(
@@ -334,7 +381,9 @@ function mountAdapter(
   const state = {} as {
     authenticated: ReturnType<typeof ref<boolean>>
     characterId: ReturnType<typeof ref<number | undefined>>
-    characters: ReturnType<typeof ref<Array<{ characterId: number }>>>
+    characters: ReturnType<
+      typeof ref<Array<{ characterId: number; location?: { solarSystemId: number } | null }>>
+    >
     adapter: ReturnType<typeof useCharacterAssets>
   }
   const Host = defineComponent({
@@ -384,6 +433,7 @@ function response(characterId: number) {
         locationId: 60003760,
         locationType: 'station',
         locationName: 'Jita IV - Moon 4',
+        solarSystemId: 30_000_142,
         solarSystemSecurityStatus: 0.9,
         locationFlag: 'Hangar',
         parentItemId: null,

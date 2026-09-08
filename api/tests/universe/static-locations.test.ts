@@ -78,13 +78,20 @@ describe('static location cache', () => {
     loading.resolve(snapshot)
 
     await expect(first).resolves.toEqual([
-      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: -0.06 },
+      {
+        id: 60_000_001,
+        type: 'station',
+        name: null,
+        solarSystemId: 30_000_001,
+        solarSystemSecurityStatus: -0.06,
+      },
     ])
     await expect(second).resolves.toEqual([
       {
         id: 30_000_001,
         type: 'solar_system',
         name: 'System 30000001',
+        solarSystemId: 30_000_001,
         solarSystemSecurityStatus: -0.06,
       },
     ])
@@ -133,11 +140,18 @@ describe('static location cache', () => {
         { id: 30_000_002, type: 'solar_system' },
       ]),
     ).resolves.toEqual([
-      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: null },
+      {
+        id: 60_000_001,
+        type: 'station',
+        name: null,
+        solarSystemId: null,
+        solarSystemSecurityStatus: null,
+      },
       {
         id: 30_000_002,
         type: 'solar_system',
         name: 'System 30000002',
+        solarSystemId: 30_000_002,
         solarSystemSecurityStatus: 0.945913,
       },
     ])
@@ -225,12 +239,25 @@ describe('static location cache', () => {
     first[2]!.solarSystemSecurityStatus = -1
 
     expect(await getStaticLocations(locations)).toEqual([
-      { id: 30_000_001, type: 'station', name: null, solarSystemSecurityStatus: null },
-      { id: 60_000_001, type: 'solar_system', name: null, solarSystemSecurityStatus: null },
+      {
+        id: 30_000_001,
+        type: 'station',
+        name: null,
+        solarSystemId: null,
+        solarSystemSecurityStatus: null,
+      },
+      {
+        id: 60_000_001,
+        type: 'solar_system',
+        name: null,
+        solarSystemId: null,
+        solarSystemSecurityStatus: null,
+      },
       {
         id: 30_000_001,
         type: 'solar_system',
         name: 'System 30000001',
+        solarSystemId: 30_000_001,
         solarSystemSecurityStatus: 0.945913,
       },
     ])
