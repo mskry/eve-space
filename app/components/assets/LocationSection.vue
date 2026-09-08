@@ -43,7 +43,7 @@ const exceptional = computed(() => props.group.placement !== 'location')
 const restricted = computed(() => props.group.placement === 'unresolved-container')
 const jumpLabel = computed(() => {
   if (props.jumpCount === null) return null
-  return `${props.jumpCount.toLocaleString('en-US')} ${props.jumpCount === 1 ? 'JUMP' : 'JUMPS'}`
+  return `${props.jumpCount.toLocaleString('en-US')} ${props.jumpCount === 1 ? 'Jump' : 'Jumps'}`
 })
 </script>
 
@@ -63,11 +63,11 @@ const jumpLabel = computed(() => {
             :value="group.solarSystemSecurityStatus"
           />
           <span class="assets-location-name">{{ group.label }}</span>
+          <span v-if="jumpLabel" class="assets-location-route">- Route: {{ jumpLabel }}</span>
           <span class="assets-location-count">
             {{ group.assetCount.toLocaleString('en-US') }} items -
             {{ formatAssetVolume(group.knownVolume) }}
           </span>
-          <span v-if="jumpLabel" class="assets-location-route">- ROUTE: {{ jumpLabel }}</span>
           <span
             v-if="locationKind !== 'STATION'"
             class="assets-location-kind"

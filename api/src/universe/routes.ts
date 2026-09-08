@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { createMiddleware } from 'hono/factory'
 import { z } from 'zod'
+import { createPublicRequestRateLimit } from '../http/public-rate-limit.js'
 import { zValidator } from '../http/validation.js'
 import { calculateUniverseRoutes } from './route-calculator.js'
 import { getUniverseTypeDetails } from './type-details.js'
@@ -11,7 +12,6 @@ const routeSystemId = z
   .number()
   .int('Solar system IDs must be positive safe integers.')
   .positive('Solar system IDs must be positive safe integers.')
-  .safe('Solar system IDs must be positive safe integers.')
 const universeRouteRequest = z
   .object({
     originSystemId: routeSystemId,
@@ -44,6 +44,10 @@ const noStore = createMiddleware(async (context, next) => {
   context.header('Cache-Control', 'no-store')
   await next()
 })
+const limitPublicUniverseRouteRequests = createPublicRequestRateLimit({
+  code: 'UNIVERSE_ROUTE_RATE_LIMITED',
+  message: 'Too many universe route requests.',
+})
 
 export const universeRoutes = new Hono()
   .get('/types/:typeId', noStore, zValidator('param', typeIdParams), async (context) => {
@@ -66,16 +70,22 @@ export const universeRoutes = new Hono()
       )
     }
   })
-  .post('/routes', noStore, zValidator('json', universeRouteRequest), async (context) => {
-    try {
-      return context.json(await calculateUniverseRoutes(context.req.valid('json')), 200)
-    } catch {
-      return context.json(
-        {
-          code: 'UNIVERSE_TOPOLOGY_UNAVAILABLE',
-          message: 'Universe route topology is temporarily unavailable.',
-        },
-        503,
-      )
-    }
-  })
+  .post(
+    '/routes',
+    noStore,
+    zValidator('json', universeRouteRequest),
+    limitPublicUniverseRouteRequests,
+    async (context) => {
+      try {
+        return context.json(await calculateUniverseRoutes(context.req.valid('json')), 200)
+      } catch {
+        return context.json(
+          {
+            code: 'UNIVERSE_TOPOLOGY_UNAVAILABLE',
+            message: 'Universe route topology is temporarily unavailable.',
+          },
+          503,
+        )
+      }
+    },
+  )

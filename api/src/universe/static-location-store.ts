@@ -3,8 +3,6 @@ import { sql } from '../db/client.js'
 import {
   executeUniverseQuery,
   runBoundedReadTransaction,
-  universeDatabaseOperationTimeoutMilliseconds,
-  universeDatabaseTimeoutMilliseconds,
   type UniverseDatabase,
   type UniverseQuery,
 } from './database-read.js'
@@ -14,9 +12,10 @@ import type {
   StaticSolarSystem,
 } from './static-location-types.js'
 
-export const staticLocationDatabaseTimeoutMilliseconds = universeDatabaseTimeoutMilliseconds
-export const staticLocationDatabaseOperationTimeoutMilliseconds =
-  universeDatabaseOperationTimeoutMilliseconds
+export {
+  universeDatabaseOperationTimeoutMilliseconds as staticLocationDatabaseOperationTimeoutMilliseconds,
+  universeDatabaseTimeoutMilliseconds as staticLocationDatabaseTimeoutMilliseconds,
+} from './database-read.js'
 
 type StaticLocationDatabase = UniverseDatabase
 type StaticLocationQuery = UniverseQuery

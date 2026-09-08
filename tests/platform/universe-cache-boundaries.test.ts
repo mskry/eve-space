@@ -7,11 +7,13 @@ import {
 describe('universe cache dependency boundaries', () => {
   test.each([
     ['static-location-cache-state', 'static-location-types'],
+    ['static-location-store', 'database-read'],
     ['static-location-store', 'static-location-types'],
     ['static-locations', 'static-location-types'],
     ['static-locations', 'static-location-cache-state'],
     ['static-locations', 'static-location-store'],
     ['topology-state', 'route-types'],
+    ['topology-store', 'database-read'],
     ['topology-store', 'route-types'],
     ['topology', 'route-types'],
     ['topology', 'topology-state'],
@@ -26,6 +28,7 @@ describe('universe cache dependency boundaries', () => {
 
   test.each([
     ['static-location-types', 'static-location-cache-state'],
+    ['database-read', 'static-location-types'],
     ['static-location-types', 'static-location-store'],
     ['static-location-types', 'static-locations'],
     ['static-location-cache-state', 'static-location-store'],
@@ -43,6 +46,7 @@ describe('universe cache dependency boundaries', () => {
     ['topology-store', 'topology'],
     ['topology-store', 'route-calculator'],
     ['topology', 'route-calculator'],
+    ['database-read', 'topology-store'],
   ])('rejects %s importing %s', (sourceModule, importedModule) => {
     expect(
       universeCacheImportViolations([source(sourceModule, `import './${importedModule}.js'`)]),
@@ -52,6 +56,14 @@ describe('universe cache dependency boundaries', () => {
   test('rejects undeclared static-location modules', () => {
     expect(universeCacheImportViolations([source('static-location-extra', '')])).toEqual([
       'api/src/universe/static-location-extra.ts: universe cache module static-location-extra has no declared tier',
+    ])
+  })
+
+  test('rejects imports of undeclared local universe modules', () => {
+    expect(
+      universeCacheImportViolations([source('database-read', "import './database-extra.js'")]),
+    ).toEqual([
+      'api/src/universe/database-read.ts: database module database-read imports undeclared universe module database-extra',
     ])
   })
 })

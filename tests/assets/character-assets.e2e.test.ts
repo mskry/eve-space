@@ -172,7 +172,7 @@ describe('character Assets production route', async () => {
     await expect.poll(() => routeRequests().length).toBe(1)
     await expect
       .poll(() => page.locator('.assets-location-header').allTextContents())
-      .toEqual([expect.stringContaining('ROUTE: 0 JUMPS')])
+      .toEqual([expect.stringContaining('Route: 0 Jumps')])
     expect(assetRequests()).toHaveLength(1)
     expect(routeRequests()).toHaveLength(1)
     expect(await assetsLink.getAttribute('aria-current')).toBe('page')

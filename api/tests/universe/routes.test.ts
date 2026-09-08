@@ -227,6 +227,41 @@ describe('universe route calculation endpoint', () => {
     })
   })
 
+  test('rate-limits one anonymous client before route calculation', async () => {
+    const body = JSON.stringify({
+      originSystemId: 1,
+      destinationSystemIds: [2],
+      policy: { kind: 'shortest' },
+    })
+    let response: Response | undefined
+    for (let index = 0; index <= 60; index += 1) {
+      response = await universeRoutes.fetch(
+        new Request('http://localhost/routes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        }),
+        {
+          incoming: {
+            socket: {
+              remoteAddress: '198.51.100.30',
+              remotePort: 1,
+              remoteFamily: 'IPv4',
+            },
+          },
+        },
+      )
+    }
+
+    expect(response?.status).toBe(429)
+    expect(response?.headers.get('retry-after')).toBe('60')
+    await expect(response?.json()).resolves.toEqual({
+      code: 'UNIVERSE_ROUTE_RATE_LIMITED',
+      message: 'Too many universe route requests.',
+    })
+    expect(mocks.calculateUniverseRoutes).toHaveBeenCalledTimes(60)
+  })
+
   test('retains the inferred route request and response contract', async () => {
     const client = testClient(universeRoutes)
     type Success = InferResponseType<(typeof client.routes)['$post'], 200>

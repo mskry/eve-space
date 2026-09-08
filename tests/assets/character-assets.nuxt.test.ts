@@ -136,18 +136,20 @@ describe('Assets workspace resource states', () => {
     )
 
     const headers = wrapper.findAll('.assets-location-header')
-    expect(headers.find((header) => header.text().includes('Same system'))?.text()).toContain(
-      'ROUTE: 0 JUMPS',
-    )
+    const sameSystemHeader = headers.find((header) => header.text().includes('Same system'))
+    expect(sameSystemHeader?.text()).toContain('Route: 0 Jumps')
+    expect(
+      sameSystemHeader?.get('.assets-location-name').element.nextElementSibling?.classList,
+    ).toContain('assets-location-route')
     expect(headers.find((header) => header.text().includes('One jump'))?.text()).toContain(
-      'ROUTE: 1 JUMP',
+      'Route: 1 Jump',
     )
     expect(headers.find((header) => header.text().includes('Two jumps'))?.text()).toContain(
-      'ROUTE: 2 JUMPS',
+      'Route: 2 Jumps',
     )
     expect(
       headers.find((header) => header.text().includes('Route unavailable'))?.text(),
-    ).not.toContain('ROUTE:')
+    ).not.toContain('Route:')
   })
 
   it('keeps stale retained data primary and reports refresh and partial enrichment context', async () => {

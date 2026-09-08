@@ -21,7 +21,12 @@ interface UniverseTopologyRow extends postgres.Row {
   destination_system_id: string | null
 }
 
-class UniverseTopologyUnavailableError extends Error {
+type MutableUniverseTopologySystem = {
+  securityStatus: number | null
+  neighbors: Set<number>
+}
+
+export class UniverseTopologyUnavailableError extends Error {
   constructor(message = 'Universe topology is unavailable') {
     super(message)
     this.name = 'UniverseTopologyUnavailableError'
@@ -87,44 +92,18 @@ function buildTopologySnapshot(
   buildNumber: number,
   rows: readonly UniverseTopologyRow[],
 ): UniverseTopologySnapshot {
-  const systems = new Map<number, { securityStatus: number | null; neighbors: Set<number> }>()
-  const gates = new Set<number>()
+  const systems = new Map<number, MutableUniverseTopologySystem>()
+  const gateRows = new Map<number, UniverseTopologyRow>()
 
   for (const row of rows) {
-    const id = positiveSafeInteger(row.id, `${row.dataset} ID`)
-    if (row.key !== String(id))
-      throw new UniverseTopologyUnavailableError('Universe topology row key is invalid')
-
-    if (row.dataset === 'mapSolarSystems') {
-      if (systems.has(id))
-        throw new UniverseTopologyUnavailableError('Universe topology contains duplicate systems')
-      systems.set(id, {
-        securityStatus: optionalFiniteSecurity(row.security_status),
-        neighbors: new Set(),
-      })
-      continue
-    }
-    if (row.dataset !== 'mapStargates')
-      throw new UniverseTopologyUnavailableError('Universe topology contains an unknown dataset')
-    if (gates.has(id))
-      throw new UniverseTopologyUnavailableError('Universe topology contains duplicate stargates')
-    gates.add(id)
+    registerTopologyRow(row, systems, gateRows)
   }
 
-  if (systems.size === 0 || gates.size === 0)
+  if (systems.size === 0 || gateRows.size === 0)
     throw new UniverseTopologyUnavailableError('Universe topology is incomplete')
 
-  for (const row of rows) {
-    if (row.dataset !== 'mapStargates') continue
-    const sourceSystemId = positiveSafeInteger(row.source_system_id, 'stargate source system ID')
-    const destinationSystemId = positiveSafeInteger(
-      row.destination_system_id,
-      'stargate destination system ID',
-    )
-    const source = systems.get(sourceSystemId)
-    if (!source || !systems.has(destinationSystemId))
-      throw new UniverseTopologyUnavailableError('Universe topology contains an unknown system')
-    source.neighbors.add(destinationSystemId)
+  for (const row of gateRows.values()) {
+    connectTopologyGate(row, systems)
   }
 
   const immutableSystems = new Map<number, UniverseTopologySystem>()
@@ -139,6 +118,49 @@ function buildTopologySnapshot(
     )
   }
   return Object.freeze({ buildNumber, systems: immutableSystems })
+}
+
+function registerTopologyRow(
+  row: UniverseTopologyRow,
+  systems: Map<number, MutableUniverseTopologySystem>,
+  gateRows: Map<number, UniverseTopologyRow>,
+) {
+  const id = positiveSafeInteger(row.id, `${row.dataset} ID`)
+  if (row.key !== String(id))
+    throw new UniverseTopologyUnavailableError('Universe topology row key is invalid')
+
+  switch (row.dataset) {
+    case 'mapSolarSystems':
+      if (systems.has(id))
+        throw new UniverseTopologyUnavailableError('Universe topology contains duplicate systems')
+      systems.set(id, {
+        securityStatus: optionalFiniteSecurity(row.security_status),
+        neighbors: new Set(),
+      })
+      return
+    case 'mapStargates':
+      if (gateRows.has(id))
+        throw new UniverseTopologyUnavailableError('Universe topology contains duplicate stargates')
+      gateRows.set(id, row)
+      return
+    default:
+      throw new UniverseTopologyUnavailableError('Universe topology contains an unknown dataset')
+  }
+}
+
+function connectTopologyGate(
+  row: UniverseTopologyRow,
+  systems: Map<number, MutableUniverseTopologySystem>,
+) {
+  const sourceSystemId = positiveSafeInteger(row.source_system_id, 'stargate source system ID')
+  const destinationSystemId = positiveSafeInteger(
+    row.destination_system_id,
+    'stargate destination system ID',
+  )
+  const source = systems.get(sourceSystemId)
+  if (!source || !systems.has(destinationSystemId))
+    throw new UniverseTopologyUnavailableError('Universe topology contains an unknown system')
+  source.neighbors.add(destinationSystemId)
 }
 
 function positiveSafeInteger(value: unknown, label: string) {

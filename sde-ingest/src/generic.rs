@@ -2,7 +2,6 @@ use crate::{db, zip_stream};
 use anyhow::{Context, Result};
 use postgres::Transaction;
 use serde_json::Value;
-use std::collections::BTreeSet;
 use std::fs::File;
 use zip::ZipArchive;
 
@@ -25,14 +24,18 @@ const TYPED_MEMBERS: &[&str] = &[
     // Build metadata, not a game dataset — same content as latest.jsonl.
     "_sde.jsonl",
 ];
+pub const MANDATORY_MEMBERS: &[&str] = &["mapSolarSystems.jsonl", "mapStargates.jsonl"];
 
 pub fn generic_members(archive: &ZipArchive<File>) -> Vec<String> {
-    let excluded: BTreeSet<&str> = TYPED_MEMBERS.iter().copied().collect();
     archive
         .file_names()
-        .filter(|name| name.ends_with(".jsonl") && !excluded.contains(name))
+        .filter(|name| is_best_effort_member(name))
         .map(str::to_owned)
         .collect()
+}
+
+fn is_best_effort_member(name: &str) -> bool {
+    name.ends_with(".jsonl") && !TYPED_MEMBERS.contains(&name) && !MANDATORY_MEMBERS.contains(&name)
 }
 
 /// Most datasets key rows by integer id; a handful (militaryCampaigns,
@@ -70,4 +73,23 @@ pub fn ingest_member(
         &["dataset", "key", "data"],
         rows,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn routing_members_are_not_best_effort() {
+        assert_eq!(
+            MANDATORY_MEMBERS,
+            &["mapSolarSystems.jsonl", "mapStargates.jsonl"]
+        );
+        assert!(
+            MANDATORY_MEMBERS
+                .iter()
+                .all(|member| !is_best_effort_member(member))
+        );
+        assert!(is_best_effort_member("mapRegions.jsonl"));
+    }
 }

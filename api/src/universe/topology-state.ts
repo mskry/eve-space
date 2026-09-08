@@ -3,6 +3,8 @@ import type { UniverseTopologySnapshot } from './route-types.js'
 interface UniverseTopologyStateView {
   snapshot: UniverseTopologySnapshot | undefined
   inFlight: Promise<UniverseTopologySnapshot> | undefined
+  nextCheckAt: number
+  failure: unknown
   generation: number
 }
 
@@ -10,6 +12,8 @@ export class UniverseTopologyState {
   readonly #state: UniverseTopologyStateView = {
     snapshot: undefined,
     inFlight: undefined,
+    nextCheckAt: 0,
+    failure: undefined,
     generation: 0,
   }
 
@@ -31,15 +35,34 @@ export class UniverseTopologyState {
     return promise
   }
 
-  publish(snapshot: UniverseTopologySnapshot, generation: number) {
+  publish(snapshot: UniverseTopologySnapshot, generation: number, nextCheckAt: number) {
     if (generation !== this.#state.generation) return false
     this.#state.snapshot = snapshot
+    this.#state.nextCheckAt = nextCheckAt
+    this.#state.failure = undefined
+    return true
+  }
+
+  retain(generation: number, failure: unknown, nextCheckAt: number) {
+    if (generation !== this.#state.generation) return false
+    this.#state.nextCheckAt = nextCheckAt
+    this.#state.failure = failure
+    return true
+  }
+
+  fail(generation: number, failure: unknown, nextCheckAt: number) {
+    if (generation !== this.#state.generation) return false
+    this.#state.snapshot = undefined
+    this.#state.nextCheckAt = nextCheckAt
+    this.#state.failure = failure
     return true
   }
 
   reset() {
     this.#state.snapshot = undefined
     this.#state.inFlight = undefined
+    this.#state.nextCheckAt = 0
+    this.#state.failure = undefined
     this.#state.generation += 1
   }
 

@@ -2,6 +2,7 @@ import { basename, extname } from 'node:path'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
+  database: ['database-read'],
   representation: ['static-location-types', 'route-types'],
   state: ['static-location-cache-state', 'topology-state'],
   adapter: ['static-location-store', 'topology-store'],
@@ -18,9 +19,10 @@ const tierByModule = new Map<string, UniverseCacheTier>(
 )
 
 const allowedImportTiers: Record<UniverseCacheTier, readonly UniverseCacheTier[]> = {
+  database: [],
   representation: [],
   state: ['representation'],
-  adapter: ['representation'],
+  adapter: ['database', 'representation'],
   orchestration: ['representation', 'state', 'adapter'],
   service: ['representation', 'orchestration'],
 }
@@ -43,7 +45,11 @@ function violationsForSource(source: UniverseCacheSource) {
     const importedModule = localModuleName(specifier)
     if (!importedModule) return []
     const importedTier = tierByModule.get(importedModule)
-    if (!importedTier || allowedImportTiers[sourceTier].includes(importedTier)) return []
+    if (!importedTier)
+      return [
+        `${source.path}: ${sourceTier} module ${module} imports undeclared universe module ${importedModule}`,
+      ]
+    if (allowedImportTiers[sourceTier].includes(importedTier)) return []
     return [
       `${source.path}: ${sourceTier} module ${module} cannot import ${importedTier} module ${importedModule}`,
     ]
