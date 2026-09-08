@@ -13,9 +13,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
-      interval: 3s
+      interval: 10m
       timeout: 3s
-      retries: 10
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
 
   queue-redis:
     image: redis:7.4.7-alpine
@@ -41,9 +43,11 @@ services:
           'CMD-SHELL',
           'redis-cli ping | grep -qx PONG && redis-cli --raw config get maxmemory-policy | grep -qx noeviction && maxmemory=$$(redis-cli --raw config get maxmemory | grep -E ''^[0-9]+$$'') && used=$$(redis-cli --raw info memory | grep ''^used_memory:'' | cut -d: -f2) && test "$$maxmemory" -gt 0 && test "$$used" -lt "$$((maxmemory * 90 / 100))"',
         ]
-      interval: 5s
+      interval: 10m
       timeout: 3s
-      retries: 10
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
 
   cache-redis:
     image: redis:7.4.7-alpine
@@ -67,9 +71,11 @@ services:
           'CMD-SHELL',
           'redis-cli ping | grep -qx PONG && redis-cli --raw config get maxmemory-policy | grep -qx allkeys-lfu && maxmemory=$$(redis-cli --raw config get maxmemory | grep -E ''^[0-9]+$$'') && used=$$(redis-cli --raw info memory | grep ''^used_memory:'' | cut -d: -f2) && test "$$maxmemory" -gt 0 && test "$$used" -lt "$$((maxmemory * 90 / 100))"',
         ]
-      interval: 5s
+      interval: 10m
       timeout: 3s
-      retries: 10
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
 
   api:
     build:
@@ -114,9 +120,11 @@ services:
           '-e',
           "fetch('http://localhost:8787/health').then(r => { if (!r.ok) process.exit(1) })",
         ]
-      interval: 5s
+      interval: 10m
       timeout: 3s
-      retries: 10
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
 
   worker:
     build:
@@ -147,10 +155,11 @@ services:
         condition: service_started
     healthcheck:
       test: ['CMD', 'node', 'dist/worker/health.js']
-      interval: 30s
+      interval: 10m
       timeout: 3s
-      retries: 10
-      start_period: 15s
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
 
 volumes:
   postgres_data:
