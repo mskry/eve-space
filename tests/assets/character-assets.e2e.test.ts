@@ -175,6 +175,7 @@ describe('character Assets production route', async () => {
     expect(
       await page.getByRole('table', { name: 'Personal inventory grouped by location' }).isVisible(),
     ).toBe(true)
+    expect(await page.locator('.assets-location-security').textContent()).toContain('0.9')
 
     const quantitySort = page.getByRole('button', { name: 'Quantity', exact: true })
     await quantitySort.click()
@@ -346,6 +347,7 @@ function inventoryAssets() {
       locationId: 1,
       locationType: 'item',
       locationName: null,
+      solarSystemSecurityStatus: null,
       parentItemId: 1,
       locationFlag: 'Cargo',
     }),
@@ -381,6 +383,7 @@ function asset(itemId: number, overrides: Record<string, unknown> = {}) {
     locationId: 60_003_760,
     locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    solarSystemSecurityStatus: 0.945,
     locationFlag: 'Hangar',
     parentItemId: null,
     ...overrides,

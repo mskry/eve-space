@@ -53,6 +53,10 @@ const restricted = computed(() => props.group.placement === 'unresolved-containe
           @click="emit('toggleLocation', group.key)"
         >
           <span class="assets-location-chevron" aria-hidden="true">{{ expanded ? '▾' : '▸' }}</span>
+          <AssetsLocationSecurity
+            v-if="group.solarSystemSecurityStatus !== null"
+            :value="group.solarSystemSecurityStatus"
+          />
           <span class="assets-location-name">{{ group.label }}</span>
           <span class="assets-location-count">
             {{ group.assetCount.toLocaleString('en-US') }} items -

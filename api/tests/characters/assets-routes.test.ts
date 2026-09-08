@@ -92,6 +92,7 @@ const assets = {
       locationId: 60_000_001,
       locationType: 'station',
       locationName: 'Jita IV - Moon 4',
+      solarSystemSecurityStatus: 0.9,
       locationFlag: 'Hangar',
       parentItemId: null,
     },

@@ -25,7 +25,7 @@ const incompleteEnrichment = computed(() =>
 function enrichmentLabel(key: keyof AssetCollection['enrichment']) {
   if (key === 'types') return 'type details'
   if (key === 'names') return 'custom names'
-  return 'location names'
+  return 'location details'
 }
 
 function formatValidationTime(value: string) {

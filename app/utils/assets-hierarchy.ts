@@ -137,6 +137,7 @@ function assetFingerprint(asset: AssetRecord) {
     asset.locationId,
     asset.locationType,
     asset.locationName,
+    asset.solarSystemSecurityStatus,
     asset.locationFlag,
     asset.parentItemId,
   ])
@@ -285,6 +286,7 @@ function locationGroup(asset: AssetRecord): AssetLocationGroup {
     label: assetLocationLabel(asset),
     locationId: asset.locationId,
     locationType: asset.locationType,
+    solarSystemSecurityStatus: asset.solarSystemSecurityStatus,
     placement: 'location',
     rows: [],
     assetCount: 0,
@@ -299,6 +301,7 @@ function exceptionalGroup(placement: Exclude<AssetGroupPlacement, 'location'>): 
     label: placement === 'broken-cycle' ? 'Broken container cycle' : 'Restricted structure',
     locationId: null,
     locationType: null,
+    solarSystemSecurityStatus: null,
     placement,
     rows: [],
     assetCount: 0,

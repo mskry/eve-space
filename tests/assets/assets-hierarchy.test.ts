@@ -222,6 +222,7 @@ function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecor
     locationId: 60003760,
     locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    solarSystemSecurityStatus: 0.9,
     locationFlag: 'Hangar',
     parentItemId: null,
     ...overrides,

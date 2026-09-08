@@ -29,6 +29,7 @@ export interface AssetRecord {
   locationId: number
   locationType: AssetLocationType
   locationName: string | null
+  solarSystemSecurityStatus: number | null
   locationFlag: string
   parentItemId: number | null
 }
@@ -59,6 +60,7 @@ export interface AssetLocationGroup {
   label: string
   locationId: number | null
   locationType: Exclude<AssetLocationType, 'item'> | null
+  solarSystemSecurityStatus: number | null
   placement: AssetGroupPlacement
   rows: AssetHierarchyRow[]
   assetCount: number
