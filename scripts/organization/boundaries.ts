@@ -24,7 +24,7 @@ const modulesByTier = {
     'roster-collection',
     'roster-coverage',
   ],
-  observability: ['audit', 'entitlement-transitions', 'group-audit'],
+  observability: ['audit', 'audit-history', 'entitlement-transitions', 'group-audit'],
   service: [
     'group-assignment-expiry',
     'group-compliance',

@@ -39,6 +39,34 @@ describe('organization frontend source contracts', () => {
     expect(composable).toContain('capabilities.viewRosterCoverage === true')
   })
 
+  it('keeps HR exception and audit reads behind current review capability', () => {
+    const component = readWorkspaceFile('app/components/settings/SettingsOrganizationHrReview.vue')
+    const composable = readWorkspaceFile('app/composables/useOrganizationHrReview.ts')
+
+    expect(component).toContain('External-character exceptions')
+    expect(component).toContain('Awaiting exception review')
+    expect(component).toContain('reviewCandidates')
+    expect(component).toContain('Decision history')
+    expect(component).toContain('event.actorId')
+    expect(component).toContain('event.subjectId')
+    expect(composable).toContain('import.meta.client && canReview.value')
+    expect(composable).toContain('memberAccess === true')
+    expect(composable).toContain('capabilities.reviewRegistration')
+    expect(composable).toContain('adminSetupQuery(apiClient)')
+  })
+
+  it('stacks HR review controls and audit rows for mobile layouts', () => {
+    const responsive = readWorkspaceFile('app/assets/css/responsive.css')
+    const page = readWorkspaceFile('app/pages/settings/roster-coverage.vue')
+
+    expect(page).toContain('<SettingsOrganizationHrReview />')
+    expect(page).toContain('<SettingsRosterCoverage />')
+    expect(responsive).toContain('.hr-review-row--decision')
+    expect(responsive).toContain('.hr-audit-list li')
+    expect(responsive).toContain('.hr-candidate-form')
+    expect(responsive).toContain('grid-template-columns: 1fr')
+  })
+
   it('clears the revocation reason whenever the form opens or closes', () => {
     const component = readWorkspaceFile('app/components/settings/SettingsIntegrations.vue')
 

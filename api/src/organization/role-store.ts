@@ -168,7 +168,10 @@ export async function getOrganizationAccessContext(userId: string) {
     )
     .limit(1)
   const isOrganizationOwner = await hasCurrentOrganizationOwnerAuthority(userId)
-  const canViewRosterCoverage = await hasCurrentOrganizationHrAuthority(userId)
+  const hasHrAuthority = await hasCurrentOrganizationHrAuthority(userId)
+  const canViewRosterCoverage =
+    hasHrAuthority &&
+    (await hasCurrentComplianceAccess(db, organization.organizationVersion, userId))
   const [memberBlock] = await db
     .select({ blockId: organizationMemberBlocks.blockId })
     .from(organizationMemberBlocks)
@@ -188,7 +191,10 @@ export async function getOrganizationAccessContext(userId: string) {
     organization,
     isOrganizationOwner,
     isBlocked,
-    capabilities: { viewRosterCoverage: canViewRosterCoverage },
+    capabilities: {
+      reviewRegistration: canViewRosterCoverage,
+      viewRosterCoverage: canViewRosterCoverage,
+    },
     claimAvailable,
     ownerStatus: owner?.evidenceStatus ?? null,
     reviewDeadline: owner?.reviewDeadline?.toISOString() ?? null,

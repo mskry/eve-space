@@ -349,3 +349,175 @@
   display: flex;
   gap: 8px;
 }
+
+.organization-hr-review {
+  gap: 1.5rem;
+  padding: 0 clamp(1rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2.5rem);
+}
+
+.hr-review-panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.hr-review-panel__heading {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hr-review-panel__heading h3 {
+  margin: 7px 0 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.hr-review-empty {
+  margin: 0;
+  padding: 24px;
+  color: var(--muted);
+  font: 12px/1.6 var(--ui-font-mono);
+}
+
+.hr-review-row {
+  padding: 20px 22px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(260px, 1fr);
+  gap: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hr-review-row:last-child {
+  border-bottom: 0;
+}
+
+.hr-review-row strong,
+.hr-audit-list strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.hr-review-row p,
+.hr-audit-list p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.hr-review-subheading {
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ui-primary) 3%, transparent);
+}
+
+.hr-review-subheading h4,
+.hr-review-subheading span {
+  margin: 0;
+  font: 11px/1.4 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hr-review-subheading span {
+  color: var(--ui-text-faint);
+}
+
+.hr-candidate-form,
+.hr-decision-form {
+  grid-column: 1 / -1;
+  padding-top: 18px;
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.hr-candidate-form label,
+.hr-decision-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--ui-text-faint);
+  font: 12px/1.2 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hr-candidate-form input,
+.hr-candidate-form textarea,
+.hr-decision-form textarea {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  outline: none;
+  background: var(--ui-surface-solid);
+  color: var(--ui-text);
+  font: 12px/1.4 var(--ui-font-mono);
+}
+
+.hr-candidate-form input:focus,
+.hr-candidate-form textarea:focus,
+.hr-decision-form textarea:focus {
+  border-color: var(--ui-primary);
+}
+
+.hr-candidate-form textarea,
+.hr-decision-form textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.hr-review-row--candidate,
+.hr-review-row--decision {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.hr-candidate-form > div,
+.hr-decision-form > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.hr-audit-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hr-audit-list li {
+  padding: 18px 22px;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1fr) auto;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.hr-audit-list li > div {
+  display: grid;
+  gap: 6px;
+}
+
+.hr-audit-list span,
+.hr-audit-list time {
+  color: var(--ui-text-faint);
+  font: 11px/1.4 var(--ui-font-mono);
+}
+
+.hr-audit-list p {
+  margin: 0;
+}
+
+.hr-audit-more {
+  margin: 18px 22px;
+}

@@ -3,7 +3,9 @@ import { db, type DatabaseTransaction } from '../db/client.js'
 import {
   characters,
   deploymentSettings,
+  organizationAccountCompliance,
   organizationCharacterExceptions,
+  organizationComplianceIssues,
   organizationManagedCorporations,
   organizationMemberBlocks,
   organizationRoleGrants,
@@ -67,6 +69,90 @@ export async function listCurrentOrganizationCharacterExceptions() {
     .orderBy(
       asc(organizationCharacterExceptions.approvedAt),
       asc(organizationCharacterExceptions.exceptionId),
+    )
+}
+
+export async function listCurrentOrganizationCharacterExceptionCandidates(now = new Date()) {
+  return db
+    .select({
+      userId: organizationComplianceIssues.userId,
+      characterId: characters.characterId,
+      characterName: characters.name,
+      reasonCode: organizationComplianceIssues.issueCode,
+      state: organizationAccountCompliance.state,
+      evidenceFreshness: organizationAccountCompliance.evidenceFreshness,
+      reviewDeadline: organizationAccountCompliance.reviewDeadline,
+      affiliationCheckedAt: characters.affiliationCheckedAt,
+    })
+    .from(deploymentSettings)
+    .innerJoin(
+      organizationComplianceIssues,
+      and(
+        eq(organizationComplianceIssues.deploymentId, deploymentSettings.id),
+        eq(
+          organizationComplianceIssues.organizationVersion,
+          deploymentSettings.organizationVersion,
+        ),
+      ),
+    )
+    .innerJoin(
+      organizationAccountCompliance,
+      and(
+        eq(organizationAccountCompliance.deploymentId, organizationComplianceIssues.deploymentId),
+        eq(
+          organizationAccountCompliance.organizationVersion,
+          organizationComplianceIssues.organizationVersion,
+        ),
+        eq(organizationAccountCompliance.userId, organizationComplianceIssues.userId),
+      ),
+    )
+    .innerJoin(
+      characters,
+      and(
+        eq(characters.userId, organizationComplianceIssues.userId),
+        eq(characters.characterId, organizationComplianceIssues.characterId),
+      ),
+    )
+    .where(
+      and(
+        eq(deploymentSettings.id, 1),
+        eq(organizationComplianceIssues.issueCode, 'character-outside-managed-organization'),
+        eq(organizationAccountCompliance.authoritative, true),
+        inArray(organizationAccountCompliance.state, ['review_required', 'suspended']),
+        notExists(
+          db
+            .select({ value: sql`1` })
+            .from(organizationCharacterExceptions)
+            .where(
+              and(
+                eq(
+                  organizationCharacterExceptions.deploymentId,
+                  organizationComplianceIssues.deploymentId,
+                ),
+                eq(
+                  organizationCharacterExceptions.organizationVersion,
+                  organizationComplianceIssues.organizationVersion,
+                ),
+                eq(organizationCharacterExceptions.userId, organizationComplianceIssues.userId),
+                eq(
+                  organizationCharacterExceptions.characterId,
+                  organizationComplianceIssues.characterId,
+                ),
+                isNull(organizationCharacterExceptions.expiredAt),
+                isNull(organizationCharacterExceptions.revokedAt),
+                or(
+                  isNull(organizationCharacterExceptions.expiresAt),
+                  gt(organizationCharacterExceptions.expiresAt, now),
+                ),
+              ),
+            ),
+        ),
+      ),
+    )
+    .orderBy(
+      asc(organizationAccountCompliance.reviewDeadline),
+      asc(characters.name),
+      asc(characters.characterId),
     )
 }
 

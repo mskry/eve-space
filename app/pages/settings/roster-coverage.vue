@@ -6,5 +6,6 @@ useHead({ title: 'Roster Coverage // EVE Space' })
 <template>
   <div class="section-page settings-page">
     <SettingsRosterCoverage />
+    <SettingsOrganizationHrReview />
   </div>
 </template>

@@ -96,6 +96,11 @@ export const PRIVATE_QUERY_KEYS = {
     [...PRIVATE_QUERY_KEYS.mail(characterId), 'mailing-lists'] as const,
   organization: () => [...PRIVATE_QUERY_KEYS.root, 'organization'] as const,
   organizationContext: () => [...PRIVATE_QUERY_KEYS.organization(), 'context'] as const,
+  organizationCompliance: () => [...PRIVATE_QUERY_KEYS.organization(), 'compliance'] as const,
+  organizationActivities: () => [...PRIVATE_QUERY_KEYS.organization(), 'activities'] as const,
+  organizationExceptions: () => [...PRIVATE_QUERY_KEYS.organization(), 'exceptions'] as const,
+  organizationAudit: (beforeAuditSequence: string | null = null) =>
+    [...PRIVATE_QUERY_KEYS.organization(), 'audit', beforeAuditSequence] as const,
   organizationRoles: () => [...PRIVATE_QUERY_KEYS.organization(), 'roles'] as const,
   organizationRosterCoverage: () =>
     [...PRIVATE_QUERY_KEYS.organization(), 'roster-coverage'] as const,

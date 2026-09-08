@@ -1,4 +1,8 @@
 @media (max-width: 1100px) {
+  .member-compliance {
+    grid-template-columns: minmax(0, 1fr) minmax(230px, 0.45fr);
+  }
+
   .section-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -33,6 +37,47 @@
     width: max-content;
   }
 
+  .member-compliance,
+  .member-actions,
+  .activity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .member-compliance__state {
+    min-height: 210px;
+  }
+
+  .member-compliance__timing {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .member-compliance__timing div:first-child {
+    border-top: 0;
+  }
+
+  .member-actions {
+    padding: 20px;
+  }
+
+  .member-actions li,
+  .member-activity__heading,
+  .activity-card dl div {
+    align-items: flex-start;
+  }
+
+  .member-actions li {
+    gap: 12px;
+  }
+
+  .activity-card {
+    min-height: 280px;
+  }
+
+  .activity-card dd {
+    max-width: 60%;
+  }
+
   .section-grid {
     grid-template-columns: 1fr;
   }
@@ -49,5 +94,40 @@
 
   .status-strip {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .hr-review-panel__heading,
+  .hr-review-row,
+  .hr-review-row--candidate,
+  .hr-review-row--decision,
+  .hr-audit-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-review-panel__heading {
+    display: grid;
+    align-items: flex-start;
+  }
+
+  .hr-review-subheading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hr-candidate-form,
+  .hr-decision-form {
+    grid-column: auto;
+  }
+
+  .hr-candidate-form .ui-action-primary,
+  .hr-candidate-form .ui-action-secondary,
+  .hr-decision-form .ui-action-primary,
+  .hr-decision-form .ui-action-secondary {
+    width: 100%;
+  }
+
+  .hr-candidate-form > div,
+  .hr-decision-form > div {
+    display: grid;
   }
 }

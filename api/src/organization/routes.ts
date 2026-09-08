@@ -21,6 +21,7 @@ import {
 import {
   approveOrganizationCharacterException,
   expireOrganizationCharacterException,
+  listCurrentOrganizationCharacterExceptionCandidates,
   listCurrentOrganizationCharacterExceptions,
   OrganizationCharacterExceptionMutationError,
   revokeOrganizationCharacterException,
@@ -47,6 +48,7 @@ import {
 import { listOrganizationRosterCoverage } from './roster-coverage.js'
 import { aggregateOrganizationActivities } from './activity.js'
 import { resolveOrganizationEntitlementScope } from './access-policy.js'
+import { listCurrentOrganizationAuditHistory } from './audit-history.js'
 import {
   maximumStaleEvidenceGraceDurationSeconds,
   maximumStrictRemediationDurationSeconds,
@@ -159,6 +161,20 @@ const corporationParamsSchema = z.object({
   corporationId: z.coerce.number().int().positive(),
 })
 const corporationSourceSchema = z.object({ characterId: z.number().int().positive() }).strict()
+const maximumPostgresBigint = '9223372036854775807'
+const auditHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  beforeAuditSequence: z
+    .string()
+    .regex(/^[1-9]\d*$/)
+    .refine(
+      (value) =>
+        value.length < maximumPostgresBigint.length ||
+        (value.length === maximumPostgresBigint.length && value <= maximumPostgresBigint),
+      { message: 'Audit sequence exceeds the supported range.' },
+    )
+    .optional(),
+})
 
 const requireTrustedOrigin: MiddlewareHandler<OrganizationSessionEnv> = async (context, next) => {
   if (context.req.header('Origin') !== env.WEB_ORIGIN)
@@ -277,8 +293,28 @@ export const organizationRoutes = new Hono<OrganizationSessionEnv>()
   .get('/roster-coverage', requireOrganizationHr, async (context) =>
     context.json(await listOrganizationRosterCoverage()),
   )
-  .get('/exceptions', requireOrganizationHr, async (context) =>
-    context.json({ exceptions: await listCurrentOrganizationCharacterExceptions() }),
+  .get('/exceptions', requireOrganizationHr, async (context) => {
+    const [exceptions, reviewCandidates] = await Promise.all([
+      listCurrentOrganizationCharacterExceptions(),
+      listCurrentOrganizationCharacterExceptionCandidates(),
+    ])
+    return context.json({ exceptions, reviewCandidates })
+  })
+  .get(
+    '/audit',
+    requireOrganizationHr,
+    zValidator('query', auditHistoryQuerySchema),
+    async (context) => {
+      const query = context.req.valid('query')
+      return context.json(
+        await listCurrentOrganizationAuditHistory({
+          limit: query.limit,
+          beforeAuditSequence: query.beforeAuditSequence
+            ? BigInt(query.beforeAuditSequence)
+            : undefined,
+        }),
+      )
+    },
   )
   .post(
     '/roles',
