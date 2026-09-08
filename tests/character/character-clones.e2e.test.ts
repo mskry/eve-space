@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { $fetch, createPage, setup, useTestContext } from '@nuxt/test-utils/e2e'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startCorsJsonApi } from '../support/cors-json-api'
@@ -264,34 +264,14 @@ describe('character Clones production route', async () => {
     expect(secondBox!.y).toBeGreaterThan(firstBox!.y + firstBox!.height - 1)
     expect(await hasHorizontalOverflow(page)).toBe(false)
 
-    const disclosure = cards.first().locator('.character-clones-card-summary')
-    const cloneName = cards.first().locator('.character-clones-card-name')
-    const previewIcon = cards.first().locator('.character-clones-card-preview-item').first()
-    const previewStyle = await previewIcon.locator('.ui-eve-image').evaluate((element) => {
-      const style = getComputedStyle(element)
-      return { width: style.width, height: style.height, opacity: style.opacity }
-    })
-    expect(previewStyle).toEqual({ width: '20px', height: '20px', opacity: '0.38' })
-    const disclosureBefore = await disclosure.boundingBox()
-    const cloneNameBefore = await cloneName.boundingBox()
-    const staticSummary = cards.nth(1).locator('.character-clones-card-summary--static')
-    expect(await staticSummary.evaluate((element) => element.tagName)).toBe('DIV')
-    expect(await staticSummary.evaluate((element) => getComputedStyle(element).cursor)).toBe(
-      'default',
-    )
-    expect(await disclosure.getAttribute('aria-expanded')).toBe('false')
-    await disclosure.focus()
-    await page.keyboard.press('Enter')
-    expect(await disclosure.getAttribute('aria-expanded')).toBe('true')
+    expect(await cards.first().locator('.character-clones-implant-name').count()).toBe(1)
+    const emptyCard = cards.nth(1)
     expect(
-      await cards
-        .first()
-        .locator('.character-clones-card-preview')
-        .evaluate((element) => getComputedStyle(element).visibility),
-    ).toBe('hidden')
-    const disclosureAfter = await disclosure.boundingBox()
-    const cloneNameAfter = await cloneName.boundingBox()
-    expect(cloneNameAfter!.y - disclosureAfter!.y).toBe(cloneNameBefore!.y - disclosureBefore!.y)
+      await emptyCard.evaluate((element) =>
+        element.classList.contains('character-clones-card--empty'),
+      ),
+    ).toBe(true)
+    expect(await emptyCard.locator('.character-clones-empty-implants').isVisible()).toBe(true)
 
     const trigger = cards.first().getByRole('button', {
       name: `View item information for ${implantName(2)}`,
@@ -305,7 +285,13 @@ describe('character Clones production route', async () => {
     await dialog.getByRole('button', { name: 'Close item information' }).click()
     expect(await trigger.evaluate((element) => document.activeElement === element)).toBe(true)
 
-    await page.setViewportSize({ width: 390, height: 844 })
+    // The route clips overflow, so document width stays clean while a card overflows inside it.
+    for (const width of [430, 390, 320]) {
+      await page.setViewportSize({ width, height: 844 })
+      await expect.poll(() => cardsOverflowing(cards)).toEqual([])
+      expect(await hasHorizontalOverflow(page)).toBe(false)
+    }
+
     await expect
       .poll(() =>
         cards.evaluateAll((elements) => {
@@ -316,7 +302,6 @@ describe('character Clones production route', async () => {
         }),
       )
       .toBeGreaterThan(-1)
-    expect(await hasHorizontalOverflow(page)).toBe(false)
 
     await trigger.click()
     await dialog.getByRole('heading', { name: implantName(2) }).waitFor()
@@ -423,5 +408,15 @@ function expectWithinViewport(
 function hasHorizontalOverflow(page: Page) {
   return page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  )
+}
+
+// Names the cards whose content is wider than they are, which the clipped route hides.
+function cardsOverflowing(cards: Locator) {
+  return cards.evaluateAll((elements) =>
+    elements
+      .map((element, index) => ({ index, overflow: element.scrollWidth - element.clientWidth }))
+      .filter((entry) => entry.overflow > 1)
+      .map((entry) => entry.index),
   )
 }

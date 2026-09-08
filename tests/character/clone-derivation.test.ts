@@ -124,18 +124,23 @@ function stationClone(jumpCloneId: number, locationId: number, name: string | nu
 }
 
 describe('jump clone grouping', () => {
-  it('groups clones by location in first-appearance order', () => {
+  it('groups clones by location, busiest first, keeping first appearance for equal counts', () => {
     const groups = groupJumpClonesByLocation([
-      stationClone(11, 60_000_001, 'Jita IV - Moon 4'),
       stationClone(12, 60_000_002, 'Amarr VIII'),
+      stationClone(11, 60_000_001, 'Jita IV - Moon 4'),
       stationClone(13, 60_000_001, 'Jita IV - Moon 4'),
+      stationClone(14, 60_000_003, 'Dodixie IX'),
     ])
 
-    expect(groups.map((group) => group.label)).toEqual(['Jita IV - Moon 4', 'Amarr VIII'])
+    expect(groups.map((group) => group.label)).toEqual([
+      'Jita IV - Moon 4',
+      'Amarr VIII',
+      'Dodixie IX',
+    ])
     expect(groups[0]?.clones.map((entry) => entry.jumpCloneId)).toEqual([11, 13])
   })
 
-  it('labels an unresolved location by type without exposing its identifier', () => {
+  it('labels an unresolved location by type and identifier', () => {
     const groups = groupJumpClonesByLocation([
       {
         jumpCloneId: 14,
@@ -145,7 +150,7 @@ describe('jump clone grouping', () => {
       },
     ])
 
-    expect(groups[0]?.label).toBe('Unknown structure')
+    expect(groups[0]?.label).toBe('Structure 1035466617946')
     expect(groups[0]?.locationType).toBe('structure')
   })
 

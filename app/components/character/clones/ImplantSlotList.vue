@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import type { CharacterImplants } from '../../../queries/clones'
 import type { ImplantRackEntry } from '../../../utils/clone-derivation'
-import { formatAttributeBonus, formatImplantSlot } from '../../../utils/clone-derivation'
+import { formatImplantSlot, implantBonusLabel } from '../../../utils/clone-derivation'
 
 type RackImplant = CharacterImplants['implants'][number]
 
 defineProps<{
   entries: ImplantRackEntry<RackImplant>[]
 }>()
-
-function bonusLabel(implant: RackImplant) {
-  return (implant.bonuses ?? []).map(formatAttributeBonus).join(' ')
-}
 </script>
 
 <template>
@@ -30,8 +26,8 @@ function bonusLabel(implant: RackImplant) {
           <span>{{ entry.implant.name }}</span>
           <AppInformationIcon />
         </span>
-        <span v-if="bonusLabel(entry.implant)" class="character-clones-implant-bonus">
-          {{ bonusLabel(entry.implant) }}
+        <span v-if="implantBonusLabel(entry.implant)" class="character-clones-implant-bonus">
+          {{ implantBonusLabel(entry.implant) }}
         </span>
       </CharacterClonesImplantInformationPopover>
       <p v-else class="character-clones-slot-empty">
