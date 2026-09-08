@@ -85,7 +85,7 @@ describe('character Clones workspace', () => {
     expect(wrapper.text()).toContain('Jita IV - Moon 4')
     expect(wrapper.text()).toContain('Industry clone')
     expect(wrapper.text()).toContain('Unnamed clone')
-    expect(wrapper.text()).toContain('Unknown structure')
+    expect(wrapper.text()).toContain('Structure 1035466617946')
     expect(wrapper.text()).toContain('No implants installed')
   })
 
@@ -119,40 +119,86 @@ describe('character Clones workspace', () => {
     )
   })
 
-  it('previews stored implants and expands the existing item-information list', async () => {
+  it('sorts location groups by clone count and labels unnamed clones positionally', async () => {
+    const busiestFirst = {
+      ...clones,
+      jumpClones: [
+        clones.jumpClones[0]!,
+        {
+          jumpCloneId: 21,
+          name: null,
+          location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
+          implants: [],
+        },
+        {
+          jumpCloneId: 22,
+          name: null,
+          location: { locationId: 1_035_466_617_946, locationType: 'structure', name: null },
+          implants: [],
+        },
+      ],
+    } satisfies CharacterClones
+    const wrapper = await mountWorkspace({ clones: busiestFirst, implants, skills })
+
+    const groups = wrapper.findAll('.character-clones-group')
+    expect(groups[0]?.get('h3').text()).toBe('Structure 1035466617946')
+    expect(groups[0]?.get('.character-clones-group-heading span').text()).toContain('2 CLONES')
+    expect(groups[1]?.get('h3').text()).toBe('Jita IV - Moon 4')
+
+    const names = groups[0]?.findAll('.character-clones-card-name').map((entry) => entry.text())
+    expect(names).toEqual(['Clone 1 of 2', 'Clone 2 of 2'])
+  })
+
+  it('lists stored implants without interaction and keeps item information reachable', async () => {
     const wrapper = await mountWorkspace({ clones, implants })
     const card = wrapper.findAll('.character-clones-card')[0]!
-    const disclosure = card.get('.character-clones-card-summary')
-    const preview = card.get('.character-clones-card-preview-item')
 
-    expect(preview.text()).toBe('')
-    expect(preview.get('.ui-eve-image').attributes('width')).toBe('32')
-    expect(card.getComponent({ name: 'UiTooltip' }).props('content')).toBe('Memory Augmentation')
-    expect(disclosure.attributes('aria-expanded')).toBe('false')
-    expect(disclosure.find('.character-clones-card-chevron').exists()).toBe(true)
-    expect(card.find('.character-clones-card-implants').exists()).toBe(false)
-
-    await disclosure.trigger('click')
-
-    expect(disclosure.attributes('aria-expanded')).toBe('true')
-    expect(disclosure.attributes('data-state')).toBe('open')
-    expect(card.get('.character-clones-card-implants').text()).toContain('Memory Augmentation')
     const implantTrigger = card.get('.character-clones-implant-trigger')
     expect(implantTrigger.attributes('aria-label')).toBe(
       'View item information for Memory Augmentation',
     )
+    expect(implantTrigger.get('.ui-eve-image').attributes('width')).toBe('32')
     const implantName = implantTrigger.get('.character-clones-implant-name')
     expect(implantName.text()).toContain('Memory Augmentation')
     expect(implantName.find('.app-information-icon').exists()).toBe(true)
+    expect(card.get('.character-clones-slot-index').text()).toBe('02')
+    expect(card.classes()).not.toContain('character-clones-card--empty')
 
     const emptyCard = wrapper.findAll('.character-clones-card')[1]!
-    expect(emptyCard.find('button.character-clones-card-summary').exists()).toBe(false)
-    expect(emptyCard.get('.character-clones-card-summary').classes()).toContain(
-      'character-clones-card-summary--static',
-    )
-    expect(emptyCard.find('.character-clones-card-chevron').exists()).toBe(false)
-    expect(emptyCard.text()).toContain('No implants installed')
+    expect(emptyCard.classes()).toContain('character-clones-card--empty')
+    expect(emptyCard.get('.character-clones-empty-implants').text()).toBe('No implants installed')
+    expect(emptyCard.find('.character-clones-implant-trigger').exists()).toBe(false)
     expect(emptyCard.text()).not.toContain('0 IMPLANTS')
+  })
+
+  it('carries attribute bonuses into stored clone implants and leaves hardwirings bare', async () => {
+    const hardwired = {
+      ...clones,
+      jumpClones: [
+        {
+          jumpCloneId: 31,
+          name: 'Missile clone',
+          location: { locationId: 60_000_001, locationType: 'station', name: 'Jita IV - Moon 4' },
+          implants: [
+            {
+              typeId: 5,
+              name: 'Ocular Filter - Improved',
+              slot: 1,
+              bonuses: [{ attribute: 'perception', value: 5 }],
+            },
+            { typeId: 6, name: "Zainou 'Snapshot' HM-703", slot: 7, bonuses: [] },
+          ],
+        },
+      ],
+    } satisfies CharacterClones
+
+    const wrapper = await mountWorkspace({ clones: hardwired, implants })
+
+    const bonuses = wrapper
+      .findAll('.character-clones-card .character-clones-implant-bonus')
+      .map((entry) => entry.text())
+    expect(bonuses).toEqual(['+5 PER'])
+    expect(wrapper.text()).toContain("Zainou 'Snapshot' HM-703")
   })
 
   it('withholds a bay maximum when the skills resource is unavailable', async () => {
@@ -338,7 +384,7 @@ describe('character Clones workspace', () => {
     const wrapper = await mountWorkspace({ clones: staleClones, implants: staleImplants })
 
     expect(wrapper.get('.character-clones-home').text()).toContain('Home Station unavailable')
-    expect(wrapper.text()).toContain('No jump clones installed')
+    expect(wrapper.get('.character-clones-empty').text()).toBe('None installed')
     expect(wrapper.text()).toContain('Unknown implant 999')
     expect(wrapper.get('.character-clones-rack-unslotted').text()).toContain('SLOT UNKNOWN')
     expect(wrapper.findAll('.character-clones-stale')).toHaveLength(2)
@@ -374,9 +420,6 @@ describe('character Clones workspace', () => {
       longValue,
       longValue,
     ])
-    for (const disclosure of wrapper.findAll('.character-clones-card-summary')) {
-      await disclosure.trigger('click')
-    }
     expect(
       wrapper.findAll('.character-clones-card .character-clones-implant-trigger'),
     ).toHaveLength(2)
@@ -393,15 +436,6 @@ interface WorkspaceOverrides {
 
 async function mountWorkspace(overrides: WorkspaceOverrides) {
   const wrapper = await mountSuspended(CharacterClonesWorkspace, {
-    global: {
-      stubs: {
-        UiTooltip: {
-          name: 'UiTooltip',
-          props: ['arrow', 'content'],
-          template: '<span><slot /></span>',
-        },
-      },
-    },
     props: {
       clones: overrides.clones,
       cloneState: overrides.cloneState ?? ready,

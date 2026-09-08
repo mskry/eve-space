@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CharacterImplants } from '../../../queries/clones'
-import { formatImplantSlot } from '../../../utils/clone-derivation'
+import { formatImplantSlot, implantBonusLabel } from '../../../utils/clone-derivation'
 
 defineProps<{
   implants: CharacterImplants['implants']
@@ -18,6 +18,9 @@ defineProps<{
         <span class="character-clones-implant-name">
           <span>{{ implant.name }}</span>
           <AppInformationIcon />
+        </span>
+        <span v-if="implantBonusLabel(implant)" class="character-clones-implant-bonus">
+          {{ implantBonusLabel(implant) }}
         </span>
       </CharacterClonesImplantInformationPopover>
     </li>

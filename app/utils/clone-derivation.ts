@@ -98,12 +98,15 @@ export interface JumpCloneLocationGroup<Clone extends LocatedClone> {
   clones: Clone[]
 }
 
+// Structure names never resolve without a docking-access scope, so the identifier is all
+// that keeps two unnamed locations apart.
 export function jumpCloneLocationLabel(location: CloneLocation) {
   if (location.name) return location.name
-  return location.locationType === 'station' ? 'Unknown station' : 'Unknown structure'
+  const kind = location.locationType === 'station' ? 'Station' : 'Structure'
+  return `${kind} ${location.locationId}`
 }
 
-// ESI provides no meaningful clone order, so location groups retain first appearance.
+// ESI provides no meaningful clone order, so groups sort by clone count, descending.
 export function groupJumpClonesByLocation<Clone extends LocatedClone>(
   jumpClones: ReadonlyArray<Clone> | undefined,
 ): JumpCloneLocationGroup<Clone>[] {
@@ -119,7 +122,7 @@ export function groupJumpClonesByLocation<Clone extends LocatedClone>(
     group.clones.push(clone)
     groups.set(key, group)
   }
-  return [...groups.values()]
+  return [...groups.values()].toSorted((left, right) => right.clones.length - left.clones.length)
 }
 
 export type ImplantBonusAttribute =
@@ -146,6 +149,12 @@ export function attributeAbbreviation(attribute: string) {
 
 export function formatAttributeBonus(bonus: { attribute: string; value: number }) {
   return `${bonus.value > 0 ? '+' : ''}${bonus.value} ${attributeAbbreviation(bonus.attribute)}`
+}
+
+export function implantBonusLabel(implant: {
+  bonuses?: ReadonlyArray<{ attribute: string; value: number }>
+}) {
+  return (implant.bonuses ?? []).map(formatAttributeBonus).join(' ')
 }
 
 export function formatImplantSlot(slot: number | null | undefined) {

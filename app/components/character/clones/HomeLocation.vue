@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CharacterClones } from '../../../queries/clones'
+import { jumpCloneLocationLabel } from '../../../utils/clone-derivation'
 
 const props = defineProps<{
   homeLocation: CharacterClones['homeLocation']
@@ -9,8 +10,11 @@ const props = defineProps<{
 const homeLocationLabel = computed(() => {
   const location = props.homeLocation
   if (!location?.locationId || !location.locationType) return 'Home Station unavailable'
-  if (location.name) return location.name
-  return `${location.locationType === 'station' ? 'Station' : 'Structure'} ${location.locationId}`
+  return jumpCloneLocationLabel({
+    locationId: location.locationId,
+    locationType: location.locationType,
+    name: location.name,
+  })
 })
 
 const lastStationChangeLabel = computed(() => historicalDate(props.lastStationChangeAt))
