@@ -1,11 +1,12 @@
 import { createLocationClient } from '@evespace/esi-client/domains/location'
 import { createUniverseClient } from '@evespace/esi-client/domains/universe'
-import { getCharacterSkillsData } from './skills.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
 import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
 import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
 import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
+import { getUniverseSolarSystem, getUniverseStation } from '../universe/locations.js'
+import { getCharacterSkillsData } from './skills.js'
 
 export const locationScope = getCharacterEsiScope('location')
 export const shipScope = getCharacterEsiScope('ship')
@@ -47,24 +48,8 @@ export async function getCharacterLocation(characterId: number): Promise<Charact
   const position = positionResult.data
 
   const [system, station] = await Promise.all([
-    getEsiResilienceLayer().getPublic({
-      operation: 'universe-solar-system',
-      inputs: { systemId: position.solar_system_id },
-      load: (revalidation) =>
-        createUniverseClient({ fetch: createEsiTransport('universe-solar-system') })
-          .withMetadata()
-          .getSolarSystem(position.solar_system_id, revalidation),
-    }),
-    position.station_id
-      ? getEsiResilienceLayer().getPublic({
-          operation: 'universe-station',
-          inputs: { stationId: position.station_id },
-          load: (revalidation) =>
-            createUniverseClient({ fetch: createEsiTransport('universe-station') })
-              .withMetadata()
-              .getStation(position.station_id!, revalidation),
-        })
-      : Promise.resolve(undefined),
+    getUniverseSolarSystem(position.solar_system_id),
+    position.station_id ? getUniverseStation(position.station_id) : Promise.resolve(undefined),
   ])
 
   return {

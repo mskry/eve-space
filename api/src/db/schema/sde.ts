@@ -21,6 +21,23 @@ export const sdeBuilds = pgTable('sde_builds', {
   ingestVersion: integer('ingest_version').default(1).notNull(),
 })
 
+export const sdeSolarSystems = pgTable('sde_solar_systems', {
+  solarSystemId: bigint('solar_system_id', { mode: 'number' }).primaryKey().notNull(),
+  name: text().notNull(),
+  securityStatus: doublePrecision('security_status').notNull(),
+})
+
+export const sdeNpcStations = pgTable(
+  'sde_npc_stations',
+  {
+    stationId: bigint('station_id', { mode: 'number' }).primaryKey().notNull(),
+    solarSystemId: bigint('solar_system_id', { mode: 'number' })
+      .notNull()
+      .references(() => sdeSolarSystems.solarSystemId),
+  },
+  (table) => [index('sde_npc_stations_solar_system_id_idx').on(table.solarSystemId)],
+)
+
 export const sdeCategories = pgTable('sde_categories', {
   categoryId: bigint('category_id', { mode: 'number' }).primaryKey().notNull(),
   name: text().notNull(),

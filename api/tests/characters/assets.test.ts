@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => {
     createAssetsClient: vi.fn(),
     createEsiTransport: vi.fn(),
     get: vi.fn(),
+    getStaticLocations: vi.fn(),
     limit: query.limit,
     listCharacterAssets: vi.fn(),
     listCorporationAssets: vi.fn(),
@@ -41,6 +42,9 @@ vi.mock('../../src/esi-resilience/request-transport.js', () => ({
 }))
 vi.mock('../../src/universe/names.js', () => ({
   resolveUniverseNamesBestEffort: mocks.resolveUniverseNamesBestEffort,
+}))
+vi.mock('../../src/universe/static-locations.js', () => ({
+  getStaticLocations: mocks.getStaticLocations,
 }))
 
 import {
@@ -91,6 +95,7 @@ beforeEach(() => {
     ),
   )
   mocks.resolveUniverseNamesBestEffort.mockResolvedValue({ names: new Map(), complete: true })
+  mocks.getStaticLocations.mockResolvedValue([])
 })
 
 describe('complete character asset collection', () => {
@@ -148,6 +153,9 @@ describe('complete character asset collection', () => {
       ]),
       complete: true,
     })
+    mocks.getStaticLocations.mockResolvedValue([
+      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: 0.945 },
+    ])
 
     const result = await getCharacterAssets(characterId)
 
@@ -171,6 +179,7 @@ describe('complete character asset collection', () => {
           locationId: 60_000_001,
           locationType: 'station',
           locationName: 'Jita IV - Moon 4',
+          solarSystemSecurityStatus: 0.945,
           locationFlag: 'Hangar',
           parentItemId: null,
         },
@@ -191,6 +200,7 @@ describe('complete character asset collection', () => {
           locationId: 22,
           locationType: 'item',
           locationName: null,
+          solarSystemSecurityStatus: null,
           locationFlag: 'Cargo',
           parentItemId: 22,
         },
@@ -218,6 +228,7 @@ describe('complete character asset collection', () => {
       body: [22],
       ...revalidation,
     })
+    expect(mocks.getStaticLocations).toHaveBeenCalledWith([{ id: 60_000_001, type: 'station' }])
     expect(JSON.stringify(result)).not.toMatch(
       /item_id|type_id|location_id|location_type|is_blueprint_copy|ignored|source|quota|meta/,
     )
@@ -623,6 +634,141 @@ describe('bounded character asset enrichment', () => {
       { itemId: 5, locationName: null },
     ])
     expect(result.enrichment.locations).toBe('partial')
+  })
+
+  test('enriches hundreds of stations and systems without a location cap', async () => {
+    const roots = Array.from({ length: 600 }, (_, index) => ({
+      id: (index < 300 ? 60_000_000 : 30_000_000) + index,
+      type: index < 300 ? ('station' as const) : ('solar_system' as const),
+    }))
+    mocks.listCharacterAssets.mockResolvedValue(
+      pageResponse(
+        roots.map((root, index) =>
+          asset({ item_id: index + 1, location_id: root.id, location_type: root.type }),
+        ),
+        1,
+      ),
+    )
+    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({
+      names: new Map(
+        roots.map((root) => [
+          root.id,
+          { id: root.id, name: `Location ${root.id}`, category: root.type },
+        ]),
+      ),
+      complete: true,
+    })
+    mocks.getStaticLocations.mockResolvedValue(
+      roots.map((root) => ({
+        ...root,
+        name: null,
+        solarSystemSecurityStatus: -0.06,
+      })),
+    )
+
+    const result = await getCharacterAssets(characterId)
+
+    expect(mocks.getStaticLocations).toHaveBeenCalledTimes(1)
+    expect(mocks.getStaticLocations).toHaveBeenCalledWith(roots)
+    expect(result.assets).toHaveLength(600)
+    expect(result.assets.every((entry) => entry.solarSystemSecurityStatus === -0.06)).toBe(true)
+    expect(result.enrichment.locations).toBe('complete')
+  })
+
+  test('retains names when the local location projection is unavailable', async () => {
+    mocks.listCharacterAssets.mockResolvedValue(
+      pageResponse([asset({ item_id: 1, location_id: 60_000_001, location_type: 'station' })], 1),
+    )
+    mocks.getStaticLocations.mockRejectedValue(new Error('projection unavailable'))
+    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({
+      names: new Map([
+        [60_000_001, { id: 60_000_001, name: 'Known station', category: 'station' }],
+      ]),
+      complete: true,
+    })
+
+    const result = await getCharacterAssets(characterId)
+
+    expect(result.assets[0]).toMatchObject({
+      locationName: 'Known station',
+      solarSystemSecurityStatus: null,
+    })
+    expect(result.enrichment.locations).toBe('partial')
+  })
+
+  test('uses local system names and security when batched names fail', async () => {
+    mocks.listCharacterAssets.mockResolvedValue(
+      pageResponse(
+        [
+          asset({ item_id: 1, location_id: 30_000_142, location_type: 'solar_system' }),
+          asset({ item_id: 2, location_id: 60_000_001, location_type: 'station' }),
+          asset({ item_id: 3, location_id: 60_000_002, location_type: 'station' }),
+        ],
+        1,
+      ),
+    )
+    mocks.resolveUniverseNamesBestEffort.mockRejectedValue(new Error('names unavailable'))
+    mocks.getStaticLocations.mockResolvedValue([
+      { id: 30_000_142, type: 'solar_system', name: 'Jita', solarSystemSecurityStatus: 0.945913 },
+      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: 0 },
+    ])
+
+    const result = await getCharacterAssets(characterId)
+
+    expect(
+      result.assets.map(({ locationName, solarSystemSecurityStatus }) => ({
+        locationName,
+        solarSystemSecurityStatus,
+      })),
+    ).toEqual([
+      { locationName: 'Jita', solarSystemSecurityStatus: 0.945913 },
+      { locationName: null, solarSystemSecurityStatus: 0 },
+      { locationName: null, solarSystemSecurityStatus: null },
+    ])
+    expect(result.enrichment.locations).toBe('partial')
+  })
+
+  test('deduplicates station and solar-system detail lookups while preserving true security', async () => {
+    mocks.listCharacterAssets.mockResolvedValue(
+      pageResponse(
+        [
+          asset({ item_id: 1, location_id: 60_000_001, location_type: 'station' }),
+          asset({ item_id: 2, location_id: 60_000_001, location_type: 'station' }),
+          asset({ item_id: 3, location_id: 30_000_142, location_type: 'solar_system' }),
+        ],
+        1,
+      ),
+    )
+    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({
+      names: new Map([
+        [60_000_001, { id: 60_000_001, name: 'Jita IV - Moon 4', category: 'station' }],
+        [30_000_142, { id: 30_000_142, name: 'Jita', category: 'solar_system' }],
+      ]),
+      complete: true,
+    })
+    mocks.getStaticLocations.mockResolvedValue([
+      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: -0.06 },
+      { id: 30_000_142, type: 'solar_system', name: 'Jita', solarSystemSecurityStatus: -0.06 },
+    ])
+
+    const result = await getCharacterAssets(characterId)
+
+    expect(
+      result.assets.map(({ itemId, solarSystemSecurityStatus }) => ({
+        itemId,
+        solarSystemSecurityStatus,
+      })),
+    ).toEqual([
+      { itemId: 1, solarSystemSecurityStatus: -0.06 },
+      { itemId: 2, solarSystemSecurityStatus: -0.06 },
+      { itemId: 3, solarSystemSecurityStatus: -0.06 },
+    ])
+    expect(result.enrichment.locations).toBe('complete')
+    expect(mocks.getStaticLocations).toHaveBeenCalledTimes(1)
+    expect(mocks.getStaticLocations).toHaveBeenCalledWith([
+      { id: 60_000_001, type: 'station' },
+      { id: 30_000_142, type: 'solar_system' },
+    ])
   })
 
   test('retains valid public locations when another resolution batch fails', async () => {

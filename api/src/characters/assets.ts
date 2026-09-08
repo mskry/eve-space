@@ -12,7 +12,8 @@ import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience
 import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
-import { resolveUniverseNamesBestEffort, type UniverseName } from '../universe/names.js'
+import { resolveUniverseNamesBestEffort } from '../universe/names.js'
+import { getStaticLocations } from '../universe/static-locations.js'
 
 export const characterAssetsScope = getCharacterEsiScope('character-assets-page')
 // A sanity bound on the advertised page count, not a product limit: the fan-out allocates an array
@@ -52,10 +53,16 @@ interface CharacterAssetTypeData {
   unitVolume: number | null
 }
 
+interface CharacterAssetLocationData {
+  name: string | null
+  solarSystemSecurityStatus: number | null
+}
+
 export interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAssetTypeData {
   totalVolume: number | null
   customName: string | null
   locationName: string | null
+  solarSystemSecurityStatus: number | null
 }
 
 export interface CharacterAssetsResult extends EsiResultMetadata {
@@ -106,17 +113,13 @@ export async function getCharacterAssets(characterId: number): Promise<Character
   for (const asset of assets) {
     const type = types.values.get(asset.typeId) ?? unknownType(asset.typeId)
     const location = locations.values.get(asset.locationId)
-    const locationName =
-      location?.category === asset.locationType &&
-      (asset.locationType === 'station' || asset.locationType === 'solar_system')
-        ? location.name
-        : null
     enrichedAssets.push({
       ...asset,
       ...type,
       totalVolume: totalVolume(type.unitVolume, asset.quantity),
       customName: names.values.get(asset.itemId) ?? null,
-      locationName,
+      locationName: location?.name ?? null,
+      solarSystemSecurityStatus: location?.solarSystemSecurityStatus ?? null,
     })
   }
 
@@ -315,37 +318,46 @@ async function loadAssetLocations(assets: readonly CharacterAssetSnapshot[]) {
     expected.set(asset.locationId, types)
   }
   if (expected.size === 0)
-    return { values: new Map<number, UniverseName>(), status: 'complete' as const }
-
-  try {
-    const ids = [...expected.keys()].toSorted((left, right) => left - right)
-    const resolution = await resolveUniverseNamesBestEffort(ids)
-    const values = resolution.names
-    const complete = [...expected].every(([id, types]) => {
-      const resolved = values.get(id)
-      return (
-        resolved !== undefined &&
-        (resolved.category === 'station' || resolved.category === 'solar_system') &&
-        types.size === 1 &&
-        types.has(resolved.category)
-      )
-    })
-    const usableCount = [...expected].filter(([id, types]) => {
-      const resolved = values.get(id)
-      return (
-        resolved !== undefined &&
-        (resolved.category === 'station' || resolved.category === 'solar_system') &&
-        types.size === 1 &&
-        types.has(resolved.category)
-      )
-    }).length
     return {
-      values,
-      status: enrichmentStatus(resolution.complete && complete, usableCount > 0),
+      values: new Map<number, CharacterAssetLocationData>(),
+      status: 'complete' as const,
     }
-  } catch {
-    return { values: new Map<number, UniverseName>(), status: 'unavailable' as const }
+
+  const locations = [...expected]
+    .filter(([, types]) => types.size === 1)
+    .map(([id, types]) => ({ id, type: [...types][0]! }))
+  const ids = [...expected.keys()].toSorted((left, right) => left - right)
+  const [names, details] = await Promise.all([
+    resolveUniverseNamesBestEffort(ids).catch(() => ({ names: new Map(), complete: false })),
+    getStaticLocations(locations).catch(() => []),
+  ])
+  const staticLocations = new Map(details.map((location) => [location.id, location]))
+
+  const values = new Map<number, CharacterAssetLocationData>()
+  for (const location of locations) {
+    const resolvedName = names.names.get(location.id)
+    const detail = staticLocations.get(location.id)
+    const matchedDetail = detail?.type === location.type ? detail : undefined
+    const securityStatus = matchedDetail?.solarSystemSecurityStatus
+    values.set(location.id, {
+      name:
+        (resolvedName?.category === location.type ? resolvedName.name : null) ??
+        matchedDetail?.name ??
+        null,
+      solarSystemSecurityStatus:
+        securityStatus != null && Number.isFinite(securityStatus) ? securityStatus : null,
+    })
   }
+
+  const complete =
+    values.size === expected.size &&
+    [...values.values()].every(
+      (value) => value.name !== null && value.solarSystemSecurityStatus !== null,
+    )
+  const usable = [...values.values()].some(
+    (value) => value.name !== null || value.solarSystemSecurityStatus !== null,
+  )
+  return { values, status: enrichmentStatus(complete, usable) }
 }
 
 function enrichmentStatus(complete: boolean, partial: boolean): EnrichmentStatus {

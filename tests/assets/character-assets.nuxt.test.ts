@@ -77,6 +77,33 @@ describe('Assets workspace resource states', () => {
     expect(unavailable.emitted('retry')).toHaveLength(1)
   })
 
+  it('renders EVE security bands for resolved systems and hides unavailable values', async () => {
+    const wrapper = await mountWorkspace(
+      collection([
+        asset(1),
+        asset(2, {
+          locationId: 30_000_142,
+          locationType: 'solar_system',
+          locationName: 'Jita',
+          solarSystemSecurityStatus: -0.06,
+        }),
+        asset(3, {
+          locationId: 60_000_002,
+          locationName: 'Unresolved security station',
+          solarSystemSecurityStatus: null,
+        }),
+      ]),
+      state(),
+    )
+
+    const statuses = wrapper.findAll('.assets-location-security')
+    expect(statuses).toHaveLength(2)
+    const highSecurity = statuses.find((status) => status.text() === 'System security: 0.9')
+    const nullSecurity = statuses.find((status) => status.text() === 'System security: -0.1')
+    expect(highSecurity?.classes()).toContain('assets-location-security--9')
+    expect(nullSecurity?.classes()).toContain('assets-location-security--0')
+  })
+
   it('keeps stale retained data primary and reports refresh and partial enrichment context', async () => {
     const wrapper = await mountWorkspace(
       collection([asset(1)], {
@@ -94,6 +121,10 @@ describe('Assets workspace resource states', () => {
     )
 
     expect(wrapper.text()).toContain('Jita IV - Moon 4')
+    expect(wrapper.get('.assets-location-security').text()).toBe('System security: 0.9')
+    expect(wrapper.get('.assets-location-security').classes()).toContain(
+      'assets-location-security--9',
+    )
     expect(wrapper.get('.assets-location-count').text()).toBe('1 items - 1.5 m³')
     expect(wrapper.find('.assets-location-kind').exists()).toBe(false)
     expect(wrapper.get('[role="alert"]').text()).toContain('retained inventory shown')
@@ -534,6 +565,7 @@ function asset(itemId: number, overrides: Partial<AssetRecord> = {}): AssetRecor
     locationId: 60_003_760,
     locationType: 'station',
     locationName: 'Jita IV - Moon 4',
+    solarSystemSecurityStatus: 0.945,
     locationFlag: 'Hangar',
     parentItemId: null,
     ...overrides,
