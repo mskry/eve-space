@@ -1,9 +1,7 @@
 import { performance } from 'node:perf_hooks'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import type {
-  StaticLocationRevision,
-  StaticLocationSnapshot,
-} from '../../src/universe/static-location-types.js'
+import type { SdeProjectionRevision } from '../../src/universe/sde-revision.js'
+import type { StaticLocationSnapshot } from '../../src/universe/static-location-types.js'
 
 const mocks = vi.hoisted(() => ({
   loadStaticLocationSnapshot: vi.fn(),
@@ -104,7 +102,7 @@ describe('static location cache', () => {
     await getStaticLocations([{ id: 30_000_001, type: 'solar_system' }])
 
     monotonicNow = staticLocationRevisionCheckIntervalMilliseconds
-    const checking = deferred<StaticLocationRevision>()
+    const checking = deferred<SdeProjectionRevision>()
     mocks.readStaticLocationRevision.mockReturnValue(checking.promise)
     const first = getStaticLocations([{ id: 30_000_001, type: 'solar_system' }])
     const second = getStaticLocations([{ id: 30_000_001, type: 'solar_system' }])
@@ -267,7 +265,7 @@ describe('static location cache', () => {
 function revision(
   ingestVersion = 2,
   ingestedAt = '2026-08-26 12:00:00.000001+00',
-): StaticLocationRevision {
+): SdeProjectionRevision {
   return { buildNumber: 1234, ingestVersion, ingestedAt }
 }
 
@@ -276,7 +274,7 @@ function system(id: number, securityStatus: number) {
 }
 
 function staticSnapshot(
-  snapshotRevision: StaticLocationRevision,
+  snapshotRevision: SdeProjectionRevision,
   systems: readonly ReturnType<typeof system>[],
   stations: readonly (readonly [number, number])[],
 ): StaticLocationSnapshot {

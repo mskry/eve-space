@@ -8,8 +8,10 @@ import {
 } from './database-read.js'
 import type { UniverseTopologySnapshot, UniverseTopologySystem } from './route-types.js'
 
-interface UniverseTopologyBuildRow extends postgres.Row {
+interface UniverseTopologyRevisionRow extends postgres.Row {
   build_number: string
+  ingest_version: number
+  ingested_at: string
 }
 
 interface UniverseTopologyRow extends postgres.Row {
@@ -33,12 +35,12 @@ export class UniverseTopologyUnavailableError extends Error {
   }
 }
 
-export function readActiveUniverseTopologyBuild(database: UniverseDatabase = sql) {
+export function readActiveUniverseTopologyRevision(database: UniverseDatabase = sql) {
   return runBoundedReadTransaction(
     database,
     'READ ONLY',
     new UniverseTopologyUnavailableError('Universe topology database operation timed out'),
-    selectActiveBuild,
+    selectActiveRevision,
   )
 }
 
@@ -52,7 +54,7 @@ export function loadUniverseTopologySnapshot(database: UniverseDatabase = sql) {
         transaction`lock table sde_builds, sde_dataset_rows in access share mode`,
         signal,
       )
-      const buildNumber = await selectActiveBuild(transaction, signal)
+      const revision = await selectActiveRevision(transaction, signal)
       const rows = await executeUniverseQuery(
         transaction<UniverseTopologyRow[]>`
           select
@@ -69,27 +71,34 @@ export function loadUniverseTopologySnapshot(database: UniverseDatabase = sql) {
         signal,
       )
       signal.throwIfAborted()
-      return buildTopologySnapshot(buildNumber, rows)
+      return buildTopologySnapshot(revision, rows)
     },
   )
 }
 
-async function selectActiveBuild(database: UniverseQuery, signal: AbortSignal) {
+async function selectActiveRevision(database: UniverseQuery, signal: AbortSignal) {
   const [row] = await executeUniverseQuery(
-    database<UniverseTopologyBuildRow[]>`
-      select build_number::text as build_number
+    database<UniverseTopologyRevisionRow[]>`
+      select
+        build_number::text as build_number,
+        ingest_version,
+        ingested_at::text as ingested_at
       from sde_builds
       order by ingested_at desc, build_number desc
       limit 1
     `,
     signal,
   )
-  if (!row) throw new UniverseTopologyUnavailableError('Universe topology build is missing')
-  return positiveSafeInteger(row.build_number, 'build number')
+  if (!row) throw new UniverseTopologyUnavailableError('Universe topology revision is missing')
+  return {
+    buildNumber: positiveSafeInteger(row.build_number, 'build number'),
+    ingestVersion: positiveSafeInteger(row.ingest_version, 'ingest version'),
+    ingestedAt: nonemptyString(row.ingested_at, 'ingestion timestamp'),
+  }
 }
 
 function buildTopologySnapshot(
-  buildNumber: number,
+  revision: UniverseTopologySnapshot['revision'],
   rows: readonly UniverseTopologyRow[],
 ): UniverseTopologySnapshot {
   const systems = new Map<number, MutableUniverseTopologySystem>()
@@ -117,7 +126,7 @@ function buildTopologySnapshot(
       }),
     )
   }
-  return Object.freeze({ buildNumber, systems: immutableSystems })
+  return Object.freeze({ revision: Object.freeze(revision), systems: immutableSystems })
 }
 
 function registerTopologyRow(
@@ -170,6 +179,12 @@ function positiveSafeInteger(value: unknown, label: string) {
   if (!Number.isSafeInteger(parsed) || parsed <= 0)
     throw new UniverseTopologyUnavailableError(`Universe topology ${label} is invalid`)
   return parsed
+}
+
+function nonemptyString(value: unknown, label: string) {
+  if (typeof value !== 'string' || value.trim().length === 0)
+    throw new UniverseTopologyUnavailableError(`Universe topology ${label} is invalid`)
+  return value
 }
 
 function optionalFiniteSecurity(value: unknown) {

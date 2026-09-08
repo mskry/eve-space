@@ -1,8 +1,9 @@
 import { performance } from 'node:perf_hooks'
 import type { UniverseTopologySnapshot } from './route-types.js'
+import { sdeProjectionRevisionsEqual } from './sde-revision.js'
 import {
   loadUniverseTopologySnapshot,
-  readActiveUniverseTopologyBuild,
+  readActiveUniverseTopologyRevision,
   UniverseTopologyUnavailableError,
 } from './topology-store.js'
 import { universeTopologyState, type UniverseTopologyState } from './topology-state.js'
@@ -57,14 +58,14 @@ async function reuseCurrentTopology(
   generation: number,
   nextCheckAt: () => number,
 ): Promise<UniverseTopologySnapshot | undefined> {
-  let activeBuildNumber: number
+  let activeRevision: UniverseTopologySnapshot['revision']
   try {
-    activeBuildNumber = await readActiveUniverseTopologyBuild()
+    activeRevision = await readActiveUniverseTopologyRevision()
   } catch (error) {
     assertTopologyStateTransition(state.retain(generation, error, nextCheckAt()))
     return current
   }
-  if (current.buildNumber !== activeBuildNumber) return undefined
+  if (!sdeProjectionRevisionsEqual(current.revision, activeRevision)) return undefined
   assertTopologyStateTransition(state.publish(current, generation, nextCheckAt()))
   return current
 }

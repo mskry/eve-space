@@ -25,8 +25,8 @@ beforeAll(async () => {
   )
   await runMigrations(connection, await loadMigrations())
   await connection`
-    insert into sde_builds (build_number, release_date, ingest_version)
-    values (1234, now(), 3)
+    insert into sde_builds (build_number, release_date, ingest_version, ingested_at)
+    values (1234, now(), 4, '2026-08-26 12:00:00.123456+00')
   `
   await connection`
     insert into sde_dataset_rows (dataset, key, data)
@@ -48,7 +48,11 @@ describe('universe topology PostgreSQL projection', () => {
   test('loads one completed-build graph with disconnected systems intact', async () => {
     const snapshot = await loadUniverseTopologySnapshot(connection)
 
-    expect(snapshot.buildNumber).toBe(1234)
+    expect(snapshot.revision).toEqual({
+      buildNumber: 1234,
+      ingestVersion: 4,
+      ingestedAt: '2026-08-26 12:00:00.123456+00',
+    })
     expect([...snapshot.systems.values()]).toEqual([
       { id: 30_000_001, securityStatus: 0.9, neighbors: [30_000_002] },
       { id: 30_000_002, securityStatus: 0.5, neighbors: [30_000_001] },

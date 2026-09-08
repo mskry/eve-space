@@ -2,6 +2,7 @@ import { basename, extname } from 'node:path'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
+  revision: ['sde-revision'],
   database: ['database-read'],
   representation: ['static-location-types', 'route-types'],
   state: ['static-location-cache-state', 'topology-state'],
@@ -19,11 +20,12 @@ const tierByModule = new Map<string, UniverseCacheTier>(
 )
 
 const allowedImportTiers: Record<UniverseCacheTier, readonly UniverseCacheTier[]> = {
+  revision: [],
   database: [],
-  representation: [],
+  representation: ['revision'],
   state: ['representation'],
   adapter: ['database', 'representation'],
-  orchestration: ['representation', 'state', 'adapter'],
+  orchestration: ['revision', 'representation', 'state', 'adapter'],
   service: ['representation', 'orchestration'],
 }
 

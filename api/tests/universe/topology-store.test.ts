@@ -14,7 +14,11 @@ describe('universe topology projection', () => {
       ]) as never,
     )
 
-    expect(snapshot.buildNumber).toBe(1234)
+    expect(snapshot.revision).toEqual({
+      buildNumber: 1234,
+      ingestVersion: 4,
+      ingestedAt: '2026-08-26 12:00:00.000001+00',
+    })
     expect([...snapshot.systems.values()]).toEqual([
       { id: 1, securityStatus: 0.9, neighbors: [2, 3] },
       { id: 2, securityStatus: null, neighbors: [1] },
@@ -42,7 +46,14 @@ function database(rows: readonly Record<string, unknown>[]) {
     vi.fn((strings: TemplateStringsArray) => {
       const statement = strings.join(' ')
       let result: unknown[] = []
-      if (statement.includes('from sde_builds')) result = [{ build_number: '1234' }]
+      if (statement.includes('from sde_builds'))
+        result = [
+          {
+            build_number: '1234',
+            ingest_version: 4,
+            ingested_at: '2026-08-26 12:00:00.000001+00',
+          },
+        ]
       else if (statement.includes('from sde_dataset_rows')) result = [...rows]
       return cancellable(result)
     }),

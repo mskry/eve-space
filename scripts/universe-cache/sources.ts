@@ -3,7 +3,7 @@ import { loadTypescriptSourceDirectory } from '../typescript-source-directory.js
 import type { UniverseCacheSource } from './boundaries.js'
 
 const universeCacheModulePattern =
-  /\/(?:database-read|static-location(?:s|-[^/]+)|route-(?:calculator|types)|topology(?:-[^/]+)?)\.ts$/
+  /\/(?:database-read|sde-revision|static-location(?:s|-[^/]+)|route-(?:calculator|types)|topology(?:-[^/]+)?)\.ts$/
 
 export async function loadUniverseCacheSources(root: string): Promise<UniverseCacheSource[]> {
   const directory = join(root, 'api', 'src', 'universe')

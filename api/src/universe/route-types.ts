@@ -1,3 +1,5 @@
+import type { SdeProjectionRevision } from './sde-revision.js'
+
 interface UniverseShortestRoutePolicy {
   kind: 'shortest'
 }
@@ -29,6 +31,6 @@ export interface UniverseTopologySystem {
 }
 
 export interface UniverseTopologySnapshot {
-  buildNumber: number
+  revision: SdeProjectionRevision
   systems: ReadonlyMap<number, UniverseTopologySystem>
 }

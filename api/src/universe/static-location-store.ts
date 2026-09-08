@@ -6,11 +6,7 @@ import {
   type UniverseDatabase,
   type UniverseQuery,
 } from './database-read.js'
-import type {
-  StaticLocationRevision,
-  StaticLocationSnapshot,
-  StaticSolarSystem,
-} from './static-location-types.js'
+import type { StaticLocationSnapshot, StaticSolarSystem } from './static-location-types.js'
 
 export {
   universeDatabaseOperationTimeoutMilliseconds as staticLocationDatabaseOperationTimeoutMilliseconds,
@@ -114,7 +110,7 @@ async function selectLatestRevision(database: StaticLocationQuery, signal: Abort
 }
 
 function buildSnapshot(
-  revision: StaticLocationRevision,
+  revision: StaticLocationSnapshot['revision'],
   systemRows: readonly StaticSolarSystemRow[],
   stationRows: readonly StaticNpcStationRow[],
 ): StaticLocationSnapshot {

@@ -6,6 +6,10 @@ import {
 
 describe('universe cache dependency boundaries', () => {
   test.each([
+    ['static-location-types', 'sde-revision'],
+    ['route-types', 'sde-revision'],
+    ['static-locations', 'sde-revision'],
+    ['topology', 'sde-revision'],
     ['static-location-cache-state', 'static-location-types'],
     ['static-location-store', 'database-read'],
     ['static-location-store', 'static-location-types'],
@@ -27,6 +31,8 @@ describe('universe cache dependency boundaries', () => {
   })
 
   test.each([
+    ['sde-revision', 'static-location-types'],
+    ['sde-revision', 'route-types'],
     ['static-location-types', 'static-location-cache-state'],
     ['database-read', 'static-location-types'],
     ['static-location-types', 'static-location-store'],

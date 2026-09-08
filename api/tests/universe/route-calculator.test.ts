@@ -78,7 +78,11 @@ function topology(
   edges: readonly (readonly [number, readonly number[]])[],
 ): UniverseTopologySnapshot {
   return {
-    buildNumber: 1234,
+    revision: {
+      buildNumber: 1234,
+      ingestVersion: 4,
+      ingestedAt: '2026-08-26 12:00:00.000001+00',
+    },
     systems: new Map(
       edges.map(([id, neighbors]) => [id, { id, securityStatus: id / 10, neighbors }]),
     ),

@@ -14,7 +14,7 @@ export async function calculateUniverseRoutes(
   return {
     originSystemId: request.originSystemId,
     policy: request.policy,
-    sdeBuildNumber: topology.buildNumber,
+    sdeBuildNumber: topology.revision.buildNumber,
     routes: shortestRoutes(topology, request.originSystemId, request.destinationSystemIds),
   }
 }
