@@ -6,7 +6,11 @@ export interface UiRadioGroupOption {
   value: string
 }
 
-defineProps<{
+const {
+  disabled = false,
+  label,
+  options,
+} = defineProps<{
   label: string
   disabled?: boolean
   options: readonly UiRadioGroupOption[]

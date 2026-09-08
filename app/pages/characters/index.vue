@@ -3,7 +3,7 @@ import { useQueryCache } from '@pinia/colada'
 import { characterOverviewQuery, type CharacterRosterEntry } from '../../queries/characters'
 import { prefetchProtectedQuery } from '../../queries/query-cache'
 
-definePageMeta({ title: 'Characters', layout: 'headerless', viewTransition: true })
+definePageMeta({ title: 'Characters', layout: 'headerless' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()

@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { PublicTypeDetail } from '../queries/universe'
 
-const props = defineProps<{
-  detailsLabel?: string
-  imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
-  imageSource?: string
-  typeId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    detailsLabel?: string
+    imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
+    imageSource?: string
+    typeId: number
+  }>(),
+  { imageKind: 'type-icon' },
+)
 
 defineSlots<{
   details(props: { item: PublicTypeDetail }): unknown

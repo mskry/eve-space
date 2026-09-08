@@ -2,14 +2,17 @@
 import { useQuery } from '@pinia/colada'
 import { publicTypeDetailQuery, type PublicTypeDetail } from '../queries/universe'
 
-const props = defineProps<{
-  descriptionId: string
-  detailsLabel?: string
-  imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
-  imageSource?: string
-  titleId: string
-  typeId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    descriptionId: string
+    detailsLabel?: string
+    imageKind?: 'type-bp' | 'type-bpc' | 'type-icon'
+    imageSource?: string
+    titleId: string
+    typeId: number
+  }>(),
+  { imageKind: 'type-icon' },
+)
 
 defineSlots<{
   details(props: { item: PublicTypeDetail }): unknown

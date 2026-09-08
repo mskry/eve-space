@@ -35,6 +35,7 @@ function locationLabel(location: CharacterRosterEntry['location']) {
     <NuxtLink
       class="roster-card-link"
       :to="`/characters/${character.characterId}`"
+      view-transition
       :aria-label="
         character.isMain ? `View ${character.name}, main character` : `View ${character.name}`
       "

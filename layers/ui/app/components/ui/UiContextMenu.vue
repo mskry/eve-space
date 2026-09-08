@@ -8,7 +8,11 @@ import {
   ContextMenuTrigger,
 } from 'reka-ui'
 
-defineProps<{
+const {
+  label,
+  accessibleLabel = label,
+  description,
+} = defineProps<{
   accessibleLabel?: string
   description?: string
   label: string

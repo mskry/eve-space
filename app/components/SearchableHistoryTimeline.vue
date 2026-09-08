@@ -10,12 +10,15 @@ interface SearchableHistoryEntry {
   entityName: string
 }
 
-const props = defineProps<{
-  entries: SearchableHistoryEntry[]
-  entityKind: 'alliance' | 'corporation'
-  entityLabel: string
-  deletedSuffix?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    entries: SearchableHistoryEntry[]
+    entityKind: 'alliance' | 'corporation'
+    entityLabel: string
+    deletedSuffix?: string
+  }>(),
+  { deletedSuffix: '' },
+)
 
 defineSlots<{
   controls(): unknown

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DropdownMenuItem } from 'reka-ui'
 
-defineProps<{
+const { disabled = false, tone = 'default' } = defineProps<{
   disabled?: boolean
   tone?: 'default' | 'danger'
 }>()

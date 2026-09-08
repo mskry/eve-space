@@ -9,7 +9,7 @@ import {
   characterPortraitViewTransitionName,
 } from '../../utils/view-transition'
 
-definePageMeta({ title: 'Characters', layout: 'headerless', viewTransition: true })
+definePageMeta({ title: 'Characters', layout: 'headerless' })
 
 const route = useRoute()
 const router = useRouter()

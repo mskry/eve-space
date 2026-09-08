@@ -18,7 +18,9 @@ These rules compile the official Vue Style Guide's [Priority A](https://vuejs.or
 #### Essential
 
 - Use multi-word component names except for the root `App` component.
-- Define props with explicit TypeScript types and required/default semantics; do not use untyped string-array prop declarations in committed code.
+- Define props with explicit TypeScript types; do not use untyped string-array prop declarations in committed code. Mark mandatory props as required and give optional props a type-checked default whenever the component has a meaningful fallback.
+- In `<script setup>`, prefer type-based `defineProps<Props>()`. Use reactive destructure defaults when destructuring props, or `withDefaults(defineProps<Props>(), defaults)` when retaining the props object so defaults are checked and defaulted properties become non-optional.
+- Wrap mutable array or object defaults in factory functions when using `withDefaults` or runtime prop declarations so each component instance receives its own value. Outside `<script setup>`, use `defineComponent()` for prop inference and `PropType` for complex runtime prop types.
 - Give every `v-for` a stable, unique `:key` based on item identity rather than an index or a potentially duplicated destination/value.
 - Never place `v-if` and `v-for` on the same element. Filter through a computed value or move the conditional to a wrapper.
 - Scope component styles through `<style scoped>`, CSS modules, or distinctive component/feature classes. Layout and root application styles may be global; reusable UI library primitives should use the repository's class-based styling strategy.
