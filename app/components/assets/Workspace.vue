@@ -3,6 +3,7 @@ import type {
   AssetCollection,
   AssetFilterState,
   AssetHierarchyRow,
+  AssetLocationGroup,
   AssetRecord,
   AssetResourceAction,
   AssetResourceState,
@@ -26,6 +27,8 @@ type AssetSortKey =
 
 const props = defineProps<{
   collection: AssetCollection | null
+  hierarchy?: readonly AssetLocationGroup[]
+  routeJumpsBySystemId?: ReadonlyMap<number, number>
   state: AssetResourceState
 }>()
 
@@ -55,7 +58,9 @@ const filters = ref<AssetFilterState>({ ...EMPTY_ASSET_FILTERS })
 const controller = shallowRef(createAssetWorkspaceController())
 const sortKey = ref<AssetSortKey>('item')
 const sortDescending = ref(false)
-const hierarchy = computed(() => buildAssetHierarchy(props.collection?.assets ?? []))
+const hierarchy = computed(
+  () => props.hierarchy ?? buildAssetHierarchy(props.collection?.assets ?? []),
+)
 const filtered = computed(() => filterAssetHierarchy(hierarchy.value, filters.value))
 const activeFilters = computed(() => hasActiveAssetFilters(filters.value))
 const containerExpansion = computed<ReadonlySet<number>>(() => {
@@ -291,6 +296,11 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
                 :container-expansion="containerExpansion"
                 :expanded="isLocationExpanded(group.key)"
                 :group="group"
+                :jump-count="
+                  group.solarSystemId === null
+                    ? null
+                    : (routeJumpsBySystemId?.get(group.solarSystemId) ?? null)
+                "
                 :visible="visibleLocation(group)"
                 @item-information="emit('itemInformation', $event)"
                 @toggle-container="toggleContainer"

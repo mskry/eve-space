@@ -1,7 +1,9 @@
 import { useQuery } from '@pinia/colada'
 import { computed, shallowRef, watch, type ComputedRef, type Ref } from 'vue'
+import { characterAssetRoutesQuery } from '../queries/character-asset-routes'
 import { characterAssetsQuery, type CharacterAssetsAccess } from '../queries/character-assets'
 import type { ApiClient } from '../utils/api-client'
+import { buildAssetHierarchy } from '../utils/assets-hierarchy'
 import {
   mapCharacterAssets,
   mapCharacterAssetsResourceState,
@@ -12,7 +14,14 @@ interface CharacterAssetsOptions {
   apiClient: ApiClient
   authenticated: Readonly<Ref<boolean>>
   characterId: ComputedRef<number | undefined>
-  characters: Readonly<Ref<readonly { characterId: number }[]>>
+  characters: Readonly<
+    Ref<
+      readonly {
+        characterId: number
+        location?: { solarSystemId: number } | null
+      }[]
+    >
+  >
   isClient?: boolean
   registerReauthorization?: typeof useCharacterReauthorization
 }
@@ -36,6 +45,38 @@ export function useCharacterAssets(options: CharacterAssetsOptions) {
   const refreshError = shallowRef<unknown>(null)
   const assets = computed(() =>
     assetsQuery.data.value ? mapCharacterAssets(assetsQuery.data.value) : null,
+  )
+  const hierarchy = computed(() => buildAssetHierarchy(assets.value?.assets ?? []))
+  const originSystemId = computed(
+    () =>
+      options.characters.value.find((entry) => entry.characterId === options.characterId.value)
+        ?.location?.solarSystemId ?? 0,
+  )
+  const destinationSystemIds = computed(() =>
+    [
+      ...new Set(
+        hierarchy.value.flatMap((group) =>
+          group.solarSystemId === null ? [] : [group.solarSystemId],
+        ),
+      ),
+    ].toSorted((left, right) => left - right),
+  )
+  const routesQuery = useQuery(() =>
+    characterAssetRoutesQuery({
+      apiClient: options.apiClient,
+      characterId: options.characterId.value ?? 0,
+      originSystemId: originSystemId.value,
+      destinationSystemIds: destinationSystemIds.value,
+      access: access.value,
+    }),
+  )
+  const routeJumpsBySystemId = computed<ReadonlyMap<number, number>>(
+    () =>
+      new Map(
+        routesQuery.data.value?.routes.flatMap((route) =>
+          route.jumps === null ? [] : [[route.destinationSystemId, route.jumps] as const],
+        ) ?? [],
+      ),
   )
   const loading = computed(
     () => assetsQuery.status.value === 'pending' || assetsQuery.asyncStatus.value === 'loading',
@@ -73,7 +114,10 @@ export function useCharacterAssets(options: CharacterAssetsOptions) {
     access,
     assets,
     assetsQuery,
+    hierarchy,
     refreshAssets,
+    routeJumpsBySystemId,
+    routesQuery,
     state,
   }
 }

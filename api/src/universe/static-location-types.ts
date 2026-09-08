@@ -1,8 +1,4 @@
-export interface StaticLocationRevision {
-  buildNumber: number
-  ingestVersion: number
-  ingestedAt: string
-}
+import type { SdeProjectionRevision } from './sde-revision.js'
 
 export interface StaticSolarSystem {
   id: number
@@ -11,18 +7,7 @@ export interface StaticSolarSystem {
 }
 
 export interface StaticLocationSnapshot {
-  revision: StaticLocationRevision
+  revision: SdeProjectionRevision
   systems: ReadonlyMap<number, StaticSolarSystem>
   stationSystemIds: ReadonlyMap<number, number>
-}
-
-export function staticLocationRevisionsEqual(
-  left: StaticLocationRevision,
-  right: StaticLocationRevision,
-) {
-  return (
-    left.buildNumber === right.buildNumber &&
-    left.ingestVersion === right.ingestVersion &&
-    left.ingestedAt === right.ingestedAt
-  )
 }

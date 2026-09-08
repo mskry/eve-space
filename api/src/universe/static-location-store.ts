@@ -1,16 +1,20 @@
 import type postgres from 'postgres'
 import { sql } from '../db/client.js'
-import type {
-  StaticLocationRevision,
-  StaticLocationSnapshot,
-  StaticSolarSystem,
-} from './static-location-types.js'
+import {
+  executeUniverseQuery,
+  runBoundedReadTransaction,
+  type UniverseDatabase,
+  type UniverseQuery,
+} from './database-read.js'
+import type { StaticLocationSnapshot, StaticSolarSystem } from './static-location-types.js'
 
-export const staticLocationDatabaseTimeoutMilliseconds = 2_000
-export const staticLocationDatabaseOperationTimeoutMilliseconds = 2_500
+export {
+  universeDatabaseOperationTimeoutMilliseconds as staticLocationDatabaseOperationTimeoutMilliseconds,
+  universeDatabaseTimeoutMilliseconds as staticLocationDatabaseTimeoutMilliseconds,
+} from './database-read.js'
 
-type StaticLocationDatabase = postgres.Sql
-type StaticLocationQuery = postgres.Sql | postgres.TransactionSql
+type StaticLocationDatabase = UniverseDatabase
+type StaticLocationQuery = UniverseQuery
 
 interface StaticLocationRevisionRow extends postgres.Row {
   build_number: string
@@ -37,26 +41,28 @@ export class StaticLocationProjectionUnavailableError extends Error {
 }
 
 export function readStaticLocationRevision(database: StaticLocationDatabase = sql) {
-  return runBoundedTransaction(database, 'READ ONLY', async (transaction, signal) => {
-    await setTimeouts(transaction, signal)
-    return selectLatestRevision(transaction, signal)
-  })
+  return runBoundedReadTransaction(
+    database,
+    'READ ONLY',
+    new StaticLocationProjectionUnavailableError('Static location database operation timed out'),
+    selectLatestRevision,
+  )
 }
 
 export function loadStaticLocationSnapshot(database: StaticLocationDatabase = sql) {
-  return runBoundedTransaction(
+  return runBoundedReadTransaction(
     database,
     'ISOLATION LEVEL REPEATABLE READ READ ONLY',
+    new StaticLocationProjectionUnavailableError('Static location database operation timed out'),
     async (transaction, signal) => {
-      await setTimeouts(transaction, signal)
-      await executeQuery(
+      await executeUniverseQuery(
         transaction`
           lock table sde_builds, sde_solar_systems, sde_npc_stations in access share mode
         `,
         signal,
       )
       const revision = await selectLatestRevision(transaction, signal)
-      const systemRows = await executeQuery(
+      const systemRows = await executeUniverseQuery(
         transaction<StaticSolarSystemRow[]>`
           select
             solar_system_id::text as solar_system_id,
@@ -67,7 +73,7 @@ export function loadStaticLocationSnapshot(database: StaticLocationDatabase = sq
         `,
         signal,
       )
-      const stationRows = await executeQuery(
+      const stationRows = await executeUniverseQuery(
         transaction<StaticNpcStationRow[]>`
           select station_id::text as station_id, solar_system_id::text as solar_system_id
           from sde_npc_stations
@@ -81,37 +87,8 @@ export function loadStaticLocationSnapshot(database: StaticLocationDatabase = sq
   )
 }
 
-function runBoundedTransaction<Result>(
-  database: StaticLocationDatabase,
-  options: string,
-  load: (transaction: postgres.TransactionSql, signal: AbortSignal) => Promise<Result>,
-) {
-  const controller = new AbortController()
-  const timeoutError = new StaticLocationProjectionUnavailableError(
-    'Static location database operation timed out',
-  )
-  let timer: ReturnType<typeof setTimeout>
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      controller.abort(timeoutError)
-      reject(timeoutError)
-    }, staticLocationDatabaseOperationTimeoutMilliseconds)
-    timer.unref()
-  })
-  const operation = database.begin(options, async (transaction) => {
-    controller.signal.throwIfAborted()
-    return load(transaction, controller.signal)
-  })
-  return Promise.race([operation, timeout]).finally(() => clearTimeout(timer))
-}
-
-async function setTimeouts(database: StaticLocationQuery, signal: AbortSignal) {
-  await executeQuery(database`set local statement_timeout = '2s'`, signal)
-  await executeQuery(database`set local lock_timeout = '2s'`, signal)
-}
-
 async function selectLatestRevision(database: StaticLocationQuery, signal: AbortSignal) {
-  const [row] = await executeQuery(
+  const [row] = await executeUniverseQuery(
     database<StaticLocationRevisionRow[]>`
       select
         build_number::text as build_number,
@@ -132,22 +109,8 @@ async function selectLatestRevision(database: StaticLocationQuery, signal: Abort
   }
 }
 
-async function executeQuery<Result>(
-  query: Promise<Result> & { cancel(): void },
-  signal: AbortSignal,
-) {
-  signal.throwIfAborted()
-  const cancel = () => query.cancel()
-  signal.addEventListener('abort', cancel, { once: true })
-  try {
-    return await query
-  } finally {
-    signal.removeEventListener('abort', cancel)
-  }
-}
-
 function buildSnapshot(
-  revision: StaticLocationRevision,
+  revision: StaticLocationSnapshot['revision'],
   systemRows: readonly StaticSolarSystemRow[],
   stationRows: readonly StaticNpcStationRow[],
 ): StaticLocationSnapshot {

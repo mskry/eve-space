@@ -6,14 +6,14 @@ mod model;
 mod typed;
 mod zip_stream;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
 use std::path::Path;
 use std::time::Instant;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use zip::ZipArchive;
 
-const INGEST_PROJECTION_VERSION: i32 = 3;
+const INGEST_PROJECTION_VERSION: i32 = 4;
 
 fn main() -> Result<()> {
     load_env();
@@ -156,6 +156,18 @@ fn ingest(
             ingest_fn(&mut archive, &mut tx).with_context(|| format!("ingesting {label}"))?;
         println!(
             "  {label}: {count} rows ({:.1}s)",
+            started.elapsed().as_secs_f64()
+        );
+    }
+
+    println!("Ingesting mandatory routing datasets into sde_dataset_rows...");
+    for member in generic::MANDATORY_MEMBERS {
+        let started = Instant::now();
+        let count = generic::ingest_member(&mut archive, &mut tx, member)
+            .with_context(|| format!("ingesting mandatory routing dataset {member}"))?;
+        ensure!(count > 0, "mandatory routing dataset {member} is empty");
+        println!(
+            "  {member}: {count} rows ({:.1}s)",
             started.elapsed().as_secs_f64()
         );
     }

@@ -4,15 +4,20 @@ import { beforeEach, describe, expect, expectTypeOf, test, vi } from 'vitest'
 import type { UniverseTypeDetails } from '../../src/universe/type-details.js'
 
 const mocks = vi.hoisted(() => ({
+  calculateUniverseRoutes: vi.fn(),
   getUniverseTypeDetails: vi.fn(),
 }))
 
+vi.mock('../../src/universe/route-calculator.js', () => ({
+  calculateUniverseRoutes: mocks.calculateUniverseRoutes,
+}))
 vi.mock('../../src/universe/type-details.js', () => ({
   getUniverseTypeDetails: mocks.getUniverseTypeDetails,
 }))
 
 import { app } from '../../src/index.js'
-import { universeRoutes } from '../../src/universe/routes.js'
+import { maximumUniverseRouteDestinations, universeRoutes } from '../../src/universe/routes.js'
+import type { UniverseRouteResult } from '../../src/universe/route-types.js'
 
 const typeDetails = {
   typeId: 34,
@@ -24,6 +29,17 @@ const typeDetails = {
 } satisfies UniverseTypeDetails
 
 beforeEach(() => {
+  mocks.calculateUniverseRoutes.mockImplementation((request) =>
+    Promise.resolve({
+      originSystemId: request.originSystemId,
+      policy: request.policy,
+      sdeBuildNumber: 1234,
+      routes: request.destinationSystemIds.map((destinationSystemId: number) => ({
+        destinationSystemId,
+        jumps: destinationSystemId === 30_000_003 ? null : destinationSystemId - 30_000_001,
+      })),
+    }),
+  )
   mocks.getUniverseTypeDetails.mockResolvedValue(typeDetails)
 })
 
@@ -97,5 +113,168 @@ describe('universe type detail route', () => {
     expect(response.status).toBe(200)
     const body = await response.json()
     expect(body).toEqual(typeDetails)
+  })
+})
+
+describe('universe route calculation endpoint', () => {
+  test('is anonymous, canonicalizes destinations, and returns ordered no-store results', async () => {
+    const response = await app.request('/api/universe/routes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        originSystemId: 30_000_001,
+        destinationSystemIds: [30_000_003, 30_000_001, 30_000_002],
+        policy: { kind: 'shortest' },
+      }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    await expect(response.json()).resolves.toEqual({
+      originSystemId: 30_000_001,
+      policy: { kind: 'shortest' },
+      sdeBuildNumber: 1234,
+      routes: [
+        { destinationSystemId: 30_000_001, jumps: 0 },
+        { destinationSystemId: 30_000_002, jumps: 1 },
+        { destinationSystemId: 30_000_003, jumps: null },
+      ],
+    })
+    expect(mocks.calculateUniverseRoutes).toHaveBeenCalledWith({
+      originSystemId: 30_000_001,
+      destinationSystemIds: [30_000_001, 30_000_002, 30_000_003],
+      policy: { kind: 'shortest' },
+    })
+  })
+
+  test.each([
+    [
+      'invalid origin',
+      { originSystemId: 0, destinationSystemIds: [1], policy: { kind: 'shortest' } },
+    ],
+    [
+      'unsafe origin',
+      {
+        originSystemId: Number.MAX_SAFE_INTEGER + 1,
+        destinationSystemIds: [1],
+        policy: { kind: 'shortest' },
+      },
+    ],
+    [
+      'missing destinations',
+      { originSystemId: 1, destinationSystemIds: [], policy: { kind: 'shortest' } },
+    ],
+    [
+      'duplicate destinations',
+      { originSystemId: 1, destinationSystemIds: [2, 2], policy: { kind: 'shortest' } },
+    ],
+    [
+      'invalid destination',
+      { originSystemId: 1, destinationSystemIds: [-2], policy: { kind: 'shortest' } },
+    ],
+    [
+      'unsupported policy',
+      { originSystemId: 1, destinationSystemIds: [2], policy: { kind: 'safer' } },
+    ],
+  ])('rejects %s before topology calculation', async (_description, body) => {
+    const response = await app.request('/api/universe/routes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    expect(response.status).toBe(400)
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    expect(mocks.calculateUniverseRoutes).not.toHaveBeenCalled()
+  })
+
+  test('enforces the destination bound before topology calculation', async () => {
+    const response = await app.request('/api/universe/routes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        originSystemId: 1,
+        destinationSystemIds: Array.from(
+          { length: maximumUniverseRouteDestinations + 1 },
+          (_, index) => index + 1,
+        ),
+        policy: { kind: 'shortest' },
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(mocks.calculateUniverseRoutes).not.toHaveBeenCalled()
+  })
+
+  test('maps unavailable topology to a controlled no-store response', async () => {
+    mocks.calculateUniverseRoutes.mockRejectedValue(new Error('database unavailable'))
+
+    const response = await app.request('/api/universe/routes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        originSystemId: 1,
+        destinationSystemIds: [2],
+        policy: { kind: 'shortest' },
+      }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(response.headers.get('cache-control')).toBe('no-store')
+    await expect(response.json()).resolves.toEqual({
+      code: 'UNIVERSE_TOPOLOGY_UNAVAILABLE',
+      message: 'Universe route topology is temporarily unavailable.',
+    })
+  })
+
+  test('rate-limits one anonymous client before route calculation', async () => {
+    const body = JSON.stringify({
+      originSystemId: 1,
+      destinationSystemIds: [2],
+      policy: { kind: 'shortest' },
+    })
+    let response: Response | undefined
+    for (let index = 0; index <= 60; index += 1) {
+      response = await universeRoutes.fetch(
+        new Request('http://localhost/routes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        }),
+        {
+          incoming: {
+            socket: {
+              remoteAddress: '198.51.100.30',
+              remotePort: 1,
+              remoteFamily: 'IPv4',
+            },
+          },
+        },
+      )
+    }
+
+    expect(response?.status).toBe(429)
+    expect(response?.headers.get('retry-after')).toBe('60')
+    await expect(response?.json()).resolves.toEqual({
+      code: 'UNIVERSE_ROUTE_RATE_LIMITED',
+      message: 'Too many universe route requests.',
+    })
+    expect(mocks.calculateUniverseRoutes).toHaveBeenCalledTimes(60)
+  })
+
+  test('retains the inferred route request and response contract', async () => {
+    const client = testClient(universeRoutes)
+    type Success = InferResponseType<(typeof client.routes)['$post'], 200>
+    expectTypeOf<Success>().toEqualTypeOf<UniverseRouteResult>()
+
+    const response = await client.routes.$post({
+      json: {
+        originSystemId: 1,
+        destinationSystemIds: [2],
+        policy: { kind: 'shortest' },
+      },
+    })
+
+    expect(response.status).toBe(200)
   })
 })

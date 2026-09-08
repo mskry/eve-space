@@ -26,6 +26,7 @@ describe('mounted Assets AppType contract', () => {
     expectTypeOf<Asset['isBlueprintCopy']>().toEqualTypeOf<boolean | null>()
     expectTypeOf<Asset['customName']>().toEqualTypeOf<string | null>()
     expectTypeOf<Asset['locationName']>().toEqualTypeOf<string | null>()
+    expectTypeOf<Asset['solarSystemId']>().toEqualTypeOf<number | null>()
     expectTypeOf<Asset['solarSystemSecurityStatus']>().toEqualTypeOf<number | null>()
     expectTypeOf<Asset['parentItemId']>().toEqualTypeOf<number | null>()
     expectTypeOf<Asset['unitVolume']>().toEqualTypeOf<number | null>()
@@ -50,6 +51,7 @@ describe('mounted Assets AppType contract', () => {
       locationId: number
       locationType: 'station' | 'solar_system' | 'item' | 'other'
       locationName: string | null
+      solarSystemId: number | null
       solarSystemSecurityStatus: number | null
       locationFlag: string
       parentItemId: number | null

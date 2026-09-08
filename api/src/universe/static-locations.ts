@@ -8,8 +8,8 @@ import {
   readStaticLocationRevision,
   StaticLocationProjectionUnavailableError,
 } from './static-location-store.js'
+import { sdeProjectionRevisionsEqual } from './sde-revision.js'
 import type { StaticLocationSnapshot } from './static-location-types.js'
-import { staticLocationRevisionsEqual } from './static-location-types.js'
 
 export const staticLocationRevisionCheckIntervalMilliseconds = 60_000
 
@@ -53,7 +53,7 @@ async function refreshStaticLocationSnapshot(
   try {
     if (current) {
       const revision = await readStaticLocationRevision()
-      if (staticLocationRevisionsEqual(current.revision, revision)) {
+      if (sdeProjectionRevisionsEqual(current.revision, revision)) {
         if (
           !state.publish(
             current,
@@ -99,6 +99,7 @@ function locationResult(snapshot: StaticLocationSnapshot, location: StaticLocati
     id: location.id,
     type: location.type,
     name: location.type === 'solar_system' ? (system?.name ?? null) : null,
+    solarSystemId: system?.id ?? null,
     solarSystemSecurityStatus: system?.securityStatus ?? null,
   }
 }

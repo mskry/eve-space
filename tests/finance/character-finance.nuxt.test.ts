@@ -70,6 +70,7 @@ beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
 
 beforeEach(() => {
+  vi.setSystemTime('2026-09-02T12:00:00.000Z')
   requests.length = 0
   scenario = {
     journal: 'data',
@@ -85,6 +86,7 @@ afterEach(async () => {
   queryServer.resetHandlers()
   await settle()
   document.body.replaceChildren()
+  vi.useRealTimers()
 })
 
 describe('character Finance page', () => {

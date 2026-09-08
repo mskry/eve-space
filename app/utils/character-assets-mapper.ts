@@ -31,6 +31,7 @@ export function mapCharacterAssets(response: CharacterAssetsResponse): AssetColl
       locationId: asset.locationId,
       locationType: asset.locationType,
       locationName: asset.locationName,
+      solarSystemId: asset.solarSystemId,
       solarSystemSecurityStatus: asset.solarSystemSecurityStatus,
       locationFlag: asset.locationFlag,
       parentItemId: asset.parentItemId,

@@ -154,7 +154,13 @@ describe('complete character asset collection', () => {
       complete: true,
     })
     mocks.getStaticLocations.mockResolvedValue([
-      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: 0.945 },
+      {
+        id: 60_000_001,
+        type: 'station',
+        name: null,
+        solarSystemId: 30_000_142,
+        solarSystemSecurityStatus: 0.945,
+      },
     ])
 
     const result = await getCharacterAssets(characterId)
@@ -179,6 +185,7 @@ describe('complete character asset collection', () => {
           locationId: 60_000_001,
           locationType: 'station',
           locationName: 'Jita IV - Moon 4',
+          solarSystemId: 30_000_142,
           solarSystemSecurityStatus: 0.945,
           locationFlag: 'Hangar',
           parentItemId: null,
@@ -200,6 +207,7 @@ describe('complete character asset collection', () => {
           locationId: 22,
           locationType: 'item',
           locationName: null,
+          solarSystemId: null,
           solarSystemSecurityStatus: null,
           locationFlag: 'Cargo',
           parentItemId: 22,
@@ -659,9 +667,10 @@ describe('bounded character asset enrichment', () => {
       complete: true,
     })
     mocks.getStaticLocations.mockResolvedValue(
-      roots.map((root) => ({
+      roots.map((root, index) => ({
         ...root,
         name: null,
+        solarSystemId: root.type === 'solar_system' ? root.id : 30_000_000 + index,
         solarSystemSecurityStatus: -0.06,
       })),
     )
@@ -691,6 +700,7 @@ describe('bounded character asset enrichment', () => {
 
     expect(result.assets[0]).toMatchObject({
       locationName: 'Known station',
+      solarSystemId: null,
       solarSystemSecurityStatus: null,
     })
     expect(result.enrichment.locations).toBe('partial')
@@ -709,21 +719,34 @@ describe('bounded character asset enrichment', () => {
     )
     mocks.resolveUniverseNamesBestEffort.mockRejectedValue(new Error('names unavailable'))
     mocks.getStaticLocations.mockResolvedValue([
-      { id: 30_000_142, type: 'solar_system', name: 'Jita', solarSystemSecurityStatus: 0.945913 },
-      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: 0 },
+      {
+        id: 30_000_142,
+        type: 'solar_system',
+        name: 'Jita',
+        solarSystemId: 30_000_142,
+        solarSystemSecurityStatus: 0.945913,
+      },
+      {
+        id: 60_000_001,
+        type: 'station',
+        name: null,
+        solarSystemId: 30_000_143,
+        solarSystemSecurityStatus: 0,
+      },
     ])
 
     const result = await getCharacterAssets(characterId)
 
     expect(
-      result.assets.map(({ locationName, solarSystemSecurityStatus }) => ({
+      result.assets.map(({ locationName, solarSystemId, solarSystemSecurityStatus }) => ({
         locationName,
+        solarSystemId,
         solarSystemSecurityStatus,
       })),
     ).toEqual([
-      { locationName: 'Jita', solarSystemSecurityStatus: 0.945913 },
-      { locationName: null, solarSystemSecurityStatus: 0 },
-      { locationName: null, solarSystemSecurityStatus: null },
+      { locationName: 'Jita', solarSystemId: 30_000_142, solarSystemSecurityStatus: 0.945913 },
+      { locationName: null, solarSystemId: 30_000_143, solarSystemSecurityStatus: 0 },
+      { locationName: null, solarSystemId: null, solarSystemSecurityStatus: null },
     ])
     expect(result.enrichment.locations).toBe('partial')
   })
@@ -747,21 +770,34 @@ describe('bounded character asset enrichment', () => {
       complete: true,
     })
     mocks.getStaticLocations.mockResolvedValue([
-      { id: 60_000_001, type: 'station', name: null, solarSystemSecurityStatus: -0.06 },
-      { id: 30_000_142, type: 'solar_system', name: 'Jita', solarSystemSecurityStatus: -0.06 },
+      {
+        id: 60_000_001,
+        type: 'station',
+        name: null,
+        solarSystemId: 30_000_142,
+        solarSystemSecurityStatus: -0.06,
+      },
+      {
+        id: 30_000_142,
+        type: 'solar_system',
+        name: 'Jita',
+        solarSystemId: 30_000_142,
+        solarSystemSecurityStatus: -0.06,
+      },
     ])
 
     const result = await getCharacterAssets(characterId)
 
     expect(
-      result.assets.map(({ itemId, solarSystemSecurityStatus }) => ({
+      result.assets.map(({ itemId, solarSystemId, solarSystemSecurityStatus }) => ({
         itemId,
+        solarSystemId,
         solarSystemSecurityStatus,
       })),
     ).toEqual([
-      { itemId: 1, solarSystemSecurityStatus: -0.06 },
-      { itemId: 2, solarSystemSecurityStatus: -0.06 },
-      { itemId: 3, solarSystemSecurityStatus: -0.06 },
+      { itemId: 1, solarSystemId: 30_000_142, solarSystemSecurityStatus: -0.06 },
+      { itemId: 2, solarSystemId: 30_000_142, solarSystemSecurityStatus: -0.06 },
+      { itemId: 3, solarSystemId: 30_000_142, solarSystemSecurityStatus: -0.06 },
     ])
     expect(result.enrichment.locations).toBe('complete')
     expect(mocks.getStaticLocations).toHaveBeenCalledTimes(1)
