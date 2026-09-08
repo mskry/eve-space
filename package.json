@@ -33,7 +33,7 @@
     "quality:sonar:esi-client": "pnpm --filter @evespace/esi-client test:coverage && pnpm sonar:esi-client",
     "sde:ingest": "cargo run --release --manifest-path sde-ingest/Cargo.toml --",
     "lint": "pnpm lint:workspace && pnpm --filter @evespace/esi-client lint",
-    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm registry:check && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-resilience-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts",
+    "lint:workspace": "oxlint . --ignore-pattern 'packages/esi-client/**' && pnpm registry:check && node scripts/verify-esi-egress.mjs && tsx scripts/verify-module-boundaries.ts && tsx scripts/verify-nuxt-module-boundaries.ts && tsx scripts/verify-esi-resilience-boundaries.ts && tsx scripts/verify-universe-cache-boundaries.ts && tsx scripts/verify-organization-boundaries.ts && tsx scripts/verify-platform-boundaries.ts && tsx scripts/verify-organization-activity-boundaries.ts",
     "lint:fix": "oxlint --fix .",
     "knip": "DATABASE_URL=postgres://localhost:5432/eve_space knip",
     "stack:up": "docker compose up --build -d",

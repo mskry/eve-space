@@ -1,6 +1,7 @@
 mod db;
 mod feed;
 mod generic;
+mod locations;
 mod model;
 mod typed;
 mod zip_stream;
@@ -12,7 +13,7 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use zip::ZipArchive;
 
-const INGEST_PROJECTION_VERSION: i32 = 2;
+const INGEST_PROJECTION_VERSION: i32 = 3;
 
 fn main() -> Result<()> {
     load_env();
@@ -120,6 +121,8 @@ fn ingest(
         ("market groups", typed::ingest_market_groups),
         ("dogma attributes", typed::ingest_dogma_attributes),
         ("dogma effects", typed::ingest_dogma_effects),
+        ("solar systems", locations::ingest_solar_systems),
+        ("NPC stations", locations::ingest_npc_stations),
     ];
 
     for (label, ingest_fn) in typed_datasets {
