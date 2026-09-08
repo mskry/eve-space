@@ -32,6 +32,7 @@ import {
   approveOrganizationCharacterException,
   expireOrganizationCharacterException,
   expireOrganizationCharacterExceptions,
+  listCurrentOrganizationCharacterExceptionCandidates,
   listCurrentOrganizationCharacterExceptions,
   revokeOrganizationCharacterException,
 } from '../../src/organization/exception-store.js'
@@ -58,6 +59,24 @@ describe('organization character exception store', () => {
     mocks.selectResults.push(rows)
 
     await expect(listCurrentOrganizationCharacterExceptions()).resolves.toEqual(rows)
+  })
+
+  test('lists discoverable external-character review candidates', async () => {
+    const rows = [
+      {
+        userId,
+        characterId: 90_000_001,
+        characterName: 'External Pilot',
+        reasonCode: 'character-outside-managed-organization',
+        state: 'review_required',
+        evidenceFreshness: 'fresh',
+        reviewDeadline: new Date('2026-09-10T12:00:00.000Z'),
+        affiliationCheckedAt: new Date('2026-09-08T12:00:00.000Z'),
+      },
+    ]
+    mocks.selectResults.push(rows)
+
+    await expect(listCurrentOrganizationCharacterExceptionCandidates()).resolves.toEqual(rows)
   })
 
   test('approves an external character exception and recomputes compliance', async () => {

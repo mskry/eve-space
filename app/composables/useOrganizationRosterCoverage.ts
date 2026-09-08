@@ -1,12 +1,17 @@
 import { useQuery } from '@pinia/colada'
+import { adminSetupQuery } from '../queries/admin'
 import { organizationContextQuery, organizationRosterCoverageQuery } from '../queries/organization'
 import type { ApiClient } from '../utils/api-client'
 
 export function useOrganizationRosterCoverage(apiClient: ApiClient) {
   const { authSession, initializeAuth } = useAuthSession(apiClient)
+  const setupQuery = useQuery({ ...adminSetupQuery(apiClient), enabled: import.meta.client })
   const contextQuery = useQuery({
     ...organizationContextQuery(apiClient),
-    enabled: () => import.meta.client && authSession.value.authenticated,
+    enabled: () =>
+      import.meta.client &&
+      authSession.value.authenticated &&
+      setupQuery.data.value?.required === false,
   })
   const coverageQuery = useQuery({
     ...organizationRosterCoverageQuery(apiClient),
@@ -19,7 +24,9 @@ export function useOrganizationRosterCoverage(apiClient: ApiClient) {
   const coverage = computed(() => coverageQuery.data.value)
   const loading = computed(
     () =>
-      contextQuery.asyncStatus.value === 'loading' || coverageQuery.asyncStatus.value === 'loading',
+      setupQuery.asyncStatus.value === 'loading' ||
+      contextQuery.asyncStatus.value === 'loading' ||
+      coverageQuery.asyncStatus.value === 'loading',
   )
   const errorMessage = computed(() => {
     const error = contextQuery.error.value ?? coverageQuery.error.value
@@ -27,7 +34,8 @@ export function useOrganizationRosterCoverage(apiClient: ApiClient) {
   })
 
   async function initialize() {
-    if (!(await initializeAuth())) return
+    const [authenticated, setup] = await Promise.all([initializeAuth(), setupQuery.refresh()])
+    if (!authenticated || setup.data?.required !== false) return
     const context = await contextQuery.refresh()
     if (context.data?.capabilities.viewRosterCoverage) await coverageQuery.refresh()
   }

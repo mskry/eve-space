@@ -38,6 +38,7 @@ export function createPlatformNavigation(
     .flatMap((contribution) =>
       contribution.pages.map((page) => ({
         moduleId: contribution.moduleId,
+        pageId: page.id,
         pageName: page.name,
         audience: page.audience,
       })),

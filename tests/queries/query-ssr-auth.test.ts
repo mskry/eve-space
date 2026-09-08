@@ -193,6 +193,10 @@ describe('SSR and authentication query boundaries', () => {
       key: PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records'),
       query: async () => ({ records: [] }),
     })
+    queryCache.ensure({
+      key: PRIVATE_QUERY_KEYS.organizationCompliance(),
+      query: async () => ({ state: 'compliant' }),
+    })
     queryCache.setQueryData(PRIVATE_QUERY_KEYS.session(), {
       authenticated: true,
       account: { userId: 'user', mainCharacter: { characterId: 7 } },
@@ -203,6 +207,7 @@ describe('SSR and authentication query boundaries', () => {
       PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records'),
       { records: [] },
     )
+    queryCache.setQueryData(PRIVATE_QUERY_KEYS.organizationCompliance(), { state: 'compliant' })
 
     clearAuthenticatedQueries(queryCache, unauthenticatedSession)
 
@@ -216,6 +221,7 @@ describe('SSR and authentication query boundaries', () => {
         PRIVATE_QUERY_KEYS.characterModuleResource(7, 'member-audit', 'records'),
       ),
     ).toBeUndefined()
+    expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationCompliance())).toBeUndefined()
     expect(queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.root })).toHaveLength(1)
     wrapper.unmount()
   })

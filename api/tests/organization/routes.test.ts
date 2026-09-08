@@ -72,6 +72,8 @@ const mocks = vi.hoisted(() => {
     hasCurrentOrganizationManagerAuthority: vi.fn(),
     hasCurrentOrganizationHrAuthority: vi.fn(),
     listOrganizationRosterCoverage: vi.fn(),
+    listCurrentOrganizationAuditHistory: vi.fn(),
+    listCurrentOrganizationCharacterExceptionCandidates: vi.fn(),
     listCurrentOrganizationGroups: vi.fn(),
     listCurrentOrganizationCharacterExceptions: vi.fn(),
     listCurrentOrganizationMemberBlocks: vi.fn(),
@@ -133,11 +135,16 @@ vi.mock('../../src/organization/exception-store.js', () => ({
   OrganizationCharacterExceptionMutationError: mocks.CharacterExceptionMutationError,
   approveOrganizationCharacterException: mocks.approveOrganizationCharacterException,
   expireOrganizationCharacterException: mocks.expireOrganizationCharacterException,
+  listCurrentOrganizationCharacterExceptionCandidates:
+    mocks.listCurrentOrganizationCharacterExceptionCandidates,
   listCurrentOrganizationCharacterExceptions: mocks.listCurrentOrganizationCharacterExceptions,
   revokeOrganizationCharacterException: mocks.revokeOrganizationCharacterException,
 }))
 vi.mock('../../src/organization/roster-coverage.js', () => ({
   listOrganizationRosterCoverage: mocks.listOrganizationRosterCoverage,
+}))
+vi.mock('../../src/organization/audit-history.js', () => ({
+  listCurrentOrganizationAuditHistory: mocks.listCurrentOrganizationAuditHistory,
 }))
 vi.mock('../../src/organization/role-store.js', () => ({
   OrganizationRoleMutationError: mocks.RoleMutationError,
@@ -210,7 +217,7 @@ beforeEach(() => {
     },
     isOrganizationOwner: true,
     isBlocked: false,
-    capabilities: { viewRosterCoverage: true },
+    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
     claimAvailable: false,
     ownerStatus: 'fresh',
     reviewDeadline: null,
@@ -237,6 +244,11 @@ beforeEach(() => {
     sources: [],
   })
   mocks.listCurrentOrganizationCharacterExceptions.mockResolvedValue([])
+  mocks.listCurrentOrganizationCharacterExceptionCandidates.mockResolvedValue([])
+  mocks.listCurrentOrganizationAuditHistory.mockResolvedValue({
+    events: [],
+    nextBeforeAuditSequence: null,
+  })
   mocks.grantOrganizationRole.mockResolvedValue(grant)
   mocks.revokeOrganizationRole.mockResolvedValue({
     ...grant,
@@ -523,9 +535,30 @@ describe('organization compliance management routes', () => {
   })
 
   test('lists, approves, expires, and revokes external-character exceptions for HR', async () => {
+    mocks.listCurrentOrganizationCharacterExceptionCandidates.mockResolvedValueOnce([
+      {
+        userId: targetUserId,
+        characterId: 90_000_001,
+        characterName: 'External Pilot',
+        reasonCode: 'character-outside-managed-organization',
+        state: 'review_required',
+        evidenceFreshness: 'fresh',
+        reviewDeadline: new Date('2026-09-10T12:00:00.000Z'),
+        affiliationCheckedAt: new Date('2026-09-08T12:00:00.000Z'),
+      },
+    ])
     const listed = await get('/exceptions')
     expect(listed.status).toBe(200)
-    expect(await listed.json()).toEqual({ exceptions: [] })
+    expect(await listed.json()).toEqual({
+      exceptions: [],
+      reviewCandidates: [
+        expect.objectContaining({
+          userId: targetUserId,
+          characterId: 90_000_001,
+          state: 'review_required',
+        }),
+      ],
+    })
 
     const approved = await request(`/members/${targetUserId}/characters/90000001/exception`, {
       reason: 'Approved external character.',
@@ -566,6 +599,7 @@ describe('organization compliance management routes', () => {
     const unauthorized = await get('/exceptions')
     expect(unauthorized.status).toBe(403)
     expect(mocks.listCurrentOrganizationCharacterExceptions).not.toHaveBeenCalled()
+    expect(mocks.listCurrentOrganizationCharacterExceptionCandidates).not.toHaveBeenCalled()
 
     mocks.approveOrganizationCharacterException.mockRejectedValueOnce(
       new mocks.CharacterExceptionMutationError('managed-corporation-evidence-stale'),
@@ -950,6 +984,35 @@ describe('organization corporation roster routes', () => {
 
     expect(response.status).toBe(200)
     expect(mocks.listOrganizationRosterCoverage).toHaveBeenCalledOnce()
+  })
+
+  test('returns bounded audit history to an explicit HR grant', async () => {
+    const response = await get('/audit?limit=25&beforeAuditSequence=90')
+
+    expect(response.status).toBe(200)
+    expect(mocks.listCurrentOrganizationAuditHistory).toHaveBeenCalledWith({
+      limit: 25,
+      beforeAuditSequence: 90n,
+    })
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
+
+  test('refuses invalid or unauthorized audit reads before loading history', async () => {
+    const invalid = await get('/audit?beforeAuditSequence=not-a-sequence')
+    expect(invalid.status).toBe(400)
+    expect(mocks.listCurrentOrganizationAuditHistory).not.toHaveBeenCalled()
+
+    mocks.hasCurrentOrganizationHrAuthority.mockResolvedValueOnce(false)
+    const unauthorized = await get('/audit')
+    expect(unauthorized.status).toBe(403)
+    expect(mocks.listCurrentOrganizationAuditHistory).not.toHaveBeenCalled()
+  })
+
+  test('rejects audit cursors beyond the PostgreSQL bigint range', async () => {
+    const response = await get('/audit?beforeAuditSequence=9223372036854775808')
+
+    expect(response.status).toBe(400)
+    expect(mocks.listCurrentOrganizationAuditHistory).not.toHaveBeenCalled()
   })
 })
 

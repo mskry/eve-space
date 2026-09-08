@@ -204,7 +204,7 @@ function ownerContext(): OrganizationContext {
     },
     isOrganizationOwner: true,
     isBlocked: false,
-    capabilities: { viewRosterCoverage: true },
+    capabilities: { reviewRegistration: true, viewRosterCoverage: true },
     claimAvailable: false,
     ownerStatus: 'fresh',
     reviewDeadline: null,

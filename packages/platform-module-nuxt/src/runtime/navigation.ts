@@ -21,6 +21,7 @@ export interface PlatformNavigationEntry extends PlatformNavigationIdentity {
 
 export interface PlatformPageMetadata {
   readonly moduleId: string
+  readonly pageId: string
   readonly pageName: string
   readonly audience: PlatformNavigationAudience
 }
