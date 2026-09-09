@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import { adminSessionQuery, adminSetupQuery } from '../../queries/admin'
 import { ADMIN_QUERY_KEYS } from '../../queries/query-keys'
+import type { AdminLoginPayload, AdminSetupPayload } from '../../types/admin'
 import { toApiQueryError } from '../../utils/query-error'
 
 definePageMeta({ layout: 'auth', title: 'Administrator Login' })
@@ -17,24 +18,11 @@ const sessionQuery = useQuery(() => ({
   ...adminSessionQuery(apiClient),
   enabled: import.meta.client,
 }))
-const setupSecret = ref('')
-const email = ref('')
-const password = ref('')
-const organizationType = ref<'corporation' | 'alliance'>('corporation')
-const organizationId = ref('')
 const setup = setupQuery.data
 
 const setupMutation = useMutation({
-  mutation: async () => {
-    const response = await apiClient.api.admin.setup.$post({
-      json: {
-        setupSecret: setupSecret.value,
-        email: email.value,
-        password: password.value,
-        organizationType: organizationType.value,
-        organizationId: organizationId.value,
-      },
-    })
+  mutation: async (payload: AdminSetupPayload) => {
+    const response = await apiClient.api.admin.setup.$post({ json: payload })
     if (response.status !== 201)
       throw await toApiQueryError(response, 'Setup could not be completed.')
     return response.json()
@@ -42,39 +30,38 @@ const setupMutation = useMutation({
   onSuccess: async (session) => {
     queryCache.setQueryData(ADMIN_QUERY_KEYS.session, session)
     queryCache.setQueryData(ADMIN_QUERY_KEYS.setup, { required: false, available: true })
-    setupSecret.value = ''
-    password.value = ''
     await navigateTo('/admin')
   },
 })
 
 const loginMutation = useMutation({
-  mutation: async () => {
-    const response = await apiClient.api.admin.login.$post({
-      json: { email: email.value, password: password.value },
-    })
+  mutation: async (payload: AdminLoginPayload) => {
+    const response = await apiClient.api.admin.login.$post({ json: payload })
     if (response.status !== 200)
       throw await toApiQueryError(response, 'Administrator login failed.')
     return response.json()
   },
   onSuccess: async (session) => {
     queryCache.setQueryData(ADMIN_QUERY_KEYS.session, session)
-    password.value = ''
     await navigateTo('/admin')
   },
 })
 
-const activeError = computed(() => {
-  const error = setupMutation.error.value ?? loginMutation.error.value
-  return error instanceof Error ? error.message : ''
-})
-const loading = computed(
-  () => setupQuery.asyncStatus.value === 'loading' || sessionQuery.asyncStatus.value === 'loading',
+const setupError = computed(() =>
+  setupMutation.error.value instanceof Error ? setupMutation.error.value.message : '',
 )
-const submitting = computed(
+const loginError = computed(() =>
+  loginMutation.error.value instanceof Error ? loginMutation.error.value.message : '',
+)
+const checkingDeployment = computed(
   () =>
-    setupMutation.asyncStatus.value === 'loading' || loginMutation.asyncStatus.value === 'loading',
+    !setup.value &&
+    (setupQuery.asyncStatus.value === 'loading' || sessionQuery.asyncStatus.value === 'loading'),
 )
+const settingUp = computed(() => setupMutation.asyncStatus.value === 'loading')
+const signingIn = computed(() => loginMutation.asyncStatus.value === 'loading')
+const showSetup = computed(() => Boolean(setup.value?.required && setup.value.available))
+const setupLocked = computed(() => Boolean(setup.value?.required))
 
 watch(
   () => sessionQuery.data.value?.authenticated,
@@ -88,86 +75,43 @@ useHead({ title: 'Administrator Login // EVE Space' })
 </script>
 
 <template>
-  <section class="auth-card admin-auth-card">
-    <div class="auth-card-mark" aria-hidden="true"><AppIcon name="admin" /></div>
+  <AdminSetupWizard
+    v-if="showSetup"
+    :error-message="setupError"
+    :submitting="settingUp"
+    @submit="setupMutation.mutate($event)"
+  />
 
-    <div v-if="loading && !setup" class="auth-progress" aria-live="polite">
-      <span class="app-scanner" aria-hidden="true" />
-      <strong>Checking deployment state</strong>
+  <section v-else-if="checkingDeployment" class="admin-access">
+    <div class="admin-access-card">
+      <div class="admin-access-progress auth-progress" aria-live="polite">
+        <span class="app-scanner" aria-hidden="true" />
+        <strong>Checking deployment state</strong>
+      </div>
     </div>
-
-    <template v-else-if="setup?.required && !setup.available">
-      <p class="ui-eyebrow">SETUP LOCKED</p>
-      <h1>Bootstrap secret required</h1>
-      <p class="auth-intro">
-        Configure the server-only <code>ADMIN_SETUP_SECRET</code> before creating the deployment
-        owner.
-      </p>
-    </template>
-
-    <form v-else-if="setup?.required" class="admin-form" @submit.prevent="setupMutation.mutate()">
-      <div class="admin-panel-heading">
-        <span>01</span>
-        <div>
-          <p class="ui-eyebrow">ONE-TIME SETUP</p>
-          <h1>Create deployment owner</h1>
-        </div>
-      </div>
-      <label
-        >Setup secret<input v-model="setupSecret" type="password" autocomplete="off" required
-      /></label>
-      <label
-        >Owner email<input v-model="email" type="email" autocomplete="username" required
-      /></label>
-      <label
-        >Owner password<input
-          v-model="password"
-          type="password"
-          minlength="12"
-          autocomplete="new-password"
-          required
-      /></label>
-      <label
-        >Organization type
-        <select v-model="organizationType">
-          <option value="corporation">Corporation</option>
-          <option value="alliance">Alliance</option>
-        </select>
-      </label>
-      <label
-        >EVE organization ID<input
-          v-model="organizationId"
-          type="number"
-          min="1"
-          inputmode="numeric"
-          required
-      /></label>
-      <p v-if="activeError" class="ui-inline-error" role="alert">{{ activeError }}</p>
-      <button class="ui-action-primary" type="submit" :disabled="submitting">
-        {{ submitting ? 'VERIFYING...' : 'COMPLETE SETUP' }}
-      </button>
-    </form>
-
-    <form v-else class="admin-form admin-login" @submit.prevent="loginMutation.mutate()">
-      <div class="admin-panel-heading">
-        <span>OWNER</span>
-        <div>
-          <p class="ui-eyebrow">RESTRICTED ACCESS</p>
-          <h1>Administrator login</h1>
-        </div>
-      </div>
-      <label
-        >Owner email<input v-model="email" type="email" autocomplete="username" required
-      /></label>
-      <label
-        >Password<input v-model="password" type="password" autocomplete="current-password" required
-      /></label>
-      <p v-if="activeError" class="ui-inline-error" role="alert">{{ activeError }}</p>
-      <button class="ui-action-primary" type="submit" :disabled="submitting">
-        {{ submitting ? 'AUTHENTICATING...' : 'SIGN IN' }}
-      </button>
-    </form>
   </section>
+
+  <section v-else-if="setupLocked" class="admin-access">
+    <div class="admin-access-card">
+      <header class="admin-access-header">
+        <div class="admin-access-heading">
+          <p class="ui-eyebrow">SETUP LOCKED</p>
+        </div>
+        <h1>Bootstrap secret required</h1>
+        <p>
+          Configure the server-only <code>ADMIN_SETUP_SECRET</code> before creating the deployment
+          owner.
+        </p>
+      </header>
+    </div>
+  </section>
+
+  <AdminLoginForm
+    v-else
+    :error-message="loginError"
+    :submitting="signingIn"
+    @submit="loginMutation.mutate($event)"
+  />
 </template>
 
 <style>

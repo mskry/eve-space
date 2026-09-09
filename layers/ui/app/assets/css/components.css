@@ -1243,6 +1243,120 @@
   background: var(--ui-surface-raised);
 }
 
+.ui-stepper {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-solid);
+}
+
+.ui-stepper-item {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  border-left: 1px solid var(--ui-border);
+}
+
+.ui-stepper-item:first-child {
+  border-left: 0;
+}
+
+.ui-stepper-item[data-state='active'] {
+  background: var(--ui-surface-raised);
+}
+
+.ui-stepper-trigger {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-stepper-trigger[data-state='inactive'] {
+  opacity: 0.6;
+}
+
+.ui-stepper-trigger[data-disabled] {
+  cursor: not-allowed;
+}
+
+.ui-stepper-trigger:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: -2px;
+}
+
+.ui-stepper-indicator {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ui-border);
+  color: var(--ui-text-faint);
+  font: 700 12px/1 var(--ui-font-mono);
+  letter-spacing: 0.08em;
+}
+
+.ui-stepper-item[data-state='active'] .ui-stepper-indicator {
+  border-color: var(--ui-primary);
+  background: var(--ui-primary);
+  color: var(--ui-on-primary);
+}
+
+.ui-stepper-item[data-state='completed'] .ui-stepper-indicator {
+  border-color: var(--ui-primary);
+  color: var(--ui-primary);
+}
+
+.ui-stepper-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.ui-stepper-title {
+  color: var(--ui-text-subtle);
+  font: 700 12px/1.2 var(--ui-font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.ui-stepper-item:not([data-state='inactive']) .ui-stepper-title {
+  color: var(--ui-text);
+}
+
+.ui-stepper-description {
+  color: var(--ui-text-faint);
+  font: 700 11px/1.4 var(--ui-font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.ui-stepper-item:not([data-state='inactive']) .ui-stepper-description {
+  color: var(--ui-primary);
+}
+
+.ui-stepper-separator {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: transparent;
+}
+
+.ui-stepper-item:not([data-state='inactive']) .ui-stepper-separator {
+  background: var(--ui-primary);
+}
+
 .ui-eyebrow {
   margin: 0 0 10px;
   color: var(--ui-primary);

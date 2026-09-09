@@ -11,4 +11,34 @@
     grid-column: 2;
     width: max-content;
   }
+
+  .admin-setup-section {
+    padding: 1.25rem;
+  }
+
+  .admin-setup-summary {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .admin-setup-summary dt {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .admin-setup-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-setup-actions button {
+    flex: 1;
+  }
+
+  .admin-access-header,
+  .admin-access-form,
+  .admin-access-progress {
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
+  }
 }
