@@ -176,6 +176,7 @@
   align-content: start;
 }
 
+.admin-field > label,
 .admin-field > span:first-child {
   color: var(--ui-text-muted);
   font: 700 0.625rem/1 var(--ui-font-mono);

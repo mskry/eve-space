@@ -45,6 +45,16 @@ it('reports password strength for the owner password', async () => {
   expect(wrapper.find('.admin-setup-strength-bar').attributes('data-score')).toBe('4')
 })
 
+it('associates the setup secret label without wrapping its reveal button', async () => {
+  const wrapper = await mountWizard()
+  const toggle = wrapper.find('.admin-field-reveal button')
+
+  expect(wrapper.find('label[for="admin-setup-secret"]').exists()).toBe(true)
+  expect(wrapper.find('#admin-setup-secret').exists()).toBe(true)
+  expect(toggle.element.closest('label')).toBeNull()
+  expect(toggle.attributes('aria-label')).toBe('Show setup secret')
+})
+
 it('summarises the deployment and emits the trimmed setup payload', async () => {
   const wrapper = await mountWizard()
   await completeOwnerStep(wrapper)

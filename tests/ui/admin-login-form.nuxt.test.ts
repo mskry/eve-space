@@ -15,18 +15,26 @@ async function mountLoginForm(props: Record<string, unknown> = {}) {
   return wrapper
 }
 
-it('holds submission until an owner email and a password are present', async () => {
+it('shows field feedback before submitting valid owner credentials', async () => {
   const wrapper = await mountLoginForm()
 
-  expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
+  expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
+
+  await wrapper.find('form').trigger('submit')
+
+  expect(wrapper.emitted('submit')).toBeUndefined()
+  expect(wrapper.find('#admin-login-email-error').attributes('role')).toBe('alert')
+  expect(wrapper.find('#admin-login-password-error').attributes('role')).toBe('alert')
+  expect(wrapper.find('input[type="email"]').attributes('aria-invalid')).toBe('true')
+  expect(wrapper.find('input[autocomplete="current-password"]').attributes('aria-invalid')).toBe(
+    'true',
+  )
 
   await wrapper.find('input[type="email"]').setValue('owner@corp.eve')
-  await nextTick()
-  expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
-
   await wrapper.find('input[autocomplete="current-password"]').setValue('orbital-anchor-12')
   await nextTick()
-  expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
+  expect(wrapper.find('#admin-login-email-error').exists()).toBe(false)
+  expect(wrapper.find('#admin-login-password-error').exists()).toBe(false)
 
   await wrapper.find('form').trigger('submit')
   expect(wrapper.emitted('submit')).toEqual([
@@ -36,11 +44,17 @@ it('holds submission until an owner email and a password are present', async () 
 
 it('reveals the password on request', async () => {
   const wrapper = await mountLoginForm()
+  const password = wrapper.find('#admin-login-password')
+  const toggle = wrapper.find('.admin-field-reveal button')
 
-  await wrapper.find('.admin-field-reveal button').trigger('click')
+  expect(wrapper.find('label[for="admin-login-password"]').exists()).toBe(true)
+  expect(toggle.element.closest('label')).toBeNull()
 
-  expect(wrapper.find('.admin-field-reveal input').attributes('type')).toBe('text')
-  expect(wrapper.find('.admin-field-reveal button').text()).toBe('HIDE')
+  await toggle.trigger('click')
+
+  expect(password.attributes('type')).toBe('text')
+  expect(toggle.text()).toBe('HIDE')
+  expect(toggle.attributes('aria-label')).toBe('Hide password')
 })
 
 it('warns while caps lock is engaged', async () => {

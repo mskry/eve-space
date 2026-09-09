@@ -78,6 +78,9 @@ const organizationLabel = computed(() =>
 )
 const organizationInitial = computed(() => organizationLabel.value.slice(0, 1))
 const secretToggleLabel = computed(() => (secretVisible.value ? 'HIDE' : 'SHOW'))
+const secretToggleDescription = computed(() =>
+  secretVisible.value ? 'Hide setup secret' : 'Show setup secret',
+)
 const secretFieldType = computed(() => (secretVisible.value ? 'text' : 'password'))
 const secretHint = computed(() =>
   invalid.value.setupSecret
@@ -159,23 +162,32 @@ function returnToOwnerStep() {
       <template v-if="step === 1">
         <section class="admin-setup-section">
           <p class="ui-eyebrow">AUTHORIZATION</p>
-          <label class="admin-field">
-            <span>Setup secret</span>
-            <span class="admin-field-reveal">
+          <div class="admin-field">
+            <label for="admin-setup-secret">Setup secret</label>
+            <span class="admin-field-reveal" :data-invalid="invalid.setupSecret">
               <input
+                id="admin-setup-secret"
                 v-model="setupSecret"
                 aria-describedby="admin-setup-secret-hint"
                 :aria-invalid="invalid.setupSecret"
                 autocomplete="off"
+                name="setupSecret"
                 spellcheck="false"
                 :type="secretFieldType"
               />
-              <button type="button" @click="toggleSecret">{{ secretToggleLabel }}</button>
+              <button
+                :aria-label="secretToggleDescription"
+                :aria-pressed="secretVisible"
+                type="button"
+                @click="toggleSecret"
+              >
+                {{ secretToggleLabel }}
+              </button>
             </span>
             <small id="admin-setup-secret-hint" :data-invalid="invalid.setupSecret">
               {{ secretHint }}
             </small>
-          </label>
+          </div>
         </section>
 
         <section class="admin-setup-section">
