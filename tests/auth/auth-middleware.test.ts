@@ -3,6 +3,8 @@ import { getAuthLoginUrl } from '../../app/utils/auth-redirect'
 
 const fetchSession = vi.fn()
 const navigateTo = vi.fn()
+const onNuxtReady = vi.fn()
+const nuxtApp = { isHydrating: false, payload: { serverRendered: true } }
 let authMiddleware: (to: {
   path: string
   fullPath: string
@@ -15,6 +17,8 @@ beforeAll(async () => {
   vi.stubGlobal('useRuntimeConfig', () => ({ public: { apiBase: 'http://localhost' } }))
   vi.stubGlobal('$fetch', fetchSession)
   vi.stubGlobal('navigateTo', navigateTo)
+  vi.stubGlobal('onNuxtReady', onNuxtReady)
+  vi.stubGlobal('useNuxtApp', () => nuxtApp)
   authMiddleware = (await import('../../app/middleware/auth.global'))
     .default as typeof authMiddleware
 })
@@ -22,6 +26,8 @@ beforeAll(async () => {
 beforeEach(() => {
   fetchSession.mockReset()
   navigateTo.mockReset()
+  onNuxtReady.mockReset()
+  nuxtApp.isHydrating = false
 })
 
 afterAll(() => {
@@ -64,6 +70,27 @@ describe('authentication route middleware', () => {
       path: '/auth',
       query: { redirect: '/characters/7?tab=wallet' },
     })
+  })
+
+  it('defers an unauthenticated redirect until server-rendered hydration finishes', async () => {
+    fetchSession.mockResolvedValue({ authenticated: false })
+    nuxtApp.isHydrating = true
+
+    await authMiddleware(route('/', '/'))
+
+    expect(navigateTo).not.toHaveBeenCalled()
+    expect(onNuxtReady).toHaveBeenCalledOnce()
+
+    const redirect = onNuxtReady.mock.calls[0]?.[0]
+    await redirect()
+    expect(navigateTo).toHaveBeenCalledWith({ path: '/auth', query: { redirect: '/' } })
+  })
+
+  it('does not require an EVE session for the deployment administrator login', async () => {
+    await authMiddleware(route('/admin/login', '/admin/login'))
+
+    expect(fetchSession).not.toHaveBeenCalled()
+    expect(navigateTo).not.toHaveBeenCalled()
   })
 
   it('adds the deep link to the EVE login URL', () => {

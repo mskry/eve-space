@@ -11,6 +11,12 @@ These instructions apply to the entire repository. Preserve the architecture and
 
 - Prefer optional chaining over separate nullish guards when reading a property from a nullable value.
 
+### Regular Expressions
+
+- Regular expressions that process untrusted or unbounded input must have linear-time matching behavior.
+- Do not use nested quantifiers or consecutive unbounded quantifiers when their character classes can match the same input. Make separators unambiguous by excluding them from adjacent character classes, use bounded quantifiers, or parse structured values with string operations instead.
+- Add adversarial near-match tests for non-trivial regular expressions and resolve Sonar slow-regex or regular-expression denial-of-service findings rather than suppressing them.
+
 ### Vue
 
 These rules compile the official Vue Style Guide's [Priority A](https://vuejs.org/style-guide/rules-essential.html), [Priority B](https://vuejs.org/style-guide/rules-strongly-recommended.html), and [Priority C](https://vuejs.org/style-guide/rules-recommended.html) guidance. Preserve a more specific repository convention where one is documented.
