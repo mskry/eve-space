@@ -142,15 +142,21 @@ function revealTruncatedRecipients(event: MouseEvent) {
             <div>
               <span>FROM</span>
               <strong>{{ senderName }}</strong>
-              <p
-                class="mail-reader-recipients"
+              <div
+                class="mail-reader-recipients-frame"
                 :class="{ 'is-revealed': recipientsRevealed }"
                 :data-full-recipients="recipientsLabel"
-                @mouseenter="revealTruncatedRecipients"
-                @mouseleave="recipientsRevealed = false"
               >
-                {{ recipientsLabel }}
-              </p>
+                <p
+                  class="mail-reader-recipients"
+                  :class="{ 'is-revealed': recipientsRevealed }"
+                  :data-full-recipients="recipientsLabel"
+                  @mouseenter="revealTruncatedRecipients"
+                  @mouseleave="recipientsRevealed = false"
+                >
+                  {{ recipientsLabel }}
+                </p>
+              </div>
             </div>
           </div>
           <div class="mail-reader-actions" aria-label="Message actions">

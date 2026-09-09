@@ -16,6 +16,9 @@ afterAll(() => queryServer.close())
 
 afterEach(async () => {
   for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  const queryCache = useQueryCache()
+  queryCache.cancelQueries()
+  for (const entry of queryCache.getEntries()) queryCache.remove(entry)
   queryServer.resetHandlers()
   await flushPromises()
 })
@@ -63,6 +66,10 @@ describe('authenticated member overview', () => {
     expect(wrapper.text()).toContain('9 Sept 2026, 18:00 UTC')
     expect(wrapper.text()).toContain('Reauthorize character')
     expect(wrapper.text()).toContain('Deliver requested hulls')
+    expect(wrapper.text()).toContain('Manufacture strategic cruisers')
+    expect(wrapper.text()).toContain('4 / 10')
+    expect(wrapper.text()).toContain('1,250,000 ISK')
+    expect(wrapper.text()).toContain('2 contributed')
     expect(wrapper.text()).toContain('Main Pilot')
     expect(wrapper.text()).toContain('Industry Pilot')
     expect(wrapper.text()).toContain('Some activity providers are delayed or unavailable')
@@ -92,6 +99,52 @@ describe('authenticated member overview', () => {
       },
     })
   })
+
+  it('shows compliant activity while suppressing disabled-module detail actions', async () => {
+    useOverviewHandlers('compliant', [])
+
+    const wrapper = await mountSuspended(MemberOverviewPage, {
+      global: { stubs: { NuxtLink: RouterLinkStub } },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Build the fleet reserve'))
+
+    expect(wrapper.text()).toContain('Compliant')
+    expect(wrapper.text()).toContain('Deliver requested hulls')
+    expect(wrapper.findAll('.activity-card')).toHaveLength(2)
+    expect(wrapper.find('.activity-card__link').exists()).toBe(false)
+    expect(wrapper.find('.section-grid').exists()).toBe(false)
+    expect(wrapper.find('.status-strip').exists()).toBe(false)
+  })
+
+  it.each(['pending', 'suspended'] as const)(
+    'withholds protected activity while %s and shows remediation',
+    async (state) => {
+      let activityRequests = 0
+      useOverviewHandlers(state, ['organization-activity'], () => {
+        activityRequests += 1
+      })
+
+      const wrapper = await mountSuspended(MemberOverviewPage, {
+        global: { stubs: { NuxtLink: RouterLinkStub } },
+        route: false,
+      })
+      mountedWrappers.push(wrapper)
+
+      await vi.waitFor(() => expect(wrapper.text()).toContain('Registration action required'))
+
+      expect(wrapper.text()).toContain(
+        state === 'pending' ? 'Registration pending' : 'Access suspended',
+      )
+      expect(wrapper.text()).toContain(
+        'Protected organization activity is withheld until member access is restored.',
+      )
+      expect(activityRequests).toBe(0)
+      expect(wrapper.find('.activity-card').exists()).toBe(false)
+    },
+  )
 
   it('does not request organization context before deployment setup', async () => {
     let complianceRequests = 0
@@ -138,6 +191,58 @@ describe('authenticated member overview', () => {
     expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/admin/login')
   })
 })
+
+function useOverviewHandlers(
+  state: OrganizationCompliance['state'],
+  enabledModuleIds: readonly string[],
+  onActivityRequest?: () => void,
+) {
+  const compliance = {
+    ...complianceResponse,
+    state,
+    reviewDeadline: state === 'review_required' ? complianceResponse.reviewDeadline : null,
+    accessValidUntil: state === 'review_required' ? complianceResponse.accessValidUntil : null,
+    characters:
+      state === 'compliant'
+        ? complianceResponse.characters.map((character) => ({
+            ...character,
+            reasons: [],
+            remediationActions: [],
+          }))
+        : complianceResponse.characters,
+  }
+  queryServer.use(
+    http.get('*/auth/config', () =>
+      HttpResponse.json({
+        configured: true,
+        loginUrl: '/auth/eve/login',
+        attachUrl: '/auth/eve/attach',
+      }),
+    ),
+    http.get('*/auth/session', () =>
+      HttpResponse.json({
+        authenticated: true,
+        account: {
+          userId: 'member-user',
+          mainCharacter: { characterId: 1_404_328_063, name: 'Main Pilot' },
+        },
+      }),
+    ),
+    http.get('*/api/admin/session', () => HttpResponse.json({ authenticated: false })),
+    http.get('*/api/admin/setup', () => HttpResponse.json({ required: false, available: true })),
+    http.get('*/api/modules', () =>
+      HttpResponse.json({
+        enabledModuleIds,
+        shellNavigationOrder: { dashboard: [], character: [] },
+      }),
+    ),
+    http.get('*/api/organization/compliance', () => HttpResponse.json(compliance)),
+    http.get('*/api/organization/activities', () => {
+      onActivityRequest?.()
+      return HttpResponse.json(activityResponse)
+    }),
+  )
+}
 
 const complianceResponse = {
   organizationVersion: 1,
@@ -188,6 +293,10 @@ const activityResponse = {
       kind: 'corporation-project',
       title: 'Build the fleet reserve',
       summary: 'Deliver hulls before deployment.',
+      objective: 'Manufacture strategic cruisers',
+      state: 'Active',
+      progress: { current: 4, desired: 10 },
+      reward: { initial: 2_000_000, remaining: 1_250_000 },
       requiredAction: {
         kind: 'delivery',
         label: 'Deliver requested hulls',
@@ -197,8 +306,8 @@ const activityResponse = {
       deadline: '2026-09-09T18:00:00.000Z',
       eligibleCharacterIds: [1_404_328_063, 90_000_002],
       participation: [
-        { characterId: 1_404_328_063, state: 'participating' },
-        { characterId: 90_000_002, state: 'eligible' },
+        { characterId: 1_404_328_063, state: 'participating', contribution: 2 },
+        { characterId: 90_000_002, state: 'eligible', contribution: null },
       ],
       linkTarget: {
         moduleId: 'organization-activity',
@@ -215,11 +324,17 @@ const activityResponse = {
       kind: 'military-campaign',
       title: 'Monitor the campaign',
       summary: null,
+      objective: null,
+      state: 'Active',
+      progress: { current: 0.4, desired: 1 },
+      reward: null,
       requiredAction: null,
       organizationPriority: 20,
       deadline: null,
       eligibleCharacterIds: [],
-      participation: [{ characterId: 90_000_002, state: 'authorization-required' }],
+      participation: [
+        { characterId: 90_000_002, state: 'authorization-required', contribution: null },
+      ],
       linkTarget: null,
       freshness: { state: 'stale', collectedAt: '2026-09-08T08:55:00.000Z' },
     },

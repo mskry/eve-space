@@ -79,6 +79,10 @@ describe('organization queries', () => {
           kind: 'corporation-project',
           title: 'Build the fleet reserve',
           summary: 'Deliver hulls before deployment.',
+          objective: 'manufacturing',
+          state: 'Active',
+          progress: { current: 2, desired: 10 },
+          reward: { initial: 1_000, remaining: 800 },
           requiredAction: {
             kind: 'delivery',
             label: 'Deliver requested hulls',
@@ -87,7 +91,7 @@ describe('organization queries', () => {
           organizationPriority: 100,
           deadline: '2026-09-09T18:00:00.000Z',
           eligibleCharacterIds: [1_404_328_063],
-          participation: [{ characterId: 1_404_328_063, state: 'participating' }],
+          participation: [{ characterId: 1_404_328_063, state: 'participating', contribution: 2 }],
           linkTarget: {
             moduleId: 'organization-activity',
             pageId: 'organization-activity-projects',

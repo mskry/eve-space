@@ -98,6 +98,10 @@ function createActivity(
     kind: snapshot.kind,
     title: snapshot.title,
     summary: snapshot.description?.slice(0, 2000) ?? snapshot.objective,
+    objective: snapshot.objective,
+    state: snapshot.state,
+    progress: snapshot.progress,
+    reward: snapshot.reward,
     requiredAction: requiredActionFor(authorization, selectedCharacter),
     organizationPriority: 0,
     deadline: snapshot.deadline,
@@ -127,20 +131,34 @@ function createParticipation(
     .find((item) => item.characterId === character.characterId)
     ?.sources.find((item) => item.resourceId === resourceId)
   if (privateSource?.status.status === 'authorization-required')
-    return { characterId: character.characterId, state: 'authorization-required' }
+    return {
+      characterId: character.characterId,
+      state: 'authorization-required',
+      contribution: null,
+    }
   if (
     source.status.status !== 'current' ||
     character.affiliationFreshness !== 'fresh' ||
     privateSource?.status.status !== 'current'
   )
-    return { characterId: character.characterId, state: 'unavailable' }
-  const own = privateSource.snapshots.find(
-    (item) => item.id === snapshot.id || item.campaignId === snapshot.id,
-  )
-  if (own?.committed) return { characterId: character.characterId, state: 'participating' }
+    return { characterId: character.characterId, state: 'unavailable', contribution: null }
+  const own = privateSource.snapshots.find((item) => item.id === snapshot.id)
+  const participatingObjective =
+    snapshot.kind === 'campaign'
+      ? privateSource.snapshots.find(
+          (item) => item.campaignId === snapshot.id && item.committed === true,
+        )
+      : undefined
+  if (own?.committed || participatingObjective)
+    return {
+      characterId: character.characterId,
+      state: 'participating',
+      contribution: snapshot.kind === 'campaign' ? null : (own?.contributed ?? null),
+    }
   return {
     characterId: character.characterId,
     state: snapshot.eligibility === 'unrestricted' ? 'eligible' : 'unavailable',
+    contribution: own?.contributed ?? null,
   }
 }
 

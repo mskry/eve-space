@@ -5,6 +5,7 @@ import {
   type PlatformModuleLogFields,
   type PlatformModuleLogger,
 } from '@eve-space/platform-module-contract'
+import { containsSensitiveText } from '../sensitive-data.js'
 
 const eventPattern = /^[a-z][a-z0-9]*(?:[.:-][a-z0-9]+)*$/
 const fieldNamePattern = /^[A-Za-z]\w*$/
@@ -70,6 +71,7 @@ function sanitizeLogFields(fields: PlatformModuleLogFields | undefined) {
         throw new Error(
           `Platform module log strings must not exceed ${maximumStringLength} characters`,
         )
+      if (typeof value === 'string' && containsSensitiveText(value)) return []
       if (typeof value === 'number' && !Number.isFinite(value))
         throw new Error('Platform module log numbers must be finite')
       return [[key, value] as const]

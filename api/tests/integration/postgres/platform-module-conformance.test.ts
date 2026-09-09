@@ -38,14 +38,31 @@ it('runs the conformance migration under its schema-only role and leaves the led
         migrations: [{ name: 'conformance-001-initial.sql', sql }],
       },
     ])
+    await connection`
+      insert into deployment_modules (module_id, enabled)
+      values ('conformance', true)
+    `
+    await connection.begin(async (transaction) => {
+      await transaction`set local role eve_module_conformance_runtime`
+      await transaction`
+        insert into eve_module_conformance.conformance_snapshots (
+          character_id,
+          pilots_online,
+          validated_at
+        ) values (9001, 12, now())
+      `
+    })
+    await connection`update deployment_modules set enabled = false where module_id = 'conformance'`
 
     const [state] = await connection<
       {
+        enabled: boolean
         ledger_owner: string
         migration_count: number
         migration_role: string
         migration_schema: string
         schema_owner: string
+        snapshot_count: number
         table_owner: string
       }[]
     >`
@@ -55,6 +72,15 @@ it('runs the conformance migration under its schema-only role and leaves the led
         pg_get_userbyid(ledger.relowner) as ledger_owner,
         identity.role_name as migration_role,
         identity.schema_name as migration_schema,
+        (
+          select enabled
+          from public.deployment_modules
+          where module_id = 'conformance'
+        ) as enabled,
+        (
+          select count(*)::integer
+          from eve_module_conformance.conformance_snapshots
+        ) as snapshot_count,
         (
           select count(*)::integer
           from public.schema_migrations
@@ -69,11 +95,13 @@ it('runs the conformance migration under its schema-only role and leaves the led
         and ledger.oid = 'public.schema_migrations'::regclass
     `
     expect(state).toEqual({
+      enabled: false,
       ledger_owner: 'eve_space',
       migration_count: 1,
       migration_role: 'eve_module_conformance_migrate',
       migration_schema: 'eve_module_conformance',
       schema_owner: 'eve_space',
+      snapshot_count: 1,
       table_owner: 'eve_module_conformance_migrate',
     })
   } finally {

@@ -3,6 +3,8 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 afterEach(() => {
   process.exitCode = 0
   vi.doUnmock('../../src/db/client.js')
+  vi.doUnmock('../../src/esi-resilience/cache-redis.js')
+  vi.doUnmock('../../src/logging.js')
   vi.doUnmock('../../src/queue/platform.js')
   vi.doUnmock('../../src/worker/readiness.js')
   vi.resetModules()
@@ -46,11 +48,15 @@ describe('worker entrypoint', () => {
 
   test('closes and exits nonzero when the processing loop ends outside shutdown', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.fn()
     const end = vi.fn().mockResolvedValue(undefined)
     const { close, stopped, stopRunLoop } = pendingPlatform()
     const startWorkerPlatform = vi.fn().mockResolvedValue({ close, stopped })
     vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
+    vi.doMock('../../src/logging.js', () => ({
+      apiLogger: { error, info: vi.fn() },
+      logSafeError: vi.fn(),
+    }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
       assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
@@ -93,5 +99,31 @@ describe('worker entrypoint', () => {
     await vi.waitFor(() => expect(end).toHaveBeenCalled())
     expect(close).toHaveBeenCalledOnce()
     expect(process.exitCode).not.toBe(1)
+  })
+
+  test('logs safely and closes dependencies when startup fails', async () => {
+    const startupError = new Error('password=private-value')
+    const end = vi.fn().mockResolvedValue(undefined)
+    const closeSharedCacheRedisConnection = vi.fn().mockResolvedValue(undefined)
+    const logSafeError = vi.fn()
+    vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
+    vi.doMock('../../src/esi-resilience/cache-redis.js', () => ({
+      closeSharedCacheRedisConnection,
+    }))
+    vi.doMock('../../src/logging.js', () => ({
+      apiLogger: { error: vi.fn(), info: vi.fn() },
+      logSafeError,
+    }))
+    vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform: vi.fn() }))
+    vi.doMock('../../src/worker/readiness.js', () => ({
+      assertWorkerStartupDependencies: vi.fn().mockRejectedValue(startupError),
+    }))
+
+    await import('../../src/worker.js')
+
+    expect(logSafeError).toHaveBeenCalledWith('Worker startup failed', startupError)
+    expect(closeSharedCacheRedisConnection).toHaveBeenCalledOnce()
+    expect(end).toHaveBeenCalledWith({ timeout: 1 })
+    expect(process.exitCode).toBe(1)
   })
 })

@@ -12,6 +12,7 @@
     "build:nuxt:dependencies": "pnpm --filter @evespace/esi-client build && pnpm --filter @eve-space/platform-module-contract build && pnpm --filter @eve-space/platform-module-server build && pnpm --filter @eve-space/platform-module-nuxt build && tsx scripts/run-installed-module-package-script.ts server build && tsx scripts/run-installed-module-package-script.ts nuxt build",
     "dev": "nuxt dev",
     "dev:api": "pnpm --filter @eve-space/api dev",
+    "dev:fixture:organization": "pnpm --filter @eve-space/api dev:fixture:organization",
     "db:migrate": "pnpm --filter @eve-space/api migrate",
     "db:studio": "pnpm --filter @eve-space/api db:studio",
     "esi:generate:check": "pnpm --filter @evespace/esi-client generate:check",

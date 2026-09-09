@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { DatabaseTransaction } from '../db/client.js'
+import { containsSensitiveText } from '../sensitive-data.js'
 import {
   organizationAuditActorTypes,
   organizationAuditEvents,
@@ -18,14 +19,14 @@ export const organizationAuditInputSchema = z
     actorType: z.enum(organizationAuditActorTypes),
     actorId: z.uuid().nullable(),
     subjectType: z.enum(organizationAuditSubjectTypes),
-    subjectId: z.string().trim().min(1).max(255),
-    reason: z.string().trim().min(1).max(2000),
+    subjectId: safeAuditText(255),
+    reason: safeAuditText(2000),
     outcome: z.enum(organizationAuditOutcomes),
     groupId: z.uuid().nullable().optional(),
     assignmentId: z.uuid().nullable().optional(),
     targetUserId: z.uuid().nullable().optional(),
     assignmentSource: z.enum(['manual', 'compliance']).nullable().optional(),
-    complianceSource: z.string().min(1).max(200).nullable().optional(),
+    complianceSource: safeAuditText(200).nullable().optional(),
     entitlementExpiresAt: z.date().nullable().optional(),
     causationAuditId: z.uuid().nullable().optional(),
     occurredAt: z.date().optional(),
@@ -88,14 +89,14 @@ const organizationAuditEventSchema = z
     actorType: z.enum(organizationAuditActorTypes),
     actorId: z.uuid().nullable(),
     subjectType: z.enum(organizationAuditSubjectTypes),
-    subjectId: z.string().min(1).max(255),
-    reason: z.string().min(1).max(2000),
+    subjectId: safeAuditText(255),
+    reason: safeAuditText(2000),
     outcome: z.enum(organizationAuditOutcomes),
     groupId: z.uuid().nullable(),
     assignmentId: z.uuid().nullable(),
     targetUserId: z.uuid().nullable(),
     assignmentSource: z.enum(['manual', 'compliance']).nullable(),
-    complianceSource: z.string().min(1).max(200).nullable(),
+    complianceSource: safeAuditText(200).nullable(),
     entitlementExpiresAt: z.date().nullable(),
     causationAuditId: z.uuid().nullable(),
     occurredAt: z.date(),
@@ -126,4 +127,13 @@ export async function appendOrganizationAuditEvents(
 
 function toOrganizationAuditEvent(stored: OrganizationAuditEventRow) {
   return organizationAuditEventSchema.parse(stored)
+}
+
+function safeAuditText(maximumLength: number) {
+  return z
+    .string()
+    .trim()
+    .min(1)
+    .max(maximumLength)
+    .refine((value) => !containsSensitiveText(value), 'Sensitive data is not allowed')
 }

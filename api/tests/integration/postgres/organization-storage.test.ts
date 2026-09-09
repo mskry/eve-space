@@ -863,6 +863,26 @@ describe('organization storage invariants', () => {
     })
   })
 
+  test('removes a newly attached managed character from the unregistered roster', async () => {
+    const { observedCharacterId } = await establishRosterObservation()
+
+    await expect(listOrganizationRosterCoverage()).resolves.toMatchObject({
+      corporations: [
+        {
+          unregisteredCharacters: [
+            { characterId: observedCharacterId, observedAt: expect.any(String) },
+          ],
+        },
+      ],
+    })
+
+    await seedCharacter(randomUUID(), observedCharacterId)
+
+    await expect(listOrganizationRosterCoverage()).resolves.toMatchObject({
+      corporations: [{ unregisteredCharacters: [] }],
+    })
+  })
+
   test('withholds roster observations collected by a replaced source', async () => {
     await establishRosterObservation()
     const replacementCharacterId = characterId + 1
@@ -1343,7 +1363,7 @@ describe('organization storage invariants', () => {
     ).resolves.toEqual({ grantId: expect.any(String) })
   })
 
-  test('grants and revokes delegated roles with immutable current-version audit entries', async () => {
+  test('grants and revokes HR roles with complete immutable current-version audit entries', async () => {
     await claimOrganizationOwnership(
       ownerClaimInput({ affiliationCheckedAt: await loadAffiliationCheckedAt() }),
     )
@@ -1353,8 +1373,8 @@ describe('organization storage invariants', () => {
     const grant = await grantOrganizationRole({
       actorUserId: userId,
       targetUserId,
-      role: 'director',
-      reason: 'Delegated operational leadership.',
+      role: 'hr_auditor',
+      reason: 'Delegated registration review.',
     })
     const context = await getOrganizationAccessContext(userId)
     const activeRoles = await listCurrentOrganizationRoles()
@@ -1364,17 +1384,34 @@ describe('organization storage invariants', () => {
       reason: 'Delegation ended.',
     })
     const audits = await connection<
-      { event_type: string; actor_id: string; reason: string; outcome: string }[]
+      {
+        event_type: string
+        actor_id: string
+        subject_user_id: string
+        role: string
+        reason: string
+        outcome: string
+        occurred_at: Date
+      }[]
     >`
-      select event_type, actor_id, reason, outcome
-      from organization_audit_events
-      where subject_id = ${grant.grantId}
-      order by audit_sequence
+      select
+        audit.event_type,
+        audit.actor_id,
+        role_grant.user_id as subject_user_id,
+        role_grant.role,
+        audit.reason,
+        audit.outcome,
+        audit.occurred_at
+      from organization_audit_events audit
+      join organization_role_grants role_grant
+        on role_grant.grant_id::text = audit.subject_id
+      where audit.subject_id = ${grant.grantId}
+      order by audit.audit_sequence
     `
 
     expect(revoked).toMatchObject({
       grantId: grant.grantId,
-      role: 'director',
+      role: 'hr_auditor',
       revokedAt: expect.any(String),
       revokedByUserId: userId,
       revocationReason: 'Delegation ended.',
@@ -1393,7 +1430,7 @@ describe('organization storage invariants', () => {
       expect.objectContaining({
         grantId: grant.grantId,
         userId: targetUserId,
-        role: 'director',
+        role: 'hr_auditor',
         mainCharacterId: null,
         mainCharacterName: null,
       }),
@@ -1403,14 +1440,20 @@ describe('organization storage invariants', () => {
       {
         event_type: 'role.granted',
         actor_id: userId,
-        reason: 'Delegated operational leadership.',
+        subject_user_id: targetUserId,
+        role: 'hr_auditor',
+        reason: 'Delegated registration review.',
         outcome: 'granted',
+        occurred_at: expect.any(Date),
       },
       {
         event_type: 'role.revoked',
         actor_id: userId,
+        subject_user_id: targetUserId,
+        role: 'hr_auditor',
         reason: 'Delegation ended.',
         outcome: 'revoked',
+        occurred_at: expect.any(Date),
       },
     ])
   })
@@ -2307,6 +2350,65 @@ describe('organization storage invariants', () => {
       expect.objectContaining({ previousOrganizationVersion: 2, organizationVersion: 3 }),
     ])
     expect(auditCount?.count).toBe(2)
+  })
+
+  test('invalidates old organization state and recomputes every account for the new epoch', async () => {
+    const firstUserId = randomUUID()
+    const secondUserId = randomUUID()
+    await establishCompliantAccount(firstUserId, 90_000_011)
+    await establishCompliantAccount(secondUserId, 90_000_012)
+    await establishRosterObservation()
+
+    await updateDeploymentOrganization(
+      { type: 'corporation', id: 98_000_002, name: 'Second Corporation', ticker: 'TWO' },
+      adminId,
+    )
+
+    const [oldState] = await connection<
+      {
+        current_corporations: number
+        authoritative_compliance: number
+        roster_observations: number
+      }[]
+    >`
+      select
+        (
+          select count(*)::integer
+          from organization_managed_corporations
+          where organization_version = 1 and is_current
+        ) as current_corporations,
+        (
+          select count(*)::integer
+          from organization_account_compliance
+          where organization_version = 1 and authoritative
+        ) as authoritative_compliance,
+        (
+          select count(*)::integer
+          from organization_corporation_roster_observations
+          where organization_version = 1
+        ) as roster_observations
+    `
+    const newProjections = await connection<
+      { user_id: string; state: string; authoritative: boolean }[]
+    >`
+      select user_id, state, authoritative
+      from organization_account_compliance
+      where organization_version = 2 and user_id in (${firstUserId}, ${secondUserId})
+      order by user_id
+    `
+
+    expect(oldState).toEqual({
+      current_corporations: 0,
+      authoritative_compliance: 0,
+      roster_observations: 1,
+    })
+    expect(newProjections).toHaveLength(2)
+    expect(newProjections.every(({ authoritative }) => authoritative)).toBe(true)
+    await expect(loadOrganizationSessionContext(firstUserId)).resolves.toMatchObject({
+      organizationVersion: 2,
+      state: 'suspended',
+      accessValidUntil: null,
+    })
   })
 
   test('rejects updates and deletes from the append-only audit ledger', async () => {

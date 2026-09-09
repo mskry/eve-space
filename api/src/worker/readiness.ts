@@ -5,6 +5,7 @@ import {
 } from '../generated/platform/installed-module-migrations.js'
 import { workerHeartbeatStaleAfterMs } from '../queue/policy.js'
 import { probeQueueStatus } from '../queue/status.js'
+import { logSafeError } from '../logging.js'
 
 export interface WorkerMigrationRequirement {
   readonly module: string
@@ -91,7 +92,7 @@ export async function checkWorkerReadiness(
 
     return { healthy: true as const }
   } catch (error) {
-    console.error('Worker database readiness check failed', error)
+    logSafeError('Worker database readiness check failed', error)
     return { healthy: false as const, reason: 'Database unavailable' }
   }
 }

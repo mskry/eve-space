@@ -282,7 +282,12 @@ packages/<package>/test/integration/
 ```
 
 - PostgreSQL, Redis, server-module, Nuxt-module, and package integration suites have different dependencies and runners. Keep their package scripts and Vitest configs authoritative, and update include/exclude patterns when migrating existing files into these paths.
-- Run relevant checks after changes. For API or shared-contract changes, run all of these:
+- Run verification at task completion, after all requested edits are complete. Do not rerun the full verification matrix after each incremental change.
+- Use targeted checks while iterating only when needed to diagnose a failure or validate a risky change. Run the required full suite for the task's scope once before handoff. If verification leads to further edits, rerun affected checks; repeat the full matrix only when the impact warrants it.
+- Do not run builds or typechecks that regenerate shared artifacts concurrently with tests that import those artifacts, or with other commands that write the same artifacts. Complete artifact generation before starting dependent checks.
+- Keep verbose verification output in log files and report concise pass/fail summaries. Read only relevant failure excerpts when diagnosing issues; avoid loading full successful build, lint, typecheck, test, coverage, or Sonar reports into conversation context. Run Sonar when required by the task, after its prerequisite reports are complete.
+- For documentation-only changes, use relevant formatting and diff checks; runtime verification is unnecessary unless the documentation change affects executable behavior.
+- For API or shared-contract changes, run all of these at task completion:
 
 ```bash
 pnpm lint

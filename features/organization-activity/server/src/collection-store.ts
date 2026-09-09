@@ -28,20 +28,26 @@ export async function materializeActivityResource(
       await transaction.query(
         `insert into activity_snapshots
           (resource_id, subject_lifecycle_id, organization_version, authorization_generation, activity_id, snapshot, validated_at)
-         values ($1, $2, $3, $4, $5, $6::jsonb, $7)
+         values ($1, $2, $3, $4, $5, $6::text::jsonb, $7)
          on conflict (resource_id, subject_lifecycle_id, organization_version, authorization_generation, activity_id)
          do update set snapshot = excluded.snapshot, validated_at = excluded.validated_at
          where $8 and activity_snapshots.validated_at <= excluded.validated_at`,
-        [...identity, entry.snapshot.id, entry.snapshot, entry.validatedAt, entry.replace],
+        [
+          ...identity,
+          entry.snapshot.id,
+          JSON.stringify(entry.snapshot),
+          entry.validatedAt,
+          entry.replace,
+        ],
       )
     }
     await transaction.query(
       `insert into collection_checkpoints
         (resource_id, subject_lifecycle_id, organization_version, authorization_generation, checkpoint, revision)
-       values ($1, $2, $3, $4, $5::jsonb, $6)
+       values ($1, $2, $3, $4, $5::text::jsonb, $6)
        on conflict (resource_id, subject_lifecycle_id, organization_version, authorization_generation)
        do update set checkpoint = excluded.checkpoint, revision = excluded.revision`,
-      [...identity, data.checkpoint, data.expectedRevision + 1],
+      [...identity, JSON.stringify(data.checkpoint), data.expectedRevision + 1],
     )
     if (data.checkpoint.requests.length === 0 && data.checkpoint.retainedIds)
       await transaction.query(

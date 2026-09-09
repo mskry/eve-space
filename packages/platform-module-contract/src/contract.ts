@@ -761,6 +761,7 @@ export interface PlatformActivityRequiredAction {
 export interface PlatformActivityParticipation {
   readonly characterId: number
   readonly state: PlatformActivityParticipationState
+  readonly contribution: number | null
 }
 
 export interface PlatformActivityLinkTarget {
@@ -775,6 +776,10 @@ export interface PlatformActivity {
   readonly kind: string
   readonly title: string
   readonly summary: string | null
+  readonly objective: string | null
+  readonly state: string
+  readonly progress: { readonly current: number; readonly desired: number } | null
+  readonly reward: { readonly initial: number; readonly remaining: number } | null
   readonly requiredAction: PlatformActivityRequiredAction | null
   readonly organizationPriority: number
   readonly deadline: string | null

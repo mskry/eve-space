@@ -47,6 +47,10 @@ export function conformanceActivityProvider(
           kind: 'conformance-status',
           title: `${snapshot.pilots_online} pilots online`,
           summary: 'A bounded conformance activity from module-owned storage.',
+          objective: null,
+          state: 'Active',
+          progress: null,
+          reward: null,
           requiredAction: {
             kind: 'participation',
             label: 'Review activity',
@@ -55,7 +59,9 @@ export function conformanceActivityProvider(
           organizationPriority: 10,
           deadline: null,
           eligibleCharacterIds: [character.characterId],
-          participation: [{ characterId: character.characterId, state: 'eligible' }],
+          participation: [
+            { characterId: character.characterId, state: 'eligible', contribution: null },
+          ],
           linkTarget: {
             pageId: 'conformance-activity-page',
             characterId: character.characterId,

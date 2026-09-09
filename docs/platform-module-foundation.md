@@ -39,6 +39,22 @@ directly. Runtime clients consume enabled identities and the resolved shared nav
 30-second freshness window and refreshes before entering a module page. Install modules disabled,
 verify migration and worker readiness, then enable them.
 
+## Adding A Shared Capability
+
+When a feature needs cross-cutting authentication, authorization, transport, persistence,
+scheduling, observability, query-lifecycle, or reusable interaction behavior that the platform does
+not expose, add the capability to the platform before using it in the feature:
+
+1. Define the smallest bounded contract in the applicable platform package.
+2. Implement the host-owned behavior without exposing infrastructure identities or credentials.
+3. Exercise the capability in the production-shaped module conformance fixture.
+4. Run the independent server and Nuxt package typechecks and module-boundary checks.
+5. Only then consume the capability from feature code.
+
+Feature-local infrastructure, authentication, network, or query-lifecycle substitutes are not an
+accepted bridge. `pnpm lint` and `pnpm test:module-conformance` enforce the no-bypass side of this
+sequence; review must confirm the platform-first ordering when a new capability is introduced.
+
 ## Migration Failure
 
 The API applies migrations for every installed module before opening its HTTP socket, including
