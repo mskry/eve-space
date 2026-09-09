@@ -18,6 +18,14 @@ describe('local organization fixture database guard', () => {
     ).toThrow('NODE_ENV=development')
   })
 
+  test('requires a database URL', () => {
+    expect(() =>
+      parseLocalDatabaseGuard(['--confirm-database=eve_space_fixture', sessionHandoffArgument], {
+        NODE_ENV: 'development',
+      }),
+    ).toThrow('require DATABASE_URL')
+  })
+
   test.each([
     'postgres://fixture:private@database.internal:5432/eve_space_fixture',
     'postgres://fixture:private@localhost.example.com:5432/eve_space_fixture',

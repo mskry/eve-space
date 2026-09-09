@@ -14,6 +14,8 @@ describe('containsSensitiveText', () => {
     'token encryption key=private-value',
     'encryption_key=private-value',
     'private-key=private-value',
+    '{"access_token":"private-value"}',
+    '{"password":"private-value"}',
     'Bearer abcdefgh',
   ])('detects %s', (value) => {
     expect(containsSensitiveText(value)).toBe(true)

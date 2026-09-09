@@ -14,8 +14,8 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       exclude: [
-        'src/{env,index,server,worker}.ts',
-        'src/commands/**/*.ts',
+        'src/{env,server}.ts',
+        'src/commands/{local-organization-fixture,redrive-domain-events,seed-local-organization-fixture,verify-worker-rollback}.ts',
         'src/generated/**/*.ts',
         'src/admin/store.ts',
         'src/auth/store.ts',
