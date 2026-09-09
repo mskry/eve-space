@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers'
@@ -133,13 +133,18 @@ describe('multi-process safety', () => {
       await Promise.all([runMigrations(first), runMigrations(second)])
 
       const migrations = await loadMigrations()
-      const applied = await inspector<{ module: string; name: string }[]>`
-        select module, name from schema_migrations order by name
+      const applied = await inspector<{ module: string; name: string; contentSha256: string }[]>`
+        select module, name, content_sha256 as "contentSha256"
+        from schema_migrations
+        order by applied_at, name
       `
       expect(applied.map((migration) => migration.name)).toEqual(
         migrations.map((migration) => migration.name),
       )
       expect(new Set(applied.map((migration) => migration.module))).toEqual(new Set(['core']))
+      expect(applied.map(({ name, contentSha256 }) => ({ name, sha256: contentSha256 }))).toEqual(
+        migrations.map(({ name, sha256 }) => ({ name, sha256 })),
+      )
 
       const { checkWorkerReadiness } = await import('../../../src/worker/readiness.js')
       await runStartupMigrations(inspector)
@@ -149,7 +154,20 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('upgrades an initial-schema database with platform validation functions', async () => {
+  test('matches the reviewed normalized core schema baseline', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runMigrations(connection)
+      await expect(loadNormalizedPublicSchema(connection)).resolves.toMatchFileSnapshot(
+        './snapshots/core-schema.txt',
+      )
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('resumes an interrupted current migration prefix', async () => {
     const connection = postgres(databaseUrl)
     const migrations = await loadMigrations()
     const initialMigration = migrations.find(({ name }) => name === '001_initial.sql')
@@ -171,7 +189,7 @@ describe('multi-process safety', () => {
             where conname = 'deployment_modules_module_id_check'
           ) as "usesValidationFunction",
           (
-            select array_agg(name order by name)
+            select array_agg(name order by applied_at, name)
             from schema_migrations
             where module = 'core'
           ) as "appliedMigrations"
@@ -182,6 +200,89 @@ describe('multi-process safety', () => {
         usesValidationFunction: true,
         appliedMigrations: migrations.map(({ name }) => name),
       })
+      const missingIdentities = await connection<{ count: number }[]>`
+        select count(*)::integer as count
+        from schema_migrations
+        where module = 'core' and content_sha256 is null
+      `
+      expect(missingIdentities[0]?.count).toBe(0)
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rejects non-prefix, unknown, missing, and changed core identities before pending work', async () => {
+    const connection = postgres(databaseUrl)
+    const migrations = await loadMigrations()
+
+    try {
+      await runMigrations(connection)
+      const first = migrations[0]!
+
+      await connection`
+        update schema_migrations
+        set content_sha256 = ${'0'.repeat(64)}
+        where module = 'core' and name = ${first.name}
+      `
+      await expect(runMigrations(connection)).rejects.toThrow(
+        `content identity mismatch): ${first.name}`,
+      )
+
+      await connection`
+        update schema_migrations
+        set content_sha256 = ${first.sha256}
+        where module = 'core' and name = ${first.name}
+      `
+      await connection`
+        update schema_migrations
+        set content_sha256 = null
+        where module = 'core' and name = ${first.name}
+      `
+      await expect(runMigrations(connection)).rejects.toThrow(
+        `missing content identity): ${first.name}`,
+      )
+
+      await connection`
+        update schema_migrations
+        set content_sha256 = ${first.sha256}
+        where module = 'core' and name = ${first.name}
+      `
+      await connection`
+        insert into schema_migrations (module, name, content_sha256)
+        values ('core', '999_unknown.sql', ${'0'.repeat(64)})
+      `
+      await expect(runMigrations(connection)).rejects.toThrow('unknown migration): 999_unknown.sql')
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rejects a non-prefix clean-install ledger before running migration SQL', async () => {
+    const connection = postgres(databaseUrl)
+    const migrations = await loadMigrations()
+
+    try {
+      await connection`
+        create table schema_migrations (
+          module text not null default 'core',
+          name text not null,
+          content_sha256 text,
+          applied_at timestamptz not null default now(),
+          constraint schema_migrations_pkey primary key (module, name)
+        )
+      `
+      await connection`
+        insert into schema_migrations (module, name, content_sha256)
+        values ('core', ${migrations[1]!.name}, ${migrations[1]!.sha256})
+      `
+
+      await expect(runMigrations(connection)).rejects.toThrow(
+        `non-prefix migration): ${migrations[1]!.name}`,
+      )
+      const [state] = await connection<{ usersExists: boolean }[]>`
+        select to_regclass('users') is not null as "usersExists"
+      `
+      expect(state?.usersExists).toBe(false)
     } finally {
       await connection.end()
     }
@@ -1344,14 +1445,15 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('does not revalidate an already-applied migration', async () => {
+  test('rejects changed content for an already-applied supplied migration', async () => {
     const connection = postgres(databaseUrl)
 
     try {
+      await runMigrations(connection)
       await runMigrations(connection, [{ name: 'legacy.sql', sql: 'select 1' }])
       await expect(
         runMigrations(connection, [{ name: 'legacy.sql', sql: 'vacuum' }]),
-      ).resolves.toBeUndefined()
+      ).rejects.toThrow('Applied migration content identity mismatch: legacy.sql')
     } finally {
       await connection.end()
     }
@@ -1462,3 +1564,99 @@ describe('multi-process safety', () => {
     }
   })
 })
+
+async function loadNormalizedPublicSchema(connection: postgres.Sql) {
+  const objects = await connection<{ kind: string; identity: string; definition: string }[]>`
+    select kind, identity, definition
+    from (
+      select
+        'column' as kind,
+        format('%I.%I', class.relname, attribute.attname) as identity,
+        concat_ws(
+          ' ',
+          format_type(attribute.atttypid, attribute.atttypmod),
+          case when attribute.attnotnull then 'not null' else 'nullable' end,
+          case
+            when default_value.adbin is null then null
+            else 'default ' || pg_get_expr(default_value.adbin, default_value.adrelid)
+          end
+        ) as definition
+      from pg_attribute attribute
+      join pg_class class on class.oid = attribute.attrelid
+      join pg_namespace namespace on namespace.oid = class.relnamespace
+      left join pg_attrdef default_value
+        on default_value.adrelid = attribute.attrelid
+        and default_value.adnum = attribute.attnum
+      where namespace.nspname = 'public'
+        and class.relkind in ('r', 'p', 'v', 'm')
+        and attribute.attnum > 0
+        and not attribute.attisdropped
+
+      union all
+
+      select
+        'constraint',
+        format('%I.%I', class.relname, constraint_record.conname),
+        pg_get_constraintdef(constraint_record.oid, true)
+      from pg_constraint constraint_record
+      join pg_class class on class.oid = constraint_record.conrelid
+      join pg_namespace namespace on namespace.oid = class.relnamespace
+      where namespace.nspname = 'public'
+
+      union all
+
+      select
+        'index',
+        index_record.indexname,
+        index_record.indexdef
+      from pg_indexes index_record
+      where index_record.schemaname = 'public'
+
+      union all
+
+      select
+        'function',
+        format(
+          '%I(%s)',
+          procedure_record.proname,
+          pg_get_function_identity_arguments(procedure_record.oid)
+        ),
+        pg_get_functiondef(procedure_record.oid)
+      from pg_proc procedure_record
+      join pg_namespace namespace on namespace.oid = procedure_record.pronamespace
+      where namespace.nspname = 'public'
+
+      union all
+
+      select
+        'trigger',
+        format('%I.%I', class.relname, trigger_record.tgname),
+        pg_get_triggerdef(trigger_record.oid, true)
+      from pg_trigger trigger_record
+      join pg_class class on class.oid = trigger_record.tgrelid
+      join pg_namespace namespace on namespace.oid = class.relnamespace
+      where namespace.nspname = 'public' and not trigger_record.tgisinternal
+
+      union all
+
+      select
+        'row-security',
+        class.relname,
+        format('enabled=%s forced=%s', class.relrowsecurity, class.relforcerowsecurity)
+      from pg_class class
+      join pg_namespace namespace on namespace.oid = class.relnamespace
+      where namespace.nspname = 'public'
+        and class.relkind in ('r', 'p')
+        and (class.relrowsecurity or class.relforcerowsecurity)
+    ) schema_object
+    order by kind, identity
+  `
+
+  return objects
+    .map(({ kind, identity, definition }) => {
+      const normalized = definition.replaceAll(/\s+/g, ' ').trim()
+      const sha256 = createHash('sha256').update(normalized).digest('hex')
+      return `${kind}\t${identity}\t${sha256}`
+    })
+    .join('\n')
+}

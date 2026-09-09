@@ -1,4 +1,5 @@
 import { sql } from '../db/client.js'
+import { latestCoreMigrationName } from '../db/migration-manifest.js'
 import {
   installedModuleIds,
   installedModuleMigrations,
@@ -12,7 +13,7 @@ export interface WorkerMigrationRequirement {
   readonly name: string
 }
 
-export const expectedWorkerMigration = '040_platform_deployment_resources.sql'
+export const expectedWorkerMigration = latestCoreMigrationName
 const workerMigrationRequirements: readonly WorkerMigrationRequirement[] = [
   { module: 'core', name: expectedWorkerMigration },
   ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),
