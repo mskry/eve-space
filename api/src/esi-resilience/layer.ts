@@ -22,6 +22,7 @@ import {
 } from './coordination.js'
 import { EsiQuotaError } from './cooldowns.js'
 import {
+  composeEnvelopeRepresentationVersion,
   createCacheEnvelope,
   getEsiQuota,
   isEnvelopeFresh,
@@ -38,6 +39,7 @@ import {
   type EsiRepresentationIdentity,
 } from './identity.js'
 import { cacheEnvelopeKey } from './keys.js'
+import { getSoleRegisteredEsiRepresentationName } from './representation-registry.js'
 import { EsiResourceRevisionRegistry } from './resource-revision.js'
 import {
   classifyStaleRefreshFailure,
@@ -364,6 +366,7 @@ export class EsiResilienceLayer {
       inputs: resource.inputs,
       compatibilityDate: env.ESI_COMPATIBILITY_DATE,
       representationVersion: policy.representationVersion,
+      representationName: getSoleRegisteredEsiRepresentationName(resource.operation),
       resourceRevision,
     })
     if (policy.cache.kind === 'none') return this.#loadUncached(resource)
@@ -436,7 +439,10 @@ export class EsiResilienceLayer {
         data: result.data,
         metadata: result.meta,
         policy,
-        representationVersion: policy.representationVersion,
+        representationVersion: composeEnvelopeRepresentationVersion(
+          policy.representationVersion,
+          getSoleRegisteredEsiRepresentationName(resource.operation),
+        ),
         authorization: resolved.authorization,
         fence: 0,
       })
@@ -485,7 +491,10 @@ export class EsiResilienceLayer {
       data: response.data,
       metadata: response.meta,
       policy,
-      representationVersion: context.identity.representationVersion,
+      representationVersion: composeEnvelopeRepresentationVersion(
+        context.identity.representationVersion,
+        context.identity.representationName,
+      ),
       authorization: context.resource.authorization,
       resourceRevision: context.identity.resourceRevision,
       fence: lease?.fence ?? 0,
@@ -757,7 +766,14 @@ function isCompatibleEnvelope(
   { identity, resource }: EsiRequestContext<unknown>,
 ) {
   const authorization = resource.authorization
-  if (envelope.representationVersion !== identity.representationVersion) return false
+  if (
+    envelope.representationVersion !==
+    composeEnvelopeRepresentationVersion(
+      identity.representationVersion,
+      identity.representationName,
+    )
+  )
+    return false
   if (!identity.resourceRevision) {
     if (envelope.resourceRevision !== undefined) return false
   } else if (

@@ -4,13 +4,40 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypes } from '../db/schema.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerCharacterEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
 import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import { skillCategoryId } from '../skills/training.js'
 
-export const characterSkillsScope = getCharacterEsiScope('skills')
+interface CharacterSkillsRepresentationInput {
+  characterId: number
+}
+
+const characterSkillsRepresentation = registerCharacterEsiRepresentation(
+  defineCharacterEsiRepresentation<
+    'skills',
+    CharacterSkillsRepresentationInput,
+    CharacterSkillsSnapshot
+  >({
+    operation: 'skills',
+    name: 'character-skills-core',
+    encodeIdentity: (input) => ({ characterId: input.characterId }),
+    load: async (input, authority, revalidation) => {
+      const response = await createSkillsClient({
+        fetch: createEsiTransport('skills', authority.principal),
+        token: authority.accessToken,
+      })
+        .withMetadata()
+        .getSkills(input.characterId, revalidation)
+      return { data: mapCharacterSkillsSnapshot(response.data), meta: response.meta }
+    },
+  }),
+)
+
+export const characterSkillsScope = getCharacterEsiScope(characterSkillsRepresentation.operation)
 export { skillCategoryId } from '../skills/training.js'
 
 interface CharacterSkillSnapshot {
@@ -39,19 +66,7 @@ let skillCataloguePromise: Promise<SkillCatalogue> | undefined
 export async function getCharacterSkillsData(
   characterId: number,
 ): Promise<EsiCachedResult<CharacterSkillsSnapshot>> {
-  return getEsiResilienceLayer().getCharacter({
-    operation: 'skills',
-    inputs: { characterId },
-    load: async (authority, revalidation) => {
-      const response = await createSkillsClient({
-        fetch: createEsiTransport('skills', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .getSkills(characterId, revalidation)
-      return { data: mapCharacterSkillsSnapshot(response.data), meta: response.meta }
-    },
-  })
+  return execute(characterSkillsRepresentation, { characterId })
 }
 
 interface CharacterSkillsData {

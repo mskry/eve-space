@@ -15,6 +15,7 @@ export interface EsiRepresentationIdentity {
   value: string
   coordinationDigest: string
   representationVersion: string
+  representationName?: string
   resourceRevision?: EsiResourceRevision
 }
 
@@ -41,6 +42,7 @@ export function createEsiRepresentationIdentity(options: {
   inputs: Readonly<Record<string, unknown>>
   compatibilityDate: string
   representationVersion: string
+  representationName?: string
   resourceRevision?: EsiResourceRevision
 }): EsiRepresentationIdentity {
   const contract = getEsiOperationContract(options.operation)
@@ -50,6 +52,7 @@ export function createEsiRepresentationIdentity(options: {
     inputs: normalizedInputs,
     compatibilityDate: options.compatibilityDate,
     representationVersion: options.representationVersion,
+    representationName: options.representationName,
   }
   const canonical = JSON.stringify({
     ...canonicalBase,
@@ -65,6 +68,7 @@ export function createEsiRepresentationIdentity(options: {
     value: `${options.operation}:${digest}`,
     coordinationDigest,
     representationVersion: options.representationVersion,
+    representationName: options.representationName,
     resourceRevision: options.resourceRevision,
   }
 }

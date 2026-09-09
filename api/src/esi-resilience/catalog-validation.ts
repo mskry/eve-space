@@ -3,6 +3,7 @@ import {
   platformExportNamePattern,
 } from '@eve-space/platform-module-contract'
 import { z } from 'zod'
+import type { EsiOperationContract } from './contract-types.js'
 
 const scopePattern = /^esi-[a-z0-9_-]+\.[a-z0-9_]+\.v[1-9]\d*$/
 const identityFieldPattern = /^[A-Za-z][A-Za-z0-9]*$/
@@ -391,4 +392,36 @@ function formatCacheIssue(path: PropertyKey[]) {
 
 export function isIsoCalendarDate(value: string) {
   return isoCalendarDateSchema.safeParse(value).success
+}
+
+export interface EsiRepresentationRegistrationDescriptor {
+  readonly name: string
+  readonly operation: string
+  readonly authorization: 'character'
+}
+
+export function assertConsistentEsiRepresentationRegistration(
+  registration: EsiRepresentationRegistrationDescriptor,
+  state: { duplicateName: boolean; contract: EsiOperationContract | undefined },
+) {
+  const issues: string[] = []
+  if (state.duplicateName) issues.push(`representation ${registration.name} is already registered`)
+  if (!state.contract)
+    issues.push(
+      `representation ${registration.name} references unregistered ESI operation ${registration.operation}`,
+    )
+  else {
+    if (state.contract.authorization.kind !== registration.authorization)
+      issues.push(
+        `representation ${registration.name} declares ${registration.authorization} authorization but operation ${registration.operation} requires ${state.contract.authorization.kind}`,
+      )
+    if (state.contract.mutation)
+      issues.push(
+        `representation ${registration.name} cannot be a core representation of mutation operation ${registration.operation}`,
+      )
+  }
+  if (issues.length > 0)
+    throw new Error(
+      `Invalid ESI representation registration:\n${issues.map((issue) => `- ${issue}`).join('\n')}`,
+    )
 }

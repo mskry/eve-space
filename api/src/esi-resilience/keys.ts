@@ -1,7 +1,7 @@
 import type { EsiRepresentationIdentity } from './identity.js'
 
 export const cacheEnvelopeVersion = 'v3'
-export const cacheIdentityVersion = 'v2'
+export const cacheIdentityVersion = 'v3'
 const cachePrefix = `eve-space:esi-cache:${cacheEnvelopeVersion}:${cacheIdentityVersion}`
 
 export const cacheCoordinationSentinelKey = 'eve-space:esi-cache:coordination-sentinel'
