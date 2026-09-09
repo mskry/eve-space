@@ -11,6 +11,8 @@ const modulesByTier = {
     'catalog',
     'catalog-access',
     'policy',
+    'representations',
+    'representation-registry',
   ],
   infrastructure: ['cache-redis', 'coordination', 'transport'],
   execution: [
@@ -22,6 +24,7 @@ const modulesByTier = {
     'errors',
     'module-operation-dispatcher',
     'request-transport',
+    'execute',
   ],
   observability: ['telemetry', 'telemetry-counters', 'rate-measurement', 'result-metadata'],
 } as const
