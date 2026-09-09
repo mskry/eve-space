@@ -32,21 +32,21 @@ describe('core migration manifest', () => {
     expect(() =>
       assertCoreMigrationInventory(activeCoreMigrationManifest, [...names, '043_extra.sql']),
     ).toThrow('absent from manifest: 043_extra.sql')
-    expect(() => assertCoreMigrationContent(activeCoreMigrationManifest[0], 'changed sql')).toThrow(
-      'content identity mismatch: 001_initial.sql',
-    )
+    expect(() =>
+      assertCoreMigrationContent(activeCoreMigrationManifest[0]!, 'changed sql'),
+    ).toThrow('content identity mismatch: 001_initial.sql')
     expect(() => assertCoreMigrationManifest(activeCoreMigrationManifest.slice(1))).toThrow(
       'preserve the reviewed canonical order',
     )
   })
 
-  test('allows only unique monotonically increasing additions after the fixed inventory', () => {
+  test('requires accepted additions to advance the frozen inventory', () => {
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
         { name: '042_next.sql', sha256: migrationSha256('select 1;') },
       ]),
-    ).not.toThrow()
+    ).toThrow('match the accepted frozen inventory')
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
