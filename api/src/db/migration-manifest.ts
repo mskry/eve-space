@@ -19,12 +19,8 @@ export interface LoadedCoreMigration extends Migration {
   readonly sha256: string
 }
 
-const coreMigrationBaseline = identity(
-  '001_initial.sql',
-  '783a8c49b306138a30466d551be97be8888a0b38ea04313ded60afe9be1060a7',
-)
-
-const coreMigrationTail = [
+export const activeCoreMigrationManifest = [
+  identity('001_initial.sql', '783a8c49b306138a30466d551be97be8888a0b38ea04313ded60afe9be1060a7'),
   identity(
     '020_oauth_state_return_path.sql',
     '0212cdd9faec8ba58d5236fd81549ebb2c41029c3e47aa3ee95ea035d5cbe36f',
@@ -139,9 +135,7 @@ const coreMigrationTail = [
   ),
 ] as const
 
-export const activeCoreMigrationManifest = [coreMigrationBaseline, ...coreMigrationTail] as const
-
-export const latestCoreMigrationName = coreMigrationTail.at(-1)!.name
+export const latestCoreMigrationName = activeCoreMigrationManifest.at(-1)!.name
 
 export async function loadCoreMigrations(
   directory: string = migrationsDirectory,
