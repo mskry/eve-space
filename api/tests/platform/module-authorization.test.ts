@@ -188,6 +188,7 @@ vi.mock('../../src/generated/platform/installed-module-routes.js', async () => {
 })
 
 import { app } from '../../src/index.js'
+import { apiLogger } from '../../src/logging.js'
 
 const session = {
   userId: 'user-1',
@@ -375,27 +376,37 @@ describe('full-root platform module authorization', () => {
 
   test('sanitizes unexpected module failures in responses and logs', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    apiLogger.enableLogging()
 
-    const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
-      headers: sessionCookie,
-    })
+    try {
+      const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
+        headers: sessionCookie,
+      })
 
-    expect(response.status).toBe(500)
-    await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
-    expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/refresh-token|private-host/)
-    expect(consoleError).toHaveBeenCalledWith(
-      'Unhandled API error',
-      expect.objectContaining({
-        category: 'unexpected application failure',
-        errorName: 'Error',
-        method: 'GET',
-        path: '/api/modules/alpha/profile/unexpected-error',
-        stack: expect.any(String),
-      }),
-    )
-    expect(response.headers.get('cache-control')).toBe('private, no-store')
-    expect(response.headers.get('vary')).toContain('Cookie')
-    consoleError.mockRestore()
+      expect(response.status).toBe(500)
+      await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
+      expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/refresh-token|private-host/)
+      expect(consoleError).toHaveBeenCalledOnce()
+      expect(JSON.parse(String(consoleError.mock.calls[0]?.[0]))).toEqual(
+        expect.objectContaining({
+          level: 'error',
+          msg: 'Unhandled API error',
+          requestId: expect.any(String),
+          category: 'unexpected application failure',
+          errorName: 'Error',
+          method: 'GET',
+          path: '/api/modules/alpha/profile/unexpected-error',
+          stack: expect.any(String),
+        }),
+      )
+      expect(response.headers.get('cache-control')).toBe('private, no-store')
+      expect(response.headers.get('vary')).toContain('Cookie')
+    } finally {
+      apiLogger.disableLogging()
+      consoleError.mockRestore()
+      consoleInfo.mockRestore()
+    }
   })
 
   test.each([
@@ -406,11 +417,16 @@ describe('full-root platform module authorization', () => {
     async (withFrames, expectedStack) => {
       const cause = new Error('connection failed\ndsn=postgres://user:pw@private-host')
       mocks.unexpectedError = new Error('request failed\nrefresh-token=private-value', { cause })
-      if (!withFrames) {
+      if (withFrames) {
+        cause.stack = `Error: ${cause.message}\n    at cause (file:///workspace/private/cause.ts?token=private-value:10:2)`
+        mocks.unexpectedError.stack = `Error: ${mocks.unexpectedError.message}\n    at handler (file:///workspace/private/handler.ts?secret=private-value:20:4)`
+      } else {
         cause.stack = `Error: ${cause.message}`
         mocks.unexpectedError.stack = `Error: ${mocks.unexpectedError.message}`
       }
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+      const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+      apiLogger.enableLogging()
       try {
         const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
           headers: sessionCookie,
@@ -420,18 +436,26 @@ describe('full-root platform module authorization', () => {
         expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
           /dsn=|postgres:|user:pw|private-host|refresh-token|private-value/,
         )
-        expect(consoleError).toHaveBeenCalledWith(
-          'Unhandled API error',
+        expect(consoleError).toHaveBeenCalledOnce()
+        const loggedEvent = JSON.parse(String(consoleError.mock.calls[0]?.[0]))
+        expect(loggedEvent).toEqual(
           expect.objectContaining({
-            stack: expectedStack,
-            cause: {
+            level: 'error',
+            msg: 'Unhandled API error',
+            requestId: expect.any(String),
+            ...(withFrames ? { stack: expectedStack } : {}),
+            cause: expect.objectContaining({
               errorName: 'Error',
-              stack: expectedStack,
-            },
+              ...(withFrames ? { stack: expectedStack } : {}),
+            }),
           }),
         )
+        expect(Object.hasOwn(loggedEvent, 'stack')).toBe(withFrames)
+        expect(Object.hasOwn(loggedEvent.cause, 'stack')).toBe(withFrames)
       } finally {
+        apiLogger.disableLogging()
         consoleError.mockRestore()
+        consoleInfo.mockRestore()
       }
     },
   )

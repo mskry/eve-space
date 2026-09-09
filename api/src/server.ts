@@ -5,6 +5,7 @@ import { env, isSsoConfigured } from './env.js'
 import { closeSharedCacheRedisConnection } from './esi-resilience/cache-redis.js'
 import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog-access.js'
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
+import { apiLogger } from './logging.js'
 
 assertEsiOperationCatalogConfiguration({
   compatibilityDate: env.ESI_COMPATIBILITY_DATE,
@@ -14,7 +15,7 @@ assertEsiOperationCatalogConfiguration({
 assertInstalledResourceDeclarations()
 
 const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-  console.log(`Hono API listening on http://localhost:${info.port}`)
+  apiLogger.withMetadata({ port: info.port }).info('Hono API listening')
 })
 
 async function shutdown() {

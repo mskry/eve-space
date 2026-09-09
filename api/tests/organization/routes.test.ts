@@ -930,6 +930,17 @@ describe('organization member block routes', () => {
 })
 
 describe('organization corporation roster routes', () => {
+  test('refuses a deployment-admin session before reading private roster data', async () => {
+    const response = await organizationRoutes.request('/roster-coverage', {
+      headers: { Cookie: 'eve_space_admin_session=deployment-admin-session' },
+    })
+
+    expect(response.status).toBe(401)
+    expect(mocks.findSession).not.toHaveBeenCalled()
+    expect(mocks.loadOrganizationSession).not.toHaveBeenCalled()
+    expect(mocks.listOrganizationRosterCoverage).not.toHaveBeenCalled()
+  })
+
   test('registers an owned eligible corporation data source', async () => {
     const response = await organizationRoutes.request('/corporations/98000001/source', {
       method: 'PUT',

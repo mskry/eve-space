@@ -845,11 +845,17 @@
   font: 600 0.875rem/1.2 var(--ui-font-body);
 }
 
-.mail-reader-recipients {
+.mail-reader-recipients-frame {
   position: relative;
   min-width: 0;
   max-width: 32rem;
   margin: 0.45rem 0 0;
+}
+
+.mail-reader-recipients {
+  min-width: 0;
+  max-width: 32rem;
+  margin: 0;
   overflow: hidden;
   color: var(--ui-text-muted);
   font: 0.75rem/1.5 var(--ui-font-mono);
@@ -858,11 +864,7 @@
   white-space: nowrap;
 }
 
-.mail-reader-recipients.is-revealed {
-  overflow: visible;
-}
-
-.mail-reader-recipients.is-revealed::after {
+.mail-reader-recipients-frame.is-revealed::after {
   content: attr(data-full-recipients);
   position: absolute;
   inset: 50% auto auto -0.5rem;

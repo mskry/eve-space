@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('../../src/env.js', () => ({
   env: {
+    NODE_ENV: 'development',
     ESI_USER_AGENT: 'EveSpace/Test',
     EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback',
     PORT: 8788,
@@ -107,6 +108,8 @@ vi.mock('../../src/organization/owner-claim.js', () => ({
 vi.mock('../../src/db/client.js', () => ({ db: {}, sql: vi.fn() }))
 
 import { app } from '../../src/index.js'
+import { env } from '../../src/env.js'
+import { apiLogger } from '../../src/logging.js'
 
 const client = testClient(app)
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
@@ -764,7 +767,8 @@ describe('EVE SSO callback intents', () => {
   })
 
   test('uses the state-bound mailbox for upstream reauthorization failure', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    apiLogger.enableLogging()
     mocks.consumeOAuthState.mockResolvedValue({
       intent: 'reauthorize',
       userId,
@@ -773,12 +777,19 @@ describe('EVE SSO callback intents', () => {
     })
     mocks.exchangeAuthorizationCode.mockRejectedValue(new Error('secret upstream detail'))
 
-    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+    try {
+      const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
 
-    expect(response.headers.get('location')).toBe(
-      `http://localhost:3000/characters/${mainCharacter.characterId}/mail?reauthorize=error`,
-    )
-    expect(response.headers.get('location')).not.toContain('secret')
+      expect(response.headers.get('location')).toBe(
+        `http://localhost:3000/characters/${mainCharacter.characterId}/mail?reauthorize=error`,
+      )
+      expect(response.headers.get('location')).not.toContain('secret')
+      expect(consoleError).toHaveBeenCalledOnce()
+      expect(String(consoleError.mock.calls[0]?.[0])).not.toContain('secret upstream detail')
+    } finally {
+      apiLogger.disableLogging()
+      consoleError.mockRestore()
+    }
   })
 
   test('falls back safely when a consumed state is replayed', async () => {
@@ -813,6 +824,54 @@ describe('EVE SSO callback intents', () => {
 })
 
 describe('account sessions', () => {
+  test('exchanges a valid local fixture bearer through a form body for an HttpOnly cookie', async () => {
+    const sessionToken = 'local-fixture-session-token-0000000000000000'
+    const response = await app.request('/auth/local-fixture-session', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ sessionToken }),
+    })
+
+    expect(response.status).toBe(303)
+    expect(response.headers.get('location')).toBe('http://localhost:3000/')
+    expect(response.headers.get('set-cookie')).toContain(`eve_space_session=${sessionToken}`)
+    expect(response.headers.get('set-cookie')).toContain('HttpOnly')
+    expect(mocks.findSession).toHaveBeenCalledWith(sessionToken)
+  })
+
+  test('refuses an invalid local fixture bearer', async () => {
+    mocks.findSession.mockResolvedValueOnce(null)
+    const response = await app.request('/auth/local-fixture-session', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        sessionToken: 'invalid-local-fixture-session-000000000000000',
+      }),
+    })
+
+    expect(response.status).toBe(401)
+    expect(response.headers.get('set-cookie')).toBeNull()
+  })
+
+  test('does not expose the local fixture exchange outside development', async () => {
+    const nodeEnvironment = env.NODE_ENV
+    env.NODE_ENV = 'production'
+    try {
+      const response = await app.request('/auth/local-fixture-session', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          sessionToken: 'local-fixture-session-token-0000000000000000',
+        }),
+      })
+
+      expect(response.status).toBe(404)
+      expect(mocks.findSession).not.toHaveBeenCalled()
+    } finally {
+      env.NODE_ENV = nodeEnvironment
+    }
+  })
+
   test('returns anonymous state without a cookie and clears expired cookies', async () => {
     const anonymous = await client.auth.session.$get()
     expect(await anonymous.json()).toEqual({ authenticated: false })

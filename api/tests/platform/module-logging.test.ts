@@ -26,6 +26,7 @@ describe('platform module logging', () => {
 
     logger.warn('activity.authorization-required', {
       accessToken: 'not-for-logs',
+      detail: 'Bearer private-value',
       requiredScope: 'esi-example.read.v1',
     })
     expect(sink.warn).toHaveBeenCalledWith('Platform module event', {
@@ -33,6 +34,7 @@ describe('platform module logging', () => {
       moduleId: 'organization-activity',
       event: 'activity.authorization-required',
     })
+    expect(JSON.stringify(sink.warn.mock.calls)).not.toContain('private-value')
     expect(() =>
       logger.error('activity.failed', { failure: new Error('private-host') } as never),
     ).toThrow('primitive values')

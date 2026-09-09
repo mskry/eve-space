@@ -12,6 +12,7 @@ import { assertSelectedDomainEventJobsAbsent } from '../domain-events/redrive-qu
 import { sql } from '../db/client.js'
 import { operationsQueueName, queuePrefix } from '../queue/namespaces.js'
 import { closeQueueRedisConnection, createProducerRedisConnection } from '../queue/redis.js'
+import { logSafeError } from '../logging.js'
 
 try {
   const options = parseDomainEventRedriveArgs(process.argv.slice(2))
@@ -23,7 +24,7 @@ try {
   })
   console.log(JSON.stringify(result))
 } catch (error) {
-  console.error(error instanceof Error ? error.message : 'Domain-event re-drive failed')
+  logSafeError('Domain-event re-drive failed', error)
   process.exitCode = 1
 } finally {
   await sql.end()

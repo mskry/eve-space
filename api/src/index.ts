@@ -3,6 +3,7 @@ import type { ApplyGlobalResponse } from 'hono/client'
 import { cors } from 'hono/cors'
 import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
+import { honoLogLayer, type HonoLogLayerVariables } from '@loglayer/hono'
 import type { PlatformModuleErrorBody } from '@eve-space/platform-module-contract'
 import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { env } from './env.js'
@@ -22,10 +23,30 @@ import { loadSession, requireSession } from './middleware/auth-session.js'
 import { TokenRefreshUnavailableError } from './auth/tokens.js'
 import { organizationRoutes } from './organization/routes.js'
 import { universeRoutes } from './universe/routes.js'
+import { apiLogger, safeErrorMetadata, safeRequestMetadata } from './logging.js'
 
 type GlobalErrorBody = { message: string } | PlatformModuleErrorBody
 
-export const app = new Hono()
+export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
+  .use(
+    '*',
+    honoLogLayer({
+      instance: apiLogger,
+      autoLogging: false,
+    }),
+  )
+  .use('*', async (context, next) => {
+    const startedAt = Date.now()
+    await next()
+    if (context.req.path === '/health') return
+    context.var.logger
+      .withMetadata({
+        req: safeRequestMetadata(context.req.raw, context.req.path),
+        res: { statusCode: context.res.status },
+        responseTime: Date.now() - startedAt,
+      })
+      .info('request completed')
+  })
   .use('*', secureHeaders())
   .use('/api/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
   .use('/auth/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
@@ -61,10 +82,10 @@ app.onError((error, context) => {
     return context.json({ message: error.message }, error.status)
   }
 
-  console.error(
-    'Unhandled API error',
-    unexpectedErrorDetails(error, context.req.method, context.req.path),
-  )
+  const request = safeRequestMetadata(context.req.raw, context.req.path)
+  context.var.logger
+    .withMetadata(unexpectedErrorDetails(error, request.method, request.url))
+    .error('Unhandled API error')
   return context.json({ message: 'Internal server error' }, 500)
 })
 
@@ -85,24 +106,5 @@ export type AppType = ApplyGlobalResponse<
 
 function unexpectedErrorDetails(error: unknown, method: string, path: string) {
   const request = { category: 'unexpected application failure', method, path }
-  if (!(error instanceof Error)) return { ...request, thrownType: typeof error }
-
-  return {
-    ...request,
-    errorName: error.name,
-    stack: errorStackLocations(error),
-    cause: errorCauseDetails(error.cause),
-  }
-}
-
-function errorCauseDetails(cause: unknown) {
-  if (cause instanceof Error) return { errorName: cause.name, stack: errorStackLocations(cause) }
-  if (cause === undefined) return undefined
-  return { thrownType: typeof cause }
-}
-
-function errorStackLocations(error: Error) {
-  const lines = error.stack?.split('\n')
-  const firstFrame = lines?.findIndex((line) => /^\s*at /.test(line)) ?? -1
-  return firstFrame === -1 ? undefined : lines?.slice(firstFrame).join('\n').trim()
+  return { ...request, ...safeErrorMetadata(error) }
 }

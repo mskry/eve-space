@@ -5,6 +5,7 @@ import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
 import { startWorkerPlatform } from './queue/platform.js'
 import { assertWorkerStartupDependencies } from './worker/readiness.js'
+import { apiLogger, logSafeError } from './logging.js'
 
 export async function startWorker() {
   assertEsiOperationCatalogConfiguration({
@@ -29,14 +30,14 @@ export async function startWorker() {
     return
   }
   const platform = await startWorkerPlatform()
-  console.log('Worker dependencies verified')
+  apiLogger.info('Worker dependencies verified')
 
   const reason = await Promise.race([
     shutdown.then(() => 'signal' as const),
     platform.stopped.then(() => 'run-loop-stopped' as const),
   ])
   if (reason === 'run-loop-stopped')
-    console.error('Worker processing loop ended; shutting down this replica')
+    apiLogger.error('Worker processing loop ended; shutting down this replica')
   await platform.close(env.WORKER_SHUTDOWN_TIMEOUT_MS)
   await closeSharedCacheRedisConnection()
   await sql.end({ timeout: 5 })
@@ -46,7 +47,7 @@ export async function startWorker() {
 try {
   await startWorker()
 } catch (error) {
-  console.error('Worker startup failed', error instanceof Error ? error.message : 'unknown error')
+  logSafeError('Worker startup failed', error)
   await closeSharedCacheRedisConnection()
   await sql.end({ timeout: 1 })
   process.exitCode = 1

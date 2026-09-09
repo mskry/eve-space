@@ -25,6 +25,9 @@ catalogs:
     '@hono/zod-validator':
       specifier: ^0.9.0
       version: 0.9.0
+    '@loglayer/hono':
+      specifier: ^2.4.0
+      version: 2.4.0
     '@nuxt/kit':
       specifier: ^4.5.2
       version: 4.5.2
@@ -106,6 +109,9 @@ catalogs:
     lefthook:
       specifier: ^2.1.10
       version: 2.1.10
+    loglayer:
+      specifier: ^9.4.0
+      version: 9.4.0
     msw:
       specifier: ^2.15.0
       version: 2.15.0
@@ -302,6 +308,9 @@ importers:
       '@hono/zod-validator':
         specifier: 'catalog:'
         version: 0.9.0(hono@4.13.3)(zod@4.5.4)
+      '@loglayer/hono':
+        specifier: 'catalog:'
+        version: 2.4.0(hono@4.13.3)(loglayer@9.4.0)
       bullmq:
         specifier: 'catalog:'
         version: 6.2.0(ioredis@6.0.0(supports-color@10.2.2))
@@ -317,6 +326,9 @@ importers:
       jose:
         specifier: 'catalog:'
         version: 6.2.9
+      loglayer:
+        specifier: 'catalog:'
+        version: 9.4.0
       postgres:
         specifier: 'catalog:'
         version: 3.4.9
@@ -1385,6 +1397,33 @@ packages:
 
   '@loaderkit/resolve@1.0.6':
     resolution: {integrity: sha512-G8FdIoF5CypfwmD9rl8BXod5HDn8JqB0CCNBXDTaRZ+yRYhARrrSToX1zg1zy9jX3zLqigsELwhT4gNtkdQAUg==}
+
+  '@loglayer/context-manager@2.3.0':
+    resolution: {integrity: sha512-bStCSDKUk88ZHTloOR+eE+Jfnfcs+jfI2hNSrcchorwi2UHS8AYHWMm9o2Ov3tSQ4v64je9JDeTVLgoeL+JHvw==}
+    engines: {node: '>=18'}
+
+  '@loglayer/hono@2.4.0':
+    resolution: {integrity: sha512-KNegPce9WQS99ELd7NssCDnaqnz4VSyBBzD0ijO+AqD9LasdznSS1woMbWTwC9BF+IIDh1FDJgRjy+Da5rHjzA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: '>=4.0.0'
+      loglayer: '*'
+
+  '@loglayer/log-level-manager@2.3.0':
+    resolution: {integrity: sha512-tkiKKa5yBnWqCLUWFZraNAotaHxGlb8yqTUpYS1o5Qv3XeTPoNkI87oDwI8V8m63yvKLPrXsZtNas2pIiFldCQ==}
+    engines: {node: '>=18'}
+
+  '@loglayer/plugin@3.3.0':
+    resolution: {integrity: sha512-qSEgukxOXrQsUPPUbcrOBGymowBfobTK+vC3+eDRx1dEqlhCl1YxTn8zIJjQKV+nZJyCRTzgPTvEfvceFO+QnQ==}
+    engines: {node: '>=18'}
+
+  '@loglayer/shared@4.4.0':
+    resolution: {integrity: sha512-9C6zpO9RXjfjddR+Bbk+h5NiLDL2wNlno5jLplzhw+Jaj2gO2Dv53rxrgdRmBP5/DgSHNCZu6FdOq8ankSYdGA==}
+    engines: {node: '>=18'}
+
+  '@loglayer/transport@3.3.0':
+    resolution: {integrity: sha512-fFh4XaX24FiyZtpzOjBP2PScA3sQk1rfka287FsYXkGMm2/n74BOVj6/D/oLaiI+cJMy7fv3dtyy5sUtNil5UQ==}
+    engines: {node: '>=18'}
 
   '@lukeed/ms@2.0.2':
     resolution: {integrity: sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA==}
@@ -4611,6 +4650,10 @@ packages:
   lodash@4.18.1:
     resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
 
+  loglayer@9.4.0:
+    resolution: {integrity: sha512-abAZY0TkGw1LOA8n0yGJbRi9R0upRWymYBZItWfiktXMTHqdgCpHukONoX/Byfbt1RfRdw/GjT/PwrztePYOcw==}
+    engines: {node: '>=18'}
+
   long@5.3.2:
     resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
 
@@ -7161,6 +7204,29 @@ snapshots:
     dependencies:
       '@braidai/lang': 1.1.2
 
+  '@loglayer/context-manager@2.3.0':
+    dependencies:
+      '@loglayer/shared': 4.4.0
+
+  '@loglayer/hono@2.4.0(hono@4.13.3)(loglayer@9.4.0)':
+    dependencies:
+      hono: 4.13.3
+      loglayer: 9.4.0
+
+  '@loglayer/log-level-manager@2.3.0':
+    dependencies:
+      '@loglayer/shared': 4.4.0
+
+  '@loglayer/plugin@3.3.0':
+    dependencies:
+      '@loglayer/shared': 4.4.0
+
+  '@loglayer/shared@4.4.0': {}
+
+  '@loglayer/transport@3.3.0':
+    dependencies:
+      '@loglayer/shared': 4.4.0
+
   '@lukeed/ms@2.0.2': {}
 
   '@mapbox/node-pre-gyp@2.0.3(supports-color@10.2.2)':
@@ -8475,7 +8541,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(typescript@7.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
+      vitest: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(@typescript/typescript6@6.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
 
   '@vitest/coverage-v8@5.0.0(vitest@5.0.0)':
     dependencies:
@@ -10188,6 +10254,14 @@ snapshots:
   lodash.camelcase@4.3.0: {}
 
   lodash@4.18.1: {}
+
+  loglayer@9.4.0:
+    dependencies:
+      '@loglayer/context-manager': 2.3.0
+      '@loglayer/log-level-manager': 2.3.0
+      '@loglayer/plugin': 3.3.0
+      '@loglayer/shared': 4.4.0
+      '@loglayer/transport': 3.3.0
 
   long@5.3.2: {}
 

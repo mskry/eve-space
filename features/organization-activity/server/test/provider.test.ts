@@ -11,6 +11,8 @@ const snapshot = {
     9801,
   ),
   eligibility: 'unrestricted' as const,
+  objective: 'manufacturing',
+  reward: { initial: 1_000_000, remaining: 750_000 },
 }
 const status = {
   status: 'current' as const,
@@ -69,11 +71,113 @@ test('deduplicates activities and keeps character scopes independent, excluding 
   ])
   expect(result).toHaveLength(1)
   expect(result[0]?.eligibleCharacterIds).toEqual([9001])
+  expect(result[0]).toMatchObject({
+    objective: 'manufacturing',
+    state: 'Active',
+    progress: { current: 0, desired: 10 },
+    reward: { initial: 1_000_000, remaining: 750_000 },
+    linkTarget: { characterId: 9001 },
+  })
   expect(result[0]?.participation).toEqual([
-    { characterId: 9001, state: 'participating' },
-    { characterId: 9002, state: 'authorization-required' },
+    { characterId: 9001, state: 'participating', contribution: 2 },
+    { characterId: 9002, state: 'authorization-required', contribution: null },
   ])
   expect(result[0]?.requiredAction).toMatchObject({ kind: 'authorization', characterId: 9002 })
+})
+
+test('deduplicates public and private jobs with per-character participation', () => {
+  const job = {
+    ...summarySnapshot(
+      { id: 'job-a', name: 'Freelance job', state: 'Active', progress: { current: 2, desired: 8 } },
+      'job',
+      null,
+    ),
+    eligibility: 'unrestricted' as const,
+  }
+  const publicJobs = { ...source, resourceId: 'public-jobs', snapshots: [job] }
+  const result = combineActivitySources(
+    [publicJobs],
+    [character, { ...character, characterId: 9002 }],
+    [
+      {
+        characterId: 9001,
+        sources: [
+          {
+            ...source,
+            resourceId: 'character-jobs',
+            snapshots: [{ ...job, contributed: 3, committed: true }],
+          },
+        ],
+      },
+      {
+        characterId: 9002,
+        sources: [{ ...source, resourceId: 'character-jobs', snapshots: [] }],
+      },
+    ],
+  )
+
+  expect(result).toHaveLength(1)
+  expect(result[0]).toMatchObject({
+    id: 'job-a',
+    kind: 'job',
+    eligibleCharacterIds: [9001, 9002],
+    participation: [
+      { characterId: 9001, state: 'participating', contribution: 3 },
+      { characterId: 9002, state: 'eligible', contribution: null },
+    ],
+  })
+})
+
+test('projects campaign participation without assigning an objective contribution', () => {
+  const campaign = {
+    ...snapshot,
+    id: 'campaign-a',
+    kind: 'campaign' as const,
+    corporationId: null,
+    title: 'Military campaign',
+    objective: null,
+    progress: { current: 0.4, desired: 1 },
+    reward: null,
+  }
+  const result = combineActivitySources(
+    [{ ...source, resourceId: 'campaigns', snapshots: [campaign] }],
+    [character],
+    [
+      {
+        characterId: 9001,
+        sources: [
+          {
+            ...source,
+            resourceId: 'character-campaigns',
+            snapshots: [
+              {
+                ...campaign,
+                id: 'objective-a',
+                kind: 'objective' as const,
+                campaignId: campaign.id,
+                contributed: 0.25,
+                committed: true,
+              },
+              {
+                ...campaign,
+                id: 'objective-b',
+                kind: 'objective' as const,
+                campaignId: campaign.id,
+                contributed: 0.75,
+                committed: true,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  )
+
+  expect(result[0]).toMatchObject({
+    state: 'Active',
+    progress: { current: 0.4, desired: 1 },
+    participation: [{ characterId: 9001, state: 'participating', contribution: null }],
+  })
 })
 
 test('stale sources and stale affiliation never grant eligibility', () => {

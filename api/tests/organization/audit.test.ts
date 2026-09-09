@@ -27,6 +27,17 @@ describe('organization audit schema', () => {
     },
   )
 
+  test.each([
+    'Authorization: Bearer private-value',
+    'refresh_token=private-value',
+    'postgres://user:password@private-host/eve_space',
+    'TOKEN_ENCRYPTION_KEY=private-value',
+  ])('rejects sensitive text in intentional audit fields', (reason) => {
+    expect(() => organizationAuditInputSchema.parse({ ...validAuditEvent, reason })).toThrow(
+      'Sensitive data is not allowed',
+    )
+  })
+
   test('requires identities for human actors and none for system actors', () => {
     expect(() =>
       organizationAuditInputSchema.parse({

@@ -54,6 +54,7 @@ const impairedActivitySources = computed(
       ({ freshness }) => freshness.state !== 'current',
     ) ?? [],
 )
+const activityNumberFormatter = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 })
 
 function activityCharacters(activity: OrganizationActivities['activities'][number]) {
   const participationByCharacter = new Map(
@@ -69,6 +70,9 @@ function activityCharacters(activity: OrganizationActivities['activities'][numbe
       compliance.value?.characters.find((character) => character.characterId === characterId)
         ?.characterName ?? `Character ${characterId}`,
     state: participationByCharacter.get(characterId) ?? ('eligible' as const),
+    contribution:
+      activity.participation.find((participation) => participation.characterId === characterId)
+        ?.contribution ?? null,
   }))
 }
 
@@ -96,6 +100,10 @@ function freshnessLabel(state: string) {
 
 function participationLabel(state: string) {
   return state.replaceAll('-', ' ').toUpperCase()
+}
+
+function activityNumber(value: number) {
+  return activityNumberFormatter.format(value)
 }
 
 useHead({
@@ -247,6 +255,25 @@ useHead({
                 <h3>{{ activity.title }}</h3>
                 <p v-if="activity.summary">{{ activity.summary }}</p>
                 <dl>
+                  <div v-if="activity.objective">
+                    <dt>Objective</dt>
+                    <dd>{{ activity.objective }}</dd>
+                  </div>
+                  <div>
+                    <dt>State</dt>
+                    <dd>{{ activity.state }}</dd>
+                  </div>
+                  <div v-if="activity.progress">
+                    <dt>Progress</dt>
+                    <dd>
+                      {{ activityNumber(activity.progress.current) }} /
+                      {{ activityNumber(activity.progress.desired) }}
+                    </dd>
+                  </div>
+                  <div v-if="activity.reward">
+                    <dt>Reward remaining</dt>
+                    <dd>{{ activityNumber(activity.reward.remaining) }} ISK</dd>
+                  </div>
                   <div>
                     <dt>Deadline</dt>
                     <dd>
@@ -271,6 +298,9 @@ useHead({
                       <strong>{{ character.characterName }}</strong>
                       <span :data-participation="character.state">
                         {{ participationLabel(character.state) }}
+                      </span>
+                      <span v-if="character.contribution !== null">
+                        {{ activityNumber(character.contribution) }} contributed
                       </span>
                     </li>
                   </ul>

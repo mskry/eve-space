@@ -94,11 +94,11 @@ export async function upsertPlatformCollectionStateInTransaction(
       ${parsed.subjectKind},
       ${parsed.subjectLifecycleId},
       ${parsed.subjectId},
-      ${parsed.nextEligibleAt},
+      ${parsed.nextEligibleAt?.toISOString() ?? null},
       ${parsed.authorizationGeneration},
-      ${parsed.validatedAt},
+      ${parsed.validatedAt?.toISOString() ?? null},
       ${parsed.lastFailureClass},
-      ${parsed.lastFailureClass === null ? null : new Date()}
+      ${parsed.lastFailureClass === null ? null : new Date().toISOString()}
     )
     on conflict (module_id, resource_id, subject_kind, subject_lifecycle_id, subject_id)
     do update set

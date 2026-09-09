@@ -22,8 +22,10 @@ import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { loadSession, sessionCookie } from '../middleware/auth-session.js'
 import { createOpaqueToken, tokensMatch } from './security.js'
+import { authRequiredBody, routeNotFoundBody } from '../http/contracts.js'
 import { setPrivateHeaders } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
+import { logSafeError } from '../logging.js'
 import { loadCurrentOrganizationIdentity } from '../organization/context.js'
 import { resolveOrganizationAuthorityCorporation } from '../organization/authority.js'
 import {
@@ -55,6 +57,9 @@ const returnDestinationQuery = z.object({
     .min(1, 'Return destination must not be empty.')
     .max(512, 'Return destination must not exceed 512 characters.')
     .optional(),
+})
+const localFixtureSessionForm = z.object({
+  sessionToken: z.string().min(32).max(200),
 })
 const invalidReturnDestination = new HTTPException(400, {
   message: 'Return destination must be a safe application route.',
@@ -191,13 +196,25 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     } catch (error) {
       if (error instanceof CharacterOwnershipConflictError)
         return redirectForIntent(context, stateContext, 'conflict')
-      console.error(
-        'EVE SSO callback failed',
-        error instanceof Error ? error.message : 'Unknown error',
-      )
+      logSafeError('EVE SSO callback failed', error)
       return redirectForIntent(context, stateContext, 'error')
     }
   })
+  .post(
+    '/local-fixture-session',
+    async (context, next) => {
+      setPrivateHeaders(context)
+      if (env.NODE_ENV !== 'development') return context.json(routeNotFoundBody, 404)
+      await next()
+    },
+    zValidator('form', localFixtureSessionForm),
+    async (context) => {
+      const { sessionToken } = context.req.valid('form')
+      if (!(await findSession(sessionToken))) return context.json(authRequiredBody, 401)
+      setCookie(context, sessionCookie, sessionToken, sessionCookieOptions(sessionDurationSeconds))
+      return context.redirect(new URL('/', env.WEB_ORIGIN).toString(), 303)
+    },
+  )
   .get('/session', async (context) => {
     setPrivateHeaders(context)
     const sessionToken = getCookie(context, sessionCookie)

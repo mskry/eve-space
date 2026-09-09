@@ -17,7 +17,7 @@ import type { OrganizationSessionContext } from './access-policy.js'
 import { loadOrganizationActivityCharacters } from './activity-context.js'
 import { authorizeOrganizationContribution } from './module-authorization.js'
 
-const positiveCharacterIdSchema = z.number().int().positive()
+const positiveCharacterIdSchema = z.int().positive()
 const freshnessSchema = z
   .object({
     state: z.enum(platformActivityFreshnessStates),
@@ -37,6 +37,10 @@ const providerActivitySchema = z
     kind: z.string().trim().min(1).max(100),
     title: z.string().trim().min(1).max(200),
     summary: z.string().trim().min(1).max(2_000).nullable(),
+    objective: z.string().trim().min(1).max(500).nullable(),
+    state: z.string().trim().min(1).max(100),
+    progress: z.object({ current: z.number(), desired: z.number() }).strict().nullable(),
+    reward: z.object({ initial: z.number(), remaining: z.number() }).strict().nullable(),
     requiredAction: z
       .object({
         kind: z.enum(platformActivityRequiredActionKinds),
@@ -45,7 +49,7 @@ const providerActivitySchema = z
       })
       .strict()
       .nullable(),
-    organizationPriority: z.number().int().min(0).max(1_000),
+    organizationPriority: z.int().min(0).max(1_000),
     deadline: z.iso.datetime({ offset: true }).nullable(),
     eligibleCharacterIds: z.array(positiveCharacterIdSchema).max(100),
     participation: z
@@ -54,6 +58,7 @@ const providerActivitySchema = z
           .object({
             characterId: positiveCharacterIdSchema,
             state: z.enum(platformActivityParticipationStates),
+            contribution: z.number().nullable(),
           })
           .strict(),
       )
@@ -266,7 +271,7 @@ function mergeProviderActivities(
     const participation = new Map(existing.participation.map((entry) => [entry.characterId, entry]))
     for (const entry of projected.participation) {
       const previous = participation.get(entry.characterId)
-      if (previous && previous.state !== entry.state)
+      if (previous && !sameParticipation(previous, entry))
         throw new Error('Conflicting duplicate activity participation')
       participation.set(entry.characterId, entry)
     }
@@ -314,6 +319,10 @@ function projectActivity(
     kind: activity.kind,
     title: activity.title,
     summary: activity.summary,
+    objective: activity.objective,
+    state: activity.state,
+    progress: activity.progress,
+    reward: activity.reward,
     requiredAction: activity.requiredAction,
     organizationPriority: activity.organizationPriority,
     deadline: activity.deadline,
@@ -334,11 +343,18 @@ function normalizeParticipation(
   const byCharacter = new Map<number, (typeof participation)[number]>()
   for (const entry of participation) {
     const existing = byCharacter.get(entry.characterId)
-    if (existing && existing.state !== entry.state)
+    if (existing && !sameParticipation(existing, entry))
       throw new Error('Conflicting activity participation')
     byCharacter.set(entry.characterId, entry)
   }
   return [...byCharacter.values()].toSorted((left, right) => left.characterId - right.characterId)
+}
+
+function sameParticipation(
+  left: z.infer<typeof providerActivitySchema>['participation'][number],
+  right: z.infer<typeof providerActivitySchema>['participation'][number],
+) {
+  return left.state === right.state && left.contribution === right.contribution
 }
 
 function normalizeFreshness(
@@ -361,6 +377,10 @@ function sameActivityScalars(left: OrganizationActivity, right: OrganizationActi
     left.kind === right.kind &&
     left.title === right.title &&
     left.summary === right.summary &&
+    left.objective === right.objective &&
+    left.state === right.state &&
+    JSON.stringify(left.progress) === JSON.stringify(right.progress) &&
+    JSON.stringify(left.reward) === JSON.stringify(right.reward) &&
     JSON.stringify(left.requiredAction) === JSON.stringify(right.requiredAction) &&
     left.organizationPriority === right.organizationPriority &&
     left.deadline === right.deadline &&

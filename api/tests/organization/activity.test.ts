@@ -147,7 +147,7 @@ describe('organization activity aggregation', () => {
         duplicate,
         activity('duplicate', {
           eligibleCharacterIds: [9001],
-          participation: [{ characterId: 9001, state: 'eligible' }],
+          participation: [{ characterId: 9001, state: 'eligible', contribution: null }],
         }),
       ],
     })
@@ -169,7 +169,7 @@ describe('organization activity aggregation', () => {
     ])
     expect(result.activities.at(-1)).toMatchObject({
       eligibleCharacterIds: [9001],
-      participation: [{ characterId: 9001, state: 'eligible' }],
+      participation: [{ characterId: 9001, state: 'eligible', contribution: null }],
     })
   })
 
@@ -197,16 +197,50 @@ describe('organization activity aggregation', () => {
         activities: [
           activity('contradictory', {
             participation: [
-              { characterId: 9001, state: 'participating' },
-              { characterId: 9001, state: 'completed' },
+              { characterId: 9001, state: 'participating', contribution: 2 },
+              { characterId: 9001, state: 'completed', contribution: 2 },
             ],
           }),
         ],
       }),
     )
+    const contradictoryContribution = provider(
+      'delta',
+      vi.fn().mockResolvedValue({
+        freshness: freshness(),
+        activities: [
+          activity('contradictory-contribution', {
+            participation: [
+              { characterId: 9001, state: 'participating', contribution: 2 },
+              { characterId: 9001, state: 'participating', contribution: 5 },
+            ],
+          }),
+        ],
+      }),
+    )
+    const duplicateContribution = provider(
+      'epsilon',
+      vi.fn().mockResolvedValue({
+        freshness: freshness(),
+        activities: [
+          activity('duplicate-contribution', {
+            participation: [{ characterId: 9001, state: 'participating', contribution: 2 }],
+          }),
+          activity('duplicate-contribution', {
+            participation: [{ characterId: 9001, state: 'participating', contribution: 5 }],
+          }),
+        ],
+      }),
+    )
     const result = await aggregateOrganizationActivities('user-1', organization, {
-      providers: [conflict, deadLink, contradictoryParticipation],
-      loadEnabledModuleIds: async () => ['alpha', 'beta', 'gamma'],
+      providers: [
+        conflict,
+        deadLink,
+        contradictoryParticipation,
+        contradictoryContribution,
+        duplicateContribution,
+      ],
+      loadEnabledModuleIds: async () => ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
       authorize: authorized,
       loadCharacters: async () => characters,
       now,
@@ -281,11 +315,15 @@ function activity(id: string, overrides: Partial<PlatformActivity> = {}): Platfo
     kind: 'project',
     title: id,
     summary: null,
+    objective: null,
+    state: 'Active',
+    progress: null,
+    reward: null,
     requiredAction: null,
     organizationPriority: 10,
     deadline: null,
     eligibleCharacterIds: [9001],
-    participation: [{ characterId: 9001, state: 'eligible' }],
+    participation: [{ characterId: 9001, state: 'eligible', contribution: null }],
     linkTarget: { pageId: 'activity-page', characterId: null },
     freshness: freshness(),
     ...overrides,
