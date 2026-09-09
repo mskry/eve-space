@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { createStatusClient } from '@evespace/esi-client/domains/status'
 
 import { env } from '../../src/env.js'
@@ -19,7 +19,8 @@ vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
 vi.mock('../../src/queue/redis.js', () => ({
   createProducerRedisConnection: () => mocks.coordination,
 }))
-vi.mock('../../src/esi-resilience/cooldowns.js', () => ({
+vi.mock('../../src/esi-resilience/cooldowns.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/esi-resilience/cooldowns.js')>()),
   recordEsiResponse: mocks.recordResponse,
 }))
 vi.mock('../../src/esi-resilience/permits.js', () => ({
@@ -37,12 +38,17 @@ vi.mock('../../src/esi-resilience/telemetry-counters.js', () => ({
   recordEsiUpstreamOutcome: mocks.recordUpstream,
 }))
 
+beforeEach(() => {
+  mocks.renew.mockResolvedValue(true)
+})
+
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
-describe('ESI transport telemetry roles', () => {
+describe('ESI request transport', () => {
   test('keeps cooldowns on coordination Redis and lossy telemetry on Cache Redis', async () => {
     vi.stubGlobal(
       'fetch',
@@ -89,6 +95,7 @@ describe('ESI transport telemetry roles', () => {
   })
 
   test('abandons a request at the configured timeout', async () => {
+    vi.useFakeTimers()
     const timeoutController = new AbortController()
     const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeoutController.signal)
     const fetch = vi.fn(
@@ -115,9 +122,14 @@ describe('ESI transport telemetry roles', () => {
     await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
     expect(timeout).toHaveBeenCalledWith(env.ESI_REQUEST_TIMEOUT_MS)
     expect(mocks.release).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
   })
 
   test('honors caller cancellation as well as the request timeout', async () => {
+    vi.useFakeTimers()
     const callerController = new AbortController()
     const timeoutController = new AbortController()
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeoutController.signal)
@@ -146,6 +158,10 @@ describe('ESI transport telemetry roles', () => {
     await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
     expect(timeoutController.signal.aborted).toBe(false)
     expect(mocks.release).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
   })
 
   test('holds the concurrency permit until the response body closes', async () => {
@@ -167,7 +183,153 @@ describe('ESI transport telemetry roles', () => {
     await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
   })
 
+  test('renews the permit repeatedly until the response body closes', async () => {
+    vi.useFakeTimers()
+    let bodyController: ReadableStreamDefaultController<Uint8Array> | undefined
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        bodyController = controller
+      },
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 200 })))
+    const { createEsiTransport } = await import('../../src/esi-resilience/request-transport.js')
+
+    const response = await createEsiTransport('status')('https://esi.evetech.net/status')
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).toHaveBeenCalledTimes(2)
+    expect(mocks.release).not.toHaveBeenCalled()
+
+    bodyController?.close()
+    await response.text()
+    await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).toHaveBeenCalledTimes(2)
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  test('serializes permit renewals and waits for the active renewal before release', async () => {
+    vi.useFakeTimers()
+    let resolveRenewal: ((renewed: boolean) => void) | undefined
+    const activeRenewal = new Promise<boolean>((resolve) => {
+      resolveRenewal = resolve
+    })
+    mocks.renew.mockImplementationOnce(() => activeRenewal).mockResolvedValue(true)
+    let bodyController: ReadableStreamDefaultController<Uint8Array> | undefined
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        bodyController = controller
+      },
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 200 })))
+    const { createEsiTransport } = await import('../../src/esi-resilience/request-transport.js')
+
+    const response = await createEsiTransport('status')('https://esi.evetech.net/status')
+    await vi.advanceTimersByTimeAsync(45_000)
+    expect(mocks.renew).toHaveBeenCalledOnce()
+
+    bodyController?.close()
+    const responseBody = response.text()
+    await vi.waitFor(() => expect(mocks.release).not.toHaveBeenCalled())
+
+    resolveRenewal?.(true)
+    await responseBody
+    await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).toHaveBeenCalledOnce()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  test('aborts an active fetch when permit ownership is lost', async () => {
+    vi.useFakeTimers()
+    mocks.renew.mockResolvedValueOnce(false)
+    let transportSignal: AbortSignal | undefined
+    const fetch = vi.fn(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          transportSignal = init?.signal ?? undefined
+          if (!transportSignal) throw new Error('Expected a permit-aware ESI request signal')
+          transportSignal.addEventListener('abort', () => reject(transportSignal?.reason), {
+            once: true,
+          })
+        }),
+    )
+    vi.stubGlobal('fetch', fetch)
+    const [{ createEsiTransport }, { classifyStaleRefreshFailure }, { EsiTransportError }] =
+      await Promise.all([
+        import('../../src/esi-resilience/request-transport.js'),
+        import('../../src/esi-resilience/errors.js'),
+        import('../../src/esi-resilience/transport.js'),
+      ])
+    const caught = createEsiTransport('status')('https://esi.evetech.net/status').catch(
+      (error: unknown) => error,
+    )
+
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    const error = await caught
+    expect(error).toBeInstanceOf(EsiTransportError)
+    expect(classifyStaleRefreshFailure(error)).toBe('esi-unavailable')
+    expect(transportSignal?.aborted).toBe(true)
+    expect(mocks.renew).toHaveBeenCalledOnce()
+    expect(mocks.release).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).toHaveBeenCalledOnce()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
+  test('aborts an active response body when permit renewal is rejected', async () => {
+    vi.useFakeTimers()
+    mocks.renew.mockRejectedValueOnce(new Error('coordination unavailable'))
+    let transportSignal: AbortSignal | undefined
+    const fetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      transportSignal = init?.signal ?? undefined
+      if (!transportSignal) throw new Error('Expected a permit-aware ESI request signal')
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          transportSignal?.addEventListener(
+            'abort',
+            () => controller.error(transportSignal?.reason),
+            { once: true },
+          )
+        },
+      })
+      return Promise.resolve(new Response(body, { status: 200 }))
+    })
+    vi.stubGlobal('fetch', fetch)
+    const [
+      { createEsiTransport },
+      { classifyStaleRefreshFailure, isStaleUsableForFailure },
+      { EsiTransportError },
+    ] = await Promise.all([
+      import('../../src/esi-resilience/request-transport.js'),
+      import('../../src/esi-resilience/errors.js'),
+      import('../../src/esi-resilience/transport.js'),
+    ])
+    const response = await createEsiTransport('status')('https://esi.evetech.net/status')
+    const caught = response.text().catch((error: unknown) => error)
+
+    await vi.advanceTimersByTimeAsync(15_000)
+
+    const error = await caught
+    expect(error).toBeInstanceOf(EsiTransportError)
+    expect(classifyStaleRefreshFailure(error)).toBe('esi-unavailable')
+    expect(isStaleUsableForFailure({ kind: 'outage', milliseconds: 60_000 }, error)).toBe(true)
+    expect(transportSignal?.aborted).toBe(true)
+    expect(mocks.renew).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).toHaveBeenCalledOnce()
+    expect(mocks.release).toHaveBeenCalledOnce()
+  })
+
   test('releases the concurrency permit when the response body is cancelled', async () => {
+    vi.useFakeTimers()
     const body = new ReadableStream<Uint8Array>({ pull() {} })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 200 })))
     const { createEsiTransport } = await import('../../src/esi-resilience/request-transport.js')
@@ -177,9 +339,14 @@ describe('ESI transport telemetry roles', () => {
     expect(mocks.release).not.toHaveBeenCalled()
     await response.body?.cancel()
     await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
   })
 
   test('preserves a successful response body timeout through SDK parsing', async () => {
+    vi.useFakeTimers()
     const timeoutController = new AbortController()
     vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeoutController.signal)
     const fetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
@@ -210,9 +377,14 @@ describe('ESI transport telemetry roles', () => {
       cause: expect.any(EsiTransportError),
     })
     await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
   })
 
   test('marks error-response body stream failures as transport errors', async () => {
+    vi.useFakeTimers()
     const failure = new TypeError('terminated')
     const body = new ReadableStream<Uint8Array>({
       pull(controller) {
@@ -235,5 +407,9 @@ describe('ESI transport telemetry roles', () => {
     })
     await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
     await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(mocks.renew).not.toHaveBeenCalled()
+    expect(mocks.release).toHaveBeenCalledOnce()
   })
 })

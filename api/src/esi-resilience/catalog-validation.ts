@@ -329,6 +329,8 @@ function formatContractIssue(issue: z.core.$ZodIssue) {
       return formatIdentityIssue(issue.path)
     case 'resourceRevision':
       return 'has invalid resource-revision metadata'
+    case 'mutation':
+      return 'has invalid mutation metadata'
     case 'freshness':
       return formatFreshnessIssue(issue.path)
     case 'cache':

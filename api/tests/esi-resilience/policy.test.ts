@@ -784,6 +784,11 @@ describe('ESI operation policies', () => {
       'relative freshness must use positive whole seconds',
     ],
     [
+      'mutation',
+      () => ({ ...validModuleOperation(), mutation: { kind: 'character' } }),
+      'invalid mutation metadata',
+    ],
+    [
       'cache behavior',
       () => ({
         ...validModuleOperation(),
