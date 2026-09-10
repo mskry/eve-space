@@ -1,4 +1,3 @@
-import { createAssetsClient } from '@evespace/esi-client/domains/assets'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-client/types'
 import { eq, inArray } from 'drizzle-orm'
@@ -6,11 +5,9 @@ import { db } from '../db/client.js'
 import { sdeCategories, sdeGroups, sdeTypes } from '../db/schema.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
 import { execute } from '../esi-resilience/execute.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
 import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
 import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { resolveUniverseNamesBestEffort } from '../universe/names.js'
@@ -64,6 +61,28 @@ interface CharacterAssetNameSnapshot {
   itemId: number
   name: string
 }
+
+interface CharacterAssetsPageRepresentationInput {
+  characterId: number
+  page: number
+}
+
+const characterAssetsPageRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-assets-page',
+    name: 'character-assets-page-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
+    encodeRequest: (input: CharacterAssetsPageRepresentationInput) => ({
+      path: { character_id: input.characterId },
+      query: { page: input.page },
+    }),
+    map: (response, input): CharacterAssetPageSnapshot => ({
+      page: input.page,
+      totalPages: validatePageCount(response.meta.pagination?.pages),
+      assets: response.data.map(mapAssetSnapshot),
+    }),
+  }),
+)
 
 const characterAssetNamesRepresentation = registerEsiRepresentation(
   defineCharacterEsiRepresentation({
@@ -157,26 +176,7 @@ export async function getCharacterAssets(characterId: number): Promise<Character
 }
 
 async function loadCharacterAssetPage(characterId: number, page: number) {
-  return getEsiResilienceLayer().getCharacter<CharacterAssetPageSnapshot>({
-    operation: 'character-assets-page',
-    inputs: { characterId, page },
-    load: async (authority, revalidation) => {
-      const response = await createAssetsClient({
-        fetch: createEsiTransport('character-assets-page', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .listCharacterAssets(characterId, { page, ...revalidation })
-      return {
-        data: {
-          page,
-          totalPages: validatePageCount(response.meta.pagination?.pages),
-          assets: response.data.map(mapAssetSnapshot),
-        },
-        meta: response.meta,
-      }
-    },
-  })
+  return execute(characterAssetsPageRepresentation, { characterId, page })
 }
 
 function validatePageCount(value: unknown) {
