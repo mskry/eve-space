@@ -8,8 +8,4 @@
  * The egress verifier and its test both read this list. Keep it here rather than copying it, so a
  * migration cannot delete an entry from one and leave the other behind.
  */
-export const legacyEsiEgressModules = [
-  'api/src/deployment/organization.ts',
-  'api/src/mail/mailbox.ts',
-  'api/src/organization/authority.ts',
-]
+export const legacyEsiEgressModules = ['api/src/mail/mailbox.ts']

@@ -1,21 +1,24 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  createAllianceClient: vi.fn(),
-  createEsiTransport: vi.fn(),
+  callOperation: vi.fn(),
   get: vi.fn(),
-  getPublicInfo: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/alliance', () => ({
-  createAllianceClient: mocks.createAllianceClient,
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.callOperation(...arguments_)
+    }
+  },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
+  getEsiResilienceLayer: () => ({
+    executePublicRepresentation: (_r: unknown, resource: unknown) => mocks.get(resource),
+  }),
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 import { resolveOrganizationAuthorityCorporation } from '../../src/organization/authority.js'
 import {
@@ -32,10 +35,7 @@ beforeEach(() => {
     const loaded = await resource.load({ ifNoneMatch: 'etag' })
     return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
   })
-  mocks.createAllianceClient.mockReturnValue({
-    withMetadata: () => ({ getPublicInfo: mocks.getPublicInfo }),
-  })
-  mocks.getPublicInfo.mockResolvedValue(
+  mocks.callOperation.mockResolvedValue(
     response({ executor_corporation_id: corporationId, name: 'Alliance' }),
   )
 })
@@ -58,11 +58,11 @@ describe('organization owner authority', () => {
         { corporationId, allianceId },
       ),
     ).resolves.toBe(corporationId)
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      operation: 'public-alliance',
-      inputs: { allianceId },
+    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({ operation: 'public-alliance' })
+    expect(mocks.callOperation).toHaveBeenCalledWith('GetAlliancesAllianceId', {
+      path: { alliance_id: allianceId },
+      headers: { 'If-None-Match': 'etag' },
     })
-    expect(mocks.getPublicInfo).toHaveBeenCalledWith(allianceId, { ifNoneMatch: 'etag' })
   })
 
   test('rejects a corporation outside the managed organization authority', async () => {
@@ -104,7 +104,7 @@ describe('organization owner authority', () => {
   })
 
   test('treats an alliance without a current executor as unavailable evidence', async () => {
-    mocks.getPublicInfo.mockResolvedValueOnce(response({ name: 'Alliance' }))
+    mocks.callOperation.mockResolvedValueOnce(response({ name: 'Alliance' }))
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'alliance', organizationId: allianceId },

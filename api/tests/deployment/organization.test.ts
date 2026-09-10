@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  allianceInfo: vi.fn(),
   callOperation: vi.fn(),
   executePublicRepresentation: vi.fn(),
   get: vi.fn(),
@@ -14,10 +13,6 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
       return mocks.callOperation(...arguments_)
     }
   },
-}))
-
-vi.mock('@evespace/esi-client/domains/alliance', () => ({
-  createAllianceClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.allianceInfo }) }),
 }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
@@ -38,13 +33,14 @@ beforeEach(() => {
     const response = await resource.load({})
     return { data: response.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
   })
-  mocks.allianceInfo.mockResolvedValue({
-    data: { name: 'Test Alliance', ticker: 'TEST' },
-    meta: { headers: {} },
-  })
   mocks.callOperation.mockImplementation((operationId: string) => {
     if (operationId === 'GetCorporationsCorporationId')
       return { data: { name: 'Test Corporation', ticker: 'CORP' }, meta: { headers: {} } }
+    if (operationId === 'GetAlliancesAllianceId')
+      return {
+        data: { name: 'Test Alliance', ticker: 'TEST', executor_corporation_id: 98 },
+        meta: { headers: {} },
+      }
     throw new Error(`Unexpected operation ${operationId}`)
   })
 })
@@ -57,7 +53,9 @@ describe('deployment organization resolution', () => {
       name: 'Test Alliance',
       ticker: 'TEST',
     })
-    expect(mocks.allianceInfo).toHaveBeenCalledWith(99, {})
+    expect(mocks.callOperation).toHaveBeenCalledWith('GetAlliancesAllianceId', {
+      path: { alliance_id: 99 },
+    })
   })
 
   test('maps a corporation ID to stable deployment details', async () => {
