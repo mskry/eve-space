@@ -3,31 +3,91 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::copy;
 use std::path::Path;
+use std::path::PathBuf;
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 
 const LATEST_URL: &str = "https://developers.eveonline.com/static-data/tranquility/latest.jsonl";
 
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct LatestBuild {
+    pub build_number: i64,
+    pub release_date: OffsetDateTime,
+}
+
 #[derive(Deserialize)]
-pub struct LatestBuild {
+struct LatestBuildResponse {
     #[serde(rename = "buildNumber")]
     pub build_number: i64,
     #[serde(rename = "releaseDate")]
-    pub release_date: String,
+    release_date: String,
 }
 
-pub fn fetch_latest_build(client: &reqwest::blocking::Client) -> Result<LatestBuild> {
-    client
-        .get(LATEST_URL)
-        .send()
-        .context("requesting the latest SDE build number")?
-        .error_for_status()
-        .context("CCP's latest-build endpoint returned an error")?
-        .json::<LatestBuild>()
-        .context("parsing latest.jsonl")
+pub(crate) trait SdeSource {
+    fn latest_build(&mut self) -> Result<LatestBuild>;
+    fn acquire_archive(&mut self, build_number: i64) -> Result<PathBuf>;
+    fn release_archive(&mut self, archive: &Path);
+}
+
+pub(crate) struct OfficialSdeSource {
+    client: reqwest::blocking::Client,
+    download_directory: PathBuf,
+}
+
+impl OfficialSdeSource {
+    pub(crate) fn new() -> Result<Self> {
+        Ok(Self {
+            client: reqwest::blocking::Client::builder()
+                .user_agent("eve-space-sde-ingest/0.1")
+                .build()
+                .context("building the HTTP client")?,
+            download_directory: std::env::temp_dir(),
+        })
+    }
+}
+
+impl SdeSource for OfficialSdeSource {
+    fn latest_build(&mut self) -> Result<LatestBuild> {
+        let latest = self
+            .client
+            .get(LATEST_URL)
+            .send()
+            .context("requesting the latest SDE build number")?
+            .error_for_status()
+            .context("CCP's latest-build endpoint returned an error")?
+            .json::<LatestBuildResponse>()
+            .context("parsing latest.jsonl")?;
+        Ok(LatestBuild {
+            build_number: latest.build_number,
+            release_date: OffsetDateTime::parse(&latest.release_date, &Rfc3339)
+                .context("parsing the SDE release date")?,
+        })
+    }
+
+    fn acquire_archive(&mut self, build_number: i64) -> Result<PathBuf> {
+        let destination = self
+            .download_directory
+            .join(format!("eve-sde-{build_number}.zip"));
+        if destination.exists() {
+            println!(
+                "Reusing already-downloaded archive at {}.",
+                destination.display()
+            );
+        } else {
+            println!("Downloading SDE build {build_number} (~94 MB)...");
+            download_build(&self.client, build_number, &destination)?;
+        }
+        Ok(destination)
+    }
+
+    fn release_archive(&mut self, archive: &Path) {
+        cleanup_downloads(&self.download_directory, archive);
+    }
 }
 
 /// Streams the SDE zip to a `.part` sibling and renames it into place, so a killed download never
 /// leaves a truncated file at `destination` for a later run to mistake for a complete archive.
-pub fn download_build(
+fn download_build(
     client: &reqwest::blocking::Client,
     build_number: i64,
     destination: &Path,
@@ -58,4 +118,20 @@ pub fn download_build(
         )
     })?;
     Ok(())
+}
+
+fn cleanup_downloads(directory: &Path, current: &Path) {
+    let _ = std::fs::remove_file(current);
+    let Ok(entries) = std::fs::read_dir(directory) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if name.starts_with("eve-sde-") && (name.ends_with(".zip") || name.ends_with(".zip.part")) {
+            let _ = std::fs::remove_file(path);
+        }
+    }
 }

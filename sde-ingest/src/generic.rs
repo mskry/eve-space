@@ -5,37 +5,20 @@ use serde_json::Value;
 use std::fs::File;
 use zip::ZipArchive;
 
-/// The datasets handled by `typed.rs`; everything else falls through to the
-/// generic `sde_dataset_rows` catch-all so the ingestion covers all 102 SDE
-/// datasets without hand-designed schema for the ~90 this app doesn't query
-/// relationally today.
-const TYPED_MEMBERS: &[&str] = &[
-    "categories.jsonl",
-    "groups.jsonl",
-    "types.jsonl",
-    "marketGroups.jsonl",
-    "dogmaAttributes.jsonl",
-    "dogmaEffects.jsonl",
-    "typeDogma.jsonl",
-    "races.jsonl",
-    "bloodlines.jsonl",
-    "ancestries.jsonl",
-    "factions.jsonl",
-    // Build metadata, not a game dataset — same content as latest.jsonl.
-    "_sde.jsonl",
-];
-pub const MANDATORY_MEMBERS: &[&str] = &["mapSolarSystems.jsonl", "mapStargates.jsonl"];
-
-pub fn generic_members(archive: &ZipArchive<File>) -> Vec<String> {
+pub fn optional_members(
+    archive: &ZipArchive<File>,
+    excluded: &[&str],
+    required: &[&str],
+) -> Vec<String> {
     archive
         .file_names()
-        .filter(|name| is_best_effort_member(name))
+        .filter(|name| is_optional_member(name, excluded, required))
         .map(str::to_owned)
         .collect()
 }
 
-fn is_best_effort_member(name: &str) -> bool {
-    name.ends_with(".jsonl") && !TYPED_MEMBERS.contains(&name) && !MANDATORY_MEMBERS.contains(&name)
+fn is_optional_member(name: &str, excluded: &[&str], required: &[&str]) -> bool {
+    name.ends_with(".jsonl") && !excluded.contains(&name) && !required.contains(&name)
 }
 
 /// Most datasets key rows by integer id; a handful (militaryCampaigns,
@@ -80,16 +63,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn routing_members_are_not_best_effort() {
-        assert_eq!(
-            MANDATORY_MEMBERS,
-            &["mapSolarSystems.jsonl", "mapStargates.jsonl"]
-        );
-        assert!(
-            MANDATORY_MEMBERS
-                .iter()
-                .all(|member| !is_best_effort_member(member))
-        );
-        assert!(is_best_effort_member("mapRegions.jsonl"));
+    fn member_classification_honors_the_projection_plan() {
+        let excluded = ["types.jsonl"];
+        let required = ["mapStargates.jsonl"];
+        assert!(!is_optional_member("types.jsonl", &excluded, &required));
+        assert!(!is_optional_member(
+            "mapStargates.jsonl",
+            &excluded,
+            &required
+        ));
+        assert!(is_optional_member("mapRegions.jsonl", &excluded, &required));
     }
 }

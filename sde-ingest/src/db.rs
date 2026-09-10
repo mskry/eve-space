@@ -63,16 +63,10 @@ pub fn record_build(
     Ok(())
 }
 
-pub fn truncate_all(client: &mut Transaction) -> Result<()> {
+pub fn truncate_all(client: &mut Transaction, tables: &[&str]) -> Result<()> {
+    let statement = format!("truncate table {}", tables.join(", "));
     client
-        .batch_execute(
-            "truncate table
-                sde_categories, sde_groups, sde_types, sde_market_groups,
-                sde_dogma_attributes, sde_dogma_effects,
-                sde_type_dogma_attributes, sde_type_dogma_effects,
-                sde_races, sde_bloodlines, sde_ancestries, sde_factions,
-                sde_dataset_rows, sde_npc_stations, sde_solar_systems",
-        )
+        .batch_execute(&statement)
         .context("truncating SDE tables before reload")
 }
 
