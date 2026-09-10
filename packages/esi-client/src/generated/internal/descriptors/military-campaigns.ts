@@ -61,6 +61,7 @@ export const GetMilitaryCampaignsDetailDescriptor: OperationExecutionDescriptor<
   requestBody: null,
   requestSchema: GetMilitaryCampaignsDetailRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"military-campaign","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMilitaryCampaignsDetailResponse },
   ],
@@ -86,6 +87,7 @@ export const GetCharactersMilitaryCampaignsObjectivesParticipationDescriptor: Op
   requestBody: null,
   requestSchema: GetCharactersMilitaryCampaignsObjectivesParticipationRequestSchema,
   authentication: { scopes: ["esi.activity.char:read"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-military-campaign","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersMilitaryCampaignsObjectivesParticipationResponse },
   ],
@@ -111,6 +113,7 @@ export const GetMilitaryCampaignsObjectivesDetailDescriptor: OperationExecutionD
   requestBody: null,
   requestSchema: GetMilitaryCampaignsObjectivesDetailRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"military-campaign","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMilitaryCampaignsObjectivesDetailResponse },
   ],
@@ -133,6 +136,7 @@ export const GetMilitaryCampaignsListingDescriptor: OperationExecutionDescriptor
   requestBody: null,
   requestSchema: GetMilitaryCampaignsListingRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"military-campaign","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMilitaryCampaignsListingResponse },
   ],
@@ -161,6 +165,7 @@ export const GetCharactersMilitaryCampaignsObjectivesListingDescriptor: Operatio
   requestBody: null,
   requestSchema: GetCharactersMilitaryCampaignsObjectivesListingRequestSchema,
   authentication: { scopes: ["esi.activity.char:read"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-military-campaign","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersMilitaryCampaignsObjectivesListingResponse },
   ],
@@ -189,6 +194,7 @@ export const GetMilitaryCampaignsObjectivesListingDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetMilitaryCampaignsObjectivesListingRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"military-campaign","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMilitaryCampaignsObjectivesListingResponse },
   ],

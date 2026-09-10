@@ -5,12 +5,16 @@ export type EsiErrorCode =
   | 'ESI_AUTHENTICATION_REQUIRED'
   | 'ESI_GENERIC_MUTATION_DISABLED'
   | 'ESI_GENERIC_MUTATION_UNCONFIRMED'
+  | 'ESI_TRANSPORT_ERROR'
+  | 'ESI_NOT_MODIFIED'
   | 'ESI_HTTP_ERROR'
   | 'ESI_RESPONSE_PARSE_ERROR'
   | 'ESI_REQUEST_VALIDATION_ERROR'
   | 'ESI_RESPONSE_VALIDATION_ERROR';
 
 export type EsiValidationDirection = 'request' | 'response';
+export type EsiTransportFailureReason = 'timeout' | 'network';
+export type EsiTransportFailurePhase = 'request' | 'response';
 export type EsiErrorBodyFormat = 'json' | 'text' | 'none';
 export type EsiErrorBodyValue =
   | null
@@ -55,6 +59,18 @@ export interface SerializedEsiHttpError extends SerializedEsiError {
   readonly bodyTruncated: boolean;
 }
 
+export interface SerializedEsiTransportError extends SerializedEsiError {
+  readonly reason: EsiTransportFailureReason;
+  readonly phase: EsiTransportFailurePhase;
+  readonly status?: number;
+  readonly metadata?: EsiResponseMetadata;
+}
+
+export interface SerializedEsiNotModifiedError extends SerializedEsiError {
+  readonly status: 304;
+  readonly metadata: EsiResponseMetadata;
+}
+
 export interface SerializedEsiResponseParseError extends SerializedEsiError {
   readonly status: number;
   readonly metadata: EsiResponseMetadata;
@@ -63,6 +79,11 @@ export interface SerializedEsiResponseParseError extends SerializedEsiError {
 export interface SerializedEsiValidationError extends SerializedEsiError {
   readonly direction: EsiValidationDirection;
   readonly issues: readonly EsiValidationIssue[];
+}
+
+export interface SerializedEsiResponseValidationError extends SerializedEsiValidationError {
+  readonly status: number;
+  readonly metadata: EsiResponseMetadata;
 }
 
 export interface CommonErrorOptions {
@@ -88,6 +109,17 @@ export interface EsiHttpErrorOptions extends CommonErrorOptions {
   readonly responseBodyText?: string;
 }
 
+export interface EsiTransportErrorOptions extends CommonErrorOptions {
+  readonly reason: EsiTransportFailureReason;
+  readonly phase: EsiTransportFailurePhase;
+  readonly status?: number;
+  readonly metadata?: EsiResponseMetadataInput;
+}
+
+export interface EsiNotModifiedErrorOptions extends CommonErrorOptions {
+  readonly metadata?: EsiResponseMetadataInput;
+}
+
 export interface EsiResponseParseErrorOptions extends CommonErrorOptions {
   readonly status: number;
   readonly metadata?: EsiResponseMetadataInput;
@@ -99,4 +131,7 @@ export interface EsiValidationErrorOptions extends CommonErrorOptions {
 
 export interface EsiRequestValidationErrorOptions extends EsiValidationErrorOptions {}
 
-export interface EsiResponseValidationErrorOptions extends EsiValidationErrorOptions {}
+export interface EsiResponseValidationErrorOptions extends EsiValidationErrorOptions {
+  readonly status: number;
+  readonly metadata?: EsiResponseMetadataInput;
+}

@@ -307,6 +307,65 @@ describe('atomic generated-path replacement', () => {
 });
 
 describe('project root isolation', () => {
+  it('rejects malformed policy extensions before emitting or replacing generated output', async () => {
+    const projectRoot = await makeTemporaryDirectory('esi-invalid-policy-root-');
+    const workspace = await makeTemporaryDirectory('esi-invalid-policy-out-');
+    await mkdir(join(projectRoot, 'openapi/config'), { recursive: true });
+    await Promise.all([
+      writeFile(
+        join(projectRoot, 'openapi/config/naming-overrides.json'),
+        `${JSON.stringify({
+          schemaVersion: 2,
+          operations: [
+            {
+              operationId: 'get_items',
+              domain: 'items',
+              method: 'list',
+              reviewed: true,
+            },
+          ],
+        })}\n`,
+      ),
+      writeFile(
+        join(projectRoot, 'openapi/config/safety-overrides.json'),
+        `${JSON.stringify({ schemaVersion: 1, overrides: [] })}\n`,
+      ),
+      writeFile(
+        join(projectRoot, 'openapi/config/exclusions.json'),
+        `${JSON.stringify({ schemaVersion: 1, exclusions: [] })}\n`,
+      ),
+    ]);
+    const document = {
+      openapi: '3.1.0',
+      info: { title: 'Invalid policy fixture', version: '1.0.0' },
+      paths: {
+        '/items': {
+          get: {
+            operationId: 'get_items',
+            responses: { '204': { description: 'No content' } },
+            'x-rate-limit': { group: 'items', 'max-tokens': 10, 'window-size': 900 },
+          },
+        },
+      },
+    };
+
+    await expect(
+      prepareGenerationContext(
+        {
+          appliedCorrections: [],
+          compatibilityDate: '2026-08-18',
+          document,
+          sha256: 'a'.repeat(64),
+          sourceSha256: 'b'.repeat(64),
+          specificationUrl: 'https://example.test/openapi.json',
+        },
+        workspace,
+        projectRoot,
+      ),
+    ).rejects.toThrow('Invalid x-rate-limit window-size for get_items');
+    await expect(readdir(workspace)).resolves.toEqual([]);
+  });
+
   it('reads configuration from the given project root, not the package root', async () => {
     const projectRoot = await makeTemporaryDirectory('esi-project-root-');
     const workspace = await makeTemporaryDirectory('esi-project-root-out-');

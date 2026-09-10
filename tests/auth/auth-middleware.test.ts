@@ -47,18 +47,26 @@ describe('authentication route middleware', () => {
     expect(navigateTo).toHaveBeenCalledWith('/characters/7?tab=wallet#activity', { replace: true })
   })
 
+  it('sends a newly authenticated capsuleer to the character roster', async () => {
+    fetchSession.mockResolvedValue({ authenticated: true })
+
+    await authMiddleware(route('/auth?auth=success', '/auth', { auth: 'success' }))
+
+    expect(navigateTo).toHaveBeenCalledWith('/characters', { replace: true })
+  })
+
   it.each([
     ['an external URL', 'https://example.com/characters/7'],
     ['a protocol-relative URL', '//example.com/characters/7'],
     ['an encoded authorization route', '/%61uth'],
     ['a repeated redirect parameter', ['/characters/7', '/corporations/8']],
     ['the authorization route', '/auth'],
-  ])('falls back to the homepage for %s', async (_label, redirect) => {
+  ])('falls back to the character roster for %s', async (_label, redirect) => {
     fetchSession.mockResolvedValue({ authenticated: true })
 
     await authMiddleware(route('/auth', '/auth', { redirect }))
 
-    expect(navigateTo).toHaveBeenCalledWith('/', { replace: true })
+    expect(navigateTo).toHaveBeenCalledWith('/characters', { replace: true })
   })
 
   it('captures the requested deep link when authentication is required', async () => {

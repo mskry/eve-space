@@ -58,6 +58,14 @@ interface OperationContract {
   readonly arguments: Record<string, unknown>;
   readonly expectedRequest: ExpectedRequest;
   readonly responses: readonly OperationResponseContract[];
+  readonly protocol: Pick<
+    NormalizedOperation,
+    | 'cache'
+    | 'conditionalRequestValidators'
+    | 'maximumBatchSize'
+    | 'rateLimit'
+    | 'requestArrayLimits'
+  >;
 }
 
 export function renderGeneratedOperationContractTests(
@@ -112,6 +120,7 @@ describe('generated operation contracts', () => {
     expect(runtime.transport.requestBody).toEqual(contract.requestBody);
     expect(runtime.transport.authentication?.scopes ?? []).toEqual(contract.authentication.scopes);
     expect(runtime.transport.authentication !== null).toBe(contract.authentication.required);
+    expect(runtime.transport.protocol).toEqual(contract.protocol);
 
     expect(manifest.http).toEqual({ method: contract.method, path: contract.pathTemplate });
     expect(
@@ -132,6 +141,13 @@ describe('generated operation contracts', () => {
     expect(manifest.requestSchemas.every(({ schema }) => schema.module === '@evespace/esi-client/zod')).toBe(true);
     expect(manifest.responseType.export).toBe(contract.responseTypeExport);
     expect(manifest.responseType.module).toBe('@evespace/esi-client/types');
+    expect({
+      cache: manifest.cache,
+      conditionalRequestValidators: manifest.conditionalRequestValidators,
+      maximumBatchSize: manifest.maximumBatchSize,
+      rateLimit: manifest.rateLimit,
+      requestArrayLimits: manifest.requestArrayLimits,
+    }).toEqual(contract.protocol);
 
     expect(runtime.requestSchema.parse(contract.arguments)).toEqual(contract.arguments);
     const transport = { ...runtime.transport, requestSchema: undefined };
@@ -256,6 +272,13 @@ function createOperationContract(
       fixtureArguments,
       requestBody,
     ),
+    protocol: {
+      cache: operation.cache,
+      conditionalRequestValidators: operation.conditionalRequestValidators,
+      maximumBatchSize: operation.maximumBatchSize,
+      rateLimit: operation.rateLimit,
+      requestArrayLimits: operation.requestArrayLimits,
+    },
     responses: operation.successResponses.map((response) => ({
       status: response.status,
       body: response.noContent ? ('none' as const) : ('json' as const),

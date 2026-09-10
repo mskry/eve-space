@@ -115,13 +115,30 @@ describe('operation search', () => {
         'authenticated',
         'scopes',
         'classification',
+        'protocol',
       ]);
       expect(Object.isFrozen(result)).toBe(true);
       expect(Object.isFrozen(result.scopes)).toBe(true);
+      expect(Object.isFrozen(result.protocol)).toBe(true);
       expect(Object.values(result).every((value) => typeof value !== 'function')).toBe(true);
     }
 
     expect(operationManifest.operations.length).toBeGreaterThan(results.length);
+  });
+
+  it('projects generated protocol facts into search results', () => {
+    const result = searchOperations({ query: 'GetStatus', limit: 1 })[0];
+    const operation = operationManifest.operations.find(
+      ({ operationId }) => operationId === 'GetStatus',
+    );
+
+    expect(result?.protocol).toEqual({
+      cache: operation?.cache,
+      conditionalRequestValidators: operation?.conditionalRequestValidators,
+      maximumBatchSize: operation?.maximumBatchSize,
+      rateLimit: operation?.rateLimit,
+      requestArrayLimits: operation?.requestArrayLimits,
+    });
   });
 });
 

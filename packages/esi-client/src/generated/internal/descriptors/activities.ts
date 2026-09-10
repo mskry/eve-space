@@ -45,6 +45,7 @@ export const GetCharactersMercenaryTacticalOperationsDetailDescriptor: Operation
   requestBody: null,
   requestSchema: GetCharactersMercenaryTacticalOperationsDetailRequestSchema,
   authentication: { scopes: ["esi-activities.read_character.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-cache-mode":"event-based","x-client-cache-ttl":300,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-activity","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersMercenaryTacticalOperationsDetailResponse },
   ],
@@ -69,6 +70,7 @@ export const GetCharactersMercenaryTacticalOperationsListingDescriptor: Operatio
   requestBody: null,
   requestSchema: GetCharactersMercenaryTacticalOperationsListingRequestSchema,
   authentication: { scopes: ["esi-activities.read_character.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-cache-mode":"event-based","x-client-cache-ttl":300,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-activity","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersMercenaryTacticalOperationsListingResponse },
   ],
@@ -91,6 +93,7 @@ export const GetSkyhooksRaidableDescriptor: OperationExecutionDescriptor<Operati
   requestBody: null,
   requestSchema: GetSkyhooksRaidableRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-cache-mode":"ttl-based","x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":60}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"activity","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetSkyhooksRaidableResponse },
   ],

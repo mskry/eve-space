@@ -141,6 +141,10 @@ function operation(operationId: string, path: string, summary: string): Normaliz
     security: [],
     pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
     cache: { responseHeaders: [], extensions: {} },
+    conditionalRequestValidators: [],
+    rateLimit: { kind: 'legacy-only' },
+    requestArrayLimits: [],
+    maximumBatchSize: null,
     extensions: {},
   };
 }

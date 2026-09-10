@@ -84,12 +84,13 @@ describe('ESI request transport through registered execution', () => {
   test('marks fetch failures as transport errors and releases the permit', async () => {
     const failure = new TypeError('network unavailable')
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(failure))
-    const { EsiTransportError } = await import('../../src/esi-resilience/transport.js')
 
     const caught = executeStatus().catch((error: unknown) => error)
 
-    await expect(caught).resolves.toMatchObject({ name: 'EsiTransportError', cause: failure })
-    await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
+    await expect(caught).resolves.toMatchObject({
+      code: 'ESI_TRANSPORT_ERROR',
+      cause: expect.objectContaining({ cause: failure }),
+    })
     expect(mocks.release).toHaveBeenCalledTimes(3)
   })
 
@@ -107,7 +108,6 @@ describe('ESI request transport through registered execution', () => {
         }),
     )
     vi.stubGlobal('fetch', fetch)
-    const { EsiTransportError } = await import('../../src/esi-resilience/transport.js')
     const caught = executeStatus().catch((error: unknown) => error)
 
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
@@ -115,8 +115,10 @@ describe('ESI request transport through registered execution', () => {
     timeoutController.abort(timeoutFailure)
     await vi.runAllTimersAsync()
 
-    await expect(caught).resolves.toMatchObject({ cause: timeoutFailure })
-    await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
+    await expect(caught).resolves.toMatchObject({
+      code: 'ESI_TRANSPORT_ERROR',
+      cause: expect.objectContaining({ cause: timeoutFailure }),
+    })
     expect(timeout).toHaveBeenCalledWith(env.ESI_REQUEST_TIMEOUT_MS)
     expect(mocks.release).toHaveBeenCalledTimes(3)
   })
@@ -133,8 +135,8 @@ describe('ESI request transport through registered execution', () => {
 
     const pending = executeStatus()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledOnce())
-    await vi.advanceTimersByTimeAsync(30_000)
-    expect(mocks.renew).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(mocks.renew).toHaveBeenCalledOnce()
     expect(mocks.release).not.toHaveBeenCalled()
 
     bodyController?.enqueue(new TextEncoder().encode(JSON.stringify(statusData())))
@@ -162,7 +164,7 @@ describe('ESI request transport through registered execution', () => {
 
     const pending = executeStatus()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledOnce())
-    await vi.advanceTimersByTimeAsync(45_000)
+    await vi.advanceTimersByTimeAsync(20_000)
     expect(mocks.renew).toHaveBeenCalledOnce()
     bodyController?.enqueue(new TextEncoder().encode(JSON.stringify(statusData())))
     bodyController?.close()
@@ -188,17 +190,14 @@ describe('ESI request transport through registered execution', () => {
         }),
     )
     vi.stubGlobal('fetch', fetch)
-    const [{ classifyStaleRefreshFailure }, { EsiTransportError }] = await Promise.all([
-      import('../../src/esi-resilience/errors.js'),
-      import('../../src/esi-resilience/transport.js'),
-    ])
+    const { classifyStaleRefreshFailure } = await import('../../src/esi-resilience/errors.js')
     const caught = executeStatus().catch((error: unknown) => error)
 
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     await vi.runAllTimersAsync()
 
     const error = await caught
-    expect(error).toBeInstanceOf(EsiTransportError)
+    expect(error).toMatchObject({ code: 'ESI_TRANSPORT_ERROR' })
     expect(classifyStaleRefreshFailure(error)).toBe('esi-unavailable')
     expect(transportSignal?.aborted).toBe(true)
     expect(mocks.release).toHaveBeenCalledTimes(3)
@@ -220,7 +219,7 @@ describe('ESI request transport through registered execution', () => {
       return Promise.resolve(statusResponse(body))
     })
     vi.stubGlobal('fetch', fetch)
-    const { EsiTransportError } = await import('../../src/esi-resilience/transport.js')
+    const { classifyStaleRefreshFailure } = await import('../../src/esi-resilience/errors.js')
     const caught = executeStatus().catch((error: unknown) => error)
 
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
@@ -228,9 +227,12 @@ describe('ESI request transport through registered execution', () => {
     await vi.runAllTimersAsync()
 
     await expect(caught).resolves.toMatchObject({
-      cause: expect.objectContaining({ name: 'TimeoutError' }),
+      code: 'ESI_TRANSPORT_ERROR',
+      cause: expect.objectContaining({
+        cause: expect.objectContaining({ name: 'TimeoutError' }),
+      }),
     })
-    await expect(caught).resolves.toBeInstanceOf(EsiTransportError)
+    expect(classifyStaleRefreshFailure(await caught)).toBe('esi-unavailable')
     await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledTimes(3))
   })
 })

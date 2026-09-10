@@ -55,6 +55,7 @@ export const PostUiOpenwindowContractDescriptor: OperationExecutionDescriptor<Op
   requestBody: null,
   requestSchema: PostUiOpenwindowContractRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"ui","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -79,6 +80,7 @@ export const PostUiOpenwindowInformationDescriptor: OperationExecutionDescriptor
   requestBody: null,
   requestSchema: PostUiOpenwindowInformationRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"ui","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -103,6 +105,7 @@ export const PostUiOpenwindowMarketdetailsDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: PostUiOpenwindowMarketdetailsRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"ui","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -126,6 +129,7 @@ export const PostUiOpenwindowNewmailDescriptor: OperationExecutionDescriptor<Ope
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostUiOpenwindowNewmailRequestSchema,
   authentication: { scopes: ["esi-ui.open_window.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":50,"rateLimit":{"kind":"declared","group":"ui","maximumTokens":900,"window":"15m"},"requestArrayLimits":[{"location":"body","path":["recipients"],"maximumItems":50}]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -152,6 +156,7 @@ export const PostUiAutopilotWaypointDescriptor: OperationExecutionDescriptor<Ope
   requestBody: null,
   requestSchema: PostUiAutopilotWaypointRequestSchema,
   authentication: { scopes: ["esi-ui.write_waypoint.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"ui","maximumTokens":900,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],

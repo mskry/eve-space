@@ -230,4 +230,4 @@ Do not run it without a real previous image. It intentionally refuses to infer o
 
 ## Current SDK Caveat
 
-Live ESI currently returns nullable `ship_type_id` values from `GetUniverseBloodlines`, while `@evespace/esi-client@3.0.1` expects numbers. Response validation is disabled only for that static operation; other ESI responses remain validated.
+Live ESI currently returns nullable `ship_type_id` values from `GetUniverseBloodlines`, while `@evespace/esi-client@3.1.0` expects numbers. Response validation is disabled only for that static operation; other ESI responses remain validated.

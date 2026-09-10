@@ -12,6 +12,7 @@ export type {
   OperationAuthentication,
   OperationExecutionDescriptor,
   OperationExecutionOptions,
+  OperationProtocolDescriptor,
   OperationSuccessResponse,
   OperationSuccessStatus,
   OperationTransportDescriptor,
@@ -44,6 +45,7 @@ export type {
 export {
   searchOperations,
   type OperationSearchClassification,
+  type OperationSearchProtocol,
   type OperationSearchResult,
   type SearchOperationsOptions,
 } from './operation-search.js';

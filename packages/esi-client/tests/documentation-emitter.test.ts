@@ -32,6 +32,9 @@ const conceptPaths = [
   'concepts/validation.md',
   'concepts/metadata-pagination.md',
   'concepts/errors.md',
+  'concepts/operation-discovery.md',
+  'concepts/custom-fetch.md',
+  'concepts/standalone-domains.md',
   'concepts/mutation-safety.md',
 ];
 const examplePaths = [
@@ -40,6 +43,9 @@ const examplePaths = [
   'examples/authenticated.md',
   'examples/paginated.md',
   'examples/metadata.md',
+  'examples/operation-protocol.md',
+  'examples/custom-fetch.md',
+  'examples/transport-errors.md',
   'examples/validation-error.md',
   'examples/mutation-safety.md',
   'examples/schema-validation.md',

@@ -46,6 +46,9 @@ const conceptPages: readonly (readonly [string, string])[] = Object.freeze([
   ['validation', 'Validation'],
   ['metadata-pagination', 'Metadata and pagination'],
   ['errors', 'Structured errors'],
+  ['operation-discovery', 'Operation discovery'],
+  ['custom-fetch', 'Custom fetch'],
+  ['standalone-domains', 'Standalone domains'],
   ['mutation-safety', 'Mutation safety'],
 ]);
 const safeSegmentPattern = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/u;
@@ -209,21 +212,30 @@ function renderConceptPage(slug: string, title: string, provenance: ArtifactProv
 \`pnpm add @evespace/esi-client zod\`
 
 The package is ESM-only and requires Node.js 24.20 or newer. Import \`EsiClient\` from the package root, or use a documented domain, \`types\`, \`zod\`, or \`operations\` subpath for a narrower dependency surface.`,
-    client: `Create a public client with \`new EsiClient()\`. The pinned compatibility date, standard ESI base URL, English language, response validation, and the global \`fetch\` implementation are defaults.
+    client: `Create a public client with \`new EsiClient()\`. The pinned compatibility date, standard ESI base URL, English language, 10,000 millisecond request timeout, response validation, and the global \`fetch\` implementation are defaults.
 
-Constructor options include \`baseUrl\`, \`compatibilityDate\`, \`language\`, \`token\` or \`tokenProvider\`, \`fetch\`, \`validateResponses\`, \`validateRequests\`, and \`allowGenericMutations\`. Configuration is immutable. Operation options can override the compatibility date where the registry declares support.`,
+Constructor options include \`baseUrl\`, \`compatibilityDate\`, \`language\`, \`requestTimeoutMs\`, \`token\` or \`tokenProvider\`, \`fetch\`, \`validateResponses\`, \`validateRequests\`, and \`allowGenericMutations\`. Configuration is immutable. The positive-integer timeout starts after token-provider resolution and spans the configured fetch plus response-body consumption. Operation options can override the compatibility date where the registry declares support.`,
     auth: `Public operations need no authentication. Authenticated operation references list every required OAuth scope.
 
 Configure either \`token\` or an asynchronous \`tokenProvider\`; do not configure both. Token providers are resolved only for authenticated requests. Credentials and authorization headers are excluded from the serializable registry, response metadata, and structured errors.`,
     validation: `Successful JSON responses are validated by generated Zod 4 schemas by default. Natural TypeScript exports are available from \`@evespace/esi-client/types\`; matching natural Zod exports are available from \`@evespace/esi-client/zod\`. Known object fields are checked while unknown response fields are preserved for forward compatibility. Date and date-time values remain JSON strings.
 
 Typed request validation is opt-in with \`validateRequests: true\`. Generic \`callOperation\` arguments are always validated before network activity. Response validation can be disabled explicitly with \`validateResponses: false\`.`,
-    'metadata-pagination': `Normal domain methods return validated bare data. Call \`client.<domain>.withMetadata().<method>(...)\` for an \`EsiResponse<T>\` envelope containing status, all response headers, request ID, pagination, cache validators, and ESI error-limit metadata. Generic execution always returns this envelope.
+    'metadata-pagination': `Normal domain methods return validated bare data. Call \`client.<domain>.withMetadata().<method>(...)\` for an \`EsiResponse<T>\` envelope containing status, bounded original response headers, request ID, pagination, cache validators and an unambiguous \`maxAgeSeconds\`, legacy ESI error-limit metadata, route-group rate-limit metadata, and a delta-seconds \`retryAfterSeconds\`. Generic execution always returns this envelope.
 
 Generic execution performs exactly one request. For offset pagination, pass the documented page parameter and inspect \`meta.pagination.pages\`. For cursor pagination, pass the documented cursor and inspect the cursor metadata or response headers. The SDK does not automatically traverse pages.`,
-    errors: `SDK failures extend \`EsiError\` and expose a stable \`code\`, \`operationId\`, message, and an allowlisted \`toJSON()\` result. Validation errors add \`direction\` and structured \`issues\`. Authentication failures add required scopes. HTTP and parse failures add status and response metadata; HTTP failures may include a bounded parsed ESI body.
+    errors: `SDK failures extend \`EsiError\` and expose a stable \`code\`, \`operationId\`, message, and an allowlisted \`toJSON()\` result. \`EsiTransportError\` distinguishes timeout and network failures during the request or response phase. \`EsiNotModifiedError\` represents status 304 with immutable response metadata and no response body. Validation errors add \`direction\` and structured \`issues\`. HTTP and parse failures add status and response metadata; HTTP failures may include a bounded parsed ESI body.
 
-Handle errors by class or stable code. Error serialization excludes credentials, authorization headers, token-provider values, and raw authenticated request bodies.`,
+Use \`classifyEsiFailure(error)\` for policy-neutral failure facts: \`transient\`, \`throttled\`, \`not-modified\`, \`invalid-response\`, \`permanent\`, or \`unknown\`. Classification never retries or implies idempotency. Error serialization excludes credentials, authorization headers, token-provider values, response bodies from transport and not-modified errors, and original causes.`,
+    'operation-discovery': `Import \`searchOperations\` and \`describeOperation\` from \`@evespace/esi-client/operations\`. Search results include a concise \`protocol\` projection, while descriptions expose the complete serializable operation contract.
+
+Protocol facts are generated from the corrected pinned OpenAPI document: declared conditional validators, cache extensions, route-group limits or an explicit \`legacy-only\` marker, bounded request arrays, and an unambiguous maximum batch size when one exists. Missing declarations remain explicit; inspecting them performs no network or policy side effect. Executable registry descriptors expose the same facts through \`transport.protocol\`.`,
+    'custom-fetch': `Pass a custom \`fetch\` implementation to compose application headers, coordination, or telemetry with SDK execution. The SDK calls it once per operation and supplies the final URL, method, headers, body, and a composed \`AbortSignal\` that includes the SDK deadline and any caller cancellation.
+
+Custom wrappers must forward and observe \`init.signal\`, retain resources such as distributed permits until the response body closes, errors, or is cancelled, and return the original response stream semantics. A wrapper that ignores cancellation may continue background work after the public SDK promise has been bounded. Do not add a competing independent timeout around the same attempt.`,
+    'standalone-domains': `Import a \`create<Domain>Client\` factory from \`@evespace/esi-client/domains/<domain>\` when an aggregate \`EsiClient\` is unnecessary. Standalone factories accept the same client options, including \`requestTimeoutMs\`, authentication, validation, and custom fetch configuration.
+
+Standalone methods return bare data by default and expose the same metadata-enabled view, structured errors, generated protocol descriptors, one-attempt behavior, and transport deadline as the aggregate client. A standalone import narrows runtime and declaration reach but does not reduce installed package size.`,
     'mutation-safety': `Named typed mutation methods are explicit caller intent and execute after normal validation and authentication checks.
 
 Generic mutation execution is denied unless the client is constructed with \`allowGenericMutations: true\` and that call passes \`{ confirmMutation: true }\`. Missing either gate fails before network activity. Reviewed read-like POST operations are classified as reads in each operation reference and do not require generic mutation confirmation.`,
@@ -367,6 +379,12 @@ ${renderPagination(operation)}
 
 ${renderCache(operation)}
 
+${renderConditionalRequestValidators(operation)}
+
+${renderRateLimit(operation)}
+
+${renderRequestLimits(operation)}
+
 ## Mutation safety
 
 ${renderSafety(operation)}
@@ -437,11 +455,52 @@ function renderPagination(operation: SerializableOperationManifestEntry): string
 
 function renderCache(operation: SerializableOperationManifestEntry): string {
   const headers = codeList(operation.cache.responseHeaders);
-  const extensionNames = Object.keys(operation.cache.extensions).toSorted(compareText);
-  if (operation.cache.responseHeaders.length === 0 && extensionNames.length === 0) {
+  const extensions = Object.entries(operation.cache.extensions).toSorted(([left], [right]) =>
+    compareText(left, right),
+  );
+  if (operation.cache.responseHeaders.length === 0 && extensions.length === 0) {
     return 'Cache behavior: no operation-specific cache metadata is declared. Metadata-enabled results still preserve all response headers.';
   }
-  return `Cache response headers: ${headers}. Cache extension keys: ${codeList(extensionNames)}. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.`;
+  const extensionValues =
+    extensions.length === 0
+      ? 'none'
+      : extensions.map(([name, value]) => `\`${name}=${String(value)}\``).join(', ');
+  return `Cache response headers: ${headers}. Cache extensions: ${extensionValues}. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.`;
+}
+
+function renderConditionalRequestValidators(operation: SerializableOperationManifestEntry): string {
+  const validators = codeList(operation.conditionalRequestValidators);
+  return `Declared conditional request validators: ${validators}. These declarations identify accepted request headers; they do not by themselves assert support for a \`304 Not Modified\` response.`;
+}
+
+function renderRateLimit(operation: SerializableOperationManifestEntry): string {
+  if (operation.rateLimit.kind === 'legacy-only') {
+    return 'Route rate limit: `legacy-only`; no route-group declaration is available in the pinned specification.';
+  }
+  return `Route rate limit: group \`${markdownText(operation.rateLimit.group)}\`, maximum ${operation.rateLimit.maximumTokens} tokens per \`${markdownText(operation.rateLimit.window)}\` window.`;
+}
+
+function renderRequestLimits(operation: SerializableOperationManifestEntry): string {
+  if (operation.requestArrayLimits.length === 0) {
+    return 'Bounded request arrays: none declared. Maximum batch size: unspecified.';
+  }
+  const limits = operation.requestArrayLimits
+    .map(
+      ({ location, path, maximumItems }) =>
+        `\`${markdownText(renderRequestArrayPath(location, path))}\` (maximum ${maximumItems})`,
+    )
+    .join(', ');
+  const maximumBatchSize =
+    operation.maximumBatchSize === null ? 'unspecified' : String(operation.maximumBatchSize);
+  return `Bounded request arrays: ${limits}. Maximum batch size: ${maximumBatchSize}.`;
+}
+
+function renderRequestArrayPath(
+  location: SerializableOperationManifestEntry['requestArrayLimits'][number]['location'],
+  path: readonly string[],
+): string {
+  if (path.length === 0) return `${location}:$`;
+  return `${location}:$.${path.join('.')}`;
 }
 
 function renderSafety(operation: SerializableOperationManifestEntry): string {
@@ -588,7 +647,7 @@ function validateManifest(
   if (
     manifest === null ||
     typeof manifest !== 'object' ||
-    manifest.schemaVersion !== 2 ||
+    manifest.schemaVersion !== 3 ||
     !Array.isArray(manifest.operations) ||
     generatedProvenance?.compatibilityDate !== provenance?.compatibilityDate ||
     generatedProvenance?.specificationSha256 !== provenance?.sha256

@@ -167,6 +167,7 @@ describe('character skills snapshot', () => {
     expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
     expect(mocks.createEsiClient).toHaveBeenCalledWith({
       fetch: expect.any(Function),
+      requestTimeoutMs: 30_000,
       token: 'access-token',
       validateResponses: true,
     })

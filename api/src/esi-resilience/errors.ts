@@ -22,7 +22,7 @@ export function shouldRetryEsiError(error: unknown) {
 function isRetryableEsiError(error: unknown) {
   const transportError = getEsiTransportError(error)
   if (transportError) {
-    const status = transportError.status
+    const status = getErrorStatus(transportError)
     return status === undefined || status < 400 || (status >= 500 && status < 600)
   }
   const status = getErrorStatus(error)
@@ -73,7 +73,7 @@ export function toEsiQuotaError(error: unknown) {
 }
 
 function getEsiTransportError(error: unknown) {
-  if (error instanceof EsiTransportError) return error
+  if (isEsiTransportError(error)) return error
   if (
     typeof error !== 'object' ||
     !error ||
@@ -82,7 +82,17 @@ function getEsiTransportError(error: unknown) {
     !('cause' in error)
   )
     return undefined
-  return error.cause instanceof EsiTransportError ? error.cause : undefined
+  return isEsiTransportError(error.cause) ? error.cause : undefined
+}
+
+function isEsiTransportError(error: unknown) {
+  return (
+    error instanceof EsiTransportError ||
+    (typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'ESI_TRANSPORT_ERROR')
+  )
 }
 
 function isEsiHttpError(error: unknown) {
@@ -99,7 +109,7 @@ export function shouldAdvanceRevisionAfterMutationError(
   error: unknown,
 ) {
   return (
-    error instanceof EsiTransportError ||
+    Boolean(getEsiTransportError(error)) ||
     isEsiResponseContractError(error) ||
     (policy.mutation?.appliedOnMissing === true && getErrorStatus(error) === 404)
   )

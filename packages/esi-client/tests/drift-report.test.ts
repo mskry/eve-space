@@ -338,7 +338,7 @@ function driftDocument(version: 'pinned' | 'latest') {
           '202': { description: 'Accepted without content' },
         },
     security: pinned ? [{ OAuth: ['scope.read'] }] : [{ ApiKey: [], OAuth: ['scope.write'] }],
-    ...(pinned ? { 'x-cache-seconds': 60 } : { 'x-cache-minutes': 5 }),
+    'x-cache-age': pinned ? 60 : 300,
   };
 
   return {

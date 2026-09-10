@@ -38,7 +38,7 @@ const schema = z.object({
   ESI_USER_AGENT: z
     .string()
     .min(1)
-    .default('EveSpace/0.1 (+https://github.com/mskry/eve-space) @evespace/esi-client/3.0.1'),
+    .default('EveSpace/0.1 (+https://github.com/mskry/eve-space) @evespace/esi-client/3.1.0'),
   ESI_COMPATIBILITY_DATE: z.iso.date().default('2026-08-23'),
   TOKEN_ENCRYPTION_KEY: optionalEncryptionKey,
   EVE_SSO_TIMEOUT_MS: positiveInteger.default(15_000),

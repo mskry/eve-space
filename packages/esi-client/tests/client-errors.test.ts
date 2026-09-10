@@ -7,11 +7,14 @@ import {
   EsiGenericMutationDisabledError,
   EsiGenericMutationUnconfirmedError,
   EsiHttpError,
+  EsiNotModifiedError,
   EsiRequestValidationError,
   EsiResponseParseError,
   EsiResponseValidationError,
+  EsiTransportError,
   EsiUnknownOperationError,
   EsiValidationError,
+  classifyEsiFailure,
 } from '../src/client/errors.js';
 
 const operationId = 'get_characters_character_id';
@@ -120,6 +123,8 @@ describe('ESI structured errors', () => {
         pagination: { pages: 2, nextCursor: secret },
         cache: { etag: secret },
         errorLimit: { remaining: 99, reset: 12 },
+        retryAfterSeconds: 4,
+        routeRateLimit: { group: `group-${secret}`, limit: 150, used: 2, remaining: 148 },
       },
     });
     headers['X-Debug'] = secret;
@@ -136,10 +141,18 @@ describe('ESI structured errors', () => {
       pagination: { pages: 2, nextCursor: '[REDACTED]' },
       cache: { etag: '[REDACTED]' },
       errorLimit: { remaining: 99, reset: 12 },
+      retryAfterSeconds: 4,
+      routeRateLimit: {
+        group: 'group-[REDACTED]',
+        limit: 150,
+        used: 2,
+        remaining: 148,
+      },
     });
     expect(Object.isFrozen(error.metadata)).toBe(true);
     expect(Object.isFrozen(error.metadata.headers)).toBe(true);
     expect(Object.isFrozen(error.metadata.pagination)).toBe(true);
+    expect(Object.isFrozen(error.metadata.routeRateLimit)).toBe(true);
     expect(serialized).not.toContain(secret);
     expect(serialized).not.toContain(`Bearer ${secret}`);
   });
@@ -224,6 +237,7 @@ describe('ESI structured errors', () => {
     });
     const response = new EsiResponseValidationError({
       operationId,
+      status: 200,
       issues,
       redaction: { secrets: [credential] },
     });
@@ -248,5 +262,55 @@ describe('ESI structured errors', () => {
     expect(JSON.stringify(request)).not.toContain('authorization');
     expect(JSON.stringify(request)).not.toContain('payload');
     expect(JSON.stringify(response)).not.toContain(credential);
+  });
+
+  it('serializes transport and not-modified outcomes without causes or response bodies', () => {
+    const secret = 'transport-secret';
+    const transport = new EsiTransportError({
+      operationId,
+      reason: 'network',
+      phase: 'response',
+      status: 502,
+      metadata: { headers: { Authorization: `Bearer ${secret}` } },
+      redaction: { secrets: [secret] },
+      cause: new Error(secret),
+    });
+    const notModified = new EsiNotModifiedError({
+      operationId,
+      metadata: { headers: { etag: 'revision-1' } },
+    });
+
+    expect(transport.toJSON()).toMatchObject({
+      code: 'ESI_TRANSPORT_ERROR',
+      reason: 'network',
+      phase: 'response',
+      status: 502,
+      metadata: { headers: { authorization: '[REDACTED]' } },
+    });
+    expect(JSON.stringify(transport)).not.toContain(secret);
+    expect(JSON.stringify(transport)).not.toContain('cause');
+    expect(notModified.toJSON()).toEqual({
+      name: 'EsiNotModifiedError',
+      code: 'ESI_NOT_MODIFIED',
+      message: `ESI operation ${operationId} returned an unmodified representation`,
+      operationId,
+      status: 304,
+      metadata: { status: 304, headers: { etag: 'revision-1' } },
+    });
+    expect(JSON.stringify(notModified)).not.toContain('body');
+  });
+
+  it.each([
+    [new EsiTransportError({ operationId, reason: 'network', phase: 'request' }), 'transient'],
+    [new EsiHttpError({ operationId, status: 503 }), 'transient'],
+    [new EsiHttpError({ operationId, status: 429 }), 'throttled'],
+    [new EsiNotModifiedError({ operationId }), 'not-modified'],
+    [new EsiResponseParseError({ operationId, status: 200 }), 'invalid-response'],
+    [new EsiResponseValidationError({ operationId, status: 200, issues: [] }), 'invalid-response'],
+    [new EsiHttpError({ operationId, status: 404 }), 'permanent'],
+    [new EsiRequestValidationError({ operationId, issues: [] }), 'permanent'],
+    [new Error('outside the SDK'), 'unknown'],
+  ] as const)('classifies policy-neutral failure facts', (error, expected) => {
+    expect(classifyEsiFailure(error)).toBe(expected);
   });
 });

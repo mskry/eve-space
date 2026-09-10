@@ -23,6 +23,11 @@ describe('ESI response metadata', () => {
     headers.set('Cache-Control', 'public, max-age=300');
     headers.set('X-Esi-Error-Limit-Remain', '98.5');
     headers.set('X-Esi-Error-Limit-Reset', '12');
+    headers.set('Retry-After', '4');
+    headers.set('X-Ratelimit-Group', 'char-wallet');
+    headers.set('X-Ratelimit-Limit', '150');
+    headers.set('X-Ratelimit-Used', '2');
+    headers.set('X-Ratelimit-Remaining', '148');
 
     const metadata = extractEsiResponseMetadata(200, headers);
 
@@ -33,6 +38,7 @@ describe('ESI response metadata', () => {
         etag: '"revision-3"',
         expires: 'Wed, 19 Aug 2026 12:00:00 GMT',
         'last-modified': 'Tue, 18 Aug 2026 10:00:00 GMT',
+        'retry-after': '4',
         'x-cursor': 'current-cursor',
         'x-custom': 'first, second',
         'x-esi-error-limit-remain': '98.5',
@@ -41,6 +47,10 @@ describe('ESI response metadata', () => {
         'x-next-cursor': 'next-cursor',
         'x-pages': '7',
         'x-previous-cursor': 'previous-cursor',
+        'x-ratelimit-group': 'char-wallet',
+        'x-ratelimit-limit': '150',
+        'x-ratelimit-remaining': '148',
+        'x-ratelimit-used': '2',
       },
       requestId: 'request-42',
       pagination: {
@@ -54,8 +64,16 @@ describe('ESI response metadata', () => {
         expires: 'Wed, 19 Aug 2026 12:00:00 GMT',
         lastModified: 'Tue, 18 Aug 2026 10:00:00 GMT',
         cacheControl: 'public, max-age=300',
+        maxAgeSeconds: 300,
       },
       errorLimit: { remaining: 98.5, reset: 12 },
+      retryAfterSeconds: 4,
+      routeRateLimit: {
+        group: 'char-wallet',
+        limit: 150,
+        used: 2,
+        remaining: 148,
+      },
     });
   });
 
@@ -64,6 +82,10 @@ describe('ESI response metadata', () => {
       'X-Pages': '2.5',
       'X-Esi-Error-Limit-Remain': 'many',
       'X-Esi-Error-Limit-Reset': '1e999',
+      'Retry-After': '-1',
+      'X-Ratelimit-Limit': '1e999',
+      'X-Ratelimit-Used': '2.5',
+      'X-Ratelimit-Remaining': '999999999999999999999999',
     });
 
     const metadata = extractEsiResponseMetadata(429, headers);
@@ -71,10 +93,31 @@ describe('ESI response metadata', () => {
     expect(metadata.headers).toEqual({
       'x-esi-error-limit-remain': 'many',
       'x-esi-error-limit-reset': '1e999',
+      'retry-after': '-1',
       'x-pages': '2.5',
+      'x-ratelimit-limit': '1e999',
+      'x-ratelimit-remaining': '999999999999999999999999',
+      'x-ratelimit-used': '2.5',
     });
     expect(metadata.pagination).toBeUndefined();
     expect(metadata.errorLimit).toBeUndefined();
+    expect(metadata.retryAfterSeconds).toBeUndefined();
+    expect(metadata.routeRateLimit).toBeUndefined();
+  });
+
+  it.each([
+    ['quoted', 'public, max-age="30"'],
+    ['negative', 'max-age=-1'],
+    ['fractional', 'max-age=1.5'],
+    ['duplicated', 'max-age=30, max-age=60'],
+    ['overflowed', 'max-age=999999999999999999999999'],
+  ])('keeps %s Cache-Control max-age raw without normalizing it', (_case, cacheControl) => {
+    const metadata = extractEsiResponseMetadata(
+      200,
+      new Headers({ 'Cache-Control': cacheControl }),
+    );
+
+    expect(metadata.cache).toEqual({ cacheControl });
   });
 
   it('creates a deeply immutable serializable envelope without freezing data', () => {
@@ -84,6 +127,7 @@ describe('ESI response metadata', () => {
       headers: { etag: '"revision"', 'x-pages': '3' },
       pagination: { pages: 3 },
       cache: { etag: '"revision"' },
+      routeRateLimit: { group: 'status', limit: 600 },
     };
     const response = createEsiResponse(data, metadata);
 
@@ -94,6 +138,7 @@ describe('ESI response metadata', () => {
     expect(Object.isFrozen(response.meta.headers)).toBe(true);
     expect(Object.isFrozen(response.meta.pagination)).toBe(true);
     expect(Object.isFrozen(response.meta.cache)).toBe(true);
+    expect(Object.isFrozen(response.meta.routeRateLimit)).toBe(true);
     metadata.headers['x-pages'] = '99';
     metadata.pagination.pages = 99;
     expect(response.meta.headers['x-pages']).toBe('3');
@@ -108,6 +153,7 @@ describe('ESI response metadata', () => {
         headers: { etag: '"revision"', 'x-pages': '3' },
         pagination: { pages: 3 },
         cache: { etag: '"revision"' },
+        routeRateLimit: { group: 'status', limit: 600 },
       },
     });
 
@@ -173,6 +219,13 @@ function operation(
     parameters: [],
     requestBody: null,
     authentication: null,
+    protocol: {
+      cache: { responseHeaders: [], extensions: {} },
+      conditionalRequestValidators: [],
+      rateLimit: { kind: 'legacy-only' },
+      requestArrayLimits: [],
+      maximumBatchSize: null,
+    },
     successResponses: [{ status: 200, body: 'json', schema: passthroughSchema }],
     ...overrides,
   };

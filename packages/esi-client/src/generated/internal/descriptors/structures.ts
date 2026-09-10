@@ -61,6 +61,7 @@ export const GetCharactersStructuresMercenaryDensDetailDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCharactersStructuresMercenaryDensDetailRequestSchema,
   authentication: { scopes: ["esi-structures.read_character.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-structure","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersStructuresMercenaryDensDetailResponse },
   ],
@@ -86,6 +87,7 @@ export const GetCorporationsStructuresSkyhooksDetailDescriptor: OperationExecuti
   requestBody: null,
   requestSchema: GetCorporationsStructuresSkyhooksDetailRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-structure","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsStructuresSkyhooksDetailResponse },
   ],
@@ -111,6 +113,7 @@ export const GetCorporationsStructuresSovereigntyHubsDetailDescriptor: Operation
   requestBody: null,
   requestSchema: GetCorporationsStructuresSovereigntyHubsDetailRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-structure","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsStructuresSovereigntyHubsDetailResponse },
   ],
@@ -135,6 +138,7 @@ export const GetCharactersStructuresMercenaryDensListingDescriptor: OperationExe
   requestBody: null,
   requestSchema: GetCharactersStructuresMercenaryDensListingRequestSchema,
   authentication: { scopes: ["esi-structures.read_character.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-structure","maximumTokens":30,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersStructuresMercenaryDensListingResponse },
   ],
@@ -159,6 +163,7 @@ export const GetCorporationsStructuresSkyhooksListingDescriptor: OperationExecut
   requestBody: null,
   requestSchema: GetCorporationsStructuresSkyhooksListingRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-structure","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsStructuresSkyhooksListingResponse },
   ],
@@ -183,6 +188,7 @@ export const GetCorporationsStructuresSovereigntyHubsListingDescriptor: Operatio
   requestBody: null,
   requestSchema: GetCorporationsStructuresSovereigntyHubsListingRequestSchema,
   authentication: { scopes: ["esi-structures.read_corporation.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-cache-mode":"event-based","x-client-cache-ttl":3600,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-structure","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsStructuresSovereigntyHubsListingResponse },
   ],

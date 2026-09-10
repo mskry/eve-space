@@ -125,6 +125,77 @@ export async function getMarketPricesWithMetadata() {
 }`,
   },
   {
+    fileName: 'operation-protocol.ts',
+    operationId: 'GetStatus',
+    title: 'Operation protocol facts',
+    description:
+      'Inspect generated conditional-validator, cache, route-limit, and request-array declarations without performing a request.',
+    source: `import { describeOperation } from '@evespace/esi-client/operations';
+
+export function getStatusProtocolFacts() {
+  const operation = describeOperation('GetStatus');
+
+  return {
+    conditionalRequestValidators: operation.conditionalRequestValidators,
+    cacheExtensions: operation.cache.extensions,
+    rateLimit: operation.rateLimit,
+    requestArrayLimits: operation.requestArrayLimits,
+    maximumBatchSize: operation.maximumBatchSize,
+  };
+}`,
+  },
+  {
+    fileName: 'custom-fetch.ts',
+    operationId: 'GetStatus',
+    title: 'Custom fetch composition',
+    description:
+      'Compose application transport behavior while forwarding the SDK deadline and caller cancellation signal.',
+    source: `import { EsiClient } from '@evespace/esi-client';
+
+const coordinatedFetch: typeof fetch = async (input, init) => {
+  if (!init?.signal) throw new Error('The SDK transport signal is required.');
+
+  return fetch(input, {
+    ...init,
+    headers: new Headers(init.headers),
+    signal: init.signal,
+  });
+};
+
+const client = new EsiClient({
+  fetch: coordinatedFetch,
+  requestTimeoutMs: 30_000,
+});
+
+export async function getStatusThroughCustomFetch() {
+  return client.status.withMetadata().get();
+}`,
+  },
+  {
+    fileName: 'transport-errors.ts',
+    operationId: 'GetStatus',
+    title: 'Transport and conditional outcomes',
+    description:
+      'Classify transport failures and handle conditional not-modified responses without embedding retry policy.',
+    source: `import {
+  EsiClient,
+  EsiNotModifiedError,
+  classifyEsiFailure,
+} from '@evespace/esi-client';
+
+const client = new EsiClient({ requestTimeoutMs: 10_000 });
+
+export async function getConditionalStatus(etag: string) {
+  try {
+    return await client.status.withMetadata().get({ ifNoneMatch: etag });
+  } catch (error: unknown) {
+    if (error instanceof EsiNotModifiedError) return { notModified: true, meta: error.metadata };
+    if (classifyEsiFailure(error) === 'transient') return { unavailable: true };
+    throw error;
+  }
+}`,
+  },
+  {
     fileName: 'schema-validation.ts',
     operationId: 'GetStatus',
     title: 'Natural generated schemas',
@@ -654,6 +725,7 @@ function relatedStandaloneExamples(operation: SerializableOperationManifestEntry
   const fileNames = new Set([
     operation.authentication.required ? 'authenticated.md' : 'public.md',
     'metadata.md',
+    'operation-protocol.md',
     'schema-validation.md',
     'validation-error.md',
   ]);

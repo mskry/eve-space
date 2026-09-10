@@ -4,9 +4,11 @@ import { EsiClientConfiguration } from '../src/client/configuration.js';
 import {
   EsiAuthenticationRequiredError,
   EsiHttpError,
+  EsiNotModifiedError,
   EsiRequestValidationError,
   EsiResponseParseError,
   EsiResponseValidationError,
+  EsiTransportError,
 } from '../src/client/errors.js';
 import { executeOperation } from '../src/client/execute.js';
 import type { OperationExecutionDescriptor } from '../src/client/execute.js';
@@ -122,6 +124,50 @@ describe('shared descriptor execution', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it('starts the transport deadline after deferred credential resolution', async () => {
+    const tokenProvider = vi.fn<() => Promise<string>>(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      return 'deferred-secret';
+    });
+    const fetch = jsonFetch({ ok: true });
+
+    await expect(
+      executeOperation(
+        new EsiClientConfiguration({ tokenProvider, fetch, requestTimeoutMs: 5 }),
+        authenticatedOperation(),
+        {},
+      ),
+    ).resolves.toMatchObject({ data: { ok: true } });
+  });
+
+  it('stops waiting for deferred credentials when the caller cancels', async () => {
+    let resolveToken: ((token: string) => void) | undefined;
+    const tokenProvider = vi.fn<() => Promise<string>>(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveToken = resolve;
+        }),
+    );
+    const fetch = jsonFetch({ unreachable: true });
+    const controller = new AbortController();
+    const promise = executeOperation(
+      new EsiClientConfiguration({ tokenProvider, fetch }),
+      authenticatedOperation(),
+      {},
+      { signal: controller.signal },
+    );
+
+    controller.abort(new Error('caller cancelled'));
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'ESI_TRANSPORT_ERROR',
+      reason: 'network',
+      phase: 'request',
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    resolveToken?.('late-secret');
+  });
+
   it('requires credentials with scopes before network activity', async () => {
     const fetch = jsonFetch({ unreachable: true });
 
@@ -174,6 +220,32 @@ describe('shared descriptor execution', () => {
     );
     expect(onlyFetchCall(forcedFetch)[0]).toBe('https://esi.evetech.net/items?page=3');
     expect(requestSchema.safeParse).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects AbortSignal lookalikes before network activity', async () => {
+    const fetch = jsonFetch({ unreachable: true });
+    const signal: AbortSignal = {
+      aborted: false,
+      reason: undefined,
+      onabort: null,
+      addEventListener() {},
+      removeEventListener() {},
+      dispatchEvent: () => true,
+      throwIfAborted() {},
+    };
+
+    const promise = executeOperation(
+      new EsiClientConfiguration({ fetch }),
+      operation(),
+      {},
+      { signal },
+    );
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'ESI_REQUEST_VALIDATION_ERROR',
+      issues: [{ path: ['signal'], code: 'invalid_type' }],
+    });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -289,6 +361,155 @@ describe('shared descriptor execution', () => {
     });
   });
 
+  it('returns a timeout transport error when fetch ignores cancellation', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(() => new Promise(() => undefined));
+
+    await expect(
+      executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
+    ).rejects.toMatchObject({
+      code: 'ESI_TRANSPORT_ERROR',
+      reason: 'timeout',
+      phase: 'request',
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps a synchronous configured-fetch failure to a transport error', async () => {
+    const failure = new TypeError('network unavailable');
+    const fetch = vi.fn<typeof globalThis.fetch>(() => {
+      throw failure;
+    });
+
+    await expect(
+      executeOperation(new EsiClientConfiguration({ fetch }), operation(), {}),
+    ).rejects.toMatchObject({
+      code: 'ESI_TRANSPORT_ERROR',
+      reason: 'network',
+      phase: 'request',
+      cause: failure,
+    });
+  });
+
+  it('returns a timeout transport error when fetch observes cancellation', async () => {
+    let observedSignal: AbortSignal | undefined;
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          observedSignal = init?.signal ?? undefined;
+          observedSignal?.addEventListener('abort', () => reject(observedSignal?.reason), {
+            once: true,
+          });
+        }),
+    );
+
+    await expect(
+      executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
+    ).rejects.toMatchObject({ reason: 'timeout', phase: 'request' });
+    expect(observedSignal?.aborted).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('composes caller cancellation with the SDK deadline', async () => {
+    const controller = new AbortController();
+    const fetch = vi.fn<typeof globalThis.fetch>(() => new Promise(() => undefined));
+    const promise = executeOperation(
+      new EsiClientConfiguration({ fetch, requestTimeoutMs: 1_000 }),
+      operation(),
+      {},
+      { signal: controller.signal },
+    );
+
+    controller.abort(new Error('caller cancelled'));
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'ESI_TRANSPORT_ERROR',
+      reason: 'network',
+      phase: 'request',
+    });
+  });
+
+  it('maps response-stream failures separately from completed invalid JSON', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.error(new Error('connection reset'));
+      },
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(body, { status: 200 }));
+
+    const promise = executeOperation(new EsiClientConfiguration({ fetch }), operation(), {});
+
+    await expect(promise).rejects.toBeInstanceOf(EsiTransportError);
+    await expect(promise).rejects.toMatchObject({
+      reason: 'network',
+      phase: 'response',
+      status: 200,
+    });
+  });
+
+  it('times out while consuming a stalled response body', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull: () => new Promise(() => undefined),
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(body, { status: 200 }));
+
+    await expect(
+      executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
+    ).rejects.toMatchObject({ reason: 'timeout', phase: 'response', status: 200 });
+  });
+
+  it('handles a rejected reader cancellation after a response timeout', async () => {
+    const cancel = vi.fn<() => Promise<void>>(async () => {
+      throw new Error('stream cancellation failed');
+    });
+    const body = new ReadableStream<Uint8Array>({
+      pull: () => new Promise(() => undefined),
+      cancel,
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(body, { status: 200 }));
+
+    await expect(
+      executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
+    ).rejects.toMatchObject({ reason: 'timeout', phase: 'response', status: 200 });
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it('times out while consuming a stalled error response body', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      pull: () => new Promise(() => undefined),
+    });
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(body, { status: 503 }));
+
+    await expect(
+      executeOperation(new EsiClientConfiguration({ fetch, requestTimeoutMs: 5 }), operation(), {}),
+    ).rejects.toMatchObject({ reason: 'timeout', phase: 'response', status: 503 });
+  });
+
+  it('returns a dedicated not-modified outcome with metadata', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(
+      async () => new Response(null, { status: 304, headers: { ETag: 'revision-2' } }),
+    );
+
+    const promise = executeOperation(new EsiClientConfiguration({ fetch }), operation(), {});
+
+    await expect(promise).rejects.toBeInstanceOf(EsiNotModifiedError);
+    await expect(promise).rejects.toMatchObject({
+      code: 'ESI_NOT_MODIFIED',
+      status: 304,
+      metadata: { cache: { etag: 'revision-2' } },
+    });
+  });
+
+  it.each([429, 503])('performs one fetch attempt for HTTP %s', async (status) => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json({ error: 'failed' }, { status }),
+    );
+
+    await expect(
+      executeOperation(new EsiClientConfiguration({ fetch }), operation(), {}),
+    ).rejects.toBeInstanceOf(EsiHttpError);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('throws a bounded structured HTTP error and serializes no credentials', async () => {
     const secret = 'http-token-secret';
     const fetch = vi.fn<typeof globalThis.fetch>(
@@ -323,7 +544,11 @@ describe('shared descriptor execution', () => {
     let thrown: unknown;
     try {
       await executeOperation(
-        new EsiClientConfiguration({ token: secret, fetch: jsonFetch({ value: 'bad' }) }),
+        new EsiClientConfiguration({
+          token: secret,
+          fetch: async () =>
+            Response.json({ value: 'bad' }, { headers: { 'cache-control': 'public, max-age=30' } }),
+        }),
         descriptor,
         {},
       );
@@ -336,6 +561,7 @@ describe('shared descriptor execution', () => {
     expect(JSON.stringify(thrown)).not.toContain('authorization');
     expect(thrown).toMatchObject({
       issues: [{ path: ['body', '[REDACTED]'], code: 'invalid_[REDACTED]' }],
+      metadata: { cache: { maxAgeSeconds: 30 } },
     });
   });
 });
@@ -357,6 +583,13 @@ function operation<TArguments extends OperationRequestArguments = OperationReque
     parameters: [],
     requestBody: null,
     authentication: null,
+    protocol: {
+      cache: { responseHeaders: [], extensions: {} },
+      conditionalRequestValidators: [],
+      rateLimit: { kind: 'legacy-only' },
+      requestArrayLimits: [],
+      maximumBatchSize: null,
+    },
     successResponses: [{ status: 200, body: 'json', schema: responseSchema }],
     ...descriptorOverrides,
   };

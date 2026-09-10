@@ -7,9 +7,9 @@ DO NOT EDIT.
 
 # Structured errors
 
-SDK failures extend `EsiError` and expose a stable `code`, `operationId`, message, and an allowlisted `toJSON()` result. Validation errors add `direction` and structured `issues`. Authentication failures add required scopes. HTTP and parse failures add status and response metadata; HTTP failures may include a bounded parsed ESI body.
+SDK failures extend `EsiError` and expose a stable `code`, `operationId`, message, and an allowlisted `toJSON()` result. `EsiTransportError` distinguishes timeout and network failures during the request or response phase. `EsiNotModifiedError` represents status 304 with immutable response metadata and no response body. Validation errors add `direction` and structured `issues`. HTTP and parse failures add status and response metadata; HTTP failures may include a bounded parsed ESI body.
 
-Handle errors by class or stable code. Error serialization excludes credentials, authorization headers, token-provider values, and raw authenticated request bodies.
+Use `classifyEsiFailure(error)` for policy-neutral failure facts: `transient`, `throttled`, `not-modified`, `invalid-response`, `permanent`, or `unknown`. Classification never retries or implies idempotency. Error serialization excludes credentials, authorization headers, token-provider values, response bodies from transport and not-modified errors, and original causes.
 
 ## Related
 

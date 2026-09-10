@@ -32,6 +32,7 @@ export const GetStatusDescriptor: OperationExecutionDescriptor<OperationArgument
   requestBody: null,
   requestSchema: GetStatusRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":30,"x-cache-mode":"ttl-based","x-client-cache-ttl":30,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":30}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"status","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetStatusResponse },
   ],

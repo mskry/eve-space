@@ -106,6 +106,7 @@ export const PostFleetsFleetIdWingsWingIdSquadsDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: PostFleetsFleetIdWingsWingIdSquadsRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 201, body: 'json', schema: zPostFleetsFleetIdWingsWingIdSquadsResponse },
   ],
@@ -130,6 +131,7 @@ export const PostFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<Oper
   requestBody: null,
   requestSchema: PostFleetsFleetIdWingsRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 201, body: 'json', schema: zPostFleetsFleetIdWingsResponse },
   ],
@@ -155,6 +157,7 @@ export const DeleteFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: DeleteFleetsFleetIdSquadsSquadIdRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -180,6 +183,7 @@ export const DeleteFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: DeleteFleetsFleetIdWingsWingIdRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -204,6 +208,7 @@ export const GetFleetsFleetIdDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: null,
   requestSchema: GetFleetsFleetIdRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":5,"x-client-cache-ttl":5,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":5}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFleetsFleetIdResponse },
   ],
@@ -228,6 +233,7 @@ export const GetCharactersCharacterIdFleetDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: GetCharactersCharacterIdFleetRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-client-cache-ttl":60,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":60}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdFleetResponse },
   ],
@@ -253,6 +259,7 @@ export const PostFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<Op
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostFleetsFleetIdMembersRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -277,6 +284,7 @@ export const GetFleetsFleetIdMembersDescriptor: OperationExecutionDescriptor<Ope
   requestBody: null,
   requestSchema: GetFleetsFleetIdMembersRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":5,"x-client-cache-ttl":5,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":5}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFleetsFleetIdMembersResponse },
   ],
@@ -301,6 +309,7 @@ export const GetFleetsFleetIdWingsDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetFleetsFleetIdWingsRequestSchema,
   authentication: { scopes: ["esi-fleets.read_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":5,"x-client-cache-ttl":5,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":5}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFleetsFleetIdWingsResponse },
   ],
@@ -327,6 +336,7 @@ export const PutFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDescri
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PutFleetsFleetIdMembersMemberIdRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -352,6 +362,7 @@ export const DeleteFleetsFleetIdMembersMemberIdDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: DeleteFleetsFleetIdMembersMemberIdRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -378,6 +389,7 @@ export const PutFleetsFleetIdSquadsSquadIdDescriptor: OperationExecutionDescript
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PutFleetsFleetIdSquadsSquadIdRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -404,6 +416,7 @@ export const PutFleetsFleetIdWingsWingIdDescriptor: OperationExecutionDescriptor
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PutFleetsFleetIdWingsWingIdRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -429,6 +442,7 @@ export const PutFleetsFleetIdDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PutFleetsFleetIdRequestSchema,
   authentication: { scopes: ["esi-fleets.write_fleet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"fleet","maximumTokens":1800,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],

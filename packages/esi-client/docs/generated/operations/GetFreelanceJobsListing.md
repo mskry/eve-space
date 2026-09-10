@@ -88,7 +88,13 @@ Public; no access token is required.
 
 Pagination: none declared. Generic execution still performs exactly one request.
 
-Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extension keys: `x-cache-mode`, `x-server-cache-mode`. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extensions: `x-cache-mode=event-based`, `x-server-cache-mode=event-based`. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+
+Declared conditional request validators: `if-modified-since`, `if-none-match`. These declarations identify accepted request headers; they do not by themselves assert support for a `304 Not Modified` response.
+
+Route rate limit: group `freelance-job`, maximum 900 tokens per `15m` window.
+
+Bounded request arrays: none declared. Maximum batch size: unspecified.
 
 ## Mutation safety
 
@@ -108,6 +114,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 ## Standalone examples
 
 - [Metadata](../examples/metadata.md)
+- [Operation protocol](../examples/operation-protocol.md)
 - [Public](../examples/public.md)
 - [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)

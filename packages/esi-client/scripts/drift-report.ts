@@ -268,6 +268,25 @@ function compareOperation(before: any, after: any): OperationChange | undefined 
   if (hasDiff(change.responses)) change.categories.push('responses');
   recordObjectChange(change, 'pagination', before.pagination, after.pagination);
   recordObjectChange(change, 'cache', before.cache, after.cache);
+  recordObjectChange(
+    change,
+    'conditionalRequestValidators',
+    before.conditionalRequestValidators,
+    after.conditionalRequestValidators,
+  );
+  recordObjectChange(change, 'rateLimit', before.rateLimit, after.rateLimit);
+  recordObjectChange(
+    change,
+    'requestLimits',
+    {
+      maximumBatchSize: before.maximumBatchSize,
+      requestArrayLimits: before.requestArrayLimits,
+    },
+    {
+      maximumBatchSize: after.maximumBatchSize,
+      requestArrayLimits: after.requestArrayLimits,
+    },
+  );
   const authentication = compareOperationAuthentication(before.security, after.security);
   if (authentication !== undefined) {
     change.categories.push('authentication');
@@ -630,6 +649,9 @@ function summarizeChanges(changes: {
     authenticationSchemesChanged: changes.authenticationSchemes.changed.length,
     authenticationSchemesRemoved: changes.authenticationSchemes.removed.length,
     cacheChanged: changedOperations.filter(({ categories }) => categories.includes('cache')).length,
+    conditionalRequestValidatorsChanged: changedOperations.filter(({ categories }) =>
+      categories.includes('conditionalRequestValidators'),
+    ).length,
     componentFieldsAdded: countChanges(componentFieldChanges, 'added'),
     componentFieldsChanged: countChanges(componentFieldChanges, 'changed'),
     componentFieldsRemoved: countChanges(componentFieldChanges, 'removed'),
@@ -641,6 +663,9 @@ function summarizeChanges(changes: {
     operationsRemoved: changes.operations.removed.length,
     paginationChanged: changedOperations.filter(({ categories }) =>
       categories.includes('pagination'),
+    ).length,
+    rateLimitsChanged: changedOperations.filter(({ categories }) =>
+      categories.includes('rateLimit'),
     ).length,
     parametersAdded: countChanges(
       changedOperations.map(({ parameters }) => parameters),
@@ -666,6 +691,9 @@ function summarizeChanges(changes: {
       changedOperations.map(({ responses }) => responses),
       'removed',
     ),
+    requestLimitsChanged: changedOperations.filter(({ categories }) =>
+      categories.includes('requestLimits'),
+    ).length,
   };
   const totalChanges = Object.values(summary).reduce((total: number, value) => total + value, 0);
   return { hasChanges: totalChanges > 0, totalChanges, ...summary };

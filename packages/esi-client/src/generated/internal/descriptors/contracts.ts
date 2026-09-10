@@ -82,6 +82,7 @@ export const GetCharactersCharacterIdContractsContractIdBidsDescriptor: Operatio
   requestBody: null,
   requestSchema: GetCharactersCharacterIdContractsContractIdBidsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_character_contracts.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-contract","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdContractsContractIdBidsResponse },
   ],
@@ -107,6 +108,7 @@ export const GetCharactersCharacterIdContractsContractIdItemsDescriptor: Operati
   requestBody: null,
   requestSchema: GetCharactersCharacterIdContractsContractIdItemsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_character_contracts.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-contract","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdContractsContractIdItemsResponse },
   ],
@@ -133,6 +135,7 @@ export const GetCharactersCharacterIdContractsDescriptor: OperationExecutionDesc
   requestBody: null,
   requestSchema: GetCharactersCharacterIdContractsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_character_contracts.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-contract","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdContractsResponse },
   ],
@@ -160,6 +163,7 @@ export const GetCorporationsCorporationIdContractsContractIdBidsDescriptor: Oper
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdContractsContractIdBidsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_corporation_contracts.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-contract","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContractsContractIdBidsResponse },
   ],
@@ -185,6 +189,7 @@ export const GetCorporationsCorporationIdContractsContractIdItemsDescriptor: Ope
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdContractsContractIdItemsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_corporation_contracts.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-contract","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContractsContractIdItemsResponse },
   ],
@@ -211,6 +216,7 @@ export const GetCorporationsCorporationIdContractsDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdContractsRequestSchema,
   authentication: { scopes: ["esi-contracts.read_corporation_contracts.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-contract","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdContractsResponse },
   ],
@@ -237,6 +243,7 @@ export const GetContractsPublicBidsContractIdDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetContractsPublicBidsContractIdRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetContractsPublicBidsContractIdResponse },
     { status: 204, body: 'none' },
@@ -264,6 +271,7 @@ export const GetContractsPublicItemsContractIdDescriptor: OperationExecutionDesc
   requestBody: null,
   requestSchema: GetContractsPublicItemsContractIdRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetContractsPublicItemsContractIdResponse },
     { status: 204, body: 'none' },
@@ -291,6 +299,7 @@ export const GetContractsPublicRegionIdDescriptor: OperationExecutionDescriptor<
   requestBody: null,
   requestSchema: GetContractsPublicRegionIdRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":1800,"x-client-cache-ttl":1800,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":1800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetContractsPublicRegionIdResponse },
   ],
