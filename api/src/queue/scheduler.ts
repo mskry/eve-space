@@ -1,17 +1,55 @@
 import { randomInt, randomUUID } from 'node:crypto'
 import { defaultRepeatStrategy, type Queue, type RepeatOptions, type RepeatStrategy } from 'bullmq'
-import type { QueueRedisConnection } from './redis.js'
+import type { CoordinationRedisConnection } from '../coordination-redis.js'
 import { env } from '../env.js'
-import { jobOptions } from './job-options.js'
+import {
+  getJobContract,
+  parseJobPayload,
+  type JobName,
+  type JobPayloadByName,
+} from './job-contracts.js'
 import { schedulerLockKey, schedulerOutcomeKey } from './namespaces.js'
 import { schedulerLockRenewalMs, schedulerLockTtlMs, workerHeartbeatTtlSeconds } from './policy.js'
-import { getJobDefinition, type JobDefinition } from './job-registry.js'
 
 export const diagnosticSchedulerId = 'diagnostic-planner'
 export const outboxRelaySchedulerId = 'outbox-relay'
 export const eventRetentionSchedulerId = 'domain-event-retention'
 export const diagnosticOverlapPolicy = 'skip' as const
 export const eventRetentionIntervalMs = 24 * 60 * 60 * 1_000
+
+type ScheduledJobName = 'planner' | 'outbox-relay' | 'domain-event-retention'
+
+interface SchedulerDeclaration<Name extends ScheduledJobName> {
+  readonly schedulerId: string
+  readonly name: Name
+  readonly payload: JobPayloadByName[Name]
+  readonly schedule: () => Omit<RepeatOptions, 'key'>
+  readonly overlap: typeof diagnosticOverlapPolicy
+}
+
+const schedulerCatalog = [
+  scheduler({
+    schedulerId: diagnosticSchedulerId,
+    name: 'planner',
+    payload: { operationId: 'queue-planner' },
+    schedule: () => schedulerOptions(diagnosticOverlapPolicy),
+    overlap: diagnosticOverlapPolicy,
+  }),
+  scheduler({
+    schedulerId: outboxRelaySchedulerId,
+    name: 'outbox-relay',
+    payload: { operationId: 'outbox-relay' },
+    schedule: () => intervalSchedulerOptions(env.OUTBOX_RELAY_INTERVAL_MS),
+    overlap: diagnosticOverlapPolicy,
+  }),
+  scheduler({
+    schedulerId: eventRetentionSchedulerId,
+    name: 'domain-event-retention',
+    payload: { operationId: 'domain-event-retention' },
+    schedule: () => intervalSchedulerOptions(eventRetentionIntervalMs),
+    overlap: diagnosticOverlapPolicy,
+  }),
+] as const
 
 export function createPlannerRepeatStrategy(
   deploymentOffsetMs: number,
@@ -53,41 +91,37 @@ export async function plannerInitialDelay(
 }
 
 export async function registerSchedulers(queue: Queue) {
-  const planner = getJobDefinition('planner') as JobDefinition<{ operationId: 'queue-planner' }>
-  await queue.upsertJobScheduler(diagnosticSchedulerId, schedulerOptions(diagnosticOverlapPolicy), {
-    name: planner.name,
-    data: { operationId: 'queue-planner' },
-    opts: jobOptions(planner),
-  })
-  const relay = getJobDefinition('outbox-relay') as JobDefinition<{
-    operationId: 'outbox-relay'
-  }>
-  await queue.upsertJobScheduler(
-    outboxRelaySchedulerId,
-    intervalSchedulerOptions(env.OUTBOX_RELAY_INTERVAL_MS),
-    {
-      name: relay.name,
-      data: { operationId: 'outbox-relay' },
-      opts: jobOptions(relay),
-    },
-  )
-  const retention = getJobDefinition('domain-event-retention') as JobDefinition<{
-    operationId: 'domain-event-retention'
-  }>
-  await queue.upsertJobScheduler(
-    eventRetentionSchedulerId,
-    intervalSchedulerOptions(eventRetentionIntervalMs),
-    {
-      name: retention.name,
-      data: { operationId: 'domain-event-retention' },
-      opts: jobOptions(retention),
-    },
-  )
+  for (const declaration of schedulerCatalog)
+    // oxlint-disable-next-line no-await-in-loop -- stable registration order is intentional.
+    await registerScheduler(queue, declaration)
   await queue
     .getBackend()
     .client.then((connection) =>
       connection.set(schedulerOutcomeKey, 'registered', { EX: workerHeartbeatTtlSeconds }),
     )
+    .catch(() => console.error('Scheduler outcome marker update failed'))
+}
+
+async function registerScheduler<Name extends ScheduledJobName>(
+  queue: Queue,
+  declaration: SchedulerDeclaration<Name>,
+) {
+  const contract = getJobContract(declaration.name)
+  await queue.upsertJobScheduler(declaration.schedulerId, declaration.schedule(), {
+    name: contract.name,
+    data: parseJobPayload(declaration.name, declaration.payload),
+    opts: schedulerJobOptions(contract.name),
+  })
+}
+
+function schedulerJobOptions(name: JobName) {
+  const contract = getJobContract(name)
+  return {
+    attempts: contract.attempts,
+    backoff: { type: 'exponential' as const, delay: 1_000, jitter: 0.25 },
+    removeOnComplete: contract.retention.completed,
+    removeOnFail: contract.retention.failed,
+  }
 }
 
 function schedulerOptions(overlap: typeof diagnosticOverlapPolicy) {
@@ -102,13 +136,10 @@ function intervalSchedulerOptions(intervalMs: number) {
 }
 
 export function getJobScheduler(jobName: string) {
-  if (jobName === 'planner')
-    return { schedulerId: diagnosticSchedulerId, overlap: diagnosticOverlapPolicy }
-  if (jobName === 'outbox-relay')
-    return { schedulerId: outboxRelaySchedulerId, overlap: diagnosticOverlapPolicy }
-  if (jobName === 'domain-event-retention')
-    return { schedulerId: eventRetentionSchedulerId, overlap: diagnosticOverlapPolicy }
-  return undefined
+  const declaration = schedulerCatalog.find((candidate) => candidate.name === jobName)
+  return declaration
+    ? { schedulerId: declaration.schedulerId, overlap: declaration.overlap }
+    : undefined
 }
 
 export class SchedulerLeaseLostError extends Error {
@@ -118,7 +149,7 @@ export class SchedulerLeaseLostError extends Error {
 }
 
 export async function runWithSchedulerOverlapPolicy<T>(
-  connection: QueueRedisConnection,
+  connection: CoordinationRedisConnection,
   schedulerId: string,
   overlap: typeof diagnosticOverlapPolicy,
   operation: (signal: AbortSignal) => Promise<T>,
@@ -191,7 +222,7 @@ function rejectWhenLeaseLost(signal: AbortSignal) {
   return lost
 }
 
-function renewSchedulerLock(connection: QueueRedisConnection, key: string, token: string) {
+function renewSchedulerLock(connection: CoordinationRedisConnection, key: string, token: string) {
   return connection.eval(
     "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('pexpire', KEYS[1], ARGV[2]) else return 0 end",
     1,
@@ -201,11 +232,17 @@ function renewSchedulerLock(connection: QueueRedisConnection, key: string, token
   )
 }
 
-function releaseSchedulerLock(connection: QueueRedisConnection, key: string, token: string) {
+function releaseSchedulerLock(connection: CoordinationRedisConnection, key: string, token: string) {
   return connection.eval(
     "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
     1,
     key,
     token,
   )
+}
+
+function scheduler<Name extends ScheduledJobName>(
+  declaration: SchedulerDeclaration<Name>,
+): SchedulerDeclaration<Name> {
+  return declaration
 }

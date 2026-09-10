@@ -61,12 +61,11 @@ describe('worker readiness', () => {
       .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce(provisionedModules)
     const queueProbe = vi.fn().mockResolvedValue({
-      status: 'degraded',
-      workerHeartbeatAt: new Date().toISOString(),
-      oldestWaitingAgeSeconds: 301,
+      status: 'operational',
+      heartbeatAt: new Date().toISOString(),
     })
 
-    await expect(checkWorkerDependencies(connection as never, queueProbe)).resolves.toEqual({
+    await expect(checkWorkerDependencies(queueProbe, connection as never)).resolves.toEqual({
       healthy: true,
     })
   })
@@ -104,7 +103,7 @@ describe('worker readiness', () => {
       .mockResolvedValueOnce(provisionedModules)
     const queueProbe = vi.fn().mockResolvedValue({
       status: 'operational',
-      workerHeartbeatAt: new Date().toISOString(),
+      heartbeatAt: new Date().toISOString(),
     })
 
     await expect(assertWorkerReadiness(connection as never)).resolves.toBeUndefined()
@@ -115,7 +114,7 @@ describe('worker readiness', () => {
       .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce(provisionedModules)
     await expect(
-      assertWorkerDependencies(secondConnection as never, queueProbe),
+      assertWorkerDependencies(queueProbe, secondConnection as never),
     ).resolves.toBeUndefined()
   })
 
@@ -125,18 +124,29 @@ describe('worker readiness', () => {
       .mockResolvedValueOnce([{ exists: true, qualified: true }])
       .mockResolvedValueOnce(appliedMigrations)
       .mockResolvedValueOnce(provisionedModules)
-    const queueProbe = vi.fn().mockResolvedValue({ status: 'unavailable' })
+    const queueProbe = vi.fn().mockResolvedValue({ status: 'unavailable', heartbeatAt: null })
 
-    await expect(checkWorkerDependencies(connection as never, queueProbe)).resolves.toEqual({
+    await expect(checkWorkerDependencies(queueProbe, connection as never)).resolves.toEqual({
       healthy: false,
       reason: 'Queue Redis unavailable',
     })
   })
 
+  test('contains scoped liveness probe rejections for a running worker', async () => {
+    const queueProbe = vi
+      .fn()
+      .mockRejectedValue(new Error('redis://user:password@private-host unavailable'))
+
+    const result = await checkWorkerDependencies(queueProbe, appliedMigrationConnection() as never)
+
+    expect(result).toEqual({ healthy: false, reason: 'Queue Redis unavailable' })
+    expect(JSON.stringify(result)).not.toContain('private-host')
+  })
+
   test('rejects dependency readiness failures', async () => {
     const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
 
-    await expect(assertWorkerDependencies(connection as never, vi.fn())).rejects.toThrow(
+    await expect(assertWorkerDependencies(vi.fn(), connection as never)).rejects.toThrow(
       `Worker dependency unavailable: Missing migration ${expectedWorkerIdentity}`,
     )
   })
@@ -153,7 +163,10 @@ describe('worker readiness', () => {
 
     // The same state must still read unhealthy for an already-started worker.
     await expect(
-      checkWorkerDependencies(appliedMigrationConnection() as never, queueProbe),
+      checkWorkerDependencies(
+        vi.fn().mockResolvedValue({ status: 'stale', heartbeatAt: null }),
+        appliedMigrationConnection() as never,
+      ),
     ).resolves.toEqual({ healthy: false, reason: 'Worker heartbeat stale' })
   })
 
@@ -168,6 +181,16 @@ describe('worker readiness', () => {
     ).rejects.toThrow('Worker dependency unavailable: Queue Redis unavailable')
   })
 
+  test('contains scoped liveness probe rejections during startup', async () => {
+    const queueProbe = vi
+      .fn()
+      .mockRejectedValue(new Error('redis://user:password@private-host unavailable'))
+
+    await expect(
+      checkWorkerStartupDependencies(appliedMigrationConnection() as never, queueProbe),
+    ).resolves.toEqual({ healthy: false, reason: 'Queue Redis unavailable' })
+  })
+
   test('refuses to start before the required migration is applied', async () => {
     const connection = vi.fn().mockResolvedValueOnce([{ exists: false, qualified: false }])
     const queueProbe = vi.fn()
@@ -179,13 +202,10 @@ describe('worker readiness', () => {
   })
 
   test('fails an already-running worker when its scoped heartbeat is stale', async () => {
-    const queueProbe = vi.fn().mockResolvedValue({
-      status: 'degraded',
-      workerHeartbeatAt: new Date(0).toISOString(),
-    })
+    const queueProbe = vi.fn().mockResolvedValue({ status: 'stale', heartbeatAt: null })
 
     await expect(
-      checkWorkerDependencies(appliedMigrationConnection() as never, queueProbe),
+      checkWorkerDependencies(queueProbe, appliedMigrationConnection() as never),
     ).resolves.toEqual({ healthy: false, reason: 'Worker heartbeat stale' })
   })
 

@@ -5,20 +5,39 @@ import {
   type PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { PlatformEsiRequestError } from '../../src/esi-resilience/platform-execute.js'
 import {
   executeInstalledResourceBatchOperation,
   validatePlatformResourceBatchClassifications,
 } from '../../src/platform/resource-batch.js'
 import { processInstalledResourceBatch } from '../../src/queue/resource-batch-processor.js'
-import { resourceRefreshJobId } from '../../src/queue/resource-job-contracts.js'
+import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
+
+const processorMocks = vi.hoisted(() => ({
+  applyObservation: vi.fn(),
+  recordFailure: vi.fn(),
+}))
+
+vi.mock('../../src/platform/resource-refresh.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/platform/resource-refresh.js')>()),
+  applyInstalledResourceObservation: processorMocks.applyObservation,
+}))
+vi.mock('../../src/platform/resource-failures.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/platform/resource-failures.js')>()),
+  recordInstalledResourceCollectionFailure: processorMocks.recordFailure,
+}))
 
 const lifecycleIds = [
   '35acd527-9539-44ad-aacf-9f8e45232267',
   '98a782d2-e042-47d7-9659-03b218121a1a',
   '6f80b8de-8ff0-4dc6-af2c-9fb5c892174a',
 ] as const
+
+beforeEach(() => {
+  processorMocks.applyObservation.mockReset().mockResolvedValue(undefined)
+  processorMocks.recordFailure.mockReset().mockResolvedValue(undefined)
+})
 
 describe('platform resource batch processing', () => {
   test('infers typed scalar and batch response data through the contract helper', () => {
@@ -95,17 +114,15 @@ describe('platform resource batch processing', () => {
   test('materializes complete observations locally without scalar ESI loads', async () => {
     const resource = completeResource()
     const payload = batchPayload(2)
-    const applyObservation = vi.fn().mockResolvedValue(undefined)
     const definition = batchDefinition()
     const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution({ observed: true }))
     const queue = batchQueue()
 
-    await processInstalledResourceBatch(payload, queue as never, {
+    await processInstalledResourceBatch(payload, queue, undefined, {
       resources: [resource],
       resolveEligibility: eligible as never,
       definitions: { 'universe-resolve-names': definition },
       executeEsiOperation,
-      applyObservation: applyObservation as never,
     })
 
     expect(executeEsiOperation).toHaveBeenCalledOnce()
@@ -120,15 +137,13 @@ describe('platform resource batch processing', () => {
       data: { observed: true },
     })
     expect(resource.implementation.map).not.toHaveBeenCalled()
-    expect(applyObservation).toHaveBeenNthCalledWith(
-      1,
+    expect(processorMocks.applyObservation).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: 'complete', data: { score: 10 } }),
     )
-    expect(applyObservation).toHaveBeenNthCalledWith(
-      2,
+    expect(processorMocks.applyObservation).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: 'unchanged' }),
     )
-    expect(queue.add).not.toHaveBeenCalled()
+    expect(queue.commands).toHaveLength(0)
   })
 
   test('rejects batch inputs that do not match the requested characters', async () => {
@@ -136,19 +151,17 @@ describe('platform resource batch processing', () => {
     const payload = batchPayload(2)
     resource.implementation.batch.request.mockReturnValue({ ids: [1, 2] })
     const executeEsiOperation = vi.fn()
-    const recordFailure = vi.fn().mockResolvedValue(undefined)
 
     await expect(
-      processInstalledResourceBatch(payload, batchQueue() as never, {
+      processInstalledResourceBatch(payload, batchQueue(), undefined, {
         resources: [resource],
         resolveEligibility: eligible as never,
         definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation,
-        recordFailure,
       }),
     ).rejects.toThrow('Platform resource mapping failed')
     expect(executeEsiOperation).not.toHaveBeenCalled()
-    expect(recordFailure).toHaveBeenCalledTimes(2)
+    expect(processorMocks.recordFailure).toHaveBeenCalledTimes(2)
   })
 
   test('rejects a batch above the ESI operation limit before eligibility or execution', async () => {
@@ -175,12 +188,11 @@ describe('platform resource batch processing', () => {
       .mockRejectedValue(new PlatformEsiRequestError('Platform ESI request inputs are invalid'))
 
     await expect(
-      processInstalledResourceBatch(payload, batchQueue() as never, {
+      processInstalledResourceBatch(payload, batchQueue(), undefined, {
         resources: [resource],
         resolveEligibility: eligible as never,
         definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation,
-        recordFailure: vi.fn().mockResolvedValue(undefined),
       }),
     ).rejects.toThrow('Platform resource mapping failed')
     expect(executeEsiOperation).toHaveBeenCalledOnce()
@@ -189,10 +201,9 @@ describe('platform resource batch processing', () => {
   test('records a batch failure only for subjects included in the attempted request', async () => {
     const payload = batchPayload(2)
     const failure = new Error('ESI unavailable')
-    const recordFailure = vi.fn().mockResolvedValue(undefined)
 
     await expect(
-      processInstalledResourceBatch(payload, batchQueue() as never, {
+      processInstalledResourceBatch(payload, batchQueue(), undefined, {
         resources: [completeResource()],
         resolveEligibility: vi
           .fn()
@@ -205,12 +216,11 @@ describe('platform resource batch processing', () => {
           .mockResolvedValueOnce({ status: 'eligible', due: false }),
         definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation: vi.fn().mockRejectedValue(failure),
-        recordFailure,
       }),
     ).rejects.toBe(failure)
 
-    expect(recordFailure).toHaveBeenCalledOnce()
-    expect(recordFailure).toHaveBeenCalledWith(identity(payload, 0), failure, {
+    expect(processorMocks.recordFailure).toHaveBeenCalledOnce()
+    expect(processorMocks.recordFailure).toHaveBeenCalledWith(identity(payload, 0), failure, {
       resources: expect.any(Array),
     })
   })
@@ -218,34 +228,28 @@ describe('platform resource batch processing', () => {
   test('admits scalar refreshes only for changed hints and leaves the capacity suffix untouched', async () => {
     const resource = changeHintResource()
     const payload = batchPayload(3)
-    const applyObservation = vi.fn().mockResolvedValue(undefined)
-    const queue = batchQueue()
+    const queue = createInMemoryQueueProducer({ highWaterMark: 1 })
 
-    await processInstalledResourceBatch(payload, queue as never, {
+    await processInstalledResourceBatch(payload, queue, undefined, {
       resources: [resource],
       resolveEligibility: eligible as never,
       definitions: { 'universe-resolve-names': batchDefinition() },
       executeEsiOperation: vi.fn().mockResolvedValue(platformExecution({ observed: true })),
-      applyObservation: applyObservation as never,
-      getCapacity: vi.fn().mockResolvedValue({
-        admitted: true,
-        depth: 99,
-        remainingCapacity: 1,
-      }),
     })
 
-    expect(applyObservation).toHaveBeenCalledOnce()
-    expect(applyObservation).toHaveBeenCalledWith(expect.objectContaining({ outcome: 'unchanged' }))
-    const firstIdentity = identity(payload, 0)
-    expect(queue.add).toHaveBeenCalledOnce()
-    expect(queue.add).toHaveBeenCalledWith(
-      'resource-refresh',
-      firstIdentity,
-      expect.objectContaining({
-        deduplication: { id: resourceRefreshJobId(firstIdentity) },
-        priority: 900,
-      }),
+    expect(processorMocks.applyObservation).toHaveBeenCalledOnce()
+    expect(processorMocks.applyObservation).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'unchanged' }),
     )
+    const firstIdentity = identity(payload, 0)
+    expect(queue.commands).toEqual([
+      {
+        name: 'resource-refresh',
+        payload: firstIdentity,
+        source: 'on-demand',
+        materializationIntervalSeconds: 900,
+      },
+    ])
     expect(resource.implementation.map).not.toHaveBeenCalled()
   })
 })
@@ -382,5 +386,5 @@ function platformExecution(data: unknown) {
 }
 
 function batchQueue() {
-  return { add: vi.fn().mockResolvedValue(undefined) }
+  return createInMemoryQueueProducer()
 }

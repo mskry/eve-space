@@ -16,7 +16,8 @@ import {
 } from '../../../src/domain-events/store.js'
 import { runMigrations } from '../../../src/db/migration-runner.js'
 import * as schema from '../../../src/db/schema.js'
-import { runOutboxRelayBatch } from '../../../src/queue/outbox-relay.js'
+import { runOutboxRelayBatch as runSemanticOutboxRelayBatch } from '../../../src/queue/outbox-relay.js'
+import type { QueueProducer } from '../../../src/queue/producer.js'
 
 let container: StartedTestContainer
 let databaseUrl: string
@@ -222,9 +223,9 @@ describe('domain event PostgreSQL persistence', () => {
 
       await expect(
         runOutboxRelayBatch(
-          subject as never,
+          subject,
           { highWaterMark: 10, batchSize: 2 },
-          relayDependencies(database, new Date(Date.now() + 1_000)),
+          relayStore(database, new Date(Date.now() + 1_000)),
         ),
       ).resolves.toMatchObject({ claimed: 2, published: 1, failed: 1 })
 
@@ -268,16 +269,16 @@ describe('domain event PostgreSQL persistence', () => {
 
       await expect(
         runOutboxRelayBatch(
-          subject as never,
+          subject,
           { highWaterMark: 10, batchSize: 2, retryDelayMs: 1_000 },
-          relayDependencies(database, firstAttemptAt),
+          relayStore(database, firstAttemptAt),
         ),
       ).resolves.toMatchObject({ claimed: 2, published: 0, failed: 2 })
       await expect(
         runOutboxRelayBatch(
-          subject as never,
+          subject,
           { highWaterMark: 10, batchSize: 2, retryDelayMs: 1_000 },
-          relayDependencies(database, new Date(firstAttemptAt.getTime() + 1_000)),
+          relayStore(database, new Date(firstAttemptAt.getTime() + 1_000)),
         ),
       ).resolves.toMatchObject({ claimed: 2, published: 1, failed: 1 })
 
@@ -477,14 +478,14 @@ describe('domain event PostgreSQL persistence', () => {
     try {
       await appendEvents(drizzle(setup, { schema }), 4)
       const firstRun = runOutboxRelayBatch(
-        queue as never,
+        queue,
         { highWaterMark: 10, batchSize: 2 },
-        relayDependencies(firstDatabase, claimedAt),
+        relayStore(firstDatabase, claimedAt),
       )
       const secondRun = runOutboxRelayBatch(
-        queue as never,
+        queue,
         { highWaterMark: 10, batchSize: 2 },
-        relayDependencies(secondDatabase, claimedAt),
+        relayStore(secondDatabase, claimedAt),
       )
       await waitForCondition(() => enqueued.size === 4)
 
@@ -537,29 +538,29 @@ describe('domain event PostgreSQL persistence', () => {
       await appendEvents(firstDatabase, 1)
       await expect(
         runOutboxRelayBatch(
-          failedQueue as never,
+          failedQueue,
           { highWaterMark: 10, batchSize: 1, claimTtlMs: 1_000 },
           {
-            ...relayDependencies(firstDatabase, claimedAt),
+            ...relayStore(firstDatabase, claimedAt),
             recordFailure: async () => {
               throw new Error('relay process stopped')
             },
-          } as never,
+          },
         ),
       ).rejects.toThrow('relay process stopped')
 
       await expect(
         runOutboxRelayBatch(
-          healthyQueue as never,
+          healthyQueue,
           { highWaterMark: 10, batchSize: 1, claimTtlMs: 1_000 },
-          relayDependencies(secondDatabase, new Date(claimedAt.getTime() + 999)),
+          relayStore(secondDatabase, new Date(claimedAt.getTime() + 999)),
         ),
       ).resolves.toMatchObject({ claimed: 0 })
       await expect(
         runOutboxRelayBatch(
-          healthyQueue as never,
+          healthyQueue,
           { highWaterMark: 10, batchSize: 1, claimTtlMs: 1_000 },
-          relayDependencies(secondDatabase, new Date(claimedAt.getTime() + 1_000)),
+          relayStore(secondDatabase, new Date(claimedAt.getTime() + 1_000)),
         ),
       ).resolves.toMatchObject({ claimed: 1, published: 1 })
     } finally {
@@ -611,7 +612,7 @@ async function appendEvents(
   return events
 }
 
-function relayDependencies(database: ReturnType<typeof drizzle<typeof schema>>, now?: Date) {
+function relayStore(database: ReturnType<typeof drizzle<typeof schema>>, now?: Date) {
   return {
     claim: (options: { limit: number; claimTtlMs: number }) =>
       claimPendingDomainEvents({ ...options, now }, database),
@@ -622,19 +623,37 @@ function relayDependencies(database: ReturnType<typeof drizzle<typeof schema>>, 
   }
 }
 
-function relayQueue(enqueue: (eventId: string) => Promise<void>) {
-  return {
-    getJobCounts: async () => ({ waiting: 0, delayed: 0 }),
-    getBackend: () => ({
-      client: Promise.resolve({
-        del: async () => 1,
-        set: async () => 'OK',
-      }),
-    }),
-    add: async (_name: string, payload: { eventId: string }) => {
-      await enqueue(payload.eventId)
-      return { id: `domain-event-${payload.eventId}` }
+function runOutboxRelayBatch(
+  producer: QueueProducer,
+  options: Parameters<typeof runSemanticOutboxRelayBatch>[3],
+  store: Parameters<typeof runSemanticOutboxRelayBatch>[2],
+) {
+  return runSemanticOutboxRelayBatch(
+    producer,
+    {
+      recordAffiliation: async () => {},
+      recordOutbox: async () => {},
     },
+    store,
+    options,
+  )
+}
+
+function relayQueue(enqueue: (eventId: string) => Promise<void>): QueueProducer {
+  return {
+    async inspectCapacity() {
+      return { status: 'accepted', depth: 0, remainingCapacity: 1_000 }
+    },
+    async enqueue(command) {
+      if (command.name !== 'domain-event') throw new Error('Unexpected relay command')
+      await enqueue(command.payload.eventId)
+      return { status: 'accepted', depth: 0 }
+    },
+    async enqueueMany(commands) {
+      return Promise.all(commands.map((command) => this.enqueue(command)))
+    },
+    async pausePlanner() {},
+    async resumePlanner() {},
   }
 }
 

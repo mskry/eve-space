@@ -16,8 +16,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => mocks.cache,
 }))
-vi.mock('../../src/queue/redis.js', () => ({
-  createProducerRedisConnection: () => mocks.coordination,
+vi.mock('../../src/coordination-redis.js', () => ({
+  createCoordinationRedisConnection: () => mocks.coordination,
 }))
 vi.mock('../../src/esi-resilience/coordination.js', () => ({
   acquireEsiRequestLease: vi.fn().mockResolvedValue(undefined),

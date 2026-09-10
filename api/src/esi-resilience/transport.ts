@@ -1,7 +1,4 @@
 import { env } from '../env.js'
-import { createProducerRedisConnection, type QueueRedisConnection } from '../queue/redis.js'
-
-let coordinationConnection: QueueRedisConnection | undefined
 
 export class EsiTransportError extends Error {
   constructor(
@@ -83,9 +80,4 @@ function wrapStreamErrors(
       }
     },
   })
-}
-
-export function getCoordinationConnection() {
-  coordinationConnection ??= createProducerRedisConnection()
-  return coordinationConnection
 }

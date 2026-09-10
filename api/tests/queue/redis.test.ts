@@ -22,39 +22,24 @@ vi.mock('ioredis', () => ({
 afterEach(() => vi.resetModules())
 
 describe('queue Redis connections', () => {
-  test('bounds producer reconnects and configures worker blocking connections', async () => {
-    const {
-      createProducerRedisConnection,
-      createProbeRedisConnection,
-      createWorkerRedisConnection,
-    } = await import('../../src/queue/redis.js')
-    createProducerRedisConnection('redis://producer')
-    createProbeRedisConnection('redis://probe')
+  test('configures worker blocking connections', async () => {
+    const { createWorkerRedisConnection } = await import('../../src/queue/redis.js')
     createWorkerRedisConnection('redis://worker')
 
-    const producer = mocks.instances[0]!
-    const probe = mocks.instances[1]!
-    const worker = mocks.instances[2]!
-    const producerOptions = producer.options as {
-      retryStrategy: (attempt: number) => number | null
-      maxRetriesPerRequest: number
+    const worker = mocks.instances[0]!
+    const workerOptions = worker.options as {
+      connectTimeout: number
+      lazyConnect: boolean
+      maxRetriesPerRequest: null
+      retryStrategy: (attempt: number) => number
     }
-    const workerOptions = worker.options as { maxRetriesPerRequest: null }
-    expect(producerOptions.retryStrategy(4)).toBeNull()
-    expect(producerOptions.maxRetriesPerRequest).toBe(1)
-    expect(producerOptions).not.toHaveProperty('commandTimeout', 1_000)
-    expect(probe.options).toMatchObject({ commandTimeout: 1_000 })
+    expect(workerOptions).toMatchObject({
+      connectTimeout: 1_000,
+      lazyConnect: true,
+      maxRetriesPerRequest: null,
+    })
+    expect(workerOptions.retryStrategy(25)).toBe(2_000)
     expect(workerOptions.maxRetriesPerRequest).toBeNull()
-  })
-
-  test('quits healthy connections and force-disconnects unavailable ones', async () => {
-    const { closeQueueRedisConnection } = await import('../../src/queue/redis.js')
-    const quit = vi.fn().mockRejectedValue(new Error('timeout'))
-    const disconnect = vi.fn()
-
-    await closeQueueRedisConnection({ status: 'ready', quit, disconnect } as never)
-
-    expect(quit).toHaveBeenCalledOnce()
-    expect(disconnect).toHaveBeenCalledOnce()
+    expect(worker.on).toHaveBeenCalledWith('error', expect.any(Function))
   })
 })

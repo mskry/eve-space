@@ -37,8 +37,7 @@ let lifecycleAuthorizationResolutions = 0
 vi.mock('../../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => cache,
 }))
-vi.mock('../../../src/esi-resilience/transport.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../../src/esi-resilience/transport.js')>()),
+vi.mock('../../../src/esi-resilience/coordination-connection.js', () => ({
   getCoordinationConnection: () => coordination,
 }))
 vi.mock('../../../src/auth/tokens.js', () => ({

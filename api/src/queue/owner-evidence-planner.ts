@@ -1,32 +1,26 @@
-import type { Queue } from 'bullmq'
 import { selectDueOrganizationOwnerEvidence } from '../organization/owner-evidence.js'
-import { admitQueueWork } from './admission.js'
-import { jobOptions } from './job-options.js'
-import { getJobDefinition, type JobDefinition } from './job-registry.js'
+import type { QueuePlanningContext } from './planning-context.js'
 
-export async function runOrganizationOwnerEvidencePlanner(
-  queue: Queue,
-  signal?: AbortSignal,
-  selectDue = selectDueOrganizationOwnerEvidence,
-) {
-  const due = await selectDue()
-  const definition = getJobDefinition('organization-owner-evidence') as JobDefinition<{
-    operationId: string
-    grantId: string
-  }>
+export async function runOrganizationOwnerEvidencePlanner(context: QueuePlanningContext) {
+  const { producer, signal } = context
+  const due = await selectDueOrganizationOwnerEvidence()
   let planned = 0
   for (const { grantId } of due) {
     signal?.throwIfAborted()
     const payload = { operationId: organizationOwnerEvidenceJobId(grantId), grantId }
     // oxlint-disable-next-line no-await-in-loop
-    const admission = await admitQueueWork(queue, definition.operationIdentity(payload), 'planner')
-    if (!admission.admitted) {
+    const admission = await producer.enqueue(
+      {
+        name: 'organization-owner-evidence',
+        payload,
+        source: 'planner',
+      },
+      { signal },
+    )
+    if (admission.status === 'rejected') {
       if (admission.reason === 'coalesced') continue
       return { planned, reason: admission.reason }
     }
-    signal?.throwIfAborted()
-    // oxlint-disable-next-line no-await-in-loop
-    await queue.add(definition.name, payload, jobOptions(definition))
     planned += 1
   }
   return { planned, reason: planned === 0 ? ('idle' as const) : ('scheduled' as const) }

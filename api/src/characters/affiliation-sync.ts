@@ -1,6 +1,5 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { and, asc, inArray, lte, sql } from 'drizzle-orm'
-import { z } from 'zod'
 import { db } from '../db/client.js'
 import { characters } from '../db/schema.js'
 import { env } from '../env.js'
@@ -10,11 +9,15 @@ import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
 import { execute } from '../esi-resilience/execute.js'
 import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
 import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
+import { affiliationJobPayload, type JobPayloadByName } from '../queue/job-contracts.js'
+import { affiliationBatchLimit } from './affiliation-contract.js'
 
 const affiliationIdentity = getEsiOperationContract('bulk-affiliation').identity
 if (affiliationIdentity.kind !== 'set')
   throw new Error('Bulk affiliation identity must be set-like')
-export const affiliationBatchLimit = affiliationIdentity.maximumItems
+if (affiliationIdentity.maximumItems !== affiliationBatchLimit)
+  throw new Error('Bulk affiliation identity does not match the queue payload contract')
+export { affiliationBatchLimit }
 
 const bulkAffiliationRepresentation = registerEsiRepresentation(
   definePublicEsiRepresentation({
@@ -31,16 +34,8 @@ const bulkAffiliationRepresentation = registerEsiRepresentation(
   }),
 )
 
-export const affiliationJobPayload = z
-  .object({
-    operationId: z
-      .string()
-      .regex(/^affiliation-\d+(?:-\d+)*(?:--[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12})?$/i),
-    characterIds: z.array(z.number().int().positive()).min(1).max(affiliationBatchLimit),
-  })
-  .strict()
-
-export type AffiliationJobPayload = z.infer<typeof affiliationJobPayload>
+export { affiliationJobPayload }
+export type AffiliationJobPayload = JobPayloadByName['affiliation']
 
 export interface AffiliationObservation {
   characterId: number
@@ -60,8 +55,11 @@ export async function getCharacterAffiliationObservation(characterId: number) {
 }
 
 export class AffiliationCooldownError extends Error {
+  readonly retryAt: Date
+
   constructor(readonly retryAfterSeconds: number) {
     super('Character affiliation refresh is deferred by ESI cooldown')
+    this.retryAt = new Date(Date.now() + retryAfterSeconds * 1_000)
   }
 }
 

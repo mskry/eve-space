@@ -1,5 +1,4 @@
-import type { JobDefinition } from '../queue/job-registry.js'
-import { verifyJobRegistry } from '../queue/job-registry.js'
+import { verifyJobContracts, type JobContract, type JobName } from '../queue/job-contracts.js'
 
 export interface DomainEventRecoverySnapshot {
   eventCount: number
@@ -9,10 +8,10 @@ export interface DomainEventRecoverySnapshot {
   latestPublishedAt: string | null
 }
 
-export function verifyRollbackJobRegistry(registry: readonly Partial<JobDefinition<unknown>>[]) {
-  verifyJobRegistry(registry)
+export function verifyRollbackJobContracts(contracts: readonly JobContract<JobName>[]) {
+  verifyJobContracts(contracts)
   return {
-    authoritativeCount: registry.filter((job) => job.durability === 'authoritative').length,
+    authoritativeCount: contracts.filter((job) => job.durability.kind === 'authoritative').length,
   }
 }
 

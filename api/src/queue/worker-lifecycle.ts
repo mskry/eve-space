@@ -1,4 +1,4 @@
-import type { QueueRedisConnection } from './redis.js'
+import type { CoordinationRedisConnection } from '../coordination-redis.js'
 import { schedulerOutcomeKey, workerHeartbeatKey, workerRegistryKey } from './namespaces.js'
 import { workerHeartbeatIntervalMs, workerHeartbeatTtlSeconds } from './policy.js'
 import { workerId as localWorkerId } from './worker-identity.js'
@@ -39,7 +39,7 @@ export function createActiveJobTracker() {
 }
 
 export async function startWorkerHeartbeat(
-  connection: QueueRedisConnection,
+  connection: CoordinationRedisConnection,
   workerId = localWorkerId,
 ) {
   const key = workerHeartbeatKey(workerId)
@@ -58,7 +58,7 @@ export async function startWorkerHeartbeat(
 }
 
 /** Drops expired replicas; every deployment adds a hostname, so the registry would grow forever. */
-async function pruneWorkerRegistry(connection: QueueRedisConnection) {
+async function pruneWorkerRegistry(connection: CoordinationRedisConnection) {
   const registered = await connection.smembers(workerRegistryKey)
   if (registered.length === 0) return
   const beats = await connection.mget(registered.map(workerHeartbeatKey))

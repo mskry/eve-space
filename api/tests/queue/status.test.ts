@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { workerHeartbeatStaleAfterMs } from '../../src/queue/policy.js'
 
 const mocks = vi.hoisted(() => ({
   close: vi.fn(),
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     info: vi.fn(),
     config: vi.fn(),
   },
+  createProbe: vi.fn(),
   queue: {
     close: vi.fn(),
     getJobCounts: vi.fn(),
@@ -23,9 +25,9 @@ vi.mock('bullmq', () => ({
     return mocks.queue
   },
 }))
-vi.mock('../../src/queue/redis.js', () => ({
-  createProbeRedisConnection: () => mocks.connection,
-  closeQueueRedisConnection: mocks.close,
+vi.mock('../../src/coordination-redis.js', () => ({
+  createCoordinationRedisProbe: mocks.createProbe,
+  closeCoordinationRedisConnection: mocks.close,
 }))
 
 /** Heartbeats now live one key per replica behind a registry set. */
@@ -44,10 +46,12 @@ beforeEach(() => {
   mocks.connection.mget.mockReset()
   mocks.connection.info.mockReset()
   mocks.connection.config.mockReset()
+  mocks.createProbe.mockReset()
   mocks.queue.close.mockReset()
   mocks.queue.getJobCounts.mockReset()
   mocks.queue.getJobs.mockReset()
   mocks.close.mockReset()
+  mocks.createProbe.mockReturnValue(mocks.connection)
   mocks.connection.ping.mockResolvedValue('PONG')
   mocks.connection.info.mockResolvedValue('# Memory\r\nused_memory:53687091\r\n')
   mocks.connection.config.mockResolvedValue(['maxmemory', '536870912'])
@@ -179,7 +183,47 @@ describe('queue telemetry probe', () => {
     await expect(probeQueueStatus()).resolves.toMatchObject({
       status: 'degraded',
       retrying: 0,
-      workerHeartbeatAt: 'not-a-date',
+      workerHeartbeatAt: null,
+      workers: 0,
+    })
+  })
+
+  test.each([
+    '2026-09-10',
+    new Date(Date.now() - workerHeartbeatStaleAfterMs - 1).toISOString(),
+    new Date(Date.now() + workerHeartbeatStaleAfterMs * 2).toISOString(),
+  ])('does not expose or count invalid heartbeat %s', async (heartbeat) => {
+    withHeartbeats({ 'worker-a': heartbeat })
+    mocks.queue.getJobCounts.mockResolvedValue({ waiting: 0, delayed: 0, active: 0, failed: 0 })
+    mocks.queue.getJobs.mockResolvedValue([])
+    const { probeQueueStatus } = await import('../../src/queue/status.js')
+
+    await expect(probeQueueStatus()).resolves.toMatchObject({
+      status: 'degraded',
+      workerHeartbeatAt: null,
+      workers: 0,
+    })
+  })
+
+  test('degrades aggregate status for backlog while a replica heartbeat is fresh', async () => {
+    withHeartbeats({ 'worker-a': new Date().toISOString() })
+    mocks.queue.getJobCounts.mockResolvedValue({ waiting: 1, delayed: 0, active: 0, failed: 0 })
+    mocks.queue.getJobs.mockImplementation(async ([state]: string[]) =>
+      state === 'waiting'
+        ? [
+            {
+              attemptsMade: 0,
+              timestamp:
+                Date.now() - (Number(process.env.QUEUE_LAG_DEGRADED_SECONDS ?? 300) + 1) * 1_000,
+            },
+          ]
+        : [],
+    )
+    const { probeQueueStatus } = await import('../../src/queue/status.js')
+
+    await expect(probeQueueStatus()).resolves.toMatchObject({
+      status: 'degraded',
+      workers: 1,
     })
   })
 
@@ -232,26 +276,8 @@ describe('queue telemetry probe', () => {
     await expect(probeQueueStatus()).resolves.toMatchObject({
       status: 'operational',
       workerHeartbeatAt: fresh,
-      workers: 2,
+      workers: 1,
     })
-  })
-
-  test('scopes worker liveness to one replica when asked', async () => {
-    withHeartbeats({ 'worker-a': new Date().toISOString(), 'stuck-worker': null })
-    mocks.queue.getJobCounts.mockResolvedValue({ waiting: 0, delayed: 0, active: 0, failed: 0 })
-    mocks.queue.getJobs.mockResolvedValue([])
-    const { probeQueueStatus } = await import('../../src/queue/status.js')
-
-    // A healthy sibling must not vouch for the stuck replica.
-    await expect(probeQueueStatus('stuck-worker')).resolves.toMatchObject({
-      status: 'degraded',
-      workerHeartbeatAt: null,
-      workers: 0,
-    })
-    expect(mocks.connection.smembers).not.toHaveBeenCalled()
-    expect(mocks.connection.mget).toHaveBeenCalledWith([
-      'eve-space:v1:worker:heartbeat:stuck-worker',
-    ])
   })
 
   test('reports no workers when the registry is empty', async () => {
@@ -275,5 +301,17 @@ describe('queue telemetry probe', () => {
     const { probeQueueStatus } = await import('../../src/queue/status.js')
 
     await expect(probeQueueStatus()).resolves.toMatchObject({ status: 'unavailable' })
+  })
+
+  test('contains synchronous probe-construction failures', async () => {
+    mocks.createProbe.mockImplementationOnce(() => {
+      throw new Error('redis://user:password@private-host unavailable')
+    })
+    const { probeQueueStatus } = await import('../../src/queue/status.js')
+
+    const status = await probeQueueStatus()
+
+    expect(status).toMatchObject({ status: 'unavailable' })
+    expect(JSON.stringify(status)).not.toContain('private-host')
   })
 })

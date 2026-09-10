@@ -1,4 +1,3 @@
-import type { Queue } from 'bullmq'
 import {
   claimPendingDomainEvents,
   markDomainEventPublished,
@@ -6,13 +5,11 @@ import {
 } from '../domain-events/store.js'
 import { categorizeRelayFailure, RelayPublicationError } from '../domain-events/definitions.js'
 import { env } from '../env.js'
-import { admitQueueWork } from './admission.js'
-import { jobOptions } from './job-options.js'
-import { domainEventJobId, getJobDefinition, type JobDefinition } from './job-registry.js'
-import { outboxRelayOutcomeKey } from './namespaces.js'
-import type { OutboxRelayOutcome } from './status.js'
+import type { QueueOutcomeRecorder } from './outcome-recorder.js'
+import type { OutboxRelayOutcome } from './outcomes.js'
+import type { QueueProducer } from './producer.js'
 
-interface RelayDependencies {
+export interface OutboxRelayStore {
   claim: typeof claimPendingDomainEvents
   acknowledge: typeof markDomainEventPublished
   recordFailure: typeof recordDomainEventPublishFailure
@@ -26,45 +23,45 @@ interface RelayOptions {
   retryDelayMs?: number
 }
 
-const defaultDependencies: RelayDependencies = {
+export const outboxRelayStore: OutboxRelayStore = {
   claim: claimPendingDomainEvents,
   acknowledge: markDomainEventPublished,
   recordFailure: recordDomainEventPublishFailure,
 }
 
 export async function runOutboxRelayBatch(
-  queue: Queue,
+  producer: QueueProducer,
+  outcomes: QueueOutcomeRecorder,
+  store: OutboxRelayStore,
   options: RelayOptions = {},
-  dependencies: RelayDependencies = defaultDependencies,
 ) {
   options.signal?.throwIfAborted()
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK
-  const admission = await admitQueueWork(queue, 'domain-event', 'outbox', highWaterMark)
-  if (!admission.admitted) {
-    await recordRelayOutcome(queue, 'paused', null)
+  const admission = await producer.inspectCapacity({ source: 'outbox', highWaterMark })
+  if (admission.status === 'rejected') {
+    await recordRelayOutcome(outcomes, 'paused', null)
     return { admission, claimed: 0, published: 0, failed: 0 }
   }
 
   const remainingCapacity = Math.max(0, highWaterMark - admission.depth)
   const limit = Math.min(options.batchSize ?? env.OUTBOX_RELAY_BATCH_SIZE, remainingCapacity)
   if (limit === 0) {
-    await recordRelayOutcome(queue, 'idle', null)
+    await recordRelayOutcome(outcomes, 'idle', null)
     return { admission, claimed: 0, published: 0, failed: 0 }
   }
 
-  const claims = await dependencies.claim({
+  const claims = await store.claim({
     limit,
     claimTtlMs: options.claimTtlMs ?? env.OUTBOX_RELAY_CLAIM_TTL_MS,
   })
-  const definition = getJobDefinition('domain-event') as JobDefinition<{ eventId: string }>
-  const outcomes = await Promise.all(
+  const publications = await Promise.all(
     claims.map(async (claim) => {
       options.signal?.throwIfAborted()
       const eventId = claim.event.eventId
       if (!claim.valid) {
         const category = 'invalid-event' as const
         console.error('Outbox relay event failed', { eventId, category })
-        await dependencies.recordFailure({
+        await store.recordFailure({
           eventId,
           claimToken: claim.claimToken,
           category,
@@ -73,12 +70,16 @@ export async function runOutboxRelayBatch(
         return { outcome: 'failed' as const, category }
       }
       try {
-        await queue.add(
-          definition.name,
-          { eventId },
-          jobOptions(definition, domainEventJobId(eventId)),
+        const produced = await producer.enqueue(
+          {
+            name: 'domain-event',
+            payload: { eventId },
+            source: 'outbox',
+          },
+          { signal: options.signal },
         )
-        const acknowledged = await dependencies.acknowledge(eventId, claim.claimToken)
+        if (produced.status === 'rejected') throw new RelayPublicationError('queue-rejected')
+        const acknowledged = await store.acknowledge(eventId, claim.claimToken)
         if (!acknowledged) throw new RelayPublicationError('unknown')
         console.info('Outbox relay event published', {
           eventId,
@@ -94,7 +95,7 @@ export async function runOutboxRelayBatch(
           payloadVersion: claim.event.payloadVersion,
           category,
         })
-        await dependencies.recordFailure({
+        await store.recordFailure({
           eventId,
           claimToken: claim.claimToken,
           category,
@@ -104,19 +105,19 @@ export async function runOutboxRelayBatch(
       }
     }),
   )
-  const published = outcomes.filter((result) => result.outcome === 'published').length
-  const failed = outcomes.length - published
-  const category = outcomes.find((result) => result.category)?.category ?? null
+  const published = publications.filter((result) => result.outcome === 'published').length
+  const failed = publications.length - published
+  const category = publications.find((result) => result.category)?.category ?? null
   let relayOutcome: 'idle' | 'published' | 'failed' | 'partial-failure'
   if (failed === 0) relayOutcome = published === 0 ? 'idle' : 'published'
   else relayOutcome = published === 0 ? 'failed' : 'partial-failure'
-  await recordRelayOutcome(queue, relayOutcome, category)
+  await recordRelayOutcome(outcomes, relayOutcome, category)
 
   return { admission, claimed: claims.length, published, failed }
 }
 
 async function recordRelayOutcome(
-  queue: Queue,
+  recorder: QueueOutcomeRecorder,
   outcome: OutboxRelayOutcome['outcome'],
   category: OutboxRelayOutcome['category'],
 ) {
@@ -125,7 +126,5 @@ async function recordRelayOutcome(
     category,
     recordedAt: new Date().toISOString(),
   }
-  await queue
-    .getBackend()
-    .client.then((connection) => connection.set(outboxRelayOutcomeKey, JSON.stringify(value)))
+  await recorder.recordOutbox(value)
 }

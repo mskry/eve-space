@@ -1,31 +1,16 @@
-import {
-  DelayedError,
-  Queue,
-  UnrecoverableError,
-  Worker,
-  type Job,
-  type RepeatStrategy,
-} from 'bullmq'
-import { AffiliationCooldownError } from '../characters/affiliation-sync.js'
+import { DelayedError, UnrecoverableError, Worker, type Job } from 'bullmq'
+import { closeCoordinationRedisConnection } from '../coordination-redis.js'
 import { loadPlannerScheduleOffset } from '../deployment/installation-settings.js'
 import { verifyDomainEventHandlers } from '../domain-events/handlers.js'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { env } from '../env.js'
-import { admitQueueWork } from './admission.js'
+import { createBullMqQueueProducer } from './bullmq-producer.js'
 import { sanitizeJobFailure } from './failures.js'
-import { jobOptions } from './job-options.js'
-import {
-  getJobDefinition,
-  type JobDefinition,
-  validateJobPayload,
-  verifyJobRegistry,
-} from './job-registry.js'
+import { hasJobContract, parseJobPayload, verifyJobContracts } from './job-contracts.js'
+import { executeJobHandler, verifyJobHandlers } from './job-handlers.js'
 import { operationsQueueName, queuePrefix } from './namespaces.js'
-import {
-  closeQueueRedisConnection,
-  createProducerRedisConnection,
-  createWorkerRedisConnection,
-} from './redis.js'
+import { createOperationsQueueHandle, type OperationsQueueHandle } from './operations-queue.js'
+import { createQueueOutcomeRecorder } from './outcome-recorder.js'
+import { createWorkerRedisConnection } from './redis.js'
 import {
   createPlannerRepeatStrategy,
   getJobScheduler,
@@ -35,53 +20,30 @@ import {
 } from './scheduler.js'
 import { createActiveJobTracker, startWorkerHeartbeat } from './worker-lifecycle.js'
 
-const queueConnections = new WeakMap<Queue, ReturnType<typeof createProducerRedisConnection>>()
-
-export function createOperationsQueue(repeatStrategy?: RepeatStrategy) {
-  const connection = createProducerRedisConnection()
-  const queue = new Queue(operationsQueueName, {
-    connection,
-    prefix: queuePrefix,
-    ...(repeatStrategy ? { settings: { repeatStrategy } } : {}),
-    skipWaitingForReady: true,
-  })
-  queueConnections.set(queue, connection)
-  return queue
-}
-
-export async function closeOperationsQueue(queue: Queue) {
-  await closeQueue(queue)
-}
-
 export async function enqueueDiagnostic(
   source: 'planner' | 'on-demand' = 'planner',
   signal?: AbortSignal,
 ) {
   signal?.throwIfAborted()
-  const queue = createOperationsQueue()
+  const producer = createBullMqQueueProducer({ plannerDelay: plannerInitialDelay })
   try {
-    const definition = getJobDefinition('diagnostic') as JobDefinition<{
-      operationId: 'queue-diagnostic'
-    }>
-    const payload = { operationId: 'queue-diagnostic' as const }
-    const admission = await admitQueueWork(queue, definition.operationIdentity(payload), source)
-    if (!admission.admitted) return admission
-    const delay = source === 'planner' ? await plannerInitialDelay() : 0
-
-    // Admission and the delay lookup are round trips; the lease can go while they are in flight.
     signal?.throwIfAborted()
-    await queue.add(definition.name, payload, {
-      ...jobOptions(definition),
-      ...(delay > 0 ? { delay } : {}),
-    })
-    return admission
+    return await producer.enqueue(
+      {
+        name: 'diagnostic',
+        payload: { operationId: 'queue-diagnostic' },
+        source,
+      },
+      { signal },
+    )
   } finally {
-    await closeQueue(queue)
+    await producer.close()
   }
 }
 
 export async function startWorkerPlatform() {
-  verifyJobRegistry()
+  verifyJobContracts()
+  verifyJobHandlers()
   verifyDomainEventHandlers()
   const plannerRepeatStrategy = createPlannerRepeatStrategy(
     await loadPlannerScheduleOffset(),
@@ -89,10 +51,12 @@ export async function startWorkerPlatform() {
   )
   const connection = createWorkerRedisConnection()
   const activeJobs = createActiveJobTracker()
-  const queue = createOperationsQueue(plannerRepeatStrategy)
+  const handle = createOperationsQueueHandle({ repeatStrategy: plannerRepeatStrategy })
+  const producer = createBullMqQueueProducer({ handle, plannerDelay: plannerInitialDelay })
+  const outcomes = createQueueOutcomeRecorder(handle.connection)
   const worker = new Worker(
     operationsQueueName,
-    (job) => activeJobs.run(() => processJob(job, connection, queue)),
+    (job) => activeJobs.run(() => processJob(job, connection, producer, outcomes)),
     {
       connection,
       concurrency: env.QUEUE_OPERATION_CONCURRENCY,
@@ -104,12 +68,12 @@ export async function startWorkerPlatform() {
   )
   let stopHeartbeat: () => void
   try {
-    await registerSchedulers(queue)
+    await registerSchedulers(handle.queue)
     stopHeartbeat = await startWorkerHeartbeat(connection)
   } catch (error) {
     await worker.close(true)
-    await closeQueue(queue)
-    await closeQueueRedisConnection(connection)
+    await handle.close()
+    await closeCoordinationRedisConnection(connection)
     throw error
   }
   worker.on('failed', (job, error) => {
@@ -140,11 +104,11 @@ export async function startWorkerPlatform() {
           await withDeadline(worker.pause(true), remaining())
           drained = await activeJobs.waitForIdle(remaining())
           await withDeadline(worker.close(!drained), remaining())
-          await withDeadline(closeQueue(queue), remaining())
-          await withDeadline(closeQueueRedisConnection(connection), remaining())
+          await withDeadline(handle.close(), remaining())
+          await withDeadline(closeCoordinationRedisConnection(connection), remaining())
         } catch {
           console.error('Worker shutdown exceeded its timeout; dropping queue connections')
-          forceDisconnect(worker, queue, connection)
+          forceDisconnect(worker, handle, connection)
         }
         return drained
       })()
@@ -169,52 +133,50 @@ async function withDeadline<T>(operation: Promise<T>, timeoutMs: number) {
 
 function forceDisconnect(
   worker: Worker,
-  queue: Queue,
+  handle: OperationsQueueHandle,
   connection: ReturnType<typeof createWorkerRedisConnection>,
 ) {
   // `disconnect()` stops the retry strategy outright, unlike `quit()`, which waits for a reply an
   // unreachable Redis will never send.
   connection.disconnect()
-  queueConnections.get(queue)?.disconnect()
+  handle.disconnect()
   // BullMQ's duplicated blocking client is not ours to close, and alone keeps the process alive.
-  void Promise.allSettled([worker.close(true), worker.disconnect(), queue.disconnect()])
+  void Promise.allSettled([worker.close(true), worker.disconnect()])
 }
 
 async function processJob(
   job: Job,
   connection: ReturnType<typeof createWorkerRedisConnection>,
-  queue: Queue,
+  producer: ReturnType<typeof createBullMqQueueProducer>,
+  outcomes: ReturnType<typeof createQueueOutcomeRecorder>,
 ) {
-  const definition = getJobDefinition(job.name)
-  if (!definition) throw new UnrecoverableError(`Unknown job type ${job.name}`)
-  const payload = validateJobPayload(definition, job.data)
+  if (!hasJobContract(job.name)) throw new UnrecoverableError(`Unknown job type ${job.name}`)
+  const name = job.name
+  let payload
   try {
-    const scheduler = getJobScheduler(job.name)
-    if (scheduler) {
-      await runWithSchedulerOverlapPolicy(
+    payload = parseJobPayload(name, job.data)
+  } catch {
+    throw new UnrecoverableError(`Invalid ${job.name} job payload`)
+  }
+  const scheduler = getJobScheduler(name)
+  const execute = (signal: AbortSignal) =>
+    executeJobHandler(name, payload, { producer, outcomes, signal })
+  const disposition = scheduler
+    ? await runWithSchedulerOverlapPolicy(
         connection,
         scheduler.schedulerId,
         scheduler.overlap,
-        (signal) => definition.process(payload as never, signal, { queue }),
-      )
-    } else {
-      await definition.process(payload as never, undefined, { queue })
-    }
-    if (definition.name === 'domain-event')
-      console.info('Domain event job processed', domainEventJobLogContext(job))
-  } catch (error) {
-    if (error instanceof AffiliationCooldownError || error instanceof EsiQuotaError) {
-      const retryAt =
-        error instanceof EsiQuotaError
-          ? error.retryAt.getTime()
-          : Date.now() + error.retryAfterSeconds * 1_000
-      await job.moveToDelayed(retryAt, job.token)
-      throw new DelayedError('ESI cooldown deferred this job')
-    }
-    if (definition.classifyError(error) === 'permanent')
-      throw new UnrecoverableError('Permanent job failure')
-    throw error
+        execute,
+      ).then((result) => (result.executed ? result.result : { type: 'completed' as const }))
+    : await execute(new AbortController().signal)
+  if (disposition.type === 'delayed') {
+    await job.moveToDelayed(disposition.retryAt, job.token)
+    throw new DelayedError('Dependency cooldown deferred this job')
   }
+  if (disposition.type === 'permanent') throw new UnrecoverableError('Permanent job failure')
+  if (disposition.type === 'retryable') throw new Error(sanitizeJobFailure(disposition.error))
+  if (job.name === 'domain-event')
+    console.info('Domain event job processed', domainEventJobLogContext(job))
 }
 
 function domainEventJobLogContext(job: Job | undefined) {
@@ -224,10 +186,4 @@ function domainEventJobLogContext(job: Job | undefined) {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)
     ? { eventId }
     : {}
-}
-
-async function closeQueue(queue: Queue) {
-  await queue.close()
-  const connection = queueConnections.get(queue)
-  if (connection) await closeQueueRedisConnection(connection)
 }

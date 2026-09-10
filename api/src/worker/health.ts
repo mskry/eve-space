@@ -1,12 +1,12 @@
 import { sql } from '../db/client.js'
-import { probeQueueStatus } from '../queue/status.js'
+import { probeScopedWorkerLiveness } from '../queue/worker-liveness.js'
 import { workerId } from '../queue/worker-identity.js'
 import { checkWorkerDependencies } from './readiness.js'
 
 async function runWorkerHealthcheck() {
   try {
     // Scoped to this replica: a sibling's beat says nothing about the worker in this container.
-    const readiness = await checkWorkerDependencies(sql, () => probeQueueStatus(workerId))
+    const readiness = await checkWorkerDependencies(() => probeScopedWorkerLiveness(workerId), sql)
     if (!readiness.healthy) {
       console.error(`Worker unhealthy: ${readiness.reason}`)
       process.exitCode = 1

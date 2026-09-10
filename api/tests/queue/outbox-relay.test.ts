@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { runOutboxRelayBatch } from '../../src/queue/outbox-relay.js'
+import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 
 const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
 const claimToken = 'b7e7be31-3547-48aa-baaa-9b86e89e4420'
@@ -12,162 +13,211 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('outbox relay batch', () => {
-  test('caps claims to remaining queue capacity and acknowledges stable event jobs', async () => {
-    const subject = queue({ waiting: 7 })
-    const dependencies = relayDependencies()
+  test('caps claims to remaining capacity and acknowledges stable event commands', async () => {
+    const producer = createInMemoryQueueProducer({ depth: 7 })
+    const outcomes = outcomeRecorder()
+    const store = relayStore()
 
     await expect(
-      runOutboxRelayBatch(subject as never, { highWaterMark: 10, batchSize: 100 }, dependencies),
+      runOutboxRelayBatch(producer, outcomes, store, { highWaterMark: 10, batchSize: 100 }),
     ).resolves.toMatchObject({ claimed: 1, published: 1, failed: 0 })
-    expect(dependencies.claim).toHaveBeenCalledWith({ limit: 3, claimTtlMs: 30_000 })
-    expect(subject.add).toHaveBeenCalledWith(
-      'domain-event',
-      { eventId },
-      expect.objectContaining({ jobId: `domain-event-${eventId}`, attempts: 5 }),
-    )
-    expect(dependencies.acknowledge).toHaveBeenCalledWith(eventId, claimToken)
+    expect(store.claim).toHaveBeenCalledWith({ limit: 3, claimTtlMs: 30_000 })
+    expect(producer.commands).toEqual([
+      { name: 'domain-event', payload: { eventId }, source: 'outbox' },
+    ])
+    expect(store.acknowledge).toHaveBeenCalledWith(eventId, claimToken)
     expect(console.info).toHaveBeenCalledWith('Outbox relay event published', {
       eventId,
       eventType: 'character.attached',
       payloadVersion: 1,
     })
-    expect(latestOutcome(subject)).toMatchObject({ outcome: 'published', category: null })
+    expect(JSON.stringify(vi.mocked(console.info).mock.calls)).not.toContain('Payload Pilot')
+    expect(outcomes.recordOutbox).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'published', category: null }),
+    )
   })
 
   test('does not claim PostgreSQL rows while outbox admission is paused', async () => {
-    const subject = queue({ waiting: 10 })
-    const dependencies = relayDependencies()
+    const producer = createInMemoryQueueProducer({ highWaterMark: 10, depth: 10 })
+    const outcomes = outcomeRecorder()
+    const store = relayStore()
 
     await expect(
-      runOutboxRelayBatch(subject as never, { highWaterMark: 10 }, dependencies),
+      runOutboxRelayBatch(producer, outcomes, store, { highWaterMark: 10 }),
     ).resolves.toMatchObject({
-      admission: { reason: 'outbox-paused' },
+      admission: { status: 'rejected', reason: 'outbox-paused' },
       claimed: 0,
     })
-    expect(dependencies.claim).not.toHaveBeenCalled()
-    expect(subject.add).not.toHaveBeenCalled()
-    expect(latestOutcome(subject)).toMatchObject({ outcome: 'paused', category: null })
+    expect(store.claim).not.toHaveBeenCalled()
+    expect(outcomes.recordOutbox).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'paused' }),
+    )
   })
 
-  test('records a sanitized retry category when enqueue fails', async () => {
-    const subject = queue()
-    subject.add.mockRejectedValue({ code: 'ECONNRESET', message: 'redis://private-host' })
-    const dependencies = relayDependencies()
+  test('records a sanitized retry category when infrastructure enqueue fails', async () => {
+    const producer = createInMemoryQueueProducer()
+    producer.enqueue = vi.fn().mockRejectedValue({
+      code: 'ECONNRESET',
+      message: 'redis://private-host',
+    })
+    const outcomes = outcomeRecorder()
+    const store = relayStore()
 
     await expect(
-      runOutboxRelayBatch(subject as never, { retryDelayMs: 12_000 }, dependencies),
+      runOutboxRelayBatch(producer, outcomes, store, { retryDelayMs: 12_000 }),
     ).resolves.toMatchObject({ claimed: 1, published: 0, failed: 1 })
-    expect(dependencies.recordFailure).toHaveBeenCalledWith({
+    expect(store.recordFailure).toHaveBeenCalledWith({
       eventId,
       claimToken,
       category: 'queue-unavailable',
       retryDelayMs: 12_000,
     })
-    expect(JSON.stringify(dependencies.recordFailure.mock.calls)).not.toContain('private-host')
     expect(console.error).toHaveBeenCalledWith('Outbox relay event failed', {
       eventId,
       eventType: 'character.attached',
       payloadVersion: 1,
       category: 'queue-unavailable',
     })
-    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('private-host')
-    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('Payload Pilot')
-    expect(latestOutcome(subject)).toMatchObject({
-      outcome: 'failed',
-      category: 'queue-unavailable',
-    })
+    const serializedLogs = JSON.stringify(vi.mocked(console.error).mock.calls)
+    expect(serializedLogs).not.toContain('private-host')
+    expect(serializedLogs).not.toContain('Payload Pilot')
   })
 
-  test('isolates an invalid stored event while publishing valid companions', async () => {
-    const invalidEventId = '16b7570c-f6ea-43c5-9669-4692245b6667'
-    const invalidClaimToken = '39eb48bb-50b2-4871-b944-72781b334e2e'
-    const subject = queue()
-    const dependencies = relayDependencies()
-    dependencies.claim.mockResolvedValue([
+  test('turns expected producer rejection into recoverable queue rejection', async () => {
+    const producer = createInMemoryQueueProducer()
+    producer.enqueue = vi.fn().mockResolvedValue({
+      status: 'rejected',
+      depth: 1,
+      reason: 'coalesced',
+    })
+    const store = relayStore()
+
+    await runOutboxRelayBatch(producer, outcomeRecorder(), store)
+
+    expect(store.recordFailure).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'queue-rejected' }),
+    )
+    expect(store.acknowledge).not.toHaveBeenCalled()
+  })
+
+  test('isolates invalid stored events while publishing valid companions', async () => {
+    const producer = createInMemoryQueueProducer()
+    const outcomes = outcomeRecorder()
+    const store = relayStore()
+    store.claim.mockResolvedValue([
       {
         valid: false,
-        event: { eventId: invalidEventId },
-        claimToken: invalidClaimToken,
+        event: { eventId: '16b7570c-f6ea-43c5-9669-4692245b6667' },
+        claimToken: '39eb48bb-50b2-4871-b944-72781b334e2e',
         claimExpiresAt: new Date(Date.now() + 30_000),
         publishAttempts: 1,
       },
       validClaim(),
     ])
 
-    await expect(runOutboxRelayBatch(subject as never, {}, dependencies)).resolves.toMatchObject({
+    await expect(runOutboxRelayBatch(producer, outcomes, store)).resolves.toMatchObject({
       claimed: 2,
       published: 1,
       failed: 1,
     })
-    expect(subject.add).toHaveBeenCalledOnce()
-    expect(dependencies.recordFailure).toHaveBeenCalledWith({
-      eventId: invalidEventId,
-      claimToken: invalidClaimToken,
-      category: 'invalid-event',
-      retryDelayMs: 10_000,
-    })
-    expect(console.error).toHaveBeenCalledWith('Outbox relay event failed', {
-      eventId: invalidEventId,
-      category: 'invalid-event',
-    })
-    expect(latestOutcome(subject)).toMatchObject({
-      outcome: 'partial-failure',
-      category: 'invalid-event',
-    })
+    expect(outcomes.recordOutbox).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'partial-failure', category: 'invalid-event' }),
+    )
   })
 
-  test('releases enqueue-success acknowledgement failures for deterministic retry', async () => {
-    const subject = queue()
-    const dependencies = relayDependencies()
-    dependencies.acknowledge.mockRejectedValue(new Error('database topology'))
+  test.each(['rejected', 'ownership-lost'] as const)(
+    'releases an accepted publication when acknowledgement is %s',
+    async (failure) => {
+      const producer = createInMemoryQueueProducer()
+      const store = relayStore()
+      if (failure === 'rejected')
+        store.acknowledge.mockRejectedValueOnce(new Error('database topology'))
+      else store.acknowledge.mockResolvedValueOnce(false)
 
-    await expect(runOutboxRelayBatch(subject as never, {}, dependencies)).resolves.toMatchObject({
-      claimed: 1,
-      published: 0,
+      await expect(runOutboxRelayBatch(producer, outcomeRecorder(), store)).resolves.toMatchObject({
+        claimed: 1,
+        published: 0,
+        failed: 1,
+      })
+      expect(producer.commands).toHaveLength(1)
+      expect(store.recordFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId, claimToken, category: 'unknown' }),
+      )
+      expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('database topology')
+    },
+  )
+
+  test('accounts for producer rejection within a partially published batch', async () => {
+    const rejectedEventId = '16b7570c-f6ea-43c5-9669-4692245b6667'
+    const rejectedClaimToken = '39eb48bb-50b2-4871-b944-72781b334e2e'
+    const producer = createInMemoryQueueProducer()
+    producer.enqueue = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 'accepted', depth: 0 })
+      .mockResolvedValueOnce({ status: 'rejected', depth: 1, reason: 'outbox-paused' })
+    const outcomes = outcomeRecorder()
+    const store = relayStore()
+    store.claim.mockResolvedValue([validClaim(), validClaim(rejectedEventId, rejectedClaimToken)])
+
+    await expect(runOutboxRelayBatch(producer, outcomes, store)).resolves.toMatchObject({
+      claimed: 2,
+      published: 1,
       failed: 1,
     })
-    expect(subject.add).toHaveBeenCalledOnce()
-    expect(dependencies.recordFailure).toHaveBeenCalledWith(
-      expect.objectContaining({ category: 'unknown' }),
+    expect(store.acknowledge).toHaveBeenCalledOnce()
+    expect(store.acknowledge).toHaveBeenCalledWith(eventId, claimToken)
+    expect(store.recordFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: rejectedEventId,
+        claimToken: rejectedClaimToken,
+        category: 'queue-rejected',
+      }),
+    )
+    expect(outcomes.recordOutbox).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'partial-failure', category: 'queue-rejected' }),
     )
   })
 
-  test('leaves the expiring claim authoritative if retry recording also fails', async () => {
-    const subject = queue()
-    subject.add.mockRejectedValue(new Error('queue failure'))
-    const dependencies = relayDependencies()
-    dependencies.recordFailure.mockRejectedValue(new Error('database failure'))
+  test('records an idle outcome when no events are pending', async () => {
+    const outcomes = outcomeRecorder()
+    const store = relayStore()
+    store.claim.mockResolvedValue([])
 
-    await expect(runOutboxRelayBatch(subject as never, {}, dependencies)).rejects.toThrow(
+    await expect(
+      runOutboxRelayBatch(createInMemoryQueueProducer(), outcomes, store),
+    ).resolves.toMatchObject({ claimed: 0, published: 0, failed: 0 })
+    expect(outcomes.recordOutbox).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'idle', category: null }),
+    )
+  })
+
+  test('propagates failure recording and outcome recording infrastructure errors', async () => {
+    const producer = createInMemoryQueueProducer()
+    producer.enqueue = vi.fn().mockRejectedValue(new Error('queue failure'))
+    const store = relayStore()
+    store.recordFailure.mockRejectedValue(new Error('database failure'))
+    await expect(runOutboxRelayBatch(producer, outcomeRecorder(), store)).rejects.toThrow(
       'database failure',
     )
-  })
 
-  test('records an idle outcome when no PostgreSQL events are pending', async () => {
-    const subject = queue()
-    const dependencies = relayDependencies()
-    dependencies.claim.mockResolvedValue([])
-
-    await expect(runOutboxRelayBatch(subject as never, {}, dependencies)).resolves.toMatchObject({
-      claimed: 0,
-      published: 0,
-      failed: 0,
-    })
-    expect(latestOutcome(subject)).toMatchObject({ outcome: 'idle', category: null })
+    const outcomes = outcomeRecorder()
+    outcomes.recordOutbox.mockRejectedValue(new Error('outcome unavailable'))
+    store.recordFailure.mockResolvedValue(true)
+    store.claim.mockResolvedValue([])
+    await expect(runOutboxRelayBatch(producer, outcomes, store)).rejects.toThrow(
+      'outcome unavailable',
+    )
   })
 })
 
-function queue({ waiting = 0, delayed = 0 } = {}) {
-  const client = { del: vi.fn(), set: vi.fn() }
+function outcomeRecorder() {
   return {
-    client,
-    add: vi.fn().mockResolvedValue({ id: `domain-event-${eventId}` }),
-    getJobCounts: vi.fn().mockResolvedValue({ waiting, delayed }),
-    getBackend: () => ({ client: Promise.resolve(client) }),
+    recordAffiliation: vi.fn().mockResolvedValue(undefined),
+    recordOutbox: vi.fn().mockResolvedValue(undefined),
   }
 }
 
-function relayDependencies() {
+function relayStore() {
   return {
     claim: vi.fn().mockResolvedValue([validClaim()]),
     acknowledge: vi.fn().mockResolvedValue(true),
@@ -175,24 +225,17 @@ function relayDependencies() {
   }
 }
 
-function validClaim() {
+function validClaim(id = eventId, token = claimToken) {
   return {
     valid: true,
     event: {
-      eventId,
+      eventId: id,
       eventType: 'character.attached',
       payloadVersion: 1,
       payload: { characterName: 'Payload Pilot' },
     },
-    claimToken,
+    claimToken: token,
     claimExpiresAt: new Date(Date.now() + 30_000),
     publishAttempts: 1,
-  }
-}
-
-function latestOutcome(subject: ReturnType<typeof queue>) {
-  const call = subject.client.set.mock.calls.find(([key]) =>
-    String(key).endsWith(':outbox-relay:outcome'),
-  )
-  return call ? JSON.parse(String(call[1])) : null
+  } as const
 }

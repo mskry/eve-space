@@ -3,6 +3,7 @@ import { EsiClient, type EsiResponse } from '@evespace/esi-client'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import type { OperationRequestArguments, StableOperationId } from '@evespace/esi-client/operations'
 import { env } from '../env.js'
+import type { CoordinationRedisConnection } from '../coordination-redis.js'
 import { isPositiveSafeInteger, isRecord } from '../type-guards.js'
 import {
   getCharacterAuthorization,
@@ -64,7 +65,8 @@ import {
   recordEsiUpstreamOutcome,
 } from './telemetry-counters.js'
 import { wait } from './timing.js'
-import { createRawEsiTransport, getCoordinationConnection } from './transport.js'
+import { createRawEsiTransport } from './transport.js'
+import { getCoordinationConnection } from './coordination-connection.js'
 import { assertNoCallerEsiRevalidationHeaders, withEsiRevalidation } from './revalidation.js'
 import { acquireEsiRequestPermit, type EsiRequestPermit } from './permits.js'
 import { recordEsiRateMeasurement } from './rate-measurement.js'
@@ -75,7 +77,6 @@ import type {
   EsiLoadResult,
   EsiRevalidation,
 } from './types.js'
-import type { QueueRedisConnection } from '../queue/redis.js'
 
 const followerWaitMs = 100
 const namespaceValidationIntervalMs = 1_000
@@ -182,7 +183,7 @@ class EsiResilienceLayer {
 
   constructor(
     private readonly cache: CacheRedisConnection,
-    private readonly coordination: QueueRedisConnection,
+    private readonly coordination: CoordinationRedisConnection,
     l1Capacity = env.ESI_CACHE_L1_MAX_ENTRIES,
     authorizers:
       | {

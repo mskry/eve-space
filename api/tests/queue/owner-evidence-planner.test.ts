@@ -1,43 +1,63 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   organizationOwnerEvidenceJobId,
   runOrganizationOwnerEvidencePlanner,
 } from '../../src/queue/owner-evidence-planner.js'
+import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 
 const grantId = '98a782d2-e042-47d7-9659-03b218121a1a'
+const selectDue = vi.hoisted(() => vi.fn())
+
+vi.mock('../../src/organization/owner-evidence.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/organization/owner-evidence.js')>()),
+  selectDueOrganizationOwnerEvidence: selectDue,
+}))
+
+beforeEach(() => {
+  selectDue.mockReset().mockResolvedValue([])
+})
 
 describe('organization owner evidence planner', () => {
   test('reconstructs due refresh work using only stable authority identity', async () => {
-    const subject = queue()
-    const selectDue = vi.fn().mockResolvedValue([{ grantId }])
+    const subject = context()
+    selectDue.mockResolvedValue([{ grantId }])
 
-    await expect(
-      runOrganizationOwnerEvidencePlanner(subject as never, undefined, selectDue),
-    ).resolves.toEqual({ planned: 1, reason: 'scheduled' })
-    expect(subject.add).toHaveBeenCalledWith(
-      'organization-owner-evidence',
-      { operationId: organizationOwnerEvidenceJobId(grantId), grantId },
-      expect.objectContaining({ attempts: 3 }),
-    )
+    await expect(runOrganizationOwnerEvidencePlanner(subject)).resolves.toEqual({
+      planned: 1,
+      reason: 'scheduled',
+    })
+    expect(subject.producer.commands).toEqual([
+      {
+        name: 'organization-owner-evidence',
+        payload: { operationId: organizationOwnerEvidenceJobId(grantId), grantId },
+        source: 'planner',
+      },
+    ])
   })
 
   test('coalesces an already active grant refresh', async () => {
-    const operationId = organizationOwnerEvidenceJobId(grantId)
-    const subject = queue([{ data: { operationId, grantId } }])
+    const subject = context()
+    selectDue.mockResolvedValue([{ grantId }])
+    await subject.producer.enqueue({
+      name: 'organization-owner-evidence',
+      payload: { operationId: organizationOwnerEvidenceJobId(grantId), grantId },
+      source: 'planner',
+    })
 
-    await expect(
-      runOrganizationOwnerEvidencePlanner(subject as never, undefined, async () => [{ grantId }]),
-    ).resolves.toEqual({ planned: 0, reason: 'idle' })
-    expect(subject.add).not.toHaveBeenCalled()
+    await expect(runOrganizationOwnerEvidencePlanner(subject)).resolves.toEqual({
+      planned: 0,
+      reason: 'idle',
+    })
+    expect(subject.producer.commands).toHaveLength(1)
   })
 })
 
-function queue(active: { data: unknown }[] = []) {
-  const client = { del: vi.fn(), set: vi.fn() }
+function context() {
   return {
-    add: vi.fn(),
-    getBackend: () => ({ client: Promise.resolve(client) }),
-    getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0, prioritized: 0 }),
-    getJobs: vi.fn().mockResolvedValue(active),
+    producer: createInMemoryQueueProducer(),
+    outcomes: {
+      recordAffiliation: vi.fn().mockResolvedValue(undefined),
+      recordOutbox: vi.fn().mockResolvedValue(undefined),
+    },
   }
 }

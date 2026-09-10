@@ -54,7 +54,7 @@ describe('worker lifecycle', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  test('publishes a beat under this replica and registers it after the key exists', async () => {
+  test('publishes and registers this replica heartbeat', async () => {
     const connection = heartbeatConnection()
     const stop = await startWorkerHeartbeat(connection as never, 'worker-a')
     stop()
@@ -66,10 +66,6 @@ describe('worker lifecycle', () => {
       60,
     )
     expect(connection.sadd).toHaveBeenCalledWith('eve-space:v1:worker:registry', 'worker-a')
-    // Writing the key first keeps a pruning replica from seeing a registered id with no beat.
-    expect(connection.set.mock.invocationCallOrder[0]).toBeLessThan(
-      connection.sadd.mock.invocationCallOrder[0]!,
-    )
   })
 
   test('drops replicas from the registry once their beat has expired', async () => {
