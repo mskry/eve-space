@@ -1,8 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
-import type {
-  GetAlliancesAllianceIdResponse,
-  GetCharactersDetailResponse,
-} from '@evespace/esi-client/types'
+import type { GetCharactersDetailResponse } from '@evespace/esi-client/types'
+import { publicAllianceRepresentation } from '../alliances/public-data.js'
 import { getCorporationPublicResult } from '../corporations/public-data.js'
 import { execute } from '../esi-resilience/execute.js'
 import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
@@ -35,17 +33,6 @@ interface PublicCharacterResult {
   allianceId: number | null
 }
 
-/**
- * Also consumed by organization/authority.ts and deployment/organization.ts, which read
- * `executorCorporationId`; this file reads `name`/`ticker`. Keep the mapping a superset of all
- * three callers' fields rather than splitting it per caller.
- */
-export interface PublicAllianceResult {
-  name: string
-  ticker: string
-  executorCorporationId: number | null
-}
-
 interface PublicRaceResult {
   raceId: number
   name: string
@@ -65,18 +52,6 @@ const publicCharacterRepresentation = registerEsiRepresentation(
       path: { character_id: input.characterId },
     }),
     map: (response): PublicCharacterResult => mapPublicCharacter(response.data),
-  }),
-)
-
-export const publicAllianceRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'public-alliance',
-    name: 'public-alliance-core',
-    descriptor: operationRegistry.GetAlliancesAllianceId.transport,
-    encodeRequest: (input: { allianceId: number }) => ({
-      path: { alliance_id: input.allianceId },
-    }),
-    map: (response): PublicAllianceResult => mapPublicAlliance(response.data),
   }),
 )
 
@@ -216,13 +191,5 @@ function mapPublicCharacter(character: GetCharactersDetailResponse): PublicChara
     description: character.description,
     factionId: character.faction_id ?? null,
     allianceId: character.alliance_id ?? null,
-  }
-}
-
-function mapPublicAlliance(alliance: GetAlliancesAllianceIdResponse): PublicAllianceResult {
-  return {
-    name: alliance.name,
-    ticker: alliance.ticker,
-    executorCorporationId: alliance.executor_corporation_id ?? null,
   }
 }

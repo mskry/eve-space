@@ -106,6 +106,11 @@ interface CharacterEsiExecutionResult<Data> {
   readonly authorizationGeneration: number
 }
 
+interface EsiCanonicalLoad<Data> {
+  readonly meta: EsiLoadResult<unknown>['meta']
+  map(): Promise<Data>
+}
+
 interface EsiExecutionResource<Data> {
   operation: EsiOperation
   characterId?: number
@@ -113,7 +118,7 @@ interface EsiExecutionResource<Data> {
   load(
     authority: { accessToken: string; principal: string } | undefined,
     revalidation: EsiRevalidation,
-  ): Promise<EsiLoadResult<Data>>
+  ): Promise<EsiCanonicalLoad<Data>>
 }
 
 interface DirectInternalEsiResource<Data> {
@@ -121,7 +126,7 @@ interface DirectInternalEsiResource<Data> {
   inputs: Readonly<Record<string, unknown>>
   representationName?: string
   authorization?: EsiCacheAuthorization
-  load(revalidation: EsiRevalidation): Promise<EsiLoadResult<Data>>
+  load(revalidation: EsiRevalidation): Promise<EsiCanonicalLoad<Data>>
   resolveAuthorization?: undefined
 }
 
@@ -134,7 +139,7 @@ interface LazyInternalEsiResource<Data> {
   load?: undefined
   resolveAuthorization(): Promise<{
     authorization: EsiCacheAuthorization
-    load(revalidation: EsiRevalidation): Promise<EsiLoadResult<Data>>
+    load(revalidation: EsiRevalidation): Promise<EsiCanonicalLoad<Data>>
   }>
 }
 
@@ -381,7 +386,7 @@ class EsiResilienceLayer {
     request: OperationRequestArguments,
     revalidation: EsiRevalidation,
     authorization?: { readonly accessToken: string; readonly principal: string },
-  ): Promise<EsiLoadResult<Result>> {
+  ): Promise<EsiCanonicalLoad<Result>> {
     const policy = getEsiOperationContract(representation.operation)
     const client = new EsiClient({
       fetch: this.#createTransport(representation.operation, authorization?.principal),
@@ -397,9 +402,9 @@ class EsiResilienceLayer {
     } catch (error) {
       const recovered = representation.recover?.(error, input)
       if (!recovered) throw error
-      return recovered
+      return { meta: recovered.meta, map: async () => recovered.data }
     }
-    return { data: await representation.map(response, input), meta: response.meta }
+    return { meta: response.meta, map: async () => representation.map(response, input) }
   }
 
   async #dispatchMutation<
@@ -413,7 +418,7 @@ class EsiResilienceLayer {
     input: Input,
     request: OperationRequestArguments,
     authorization: { readonly accessToken: string; readonly principal: string },
-  ): Promise<EsiLoadResult<Result>> {
+  ): Promise<EsiCanonicalLoad<Result>> {
     const policy = getEsiOperationContract(representation.operation)
     if (!policy.mutation)
       throw new Error(
@@ -430,25 +435,26 @@ class EsiResilienceLayer {
       request as never,
       { confirmMutation: true },
     )) as unknown as EsiResponse<WireResult>
-    return { data: await representation.map(response, input), meta: response.meta }
+    return { meta: response.meta, map: async () => representation.map(response, input) }
   }
 
-  #dispatchPlatformOperation(
+  async #dispatchPlatformOperation(
     operation: EsiOperation,
     definition: PlatformExecutableEsiOperationDefinition,
     inputs: Readonly<Record<string, unknown>>,
     revalidation: EsiRevalidation,
     authorization?: { readonly accessToken: string; readonly principal: string },
-  ): Promise<EsiLoadResult<unknown>> {
+  ): Promise<EsiCanonicalLoad<unknown>> {
     const client = new EsiClient({
       fetch: this.#createTransport(operation, authorization?.principal),
       ...(authorization ? { token: authorization.accessToken } : {}),
       validateResponses: definition.contract.responseValidation.kind === 'enabled',
     })
-    return client.callOperation(
+    const response = await client.callOperation(
       definition.sdkOperationId,
       withEsiRevalidation(inputs, revalidation) as never,
     )
+    return { meta: response.meta, map: async () => response.data }
   }
 
   #createTransport(operation: EsiOperation, principal?: string): typeof globalThis.fetch {
@@ -561,8 +567,9 @@ class EsiResilienceLayer {
       policy.authorization.scope,
     )
     const principal = characterEsiPrincipal(mutation.characterId)
+    let load: EsiCanonicalLoad<Data>
     try {
-      const result = await this.#loadWithRetry(
+      load = await this.#loadWithRetry(
         {
           operation: mutation.operation,
           inputs: mutation.inputs,
@@ -572,13 +579,13 @@ class EsiResilienceLayer {
         undefined,
         policy,
       )
-      await this.#resourceRevisions.advance(policy, principal)
-      return result
     } catch (error) {
       if (shouldAdvanceRevisionAfterMutationError(policy, error))
         await this.#resourceRevisions.advance(policy, principal)
       throw toEsiQuotaError(error)
     }
+    await this.#resourceRevisions.advance(policy, principal)
+    return { data: await load.map(), meta: load.meta }
   }
 
   async #getCharacterAuthorized<Data>(
@@ -726,25 +733,28 @@ class EsiResilienceLayer {
   }
 
   async #loadUncached<Data>(resource: InternalEsiResource<Data>): Promise<EsiCachedResult<Data>> {
+    const policy = getEsiOperationContract(resource.operation)
+    let resolved: ResolvedInternalEsiResource<Data>
+    let load: EsiCanonicalLoad<Data>
     try {
-      const policy = getEsiOperationContract(resource.operation)
-      const resolved = await this.#resolveResourceAuthorization(resource)
-      const result = await this.#loadWithRetry(resolved, {}, undefined, policy)
-      const envelope = createCacheEnvelope({
-        data: result.data,
-        metadata: result.meta,
-        policy,
-        representationVersion: composeEnvelopeRepresentationVersion(
-          policy.representationVersion,
-          resolved.representationName,
-        ),
-        authorization: resolved.authorization,
-        fence: 0,
-      })
-      return toCachedResult(envelope, 'esi', false, undefined, getEsiQuota(result.meta))
+      resolved = await this.#resolveResourceAuthorization(resource)
+      load = await this.#loadWithRetry(resolved, {}, undefined, policy)
     } catch (error) {
       throw toEsiQuotaError(error)
     }
+    const result = { data: await load.map(), meta: load.meta }
+    const envelope = createCacheEnvelope({
+      data: result.data,
+      metadata: result.meta,
+      policy,
+      representationVersion: composeEnvelopeRepresentationVersion(
+        policy.representationVersion,
+        resolved.representationName,
+      ),
+      authorization: resolved.authorization,
+      fence: 0,
+    })
+    return toCachedResult(envelope, 'esi', false, undefined, getEsiQuota(result.meta))
   }
 
   async #loadAndStore<Data>(
@@ -753,35 +763,45 @@ class EsiResilienceLayer {
     lease: EsiRequestLease | undefined,
   ): Promise<EsiCachedResult<Data>> {
     const stopRenewal = this.#renewLease(lease)
-    let loadContext = context
     let fallback = stale
     try {
-      const resource = await this.#resolveResourceAuthorization(context.resource)
-      const resolvedContext = { ...context, resource }
-      loadContext = resolvedContext
+      let resolvedContext: ResolvedEsiRequestContext<Data>
+      try {
+        const resource = await this.#resolveResourceAuthorization(context.resource)
+        resolvedContext = { ...context, resource }
+      } catch (error) {
+        return await this.#recoverLoadFailure(context, stale, fallback, lease, error)
+      }
+      const { resource } = resolvedContext
       if (!hasMatchingAuthorization(stale, resource.authorization)) fallback = undefined
-      return await this.#loadAndPublish(resolvedContext, stale, fallback, lease)
-    } catch (error) {
-      return await this.#recoverLoadFailure(loadContext, stale, fallback, lease, error)
+      let load: EsiCanonicalLoad<Data>
+      try {
+        load = await this.#loadWithRetry(
+          resource,
+          toRevalidation(
+            stale,
+            context.policy.cache.kind !== 'none' && context.policy.cache.revalidate,
+          ),
+          fallback,
+          context.policy,
+        )
+      } catch (error) {
+        return await this.#recoverLoadFailure(resolvedContext, stale, fallback, lease, error)
+      }
+      return await this.#mapAndPublish(resolvedContext, load, lease)
     } finally {
       stopRenewal?.()
       await this.#releaseLease(lease)
     }
   }
 
-  async #loadAndPublish<Data>(
+  async #mapAndPublish<Data>(
     context: ResolvedEsiRequestContext<Data>,
-    revalidationEnvelope: EsiCacheEnvelope<Data> | undefined,
-    fallbackEnvelope: EsiCacheEnvelope<Data> | undefined,
+    load: EsiCanonicalLoad<Data>,
     lease: EsiRequestLease | undefined,
   ) {
     const { policy } = context
-    const response = await this.#loadWithRetry(
-      context.resource,
-      toRevalidation(revalidationEnvelope, policy.cache.kind !== 'none' && policy.cache.revalidate),
-      fallbackEnvelope,
-      policy,
-    )
+    const response = { data: await load.map(), meta: load.meta }
     const envelope = createCacheEnvelope({
       data: response.data,
       metadata: response.meta,

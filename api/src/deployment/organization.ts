@@ -1,4 +1,4 @@
-import { publicAllianceRepresentation } from '../characters/profile.js'
+import { publicAllianceRepresentation } from '../alliances/public-data.js'
 import { getCorporationPublic } from '../corporations/public-data.js'
 import type { DeploymentOrganizationType } from '../db/schema.js'
 import { execute } from '../esi-resilience/execute.js'

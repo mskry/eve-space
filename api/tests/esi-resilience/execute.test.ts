@@ -2,6 +2,7 @@ import { operationRegistry } from '@evespace/esi-client/operations'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  acquireLease: vi.fn(),
   acquirePermit: vi.fn(),
   authorize: vi.fn(),
   authorizeCache: vi.fn(),
@@ -10,7 +11,10 @@ const mocks = vi.hoisted(() => ({
   cacheSet: vi.fn(),
   callOperation: vi.fn(),
   clientOptions: vi.fn(),
+  commitFence: vi.fn(),
   incrementRevision: vi.fn(),
+  initializeNamespace: vi.fn(),
+  releaseLease: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client', async (importOriginal) => ({
@@ -38,14 +42,14 @@ vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
   }),
 }))
 vi.mock('../../src/esi-resilience/coordination.js', () => ({
-  acquireEsiRequestLease: vi.fn().mockResolvedValue(undefined),
-  commitEsiFence: vi.fn(),
+  acquireEsiRequestLease: mocks.acquireLease,
+  commitEsiFence: mocks.commitFence,
   getCommittedEsiFence: vi.fn().mockResolvedValue(undefined),
   getEsiRequestLeaseTtl: vi.fn().mockResolvedValue(0),
   getEsiResourceRevision: vi.fn().mockResolvedValue(0),
   incrementEsiResourceRevision: mocks.incrementRevision,
-  initializeCacheNamespace: vi.fn().mockRejectedValue(new Error('coordination unavailable')),
-  releaseEsiRequestLease: vi.fn(),
+  initializeCacheNamespace: mocks.initializeNamespace,
+  releaseEsiRequestLease: mocks.releaseLease,
   renewEsiRequestLease: vi.fn(),
 }))
 vi.mock('../../src/esi-resilience/permits.js', () => ({
@@ -59,12 +63,16 @@ vi.mock('../../src/esi-resilience/transport.js', async (importOriginal) => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.acquireLease.mockResolvedValue(undefined)
   mocks.authorize.mockResolvedValue({ accessToken: 'access-token', tokenVersion: 1 })
   mocks.authorizeCache.mockResolvedValue({ tokenVersion: 1 })
   mocks.cacheGet.mockResolvedValue(null)
   mocks.cacheDelete.mockResolvedValue(1)
   mocks.cacheSet.mockResolvedValue('OK')
+  mocks.commitFence.mockResolvedValue(false)
   mocks.incrementRevision.mockResolvedValue(1)
+  mocks.initializeNamespace.mockRejectedValue(new Error('coordination unavailable'))
+  mocks.releaseLease.mockResolvedValue(true)
   mocks.acquirePermit.mockResolvedValue({
     ttlMs: 30_000,
     release: vi.fn().mockResolvedValue(undefined),
@@ -170,9 +178,12 @@ describe('ESI representation execution', () => {
     })
   })
 
-  test('executes only a registered catalog mutation with both SDK gates before revision advance', async () => {
+  test('executes a registered mutation, advances its revision, then maps the result', async () => {
     const sequence: string[] = []
-    mocks.callOperation.mockResolvedValue(responseWith(7001))
+    mocks.callOperation.mockImplementation(async () => {
+      sequence.push('upstream')
+      return responseWith(7001)
+    })
     mocks.incrementRevision.mockImplementation(async () => {
       sequence.push('revision')
       return 1
@@ -213,7 +224,164 @@ describe('ESI representation execution', () => {
       },
       { confirmMutation: true },
     )
-    expect(sequence).toEqual(['map', 'revision'])
+    expect(sequence).toEqual(['upstream', 'revision', 'map'])
+  })
+
+  test('does not retry or publish an asynchronously rejected mapping', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    const { EsiTransportError } = await import('../../src/esi-resilience/transport.js')
+    const mapperError = new EsiTransportError(new Error('canonical mapping failed'), 503)
+    const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 30_000 }
+    mocks.initializeNamespace.mockResolvedValue('namespace-mapper-failure')
+    mocks.acquireLease.mockResolvedValue(lease)
+    mocks.callOperation.mockResolvedValue(responseWith({ players: 1 }))
+    const { definePublicEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const map = vi.fn(async () => {
+      await Promise.resolve()
+      throw mapperError
+    })
+    const representation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'status',
+        name: 'status-mapper-failure-fixture',
+        descriptor: operationRegistry.GetStatus.transport,
+        encodeRequest: () => ({}),
+        map,
+      }),
+    )
+
+    const pending = execute(representation, undefined).catch((error: unknown) => error)
+    await vi.advanceTimersByTimeAsync(1_500)
+    const failure = await pending
+
+    expect(failure).toBe(mapperError)
+    expect(mocks.callOperation).toHaveBeenCalledOnce()
+    expect(map).toHaveBeenCalledOnce()
+    expect(mocks.acquireLease).toHaveBeenCalledOnce()
+    expect(mocks.commitFence).not.toHaveBeenCalled()
+    expect(mocks.cacheSet).not.toHaveBeenCalled()
+  })
+
+  test('awaits asynchronous canonical mapping exactly once', async () => {
+    mocks.callOperation.mockResolvedValue(responseWith({ players: 1 }))
+    const { definePublicEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const map = vi.fn(async ({ data }: { data: { players: number } }) => {
+      await Promise.resolve()
+      return { playerCount: data.players }
+    })
+    const representation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'status',
+        name: 'status-async-mapper-fixture',
+        descriptor: operationRegistry.GetStatus.transport,
+        encodeRequest: () => ({}),
+        map,
+      }),
+    )
+
+    await expect(execute(representation, undefined)).resolves.toMatchObject({
+      data: { playerCount: 1 },
+    })
+    expect(map).toHaveBeenCalledOnce()
+  })
+
+  test('does not replay an outer request when a nested resilient call exhausts retries', async () => {
+    vi.useFakeTimers()
+    const { EsiTransportError } = await import('../../src/esi-resilience/transport.js')
+    const nestedFailure = new EsiTransportError(new Error('nested delivery failed'))
+    const mapperFailure = new EsiTransportError(new Error('nested mapping dependency failed'))
+    mocks.callOperation.mockImplementation((operationId: string) => {
+      if (operationId === 'GetStatus') return responseWith({ players: 1 })
+      return Promise.reject(nestedFailure)
+    })
+    const { definePublicEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const nested = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'universe-races',
+        name: 'races-nested-mapper-fixture',
+        descriptor: operationRegistry.GetUniverseRaces.transport,
+        encodeRequest: () => ({}),
+        map: ({ data }) => data,
+      }),
+    )
+    const outer = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'status',
+        name: 'status-outer-mapper-fixture',
+        descriptor: operationRegistry.GetStatus.transport,
+        encodeRequest: () => ({}),
+        map: async ({ data }) => {
+          try {
+            await execute(nested, undefined)
+          } catch {
+            throw mapperFailure
+          }
+          return data
+        },
+      }),
+    )
+
+    const pending = execute(outer, undefined).catch((error: unknown) => error)
+    await vi.runAllTimersAsync()
+
+    await expect(pending).resolves.toBe(mapperFailure)
+    expect(
+      mocks.callOperation.mock.calls.filter(([operationId]) => operationId === 'GetStatus'),
+    ).toHaveLength(1)
+    expect(
+      mocks.callOperation.mock.calls.filter(([operationId]) => operationId === 'GetUniverseRaces'),
+    ).toHaveLength(3)
+  })
+
+  test('does not serve retained public data when canonical mapping fails', async () => {
+    vi.useFakeTimers()
+    const mapperError = Object.assign(new Error('refresh mapping failed'), {
+      status: 429,
+      metadata: { headers: { 'retry-after': '30' } },
+    })
+    mocks.callOperation.mockResolvedValue({
+      data: { players: 1 },
+      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=1' } },
+    })
+    const { definePublicEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { EsiQuotaError } = await import('../../src/esi-resilience/cooldowns.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const map = vi.fn().mockResolvedValueOnce({ playerCount: 1 }).mockRejectedValueOnce(mapperError)
+    const representation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'status',
+        name: 'status-stale-mapper-fixture',
+        descriptor: operationRegistry.GetStatus.transport,
+        encodeRequest: () => ({}),
+        map,
+      }),
+    )
+
+    await execute(representation, undefined)
+    await vi.advanceTimersByTimeAsync(1_001)
+
+    const failure = await execute(representation, undefined).catch((error: unknown) => error)
+
+    expect(failure).toBe(mapperError)
+    expect(failure).not.toBeInstanceOf(EsiQuotaError)
+    expect(mocks.callOperation).toHaveBeenCalledTimes(2)
+    expect(map).toHaveBeenCalledTimes(2)
   })
 
   test('retries an idempotent registered read with bounded attempts', async () => {
@@ -320,6 +488,7 @@ describe('ESI representation execution', () => {
     const { registerEsiRepresentation } =
       await import('../../src/esi-resilience/representation-registry.js')
     const { execute } = await import('../../src/esi-resilience/execute.js')
+    const map304 = vi.fn(({ data }) => data)
     const representation = registerEsiRepresentation(
       defineCharacterEsiRepresentation({
         operation: 'wallet-balance',
@@ -328,7 +497,7 @@ describe('ESI representation execution', () => {
         encodeRequest: (input: { characterId: number }) => ({
           path: { character_id: input.characterId },
         }),
-        map: ({ data }) => data,
+        map: map304,
       }),
     )
 
@@ -344,6 +513,7 @@ describe('ESI representation execution', () => {
     })
 
     expect(mocks.callOperation).toHaveBeenCalledTimes(2)
+    expect(map304).toHaveBeenCalledOnce()
     expect(mocks.authorize).toHaveBeenCalledTimes(2)
     expect(mocks.authorizeCache).toHaveBeenCalledTimes(4)
   })
@@ -357,6 +527,7 @@ describe('ESI representation execution', () => {
     const { registerEsiRepresentation } =
       await import('../../src/esi-resilience/representation-registry.js')
     const { executeMutation } = await import('../../src/esi-resilience/execute.js')
+    const map = vi.fn(({ data }) => data)
     const representation = registerEsiRepresentation(
       defineCharacterEsiMutation({
         operation: 'mail-send',
@@ -371,7 +542,7 @@ describe('ESI representation execution', () => {
             subject: '',
           },
         }),
-        map: ({ data }) => data,
+        map,
       }),
     )
 
@@ -382,6 +553,92 @@ describe('ESI representation execution', () => {
       'mailbox',
       'character-1',
     )
+    expect(map).not.toHaveBeenCalled()
+  })
+
+  test('advances the mutation revision before propagating a distinct mapper failure', async () => {
+    const sequence: string[] = []
+    const mapperError = new Error('mutation mapping failed')
+    mocks.callOperation.mockImplementation(async () => {
+      sequence.push('upstream')
+      return responseWith(7001)
+    })
+    mocks.incrementRevision.mockImplementation(async () => {
+      sequence.push('revision')
+      return 1
+    })
+    const { defineCharacterEsiMutation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { executeMutation } = await import('../../src/esi-resilience/execute.js')
+    const map = vi.fn(async () => {
+      await Promise.resolve()
+      sequence.push('map')
+      throw mapperError
+    })
+    const representation = registerEsiRepresentation(
+      defineCharacterEsiMutation({
+        operation: 'mail-send',
+        name: 'mail-send-mapper-failure-fixture',
+        descriptor: operationRegistry.PostCharactersCharacterIdMail.transport,
+        encodeRequest: (input: { characterId: number }) => ({
+          path: { character_id: input.characterId },
+          body: { approved_cost: 0, body: '', recipients: [], subject: '' },
+        }),
+        map,
+      }),
+    )
+
+    await expect(executeMutation(representation, { characterId: 1 })).rejects.toBe(mapperError)
+    expect(sequence).toEqual(['upstream', 'revision', 'map'])
+    expect(mocks.callOperation).toHaveBeenCalledOnce()
+    expect(mocks.incrementRevision).toHaveBeenCalledOnce()
+    expect(map).toHaveBeenCalledOnce()
+  })
+
+  test('maps once before committing the fence and publishing canonical data', async () => {
+    const sequence: string[] = []
+    const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 30_000 }
+    mocks.initializeNamespace.mockResolvedValue('namespace-one')
+    mocks.acquireLease.mockResolvedValue(lease)
+    mocks.callOperation.mockImplementation(async () => {
+      sequence.push('upstream')
+      return responseWith({ players: 1 })
+    })
+    mocks.commitFence.mockImplementation(async () => {
+      sequence.push('fence')
+      return true
+    })
+    mocks.cacheSet.mockImplementation(async () => {
+      sequence.push('cache')
+      return 'OK'
+    })
+    const { definePublicEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const map = vi.fn(async ({ data }) => {
+      await Promise.resolve()
+      sequence.push('map')
+      return { playerCount: data.players }
+    })
+    const representation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'status',
+        name: 'status-publication-order-fixture',
+        descriptor: operationRegistry.GetStatus.transport,
+        encodeRequest: () => ({}),
+        map,
+      }),
+    )
+
+    await expect(execute(representation, undefined)).resolves.toMatchObject({
+      data: { playerCount: 1 },
+    })
+    expect(sequence).toEqual(['upstream', 'map', 'fence', 'cache'])
+    expect(map).toHaveBeenCalledOnce()
   })
 
   test.each(['IF-NONE-MATCH', 'if-modified-since'])(
