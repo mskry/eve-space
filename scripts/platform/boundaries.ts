@@ -30,6 +30,7 @@ const modulesByTier = {
     'resource-execution-guard',
     'resource-failures',
     'resource-operation-executor',
+    'resource-planning',
   ],
   application: ['resource-batch', 'resource-refresh'],
   entry: ['collection-state-repair'],

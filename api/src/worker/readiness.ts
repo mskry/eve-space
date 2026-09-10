@@ -4,8 +4,8 @@ import {
   installedModuleIds,
   installedModuleMigrations,
 } from '../generated/platform/installed-module-migrations.js'
-import { workerHeartbeatStaleAfterMs } from '../queue/policy.js'
 import { probeQueueStatus } from '../queue/status.js'
+import type { ScopedWorkerLiveness } from '../queue/worker-liveness.js'
 import { logSafeError } from '../logging.js'
 
 export interface WorkerMigrationRequirement {
@@ -113,7 +113,12 @@ async function checkSchemaAndQueueReachability(
 ) {
   const readiness = await checkWorkerReadiness(connection)
   if (!readiness.healthy) return readiness
-  const queue = await queueProbe()
+  let queue
+  try {
+    queue = await queueProbe()
+  } catch {
+    return { healthy: false as const, reason: 'Queue Redis unavailable' }
+  }
   if (queue.status === 'unavailable')
     return { healthy: false as const, reason: 'Queue Redis unavailable' }
   return { healthy: true as const, queue }
@@ -134,14 +139,20 @@ export async function checkWorkerStartupDependencies(
 
 /** Liveness check for an already-started worker; used by the container healthcheck command. */
 export async function checkWorkerDependencies(
+  livenessProbe: () => Promise<ScopedWorkerLiveness>,
   connection = sql,
-  queueProbe: typeof probeQueueStatus = probeQueueStatus,
 ) {
-  const dependencies = await checkSchemaAndQueueReachability(connection, queueProbe)
-  if (!dependencies.healthy) return dependencies
-  const heartbeatAt = dependencies.queue.workerHeartbeatAt
-  const heartbeatTime = heartbeatAt ? Date.parse(heartbeatAt) : Number.NaN
-  if (Number.isNaN(heartbeatTime) || Date.now() - heartbeatTime > workerHeartbeatStaleAfterMs)
+  const readiness = await checkWorkerReadiness(connection)
+  if (!readiness.healthy) return readiness
+  let liveness: ScopedWorkerLiveness
+  try {
+    liveness = await livenessProbe()
+  } catch {
+    return { healthy: false as const, reason: 'Queue Redis unavailable' }
+  }
+  if (liveness.status === 'unavailable')
+    return { healthy: false as const, reason: 'Queue Redis unavailable' }
+  if (liveness.status === 'stale')
     return { healthy: false as const, reason: 'Worker heartbeat stale' }
   return { healthy: true as const }
 }
@@ -155,10 +166,10 @@ export async function assertWorkerStartupDependencies(
 }
 
 export async function assertWorkerDependencies(
+  livenessProbe: () => Promise<ScopedWorkerLiveness>,
   connection = sql,
-  queueProbe: typeof probeQueueStatus = probeQueueStatus,
 ) {
-  const readiness = await checkWorkerDependencies(connection, queueProbe)
+  const readiness = await checkWorkerDependencies(livenessProbe, connection)
   if (!readiness.healthy) throw new Error(`Worker dependency unavailable: ${readiness.reason}`)
 }
 

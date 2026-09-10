@@ -35,6 +35,7 @@ describe('platform module boundaries', () => {
         source('module-runtime-cache', "import './module-navigation.js'"),
         source('module-settings', "import './module-runtime-cache.js'"),
         source('collection-status', "import './module-settings.js'"),
+        source('resource-planning', "import './resource-eligibility.js'"),
         source('resource-refresh', "import './collection-status.js'"),
         source('collection-state-repair', "import './resource-eligibility.js'"),
         source('routes', "import './module-settings.js'"),

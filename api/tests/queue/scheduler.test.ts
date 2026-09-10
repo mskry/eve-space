@@ -9,55 +9,11 @@ import {
   getJobScheduler,
   outboxRelaySchedulerId,
   plannerInitialDelay,
-  registerSchedulers,
   runWithSchedulerOverlapPolicy,
   SchedulerLeaseLostError,
 } from '../../src/queue/scheduler.js'
 
-test('upserts stable skip-overlap planner, relay, and retention schedulers', async () => {
-  const client = { set: vi.fn() }
-  const queue = {
-    upsertJobScheduler: vi.fn(),
-    getBackend: () => ({ client: Promise.resolve(client) }),
-  }
-
-  await registerSchedulers(queue as never)
-
-  expect(queue.upsertJobScheduler).toHaveBeenNthCalledWith(
-    1,
-    diagnosticSchedulerId,
-    { pattern: '*/15 * * * *' },
-    {
-      name: 'planner',
-      data: { operationId: 'queue-planner' },
-      opts: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1_000, jitter: 0.25 },
-        removeOnComplete: { age: 86_400, count: 1_000 },
-        removeOnFail: { age: 604_800, count: 5_000 },
-      },
-    },
-  )
-  expect(queue.upsertJobScheduler).toHaveBeenNthCalledWith(
-    2,
-    outboxRelaySchedulerId,
-    { every: 5_000 },
-    {
-      name: 'outbox-relay',
-      data: { operationId: 'outbox-relay' },
-      opts: expect.objectContaining({ attempts: 3 }),
-    },
-  )
-  expect(queue.upsertJobScheduler).toHaveBeenNthCalledWith(
-    3,
-    eventRetentionSchedulerId,
-    { every: eventRetentionIntervalMs },
-    {
-      name: 'domain-event-retention',
-      data: { operationId: 'domain-event-retention' },
-      opts: expect.objectContaining({ attempts: 3 }),
-    },
-  )
+test('maps scheduled contracts to stable skip-overlap identities', () => {
   expect(getJobScheduler('outbox-relay')).toEqual({
     schedulerId: outboxRelaySchedulerId,
     overlap: 'skip',
@@ -67,9 +23,7 @@ test('upserts stable skip-overlap planner, relay, and retention schedulers', asy
     overlap: 'skip',
   })
   expect(getJobScheduler('domain-event')).toBeUndefined()
-  expect(client.set).toHaveBeenCalledWith('eve-space:v1:scheduler:outcome', 'registered', {
-    EX: 60,
-  })
+  expect(eventRetentionIntervalMs).toBeGreaterThan(0)
 })
 
 test('applies a stable deployment offset without crossing the next occurrence', async () => {

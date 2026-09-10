@@ -42,10 +42,12 @@ vi.mock('../../src/esi-resilience/coordination.js', () => ({
 vi.mock('../../src/esi-resilience/permits.js', () => ({
   acquireEsiRequestPermit: vi.fn(),
 }))
+vi.mock('../../src/esi-resilience/coordination-connection.js', () => ({
+  getCoordinationConnection: () => ({}),
+}))
 vi.mock('../../src/esi-resilience/transport.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/esi-resilience/transport.js')>()),
   createRawEsiTransport: vi.fn(() => vi.fn()),
-  getCoordinationConnection: () => ({}),
 }))
 
 import { installedModuleEsiOperationDefinitions } from '../../src/generated/platform/installed-module-esi.js'

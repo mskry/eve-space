@@ -1,11 +1,11 @@
 import type { CacheRedisConnection } from './cache-redis.js'
+import type { CoordinationRedisConnection } from '../coordination-redis.js'
 import type { EsiOperationContract } from './contract-types.js'
 import { getEsiResourceRevision, incrementEsiResourceRevision } from './coordination.js'
 import { cacheResourceRevisionRepairKey } from './keys.js'
 import { recordEsiCoordinationFailure } from './telemetry-counters.js'
 import { wait } from './timing.js'
 import type { EsiCacheAuthorization, EsiResourceRevision } from './types.js'
-import type { QueueRedisConnection } from '../queue/redis.js'
 
 const advanceAttempts = 3
 const retryDelayMs = 100
@@ -29,7 +29,7 @@ export class EsiResourceRevisionRegistry {
 
   constructor(
     private readonly cache: CacheRedisConnection,
-    private readonly coordination: QueueRedisConnection,
+    private readonly coordination: CoordinationRedisConnection,
     private readonly invalidateLocalCache: () => void,
   ) {}
 

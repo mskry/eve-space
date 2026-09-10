@@ -1,11 +1,4 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
-import type { Queue } from 'bullmq'
-import {
-  assertRegisteredEsiOperation,
-  getEsiOperationContract,
-} from '../esi-resilience/catalog-access.js'
-import { getEsiRequestCooldowns } from '../esi-resilience/cooldowns.js'
-import { characterEsiPrincipal } from '../esi-resilience/identity.js'
 import { env } from '../env.js'
 import { platformResources } from '../platform/resources.js'
 import {
@@ -16,76 +9,59 @@ import {
   findInstalledResource,
   installedResourceIdentityKey,
 } from '../platform/resource-identity.js'
-import { getQueueAdmissionCapacity } from './admission.js'
-import { jobOptions } from './job-options.js'
-import { getJobDefinition, type JobDefinition } from './job-registry.js'
-import { resourceRefreshPriority } from './policy.js'
-import { plannerInitialDelay } from './scheduler.js'
-import type { QueueRedisConnection } from './redis.js'
 import {
-  resourceBatchJobId,
-  resourceRefreshJobId,
-  type PlatformResourceBatchJobPayload,
-} from './resource-job-contracts.js'
+  createResourcePlanningCooldownRequest,
+  getMaximumSubjectsPerResourceJob,
+  getResourceBatchMaximumItems,
+  getResourcePlanningCooldowns,
+  type ResourcePlanningCooldownRequest,
+} from '../platform/resource-planning.js'
+import type { JobPayloadByName } from './job-contracts.js'
+import type { QueuePlanningContext } from './planning-context.js'
+import type { QueueCommand } from './producer.js'
 
 interface ResourcePlannerOptions {
   readonly highWaterMark?: number
   readonly pageSize?: number
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
-  readonly dependencies?: Partial<ResourcePlannerDependencies>
-}
-
-interface ResourcePlannerDependencies {
-  readonly selectDue: typeof selectDueInstalledResources
-  readonly getCooldowns: typeof getEsiRequestCooldowns
-  readonly getCapacity: typeof getQueueAdmissionCapacity
-  readonly getInitialDelay: typeof plannerInitialDelay
-}
-
-const defaultDependencies: ResourcePlannerDependencies = {
-  selectDue: selectDueInstalledResources,
-  getCooldowns: getEsiRequestCooldowns,
-  getCapacity: getQueueAdmissionCapacity,
-  getInitialDelay: plannerInitialDelay,
 }
 
 export async function runResourcePlanner(
-  queue: Queue,
-  signal?: AbortSignal,
+  context: QueuePlanningContext,
   options: ResourcePlannerOptions = {},
 ) {
-  const dependencies = { ...defaultDependencies, ...options.dependencies }
+  const { producer, signal } = context
   signal?.throwIfAborted()
   const resources = options.resources ?? platformResources
   if (resources.length === 0) return { selected: 0, planned: 0, reason: 'idle' as const }
 
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK
-  const admission = await dependencies.getCapacity(queue, 'planner', highWaterMark, {
+  const admission = await producer.inspectCapacity({
+    source: 'planner',
+    highWaterMark,
     preservePausedState: true,
   })
-  if (!admission.admitted)
+  if (admission.status === 'rejected')
     return { selected: 0, planned: 0, reason: 'capacity' as const, admission }
 
   const pageSize = options.pageSize ?? env.QUEUE_RESOURCE_PLANNER_PAGE_SIZE
   const limit = Math.min(
     pageSize,
-    admission.remainingCapacity * getMaximumSubjectsPerJob(resources),
+    admission.remainingCapacity * getMaximumSubjectsPerResourceJob(resources),
   )
   if (limit === 0) return { selected: 0, planned: 0, reason: 'capacity' as const, admission }
 
   signal?.throwIfAborted()
-  const candidates = await dependencies.selectDue({ limit, resources })
+  const candidates = await selectDueInstalledResources({ limit, resources })
   signal?.throwIfAborted()
   if (candidates.length === 0)
     return { selected: 0, planned: 0, reason: 'idle' as const, admission }
 
-  const connection = (await queue.getBackend().client) as unknown as QueueRedisConnection
   const workItems = createResourceWorkItems(candidates, resources, signal)
   const capacityPrefix = workItems.slice(0, admission.remainingCapacity)
-  const cooldowns = await dependencies.getCooldowns({
-    connection,
-    requests: capacityPrefix.map(({ operation }) => operation),
-  })
+  const cooldowns = await getResourcePlanningCooldowns(
+    capacityPrefix.map(({ operation }) => operation),
+  )
   signal?.throwIfAborted()
   if (cooldowns.length !== capacityPrefix.length)
     throw new Error('ESI cooldown batch did not correlate every planned resource')
@@ -94,27 +70,23 @@ export async function runResourcePlanner(
     0,
     firstCooldown === -1 ? capacityPrefix.length : firstCooldown,
   )
-  const delays = await Promise.all(admittedPrefix.map(() => dependencies.getInitialDelay()))
   signal?.throwIfAborted()
-  if (admittedPrefix.length > 0)
-    await queue.addBulk(
-      admittedPrefix.map(({ descriptor, work }, index) => {
-        const definition = getJobDefinition(work.name) as JobDefinition<unknown>
-        const delay = delays[index] ?? 0
-        return {
-          name: definition.name,
-          data: work.payload,
-          opts: {
-            ...jobOptions(definition),
-            ...(delay > 0 ? { delay } : {}),
-            deduplication: { id: work.deduplicationId },
-            priority: resourceRefreshPriority(descriptor.materializationIntervalSeconds),
-          },
-        }
-      }),
-    )
-  const planned = admittedPrefix.length
+  const results = await producer.enqueueMany(
+    admittedPrefix.map(({ descriptor, work }) => createResourceQueueCommand(descriptor, work)),
+    { signal, preservePausedState: true },
+  )
+  const planned = results.filter(({ status }) => status === 'accepted').length
+  const publicationPaused = results.some(
+    (result) => result.status === 'rejected' && result.reason === 'planner-paused',
+  )
 
+  if (publicationPaused)
+    return {
+      selected: candidates.length,
+      planned,
+      reason: 'capacity' as const,
+      admission,
+    }
   if (firstCooldown !== -1)
     return {
       selected: candidates.length,
@@ -138,6 +110,25 @@ export async function runResourcePlanner(
   }
 }
 
+function createResourceQueueCommand(
+  descriptor: PlatformInstalledResourceDescriptor,
+  work: ReturnType<typeof createBatchWork> | ReturnType<typeof createScalarWork>,
+): QueueCommand {
+  if (work.name === 'resource-refresh')
+    return {
+      name: 'resource-refresh',
+      payload: work.payload,
+      source: 'planner',
+      materializationIntervalSeconds: descriptor.materializationIntervalSeconds,
+    }
+  return {
+    name: 'resource-batch',
+    payload: work.payload,
+    source: 'planner',
+    materializationIntervalSeconds: descriptor.materializationIntervalSeconds,
+  }
+}
+
 function createResourceWorkItems(
   candidates: readonly DueInstalledResource[],
   resources: readonly PlatformInstalledResourceDescriptor[],
@@ -146,7 +137,7 @@ function createResourceWorkItems(
   const plannedBatchResources = new Set<string>()
   const workItems = [] as Array<{
     readonly descriptor: PlatformInstalledResourceDescriptor
-    readonly operation: Parameters<typeof getEsiRequestCooldowns>[0]['requests'][number]
+    readonly operation: ResourcePlanningCooldownRequest
     readonly work: ReturnType<typeof createBatchWork> | ReturnType<typeof createScalarWork>
   }>
   for (const candidate of candidates) {
@@ -159,7 +150,7 @@ function createResourceWorkItems(
     const batchKey = installedResourceIdentityKey(descriptor)
     if (descriptor.batch && plannedBatchResources.has(batchKey)) continue
 
-    const operation = createCooldownRequest(candidate, descriptor)
+    const operation = createResourcePlanningCooldownRequest(candidate, descriptor)
     const work = descriptor.batch
       ? createBatchWork(descriptor, descriptor.batch, candidates, batchKey)
       : createScalarWork(candidate)
@@ -169,50 +160,11 @@ function createResourceWorkItems(
   return workItems
 }
 
-function createCooldownRequest(
-  candidate: DueInstalledResource,
-  descriptor: PlatformInstalledResourceDescriptor,
-) {
-  const operationId = descriptor.batch?.operationId ?? candidate.operationId
-  assertRegisteredEsiOperation(operationId)
-  const authorization = getEsiOperationContract(operationId).authorization
-  const authorizationCharacterId =
-    candidate.authorizationCharacterId ??
-    (descriptor.subjectKind === 'character' ? Number(candidate.identity.subjectId) : null)
-  if (
-    authorization.kind === 'character' &&
-    (!authorizationCharacterId || !Number.isSafeInteger(authorizationCharacterId))
-  )
-    throw new Error(
-      `Character-authorized resource ${descriptor.moduleId}/${descriptor.resourceId} has no authorization source`,
-    )
-  return {
-    operation: operationId,
-    ...(authorization.kind === 'character'
-      ? { principal: characterEsiPrincipal(authorizationCharacterId!) }
-      : {}),
-  }
-}
-
 function createScalarWork(candidate: DueInstalledResource) {
   return {
     name: 'resource-refresh' as const,
     payload: candidate.identity,
-    deduplicationId: resourceRefreshJobId(candidate.identity),
   }
-}
-
-function getMaximumSubjectsPerJob(resources: readonly PlatformInstalledResourceDescriptor[]) {
-  return resources.reduce((maximum, resource) => {
-    if (!resource.batch) return maximum
-    assertRegisteredEsiOperation(resource.batch.operationId)
-    const contract = getEsiOperationContract(resource.batch.operationId)
-    if (contract.authorization.kind !== 'public' || contract.identity.kind !== 'set')
-      throw new Error(
-        `Installed resource ${resource.moduleId}/${resource.resourceId} has invalid batch operation policy`,
-      )
-    return Math.max(maximum, contract.identity.maximumItems)
-  }, 1)
 }
 
 function createBatchWork(
@@ -221,18 +173,15 @@ function createBatchWork(
   candidates: readonly DueInstalledResource[],
   batchKey: string,
 ) {
-  assertRegisteredEsiOperation(batch.operationId)
-  const contract = getEsiOperationContract(batch.operationId)
-  if (contract.identity.kind !== 'set')
-    throw new Error('Resource batch operation must use set identity')
+  const maximumItems = getResourceBatchMaximumItems(batch.operationId)
   const subjects = candidates
     .filter(({ identity }) => installedResourceIdentityKey(identity) === batchKey)
-    .slice(0, contract.identity.maximumItems)
+    .slice(0, maximumItems)
     .map(({ identity }) => ({
       subjectLifecycleId: identity.subjectLifecycleId,
       subjectId: identity.subjectId,
     }))
-  const payload: PlatformResourceBatchJobPayload = {
+  const payload: JobPayloadByName['resource-batch'] = {
     moduleId: resource.moduleId,
     resourceId: resource.resourceId,
     subjectKind: 'character',
@@ -241,6 +190,5 @@ function createBatchWork(
   return {
     name: 'resource-batch' as const,
     payload,
-    deduplicationId: resourceBatchJobId(payload),
   }
 }

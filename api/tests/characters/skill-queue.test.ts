@@ -60,7 +60,9 @@ vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
     ping: vi.fn().mockResolvedValue('PONG'),
   }),
 }))
-vi.mock('../../src/esi-resilience/transport.js', () => ({ getCoordinationConnection: () => ({}) }))
+vi.mock('../../src/esi-resilience/coordination-connection.js', () => ({
+  getCoordinationConnection: () => ({}),
+}))
 vi.mock('../../src/esi-resilience/coordination.js', () => ({
   acquireEsiRequestLease: mocks.acquire,
   commitEsiFence: mocks.commit,

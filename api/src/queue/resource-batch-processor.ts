@@ -1,4 +1,3 @@
-import type { Queue } from 'bullmq'
 import {
   executeInstalledResourceBatchOperation,
   PlatformResourceBatchExecutionError,
@@ -10,20 +9,10 @@ import {
   PlatformResourcePersistenceError,
   recordInstalledResourceCollectionFailure,
 } from '../platform/resource-failures.js'
-import { getQueueAdmissionCapacity, QueueAdmissionError } from './admission.js'
-import { jobOptions } from './job-options.js'
-import {
-  resourceRefreshJobContract,
-  type PlatformResourceBatchJobPayload,
-} from './resource-job-contracts.js'
-import { resourceRefreshPriority } from './policy.js'
+import type { JobPayloadByName } from './job-contracts.js'
+import type { QueueProducer } from './producer.js'
 
-interface BatchProcessingOptions extends BatchExecutionOptions {
-  readonly executeBatch?: typeof executeInstalledResourceBatchOperation
-  readonly applyObservation?: typeof applyInstalledResourceObservation
-  readonly getCapacity?: typeof getQueueAdmissionCapacity
-  readonly recordFailure?: typeof recordInstalledResourceCollectionFailure
-}
+type PlatformResourceBatchJobPayload = JobPayloadByName['resource-batch']
 
 type LoadedBatchExecution = Extract<
   Awaited<ReturnType<typeof executeInstalledResourceBatchOperation>>,
@@ -32,21 +21,19 @@ type LoadedBatchExecution = Extract<
 
 export async function processInstalledResourceBatch(
   payload: PlatformResourceBatchJobPayload,
-  queue: Queue,
-  options: BatchProcessingOptions = {},
+  producer: QueueProducer,
+  signal?: AbortSignal,
+  options: BatchExecutionOptions = {},
 ) {
   let execution: Awaited<ReturnType<typeof executeInstalledResourceBatchOperation>>
   try {
-    execution = await (options.executeBatch ?? executeInstalledResourceBatchOperation)(
-      payload,
-      options,
-    )
+    execution = await executeInstalledResourceBatchOperation(payload, options)
   } catch (error) {
     const failure = error instanceof PlatformResourceBatchExecutionError ? error.cause : error
     const attempted = error instanceof PlatformResourceBatchExecutionError ? error.attempted : []
     await Promise.all(
       attempted.map(({ identity }) =>
-        (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure, {
+        recordInstalledResourceCollectionFailure(identity, failure, {
           resources: options.resources,
         }),
       ),
@@ -58,26 +45,20 @@ export async function processInstalledResourceBatch(
   const changed = await applyBatchClassifications(execution, options)
   if (changed.length === 0) return
 
-  let admission: Awaited<ReturnType<typeof getQueueAdmissionCapacity>>
-  try {
-    admission = await (options.getCapacity ?? getQueueAdmissionCapacity)(queue, 'on-demand')
-  } catch (error) {
-    if (error instanceof QueueAdmissionError) return
-    throw error
-  }
-  for (const subject of changed.slice(0, admission.remainingCapacity)) {
-    // oxlint-disable-next-line no-await-in-loop
-    await queue.add(resourceRefreshJobContract.name, subject.identity, {
-      ...jobOptions(resourceRefreshJobContract),
-      deduplication: { id: resourceRefreshJobContract.operationIdentity(subject.identity) },
-      priority: resourceRefreshPriority(execution.resource.materializationIntervalSeconds),
-    })
-  }
+  await producer.enqueueMany(
+    changed.map((subject) => ({
+      name: 'resource-refresh',
+      payload: subject.identity,
+      source: 'on-demand',
+      materializationIntervalSeconds: execution.resource.materializationIntervalSeconds,
+    })),
+    { signal },
+  )
 }
 
 async function applyBatchClassifications(
   execution: LoadedBatchExecution,
-  options: BatchProcessingOptions,
+  options: BatchExecutionOptions,
 ) {
   const changed = [] as EligibleBatchSubject[]
   for (const classification of execution.classifications) {
@@ -87,7 +68,7 @@ async function applyBatchClassifications(
     }
     try {
       // oxlint-disable-next-line no-await-in-loop
-      await (options.applyObservation ?? applyInstalledResourceObservation)({
+      await applyInstalledResourceObservation({
         identity: classification.identity,
         resource: execution.resource,
         subject: classification.subject,
@@ -100,11 +81,9 @@ async function applyBatchClassifications(
     } catch (error) {
       const failure = new PlatformResourcePersistenceError(error)
       // oxlint-disable-next-line no-await-in-loop
-      await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(
-        classification.identity,
-        failure,
-        { resources: options.resources },
-      )
+      await recordInstalledResourceCollectionFailure(classification.identity, failure, {
+        resources: options.resources,
+      })
       throw failure
     }
   }

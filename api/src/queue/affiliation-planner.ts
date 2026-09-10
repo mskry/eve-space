@@ -1,56 +1,27 @@
 import { randomUUID } from 'node:crypto'
-import type { Queue } from 'bullmq'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { acquireEsiRequestPermit } from '../esi-resilience/permits.js'
-import { getCoordinationConnection } from '../esi-resilience/transport.js'
-import { env } from '../env.js'
+import { affiliationCooldownActive } from '../characters/affiliation-planning.js'
 import {
   affiliationOperationIdentity,
   partitionAffiliationCharacterIds,
   selectDueAffiliationCharacterIds,
 } from '../characters/affiliation-sync.js'
-import { admitQueueWork } from './admission.js'
-import { jobOptions } from './job-options.js'
-import { getJobDefinition, type JobDefinition } from './job-registry.js'
-import { affiliationPlannerOutcomeKey, plannerStateKey } from './namespaces.js'
+import type { AffiliationPlannerOutcome } from './outcomes.js'
+import type { QueuePlanningContext } from './planning-context.js'
 
-type AffiliationPlannerOutcome =
-  | 'scheduled'
-  | 'idle'
-  | 'cooldown'
-  | 'paused'
-  | 'coalesced'
-  | 'failed'
+type AffiliationPlannerOutcomeKind = AffiliationPlannerOutcome['outcome']
 
-interface AffiliationPlannerOptions {
-  readonly dependencies?: {
-    cooldownActive?: () => Promise<boolean>
-    selectDue?: typeof selectDueAffiliationCharacterIds
-  }
-}
-
-export async function runAffiliationPlanner(
-  queue: Queue,
-  signal?: AbortSignal,
-  options: AffiliationPlannerOptions = {},
-) {
-  const dependencies = options.dependencies ?? {}
+export async function runAffiliationPlanner(context: QueuePlanningContext) {
+  const { producer, outcomes, signal } = context
   let planned = 0
   try {
     signal?.throwIfAborted()
-    if (await (dependencies.cooldownActive ?? affiliationCooldownActive)()) {
-      await queue
-        .getBackend()
-        .client.then((connection) => connection.set(plannerStateKey, 'paused'))
-      await recordAffiliationPlannerOutcome(queue, 'cooldown', planned)
+    if (await affiliationCooldownActive()) {
+      await producer.pausePlanner()
+      await recordAffiliationPlannerOutcome(outcomes, 'cooldown', planned)
       return { planned, reason: 'cooldown' as const }
     }
 
-    const due = await (dependencies.selectDue ?? selectDueAffiliationCharacterIds)()
-    const definition = getJobDefinition('affiliation') as JobDefinition<{
-      operationId: string
-      characterIds: number[]
-    }>
+    const due = await selectDueAffiliationCharacterIds()
     const characterIds = due
       .map((character) => character.characterId)
       .toSorted((left, right) => left - right)
@@ -62,62 +33,36 @@ export async function runAffiliationPlanner(
         characterIds: batch,
       }
       // oxlint-disable-next-line no-await-in-loop
-      const admission = await admitQueueWork(
-        queue,
-        definition.operationIdentity(payload),
-        'planner',
+      const admission = await producer.enqueue(
+        { name: 'affiliation', payload, source: 'planner' },
+        { signal },
       )
-      if (!admission.admitted) {
+      if (admission.status === 'rejected') {
         // oxlint-disable-next-line no-await-in-loop
         await recordAffiliationPlannerOutcome(
-          queue,
+          outcomes,
           admission.reason === 'coalesced' ? 'coalesced' : 'paused',
           planned,
         )
         return { planned, reason: admission.reason }
       }
-      signal?.throwIfAborted()
-      // oxlint-disable-next-line no-await-in-loop
-      await queue.add(
-        definition.name,
-        payload,
-        jobOptions(definition, definition.operationIdentity(payload)),
-      )
       planned += 1
     }
-    if (planned === 0)
-      await queue.getBackend().client.then((connection) => connection.del(plannerStateKey))
-    await recordAffiliationPlannerOutcome(queue, planned === 0 ? 'idle' : 'scheduled', planned)
+    if (planned === 0) await producer.resumePlanner()
+    await recordAffiliationPlannerOutcome(outcomes, planned === 0 ? 'idle' : 'scheduled', planned)
     return { planned, reason: 'scheduled' as const }
   } catch (error) {
-    await recordAffiliationPlannerOutcome(queue, 'failed', planned)
-    throw error
-  }
-}
-
-async function affiliationCooldownActive() {
-  try {
-    const permit = await acquireEsiRequestPermit({
-      connection: getCoordinationConnection(),
-      operation: 'bulk-affiliation',
-      concurrency: env.ESI_OPERATION_CONCURRENCY,
-    })
-    await permit.release()
-    return false
-  } catch (error) {
-    if (error instanceof EsiQuotaError) return true
+    await recordAffiliationPlannerOutcome(outcomes, 'failed', planned)
     throw error
   }
 }
 
 async function recordAffiliationPlannerOutcome(
-  queue: Queue,
-  outcome: AffiliationPlannerOutcome,
+  recorder: QueuePlanningContext['outcomes'],
+  outcome: AffiliationPlannerOutcomeKind,
   planned: number,
 ) {
-  const value = JSON.stringify({ outcome, planned, recordedAt: new Date().toISOString() })
-  await queue
-    .getBackend()
-    .client.then((connection) => connection.set(affiliationPlannerOutcomeKey, value))
+  await recorder
+    .recordAffiliation({ outcome, planned, recordedAt: new Date().toISOString() })
     .catch(() => {})
 }

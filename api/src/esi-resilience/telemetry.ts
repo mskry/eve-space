@@ -1,5 +1,9 @@
 import type { Redis } from 'ioredis'
 import {
+  closeCoordinationRedisConnection,
+  createCoordinationRedisProbe,
+} from '../coordination-redis.js'
+import {
   createCacheRedisConnection,
   closeCacheRedisConnection,
   waitForCacheRedisConnection,
@@ -22,7 +26,6 @@ import {
   type CacheSource,
   type DependencyState,
 } from './telemetry-counters.js'
-import { closeQueueRedisConnection, createProbeRedisConnection } from '../queue/redis.js'
 
 interface EsiDependencyTelemetry {
   status: DependencyState
@@ -98,7 +101,7 @@ export async function probeEsiResilienceTelemetry(
   const coordinationConnection = createOwnedConnection(
     coordinationAvailable,
     dependencies.coordinationConnection,
-    createProbeRedisConnection,
+    createCoordinationRedisProbe,
   )
   const cooldownPending = probeCooldown(
     coordinationAvailable,
@@ -140,7 +143,7 @@ export async function probeEsiResilienceTelemetry(
   } finally {
     await Promise.all([
       closeOwnedConnection(cacheConnection, closeCacheRedisConnection),
-      closeOwnedConnection(coordinationConnection, closeQueueRedisConnection),
+      closeOwnedConnection(coordinationConnection, closeCoordinationRedisConnection),
     ])
   }
 }
@@ -212,14 +215,14 @@ async function probeCache() {
 }
 
 async function probeCoordination() {
-  const connection = createProbeRedisConnection()
+  const connection = createCoordinationRedisProbe()
   try {
     await connection.ping()
     return true
   } catch {
     return false
   } finally {
-    await closeQueueRedisConnection(connection)
+    await closeCoordinationRedisConnection(connection)
   }
 }
 

@@ -2,9 +2,10 @@ import { describe, expect, test } from 'vitest'
 import {
   parseExpectedRecoverySnapshot,
   verifyQueueDiscardRecovery,
-  verifyRollbackJobRegistry,
+  verifyRollbackJobContracts,
   type DomainEventRecoverySnapshot,
 } from '../../src/worker/rollback-verifier.js'
+import { listJobContracts } from '../../src/queue/job-contracts.js'
 
 const snapshot: DomainEventRecoverySnapshot = {
   eventCount: 3,
@@ -15,17 +16,8 @@ const snapshot: DomainEventRecoverySnapshot = {
 }
 
 describe('worker rollback verifier', () => {
-  test('permits authoritative jobs only when registry verification confirms outbox recovery', () => {
-    expect(
-      verifyRollbackJobRegistry([
-        { name: 'derived', durability: 'derived' },
-        { name: 'event', durability: 'authoritative', recovery: 'outbox' },
-      ]),
-    ).toEqual({ authoritativeCount: 1 })
-    expect(() =>
-      verifyRollbackJobRegistry([{ name: 'event', durability: 'authoritative' } as never]),
-    ).toThrow('requires outbox recovery')
-    expect(() => verifyRollbackJobRegistry([{ name: 'unclassified' }])).toThrow('must declare')
+  test('counts authoritative contracts only after contract verification', () => {
+    expect(verifyRollbackJobContracts(listJobContracts())).toEqual({ authoritativeCount: 1 })
   })
 
   test('parses a retained snapshot and rejects malformed verifier input', () => {

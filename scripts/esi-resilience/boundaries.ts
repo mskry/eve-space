@@ -22,7 +22,7 @@ const modulesByTier = {
     'representations',
     'representation-registry',
   ],
-  infrastructure: ['cache-redis', 'coordination', 'transport'],
+  infrastructure: ['cache-redis', 'coordination', 'coordination-connection', 'transport'],
   execution: [
     'layer',
     'resource-revision',

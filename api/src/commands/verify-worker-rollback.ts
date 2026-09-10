@@ -1,16 +1,16 @@
 import { sql } from '../db/client.js'
-import { listJobDefinitions } from '../queue/job-registry.js'
+import { listJobContracts } from '../queue/job-contracts.js'
 import {
   parseExpectedRecoverySnapshot,
   verifyQueueDiscardRecovery,
-  verifyRollbackJobRegistry,
+  verifyRollbackJobContracts,
   type DomainEventRecoverySnapshot,
 } from '../worker/rollback-verifier.js'
 import { logSafeError } from '../logging.js'
 
 try {
   const expectedSnapshot = parseExpectedRecoverySnapshot(process.argv.slice(2))
-  verifyRollbackJobRegistry(listJobDefinitions())
+  verifyRollbackJobContracts(listJobContracts())
   const [row] = await sql<
     {
       eventCount: number

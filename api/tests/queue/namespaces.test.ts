@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { assertSafeJobPayload } from '../../src/queue/job-registry.js'
+import { assertSafeJobPayload } from '../../src/queue/job-contracts.js'
 import { queueNamespaces, queuePrefix } from '../../src/queue/namespaces.js'
 
 describe('queue namespaces', () => {

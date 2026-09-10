@@ -1,20 +1,28 @@
-import { Queue } from 'bullmq'
+import {
+  closeCoordinationRedisConnection,
+  createCoordinationRedisProbe,
+  type CoordinationRedisConnection,
+} from '../coordination-redis.js'
 import { env } from '../env.js'
 import { isNonnegativeSafeInteger } from '../type-guards.js'
-import { closeQueueRedisConnection, createProbeRedisConnection } from './redis.js'
 import {
   affiliationPlannerOutcomeKey,
-  operationsQueueName,
   outboxRelayOutcomeKey,
   outboxRelayStateKey,
   plannerStateKey,
-  queuePrefix,
   schedulerOutcomeKey,
   workerHeartbeatKey,
   workerRegistryKey,
 } from './namespaces.js'
-import type { QueueRedisConnection } from './redis.js'
 import { workerHeartbeatStaleAfterMs } from './policy.js'
+import {
+  decodeAffiliationPlannerOutcome,
+  decodeOutboxRelayOutcome,
+  type AffiliationPlannerOutcome,
+  type OutboxRelayOutcome,
+} from './outcomes.js'
+import { createOperationsQueueHandle, type OperationsQueueHandle } from './operations-queue.js'
+import { decodeWorkerHeartbeat } from './worker-liveness.js'
 
 export interface QueueStatus {
   status: 'operational' | 'degraded' | 'unavailable'
@@ -36,30 +44,13 @@ export interface QueueStatus {
   latestAffiliationPlannerOutcome: AffiliationPlannerOutcome | null
 }
 
-interface AffiliationPlannerOutcome {
-  outcome: 'scheduled' | 'idle' | 'cooldown' | 'paused' | 'coalesced' | 'failed'
-  planned: number
-  recordedAt: string
-}
-
-export interface OutboxRelayOutcome {
-  outcome: 'idle' | 'published' | 'partial-failure' | 'failed' | 'paused'
-  category: 'queue-unavailable' | 'queue-rejected' | 'invalid-event' | 'unknown' | null
-  recordedAt: string
-}
-
-/**
- * @param scopedWorkerId Restricts liveness to one replica's beat; the healthcheck passes its own
- * id, while `/api/status` omits it and reports the freshest beat in the deployment.
- */
-export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueStatus> {
-  const connection = createProbeRedisConnection()
-  const queue = new Queue(operationsQueueName, {
-    connection,
-    prefix: queuePrefix,
-    skipWaitingForReady: true,
-  })
+export async function probeQueueStatus(): Promise<QueueStatus> {
+  let connection: CoordinationRedisConnection | undefined
+  let handle: OperationsQueueHandle | undefined
   try {
+    connection = createCoordinationRedisProbe()
+    handle = createOperationsQueueHandle({ connection })
+    const { queue } = handle
     await connection.ping()
     const [
       counts,
@@ -80,7 +71,7 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       queue.getJobs(['prioritized'], 0, env.QUEUE_HIGH_WATER_MARK, true),
       // Admission bounds normal depth; cap inspection as a final safeguard if producers race.
       queue.getJobs(['delayed'], 0, env.QUEUE_HIGH_WATER_MARK, true),
-      readWorkerHeartbeats(connection, scopedWorkerId),
+      readWorkerHeartbeats(connection),
       connection.get(plannerStateKey),
       connection.get(outboxRelayStateKey),
       connection.get(outboxRelayOutcomeKey),
@@ -89,20 +80,17 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       connection.info('memory'),
       connection.config('GET', 'maxmemory'),
     ])
-    const heartbeat = latestHeartbeat(beats)
+    const now = Date.now()
+    const heartbeat = summarizeHeartbeats(beats, now)
     const oldest = [...waiting, ...prioritized].reduce<(typeof waiting)[number] | undefined>(
       (current, job) => (!current || job.timestamp < current.timestamp ? job : current),
       undefined,
     )
     const depth = (counts.waiting ?? 0) + (counts.delayed ?? 0) + (counts.prioritized ?? 0)
     const oldestWaitingAgeSeconds = oldest
-      ? Math.max(0, Math.floor((Date.now() - oldest.timestamp) / 1_000))
+      ? Math.max(0, Math.floor((now - oldest.timestamp) / 1_000))
       : null
-    const heartbeatTime = heartbeat ? Date.parse(heartbeat) : Number.NaN
-    const workerStale =
-      !heartbeat ||
-      Number.isNaN(heartbeatTime) ||
-      Date.now() - heartbeatTime > workerHeartbeatStaleAfterMs
+    const workerStale = heartbeat.workers === 0
     const lagged = (oldestWaitingAgeSeconds ?? 0) > env.QUEUE_LAG_DEGRADED_SECONDS
     const memoryUsedBytes = parseMemoryInfo(memoryInfo, 'used_memory')
     const memoryMaxBytes = parseMaxMemory(maxMemoryConfiguration)
@@ -111,8 +99,8 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
     const memoryPressure = memoryUsedPercent !== null && memoryUsedPercent >= 90
     return {
       status: workerStale || lagged || memoryPressure ? 'degraded' : 'operational',
-      workerHeartbeatAt: heartbeat,
-      workers: beats.filter((beat) => beat !== null).length,
+      workerHeartbeatAt: heartbeat.latest,
+      workers: heartbeat.workers,
       depth,
       oldestWaitingAgeSeconds,
       active: counts.active ?? 0,
@@ -123,31 +111,36 @@ export async function probeQueueStatus(scopedWorkerId?: string): Promise<QueueSt
       memoryUsedPercent,
       plannerPaused: plannerState === 'paused',
       outboxRelayPaused: outboxRelayState === 'paused',
-      latestOutboxRelayOutcome: parseOutboxRelayOutcome(outboxRelayOutcome),
+      latestOutboxRelayOutcome: decodeOutboxRelayOutcome(outboxRelayOutcome),
       latestSchedulerOutcome: schedulerOutcome === 'registered' ? 'registered' : null,
-      latestAffiliationPlannerOutcome: parseAffiliationPlannerOutcome(affiliationPlannerOutcome),
+      latestAffiliationPlannerOutcome: decodeAffiliationPlannerOutcome(affiliationPlannerOutcome),
     }
   } catch {
-    return {
-      status: 'unavailable',
-      workerHeartbeatAt: null,
-      workers: null,
-      depth: null,
-      oldestWaitingAgeSeconds: null,
-      active: null,
-      retrying: null,
-      failed: null,
-      memoryUsedBytes: null,
-      memoryMaxBytes: null,
-      memoryUsedPercent: null,
-      plannerPaused: false,
-      outboxRelayPaused: false,
-      latestOutboxRelayOutcome: null,
-      latestSchedulerOutcome: null,
-      latestAffiliationPlannerOutcome: null,
-    }
+    return unavailableQueueStatus()
   } finally {
-    await Promise.allSettled([queue.close(), closeQueueRedisConnection(connection)])
+    if (handle) await handle.close().catch(() => {})
+    else if (connection) await closeCoordinationRedisConnection(connection).catch(() => {})
+  }
+}
+
+function unavailableQueueStatus(): QueueStatus {
+  return {
+    status: 'unavailable',
+    workerHeartbeatAt: null,
+    workers: null,
+    depth: null,
+    oldestWaitingAgeSeconds: null,
+    active: null,
+    retrying: null,
+    failed: null,
+    memoryUsedBytes: null,
+    memoryMaxBytes: null,
+    memoryUsedPercent: null,
+    plannerPaused: false,
+    outboxRelayPaused: false,
+    latestOutboxRelayOutcome: null,
+    latestSchedulerOutcome: null,
+    latestAffiliationPlannerOutcome: null,
   }
 }
 
@@ -165,75 +158,24 @@ function parseMaxMemory(configuration: string[]) {
   return value
 }
 
-function parseOutboxRelayOutcome(value: string | null): OutboxRelayOutcome | null {
-  if (!value) return null
-  try {
-    const parsed: unknown = JSON.parse(value)
-    if (typeof parsed !== 'object' || parsed === null) return null
-    const outcome = 'outcome' in parsed ? parsed.outcome : null
-    const category = 'category' in parsed ? parsed.category : null
-    const recordedAt = 'recordedAt' in parsed ? parsed.recordedAt : null
-    if (
-      !['idle', 'published', 'partial-failure', 'failed', 'paused'].includes(outcome as string) ||
-      ![null, 'queue-unavailable', 'queue-rejected', 'invalid-event', 'unknown'].includes(
-        category as string | null,
-      ) ||
-      typeof recordedAt !== 'string' ||
-      Number.isNaN(Date.parse(recordedAt))
-    )
-      return null
-    return { outcome, category, recordedAt } as OutboxRelayOutcome
-  } catch {
-    return null
-  }
-}
-
-function parseAffiliationPlannerOutcome(value: string | null): AffiliationPlannerOutcome | null {
-  if (!value) return null
-  try {
-    const parsed: unknown = JSON.parse(value)
-    if (typeof parsed !== 'object' || parsed === null) return null
-    const outcome = 'outcome' in parsed ? parsed.outcome : null
-    const planned = 'planned' in parsed ? parsed.planned : null
-    const recordedAt = 'recordedAt' in parsed ? parsed.recordedAt : null
-    if (
-      !['scheduled', 'idle', 'cooldown', 'paused', 'coalesced', 'failed'].includes(
-        outcome as string,
-      ) ||
-      !isNonnegativeSafeInteger(planned) ||
-      typeof recordedAt !== 'string' ||
-      Number.isNaN(Date.parse(recordedAt))
-    )
-      return null
-    return { outcome, planned, recordedAt } as AffiliationPlannerOutcome
-  } catch {
-    return null
-  }
-}
-
-async function readWorkerHeartbeats(connection: QueueRedisConnection, scopedWorkerId?: string) {
-  if (scopedWorkerId) return connection.mget([workerHeartbeatKey(scopedWorkerId)])
+async function readWorkerHeartbeats(connection: CoordinationRedisConnection) {
   const registered = await connection.smembers(workerRegistryKey)
   if (registered.length === 0) return []
   return connection.mget(registered.map(workerHeartbeatKey))
 }
 
-function latestHeartbeat(beats: (string | null)[]) {
+function summarizeHeartbeats(beats: (string | null)[], now: number) {
   let latest: string | null = null
   let latestTime = Number.NEGATIVE_INFINITY
-  let unparseable: string | null = null
+  let workers = 0
   for (const beat of beats) {
-    if (!beat) continue
-    const time = Date.parse(beat)
-    if (Number.isNaN(time)) {
-      unparseable ??= beat
-      continue
-    }
-    if (time > latestTime) {
-      latest = beat
-      latestTime = time
+    const decoded = decodeWorkerHeartbeat(beat, now)
+    if (!decoded || now - decoded.time > workerHeartbeatStaleAfterMs) continue
+    workers += 1
+    if (decoded.time > latestTime) {
+      latest = decoded.heartbeatAt
+      latestTime = decoded.time
     }
   }
-  // Reported anyway when it is all there is: stale either way, and the raw value is diagnosable.
-  return latest ?? unparseable
+  return { latest, workers }
 }

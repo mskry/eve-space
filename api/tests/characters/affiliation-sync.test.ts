@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   affiliationBatchLimit,
   affiliationJobPayload,
@@ -9,6 +9,26 @@ import {
 } from '../../src/characters/affiliation-sync.js'
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 import { runAffiliationPlanner } from '../../src/queue/affiliation-planner.js'
+import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
+
+const plannerMocks = vi.hoisted(() => ({
+  cooldownActive: vi.fn(),
+  selectDue: vi.fn(),
+}))
+
+vi.mock('../../src/characters/affiliation-planning.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/characters/affiliation-planning.js')>()),
+  affiliationCooldownActive: plannerMocks.cooldownActive,
+}))
+vi.mock('../../src/characters/affiliation-sync.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/characters/affiliation-sync.js')>()),
+  selectDueAffiliationCharacterIds: plannerMocks.selectDue,
+}))
+
+beforeEach(() => {
+  plannerMocks.cooldownActive.mockReset().mockResolvedValue(false)
+  plannerMocks.selectDue.mockReset().mockResolvedValue([])
+})
 
 describe('character affiliation synchronization', () => {
   test('partitions deterministic batches at the SDK operation limit', () => {
@@ -46,70 +66,76 @@ describe('character affiliation synchronization', () => {
   })
 
   test('pauses planner admission during cooldown and reconstructs deterministic batches after it', async () => {
-    const client = { del: vi.fn(), set: vi.fn() }
-    const queue = {
-      add: vi.fn(),
-      getBackend: () => ({ client: Promise.resolve(client) }),
-      getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0 }),
-      getJobs: vi.fn().mockResolvedValue([]),
-    }
+    const producer = createInMemoryQueueProducer()
+    const outcomes = outcomeRecorder()
+    plannerMocks.cooldownActive.mockResolvedValueOnce(true)
 
-    await expect(
-      runAffiliationPlanner(queue as never, undefined, {
-        dependencies: { cooldownActive: async () => true },
-      }),
-    ).resolves.toEqual({ planned: 0, reason: 'cooldown' })
-    expect(client.set).toHaveBeenCalledWith('eve-space:v1:planner:state', 'paused')
-    expect(client.set).toHaveBeenCalledWith(
-      'eve-space:v1:planner:affiliation:outcome',
-      expect.stringContaining('"outcome":"cooldown"'),
+    await expect(runAffiliationPlanner({ producer, outcomes })).resolves.toEqual({
+      planned: 0,
+      reason: 'cooldown',
+    })
+    expect(producer.plannerPaused).toBe(true)
+    expect(outcomes.recordAffiliation).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'cooldown' }),
     )
 
-    await expect(
-      runAffiliationPlanner(queue as never, undefined, {
-        dependencies: {
-          cooldownActive: async () => false,
-          selectDue: async () => [{ characterId: 3 }, { characterId: 1 }, { characterId: 2 }],
-        },
-      }),
-    ).resolves.toEqual({ planned: 1, reason: 'scheduled' })
-    const call = queue.add.mock.calls[0]
-    if (!call) throw new Error('Expected planner to enqueue an affiliation batch')
-    const [, payload, options] = call
+    plannerMocks.selectDue.mockResolvedValueOnce([
+      { characterId: 3 },
+      { characterId: 1 },
+      { characterId: 2 },
+    ])
+    await expect(runAffiliationPlanner({ producer, outcomes })).resolves.toEqual({
+      planned: 1,
+      reason: 'scheduled',
+    })
+    const command = producer.commands[0]
+    if (command?.name !== 'affiliation') throw new Error('Expected an affiliation command')
+    const payload = command.payload
     expect(payload).toEqual({
       operationId: expect.stringMatching(/^affiliation-1-2-3--[0-9a-f-]{36}$/),
       characterIds: [1, 2, 3],
     })
-    expect(options).toEqual(expect.objectContaining({ jobId: payload.operationId }))
-    expect(client.set).toHaveBeenCalledWith(
-      'eve-space:v1:planner:affiliation:outcome',
-      expect.stringContaining('"outcome":"scheduled"'),
+    expect(outcomes.recordAffiliation).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'scheduled' }),
     )
   })
 
   test('gives recurring batches distinct job identities', async () => {
-    const client = { del: vi.fn(), set: vi.fn() }
-    const queue = {
-      add: vi.fn(),
-      getBackend: () => ({ client: Promise.resolve(client) }),
-      getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0 }),
-      getJobs: vi.fn().mockResolvedValue([]),
-    }
-    const dependencies = {
-      cooldownActive: async () => false,
-      selectDue: async () => [{ characterId: 1 }],
-    }
+    const producer = createInMemoryQueueProducer()
+    const outcomes = outcomeRecorder()
+    plannerMocks.selectDue.mockResolvedValue([{ characterId: 1 }])
 
-    await runAffiliationPlanner(queue as never, undefined, { dependencies })
-    await runAffiliationPlanner(queue as never, undefined, { dependencies })
+    await runAffiliationPlanner({ producer, outcomes })
+    await runAffiliationPlanner({ producer, outcomes })
 
-    const firstCall = queue.add.mock.calls[0]
-    const secondCall = queue.add.mock.calls[1]
-    if (!firstCall || !secondCall) throw new Error('Expected both planner runs to enqueue a batch')
-    const first = firstCall[1].operationId
-    const second = secondCall[1].operationId
+    const firstCommand = producer.commands[0]
+    const secondCommand = producer.commands[1]
+    if (firstCommand?.name !== 'affiliation' || secondCommand?.name !== 'affiliation')
+      throw new Error('Expected both planner runs to enqueue a batch')
+    const first = firstCommand.payload.operationId
+    const second = secondCommand.payload.operationId
     expect(first).not.toBe(second)
-    expect(firstCall[2]).toEqual(expect.objectContaining({ jobId: first }))
-    expect(secondCall[2]).toEqual(expect.objectContaining({ jobId: second }))
+  })
+
+  test('keeps planning outcomes authoritative when observability recording fails', async () => {
+    const planningFailure = new Error('selection failed')
+    const outcomes = outcomeRecorder()
+    outcomes.recordAffiliation.mockRejectedValue(new Error('Redis outcome unavailable'))
+
+    await expect(
+      runAffiliationPlanner({ producer: createInMemoryQueueProducer(), outcomes }),
+    ).resolves.toEqual({ planned: 0, reason: 'scheduled' })
+
+    plannerMocks.selectDue.mockRejectedValueOnce(planningFailure)
+    await expect(
+      runAffiliationPlanner({ producer: createInMemoryQueueProducer(), outcomes }),
+    ).rejects.toBe(planningFailure)
   })
 })
+
+function outcomeRecorder() {
+  return {
+    recordAffiliation: vi.fn().mockResolvedValue(undefined),
+    recordOutbox: vi.fn().mockResolvedValue(undefined),
+  }
+}
