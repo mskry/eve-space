@@ -75,8 +75,12 @@ beforeEach(async () => {
   const { getUniverseSolarSystem, getUniverseStation } = await import(
     '../../src/universe/locations.js'
   )
-  vi.mocked(getUniverseSolarSystem).mockResolvedValue(universeSolarSystemResult)
-  vi.mocked(getUniverseStation).mockResolvedValue(universeStationResult)
+  vi.mocked(getUniverseSolarSystem).mockResolvedValue(
+    universeSolarSystemResult as Awaited<ReturnType<typeof getUniverseSolarSystem>>,
+  )
+  vi.mocked(getUniverseStation).mockResolvedValue(
+    universeStationResult as Awaited<ReturnType<typeof getUniverseStation>>,
+  )
 })
 
 describe('character overview resources', () => {

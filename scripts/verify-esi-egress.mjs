@@ -2,34 +2,9 @@ import { readdir, readFile } from 'node:fs/promises'
 import { extname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
+import { legacyEsiEgressModules } from './esi-resilience/legacy-egress.mjs'
 import { moduleServerSourceExtensions } from './module-registry/source-extensions.mjs'
 
-/**
- * Core modules still reaching ESI through the pre-representation seam.
- *
- * This list may only shrink. A module that no longer imports the seam is reported as a stale
- * entry, so a completed migration must delete its line, and a module that starts importing the
- * seam without being listed is rejected. When the list empties, the seam itself can be deleted.
- */
-const legacyEsiEgressModules = [
-  'api/src/characters/affiliation-sync.ts',
-  'api/src/characters/assets.ts',
-  'api/src/characters/attributes.ts',
-  'api/src/characters/clones.ts',
-  'api/src/characters/contracts.ts',
-  'api/src/characters/corporation-roles.ts',
-  'api/src/characters/history.ts',
-  'api/src/characters/market.ts',
-  'api/src/characters/overview.ts',
-  'api/src/characters/profile.ts',
-  'api/src/characters/skill-queue.ts',
-  'api/src/characters/wallet.ts',
-  'api/src/corporations/public-data.ts',
-  'api/src/deployment/organization.ts',
-  'api/src/mail/mailbox.ts',
-  'api/src/organization/authority.ts',
-  'api/src/universe/locations.ts',
-]
 const legacyLayerMethods = new Set([
   'executeCharacterMutation',
   'executeCharacterRepresentation',

@@ -5,28 +5,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { describe, expect, test } from 'vitest'
+import { legacyEsiEgressModules as legacyEgressPaths } from '../../../scripts/esi-resilience/legacy-egress.mjs'
 
 const execFileAsync = promisify(execFile)
-const legacyEgressPaths = [
-  'api/src/characters/affiliation-sync.ts',
-  'api/src/characters/assets.ts',
-  'api/src/characters/attributes.ts',
-  'api/src/characters/clones.ts',
-  'api/src/characters/contracts.ts',
-  'api/src/characters/corporation-roles.ts',
-  'api/src/characters/history.ts',
-  'api/src/characters/market.ts',
-  'api/src/characters/overview.ts',
-  'api/src/characters/profile.ts',
-  'api/src/characters/skill-queue.ts',
-  'api/src/characters/wallet.ts',
-  'api/src/corporations/public-data.ts',
-  'api/src/deployment/organization.ts',
-  'api/src/mail/mailbox.ts',
-  'api/src/organization/authority.ts',
-  'api/src/system/status.ts',
-  'api/src/universe/locations.ts',
-] as const
 
 describe('ESI egress verification', () => {
   test('permits only the resilience transport and layer-owned cache or cooldown state', async () => {
