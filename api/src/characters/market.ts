@@ -1,19 +1,18 @@
-import { createMarketClient } from '@evespace/esi-client/domains/market'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type {
   GetCharactersCharacterIdOrdersHistoryResponse,
   GetCharactersCharacterIdOrdersResponse,
 } from '@evespace/esi-client/types'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { financeLocationName, loadFinanceLocationNames } from './finance-location-names.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
-
-export const marketOrdersScope = getCharacterEsiScope('market-orders')
 
 type EsiCharacterMarketOrder =
   | GetCharactersCharacterIdOrdersResponse[number]
@@ -38,8 +37,42 @@ interface CharacterMarketOrder {
   expiresAt: string
 }
 
+interface CharacterMarketOrdersRepresentationInput {
+  characterId: number
+}
+
 interface CharacterMarketOrdersData {
   orders: CharacterMarketOrder[]
+}
+
+export type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiResultMetadata
+
+const characterMarketOrdersRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'market-orders',
+    name: 'market-orders-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdOrders.transport,
+    encodeRequest: (input: CharacterMarketOrdersRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: async (response): Promise<CharacterMarketOrdersData> => {
+      const personalOrders = response.data.filter((order) => !order.is_corporation)
+      const [namesByType, namesByLocation] = await Promise.all([
+        loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
+        loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
+      ])
+      return {
+        orders: personalOrders.map((order) => mapMarketOrder(order, namesByType, namesByLocation)),
+      }
+    },
+  }),
+)
+
+export const marketOrdersScope = getCharacterEsiScope(characterMarketOrdersRepresentation.operation)
+
+interface CharacterMarketOrderHistoryRepresentationInput {
+  characterId: number
+  page: number
 }
 
 interface CharacterMarketOrderHistoryData {
@@ -48,8 +81,35 @@ interface CharacterMarketOrderHistoryData {
   totalPages: number
 }
 
-export type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiResultMetadata
 export type CharacterMarketOrderHistoryResult = CharacterMarketOrderHistoryData & EsiResultMetadata
+
+const characterMarketOrderHistoryRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'market-order-history',
+    name: 'market-order-history-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdOrdersHistory.transport,
+    encodeRequest: (input: CharacterMarketOrderHistoryRepresentationInput) => ({
+      path: { character_id: input.characterId },
+      query: { page: input.page },
+    }),
+    map: async (response, input): Promise<CharacterMarketOrderHistoryData> => {
+      const personalOrders = response.data.filter((order) => !order.is_corporation)
+      const [namesByType, namesByLocation] = await Promise.all([
+        loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
+        loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
+      ])
+      return {
+        orders: personalOrders.map((order) =>
+          Object.assign(mapMarketOrder(order, namesByType, namesByLocation), {
+            state: order.state,
+          }),
+        ),
+        page: input.page,
+        totalPages: paginationPages(response.meta.pagination?.pages, input.page),
+      }
+    },
+  }),
+)
 
 export class MarketQuotaError extends Error {
   constructor(readonly retryAfterSeconds: number) {
@@ -61,31 +121,7 @@ export async function getCharacterMarketOrders(
   characterId: number,
 ): Promise<CharacterMarketOrdersResult> {
   try {
-    const result = await getEsiResilienceLayer().getCharacter<CharacterMarketOrdersData>({
-      operation: 'market-orders',
-      inputs: { characterId },
-      load: async (authority, revalidation) => {
-        const response = await createMarketClient({
-          fetch: createEsiTransport('market-orders', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .listCharacterOrders(characterId, revalidation)
-        const personalOrders = response.data.filter((order) => !order.is_corporation)
-        const [namesByType, namesByLocation] = await Promise.all([
-          loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
-          loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
-        ])
-        return {
-          data: {
-            orders: personalOrders.map((order) =>
-              mapMarketOrder(order, namesByType, namesByLocation),
-            ),
-          },
-          meta: response.meta,
-        }
-      },
-    })
+    const result = await execute(characterMarketOrdersRepresentation, { characterId })
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwMarketError(error)
@@ -98,35 +134,7 @@ export async function getCharacterMarketOrderHistory(
 ): Promise<CharacterMarketOrderHistoryResult> {
   assertPositiveSafeInteger(page, 'Market order history page')
   try {
-    const result = await getEsiResilienceLayer().getCharacter<CharacterMarketOrderHistoryData>({
-      operation: 'market-order-history',
-      inputs: { characterId, page },
-      load: async (authority, revalidation) => {
-        const response = await createMarketClient({
-          fetch: createEsiTransport('market-order-history', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .listCharacterOrderHistory(characterId, { page, ...revalidation })
-        const personalOrders = response.data.filter((order) => !order.is_corporation)
-        const [namesByType, namesByLocation] = await Promise.all([
-          loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
-          loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
-        ])
-        return {
-          data: {
-            orders: personalOrders.map((order) =>
-              Object.assign(mapMarketOrder(order, namesByType, namesByLocation), {
-                state: order.state,
-              }),
-            ),
-            page,
-            totalPages: paginationPages(response.meta.pagination?.pages, page),
-          },
-          meta: response.meta,
-        }
-      },
-    })
+    const result = await execute(characterMarketOrderHistoryRepresentation, { characterId, page })
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwMarketError(error)

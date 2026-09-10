@@ -1,15 +1,14 @@
-import { createContractsClient } from '@evespace/esi-client/domains/contracts'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdContractsResponse } from '@evespace/esi-client/types'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
-
-export const characterContractsScope = getCharacterEsiScope('character-contracts')
 
 type EsiCharacterContract = GetCharactersCharacterIdContractsResponse[number]
 
@@ -34,10 +33,68 @@ interface CharacterContract {
   volume: number | null
 }
 
+interface CharacterContractsRepresentationInput {
+  characterId: number
+  page: number
+}
+
 interface CharacterContractsData {
   contracts: CharacterContract[]
   page: number
   totalPages: number
+}
+
+export type CharacterContractsResult = CharacterContractsData & EsiResultMetadata
+
+const characterContractsRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-contracts',
+    name: 'character-contracts-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdContracts.transport,
+    encodeRequest: (input: CharacterContractsRepresentationInput) => ({
+      path: { character_id: input.characterId },
+      query: { page: input.page },
+    }),
+    map: (response, input): CharacterContractsData => ({
+      contracts: response.data
+        .filter((contract) => !contract.for_corporation)
+        .map((contract) => ({
+          contractId: contract.contract_id,
+          type: contract.type,
+          status: contract.status,
+          availability: contract.availability,
+          // Derived, so the counterparty identifiers behind it stay out of the DTO.
+          role:
+            contract.assignee_id === input.characterId || contract.acceptor_id === input.characterId
+              ? 'assigned'
+              : 'issued',
+          title: contract.title ?? null,
+          issuedAt: contract.date_issued,
+          expiredAt: contract.date_expired,
+          acceptedAt: contract.date_accepted ?? null,
+          completedAt: contract.date_completed ?? null,
+          daysToComplete: contract.days_to_complete ?? null,
+          startLocationId: contract.start_location_id ?? null,
+          endLocationId: contract.end_location_id ?? null,
+          price: contract.price ?? null,
+          reward: contract.reward ?? null,
+          collateral: contract.collateral ?? null,
+          buyout: contract.buyout ?? null,
+          volume: contract.volume ?? null,
+        })),
+      page: input.page,
+      totalPages: paginationPages(response.meta.pagination?.pages, input.page),
+    }),
+  }),
+)
+
+export const characterContractsScope = getCharacterEsiScope(
+  characterContractsRepresentation.operation,
+)
+
+interface CharacterContractItemsRepresentationInput {
+  characterId: number
+  contractId: number
 }
 
 interface CharacterContractItemsData {
@@ -52,6 +109,38 @@ interface CharacterContractItemsData {
   }>
 }
 
+export type CharacterContractItemsResult = CharacterContractItemsData & EsiResultMetadata
+
+const characterContractItemsRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-contract-items',
+    name: 'character-contract-items-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdItems.transport,
+    encodeRequest: (input: CharacterContractItemsRepresentationInput) => ({
+      path: { character_id: input.characterId, contract_id: input.contractId },
+    }),
+    map: async (response): Promise<CharacterContractItemsData> => {
+      const namesByType = await loadFinanceTypeNames(response.data.map((item) => item.type_id))
+      return {
+        items: response.data.map((item) => ({
+          recordId: item.record_id,
+          typeId: item.type_id,
+          typeName: financeTypeName(item.type_id, namesByType),
+          direction: item.is_included ? 'included' : 'requested',
+          quantity: item.quantity,
+          isSingleton: item.is_singleton,
+          blueprint: contractItemBlueprint(item.raw_quantity),
+        })),
+      }
+    },
+  }),
+)
+
+interface CharacterContractBidsRepresentationInput {
+  characterId: number
+  contractId: number
+}
+
 interface CharacterContractBidsData {
   bids: Array<{
     bidId: number
@@ -60,9 +149,25 @@ interface CharacterContractBidsData {
   }>
 }
 
-export type CharacterContractsResult = CharacterContractsData & EsiResultMetadata
-export type CharacterContractItemsResult = CharacterContractItemsData & EsiResultMetadata
 export type CharacterContractBidsResult = CharacterContractBidsData & EsiResultMetadata
+
+const characterContractBidsRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-contract-bids',
+    name: 'character-contract-bids-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdBids.transport,
+    encodeRequest: (input: CharacterContractBidsRepresentationInput) => ({
+      path: { character_id: input.characterId, contract_id: input.contractId },
+    }),
+    map: (response): CharacterContractBidsData => ({
+      bids: response.data.map((bid) => ({
+        bidId: bid.bid_id,
+        amount: bid.amount,
+        bidAt: bid.date_bid,
+      })),
+    }),
+  }),
+)
 
 export class ContractNotFoundError extends Error {
   constructor() {
@@ -97,33 +202,7 @@ export async function getCharacterContractItems(
   assertContractDetailInputs(contractId, contractPage)
   try {
     await requirePersonalContract(characterId, contractId, contractPage)
-    const result = await getEsiResilienceLayer().getCharacter<CharacterContractItemsData>({
-      operation: 'character-contract-items',
-      inputs: { characterId, contractId },
-      load: async (authority, revalidation) => {
-        const response = await createContractsClient({
-          fetch: createEsiTransport('character-contract-items', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .listCharacterContractItems(characterId, contractId, revalidation)
-        const namesByType = await loadFinanceTypeNames(response.data.map((item) => item.type_id))
-        return {
-          data: {
-            items: response.data.map((item) => ({
-              recordId: item.record_id,
-              typeId: item.type_id,
-              typeName: financeTypeName(item.type_id, namesByType),
-              direction: item.is_included ? 'included' : 'requested',
-              quantity: item.quantity,
-              isSingleton: item.is_singleton,
-              blueprint: contractItemBlueprint(item.raw_quantity),
-            })),
-          },
-          meta: response.meta,
-        }
-      },
-    })
+    const result = await execute(characterContractItemsRepresentation, { characterId, contractId })
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwContractError(error)
@@ -138,80 +217,15 @@ export async function getCharacterContractBids(
   assertContractDetailInputs(contractId, contractPage)
   try {
     await requirePersonalContract(characterId, contractId, contractPage)
-    const result = await getEsiResilienceLayer().getCharacter<CharacterContractBidsData>({
-      operation: 'character-contract-bids',
-      inputs: { characterId, contractId },
-      load: async (authority, revalidation) => {
-        const response = await createContractsClient({
-          fetch: createEsiTransport('character-contract-bids', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .listCharacterContractBids(characterId, contractId, revalidation)
-        return {
-          data: {
-            bids: response.data.map((bid) => ({
-              bidId: bid.bid_id,
-              amount: bid.amount,
-              bidAt: bid.date_bid,
-            })),
-          },
-          meta: response.meta,
-        }
-      },
-    })
+    const result = await execute(characterContractBidsRepresentation, { characterId, contractId })
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwContractError(error)
   }
 }
 
-async function loadCharacterContracts(characterId: number, page: number) {
-  return getEsiResilienceLayer().getCharacter<CharacterContractsData>({
-    operation: 'character-contracts',
-    inputs: { characterId, page },
-    load: async (authority, revalidation) => {
-      const response = await createContractsClient({
-        fetch: createEsiTransport('character-contracts', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .listCharacterContracts(characterId, { page, ...revalidation })
-      return {
-        data: {
-          contracts: response.data
-            .filter((contract) => !contract.for_corporation)
-            .map((contract) => ({
-              contractId: contract.contract_id,
-              type: contract.type,
-              status: contract.status,
-              availability: contract.availability,
-              // Derived, so the counterparty identifiers behind it stay out of the DTO.
-              role:
-                contract.assignee_id === characterId || contract.acceptor_id === characterId
-                  ? 'assigned'
-                  : 'issued',
-              title: contract.title ?? null,
-              issuedAt: contract.date_issued,
-              expiredAt: contract.date_expired,
-              acceptedAt: contract.date_accepted ?? null,
-              completedAt: contract.date_completed ?? null,
-              daysToComplete: contract.days_to_complete ?? null,
-              startLocationId: contract.start_location_id ?? null,
-              endLocationId: contract.end_location_id ?? null,
-              price: contract.price ?? null,
-              reward: contract.reward ?? null,
-              collateral: contract.collateral ?? null,
-              buyout: contract.buyout ?? null,
-              volume: contract.volume ?? null,
-            })),
-          page,
-          totalPages: paginationPages(response.meta.pagination?.pages, page),
-        },
-        meta: response.meta,
-      }
-    },
-  })
+function loadCharacterContracts(characterId: number, page: number) {
+  return execute(characterContractsRepresentation, { characterId, page })
 }
 
 async function requirePersonalContract(characterId: number, contractId: number, page: number) {
