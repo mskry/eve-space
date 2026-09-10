@@ -1,4 +1,4 @@
-import { createCharacterClient } from '@evespace/esi-client/domains/character'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import { and, asc, inArray, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db/client.js'
@@ -7,13 +7,29 @@ import { env } from '../env.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
 
 const affiliationIdentity = getEsiOperationContract('bulk-affiliation').identity
 if (affiliationIdentity.kind !== 'set')
   throw new Error('Bulk affiliation identity must be set-like')
 export const affiliationBatchLimit = affiliationIdentity.maximumItems
+
+const bulkAffiliationRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'bulk-affiliation',
+    name: 'bulk-affiliation-core',
+    descriptor: operationRegistry.PostCharactersAffiliation.transport,
+    encodeRequest: (input: { body: number[] }) => input,
+    map: ({ data }): AffiliationObservation[] =>
+      data.map((affiliation) => ({
+        characterId: affiliation.character_id,
+        corporationId: affiliation.corporation_id,
+        allianceId: affiliation.alliance_id ?? null,
+      })),
+  }),
+)
 
 export const affiliationJobPayload = z
   .object({
@@ -185,25 +201,7 @@ async function lookupAffiliations(characterIds: readonly number[]) {
 }
 
 async function lookupAffiliationResult(characterIds: readonly number[]) {
-  return getEsiResilienceLayer().executeNoValue<AffiliationObservation[]>({
-    operation: 'bulk-affiliation',
-    inputs: { characterIds },
-    load: async () => {
-      const response = await createCharacterClient({
-        fetch: createEsiTransport('bulk-affiliation'),
-      })
-        .withMetadata()
-        .lookupAffiliations({ body: [...characterIds] })
-      return {
-        data: response.data.map((affiliation) => ({
-          characterId: affiliation.character_id,
-          corporationId: affiliation.corporation_id,
-          allianceId: affiliation.alliance_id ?? null,
-        })),
-        meta: response.meta,
-      }
-    },
-  })
+  return execute(bulkAffiliationRepresentation, { body: [...characterIds] })
 }
 
 function nextAffiliationCheckSql(observedAt: string) {
