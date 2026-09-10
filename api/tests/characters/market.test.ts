@@ -9,23 +9,34 @@ const mocks = vi.hoisted(() => {
 
   return {
     EsiQuotaError,
-    createMarketClient: vi.fn(),
-    getCharacter: vi.fn(),
-    listCharacterOrderHistory: vi.fn(),
-    listCharacterOrders: vi.fn(),
+    executeRepresentation: vi.fn(),
+    getOrders: vi.fn(),
+    getOrderHistory: vi.fn(),
     loadLocationNames: vi.fn(),
     loadTypeNames: vi.fn(),
   }
 })
 
-vi.mock('@evespace/esi-client/domains/market', () => ({
-  createMarketClient: mocks.createMarketClient,
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(operation: string, inputs: unknown) {
+      if (operation === 'GetCharactersCharacterIdOrders') return mocks.getOrders(inputs)
+      if (operation === 'GetCharactersCharacterIdOrdersHistory')
+        return mocks.getOrderHistory(inputs)
+      throw new Error(`Unexpected ESI operation ${operation}`)
+    }
+  },
 }))
+
 vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
+
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getCharacter: mocks.getCharacter }),
+  getEsiResilienceLayer: () => ({ executeCharacterRepresentation: mocks.executeRepresentation }),
 }))
+
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+
 vi.mock('../../src/characters/finance-type-names.js', () => ({
   loadFinanceTypeNames: mocks.loadTypeNames,
   financeTypeName: (typeId: number, names: ReadonlyMap<number, string>) =>
@@ -43,7 +54,11 @@ const revalidation = {
   ifNoneMatch: 'orders-etag',
   ifModifiedSince: 'Wed, 19 Aug 2026 12:00:00 GMT',
 }
-const outerMetadata = {
+const revalidationHeaders = {
+  'If-None-Match': revalidation.ifNoneMatch,
+  'If-Modified-Since': revalidation.ifModifiedSince,
+}
+const defaultFreshness = {
   cachedUntil: '2026-08-20T13:00:00.000Z',
   validatedAt: '2026-08-20T12:00:00.000Z',
   quota: {},
@@ -52,25 +67,18 @@ const outerMetadata = {
 }
 
 beforeEach(() => {
-  mocks.createMarketClient.mockReturnValue({
-    withMetadata: () => ({
-      listCharacterOrders: mocks.listCharacterOrders,
-      listCharacterOrderHistory: mocks.listCharacterOrderHistory,
-    }),
-  })
-  mocks.getCharacter.mockImplementation(async (resource) => {
-    const loaded = await resource.load(authority, revalidation)
-    return { data: loaded.data, ...outerMetadata }
-  })
-  mocks.listCharacterOrders.mockResolvedValue(response([]))
-  mocks.listCharacterOrderHistory.mockResolvedValue(response([], 1))
+  mocks.executeRepresentation.mockImplementation((_representation, resource) =>
+    loadResource(resource),
+  )
+  mocks.getOrders.mockResolvedValue(response([]))
+  mocks.getOrderHistory.mockResolvedValue(response([], 1))
   mocks.loadTypeNames.mockResolvedValue(new Map())
   mocks.loadLocationNames.mockResolvedValue(new Map())
 })
 
 describe('character market service', () => {
   test('maps personal open orders, defaults omitted sell sides, and excludes corporation orders', async () => {
-    mocks.listCharacterOrders.mockResolvedValue(
+    mocks.getOrders.mockResolvedValue(
       response([
         order(10, 34, { is_buy_order: true, escrow: 12, min_volume: 5 }),
         order(11, 35),
@@ -120,18 +128,21 @@ describe('character market service', () => {
           locationName: 'Jita IV - Moon 4 - Caldari Navy Assembly Plant',
         }),
       ],
-      cachedUntil: outerMetadata.cachedUntil,
-      validatedAt: outerMetadata.validatedAt,
+      cachedUntil: defaultFreshness.cachedUntil,
+      validatedAt: defaultFreshness.validatedAt,
       stale: false,
     })
     expect(marketOrdersScope).toBe('esi-markets.read_character_orders.v1')
     expect(mocks.loadTypeNames).toHaveBeenCalledWith([34, 35])
-    expect(mocks.listCharacterOrders).toHaveBeenCalledWith(characterId, revalidation)
+    expect(mocks.getOrders).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      headers: revalidationHeaders,
+    })
     expect(JSON.stringify(result)).not.toMatch(/isCorporation|corporation|"typeId":36/)
   })
 
   test('retains cancelled and expired history states on a sparse page', async () => {
-    mocks.listCharacterOrderHistory.mockResolvedValue(
+    mocks.getOrderHistory.mockResolvedValue(
       response(
         [
           { ...order(30, 34), state: 'cancelled' },
@@ -154,13 +165,15 @@ describe('character market service', () => {
       page: 3,
       totalPages: 8,
     })
-    expect(mocks.getCharacter.mock.calls[0]?.[0]).toMatchObject({
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toMatchObject({
       operation: 'market-order-history',
-      inputs: { characterId, page: 3 },
+      characterId,
+      inputs: { path: { character_id: characterId }, query: { page: 3 } },
     })
-    expect(mocks.listCharacterOrderHistory).toHaveBeenCalledWith(characterId, {
-      page: 3,
-      ...revalidation,
+    expect(mocks.getOrderHistory).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      query: { page: 3 },
+      headers: revalidationHeaders,
     })
     expect(mocks.loadTypeNames).toHaveBeenCalledWith([34, 36])
     expect(result.orders).toEqual([
@@ -170,7 +183,7 @@ describe('character market service', () => {
   })
 
   test('retains history pagination and stale metadata from cache data', async () => {
-    mocks.getCharacter.mockResolvedValueOnce({
+    mocks.executeRepresentation.mockResolvedValueOnce({
       data: { orders: [], page: 4, totalPages: 9 },
       cachedUntil: '2026-08-20T11:00:00.000Z',
       validatedAt: '2026-08-20T10:00:00.000Z',
@@ -190,16 +203,16 @@ describe('character market service', () => {
       stale: true,
       refreshFailureClass: 'esi-cooldown',
     })
-    expect(mocks.listCharacterOrderHistory).not.toHaveBeenCalled()
+    expect(mocks.getOrderHistory).not.toHaveBeenCalled()
   })
 
   test('maps market quota failures without invoking the SDK', async () => {
-    mocks.getCharacter.mockRejectedValueOnce(new mocks.EsiQuotaError(45))
+    mocks.executeRepresentation.mockRejectedValueOnce(new mocks.EsiQuotaError(45))
     const { getCharacterMarketOrders, MarketQuotaError } =
       await import('../../src/characters/market.js')
 
     await expect(getCharacterMarketOrders(characterId)).rejects.toEqual(new MarketQuotaError(45))
-    expect(mocks.listCharacterOrders).not.toHaveBeenCalled()
+    expect(mocks.getOrders).not.toHaveBeenCalled()
   })
 
   test('rejects invalid history pages before cache access', async () => {
@@ -208,13 +221,13 @@ describe('character market service', () => {
     await expect(getCharacterMarketOrderHistory(characterId, 0)).rejects.toThrow(
       'Market order history page must be a positive safe integer',
     )
-    expect(mocks.getCharacter).not.toHaveBeenCalled()
+    expect(mocks.executeRepresentation).not.toHaveBeenCalled()
   })
 
   test.each([undefined, 0])(
     'defaults missing or zero history pages to the requested page',
     async (pages) => {
-      mocks.listCharacterOrderHistory.mockResolvedValue(response([], pages))
+      mocks.getOrderHistory.mockResolvedValue(response([], pages))
       const { getCharacterMarketOrderHistory } = await import('../../src/characters/market.js')
 
       await expect(getCharacterMarketOrderHistory(characterId, 3)).resolves.toMatchObject({
@@ -224,6 +237,16 @@ describe('character market service', () => {
     },
   )
 })
+
+async function loadResource(resource: {
+  load: (
+    authority: { accessToken: string; principal: string },
+    revalidation: Record<string, string>,
+  ) => Promise<{ data: unknown }>
+}) {
+  const loaded = await resource.load(authority, revalidation)
+  return { data: loaded.data, ...defaultFreshness }
+}
 
 function response<Data>(data: Data, pages?: number) {
   return {

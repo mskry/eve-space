@@ -9,23 +9,36 @@ const mocks = vi.hoisted(() => {
 
   return {
     EsiQuotaError,
-    createContractsClient: vi.fn(),
-    getCharacter: vi.fn(),
-    listBids: vi.fn(),
-    listContracts: vi.fn(),
-    listItems: vi.fn(),
+    executeRepresentation: vi.fn(),
+    getBids: vi.fn(),
+    getContracts: vi.fn(),
+    getItems: vi.fn(),
     loadTypeNames: vi.fn(),
   }
 })
 
-vi.mock('@evespace/esi-client/domains/contracts', () => ({
-  createContractsClient: mocks.createContractsClient,
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(operation: string, inputs: unknown) {
+      if (operation === 'GetCharactersCharacterIdContracts') return mocks.getContracts(inputs)
+      if (operation === 'GetCharactersCharacterIdContractsContractIdItems')
+        return mocks.getItems(inputs)
+      if (operation === 'GetCharactersCharacterIdContractsContractIdBids')
+        return mocks.getBids(inputs)
+      throw new Error(`Unexpected ESI operation ${operation}`)
+    }
+  },
 }))
+
 vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
+
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getCharacter: mocks.getCharacter }),
+  getEsiResilienceLayer: () => ({ executeCharacterRepresentation: mocks.executeRepresentation }),
 }))
+
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+
 vi.mock('../../src/characters/finance-type-names.js', () => ({
   loadFinanceTypeNames: mocks.loadTypeNames,
   financeTypeName: (typeId: number, names: ReadonlyMap<number, string>) =>
@@ -35,7 +48,8 @@ vi.mock('../../src/characters/finance-type-names.js', () => ({
 const characterId = 90_000_001
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
 const revalidation = { ifNoneMatch: 'contract-etag' }
-const outerMetadata = {
+const revalidationHeaders = { 'If-None-Match': revalidation.ifNoneMatch }
+const defaultFreshness = {
   cachedUntil: '2026-08-20T12:05:00.000Z',
   validatedAt: '2026-08-20T12:00:00.000Z',
   quota: {},
@@ -44,26 +58,18 @@ const outerMetadata = {
 }
 
 beforeEach(() => {
-  mocks.createContractsClient.mockReturnValue({
-    withMetadata: () => ({
-      listCharacterContracts: mocks.listContracts,
-      listCharacterContractItems: mocks.listItems,
-      listCharacterContractBids: mocks.listBids,
-    }),
-  })
-  mocks.getCharacter.mockImplementation(async (resource) => {
-    const loaded = await resource.load(authority, revalidation)
-    return { data: loaded.data, ...outerMetadata }
-  })
-  mocks.listContracts.mockResolvedValue(response([], 1))
-  mocks.listItems.mockResolvedValue(response([]))
-  mocks.listBids.mockResolvedValue(response([]))
+  mocks.executeRepresentation.mockImplementation((_representation, resource) =>
+    loadResource(resource),
+  )
+  mocks.getContracts.mockResolvedValue(response([], 1))
+  mocks.getItems.mockResolvedValue(response([]))
+  mocks.getBids.mockResolvedValue(response([]))
   mocks.loadTypeNames.mockResolvedValue(new Map())
 })
 
 describe('character contracts service', () => {
   test('maps applicable personal contract terms and omits every party identifier', async () => {
-    mocks.listContracts.mockResolvedValue(
+    mocks.getContracts.mockResolvedValue(
       response(
         [
           contract(100, {
@@ -114,19 +120,23 @@ describe('character contracts service', () => {
       ],
       page: 2,
       totalPages: 6,
-      cachedUntil: outerMetadata.cachedUntil,
-      validatedAt: outerMetadata.validatedAt,
+      cachedUntil: defaultFreshness.cachedUntil,
+      validatedAt: defaultFreshness.validatedAt,
       stale: false,
     })
     expect(characterContractsScope).toBe('esi-contracts.read_character_contracts.v1')
-    expect(mocks.listContracts).toHaveBeenCalledWith(characterId, { page: 2, ...revalidation })
+    expect(mocks.getContracts).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      query: { page: 2 },
+      headers: revalidationHeaders,
+    })
     expect(JSON.stringify(result)).not.toMatch(
       /issuer|assignee|acceptor|corporationId|90000002|98000001/,
     )
   })
 
   test('derives the contract role from the assignee or acceptor without exposing identifiers', async () => {
-    mocks.listContracts.mockResolvedValue(
+    mocks.getContracts.mockResolvedValue(
       response(
         [
           contract(110, { assignee_id: characterId }),
@@ -149,7 +159,7 @@ describe('character contracts service', () => {
   })
 
   test('preserves a sparse page and nullable inapplicable terms', async () => {
-    mocks.listContracts.mockResolvedValue(
+    mocks.getContracts.mockResolvedValue(
       response([contract(200, { for_corporation: true }), contract(201)], 4),
     )
     const { getCharacterContracts } = await import('../../src/characters/contracts.js')
@@ -177,7 +187,7 @@ describe('character contracts service', () => {
   })
 
   test('retains page and stale metadata from a cached parent representation', async () => {
-    mocks.getCharacter.mockResolvedValueOnce({
+    mocks.executeRepresentation.mockResolvedValueOnce({
       data: { contracts: [], page: 5, totalPages: 7 },
       cachedUntil: '2026-08-20T11:00:00.000Z',
       validatedAt: '2026-08-20T10:00:00.000Z',
@@ -197,12 +207,12 @@ describe('character contracts service', () => {
       stale: true,
       refreshFailureClass: 'esi-unavailable',
     })
-    expect(mocks.listContracts).not.toHaveBeenCalled()
+    expect(mocks.getContracts).not.toHaveBeenCalled()
   })
 
   test('checks a cached personal parent before reading and mapping item detail', async () => {
     serveParentThenDetail({ contracts: [{ contractId: 300 }], page: 2, totalPages: 3 })
-    mocks.listItems.mockResolvedValue(
+    mocks.getItems.mockResolvedValue(
       response([
         item(1, 34, { is_included: true, is_singleton: true, raw_quantity: -1 }),
         item(2, 35, { raw_quantity: -2 }),
@@ -232,13 +242,20 @@ describe('character contracts service', () => {
         { recordId: 3, typeName: 'Unknown type 36', blueprint: null },
       ],
     })
-    expect(mocks.getCharacter.mock.calls.map(([resource]) => resource.operation)).toEqual([
-      'character-contracts',
-      'character-contract-items',
-    ])
-    expect(mocks.getCharacter.mock.calls[0]?.[0].inputs).toEqual({ characterId, page: 2 })
-    expect(mocks.getCharacter.mock.calls[1]?.[0].inputs).toEqual({ characterId, contractId: 300 })
-    expect(mocks.listItems).toHaveBeenCalledWith(characterId, 300, revalidation)
+    expect(
+      mocks.executeRepresentation.mock.calls.map(([, resource]) => resource.operation),
+    ).toEqual(['character-contracts', 'character-contract-items'])
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1].inputs).toEqual({
+      path: { character_id: characterId },
+      query: { page: 2 },
+    })
+    expect(mocks.executeRepresentation.mock.calls[1]?.[1].inputs).toEqual({
+      path: { character_id: characterId, contract_id: 300 },
+    })
+    expect(mocks.getItems).toHaveBeenCalledWith({
+      path: { character_id: characterId, contract_id: 300 },
+      headers: revalidationHeaders,
+    })
   })
 
   test('accepts an outage-stale personal parent before loading bid detail', async () => {
@@ -246,7 +263,7 @@ describe('character contracts service', () => {
       { contracts: [{ contractId: 400 }], page: 1, totalPages: 1 },
       { stale: true, refreshFailureClass: 'esi-unavailable' },
     )
-    mocks.listBids.mockResolvedValue(
+    mocks.getBids.mockResolvedValue(
       response([
         { amount: 250, bid_id: 20, bidder_id: 90_000_002, date_bid: '2026-08-20T13:00:00Z' },
       ]),
@@ -259,18 +276,17 @@ describe('character contracts service', () => {
       bids: [{ bidId: 20, amount: 250, bidAt: '2026-08-20T13:00:00Z' }],
     })
     expect(JSON.stringify(result)).not.toContain('90000002')
-    expect(mocks.getCharacter.mock.calls.map(([resource]) => resource.operation)).toEqual([
-      'character-contracts',
-      'character-contract-bids',
-    ])
+    expect(
+      mocks.executeRepresentation.mock.calls.map(([, resource]) => resource.operation),
+    ).toEqual(['character-contracts', 'character-contract-bids'])
   })
 
   test.each(['items', 'bids'] as const)(
     'returns deterministic not-found for ineligible %s before detail cache access',
     async (detail) => {
-      mocks.getCharacter.mockResolvedValueOnce({
+      mocks.executeRepresentation.mockResolvedValueOnce({
         data: { contracts: [{ contractId: 501 }], page: 3, totalPages: 3 },
-        ...outerMetadata,
+        ...defaultFreshness,
         source: 'cache',
       })
       const module = await import('../../src/characters/contracts.js')
@@ -280,39 +296,39 @@ describe('character contracts service', () => {
           : module.getCharacterContractBids(characterId, 500, 3)
 
       await expect(request).rejects.toBeInstanceOf(module.ContractNotFoundError)
-      expect(mocks.getCharacter).toHaveBeenCalledOnce()
-      expect(mocks.listItems).not.toHaveBeenCalled()
-      expect(mocks.listBids).not.toHaveBeenCalled()
+      expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
+      expect(mocks.getItems).not.toHaveBeenCalled()
+      expect(mocks.getBids).not.toHaveBeenCalled()
     },
   )
 
   test('propagates parent unavailability without converting it to not-found or reading detail', async () => {
     const failure = new Error('parent unavailable')
-    mocks.getCharacter.mockRejectedValueOnce(failure)
+    mocks.executeRepresentation.mockRejectedValueOnce(failure)
     const { getCharacterContractItems } = await import('../../src/characters/contracts.js')
 
     await expect(getCharacterContractItems(characterId, 600, 1)).rejects.toBe(failure)
-    expect(mocks.getCharacter).toHaveBeenCalledOnce()
-    expect(mocks.listItems).not.toHaveBeenCalled()
+    expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
+    expect(mocks.getItems).not.toHaveBeenCalled()
   })
 
   test('maps parent quota failure and never reads detail cache', async () => {
-    mocks.getCharacter.mockRejectedValueOnce(new mocks.EsiQuotaError(30))
+    mocks.executeRepresentation.mockRejectedValueOnce(new mocks.EsiQuotaError(30))
     const { ContractQuotaError, getCharacterContractBids } =
       await import('../../src/characters/contracts.js')
 
     await expect(getCharacterContractBids(characterId, 700, 1)).rejects.toEqual(
       new ContractQuotaError(30),
     )
-    expect(mocks.getCharacter).toHaveBeenCalledOnce()
-    expect(mocks.listBids).not.toHaveBeenCalled()
+    expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
+    expect(mocks.getBids).not.toHaveBeenCalled()
   })
 
   test('maps detail quota failure after successful parent eligibility', async () => {
-    mocks.getCharacter
+    mocks.executeRepresentation
       .mockResolvedValueOnce({
         data: { contracts: [{ contractId: 800 }], page: 1, totalPages: 1 },
-        ...outerMetadata,
+        ...defaultFreshness,
         source: 'cache',
       })
       .mockRejectedValueOnce(new mocks.EsiQuotaError(20))
@@ -322,13 +338,13 @@ describe('character contracts service', () => {
     await expect(getCharacterContractItems(characterId, 800, 1)).rejects.toEqual(
       new ContractQuotaError(20),
     )
-    expect(mocks.getCharacter).toHaveBeenCalledTimes(2)
+    expect(mocks.executeRepresentation).toHaveBeenCalledTimes(2)
   })
 
   test.each([undefined, 0])(
     'defaults missing or zero contract pages to the requested page',
     async (pages) => {
-      mocks.listContracts.mockResolvedValue(response([], pages))
+      mocks.getContracts.mockResolvedValue(response([], pages))
       const { getCharacterContracts } = await import('../../src/characters/contracts.js')
 
       await expect(getCharacterContracts(characterId, 3)).resolves.toMatchObject({
@@ -341,14 +357,23 @@ describe('character contracts service', () => {
 
 function serveParentThenDetail(
   data: { contracts: Array<{ contractId: number }>; page: number; totalPages: number },
-  metadata: Partial<typeof outerMetadata & { refreshFailureClass: string }> = {},
+  metadata: Partial<typeof defaultFreshness & { refreshFailureClass: string }> = {},
 ) {
-  mocks.getCharacter.mockImplementation(async (resource) => {
+  mocks.executeRepresentation.mockImplementation(async (_representation, resource) => {
     if (resource.operation === 'character-contracts')
-      return { data, ...outerMetadata, source: 'cache', ...metadata }
-    const loaded = await resource.load(authority, revalidation)
-    return { data: loaded.data, ...outerMetadata }
+      return { data, ...defaultFreshness, source: 'cache', ...metadata }
+    return loadResource(resource)
   })
+}
+
+async function loadResource(resource: {
+  load: (
+    authority: { accessToken: string; principal: string },
+    revalidation: Record<string, string>,
+  ) => Promise<{ data: unknown }>
+}) {
+  const loaded = await resource.load(authority, revalidation)
+  return { data: loaded.data, ...defaultFreshness }
 }
 
 function response<Data>(data: Data, pages?: number) {
