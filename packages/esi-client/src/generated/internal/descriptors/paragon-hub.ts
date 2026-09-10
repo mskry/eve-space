@@ -63,6 +63,7 @@ export const GetParagonHubSkinrAlliancesDescriptor: OperationExecutionDescriptor
   requestBody: null,
   requestSchema: GetParagonHubSkinrAlliancesRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based","x-tombstone-ttl":604800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-paragon-hub","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetParagonHubSkinrAlliancesResponse },
   ],
@@ -91,6 +92,7 @@ export const GetParagonHubSkinrCharactersDescriptor: OperationExecutionDescripto
   requestBody: null,
   requestSchema: GetParagonHubSkinrCharactersRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based","x-tombstone-ttl":604800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-paragon-hub","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetParagonHubSkinrCharactersResponse },
   ],
@@ -119,6 +121,7 @@ export const GetParagonHubSkinrCorporationsDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetParagonHubSkinrCorporationsRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based","x-tombstone-ttl":604800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-paragon-hub","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetParagonHubSkinrCorporationsResponse },
   ],
@@ -147,6 +150,7 @@ export const GetCharactersParagonHubSkinrDescriptor: OperationExecutionDescripto
   requestBody: null,
   requestSchema: GetCharactersParagonHubSkinrRequestSchema,
   authentication: { scopes: ["esi.cosmetic.char:read"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based","x-tombstone-ttl":604800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-paragon-hub","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersParagonHubSkinrResponse },
   ],
@@ -173,6 +177,7 @@ export const GetParagonHubSkinrDescriptor: OperationExecutionDescriptor<Operatio
   requestBody: null,
   requestSchema: GetParagonHubSkinrRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based","x-tombstone-ttl":604800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"paragon-hub","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetParagonHubSkinrResponse },
   ],

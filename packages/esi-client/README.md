@@ -54,15 +54,23 @@ Required path identifiers are positional. Optional query and header values, incl
 
 ## Runtime Behavior
 
+- Every ESI exchange has a 10,000 millisecond deadline by default. Set a positive integer `requestTimeoutMs` to override it; the deadline begins after token-provider resolution and spans the configured fetch and response-body consumption.
 - Date and date-time values remain their JSON wire-format strings. The SDK does not transform them into JavaScript `Date` objects.
 - Successful JSON responses are validated with generated Zod schemas by default. Set `validateResponses: false` to opt out.
 - Typed request validation is off by default; opt in with `validateRequests: true`. Generic operation arguments are always validated before network activity.
-- Domain methods return bare validated data. Use `client.<domain>.withMetadata().<method>(...)` for an `EsiResponse<T>` containing status, headers, request ID, pagination, cache, and ESI error-limit metadata.
+- Domain methods return bare validated data. Use `client.<domain>.withMetadata().<method>(...)` for an `EsiResponse<T>` containing status, bounded headers, request ID, pagination, cache and `maxAgeSeconds`, `retryAfterSeconds`, route-group rate limits, and legacy ESI error-limit metadata.
 - Compatibility date `2026-08-18` is pinned by default. Override it on the client with `new EsiClient({ compatibilityDate: 'YYYY-MM-DD' })` or in a domain method's final options object.
+- Each operation invocation calls the configured fetch exactly once. The SDK classifies failures but does not retry, cache, refresh OAuth credentials, coordinate limits, or derive health.
+
+`EsiTransportError` distinguishes timeout and network failures during request or response phases. `EsiNotModifiedError` represents a `304` response with immutable metadata. `classifyEsiFailure(error)` returns a policy-neutral classification without implying that an operation is safe to retry.
+
+Custom fetch wrappers receive the SDK's composed `AbortSignal` through `init.signal`. Forward and observe that signal, and retain resources such as concurrency permits until the response body closes, errors, or is cancelled. Do not place a competing independent deadline around the same SDK attempt.
 
 ## Discovery And Generic Execution
 
-Import `searchOperations` and `describeOperation` from `@evespace/esi-client/operations` to discover stable operation IDs and serializable contracts. Execute one validated request with `client.callOperation(stableId, arguments)`; generic execution always returns an `EsiResponse<T>` and never follows pagination automatically.
+Import `searchOperations` and `describeOperation` from `@evespace/esi-client/operations` to discover stable operation IDs and serializable contracts. Search results include protocol facts, descriptions expose the complete facts, and executable descriptors expose the same projection through `transport.protocol`. Facts include conditional validators, documented cache extensions, declared route-group limits or an explicit `legacy-only` value, bounded request arrays, and an unambiguous maximum batch size when available.
+
+Execute one validated request with `client.callOperation(stableId, arguments)`; generic execution always returns an `EsiResponse<T>` and never follows pagination automatically.
 
 Domain methods use concise reviewed names such as `client.location.get(characterId)`. Stable OpenAPI operation IDs such as `GetCharactersCharacterIdLocation` remain unchanged for discovery, descriptions, schemas, diagnostics, and generic `callOperation` execution.
 
@@ -96,9 +104,10 @@ Domain subpaths reduce the runtime and TypeScript declaration graph reached by a
 
 Start with the repository [`llms.txt`](llms.txt), then retrieve only the documentation needed:
 
-- Concepts: [client configuration](docs/generated/concepts/client.md), [validation](docs/generated/concepts/validation.md), [metadata and pagination](docs/generated/concepts/metadata-pagination.md), and [mutation safety](docs/generated/concepts/mutation-safety.md)
+- Concepts: [client configuration](docs/generated/concepts/client.md), [metadata and pagination](docs/generated/concepts/metadata-pagination.md), [structured errors](docs/generated/concepts/errors.md), [operation discovery](docs/generated/concepts/operation-discovery.md), [custom fetch](docs/generated/concepts/custom-fetch.md), and [standalone domains](docs/generated/concepts/standalone-domains.md)
 - Domain: [location](docs/generated/domains/location.md)
 - Operation: [`GetCharactersCharacterIdLocation`](docs/generated/operations/GetCharactersCharacterIdLocation.md)
+- EVE Space integration: [adoption contract](docs/eve-space-adoption.md)
 
 The generated domain indexes link focused references for every supported operation; there is intentionally no monolithic endpoint list here.
 
@@ -123,8 +132,8 @@ Package releases use annotated scoped tags named `@evespace/esi-client@<version>
 To release, update this package's version and changelog in a reviewed commit and merge it to `main` only after `CI`, root `Coverage`, and `ESI Client` checks succeed. Create an annotated tag at that exact commit and push it:
 
 ```bash
-git tag -a '@evespace/esi-client@3.0.1' -m '@evespace/esi-client@3.0.1'
-git push origin '@evespace/esi-client@3.0.1'
+git tag -a '@evespace/esi-client@3.1.0' -m '@evespace/esi-client@3.1.0'
+git push origin '@evespace/esi-client@3.1.0'
 ```
 
 The tag-triggered workflow verifies stable tag syntax, package and changelog versions, annotation, `origin/main` ancestry, and registry nonexistence. It runs the complete package validation on Node.js 24.20, transfers exactly one tested tarball and SHA-256 digest, then publishes those bytes from the same Node.js release through npm trusted publishing with automatic provenance. It never uses a long-lived npm write token or republishes a duplicate version.

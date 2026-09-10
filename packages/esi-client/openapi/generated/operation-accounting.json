@@ -12,6 +12,29 @@
         "method": "deleteCharacterContacts"
       },
       "operationId": "DeleteCharactersCharacterIdContacts",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 20,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "query",
+            "maximumItems": 20,
+            "path": [
+              "contact_ids"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -21,6 +44,21 @@
         "method": "deleteFitting"
       },
       "operationId": "DeleteCharactersCharacterIdFittingsFittingId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fitting",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -30,6 +68,21 @@
         "method": "deleteLabel"
       },
       "operationId": "DeleteCharactersCharacterIdMailLabelsLabelId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -39,6 +92,21 @@
         "method": "deleteMail"
       },
       "operationId": "DeleteCharactersCharacterIdMailMailId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -48,6 +116,21 @@
         "method": "removeMember"
       },
       "operationId": "DeleteFleetsFleetIdMembersMemberId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -57,6 +140,21 @@
         "method": "deleteSquad"
       },
       "operationId": "DeleteFleetsFleetIdSquadsSquadId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -66,6 +164,21 @@
         "method": "deleteWing"
       },
       "operationId": "DeleteFleetsFleetIdWingsWingId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -75,6 +188,23 @@
         "method": "list"
       },
       "operationId": "GetAlliances",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -84,6 +214,24 @@
         "method": "getPublicInfo"
       },
       "operationId": "GetAlliancesAllianceId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "ttl-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -93,6 +241,26 @@
         "method": "listAllianceContacts"
       },
       "operationId": "GetAlliancesAllianceIdContacts",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "alliance-social",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -102,6 +270,26 @@
         "method": "listAllianceContactLabels"
       },
       "operationId": "GetAlliancesAllianceIdContactsLabels",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "alliance-social",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -111,6 +299,23 @@
         "method": "listCorporations"
       },
       "operationId": "GetAlliancesAllianceIdCorporations",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -120,6 +325,18 @@
         "method": "getIcon"
       },
       "operationId": "GetAlliancesAllianceIdIcons",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -129,6 +346,26 @@
         "method": "get"
       },
       "operationId": "GetCharactersAccessListsDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-access",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -138,6 +375,26 @@
         "method": "list"
       },
       "operationId": "GetCharactersAccessListsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-access",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -147,6 +404,26 @@
         "method": "agentsResearch"
       },
       "operationId": "GetCharactersCharacterIdAgentsResearch",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -156,6 +433,26 @@
         "method": "listCharacterAssets"
       },
       "operationId": "GetCharactersCharacterIdAssets",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-asset",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -165,6 +462,26 @@
         "method": "getAttributes"
       },
       "operationId": "GetCharactersCharacterIdAttributes",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 120,
+          "x-client-cache-ttl": 120,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 120
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -174,6 +491,26 @@
         "method": "listBlueprints"
       },
       "operationId": "GetCharactersCharacterIdBlueprints",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -183,6 +520,26 @@
         "method": "listEvents"
       },
       "operationId": "GetCharactersCharacterIdCalendar",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -192,6 +549,26 @@
         "method": "getEvent"
       },
       "operationId": "GetCharactersCharacterIdCalendarEventId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -201,6 +578,26 @@
         "method": "listEventAttendees"
       },
       "operationId": "GetCharactersCharacterIdCalendarEventIdAttendees",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -210,6 +607,26 @@
         "method": "getState"
       },
       "operationId": "GetCharactersCharacterIdClones",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 120,
+          "x-client-cache-ttl": 120,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 120
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-location",
+          "kind": "declared",
+          "maximumTokens": 1200,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -219,6 +636,26 @@
         "method": "listCharacterContacts"
       },
       "operationId": "GetCharactersCharacterIdContacts",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -228,6 +665,26 @@
         "method": "listCharacterContactLabels"
       },
       "operationId": "GetCharactersCharacterIdContactsLabels",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -237,6 +694,26 @@
         "method": "listCharacterContracts"
       },
       "operationId": "GetCharactersCharacterIdContracts",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-contract",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -246,6 +723,26 @@
         "method": "listCharacterContractBids"
       },
       "operationId": "GetCharactersCharacterIdContractsContractIdBids",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-contract",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -255,6 +752,26 @@
         "method": "listCharacterContractItems"
       },
       "operationId": "GetCharactersCharacterIdContractsContractIdItems",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-contract",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -264,6 +781,23 @@
         "method": "listCorporationHistory"
       },
       "operationId": "GetCharactersCharacterIdCorporationhistory",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 86400,
+          "x-client-cache-ttl": 86400,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 86400
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -273,6 +807,26 @@
         "method": "getJumpFatigue"
       },
       "operationId": "GetCharactersCharacterIdFatigue",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-location",
+          "kind": "declared",
+          "maximumTokens": 1200,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -282,6 +836,26 @@
         "method": "list"
       },
       "operationId": "GetCharactersCharacterIdFittings",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fitting",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -291,6 +865,26 @@
         "method": "getCharacterFleet"
       },
       "operationId": "GetCharactersCharacterIdFleet",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 60
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -300,6 +894,21 @@
         "method": "getCharacterStats"
       },
       "operationId": "GetCharactersCharacterIdFwStats",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -309,6 +918,26 @@
         "method": "listActiveImplants"
       },
       "operationId": "GetCharactersCharacterIdImplants",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 120,
+          "x-client-cache-ttl": 120,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 120
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -318,6 +947,26 @@
         "method": "listCharacterJobs"
       },
       "operationId": "GetCharactersCharacterIdIndustryJobs",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -327,6 +976,26 @@
         "method": "listRecentForCharacter"
       },
       "operationId": "GetCharactersCharacterIdKillmailsRecent",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-killmail",
+          "kind": "declared",
+          "maximumTokens": 30,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -336,6 +1005,26 @@
         "method": "get"
       },
       "operationId": "GetCharactersCharacterIdLocation",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-location",
+          "kind": "declared",
+          "maximumTokens": 1200,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -345,6 +1034,26 @@
         "method": "listPoints"
       },
       "operationId": "GetCharactersCharacterIdLoyaltyPoints",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-wallet",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -354,6 +1063,34 @@
         "method": "listHeaders"
       },
       "operationId": "GetCharactersCharacterIdMail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 30,
+          "x-client-cache-ttl": 30,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 30
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 25,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "query",
+            "maximumItems": 25,
+            "path": [
+              "labels"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -363,6 +1100,26 @@
         "method": "listLabels"
       },
       "operationId": "GetCharactersCharacterIdMailLabels",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 30,
+          "x-client-cache-ttl": 30,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 30
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -372,6 +1129,26 @@
         "method": "listMailingLists"
       },
       "operationId": "GetCharactersCharacterIdMailLists",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 120,
+          "x-client-cache-ttl": 120,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 120
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -381,6 +1158,26 @@
         "method": "get"
       },
       "operationId": "GetCharactersCharacterIdMailMailId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 30,
+          "x-client-cache-ttl": 30,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 30
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -390,6 +1187,26 @@
         "method": "listMedals"
       },
       "operationId": "GetCharactersCharacterIdMedals",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -399,6 +1216,26 @@
         "method": "listCharacterMiningLedger"
       },
       "operationId": "GetCharactersCharacterIdMining",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -408,6 +1245,26 @@
         "method": "listNotifications"
       },
       "operationId": "GetCharactersCharacterIdNotifications",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-notification",
+          "kind": "declared",
+          "maximumTokens": 15,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -417,6 +1274,26 @@
         "method": "listContactNotifications"
       },
       "operationId": "GetCharactersCharacterIdNotificationsContacts",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -426,6 +1303,26 @@
         "method": "getOnlineStatus"
       },
       "operationId": "GetCharactersCharacterIdOnline",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 60
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-location",
+          "kind": "declared",
+          "maximumTokens": 1200,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -435,6 +1332,23 @@
         "method": "listCharacterOrders"
       },
       "operationId": "GetCharactersCharacterIdOrders",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 1200,
+          "x-client-cache-ttl": 1200,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 1200
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -444,6 +1358,23 @@
         "method": "listCharacterOrderHistory"
       },
       "operationId": "GetCharactersCharacterIdOrdersHistory",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -453,6 +1384,26 @@
         "method": "listColonies"
       },
       "operationId": "GetCharactersCharacterIdPlanets",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -462,6 +1413,26 @@
         "method": "getColonyLayout"
       },
       "operationId": "GetCharactersCharacterIdPlanetsPlanetId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -471,6 +1442,21 @@
         "method": "getPortrait"
       },
       "operationId": "GetCharactersCharacterIdPortrait",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -480,6 +1466,26 @@
         "method": "getCorporationRoles"
       },
       "operationId": "GetCharactersCharacterIdRoles",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -489,6 +1495,31 @@
         "method": "search"
       },
       "operationId": "GetCharactersCharacterIdSearch",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 11,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "query",
+            "maximumItems": 11,
+            "path": [
+              "categories"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -498,6 +1529,26 @@
         "method": "getCurrentShip"
       },
       "operationId": "GetCharactersCharacterIdShip",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-location",
+          "kind": "declared",
+          "maximumTokens": 1200,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -507,6 +1558,26 @@
         "method": "getSkillQueue"
       },
       "operationId": "GetCharactersCharacterIdSkillqueue",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -516,6 +1587,26 @@
         "method": "getSkills"
       },
       "operationId": "GetCharactersCharacterIdSkills",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -525,6 +1616,26 @@
         "method": "listStandings"
       },
       "operationId": "GetCharactersCharacterIdStandings",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -534,6 +1645,26 @@
         "method": "listCorporationTitles"
       },
       "operationId": "GetCharactersCharacterIdTitles",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -543,6 +1674,26 @@
         "method": "getCharacterBalance"
       },
       "operationId": "GetCharactersCharacterIdWallet",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 120,
+          "x-client-cache-ttl": 120,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 120
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-wallet",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -552,6 +1703,26 @@
         "method": "listCharacterJournal"
       },
       "operationId": "GetCharactersCharacterIdWalletJournal",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-wallet",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -561,6 +1732,26 @@
         "method": "listCharacterTransactions"
       },
       "operationId": "GetCharactersCharacterIdWalletTransactions",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-wallet",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -570,6 +1761,26 @@
         "method": "listSkinrLicenses"
       },
       "operationId": "GetCharactersCosmeticsSkinr",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-skinr",
+          "kind": "declared",
+          "maximumTokens": 30,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -579,6 +1790,26 @@
         "method": "listSkinrComponentLicenses"
       },
       "operationId": "GetCharactersCosmeticsSkinrComponents",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-skinr",
+          "kind": "declared",
+          "maximumTokens": 30,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -588,6 +1819,24 @@
         "method": "getPublicInfo"
       },
       "operationId": "GetCharactersDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 86400,
+          "x-cache-mode": "ttl-based",
+          "x-client-cache-ttl": 86400,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 86400
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -597,6 +1846,26 @@
         "method": "listCharacterJobs"
       },
       "operationId": "GetCharactersFreelanceJobsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-freelance-job",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -606,6 +1875,26 @@
         "method": "getCharacterParticipation"
       },
       "operationId": "GetCharactersFreelanceJobsParticipation",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-freelance-job",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -615,6 +1904,26 @@
         "method": "getMercenaryTacticalOperation"
       },
       "operationId": "GetCharactersMercenaryTacticalOperationsDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-activity",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -624,6 +1933,26 @@
         "method": "listMercenaryTacticalOperations"
       },
       "operationId": "GetCharactersMercenaryTacticalOperationsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-activity",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -633,6 +1962,26 @@
         "method": "listCharacterObjectiveParticipations"
       },
       "operationId": "GetCharactersMilitaryCampaignsObjectivesListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-military-campaign",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -642,6 +1991,26 @@
         "method": "getCharacterObjectiveParticipation"
       },
       "operationId": "GetCharactersMilitaryCampaignsObjectivesParticipation",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-military-campaign",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -651,6 +2020,25 @@
         "method": "listPostedListings"
       },
       "operationId": "GetCharactersParagonHubSkinr",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-paragon-hub",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -660,6 +2048,26 @@
         "method": "getMercenaryDen"
       },
       "operationId": "GetCharactersStructuresMercenaryDensDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-structure",
+          "kind": "declared",
+          "maximumTokens": 30,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -669,6 +2077,26 @@
         "method": "listMercenaryDens"
       },
       "operationId": "GetCharactersStructuresMercenaryDensListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-structure",
+          "kind": "declared",
+          "maximumTokens": 30,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -678,6 +2106,23 @@
         "method": "listPublicContractBids"
       },
       "operationId": "GetContractsPublicBidsContractId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -687,6 +2132,23 @@
         "method": "listPublicContractItems"
       },
       "operationId": "GetContractsPublicItemsContractId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -696,6 +2158,23 @@
         "method": "listPublicContracts"
       },
       "operationId": "GetContractsPublicRegionId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 1800,
+          "x-client-cache-ttl": 1800,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 1800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -705,6 +2184,26 @@
         "method": "listMoonExtractionTimers"
       },
       "operationId": "GetCorporationCorporationIdMiningExtractions",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 1800,
+          "x-client-cache-ttl": 1800,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 1800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -714,6 +2213,26 @@
         "method": "listMiningObservers"
       },
       "operationId": "GetCorporationCorporationIdMiningObservers",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -723,6 +2242,26 @@
         "method": "listObservedMining"
       },
       "operationId": "GetCorporationCorporationIdMiningObserversObserverId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -732,6 +2271,24 @@
         "method": "getPublicInfo"
       },
       "operationId": "GetCorporationsCorporationId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "ttl-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -741,6 +2298,23 @@
         "method": "listAllianceHistory"
       },
       "operationId": "GetCorporationsCorporationIdAlliancehistory",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -750,6 +2324,26 @@
         "method": "listCorporationAssets"
       },
       "operationId": "GetCorporationsCorporationIdAssets",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-asset",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -759,6 +2353,26 @@
         "method": "listBlueprints"
       },
       "operationId": "GetCorporationsCorporationIdBlueprints",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -768,6 +2382,26 @@
         "method": "listCorporationContacts"
       },
       "operationId": "GetCorporationsCorporationIdContacts",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-social",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -777,6 +2411,26 @@
         "method": "listCorporationContactLabels"
       },
       "operationId": "GetCorporationsCorporationIdContactsLabels",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-social",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -786,6 +2440,26 @@
         "method": "listAuditLogSecureContainerLogs"
       },
       "operationId": "GetCorporationsCorporationIdContainersLogs",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -795,6 +2469,26 @@
         "method": "listCorporationContracts"
       },
       "operationId": "GetCorporationsCorporationIdContracts",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-contract",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -804,6 +2498,26 @@
         "method": "listCorporationContractBids"
       },
       "operationId": "GetCorporationsCorporationIdContractsContractIdBids",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-contract",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -813,6 +2527,26 @@
         "method": "listCorporationContractItems"
       },
       "operationId": "GetCorporationsCorporationIdContractsContractIdItems",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-contract",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -822,6 +2556,26 @@
         "method": "listCustomsOffices"
       },
       "operationId": "GetCorporationsCorporationIdCustomsOffices",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -831,6 +2585,26 @@
         "method": "listDivisions"
       },
       "operationId": "GetCorporationsCorporationIdDivisions",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-wallet",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -840,6 +2614,26 @@
         "method": "listFacilities"
       },
       "operationId": "GetCorporationsCorporationIdFacilities",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -849,6 +2643,21 @@
         "method": "getCorporationStats"
       },
       "operationId": "GetCorporationsCorporationIdFwStats",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -858,6 +2667,23 @@
         "method": "getIcon"
       },
       "operationId": "GetCorporationsCorporationIdIcons",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -867,6 +2693,26 @@
         "method": "listCorporationJobs"
       },
       "operationId": "GetCorporationsCorporationIdIndustryJobs",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-industry",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -876,6 +2722,26 @@
         "method": "listRecentForCorporation"
       },
       "operationId": "GetCorporationsCorporationIdKillmailsRecent",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-killmail",
+          "kind": "declared",
+          "maximumTokens": 30,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -885,6 +2751,26 @@
         "method": "listMedals"
       },
       "operationId": "GetCorporationsCorporationIdMedals",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-detail",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -894,6 +2780,26 @@
         "method": "listIssuedMedals"
       },
       "operationId": "GetCorporationsCorporationIdMedalsIssued",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-detail",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -903,6 +2809,26 @@
         "method": "listMembers"
       },
       "operationId": "GetCorporationsCorporationIdMembers",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-member",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -912,6 +2838,26 @@
         "method": "getMemberLimit"
       },
       "operationId": "GetCorporationsCorporationIdMembersLimit",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-member",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -921,6 +2867,26 @@
         "method": "listMemberTitles"
       },
       "operationId": "GetCorporationsCorporationIdMembersTitles",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-member",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -930,6 +2896,26 @@
         "method": "listMemberTracking"
       },
       "operationId": "GetCorporationsCorporationIdMembertracking",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-member",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -939,6 +2925,23 @@
         "method": "listCorporationOrders"
       },
       "operationId": "GetCorporationsCorporationIdOrders",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 1200,
+          "x-client-cache-ttl": 1200,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 1200
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -948,6 +2951,23 @@
         "method": "listCorporationOrderHistory"
       },
       "operationId": "GetCorporationsCorporationIdOrdersHistory",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -957,6 +2977,26 @@
         "method": "listMemberRoles"
       },
       "operationId": "GetCorporationsCorporationIdRoles",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-member",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -966,6 +3006,26 @@
         "method": "listMemberRoleHistory"
       },
       "operationId": "GetCorporationsCorporationIdRolesHistory",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-member",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -975,6 +3035,26 @@
         "method": "listShareholders"
       },
       "operationId": "GetCorporationsCorporationIdShareholders",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-detail",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -984,6 +3064,26 @@
         "method": "listStandings"
       },
       "operationId": "GetCorporationsCorporationIdStandings",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-member",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -993,6 +3093,26 @@
         "method": "listStarbases"
       },
       "operationId": "GetCorporationsCorporationIdStarbases",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1002,6 +3122,26 @@
         "method": "getStarbase"
       },
       "operationId": "GetCorporationsCorporationIdStarbasesStarbaseId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1011,6 +3151,26 @@
         "method": "listStructures"
       },
       "operationId": "GetCorporationsCorporationIdStructures",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1020,6 +3180,26 @@
         "method": "listTitles"
       },
       "operationId": "GetCorporationsCorporationIdTitles",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-detail",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1029,6 +3209,26 @@
         "method": "listCorporationBalances"
       },
       "operationId": "GetCorporationsCorporationIdWallets",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-wallet",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1038,6 +3238,26 @@
         "method": "listCorporationDivisionJournal"
       },
       "operationId": "GetCorporationsCorporationIdWalletsDivisionJournal",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-wallet",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1047,6 +3267,26 @@
         "method": "listCorporationDivisionTransactions"
       },
       "operationId": "GetCorporationsCorporationIdWalletsDivisionTransactions",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-wallet",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1056,6 +3296,24 @@
         "method": "listCorporationJobs"
       },
       "operationId": "GetCorporationsFreelanceJobsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-freelance-job",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1065,6 +3323,24 @@
         "method": "listParticipants"
       },
       "operationId": "GetCorporationsFreelanceJobsParticipants",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-freelance-job",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1074,6 +3350,18 @@
         "method": "listNpcCorporations"
       },
       "operationId": "GetCorporationsNpccorps",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1083,6 +3371,26 @@
         "method": "getContribution"
       },
       "operationId": "GetCorporationsProjectsContribution",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-project",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1092,6 +3400,24 @@
         "method": "listContributors"
       },
       "operationId": "GetCorporationsProjectsContributors",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-project",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1101,6 +3427,26 @@
         "method": "get"
       },
       "operationId": "GetCorporationsProjectsDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-project",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1110,6 +3456,24 @@
         "method": "list"
       },
       "operationId": "GetCorporationsProjectsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-project",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1119,6 +3483,26 @@
         "method": "getSkyhook"
       },
       "operationId": "GetCorporationsStructuresSkyhooksDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1128,6 +3512,26 @@
         "method": "listSkyhooks"
       },
       "operationId": "GetCorporationsStructuresSkyhooksListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1137,6 +3541,26 @@
         "method": "getSovereigntyHub"
       },
       "operationId": "GetCorporationsStructuresSovereigntyHubsDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1146,6 +3570,26 @@
         "method": "listSovereigntyHubs"
       },
       "operationId": "GetCorporationsStructuresSovereigntyHubsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "corp-structure",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1155,6 +3599,27 @@
         "method": "getSkinrLicense"
       },
       "operationId": "GetCosmeticsSkinr",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 31536000,
+          "x-cache-mode": "ttl-based",
+          "x-client-cache-ttl": 31536000,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 604800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "skinr",
+          "kind": "declared",
+          "maximumTokens": 12000,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1164,6 +3629,18 @@
         "method": "listAttributes"
       },
       "operationId": "GetDogmaAttributes",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1173,6 +3650,18 @@
         "method": "getAttribute"
       },
       "operationId": "GetDogmaAttributesAttributeId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1182,6 +3671,18 @@
         "method": "getDynamicItem"
       },
       "operationId": "GetDogmaDynamicItemsTypeIdItemId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1191,6 +3692,18 @@
         "method": "listEffects"
       },
       "operationId": "GetDogmaEffects",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1200,6 +3713,18 @@
         "method": "getEffect"
       },
       "operationId": "GetDogmaEffectsEffectId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1209,6 +3734,26 @@
         "method": "get"
       },
       "operationId": "GetFleetsFleetId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1218,6 +3763,26 @@
         "method": "listMembers"
       },
       "operationId": "GetFleetsFleetIdMembers",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1227,6 +3792,26 @@
         "method": "listWings"
       },
       "operationId": "GetFleetsFleetIdWings",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1236,6 +3821,26 @@
         "method": "get"
       },
       "operationId": "GetFreelanceJobsDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "freelance-job",
+          "kind": "declared",
+          "maximumTokens": 900,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1245,6 +3850,24 @@
         "method": "listPublic"
       },
       "operationId": "GetFreelanceJobsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "freelance-job",
+          "kind": "declared",
+          "maximumTokens": 900,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1254,6 +3877,21 @@
         "method": "getFactionLeaderboards"
       },
       "operationId": "GetFwLeaderboards",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1263,6 +3901,21 @@
         "method": "getCharacterLeaderboards"
       },
       "operationId": "GetFwLeaderboardsCharacters",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1272,6 +3925,21 @@
         "method": "getCorporationLeaderboards"
       },
       "operationId": "GetFwLeaderboardsCorporations",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1281,6 +3949,21 @@
         "method": "listFactionStats"
       },
       "operationId": "GetFwStats",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1290,6 +3973,26 @@
         "method": "listSystems"
       },
       "operationId": "GetFwSystems",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 1800,
+          "x-client-cache-ttl": 1800,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 1800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1299,6 +4002,21 @@
         "method": "listWars"
       },
       "operationId": "GetFwWars",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "factional-warfare",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1308,6 +4026,26 @@
         "method": "list"
       },
       "operationId": "GetIncursions",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "incursion",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1317,6 +4055,26 @@
         "method": "listFacilities"
       },
       "operationId": "GetIndustryFacilities",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "industry",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1326,6 +4084,26 @@
         "method": "listSystemCostIndices"
       },
       "operationId": "GetIndustrySystems",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "industry",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1335,6 +4113,26 @@
         "method": "listPrices"
       },
       "operationId": "GetInsurancePrices",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "insurance",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1344,6 +4142,26 @@
         "method": "get"
       },
       "operationId": "GetKillmailsKillmailIdKillmailHash",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 2592000,
+          "x-client-cache-ttl": 2592000,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 2592000
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "killmail",
+          "kind": "declared",
+          "maximumTokens": 3600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1353,6 +4171,18 @@
         "method": "listStoreOffers"
       },
       "operationId": "GetLoyaltyStoresCorporationIdOffers",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1362,6 +4192,18 @@
         "method": "listGroups"
       },
       "operationId": "GetMarketsGroups",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1371,6 +4213,18 @@
         "method": "getGroup"
       },
       "operationId": "GetMarketsGroupsMarketGroupId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1380,6 +4234,23 @@
         "method": "listPrices"
       },
       "operationId": "GetMarketsPrices",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1389,6 +4260,18 @@
         "method": "listRegionHistory"
       },
       "operationId": "GetMarketsRegionIdHistory",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1398,6 +4281,26 @@
         "method": "listRegionOrders"
       },
       "operationId": "GetMarketsRegionIdOrders",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "market-order",
+          "kind": "declared",
+          "maximumTokens": 12000,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1407,6 +4310,23 @@
         "method": "listRegionTypes"
       },
       "operationId": "GetMarketsRegionIdTypes",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1416,6 +4336,23 @@
         "method": "listStructureOrders"
       },
       "operationId": "GetMarketsStructuresStructureId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1425,6 +4362,26 @@
         "method": "getChangelog"
       },
       "operationId": "GetMetaChangelog",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "meta",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1434,6 +4391,26 @@
         "method": "listCompatibilityDates"
       },
       "operationId": "GetMetaCompatibilityDates",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "meta",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1443,6 +4420,26 @@
         "method": "getName"
       },
       "operationId": "GetMetaName",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 600,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 600,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "meta",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1452,6 +4449,24 @@
         "method": "getHealthStatus"
       },
       "operationId": "GetMetaStatus",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "meta",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1461,6 +4476,26 @@
         "method": "getCampaign"
       },
       "operationId": "GetMilitaryCampaignsDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "military-campaign",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1470,6 +4505,26 @@
         "method": "listCampaigns"
       },
       "operationId": "GetMilitaryCampaignsListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "military-campaign",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1479,6 +4534,26 @@
         "method": "getObjective"
       },
       "operationId": "GetMilitaryCampaignsObjectivesDetail",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "military-campaign",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1488,6 +4563,26 @@
         "method": "listObjectives"
       },
       "operationId": "GetMilitaryCampaignsObjectivesListing",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 60,
+          "x-cache-mode": "event-based",
+          "x-client-cache-ttl": 60,
+          "x-server-cache-mode": "event-based"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "military-campaign",
+          "kind": "declared",
+          "maximumTokens": 300,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1497,6 +4592,25 @@
         "method": "listPublicListings"
       },
       "operationId": "GetParagonHubSkinr",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "paragon-hub",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1506,6 +4620,25 @@
         "method": "listListingsForAlliance"
       },
       "operationId": "GetParagonHubSkinrAlliances",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-paragon-hub",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1515,6 +4648,25 @@
         "method": "listListingsForCharacter"
       },
       "operationId": "GetParagonHubSkinrCharacters",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-paragon-hub",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1524,6 +4676,25 @@
         "method": "listListingsForCorporation"
       },
       "operationId": "GetParagonHubSkinrCorporations",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "event-based",
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-paragon-hub",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1533,6 +4704,27 @@
         "method": "listRaidableSkyhooks"
       },
       "operationId": "GetSkyhooksRaidable",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-cache-mode": "ttl-based",
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 60
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "activity",
+          "kind": "declared",
+          "maximumTokens": 30,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1542,6 +4734,26 @@
         "method": "listCampaigns"
       },
       "operationId": "GetSovereigntyCampaigns",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "sovereignty",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1551,6 +4763,27 @@
         "method": "listSystems"
       },
       "operationId": "GetSovereigntySystems",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 300,
+          "x-cache-mode": "ttl-based",
+          "x-client-cache-ttl": 300,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 300
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "sovereignty",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1560,6 +4793,27 @@
         "method": "get"
       },
       "operationId": "GetStatus",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 30,
+          "x-cache-mode": "ttl-based",
+          "x-client-cache-ttl": 30,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 30
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "status",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1569,6 +4823,18 @@
         "method": "listAncestries"
       },
       "operationId": "GetUniverseAncestries",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1578,6 +4844,18 @@
         "method": "getAsteroidBelt"
       },
       "operationId": "GetUniverseAsteroidBeltsAsteroidBeltId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1587,6 +4865,18 @@
         "method": "listBloodlines"
       },
       "operationId": "GetUniverseBloodlines",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1596,6 +4886,18 @@
         "method": "listItemCategories"
       },
       "operationId": "GetUniverseCategories",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1605,6 +4907,18 @@
         "method": "getItemCategory"
       },
       "operationId": "GetUniverseCategoriesCategoryId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1614,6 +4928,18 @@
         "method": "listConstellations"
       },
       "operationId": "GetUniverseConstellations",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1623,6 +4949,18 @@
         "method": "getConstellation"
       },
       "operationId": "GetUniverseConstellationsConstellationId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1632,6 +4970,18 @@
         "method": "listFactions"
       },
       "operationId": "GetUniverseFactions",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1641,6 +4991,18 @@
         "method": "listGraphics"
       },
       "operationId": "GetUniverseGraphics",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1650,6 +5012,18 @@
         "method": "getGraphic"
       },
       "operationId": "GetUniverseGraphicsGraphicId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1659,6 +5033,18 @@
         "method": "listItemGroups"
       },
       "operationId": "GetUniverseGroups",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1668,6 +5054,18 @@
         "method": "getItemGroup"
       },
       "operationId": "GetUniverseGroupsGroupId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1677,6 +5075,18 @@
         "method": "getMoon"
       },
       "operationId": "GetUniverseMoonsMoonId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1686,6 +5096,18 @@
         "method": "getPlanet"
       },
       "operationId": "GetUniversePlanetsPlanetId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1695,6 +5117,18 @@
         "method": "listRaces"
       },
       "operationId": "GetUniverseRaces",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1704,6 +5138,18 @@
         "method": "listRegions"
       },
       "operationId": "GetUniverseRegions",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1713,6 +5159,18 @@
         "method": "getRegion"
       },
       "operationId": "GetUniverseRegionsRegionId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1722,6 +5180,23 @@
         "method": "getSchematic"
       },
       "operationId": "GetUniverseSchematicsSchematicId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1731,6 +5206,18 @@
         "method": "getStargate"
       },
       "operationId": "GetUniverseStargatesStargateId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1740,6 +5227,18 @@
         "method": "getStar"
       },
       "operationId": "GetUniverseStarsStarId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1749,6 +5248,18 @@
         "method": "getStation"
       },
       "operationId": "GetUniverseStationsStationId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1758,6 +5269,23 @@
         "method": "listPublicStructures"
       },
       "operationId": "GetUniverseStructures",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1767,6 +5295,23 @@
         "method": "getStructure"
       },
       "operationId": "GetUniverseStructuresStructureId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1776,6 +5321,23 @@
         "method": "listSystemJumps"
       },
       "operationId": "GetUniverseSystemJumps",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1785,6 +5347,23 @@
         "method": "listSystemKills"
       },
       "operationId": "GetUniverseSystemKills",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1794,6 +5373,18 @@
         "method": "listSolarSystems"
       },
       "operationId": "GetUniverseSystems",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1803,6 +5394,18 @@
         "method": "getSolarSystem"
       },
       "operationId": "GetUniverseSystemsSystemId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1812,6 +5415,18 @@
         "method": "listTypes"
       },
       "operationId": "GetUniverseTypes",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1821,6 +5436,18 @@
         "method": "getType"
       },
       "operationId": "GetUniverseTypesTypeId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1830,6 +5457,26 @@
         "method": "list"
       },
       "operationId": "GetWars",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "killmail",
+          "kind": "declared",
+          "maximumTokens": 3600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1839,6 +5486,26 @@
         "method": "get"
       },
       "operationId": "GetWarsWarId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "killmail",
+          "kind": "declared",
+          "maximumTokens": 3600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1848,6 +5515,26 @@
         "method": "listKillmails"
       },
       "operationId": "GetWarsWarIdKillmails",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "killmail",
+          "kind": "declared",
+          "maximumTokens": 3600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1857,6 +5544,29 @@
         "method": "lookupAffiliations"
       },
       "operationId": "PostCharactersAffiliation",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 3600,
+          "x-client-cache-ttl": 3600,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 3600
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 1000,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1866,6 +5576,27 @@
         "method": "lookupCharacterLocations"
       },
       "operationId": "PostCharactersCharacterIdAssetsLocations",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 1000,
+        "rateLimit": {
+          "group": "char-asset",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1875,6 +5606,27 @@
         "method": "lookupCharacterNames"
       },
       "operationId": "PostCharactersCharacterIdAssetsNames",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 1000,
+        "rateLimit": {
+          "group": "char-asset",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1884,6 +5636,34 @@
         "method": "addCharacterContacts"
       },
       "operationId": "PostCharactersCharacterIdContacts",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 100,
+            "path": []
+          },
+          {
+            "location": "query",
+            "maximumItems": 63,
+            "path": [
+              "label_ids"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1893,6 +5673,27 @@
         "method": "calculateCspaCharge"
       },
       "operationId": "PostCharactersCharacterIdCspa",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 100,
+        "rateLimit": {
+          "group": "char-detail",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 100,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1902,6 +5703,29 @@
         "method": "create"
       },
       "operationId": "PostCharactersCharacterIdFittings",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 512,
+        "rateLimit": {
+          "group": "fitting",
+          "kind": "declared",
+          "maximumTokens": 150,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 512,
+            "path": [
+              "items"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1911,6 +5735,29 @@
         "method": "send"
       },
       "operationId": "PostCharactersCharacterIdMail",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 50,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 50,
+            "path": [
+              "recipients"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1920,6 +5767,21 @@
         "method": "createLabel"
       },
       "operationId": "PostCharactersCharacterIdMailLabels",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1929,6 +5791,27 @@
         "method": "lookupCorporationLocations"
       },
       "operationId": "PostCorporationsCorporationIdAssetsLocations",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 1000,
+        "rateLimit": {
+          "group": "corp-asset",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1938,6 +5821,27 @@
         "method": "lookupCorporationNames"
       },
       "operationId": "PostCorporationsCorporationIdAssetsNames",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 1000,
+        "rateLimit": {
+          "group": "corp-asset",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1947,6 +5851,21 @@
         "method": "inviteMember"
       },
       "operationId": "PostFleetsFleetIdMembers",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1956,6 +5875,21 @@
         "method": "createWing"
       },
       "operationId": "PostFleetsFleetIdWings",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1965,6 +5899,21 @@
         "method": "createSquad"
       },
       "operationId": "PostFleetsFleetIdWingsWingIdSquads",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1974,6 +5923,39 @@
         "method": "calculate"
       },
       "operationId": "PostRoute",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-mode": "not-cached",
+          "x-server-cache-mode": "not-cached"
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "routes",
+          "kind": "declared",
+          "maximumTokens": 3600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": [
+              "avoid_systems"
+            ]
+          },
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": [
+              "connections"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -1983,6 +5965,21 @@
         "method": "setAutopilotWaypoint"
       },
       "operationId": "PostUiAutopilotWaypoint",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "ui",
+          "kind": "declared",
+          "maximumTokens": 900,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -1992,6 +5989,21 @@
         "method": "openContract"
       },
       "operationId": "PostUiOpenwindowContract",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "ui",
+          "kind": "declared",
+          "maximumTokens": 900,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -2001,6 +6013,21 @@
         "method": "openInformation"
       },
       "operationId": "PostUiOpenwindowInformation",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "ui",
+          "kind": "declared",
+          "maximumTokens": 900,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -2010,6 +6037,21 @@
         "method": "openMarketDetails"
       },
       "operationId": "PostUiOpenwindowMarketdetails",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "ui",
+          "kind": "declared",
+          "maximumTokens": 900,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -2019,6 +6061,29 @@
         "method": "openNewMail"
       },
       "operationId": "PostUiOpenwindowNewmail",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 50,
+        "rateLimit": {
+          "group": "ui",
+          "kind": "declared",
+          "maximumTokens": 900,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 50,
+            "path": [
+              "recipients"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -2028,6 +6093,24 @@
         "method": "resolveIds"
       },
       "operationId": "PostUniverseIds",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 500,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 500,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -2037,6 +6120,24 @@
         "method": "resolveNames"
       },
       "operationId": "PostUniverseNames",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 1000,
+        "rateLimit": {
+          "kind": "legacy-only"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 1000,
+            "path": []
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -2046,6 +6147,26 @@
         "method": "respondToEvent"
       },
       "operationId": "PutCharactersCharacterIdCalendarEventId",
+      "protocol": {
+        "cacheExtensions": {
+          "x-cache-age": 5,
+          "x-client-cache-ttl": 5,
+          "x-server-cache-mode": "ttl-based",
+          "x-server-cache-ttl": 5
+        },
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -2055,6 +6176,34 @@
         "method": "updateCharacterContacts"
       },
       "operationId": "PutCharactersCharacterIdContacts",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 100,
+            "path": []
+          },
+          {
+            "location": "query",
+            "maximumItems": 63,
+            "path": [
+              "label_ids"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -2064,6 +6213,29 @@
         "method": "update"
       },
       "operationId": "PutCharactersCharacterIdMailMailId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": 25,
+        "rateLimit": {
+          "group": "char-social",
+          "kind": "declared",
+          "maximumTokens": 600,
+          "window": "15m"
+        },
+        "requestArrayLimits": [
+          {
+            "location": "body",
+            "maximumItems": 25,
+            "path": [
+              "labels"
+            ]
+          }
+        ]
+      },
       "status": "generated"
     },
     {
@@ -2073,6 +6245,21 @@
         "method": "update"
       },
       "operationId": "PutFleetsFleetId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -2082,6 +6269,21 @@
         "method": "moveMember"
       },
       "operationId": "PutFleetsFleetIdMembersMemberId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -2091,6 +6293,21 @@
         "method": "renameSquad"
       },
       "operationId": "PutFleetsFleetIdSquadsSquadId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     },
     {
@@ -2100,6 +6317,21 @@
         "method": "renameWing"
       },
       "operationId": "PutFleetsFleetIdWingsWingId",
+      "protocol": {
+        "cacheExtensions": {},
+        "conditionalRequestValidators": [
+          "if-modified-since",
+          "if-none-match"
+        ],
+        "maximumBatchSize": null,
+        "rateLimit": {
+          "group": "fleet",
+          "kind": "declared",
+          "maximumTokens": 1800,
+          "window": "15m"
+        },
+        "requestArrayLimits": []
+      },
       "status": "generated"
     }
   ],

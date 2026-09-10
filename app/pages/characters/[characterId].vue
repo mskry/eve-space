@@ -120,7 +120,7 @@ useHead({
       role="status"
     >
       <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-      <p>Resolving roster ownership...</p>
+      <p>Resolving character authorization...</p>
     </UiStatePanel>
     <UiStatePanel
       v-else-if="!characterId || (!selectedCharacter && rosterStatus !== 'loading')"
@@ -132,7 +132,7 @@ useHead({
     >
       <p>{{ rosterMessage || 'This character has not been added to your account.' }}</p>
       <template #action>
-        <NuxtLink class="ui-action-secondary" to="/characters">RETURN TO ROSTER</NuxtLink>
+        <NuxtLink class="ui-action-secondary" to="/characters">RETURN TO CHARACTERS</NuxtLink>
       </template>
     </UiStatePanel>
 

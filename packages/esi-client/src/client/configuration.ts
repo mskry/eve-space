@@ -17,11 +17,14 @@ export type {
 export const DEFAULT_ESI_BASE_URL: string = 'https://esi.evetech.net';
 export const PINNED_ESI_COMPATIBILITY_DATE: string = '2026-08-18';
 export const DEFAULT_ESI_LANGUAGE: EsiLanguage = 'en';
+export const DEFAULT_ESI_REQUEST_TIMEOUT_MS: number = 10_000;
+export const MAX_ESI_REQUEST_TIMEOUT_MS: number = 2_147_483_647;
 
 const optionNameRecord = {
   baseUrl: true,
   compatibilityDate: true,
   language: true,
+  requestTimeoutMs: true,
   token: true,
   tokenProvider: true,
   fetch: true,
@@ -37,6 +40,7 @@ export class EsiClientConfiguration {
   readonly baseUrl: string;
   readonly compatibilityDate: string;
   readonly language: EsiLanguage;
+  readonly requestTimeoutMs: number;
   readonly fetch: EsiFetch;
   readonly validateResponses: boolean;
   readonly validateRequests: boolean;
@@ -54,6 +58,9 @@ export class EsiClientConfiguration {
       defaultIfUndefined(options.compatibilityDate, PINNED_ESI_COMPATIBILITY_DATE),
     );
     this.language = validateLanguage(defaultIfUndefined(options.language, DEFAULT_ESI_LANGUAGE));
+    this.requestTimeoutMs = validateRequestTimeout(
+      defaultIfUndefined(options.requestTimeoutMs, DEFAULT_ESI_REQUEST_TIMEOUT_MS),
+    );
     this.#token = validateToken(options.token);
     this.#tokenProvider = validateTokenProvider(options.tokenProvider);
     this.fetch = validateFetch(defaultIfUndefined(options.fetch, globalThis.fetch));
@@ -86,6 +93,7 @@ export class EsiClientConfiguration {
       baseUrl: this.baseUrl,
       compatibilityDate: this.compatibilityDate,
       language: this.language,
+      requestTimeoutMs: this.requestTimeoutMs,
       validateResponses: this.validateResponses,
       validateRequests: this.validateRequests,
       allowGenericMutations: this.allowGenericMutations,
@@ -159,6 +167,15 @@ function validateCompatibilityDate(value: string): string {
 function validateLanguage(value: EsiLanguage): EsiLanguage {
   if (typeof value !== 'string' || !esiLanguages.has(value)) {
     throw new TypeError('language must be one of: de, en, es, fr, ja, ko, ru, zh');
+  }
+  return value;
+}
+
+function validateRequestTimeout(value: number): number {
+  if (!Number.isSafeInteger(value) || value <= 0 || value > MAX_ESI_REQUEST_TIMEOUT_MS) {
+    throw new TypeError(
+      `requestTimeoutMs must be a positive safe integer no greater than ${MAX_ESI_REQUEST_TIMEOUT_MS}`,
+    );
   }
   return value;
 }

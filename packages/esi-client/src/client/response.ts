@@ -1,3 +1,11 @@
+import {
+  MAX_HEADER_COUNT,
+  MAX_HEADER_NAME_CHARACTERS,
+  MAX_METADATA_STRING_CHARACTERS,
+  REDACTED,
+} from './error/limits.js';
+import { isSensitiveName, takeBoundedText } from './error/redaction.js';
+
 export interface EsiPaginationMetadata {
   readonly pages?: number;
   readonly cursor?: string;
@@ -10,11 +18,19 @@ export interface EsiCacheMetadata {
   readonly expires?: string;
   readonly lastModified?: string;
   readonly cacheControl?: string;
+  readonly maxAgeSeconds?: number;
 }
 
 export interface EsiErrorLimitMetadata {
   readonly remaining?: number;
   readonly reset?: number;
+}
+
+export interface EsiRouteRateLimitMetadata {
+  readonly group?: string;
+  readonly limit?: number;
+  readonly used?: number;
+  readonly remaining?: number;
 }
 
 export interface EsiResponseMetadataInput {
@@ -23,6 +39,8 @@ export interface EsiResponseMetadataInput {
   readonly pagination?: EsiPaginationMetadata;
   readonly cache?: EsiCacheMetadata;
   readonly errorLimit?: EsiErrorLimitMetadata;
+  readonly retryAfterSeconds?: number;
+  readonly routeRateLimit?: EsiRouteRateLimitMetadata;
 }
 
 export interface EsiResponseMetadata {
@@ -32,6 +50,8 @@ export interface EsiResponseMetadata {
   readonly pagination?: EsiPaginationMetadata;
   readonly cache?: EsiCacheMetadata;
   readonly errorLimit?: EsiErrorLimitMetadata;
+  readonly retryAfterSeconds?: number;
+  readonly routeRateLimit?: EsiRouteRateLimitMetadata;
 }
 
 export interface EsiResponse<T> {
@@ -55,6 +75,8 @@ export function extractEsiResponseMetadata(status: number, headers: Headers): Es
     pagination?: EsiPaginationMetadata;
     cache?: EsiCacheMetadata;
     errorLimit?: EsiErrorLimitMetadata;
+    retryAfterSeconds?: number;
+    routeRateLimit?: EsiRouteRateLimitMetadata;
   } = { status, headers: headerRecord };
 
   const requestId = firstPresentHeader(headerRecord, ['x-esi-request-id', 'x-request-id']);
@@ -68,6 +90,10 @@ export function extractEsiResponseMetadata(status: number, headers: Headers): Es
 
   const errorLimit = extractErrorLimit(headerRecord);
   if (errorLimit !== undefined) metadata.errorLimit = errorLimit;
+  const retryAfterSeconds = parseNonnegativeInteger(headerRecord['retry-after']);
+  if (retryAfterSeconds !== undefined) metadata.retryAfterSeconds = retryAfterSeconds;
+  const routeRateLimit = extractRouteRateLimit(headerRecord);
+  if (routeRateLimit !== undefined) metadata.routeRateLimit = routeRateLimit;
 
   return Object.freeze(metadata);
 }
@@ -84,6 +110,8 @@ function freezeMetadata(input: EsiResponseMetadata): EsiResponseMetadata {
     pagination?: EsiPaginationMetadata;
     cache?: EsiCacheMetadata;
     errorLimit?: EsiErrorLimitMetadata;
+    retryAfterSeconds?: number;
+    routeRateLimit?: EsiRouteRateLimitMetadata;
   } = {
     status: input.status,
     headers: freezeRecord(input.headers),
@@ -92,6 +120,9 @@ function freezeMetadata(input: EsiResponseMetadata): EsiResponseMetadata {
   if (input.pagination !== undefined) metadata.pagination = Object.freeze({ ...input.pagination });
   if (input.cache !== undefined) metadata.cache = Object.freeze({ ...input.cache });
   if (input.errorLimit !== undefined) metadata.errorLimit = Object.freeze({ ...input.errorLimit });
+  if (input.retryAfterSeconds !== undefined) metadata.retryAfterSeconds = input.retryAfterSeconds;
+  if (input.routeRateLimit !== undefined)
+    metadata.routeRateLimit = Object.freeze({ ...input.routeRateLimit });
   return Object.freeze(metadata);
 }
 
@@ -110,13 +141,21 @@ function freezeRecord(input: Readonly<Record<string, string>>): Readonly<Record<
 
 function headersToRecord(headers: Headers): Readonly<Record<string, string>> {
   const result: Record<string, string> = {};
+  let count = 0;
   headers.forEach((value, rawName) => {
-    Object.defineProperty(result, rawName.toLowerCase(), {
-      value,
+    if (count >= MAX_HEADER_COUNT) return;
+    const name = takeBoundedText(rawName.toLowerCase(), MAX_HEADER_NAME_CHARACTERS, Infinity).text;
+    if (name.length === 0 || Object.hasOwn(result, name)) return;
+    const boundedValue = isSensitiveName(name)
+      ? REDACTED
+      : takeBoundedText(value, MAX_METADATA_STRING_CHARACTERS, Infinity).text;
+    Object.defineProperty(result, name, {
+      value: boundedValue,
       enumerable: true,
       configurable: false,
       writable: false,
     });
+    count += 1;
   });
   return Object.freeze(result);
 }
@@ -147,6 +186,7 @@ function extractCache(headers: Readonly<Record<string, string>>): EsiCacheMetada
     expires?: string;
     lastModified?: string;
     cacheControl?: string;
+    maxAgeSeconds?: number;
   } = {};
   const etag = nonemptyHeader(headers.etag);
   if (etag !== undefined) cache.etag = etag;
@@ -155,17 +195,55 @@ function extractCache(headers: Readonly<Record<string, string>>): EsiCacheMetada
   const lastModified = nonemptyHeader(headers['last-modified']);
   if (lastModified !== undefined) cache.lastModified = lastModified;
   const cacheControl = nonemptyHeader(headers['cache-control']);
-  if (cacheControl !== undefined) cache.cacheControl = cacheControl;
+  if (cacheControl !== undefined) {
+    cache.cacheControl = cacheControl;
+    const maxAgeSeconds = parseCacheControlMaxAge(cacheControl);
+    if (maxAgeSeconds !== undefined) cache.maxAgeSeconds = maxAgeSeconds;
+  }
   return Object.keys(cache).length === 0 ? undefined : Object.freeze(cache);
+}
+
+function extractRouteRateLimit(
+  headers: Readonly<Record<string, string>>,
+): EsiRouteRateLimitMetadata | undefined {
+  const rateLimit: {
+    group?: string;
+    limit?: number;
+    used?: number;
+    remaining?: number;
+  } = {};
+  const group = nonemptyHeader(headers['x-ratelimit-group']);
+  if (group !== undefined) rateLimit.group = group;
+  const limit = parseNonnegativeInteger(headers['x-ratelimit-limit']);
+  if (limit !== undefined) rateLimit.limit = limit;
+  const used = parseNonnegativeInteger(headers['x-ratelimit-used']);
+  if (used !== undefined) rateLimit.used = used;
+  const remaining = parseNonnegativeInteger(headers['x-ratelimit-remaining']);
+  if (remaining !== undefined) rateLimit.remaining = remaining;
+  return Object.keys(rateLimit).length === 0 ? undefined : Object.freeze(rateLimit);
+}
+
+function parseCacheControlMaxAge(value: string): number | undefined {
+  let maxAge: number | undefined;
+  for (const rawDirective of value.split(',')) {
+    const directive = rawDirective.trim();
+    const separator = directive.indexOf('=');
+    if (separator < 0 || directive.slice(0, separator).trim().toLowerCase() !== 'max-age') continue;
+    if (maxAge !== undefined) return undefined;
+    const parsed = parseNonnegativeInteger(directive.slice(separator + 1).trim());
+    if (parsed === undefined) return undefined;
+    maxAge = parsed;
+  }
+  return maxAge;
 }
 
 function extractErrorLimit(
   headers: Readonly<Record<string, string>>,
 ): EsiErrorLimitMetadata | undefined {
   const errorLimit: { remaining?: number; reset?: number } = {};
-  const remaining = parseFiniteNumber(headers['x-esi-error-limit-remain']);
+  const remaining = parseNonnegativeFiniteNumber(headers['x-esi-error-limit-remain']);
   if (remaining !== undefined) errorLimit.remaining = remaining;
-  const reset = parseFiniteNumber(headers['x-esi-error-limit-reset']);
+  const reset = parseNonnegativeFiniteNumber(headers['x-esi-error-limit-reset']);
   if (reset !== undefined) errorLimit.reset = reset;
   return Object.keys(errorLimit).length === 0 ? undefined : Object.freeze(errorLimit);
 }
@@ -185,14 +263,19 @@ function nonemptyHeader(value: string | undefined): string | undefined {
   return value === undefined || value.length === 0 ? undefined : value;
 }
 
-function parseNonnegativeInteger(value: string | undefined): number | undefined {
-  if (value === undefined || !nonnegativeIntegerPattern.test(value)) return undefined;
-  const parsed = Number(value);
-  return Number.isSafeInteger(parsed) ? parsed : undefined;
-}
-
 function parseFiniteNumber(value: string | undefined): number | undefined {
   if (value === undefined || !finiteNumberPattern.test(value)) return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseNonnegativeFiniteNumber(value: string | undefined): number | undefined {
+  const parsed = parseFiniteNumber(value);
+  return parsed !== undefined && parsed >= 0 ? parsed : undefined;
+}
+
+function parseNonnegativeInteger(value: string | undefined): number | undefined {
+  if (value === undefined || !nonnegativeIntegerPattern.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
 }

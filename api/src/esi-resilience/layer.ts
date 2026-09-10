@@ -390,6 +390,7 @@ class EsiResilienceLayer {
     const policy = getEsiOperationContract(representation.operation)
     const client = new EsiClient({
       fetch: this.#createTransport(representation.operation, authorization?.principal),
+      requestTimeoutMs: env.ESI_REQUEST_TIMEOUT_MS,
       ...(authorization ? { token: authorization.accessToken } : {}),
       validateResponses: policy.responseValidation.kind === 'enabled',
     })
@@ -426,6 +427,7 @@ class EsiResilienceLayer {
       )
     const client = new EsiClient({
       fetch: this.#createTransport(representation.operation, authorization.principal),
+      requestTimeoutMs: env.ESI_REQUEST_TIMEOUT_MS,
       token: authorization.accessToken,
       validateResponses: policy.responseValidation.kind === 'enabled',
       allowGenericMutations: true,
@@ -447,6 +449,7 @@ class EsiResilienceLayer {
   ): Promise<EsiCanonicalLoad<unknown>> {
     const client = new EsiClient({
       fetch: this.#createTransport(operation, authorization?.principal),
+      requestTimeoutMs: env.ESI_REQUEST_TIMEOUT_MS,
       ...(authorization ? { token: authorization.accessToken } : {}),
       validateResponses: definition.contract.responseValidation.kind === 'enabled',
     })

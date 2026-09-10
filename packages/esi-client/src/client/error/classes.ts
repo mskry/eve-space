@@ -18,9 +18,11 @@ import type {
   EsiGenericMutationDisabledErrorOptions,
   EsiGenericMutationUnconfirmedErrorOptions,
   EsiHttpErrorOptions,
+  EsiNotModifiedErrorOptions,
   EsiRequestValidationErrorOptions,
   EsiResponseParseErrorOptions,
   EsiResponseValidationErrorOptions,
+  EsiTransportErrorOptions,
   EsiUnknownOperationErrorOptions,
   EsiValidationDirection,
   EsiValidationErrorOptions,
@@ -28,7 +30,10 @@ import type {
   SerializedEsiAuthenticationRequiredError,
   SerializedEsiError,
   SerializedEsiHttpError,
+  SerializedEsiNotModifiedError,
   SerializedEsiResponseParseError,
+  SerializedEsiResponseValidationError,
+  SerializedEsiTransportError,
   SerializedEsiValidationError,
 } from './types.js';
 
@@ -172,6 +177,70 @@ export class EsiHttpError extends EsiError {
   }
 }
 
+export class EsiTransportError extends EsiError {
+  readonly reason: EsiTransportErrorOptions['reason'];
+  readonly phase: EsiTransportErrorOptions['phase'];
+  readonly status: number | undefined;
+  readonly metadata: EsiResponseMetadata | undefined;
+
+  constructor(options: EsiTransportErrorOptions) {
+    const redactor = createRedactor(options.redaction);
+    super(
+      'EsiTransportError',
+      'ESI_TRANSPORT_ERROR',
+      options.reason === 'timeout'
+        ? 'ESI operation {operationId} exceeded its request timeout'
+        : 'ESI operation {operationId} failed during network transport',
+      options,
+      redactor,
+    );
+    this.reason = options.reason;
+    this.phase = options.phase;
+    this.status = options.status === undefined ? undefined : normalizeStatus(options.status);
+    this.metadata =
+      this.status === undefined
+        ? undefined
+        : normalizeMetadata(this.status, options.metadata, redactor);
+    Object.freeze(this);
+  }
+
+  override toJSON(): SerializedEsiTransportError {
+    return Object.freeze({
+      ...super.toJSON(),
+      reason: this.reason,
+      phase: this.phase,
+      ...(this.status === undefined ? {} : { status: this.status }),
+      ...(this.metadata === undefined ? {} : { metadata: this.metadata }),
+    });
+  }
+}
+
+export class EsiNotModifiedError extends EsiError {
+  readonly status = 304 as const;
+  readonly metadata: EsiResponseMetadata;
+
+  constructor(options: EsiNotModifiedErrorOptions) {
+    const redactor = createRedactor(options.redaction);
+    super(
+      'EsiNotModifiedError',
+      'ESI_NOT_MODIFIED',
+      'ESI operation {operationId} returned an unmodified representation',
+      options,
+      redactor,
+    );
+    this.metadata = normalizeMetadata(this.status, options.metadata, redactor);
+    Object.freeze(this);
+  }
+
+  override toJSON(): SerializedEsiNotModifiedError {
+    return Object.freeze({
+      ...super.toJSON(),
+      status: this.status,
+      metadata: this.metadata,
+    });
+  }
+}
+
 export class EsiResponseParseError extends EsiError {
   readonly status: number;
   readonly metadata: EsiResponseMetadata;
@@ -246,6 +315,9 @@ export class EsiRequestValidationError extends EsiValidationError {
 }
 
 export class EsiResponseValidationError extends EsiValidationError {
+  readonly status: number;
+  readonly metadata: EsiResponseMetadata;
+
   constructor(options: EsiResponseValidationErrorOptions) {
     const redactor = createRedactor(options.redaction);
     super(
@@ -255,6 +327,16 @@ export class EsiResponseValidationError extends EsiValidationError {
       options,
       redactor,
     );
+    this.status = normalizeStatus(options.status);
+    this.metadata = normalizeMetadata(this.status, options.metadata, redactor);
     Object.freeze(this);
+  }
+
+  override toJSON(): SerializedEsiResponseValidationError {
+    return Object.freeze({
+      ...super.toJSON(),
+      status: this.status,
+      metadata: this.metadata,
+    });
   }
 }

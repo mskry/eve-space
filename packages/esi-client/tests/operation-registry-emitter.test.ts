@@ -63,7 +63,7 @@ describe('generated operation registry and manifest', () => {
     expect(registryIds).toEqual(expectedIds);
     expect(manifestIds).toEqual(expectedIds);
     expect(new Set(manifestIds).size).toBe(operationCount);
-    expect(operationManifest.schemaVersion).toBe(2);
+    expect(operationManifest.schemaVersion).toBe(3);
 
     for (const contract of operationManifest.operations) {
       const runtime = Object.entries(operationRegistry).find(
@@ -119,6 +119,13 @@ describe('generated operation registry and manifest', () => {
       expect(runtime.transport.transport?.compatibilityDateOverride === true).toBe(
         contract.transport.compatibilityDateOverride,
       );
+      expect(runtime.transport.protocol).toEqual({
+        cache: contract.cache,
+        conditionalRequestValidators: contract.conditionalRequestValidators,
+        maximumBatchSize: contract.maximumBatchSize,
+        rateLimit: contract.rateLimit,
+        requestArrayLimits: contract.requestArrayLimits,
+      });
       expect(
         runtime.transport.parameters.map((parameter: OperationParameterDescriptor) => ({
           name: parameter.name,
@@ -197,6 +204,77 @@ describe('generated operation registry and manifest', () => {
         pagination,
       })),
     );
+  });
+
+  it('exposes complete corrected protocol facts without inferring conditional response support', async () => {
+    const model = await readNormalizedModel();
+    const manifestById = new Map(
+      operationManifest.operations.map((operation) => [operation.operationId, operation]),
+    );
+    const allowedCacheExtensions = new Set([
+      'x-cache-age',
+      'x-cache-mode',
+      'x-client-cache-ttl',
+      'x-server-cache-mode',
+      'x-server-cache-ttl',
+      'x-tombstone-ttl',
+    ]);
+
+    expect(
+      operationManifest.operations.filter(({ rateLimit }) => rateLimit.kind === 'declared'),
+    ).toHaveLength(171);
+    expect(
+      operationManifest.operations.filter(({ rateLimit }) => rateLimit.kind === 'legacy-only'),
+    ).toHaveLength(62);
+    expect(
+      operationManifest.operations.filter(
+        ({ requestArrayLimits }) => requestArrayLimits.length > 0,
+      ),
+    ).toHaveLength(18);
+    expect(
+      operationManifest.operations.filter(({ maximumBatchSize }) => maximumBatchSize !== null),
+    ).toHaveLength(15);
+
+    for (const operation of model.operations) {
+      const manifest = manifestById.get(operation.operationId);
+      expect(manifest).toBeDefined();
+      expect(manifest?.conditionalRequestValidators).toEqual(
+        operation.conditionalRequestValidators,
+      );
+      expect(manifest?.cache).toEqual(operation.cache);
+      expect(manifest?.rateLimit).toEqual(operation.rateLimit);
+      expect(manifest?.requestArrayLimits).toEqual(operation.requestArrayLimits);
+      expect(manifest?.maximumBatchSize).toBe(operation.maximumBatchSize);
+      expect(
+        Object.keys(operation.cache.extensions).every((name) => allowedCacheExtensions.has(name)),
+      ).toBe(true);
+    }
+
+    expect(manifestById.get('GetStatus')).toMatchObject({
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      cache: {
+        extensions: {
+          'x-cache-age': 30,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+      },
+      rateLimit: { kind: 'declared', group: 'status', maximumTokens: 600, window: '15m' },
+    });
+    expect(manifestById.get('GetAlliances')?.rateLimit).toEqual({ kind: 'legacy-only' });
+    expect(manifestById.get('PostUniverseNames')).toMatchObject({
+      maximumBatchSize: 1000,
+      requestArrayLimits: [{ location: 'body', path: [], maximumItems: 1000 }],
+    });
+    expect(manifestById.get('PostCharactersCharacterIdContacts')).toMatchObject({
+      maximumBatchSize: null,
+      requestArrayLimits: [
+        { location: 'body', path: [], maximumItems: 100 },
+        { location: 'query', path: ['label_ids'], maximumItems: 63 },
+      ],
+    });
   });
 });
 

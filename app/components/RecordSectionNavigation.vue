@@ -13,7 +13,9 @@ const emit = defineEmits<{
 const route = useRoute()
 const navigation = useTemplateRef<HTMLElement>('navigation')
 const indicatorStyle = ref<Record<string, string>>()
+const indicatorTransitionEnabled = ref(false)
 let resizeObserver: ResizeObserver | undefined
+let indicatorHasInitialPosition = false
 
 function normalizedPath(path: string) {
   return path.length > 1 ? path.replace(/\/$/, '') : path
@@ -51,23 +53,38 @@ function observeNavigation() {
 
 watch(
   [() => route.path, () => props.entries],
-  async () => {
+  async ([path], [previousPath]) => {
     await nextTick()
+    if (indicatorHasInitialPosition && path !== previousPath) {
+      indicatorTransitionEnabled.value = true
+      await nextTick()
+    }
     updateIndicator()
     observeNavigation()
   },
   { flush: 'post' },
 )
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
   updateIndicator()
   observeNavigation()
+  indicatorHasInitialPosition = true
 })
-onBeforeUnmount(() => resizeObserver?.disconnect())
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+})
 </script>
 
 <template>
-  <nav ref="navigation" class="record-section-navigation" :aria-label="label">
+  <nav
+    ref="navigation"
+    :class="[
+      'record-section-navigation',
+      { 'record-section-navigation--indicator-transition': indicatorTransitionEnabled },
+    ]"
+    :aria-label="label"
+  >
     <span
       class="record-section-navigation-indicator"
       :style="indicatorStyle"
@@ -130,6 +147,9 @@ onBeforeUnmount(() => resizeObserver?.disconnect())
   background: var(--ui-primary);
   box-shadow: 0 0 0.625rem color-mix(in srgb, var(--ui-primary) 65%, transparent);
   transform: translateX(calc(var(--record-section-indicator-position, 0px) + 1.125rem));
+}
+
+.record-section-navigation--indicator-transition .record-section-navigation-indicator {
   transition:
     width 180ms ease,
     transform 180ms ease;

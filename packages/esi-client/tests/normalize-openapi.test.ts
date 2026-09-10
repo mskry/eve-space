@@ -70,9 +70,13 @@ describe('normalized OpenAPI model', () => {
       },
       cache: {
         responseHeaders: ['etag'],
-        extensions: { 'x-cache-seconds': 60 },
+        extensions: { 'x-cache-age': 60 },
       },
-      extensions: { 'x-cache-seconds': 60, 'x-owner': 'items' },
+      conditionalRequestValidators: [],
+      rateLimit: { kind: 'legacy-only' },
+      requestArrayLimits: [],
+      maximumBatchSize: null,
+      extensions: { 'x-cache-age': 60, 'x-owner': 'items' },
     });
     expect(result.operations[1]?.successResponses).toEqual([
       {
@@ -110,7 +114,7 @@ describe('normalized OpenAPI model', () => {
 
     expect(inventory.openapi).toEqual(
       expect.arrayContaining([
-        { construct: 'extension:x-cache-seconds', count: 1 },
+        { construct: 'extension:x-cache-age', count: 1 },
         { construct: 'media-type:application/json', count: 2 },
         { construct: 'operation:delete', count: 1 },
         { construct: 'operation:get', count: 1 },
@@ -150,6 +154,139 @@ describe('normalized OpenAPI model', () => {
       },
     ]);
     expect(result.accounting.excludedOperationIds).toEqual(['remove_item']);
+  });
+
+  it('normalizes protocol declarations and only derives an unambiguous maximum batch size', async () => {
+    const document = minimalDocument({
+      '/batch': {
+        post: {
+          ...jsonOperation('batch_items'),
+          parameters: [
+            parameter('If-None-Match', 'header', false, { type: 'string' }),
+            parameter('If-Modified-Since', 'header', false, { type: 'string' }),
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { type: 'array', maxItems: 100, items: { type: 'integer' } },
+              },
+            },
+          },
+          'x-cache-age': 60,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+          'x-server-cache-ttl': 300,
+          'x-tombstone-ttl': 604800,
+          'x-rate-limit': {
+            group: 'batch-items',
+            'max-tokens': 600,
+            'window-size': '15m',
+          },
+        },
+      },
+      '/ambiguous': {
+        post: {
+          ...jsonOperation('ambiguous_arrays'),
+          parameters: [
+            parameter('ids', 'query', false, {
+              type: 'array',
+              maxItems: 20,
+              items: { type: 'integer' },
+            }),
+          ],
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    recipients: {
+                      type: 'array',
+                      maxItems: 50,
+                      items: { type: 'integer' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const result = await normalizeOpenApiDocument(document);
+    const batch = result.operations.find(({ operationId }) => operationId === 'batch_items');
+    const ambiguous = result.operations.find(
+      ({ operationId }) => operationId === 'ambiguous_arrays',
+    );
+
+    expect(batch).toMatchObject({
+      cache: {
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+          'x-server-cache-ttl': 300,
+          'x-tombstone-ttl': 604800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      rateLimit: {
+        kind: 'declared',
+        group: 'batch-items',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [{ location: 'body', path: [], maximumItems: 100 }],
+      maximumBatchSize: 100,
+    });
+    expect(ambiguous).toMatchObject({
+      conditionalRequestValidators: [],
+      rateLimit: { kind: 'legacy-only' },
+      requestArrayLimits: [
+        { location: 'body', path: ['recipients'], maximumItems: 50 },
+        { location: 'query', path: ['ids'], maximumItems: 20 },
+      ],
+      maximumBatchSize: null,
+    });
+  });
+
+  it.each([
+    ['unsupported cache extension', { 'x-cache-policy': 'ttl' }, 'Unsupported cache extension'],
+    ['malformed cache age', { 'x-cache-age': '60' }, 'Invalid x-cache-age extension'],
+    ['unsupported cache mode', { 'x-cache-mode': 'fixed' }, 'Invalid x-cache-mode extension'],
+    ['malformed tombstone TTL', { 'x-tombstone-ttl': -1 }, 'Invalid x-tombstone-ttl extension'],
+    ['malformed rate extension', { 'x-rate-limit': 'legacy' }, 'must be an object'],
+    [
+      'unknown rate field',
+      {
+        'x-rate-limit': {
+          group: 'items',
+          'max-tokens': 10,
+          'window-size': '15m',
+          burst: 1,
+        },
+      },
+      'Unknown x-rate-limit extension',
+    ],
+    [
+      'invalid rate maximum',
+      { 'x-rate-limit': { group: 'items', 'max-tokens': 0, 'window-size': '15m' } },
+      'Invalid x-rate-limit max-tokens',
+    ],
+    [
+      'invalid rate window',
+      { 'x-rate-limit': { group: 'items', 'max-tokens': 10, 'window-size': 'fifteen' } },
+      'Invalid x-rate-limit window-size',
+    ],
+  ])('rejects a %s before producing a normalized model', async (_case, extensions, message) => {
+    const document = minimalDocument({
+      '/items': { get: { ...jsonOperation('get_items'), ...extensions } },
+    });
+    await expect(normalizeOpenApiDocument(document)).rejects.toThrow(message);
   });
 
   it.each([
@@ -305,7 +442,7 @@ function referencedDocument() {
             responses: { '200': { $ref: '#/components/responses/Item' } },
             security: [{ esiOAuth: ['esi-items.read'] }],
             'x-owner': 'items',
-            'x-cache-seconds': 60,
+            'x-cache-age': 60,
           },
         },
       },
@@ -326,6 +463,21 @@ function operation(operationId?: string, response: object = { description: 'Remo
     ...(operationId === undefined ? {} : { operationId }),
     responses: { '204': response },
   };
+}
+
+function jsonResponse() {
+  return {
+    description: 'OK',
+    content: { 'application/json': { schema: { type: 'object' } } },
+  };
+}
+
+function jsonOperation(operationId: string) {
+  return { operationId, responses: { '200': jsonResponse() } };
+}
+
+function parameter(name: string, placement: string, required: boolean, schema: object) {
+  return { name, in: placement, required, schema };
 }
 
 function reviewedExclusion(operationId: string) {

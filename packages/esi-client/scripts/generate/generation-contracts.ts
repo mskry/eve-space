@@ -23,6 +23,7 @@ export interface GenerationProvenance {
   readonly specificationUrl: string;
   readonly facadeCatalog: GenerationProvenanceArtifact;
   readonly facadeReviewReport: GenerationProvenanceArtifact;
+  readonly operationProtocolFactsSha256: string;
 }
 
 export interface EmitterContext {

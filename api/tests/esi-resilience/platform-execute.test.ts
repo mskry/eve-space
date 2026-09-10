@@ -97,6 +97,7 @@ describe('platform ESI execution', () => {
     )
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),
+      requestTimeoutMs: 30_000,
       token: 'private-token',
       validateResponses: true,
     })

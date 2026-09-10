@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
 import type { EmitterContext, GenerationProvenance } from './generation-contracts.ts';
-import { hashText } from './internal/json.ts';
+import { hashText, serializeJson } from './internal/json.ts';
 import { namingReviewReportPath, renderNamingReviewReport } from './naming-review.ts';
 import { normalizeOpenApiDocument } from './normalize.ts';
 import { parseFacadeCatalog, resolveOperationMetadata } from './operation-metadata.ts';
@@ -58,6 +58,18 @@ export async function prepareGenerationContext(
       path: normalizeGeneratedPath(relative(projectRoot, facadeCatalogPath)),
       sha256: hashText(facadeCatalogSource),
     },
+    operationProtocolFactsSha256: hashText(
+      serializeJson({
+        operations: normalizedModel.operations.map((operation) => ({
+          cacheExtensions: operation.cache.extensions,
+          conditionalRequestValidators: operation.conditionalRequestValidators,
+          maximumBatchSize: operation.maximumBatchSize,
+          operationId: operation.operationId,
+          rateLimit: operation.rateLimit,
+          requestArrayLimits: operation.requestArrayLimits,
+        })),
+      }),
+    ),
     sha256: input.sha256,
     sourceSha256: input.sourceSha256,
     specificationUrl: input.specificationUrl,

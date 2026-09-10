@@ -26,11 +26,14 @@ const operationCount = 233;
 const domainCount = 39;
 const representativePaths = [
   'authenticated.ts',
+  'custom-fetch.ts',
   'metadata.ts',
   'mutation-safety.ts',
+  'operation-protocol.ts',
   'paginated.ts',
   'public.ts',
   'schema-validation.ts',
+  'transport-errors.ts',
   'validation-error.ts',
 ];
 
@@ -130,6 +133,19 @@ describe('generated examples', () => {
     const schemas = rendered.get('schema-validation.ts') ?? '';
     expect(schemas).toContain("from '@evespace/esi-client/types';");
     expect(schemas).toContain("from '@evespace/esi-client/zod';");
+
+    const protocol = rendered.get('operation-protocol.ts') ?? '';
+    expect(protocol).toContain("describeOperation('GetStatus')");
+    expect(protocol).toContain('conditionalRequestValidators');
+    expect(protocol).toContain('maximumBatchSize');
+
+    const customFetch = rendered.get('custom-fetch.ts') ?? '';
+    expect(customFetch).toContain('requestTimeoutMs: 30_000');
+    expect(customFetch).toContain('signal: init.signal');
+
+    const transportErrors = rendered.get('transport-errors.ts') ?? '';
+    expect(transportErrors).toContain('EsiNotModifiedError');
+    expect(transportErrors).toContain('classifyEsiFailure');
   });
 
   it('owns one composable examples/generated claim', async () => {

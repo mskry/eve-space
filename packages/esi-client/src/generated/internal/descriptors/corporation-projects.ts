@@ -53,6 +53,7 @@ export const GetCorporationsProjectsDetailDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: GetCorporationsProjectsDetailRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-project","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsProjectsDetailResponse },
   ],
@@ -79,6 +80,7 @@ export const GetCorporationsProjectsContributionDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetCorporationsProjectsContributionRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":60,"x-cache-mode":"event-based","x-client-cache-ttl":60,"x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-project","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsProjectsContributionResponse },
   ],
@@ -108,6 +110,7 @@ export const GetCorporationsProjectsListingDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCorporationsProjectsListingRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-project","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsProjectsListingResponse },
   ],
@@ -137,6 +140,7 @@ export const GetCorporationsProjectsContributorsDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetCorporationsProjectsContributorsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_projects.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-mode":"event-based","x-server-cache-mode":"event-based"}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-project","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsProjectsContributorsResponse },
   ],

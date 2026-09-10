@@ -1,6 +1,8 @@
 export {
   DEFAULT_ESI_BASE_URL,
   DEFAULT_ESI_LANGUAGE,
+  DEFAULT_ESI_REQUEST_TIMEOUT_MS,
+  MAX_ESI_REQUEST_TIMEOUT_MS,
   PINNED_ESI_COMPATIBILITY_DATE,
 } from './client/configuration.js';
 export type {
@@ -16,6 +18,7 @@ export type {
   EsiCacheMetadata,
   EsiErrorLimitMetadata,
   EsiPaginationMetadata,
+  EsiRouteRateLimitMetadata,
   EsiResponse,
   EsiResponseMetadata,
 } from './client/response.js';

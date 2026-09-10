@@ -19,6 +19,9 @@ Use narrow domain, type, Zod, and operation imports when possible. The generated
 - [Validation](/docs/generated/concepts/validation.md)
 - [Metadata and pagination](/docs/generated/concepts/metadata-pagination.md)
 - [Structured errors](/docs/generated/concepts/errors.md)
+- [Operation discovery](/docs/generated/concepts/operation-discovery.md)
+- [Custom fetch](/docs/generated/concepts/custom-fetch.md)
+- [Standalone domains](/docs/generated/concepts/standalone-domains.md)
 - [Mutation safety](/docs/generated/concepts/mutation-safety.md)
 - [Standalone examples](/docs/generated/examples/index.md)
 

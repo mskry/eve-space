@@ -211,6 +211,10 @@ function operation(
     security: [],
     pagination: { kind: 'none', requestParameters: [], responseHeaders: [] },
     cache: { responseHeaders: [], extensions: {} },
+    conditionalRequestValidators: [],
+    rateLimit: { kind: 'legacy-only' },
+    requestArrayLimits: [],
+    maximumBatchSize: null,
     extensions: {},
     ...overrides,
   };
@@ -290,6 +294,7 @@ function emitterContext(
         path: 'docs/generated/facade-naming-review.md',
         sha256: 'e'.repeat(64),
       },
+      operationProtocolFactsSha256: 'f'.repeat(64),
       sourceSha256: 'e'.repeat(64),
       specificationUrl: 'https://example.test/openapi.json',
     },

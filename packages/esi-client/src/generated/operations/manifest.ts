@@ -8,6 +8,7 @@ import type {
   OperationHttpMethod,
   OperationParameterPlacement,
 } from '../../client/request.js';
+import type { OperationProtocolDescriptor } from '../../client/execute.js';
 
 export interface OperationSchemaReference {
   readonly module: '@evespace/esi-client/types' | '@evespace/esi-client/zod';
@@ -69,9 +70,13 @@ export interface SerializableOperationManifestEntry {
     readonly responseHeaders: readonly string[];
   };
   readonly cache: {
-    readonly responseHeaders: readonly string[];
-    readonly extensions: Readonly<Record<string, JsonValue>>;
+    readonly responseHeaders: OperationProtocolDescriptor['cache']['responseHeaders'];
+    readonly extensions: OperationProtocolDescriptor['cache']['extensions'];
   };
+  readonly conditionalRequestValidators: OperationProtocolDescriptor['conditionalRequestValidators'];
+  readonly rateLimit: OperationProtocolDescriptor['rateLimit'];
+  readonly requestArrayLimits: OperationProtocolDescriptor['requestArrayLimits'];
+  readonly maximumBatchSize: OperationProtocolDescriptor['maximumBatchSize'];
   readonly transport: { readonly compatibilityDateOverride: boolean };
   readonly classification: 'read' | 'mutation';
   readonly safety: {
@@ -94,7 +99,7 @@ export interface SerializableOperationManifest {
     readonly notice: string;
     readonly specificationSha256: string;
   };
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly operations: readonly SerializableOperationManifestEntry[];
 }
 
@@ -129,6 +134,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Bulk delete contacts",
       "facade": {
         "domain": "contacts",
@@ -138,6 +147,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "DELETE",
         "path": "/characters/{character_id}/contacts"
       },
+      "maximumBatchSize": 20,
       "operationId": "DeleteCharactersCharacterIdContacts",
       "pagination": {
         "kind": "none",
@@ -220,6 +230,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [
+        {
+          "location": "query",
+          "path": [
+            "contact_ids"
+          ],
+          "maximumItems": 20
+        }
+      ],
       "requestSchemas": [
         {
           "group": "headers",
@@ -263,6 +282,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -296,6 +321,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Delete a fitting from a character",
       "facade": {
         "domain": "fittings",
@@ -305,6 +334,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "DELETE",
         "path": "/characters/{character_id}/fittings/{fitting_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "DeleteCharactersCharacterIdFittingsFittingId",
       "pagination": {
         "kind": "none",
@@ -382,6 +412,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -418,6 +449,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fitting",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -451,6 +488,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Delete a mail label",
       "facade": {
         "domain": "mail",
@@ -460,6 +501,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "DELETE",
         "path": "/characters/{character_id}/mail/labels/{label_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "DeleteCharactersCharacterIdMailLabelsLabelId",
       "pagination": {
         "kind": "none",
@@ -537,6 +579,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -573,6 +616,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -606,6 +655,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Delete a mail",
       "facade": {
         "domain": "mail",
@@ -615,6 +668,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "DELETE",
         "path": "/characters/{character_id}/mail/{mail_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "DeleteCharactersCharacterIdMailMailId",
       "pagination": {
         "kind": "none",
@@ -692,6 +746,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -728,6 +783,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -761,6 +822,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Kick a fleet member",
       "facade": {
         "domain": "fleets",
@@ -770,6 +835,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "DELETE",
         "path": "/fleets/{fleet_id}/members/{member_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "DeleteFleetsFleetIdMembersMemberId",
       "pagination": {
         "kind": "none",
@@ -849,6 +915,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -885,6 +952,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -918,6 +991,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Delete a fleet squad, only empty squads can be deleted",
       "facade": {
         "domain": "fleets",
@@ -927,6 +1004,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "DELETE",
         "path": "/fleets/{fleet_id}/squads/{squad_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "DeleteFleetsFleetIdSquadsSquadId",
       "pagination": {
         "kind": "none",
@@ -1006,6 +1084,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -1042,6 +1121,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -1075,6 +1160,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Delete a fleet wing, only empty wings can be deleted. The wing may contain squads, but the squads must be empty",
       "facade": {
         "domain": "fleets",
@@ -1084,6 +1173,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "DELETE",
         "path": "/fleets/{fleet_id}/wings/{wing_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "DeleteFleetsFleetIdWingsWingId",
       "pagination": {
         "kind": "none",
@@ -1163,6 +1253,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -1199,6 +1290,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -1235,6 +1332,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List all active player alliances",
       "facade": {
         "domain": "alliance",
@@ -1244,6 +1345,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/alliances"
       },
+      "maximumBatchSize": null,
       "operationId": "GetAlliances",
       "pagination": {
         "kind": "none",
@@ -1293,6 +1395,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -1329,6 +1432,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1366,6 +1472,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Public information about an alliance",
       "facade": {
         "domain": "alliance",
@@ -1375,6 +1485,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/alliances/{alliance_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetAlliancesAllianceId",
       "pagination": {
         "kind": "none",
@@ -1438,6 +1549,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -1481,6 +1593,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1519,6 +1634,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return contacts of an alliance",
       "facade": {
         "domain": "contacts",
@@ -1528,6 +1647,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/alliances/{alliance_id}/contacts"
       },
+      "maximumBatchSize": null,
       "operationId": "GetAlliancesAllianceIdContacts",
       "pagination": {
         "kind": "offset",
@@ -1610,6 +1730,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -1660,6 +1781,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "alliance-social",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1698,6 +1825,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return custom labels for an alliance's contacts",
       "facade": {
         "domain": "contacts",
@@ -1707,6 +1838,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/alliances/{alliance_id}/contacts/labels"
       },
+      "maximumBatchSize": null,
       "operationId": "GetAlliancesAllianceIdContactsLabels",
       "pagination": {
         "kind": "none",
@@ -1769,6 +1901,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -1812,6 +1945,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "alliance-social",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1848,6 +1987,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List all current member corporations of an alliance",
       "facade": {
         "domain": "alliance",
@@ -1857,6 +2000,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/alliances/{alliance_id}/corporations"
       },
+      "maximumBatchSize": null,
       "operationId": "GetAlliancesAllianceIdCorporations",
       "pagination": {
         "kind": "none",
@@ -1919,6 +2063,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -1962,6 +2107,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -1993,6 +2141,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the icon urls for a alliance\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "alliance",
@@ -2002,6 +2154,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/alliances/{alliance_id}/icons"
       },
+      "maximumBatchSize": null,
       "operationId": "GetAlliancesAllianceIdIcons",
       "pagination": {
         "kind": "none",
@@ -2064,6 +2217,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -2107,6 +2261,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2145,6 +2302,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of an Access List.",
       "facade": {
         "domain": "accessList",
@@ -2154,6 +2315,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/access-lists/{access_list_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersAccessListsDetail",
       "pagination": {
         "kind": "none",
@@ -2231,6 +2393,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -2274,6 +2437,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-access",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2312,6 +2481,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Lists all Access Lists the character is Manager or Admin of.",
       "facade": {
         "domain": "accessList",
@@ -2321,6 +2494,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/access-lists"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersAccessListsListing",
       "pagination": {
         "kind": "none",
@@ -2384,6 +2558,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -2427,6 +2602,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-access",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2465,6 +2646,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of agents research information for a character. The formula for finding the current research points with an agent is: currentPoints = remainderPoints + pointsPerDay * days(currentTime - researchStartDate)",
       "facade": {
         "domain": "character",
@@ -2474,6 +2659,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/agents_research"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdAgentsResearch",
       "pagination": {
         "kind": "none",
@@ -2536,6 +2722,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -2579,6 +2766,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2617,6 +2810,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of the characters assets",
       "facade": {
         "domain": "assets",
@@ -2626,6 +2823,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/assets"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdAssets",
       "pagination": {
         "kind": "offset",
@@ -2708,6 +2906,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -2758,6 +2957,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-asset",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2796,6 +3001,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return attributes of a character",
       "facade": {
         "domain": "skills",
@@ -2805,6 +3014,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/attributes"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdAttributes",
       "pagination": {
         "kind": "none",
@@ -2867,6 +3077,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -2910,6 +3121,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -2948,6 +3165,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of blueprints the character owns",
       "facade": {
         "domain": "character",
@@ -2957,6 +3178,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/blueprints"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdBlueprints",
       "pagination": {
         "kind": "offset",
@@ -3039,6 +3261,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -3089,6 +3312,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3127,6 +3356,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get 50 event summaries from the calendar. If no from_event ID is given, the resource will return the next 50 chronological event summaries from now. If a from_event ID is specified, it will return the next 50 chronological event summaries from after that event",
       "facade": {
         "domain": "calendar",
@@ -3136,6 +3369,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/calendar"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdCalendar",
       "pagination": {
         "kind": "none",
@@ -3213,6 +3447,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -3263,6 +3498,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3301,6 +3542,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get all the information for a specific event",
       "facade": {
         "domain": "calendar",
@@ -3310,6 +3555,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/calendar/{event_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdCalendarEventId",
       "pagination": {
         "kind": "none",
@@ -3387,6 +3633,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -3430,6 +3677,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3468,6 +3721,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get all invited attendees for a given event",
       "facade": {
         "domain": "calendar",
@@ -3477,6 +3734,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/calendar/{event_id}/attendees"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdCalendarEventIdAttendees",
       "pagination": {
         "kind": "none",
@@ -3554,6 +3812,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -3597,6 +3856,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3635,6 +3900,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "A list of the character's clones",
       "facade": {
         "domain": "clones",
@@ -3644,6 +3913,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/clones"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdClones",
       "pagination": {
         "kind": "none",
@@ -3706,6 +3976,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -3749,6 +4020,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-location",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3787,6 +4064,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return contacts of a character",
       "facade": {
         "domain": "contacts",
@@ -3796,6 +4077,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/contacts"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdContacts",
       "pagination": {
         "kind": "offset",
@@ -3878,6 +4160,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -3928,6 +4211,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -3966,6 +4255,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return custom labels for a character's contacts",
       "facade": {
         "domain": "contacts",
@@ -3975,6 +4268,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/contacts/labels"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdContactsLabels",
       "pagination": {
         "kind": "none",
@@ -4037,6 +4331,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -4080,6 +4375,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4118,6 +4419,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns contracts available to a character, only if the character is issuer, acceptor or assignee. Only returns contracts no older than 30 days, or if the status is \"in_progress\".",
       "facade": {
         "domain": "contracts",
@@ -4127,6 +4432,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/contracts"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdContracts",
       "pagination": {
         "kind": "offset",
@@ -4209,6 +4515,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -4259,6 +4566,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-contract",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4297,6 +4610,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Lists bids on a particular auction contract",
       "facade": {
         "domain": "contracts",
@@ -4306,6 +4623,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/contracts/{contract_id}/bids"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdContractsContractIdBids",
       "pagination": {
         "kind": "none",
@@ -4383,6 +4701,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -4426,6 +4745,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-contract",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4464,6 +4789,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Lists items of a particular contract",
       "facade": {
         "domain": "contracts",
@@ -4473,6 +4802,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/contracts/{contract_id}/items"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdContractsContractIdItems",
       "pagination": {
         "kind": "none",
@@ -4550,6 +4880,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -4593,6 +4924,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-contract",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4629,6 +4966,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of all the corporations a character has been a member of",
       "facade": {
         "domain": "character",
@@ -4638,6 +4979,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/corporationhistory"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdCorporationhistory",
       "pagination": {
         "kind": "none",
@@ -4700,6 +5042,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -4743,6 +5086,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4781,6 +5127,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a character's jump activation and fatigue information",
       "facade": {
         "domain": "character",
@@ -4790,6 +5140,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/fatigue"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdFatigue",
       "pagination": {
         "kind": "none",
@@ -4852,6 +5203,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -4895,6 +5247,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-location",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -4933,6 +5291,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return fittings of a character",
       "facade": {
         "domain": "fittings",
@@ -4942,6 +5304,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/fittings"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdFittings",
       "pagination": {
         "kind": "none",
@@ -5004,6 +5367,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -5047,6 +5411,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fitting",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5085,6 +5455,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return the fleet ID the character is in, if any.",
       "facade": {
         "domain": "fleets",
@@ -5094,6 +5468,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/fleet"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdFleet",
       "pagination": {
         "kind": "none",
@@ -5156,6 +5531,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -5199,6 +5575,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5232,6 +5614,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Statistical overview of a character involved in faction warfare\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "factionWarfare",
@@ -5241,6 +5627,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/fw/stats"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdFwStats",
       "pagination": {
         "kind": "none",
@@ -5303,6 +5690,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -5346,6 +5734,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5384,6 +5778,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return implants on the active clone of a character",
       "facade": {
         "domain": "clones",
@@ -5393,6 +5791,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/implants"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdImplants",
       "pagination": {
         "kind": "none",
@@ -5455,6 +5854,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -5498,6 +5898,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5536,6 +5942,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List industry jobs placed by a character",
       "facade": {
         "domain": "industry",
@@ -5545,6 +5955,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/industry/jobs"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdIndustryJobs",
       "pagination": {
         "kind": "none",
@@ -5621,6 +6032,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -5671,6 +6083,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5709,6 +6127,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of a character's kills and losses going back 90 days",
       "facade": {
         "domain": "killmails",
@@ -5718,6 +6140,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/killmails/recent"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdKillmailsRecent",
       "pagination": {
         "kind": "offset",
@@ -5800,6 +6223,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -5850,6 +6274,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-killmail",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -5888,6 +6318,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Information about the characters current location. Returns the current solar system id, and also the current station or structure ID if applicable",
       "facade": {
         "domain": "location",
@@ -5897,6 +6331,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/location"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdLocation",
       "pagination": {
         "kind": "none",
@@ -5959,6 +6394,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -6002,6 +6438,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-location",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6040,6 +6482,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of loyalty points for all corporations the character has worked for",
       "facade": {
         "domain": "loyalty",
@@ -6049,6 +6495,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/loyalty/points"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdLoyaltyPoints",
       "pagination": {
         "kind": "none",
@@ -6111,6 +6558,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -6154,6 +6602,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-wallet",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6192,6 +6646,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return the 50 most recent mail headers belonging to the character that match the query criteria. Queries can be filtered by label, and last_mail_id can be used to paginate backwards",
       "facade": {
         "domain": "mail",
@@ -6201,6 +6659,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/mail"
       },
+      "maximumBatchSize": 25,
       "operationId": "GetCharactersCharacterIdMail",
       "pagination": {
         "kind": "none",
@@ -6299,6 +6758,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [
+        {
+          "location": "query",
+          "path": [
+            "labels"
+          ],
+          "maximumItems": 25
+        }
+      ],
       "requestSchemas": [
         {
           "group": "headers",
@@ -6349,6 +6817,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6387,6 +6861,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of the users mail labels, unread counts for each label and a total unread count.",
       "facade": {
         "domain": "mail",
@@ -6396,6 +6874,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/mail/labels"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdMailLabels",
       "pagination": {
         "kind": "none",
@@ -6458,6 +6937,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -6501,6 +6981,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6539,6 +7025,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return all mailing lists that the character is subscribed to",
       "facade": {
         "domain": "mail",
@@ -6548,6 +7038,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/mail/lists"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdMailLists",
       "pagination": {
         "kind": "none",
@@ -6610,6 +7101,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -6653,6 +7145,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6691,6 +7189,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return the contents of an EVE mail",
       "facade": {
         "domain": "mail",
@@ -6700,6 +7202,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/mail/{mail_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdMailMailId",
       "pagination": {
         "kind": "none",
@@ -6777,6 +7280,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -6820,6 +7324,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -6858,6 +7368,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of medals the character has",
       "facade": {
         "domain": "character",
@@ -6867,6 +7381,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/medals"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdMedals",
       "pagination": {
         "kind": "none",
@@ -6929,6 +7444,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -6972,6 +7488,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7010,6 +7532,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Paginated record of all mining done by a character for the past 30 days",
       "facade": {
         "domain": "industry",
@@ -7019,6 +7545,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/mining"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdMining",
       "pagination": {
         "kind": "offset",
@@ -7101,6 +7628,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -7151,6 +7679,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7189,6 +7723,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return character notifications",
       "facade": {
         "domain": "character",
@@ -7198,6 +7736,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/notifications"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdNotifications",
       "pagination": {
         "kind": "none",
@@ -7260,6 +7799,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -7303,6 +7843,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-notification",
+        "maximumTokens": 15,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7341,6 +7887,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return notifications about having been added to someone's contact list",
       "facade": {
         "domain": "character",
@@ -7350,6 +7900,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/notifications/contacts"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdNotificationsContacts",
       "pagination": {
         "kind": "none",
@@ -7412,6 +7963,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -7455,6 +8007,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7493,6 +8051,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Checks if the character is currently online",
       "facade": {
         "domain": "location",
@@ -7502,6 +8064,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/online"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdOnline",
       "pagination": {
         "kind": "none",
@@ -7564,6 +8127,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -7607,6 +8171,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-location",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7645,6 +8215,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List open market orders placed by a character",
       "facade": {
         "domain": "market",
@@ -7654,6 +8228,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/orders"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdOrders",
       "pagination": {
         "kind": "none",
@@ -7716,6 +8291,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -7759,6 +8335,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7797,6 +8376,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List cancelled and expired market orders placed by a character up to 90 days in the past.",
       "facade": {
         "domain": "market",
@@ -7806,6 +8389,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/orders/history"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdOrdersHistory",
       "pagination": {
         "kind": "offset",
@@ -7888,6 +8472,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -7938,6 +8523,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -7976,6 +8564,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a list of all planetary colonies owned by a character.",
       "facade": {
         "domain": "planetaryInteraction",
@@ -7985,6 +8577,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/planets"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdPlanets",
       "pagination": {
         "kind": "none",
@@ -8047,6 +8640,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -8090,6 +8684,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8128,6 +8728,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns full details on the layout of a single planetary colony, including links, pins and routes. Note: Planetary information is only recalculated when the colony is viewed through the client. Information will not update until this criteria is met.",
       "facade": {
         "domain": "planetaryInteraction",
@@ -8137,6 +8741,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/planets/{planet_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdPlanetsPlanetId",
       "pagination": {
         "kind": "none",
@@ -8214,6 +8819,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -8257,6 +8863,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8288,6 +8900,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get portrait urls for a character\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "character",
@@ -8297,6 +8913,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/portrait"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdPortrait",
       "pagination": {
         "kind": "none",
@@ -8359,6 +8976,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -8402,6 +9020,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8440,6 +9064,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a character's corporation roles",
       "facade": {
         "domain": "character",
@@ -8449,6 +9077,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/roles"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdRoles",
       "pagination": {
         "kind": "none",
@@ -8511,6 +9140,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -8554,6 +9184,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8592,6 +9228,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Search for entities that match a given sub-string.",
       "facade": {
         "domain": "search",
@@ -8601,6 +9241,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/search"
       },
+      "maximumBatchSize": 11,
       "operationId": "GetCharactersCharacterIdSearch",
       "pagination": {
         "kind": "none",
@@ -8726,6 +9367,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [
+        {
+          "location": "query",
+          "path": [
+            "categories"
+          ],
+          "maximumItems": 11
+        }
+      ],
       "requestSchemas": [
         {
           "group": "headers",
@@ -8776,6 +9426,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8814,6 +9467,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the current ship type, name and id",
       "facade": {
         "domain": "location",
@@ -8823,6 +9480,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/ship"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdShip",
       "pagination": {
         "kind": "none",
@@ -8885,6 +9543,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -8928,6 +9587,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-location",
+        "maximumTokens": 1200,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -8966,6 +9631,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List the configured skill queue for the given character.\n\nEntries that have their finish time in the past are completed, but aren't updated in the \"/skills\" route\nyet. This will happen the next time the character logs in.",
       "facade": {
         "domain": "skills",
@@ -8975,6 +9644,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/skillqueue"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdSkillqueue",
       "pagination": {
         "kind": "none",
@@ -9038,6 +9708,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -9084,6 +9755,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9122,6 +9799,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List all trained skills for the given character.\n\nSkills returned by this route can be out-of-date if the character hasn't logged in since one or more skills\ncompleted training. Use the /skillqueue route to check for skills that completed training. Entries that are\nin the past need to be applied on top of this list to get an accurate view of the character's current skills.",
       "facade": {
         "domain": "skills",
@@ -9131,6 +9812,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/skills"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdSkills",
       "pagination": {
         "kind": "none",
@@ -9194,6 +9876,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -9237,6 +9920,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9275,6 +9964,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return character standings from agents, NPC corporations, and factions",
       "facade": {
         "domain": "character",
@@ -9284,6 +9977,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/standings"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdStandings",
       "pagination": {
         "kind": "none",
@@ -9346,6 +10040,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -9389,6 +10084,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9427,6 +10128,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a character's titles",
       "facade": {
         "domain": "character",
@@ -9436,6 +10141,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/titles"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdTitles",
       "pagination": {
         "kind": "none",
@@ -9498,6 +10204,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -9541,6 +10248,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9579,6 +10292,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a character's wallet balance",
       "facade": {
         "domain": "wallet",
@@ -9588,6 +10305,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/wallet"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdWallet",
       "pagination": {
         "kind": "none",
@@ -9650,6 +10368,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -9693,6 +10412,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-wallet",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9731,6 +10456,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Retrieve the given character's wallet journal going 30 days back",
       "facade": {
         "domain": "wallet",
@@ -9740,6 +10469,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/wallet/journal"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdWalletJournal",
       "pagination": {
         "kind": "offset",
@@ -9822,6 +10552,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -9872,6 +10603,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-wallet",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -9910,6 +10647,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get wallet transactions of a character",
       "facade": {
         "domain": "wallet",
@@ -9919,6 +10660,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/wallet/transactions"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCharacterIdWalletTransactions",
       "pagination": {
         "kind": "none",
@@ -9996,6 +10738,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -10046,6 +10789,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-wallet",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10084,6 +10833,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all SKINR licenses you own",
       "facade": {
         "domain": "cosmetics",
@@ -10093,6 +10846,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/cosmetics/skinr"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCosmeticsSkinr",
       "pagination": {
         "kind": "none",
@@ -10156,6 +10910,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -10199,6 +10954,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-skinr",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10237,6 +10998,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all SKINR component licenses you own",
       "facade": {
         "domain": "cosmetics",
@@ -10246,6 +11011,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/cosmetics/skinr/components"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersCosmeticsSkinrComponents",
       "pagination": {
         "kind": "none",
@@ -10309,6 +11075,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -10352,6 +11119,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-skinr",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10389,6 +11162,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Public information about a character",
       "facade": {
         "domain": "character",
@@ -10398,6 +11175,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersDetail",
       "pagination": {
         "kind": "none",
@@ -10461,6 +11239,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -10504,6 +11283,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10542,6 +11324,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all freelance jobs you are actively participating in.",
       "facade": {
         "domain": "freelanceJobs",
@@ -10551,6 +11337,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/freelance-jobs"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersFreelanceJobsListing",
       "pagination": {
         "kind": "none",
@@ -10614,6 +11401,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -10657,6 +11445,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-freelance-job",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10695,6 +11489,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Show your participation in a freelance job.",
       "facade": {
         "domain": "freelanceJobs",
@@ -10704,6 +11502,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/freelance-jobs/{job_id}/participation"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersFreelanceJobsParticipation",
       "pagination": {
         "kind": "none",
@@ -10781,6 +11580,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -10824,6 +11624,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-freelance-job",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -10862,6 +11668,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of a Mercenary Tactical Operation.",
       "facade": {
         "domain": "activities",
@@ -10871,6 +11681,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/mercenary-tactical-operations/{operation_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersMercenaryTacticalOperationsDetail",
       "pagination": {
         "kind": "none",
@@ -10948,6 +11759,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -10991,6 +11803,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-activity",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11029,6 +11847,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all Mercenary Tactical Operations for the character.",
       "facade": {
         "domain": "activities",
@@ -11038,6 +11860,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/mercenary-tactical-operations"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersMercenaryTacticalOperationsListing",
       "pagination": {
         "kind": "none",
@@ -11101,6 +11924,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -11144,6 +11968,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-activity",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11182,6 +12012,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of the military campaign objectives the character has participated in.",
       "facade": {
         "domain": "militaryCampaigns",
@@ -11191,6 +12025,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/military-campaigns/objectives"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersMilitaryCampaignsObjectivesListing",
       "pagination": {
         "kind": "none",
@@ -11300,6 +12135,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -11350,6 +12186,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-military-campaign",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11388,6 +12230,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Show your participation in a military campaign objective.",
       "facade": {
         "domain": "militaryCampaigns",
@@ -11397,6 +12243,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/military-campaigns/objectives/{objective_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersMilitaryCampaignsObjectivesParticipation",
       "pagination": {
         "kind": "none",
@@ -11474,6 +12321,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -11517,6 +12365,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-military-campaign",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11549,10 +12403,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ],
         "extensions": {
           "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List the SKINR listings a character has posted on the Paragon Hub.",
       "facade": {
         "domain": "paragonHub",
@@ -11562,6 +12421,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/paragon-hub/skinr"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersParagonHubSkinr",
       "pagination": {
         "kind": "none",
@@ -11671,6 +12531,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -11721,6 +12582,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-paragon-hub",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11759,6 +12626,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of a Mercenary Den.",
       "facade": {
         "domain": "structures",
@@ -11768,6 +12639,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/structures/mercenary-dens/{mercenary_den_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersStructuresMercenaryDensDetail",
       "pagination": {
         "kind": "none",
@@ -11845,6 +12717,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -11888,6 +12761,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-structure",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -11926,6 +12805,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all Mercenary Dens.",
       "facade": {
         "domain": "structures",
@@ -11935,6 +12818,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/characters/{character_id}/structures/mercenary-dens"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCharactersStructuresMercenaryDensListing",
       "pagination": {
         "kind": "none",
@@ -11998,6 +12882,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -12041,6 +12926,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-structure",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12077,6 +12968,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Lists bids on a public auction contract",
       "facade": {
         "domain": "contracts",
@@ -12086,6 +12981,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/contracts/public/bids/{contract_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetContractsPublicBidsContractId",
       "pagination": {
         "kind": "offset",
@@ -12170,6 +13066,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -12230,6 +13127,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12266,6 +13166,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Lists items of a public contract",
       "facade": {
         "domain": "contracts",
@@ -12275,6 +13179,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/contracts/public/items/{contract_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetContractsPublicItemsContractId",
       "pagination": {
         "kind": "offset",
@@ -12359,6 +13264,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -12419,6 +13325,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12455,6 +13364,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a paginated list of all public contracts in the given region",
       "facade": {
         "domain": "contracts",
@@ -12464,6 +13377,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/contracts/public/{region_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetContractsPublicRegionId",
       "pagination": {
         "kind": "offset",
@@ -12548,6 +13462,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -12598,6 +13513,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12636,6 +13554,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Extraction timers for all moon chunks being extracted by refineries belonging to a corporation.",
       "facade": {
         "domain": "industry",
@@ -12645,6 +13567,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporation/{corporation_id}/mining/extractions"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationCorporationIdMiningExtractions",
       "pagination": {
         "kind": "offset",
@@ -12727,6 +13650,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -12777,6 +13701,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12815,6 +13745,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Paginated list of all entities capable of observing and recording mining for a corporation",
       "facade": {
         "domain": "industry",
@@ -12824,6 +13758,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporation/{corporation_id}/mining/observers"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationCorporationIdMiningObservers",
       "pagination": {
         "kind": "offset",
@@ -12906,6 +13841,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -12956,6 +13892,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -12994,6 +13936,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Paginated record of all mining seen by an observer",
       "facade": {
         "domain": "industry",
@@ -13003,6 +13949,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporation/{corporation_id}/mining/observers/{observer_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationCorporationIdMiningObserversObserverId",
       "pagination": {
         "kind": "offset",
@@ -13100,6 +14047,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -13150,6 +14098,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13187,6 +14141,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Public information about a corporation",
       "facade": {
         "domain": "corporation",
@@ -13196,6 +14154,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationId",
       "pagination": {
         "kind": "none",
@@ -13259,6 +14218,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -13302,6 +14262,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13338,6 +14301,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of all the alliances a corporation has been a member of",
       "facade": {
         "domain": "corporation",
@@ -13347,6 +14314,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/alliancehistory"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdAlliancehistory",
       "pagination": {
         "kind": "none",
@@ -13409,6 +14377,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -13452,6 +14421,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13490,6 +14462,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of the corporation assets",
       "facade": {
         "domain": "assets",
@@ -13499,6 +14475,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/assets"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdAssets",
       "pagination": {
         "kind": "offset",
@@ -13581,6 +14558,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -13631,6 +14609,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-asset",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13669,6 +14653,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a list of blueprints the corporation owns",
       "facade": {
         "domain": "corporation",
@@ -13678,6 +14666,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/blueprints"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdBlueprints",
       "pagination": {
         "kind": "offset",
@@ -13760,6 +14749,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -13810,6 +14800,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -13848,6 +14844,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return contacts of a corporation",
       "facade": {
         "domain": "contacts",
@@ -13857,6 +14857,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/contacts"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdContacts",
       "pagination": {
         "kind": "offset",
@@ -13939,6 +14940,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -13989,6 +14991,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-social",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14027,6 +15035,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return custom labels for a corporation's contacts",
       "facade": {
         "domain": "contacts",
@@ -14036,6 +15048,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/contacts/labels"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdContactsLabels",
       "pagination": {
         "kind": "none",
@@ -14098,6 +15111,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -14141,6 +15155,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-social",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14179,6 +15199,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns logs recorded in the past seven days from all audit log secure containers (ALSC) owned by a given corporation",
       "facade": {
         "domain": "corporation",
@@ -14188,6 +15212,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/containers/logs"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdContainersLogs",
       "pagination": {
         "kind": "offset",
@@ -14270,6 +15295,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -14320,6 +15346,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14358,6 +15390,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns contracts available to a corporation, only if the corporation is issuer, acceptor or assignee. Only returns contracts no older than 30 days, or if the status is \"in_progress\".",
       "facade": {
         "domain": "contracts",
@@ -14367,6 +15403,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/contracts"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdContracts",
       "pagination": {
         "kind": "offset",
@@ -14449,6 +15486,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -14499,6 +15537,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-contract",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14537,6 +15581,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Lists bids on a particular auction contract",
       "facade": {
         "domain": "contracts",
@@ -14546,6 +15594,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/contracts/{contract_id}/bids"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdContractsContractIdBids",
       "pagination": {
         "kind": "offset",
@@ -14643,6 +15692,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -14693,6 +15743,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-contract",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14731,6 +15787,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Lists items of a particular contract",
       "facade": {
         "domain": "contracts",
@@ -14740,6 +15800,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/contracts/{contract_id}/items"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdContractsContractIdItems",
       "pagination": {
         "kind": "none",
@@ -14817,6 +15878,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -14860,6 +15922,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-contract",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -14898,6 +15966,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List customs offices owned by a corporation",
       "facade": {
         "domain": "planetaryInteraction",
@@ -14907,6 +15979,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/customs_offices"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdCustomsOffices",
       "pagination": {
         "kind": "offset",
@@ -14989,6 +16062,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -15039,6 +16113,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15077,6 +16157,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return corporation hangar and wallet division names, only show if a division is not using the default name",
       "facade": {
         "domain": "corporation",
@@ -15086,6 +16170,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/divisions"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdDivisions",
       "pagination": {
         "kind": "none",
@@ -15148,6 +16233,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -15191,6 +16277,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-wallet",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15229,6 +16321,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a corporation's facilities",
       "facade": {
         "domain": "corporation",
@@ -15238,6 +16334,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/facilities"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdFacilities",
       "pagination": {
         "kind": "none",
@@ -15300,6 +16397,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -15343,6 +16441,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15376,6 +16480,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Statistics about a corporation involved in faction warfare\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "factionWarfare",
@@ -15385,6 +16493,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/fw/stats"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdFwStats",
       "pagination": {
         "kind": "none",
@@ -15447,6 +16556,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -15490,6 +16600,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15526,6 +16642,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the icon urls for a corporation",
       "facade": {
         "domain": "corporation",
@@ -15535,6 +16655,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/icons"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdIcons",
       "pagination": {
         "kind": "none",
@@ -15597,6 +16718,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -15640,6 +16762,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15678,6 +16803,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List industry jobs run by a corporation",
       "facade": {
         "domain": "industry",
@@ -15687,6 +16816,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/industry/jobs"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdIndustryJobs",
       "pagination": {
         "kind": "offset",
@@ -15784,6 +16914,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -15834,6 +16965,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-industry",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -15872,6 +17009,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of a corporation's kills and losses going back 90 days",
       "facade": {
         "domain": "killmails",
@@ -15881,6 +17022,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/killmails/recent"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdKillmailsRecent",
       "pagination": {
         "kind": "offset",
@@ -15963,6 +17105,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -16013,6 +17156,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-killmail",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16051,6 +17200,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a corporation's medals",
       "facade": {
         "domain": "corporation",
@@ -16060,6 +17213,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/medals"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdMedals",
       "pagination": {
         "kind": "offset",
@@ -16142,6 +17296,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -16192,6 +17347,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-detail",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16230,6 +17391,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns medals issued by a corporation",
       "facade": {
         "domain": "corporation",
@@ -16239,6 +17404,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/medals/issued"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdMedalsIssued",
       "pagination": {
         "kind": "offset",
@@ -16321,6 +17487,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -16371,6 +17538,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-detail",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16409,6 +17582,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return the current member list of a corporation, the token's character need to be a member of the corporation.",
       "facade": {
         "domain": "corporation",
@@ -16418,6 +17595,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/members"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdMembers",
       "pagination": {
         "kind": "none",
@@ -16480,6 +17658,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -16523,6 +17702,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-member",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16561,6 +17746,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a corporation's member limit, not including CEO himself",
       "facade": {
         "domain": "corporation",
@@ -16570,6 +17759,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/members/limit"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdMembersLimit",
       "pagination": {
         "kind": "none",
@@ -16632,6 +17822,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -16675,6 +17866,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-member",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16713,6 +17910,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a corporation's members' titles",
       "facade": {
         "domain": "corporation",
@@ -16722,6 +17923,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/members/titles"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdMembersTitles",
       "pagination": {
         "kind": "none",
@@ -16784,6 +17986,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -16827,6 +18030,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-member",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -16865,6 +18074,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns additional information about a corporation's members which helps tracking their activities",
       "facade": {
         "domain": "corporation",
@@ -16874,6 +18087,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/membertracking"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdMembertracking",
       "pagination": {
         "kind": "none",
@@ -16936,6 +18150,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -16979,6 +18194,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-member",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17017,6 +18238,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List open market orders placed on behalf of a corporation",
       "facade": {
         "domain": "market",
@@ -17026,6 +18251,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/orders"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdOrders",
       "pagination": {
         "kind": "offset",
@@ -17108,6 +18334,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -17158,6 +18385,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17196,6 +18426,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List cancelled and expired market orders placed on behalf of a corporation up to 90 days in the past.",
       "facade": {
         "domain": "market",
@@ -17205,6 +18439,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/orders/history"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdOrdersHistory",
       "pagination": {
         "kind": "offset",
@@ -17287,6 +18522,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -17337,6 +18573,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17375,6 +18614,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return the roles of all members if the character has the personnel manager role or any grantable role.",
       "facade": {
         "domain": "corporation",
@@ -17384,6 +18627,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/roles"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdRoles",
       "pagination": {
         "kind": "none",
@@ -17446,6 +18690,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -17489,6 +18734,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-member",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17527,6 +18778,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return how roles have changed for a coporation's members, up to a month",
       "facade": {
         "domain": "corporation",
@@ -17536,6 +18791,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/roles/history"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdRolesHistory",
       "pagination": {
         "kind": "offset",
@@ -17618,6 +18874,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -17668,6 +18925,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-member",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17706,6 +18969,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return the current shareholders of a corporation.",
       "facade": {
         "domain": "corporation",
@@ -17715,6 +18982,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/shareholders"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdShareholders",
       "pagination": {
         "kind": "offset",
@@ -17797,6 +19065,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -17847,6 +19116,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-detail",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -17885,6 +19160,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return corporation standings from agents, NPC corporations, and factions",
       "facade": {
         "domain": "corporation",
@@ -17894,6 +19173,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/standings"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdStandings",
       "pagination": {
         "kind": "offset",
@@ -17976,6 +19256,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -18026,6 +19307,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-member",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18064,6 +19351,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns list of corporation starbases (POSes)",
       "facade": {
         "domain": "corporation",
@@ -18073,6 +19364,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/starbases"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdStarbases",
       "pagination": {
         "kind": "offset",
@@ -18155,6 +19447,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -18205,6 +19498,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18243,6 +19542,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns various settings and fuels of a starbase (POS)",
       "facade": {
         "domain": "corporation",
@@ -18252,6 +19555,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/starbases/{starbase_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdStarbasesStarbaseId",
       "pagination": {
         "kind": "none",
@@ -18344,6 +19648,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -18394,6 +19699,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18432,6 +19743,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of corporation structures. This route's version includes the changes to structures detailed in this blog: https://www.eveonline.com/article/upwell-2.0-structures-changes-coming-on-february-13th",
       "facade": {
         "domain": "corporation",
@@ -18441,6 +19756,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/structures"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdStructures",
       "pagination": {
         "kind": "offset",
@@ -18523,6 +19839,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -18573,6 +19890,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18611,6 +19934,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns a corporation's titles",
       "facade": {
         "domain": "corporation",
@@ -18620,6 +19947,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/titles"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdTitles",
       "pagination": {
         "kind": "none",
@@ -18682,6 +20010,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -18725,6 +20054,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-detail",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18763,6 +20098,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a corporation's wallets",
       "facade": {
         "domain": "wallet",
@@ -18772,6 +20111,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/wallets"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdWallets",
       "pagination": {
         "kind": "none",
@@ -18834,6 +20174,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -18877,6 +20218,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-wallet",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -18915,6 +20262,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Retrieve the given corporation's wallet journal for the given division going 30 days back",
       "facade": {
         "domain": "wallet",
@@ -18924,6 +20275,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/wallets/{division}/journal"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdWalletsDivisionJournal",
       "pagination": {
         "kind": "offset",
@@ -19021,6 +20373,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -19071,6 +20424,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-wallet",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19109,6 +20468,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get wallet transactions of a corporation",
       "facade": {
         "domain": "wallet",
@@ -19118,6 +20481,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/wallets/{division}/transactions"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsCorporationIdWalletsDivisionTransactions",
       "pagination": {
         "kind": "none",
@@ -19210,6 +20574,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -19260,6 +20625,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-wallet",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19296,6 +20667,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all freelance jobs for your corporation.",
       "facade": {
         "domain": "freelanceJobs",
@@ -19305,6 +20680,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/freelance-jobs"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsFreelanceJobsListing",
       "pagination": {
         "kind": "none",
@@ -19414,6 +20790,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -19464,6 +20841,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-freelance-job",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19500,6 +20883,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all participants of a freelance job.",
       "facade": {
         "domain": "freelanceJobs",
@@ -19509,6 +20896,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/freelance-jobs/{job_id}/participants"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsFreelanceJobsParticipants",
       "pagination": {
         "kind": "none",
@@ -19632,6 +21020,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -19682,6 +21071,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-freelance-job",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19713,6 +21108,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of npc corporations\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "corporation",
@@ -19722,6 +21121,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/npccorps"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsNpccorps",
       "pagination": {
         "kind": "none",
@@ -19771,6 +21171,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -19807,6 +21208,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -19845,6 +21249,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Show your contribution to a corporation project.",
       "facade": {
         "domain": "corporationProjects",
@@ -19854,6 +21262,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/projects/{project_id}/contribution/{character_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsProjectsContribution",
       "pagination": {
         "kind": "none",
@@ -19945,6 +21354,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -19988,6 +21398,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-project",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20024,6 +21440,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all contributors to a corporation project.",
       "facade": {
         "domain": "corporationProjects",
@@ -20033,6 +21453,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/projects/{project_id}/contributors"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsProjectsContributors",
       "pagination": {
         "kind": "none",
@@ -20156,6 +21577,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -20206,6 +21628,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-project",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20244,6 +21672,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of a corporation project.",
       "facade": {
         "domain": "corporationProjects",
@@ -20253,6 +21685,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/projects/{project_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsProjectsDetail",
       "pagination": {
         "kind": "none",
@@ -20330,6 +21763,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -20373,6 +21807,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-project",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20409,6 +21849,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all (active) corporation projects.",
       "facade": {
         "domain": "corporationProjects",
@@ -20418,6 +21862,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/projects"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsProjectsListing",
       "pagination": {
         "kind": "none",
@@ -20550,6 +21995,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -20600,6 +22046,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-project",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20638,6 +22090,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of a Skyhook.",
       "facade": {
         "domain": "structures",
@@ -20647,6 +22103,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/structures/skyhooks/{skyhook_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsStructuresSkyhooksDetail",
       "pagination": {
         "kind": "none",
@@ -20724,6 +22181,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -20767,6 +22225,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20805,6 +22269,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all Skyhooks.",
       "facade": {
         "domain": "structures",
@@ -20814,6 +22282,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/structures/skyhooks"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsStructuresSkyhooksListing",
       "pagination": {
         "kind": "none",
@@ -20877,6 +22346,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -20920,6 +22390,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -20958,6 +22434,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of a Sovereignty Hub.",
       "facade": {
         "domain": "structures",
@@ -20967,6 +22447,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/structures/sovereignty-hubs/{sovereignty_hub_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsStructuresSovereigntyHubsDetail",
       "pagination": {
         "kind": "none",
@@ -21044,6 +22525,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -21087,6 +22569,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21125,6 +22613,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all Sovereignty Hubs.",
       "facade": {
         "domain": "structures",
@@ -21134,6 +22626,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/corporations/{corporation_id}/structures/sovereignty-hubs"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCorporationsStructuresSovereigntyHubsListing",
       "pagination": {
         "kind": "none",
@@ -21197,6 +22690,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -21240,6 +22734,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-structure",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21277,6 +22777,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "All attributes of a SKINR license",
       "facade": {
         "domain": "cosmetics",
@@ -21286,6 +22790,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/cosmetics/skinr/{skinr_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetCosmeticsSkinr",
       "pagination": {
         "kind": "none",
@@ -21349,6 +22854,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -21392,6 +22898,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "skinr",
+        "maximumTokens": 12000,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21423,6 +22935,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of dogma attribute ids\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "dogma",
@@ -21432,6 +22948,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/dogma/attributes"
       },
+      "maximumBatchSize": null,
       "operationId": "GetDogmaAttributes",
       "pagination": {
         "kind": "none",
@@ -21481,6 +22998,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -21517,6 +23035,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21548,6 +23069,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a dogma attribute\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "dogma",
@@ -21557,6 +23082,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/dogma/attributes/{attribute_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetDogmaAttributesAttributeId",
       "pagination": {
         "kind": "none",
@@ -21621,6 +23147,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -21664,6 +23191,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21695,6 +23225,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns info about a dynamic item resulting from mutation with a mutaplasmid.\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "dogma",
@@ -21704,6 +23238,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/dogma/dynamic/items/{type_id}/{item_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetDogmaDynamicItemsTypeIdItemId",
       "pagination": {
         "kind": "none",
@@ -21781,6 +23316,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -21824,6 +23360,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21855,6 +23394,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of dogma effect ids\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "dogma",
@@ -21864,6 +23407,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/dogma/effects"
       },
+      "maximumBatchSize": null,
       "operationId": "GetDogmaEffects",
       "pagination": {
         "kind": "none",
@@ -21913,6 +23457,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -21949,6 +23494,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -21980,6 +23528,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a dogma effect\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "dogma",
@@ -21989,6 +23541,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/dogma/effects/{effect_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetDogmaEffectsEffectId",
       "pagination": {
         "kind": "none",
@@ -22053,6 +23606,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -22096,6 +23650,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22134,6 +23691,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return details about a fleet",
       "facade": {
         "domain": "fleets",
@@ -22143,6 +23704,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fleets/{fleet_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFleetsFleetId",
       "pagination": {
         "kind": "none",
@@ -22207,6 +23769,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -22250,6 +23813,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22288,6 +23857,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return information about fleet members",
       "facade": {
         "domain": "fleets",
@@ -22297,6 +23870,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fleets/{fleet_id}/members"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFleetsFleetIdMembers",
       "pagination": {
         "kind": "none",
@@ -22361,6 +23935,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -22404,6 +23979,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22442,6 +24023,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return information about wings in a fleet",
       "facade": {
         "domain": "fleets",
@@ -22451,6 +24036,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fleets/{fleet_id}/wings"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFleetsFleetIdWings",
       "pagination": {
         "kind": "none",
@@ -22515,6 +24101,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -22558,6 +24145,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22594,6 +24187,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of a freelance job.\n\nJobs without an ACL (public jobs) does not require authentication.\n\nJobs with an ACL requires authentication, and requires that the character is:\n- An active participant of the job, or\n- A freelance job manager for the corporation that owns the job.",
       "facade": {
         "domain": "freelanceJobs",
@@ -22603,6 +24200,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/freelance-jobs/{job_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFreelanceJobsDetail",
       "pagination": {
         "kind": "none",
@@ -22666,6 +24264,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -22709,6 +24308,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "freelance-job",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22743,6 +24348,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all public freelance jobs.",
       "facade": {
         "domain": "freelanceJobs",
@@ -22752,6 +24361,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/freelance-jobs"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFreelanceJobsListing",
       "pagination": {
         "kind": "none",
@@ -22861,6 +24471,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -22904,6 +24515,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "freelance-job",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -22935,6 +24552,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Top 4 leaderboard of factions for kills and victory points separated by total, last week and yesterday\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "factionWarfare",
@@ -22944,6 +24565,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fw/leaderboards"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFwLeaderboards",
       "pagination": {
         "kind": "none",
@@ -22993,6 +24615,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23029,6 +24652,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23060,6 +24689,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Top 100 leaderboard of pilots for kills and victory points separated by total, last week and yesterday\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "factionWarfare",
@@ -23069,6 +24702,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fw/leaderboards/characters"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFwLeaderboardsCharacters",
       "pagination": {
         "kind": "none",
@@ -23118,6 +24752,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23154,6 +24789,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23185,6 +24826,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Top 10 leaderboard of corporations for kills and victory points separated by total, last week and yesterday\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "factionWarfare",
@@ -23194,6 +24839,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fw/leaderboards/corporations"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFwLeaderboardsCorporations",
       "pagination": {
         "kind": "none",
@@ -23243,6 +24889,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23279,6 +24926,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23310,6 +24963,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Statistical overviews of factions involved in faction warfare\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "factionWarfare",
@@ -23319,6 +24976,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fw/stats"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFwStats",
       "pagination": {
         "kind": "none",
@@ -23368,6 +25026,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23404,6 +25063,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23440,6 +25105,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "An overview of the current ownership of faction warfare solar systems",
       "facade": {
         "domain": "factionWarfare",
@@ -23449,6 +25118,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fw/systems"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFwSystems",
       "pagination": {
         "kind": "none",
@@ -23498,6 +25168,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23534,6 +25205,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23565,6 +25242,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Data about which NPC factions are at war\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "factionWarfare",
@@ -23574,6 +25255,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/fw/wars"
       },
+      "maximumBatchSize": null,
       "operationId": "GetFwWars",
       "pagination": {
         "kind": "none",
@@ -23623,6 +25305,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23659,6 +25342,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "factional-warfare",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23695,6 +25384,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of current incursions",
       "facade": {
         "domain": "incursions",
@@ -23704,6 +25397,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/incursions"
       },
+      "maximumBatchSize": null,
       "operationId": "GetIncursions",
       "pagination": {
         "kind": "none",
@@ -23753,6 +25447,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23789,6 +25484,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "incursion",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23825,6 +25526,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of industry facilities",
       "facade": {
         "domain": "industry",
@@ -23834,6 +25539,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/industry/facilities"
       },
+      "maximumBatchSize": null,
       "operationId": "GetIndustryFacilities",
       "pagination": {
         "kind": "none",
@@ -23883,6 +25589,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -23919,6 +25626,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "industry",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -23955,6 +25668,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return cost indices for solar systems",
       "facade": {
         "domain": "industry",
@@ -23964,6 +25681,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/industry/systems"
       },
+      "maximumBatchSize": null,
       "operationId": "GetIndustrySystems",
       "pagination": {
         "kind": "none",
@@ -24013,6 +25731,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -24049,6 +25768,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "industry",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24085,6 +25810,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return available insurance levels for all ship types",
       "facade": {
         "domain": "insurance",
@@ -24094,6 +25823,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/insurance/prices"
       },
+      "maximumBatchSize": null,
       "operationId": "GetInsurancePrices",
       "pagination": {
         "kind": "none",
@@ -24143,6 +25873,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -24179,6 +25910,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "insurance",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24215,6 +25952,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a single killmail from its ID and hash",
       "facade": {
         "domain": "killmails",
@@ -24224,6 +25965,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/killmails/{killmail_id}/{killmail_hash}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetKillmailsKillmailIdKillmailHash",
       "pagination": {
         "kind": "none",
@@ -24302,6 +26044,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -24345,6 +26088,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "killmail",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24376,6 +26125,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of offers from a specific corporation's loyalty store\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "loyalty",
@@ -24385,6 +26138,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/loyalty/stores/{corporation_id}/offers"
       },
+      "maximumBatchSize": null,
       "operationId": "GetLoyaltyStoresCorporationIdOffers",
       "pagination": {
         "kind": "none",
@@ -24447,6 +26201,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -24490,6 +26245,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24521,6 +26279,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of item groups\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "market",
@@ -24530,6 +26292,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/markets/groups"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMarketsGroups",
       "pagination": {
         "kind": "none",
@@ -24579,6 +26342,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -24615,6 +26379,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24646,6 +26413,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on an item group\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "market",
@@ -24655,6 +26426,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/markets/groups/{market_group_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMarketsGroupsMarketGroupId",
       "pagination": {
         "kind": "none",
@@ -24719,6 +26491,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -24762,6 +26535,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24798,6 +26574,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of prices",
       "facade": {
         "domain": "market",
@@ -24807,6 +26587,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/markets/prices"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMarketsPrices",
       "pagination": {
         "kind": "none",
@@ -24856,6 +26637,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -24892,6 +26674,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -24923,6 +26708,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of historical market statistics for the specified type in a region\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "market",
@@ -24932,6 +26721,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/markets/{region_id}/history"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMarketsRegionIdHistory",
       "pagination": {
         "kind": "none",
@@ -25011,6 +26801,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -25061,6 +26852,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25097,6 +26891,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of orders in a region",
       "facade": {
         "domain": "market",
@@ -25106,6 +26904,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/markets/{region_id}/orders"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMarketsRegionIdOrders",
       "pagination": {
         "kind": "offset",
@@ -25225,6 +27024,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -25275,6 +27075,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "market-order",
+        "maximumTokens": 12000,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25311,6 +27117,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of type IDs that have active orders in the region, for efficient market indexing.",
       "facade": {
         "domain": "market",
@@ -25320,6 +27130,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/markets/{region_id}/types"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMarketsRegionIdTypes",
       "pagination": {
         "kind": "offset",
@@ -25404,6 +27215,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -25454,6 +27266,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25492,6 +27307,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return all orders in a structure",
       "facade": {
         "domain": "market",
@@ -25501,6 +27320,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/markets/structures/{structure_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMarketsStructuresStructureId",
       "pagination": {
         "kind": "offset",
@@ -25585,6 +27405,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -25635,6 +27456,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25671,6 +27495,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the changelog of this API.",
       "facade": {
         "domain": "meta",
@@ -25680,6 +27508,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/meta/changelog"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMetaChangelog",
       "pagination": {
         "kind": "none",
@@ -25729,6 +27558,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -25765,6 +27595,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "meta",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25801,6 +27637,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of compatibility dates.",
       "facade": {
         "domain": "meta",
@@ -25810,6 +27650,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/meta/compatibility-dates"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMetaCompatibilityDates",
       "pagination": {
         "kind": "none",
@@ -25859,6 +27700,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -25895,6 +27737,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "meta",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -25931,6 +27779,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the name ESI is currently going by, plus the full and glorious history of every name it has ever had. The three letters have never once meant the same thing twice.",
       "facade": {
         "domain": "meta",
@@ -25940,6 +27792,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/meta/name"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMetaName",
       "pagination": {
         "kind": "none",
@@ -25989,6 +27842,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -26025,6 +27879,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "meta",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26059,6 +27919,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the health status of each API route.",
       "facade": {
         "domain": "meta",
@@ -26068,6 +27932,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/meta/status"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMetaStatus",
       "pagination": {
         "kind": "none",
@@ -26117,6 +27982,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -26153,6 +28019,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "meta",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26189,6 +28061,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of a military campaign.",
       "facade": {
         "domain": "militaryCampaigns",
@@ -26198,6 +28074,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/military-campaigns/{campaign_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMilitaryCampaignsDetail",
       "pagination": {
         "kind": "none",
@@ -26261,6 +28138,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -26304,6 +28182,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "military-campaign",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26340,6 +28224,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all active military campaigns.",
       "facade": {
         "domain": "militaryCampaigns",
@@ -26349,6 +28237,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/military-campaigns"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMilitaryCampaignsListing",
       "pagination": {
         "kind": "none",
@@ -26398,6 +28287,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -26434,6 +28324,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "military-campaign",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26470,6 +28366,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the details of an objective of a military campaign.",
       "facade": {
         "domain": "militaryCampaigns",
@@ -26479,6 +28379,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/military-campaigns/{campaign_id}/objectives/{objective_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMilitaryCampaignsObjectivesDetail",
       "pagination": {
         "kind": "none",
@@ -26556,6 +28457,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -26599,6 +28501,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "military-campaign",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26635,6 +28543,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all active, completed or expired objectives of a military campaign.",
       "facade": {
         "domain": "militaryCampaigns",
@@ -26644,6 +28556,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/military-campaigns/{campaign_id}/objectives"
       },
+      "maximumBatchSize": null,
       "operationId": "GetMilitaryCampaignsObjectivesListing",
       "pagination": {
         "kind": "none",
@@ -26753,6 +28666,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -26803,6 +28717,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "military-campaign",
+        "maximumTokens": 300,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -26833,10 +28753,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ],
         "extensions": {
           "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Browse the SKINR listings publicly available on the Paragon Hub.",
       "facade": {
         "domain": "paragonHub",
@@ -26846,6 +28771,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/paragon-hub/skinr"
       },
+      "maximumBatchSize": null,
       "operationId": "GetParagonHubSkinr",
       "pagination": {
         "kind": "none",
@@ -26941,6 +28867,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -26984,6 +28911,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "paragon-hub",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27016,10 +28949,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ],
         "extensions": {
           "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Browse the SKINR listings on the Paragon Hub that are visible to the given alliance.",
       "facade": {
         "domain": "paragonHub",
@@ -27029,6 +28967,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/paragon-hub/skinr/alliances/{alliance_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetParagonHubSkinrAlliances",
       "pagination": {
         "kind": "none",
@@ -27138,6 +29077,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -27188,6 +29128,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-paragon-hub",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27220,10 +29166,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ],
         "extensions": {
           "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Browse the SKINR listings on the Paragon Hub that are visible to the given character.",
       "facade": {
         "domain": "paragonHub",
@@ -27233,6 +29184,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/paragon-hub/skinr/characters/{character_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetParagonHubSkinrCharacters",
       "pagination": {
         "kind": "none",
@@ -27342,6 +29294,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -27392,6 +29345,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-paragon-hub",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27424,10 +29383,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         ],
         "extensions": {
           "x-cache-mode": "event-based",
-          "x-server-cache-mode": "event-based"
+          "x-server-cache-mode": "event-based",
+          "x-tombstone-ttl": 604800
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Browse the SKINR listings on the Paragon Hub that are visible to the given corporation.",
       "facade": {
         "domain": "paragonHub",
@@ -27437,6 +29401,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/paragon-hub/skinr/corporations/{corporation_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetParagonHubSkinrCorporations",
       "pagination": {
         "kind": "none",
@@ -27546,6 +29511,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -27596,6 +29562,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-paragon-hub",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27633,6 +29605,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of all Skyhooks that currently or will shortly be raidable.",
       "facade": {
         "domain": "activities",
@@ -27642,6 +29618,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/skyhooks/raidable"
       },
+      "maximumBatchSize": null,
       "operationId": "GetSkyhooksRaidable",
       "pagination": {
         "kind": "none",
@@ -27691,6 +29668,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -27727,6 +29705,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "activity",
+        "maximumTokens": 30,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27763,6 +29747,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Shows sovereignty data for campaigns.",
       "facade": {
         "domain": "sovereignty",
@@ -27772,6 +29760,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/sovereignty/campaigns"
       },
+      "maximumBatchSize": null,
       "operationId": "GetSovereigntyCampaigns",
       "pagination": {
         "kind": "none",
@@ -27821,6 +29810,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -27857,6 +29847,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "sovereignty",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -27894,6 +29890,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Listing of sovereignty details for all K-space systems in New Eden.",
       "facade": {
         "domain": "sovereignty",
@@ -27903,6 +29903,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/sovereignty/systems"
       },
+      "maximumBatchSize": null,
       "operationId": "GetSovereigntySystems",
       "pagination": {
         "kind": "none",
@@ -27952,6 +29953,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -27988,6 +29990,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "sovereignty",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28025,6 +30033,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Current status of the EVE Online cluster",
       "facade": {
         "domain": "status",
@@ -28034,6 +30046,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/status"
       },
+      "maximumBatchSize": null,
       "operationId": "GetStatus",
       "pagination": {
         "kind": "none",
@@ -28083,6 +30096,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -28119,6 +30133,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "status",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28150,6 +30170,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get all character ancestries\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -28159,6 +30183,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/ancestries"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseAncestries",
       "pagination": {
         "kind": "none",
@@ -28208,6 +30233,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -28244,6 +30270,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28275,6 +30304,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on an asteroid belt\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -28284,6 +30317,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/asteroid_belts/{asteroid_belt_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseAsteroidBeltsAsteroidBeltId",
       "pagination": {
         "kind": "none",
@@ -28347,6 +30381,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -28390,6 +30425,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28421,6 +30459,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of bloodlines\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -28430,6 +30472,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/bloodlines"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseBloodlines",
       "pagination": {
         "kind": "none",
@@ -28479,6 +30522,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -28515,6 +30559,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28546,6 +30593,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of item categories\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -28555,6 +30606,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/categories"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseCategories",
       "pagination": {
         "kind": "none",
@@ -28604,6 +30656,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -28640,6 +30693,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28671,6 +30727,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information of an item category\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -28680,6 +30740,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/categories/{category_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseCategoriesCategoryId",
       "pagination": {
         "kind": "none",
@@ -28744,6 +30805,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -28787,6 +30849,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28818,6 +30883,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of constellations\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -28827,6 +30896,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/constellations"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseConstellations",
       "pagination": {
         "kind": "none",
@@ -28876,6 +30946,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -28912,6 +30983,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -28943,6 +31017,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a constellation\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -28952,6 +31030,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/constellations/{constellation_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseConstellationsConstellationId",
       "pagination": {
         "kind": "none",
@@ -29015,6 +31094,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -29058,6 +31138,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29089,6 +31172,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of factions\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -29098,6 +31185,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/factions"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseFactions",
       "pagination": {
         "kind": "none",
@@ -29147,6 +31235,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -29183,6 +31272,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29214,6 +31306,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of graphics\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -29223,6 +31319,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/graphics"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseGraphics",
       "pagination": {
         "kind": "none",
@@ -29272,6 +31369,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -29308,6 +31406,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29339,6 +31440,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a graphic\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -29348,6 +31453,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/graphics/{graphic_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseGraphicsGraphicId",
       "pagination": {
         "kind": "none",
@@ -29411,6 +31517,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -29454,6 +31561,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29485,6 +31595,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of item groups\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -29494,6 +31608,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/groups"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseGroups",
       "pagination": {
         "kind": "offset",
@@ -29563,6 +31678,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -29606,6 +31722,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29637,6 +31756,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on an item group\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -29646,6 +31769,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/groups/{group_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseGroupsGroupId",
       "pagination": {
         "kind": "none",
@@ -29710,6 +31834,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -29753,6 +31878,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29784,6 +31912,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a moon\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -29793,6 +31925,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/moons/{moon_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseMoonsMoonId",
       "pagination": {
         "kind": "none",
@@ -29856,6 +31989,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -29899,6 +32033,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -29930,6 +32067,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a planet\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -29939,6 +32080,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/planets/{planet_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniversePlanetsPlanetId",
       "pagination": {
         "kind": "none",
@@ -30002,6 +32144,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -30045,6 +32188,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30076,6 +32222,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of character races\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -30085,6 +32235,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/races"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseRaces",
       "pagination": {
         "kind": "none",
@@ -30134,6 +32285,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -30170,6 +32322,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30201,6 +32356,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of regions\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -30210,6 +32369,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/regions"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseRegions",
       "pagination": {
         "kind": "none",
@@ -30259,6 +32419,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -30295,6 +32456,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30326,6 +32490,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a region\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -30335,6 +32503,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/regions/{region_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseRegionsRegionId",
       "pagination": {
         "kind": "none",
@@ -30398,6 +32567,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -30441,6 +32611,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30477,6 +32650,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a planetary factory schematic",
       "facade": {
         "domain": "planetaryInteraction",
@@ -30486,6 +32663,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/schematics/{schematic_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseSchematicsSchematicId",
       "pagination": {
         "kind": "none",
@@ -30550,6 +32728,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -30593,6 +32772,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30624,6 +32806,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a stargate\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -30633,6 +32819,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/stargates/{stargate_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseStargatesStargateId",
       "pagination": {
         "kind": "none",
@@ -30696,6 +32883,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -30739,6 +32927,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30770,6 +32961,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a star\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -30779,6 +32974,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/stars/{star_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseStarsStarId",
       "pagination": {
         "kind": "none",
@@ -30842,6 +33038,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -30885,6 +33082,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -30916,6 +33116,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a station\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -30925,6 +33129,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/stations/{station_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseStationsStationId",
       "pagination": {
         "kind": "none",
@@ -30988,6 +33193,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -31031,6 +33237,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31067,6 +33276,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "List all public structures",
       "facade": {
         "domain": "universe",
@@ -31076,6 +33289,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/structures"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseStructures",
       "pagination": {
         "kind": "none",
@@ -31143,6 +33357,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -31186,6 +33401,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31224,6 +33442,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Returns information on requested structure if you are on the ACL. Otherwise, returns \"Forbidden\" for all inputs.",
       "facade": {
         "domain": "universe",
@@ -31233,6 +33455,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/structures/{structure_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseStructuresStructureId",
       "pagination": {
         "kind": "none",
@@ -31297,6 +33520,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -31340,6 +33564,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31376,6 +33603,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the number of jumps in solar systems within the last hour ending at the timestamp of the Last-Modified header, excluding wormhole space. Only systems with jumps will be listed",
       "facade": {
         "domain": "universe",
@@ -31385,6 +33616,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/system_jumps"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseSystemJumps",
       "pagination": {
         "kind": "none",
@@ -31434,6 +33666,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -31470,6 +33703,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31506,6 +33742,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get the number of ship, pod and NPC kills per solar system within the last hour ending at the timestamp of the Last-Modified header, excluding wormhole space. Only systems with kills will be listed",
       "facade": {
         "domain": "universe",
@@ -31515,6 +33755,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/system_kills"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseSystemKills",
       "pagination": {
         "kind": "none",
@@ -31564,6 +33805,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -31600,6 +33842,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31631,6 +33876,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of solar systems\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -31640,6 +33889,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/systems"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseSystems",
       "pagination": {
         "kind": "none",
@@ -31689,6 +33939,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -31725,6 +33976,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31756,6 +34010,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a solar system.\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -31765,6 +34023,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/systems/{system_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseSystemsSystemId",
       "pagination": {
         "kind": "none",
@@ -31828,6 +34087,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -31871,6 +34131,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -31902,6 +34165,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get a list of type ids\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -31911,6 +34178,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/types"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseTypes",
       "pagination": {
         "kind": "offset",
@@ -31980,6 +34248,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -32023,6 +34292,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32054,6 +34326,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Get information on a type\n\nThis route expires daily at 11:05",
       "facade": {
         "domain": "universe",
@@ -32063,6 +34339,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/universe/types/{type_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetUniverseTypesTypeId",
       "pagination": {
         "kind": "none",
@@ -32127,6 +34404,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -32170,6 +34448,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32206,6 +34487,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of wars",
       "facade": {
         "domain": "wars",
@@ -32215,6 +34500,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/wars"
       },
+      "maximumBatchSize": null,
       "operationId": "GetWars",
       "pagination": {
         "kind": "none",
@@ -32279,6 +34565,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -32322,6 +34609,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "killmail",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32358,6 +34651,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return details about a war",
       "facade": {
         "domain": "wars",
@@ -32367,6 +34664,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/wars/{war_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "GetWarsWarId",
       "pagination": {
         "kind": "none",
@@ -32431,6 +34729,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -32474,6 +34773,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "killmail",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32510,6 +34815,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return a list of kills related to a war",
       "facade": {
         "domain": "wars",
@@ -32519,6 +34828,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "GET",
         "path": "/wars/{war_id}/killmails"
       },
+      "maximumBatchSize": null,
       "operationId": "GetWarsWarIdKillmails",
       "pagination": {
         "kind": "offset",
@@ -32603,6 +34913,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -32653,6 +34964,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "killmail",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32689,6 +35006,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Bulk lookup of character IDs to corporation, alliance and faction",
       "facade": {
         "domain": "character",
@@ -32698,6 +35019,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/affiliation"
       },
+      "maximumBatchSize": 1000,
       "operationId": "PostCharactersAffiliation",
       "pagination": {
         "kind": "none",
@@ -32766,6 +35088,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 1000
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -32809,6 +35138,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -32845,6 +35177,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return locations for a set of item ids, which you can get from character assets endpoint. Coordinates for items in hangars or stations are set to (0,0,0)",
       "facade": {
         "domain": "assets",
@@ -32854,6 +35190,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/{character_id}/assets/locations"
       },
+      "maximumBatchSize": 1000,
       "operationId": "PostCharactersCharacterIdAssetsLocations",
       "pagination": {
         "kind": "none",
@@ -32935,6 +35272,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 1000
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -32985,6 +35329,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-asset",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33021,6 +35371,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return names for a set of item ids, which you can get from character assets endpoint. Typically used for items that can customize names, like containers or ships.",
       "facade": {
         "domain": "assets",
@@ -33030,6 +35384,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/{character_id}/assets/names"
       },
+      "maximumBatchSize": 1000,
       "operationId": "PostCharactersCharacterIdAssetsNames",
       "pagination": {
         "kind": "none",
@@ -33111,6 +35466,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 1000
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -33161,6 +35523,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-asset",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33197,6 +35565,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Bulk add contacts with same settings",
       "facade": {
         "domain": "contacts",
@@ -33206,6 +35578,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/{character_id}/contacts"
       },
+      "maximumBatchSize": null,
       "operationId": "PostCharactersCharacterIdContacts",
       "pagination": {
         "kind": "none",
@@ -33335,6 +35708,20 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 100
+        },
+        {
+          "location": "query",
+          "path": [
+            "label_ids"
+          ],
+          "maximumItems": 63
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -33392,6 +35779,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -33425,6 +35818,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Takes a source character ID in the url and a set of target character ID's in the body, returns a CSPA charge cost",
       "facade": {
         "domain": "character",
@@ -33434,6 +35831,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/{character_id}/cspa"
       },
+      "maximumBatchSize": 100,
       "operationId": "PostCharactersCharacterIdCspa",
       "pagination": {
         "kind": "none",
@@ -33515,6 +35913,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 100
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -33565,6 +35970,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-detail",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -33601,6 +36012,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Save a new fitting for a character",
       "facade": {
         "domain": "fittings",
@@ -33610,6 +36025,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/{character_id}/fittings"
       },
+      "maximumBatchSize": 512,
       "operationId": "PostCharactersCharacterIdFittings",
       "pagination": {
         "kind": "none",
@@ -33777,6 +36193,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [
+            "items"
+          ],
+          "maximumItems": 512
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -33827,6 +36252,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fitting",
+        "maximumTokens": 150,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -33860,6 +36291,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Create and send a new mail",
       "facade": {
         "domain": "mail",
@@ -33869,6 +36304,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/{character_id}/mail"
       },
+      "maximumBatchSize": 50,
       "operationId": "PostCharactersCharacterIdMail",
       "pagination": {
         "kind": "none",
@@ -33990,6 +36426,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [
+            "recipients"
+          ],
+          "maximumItems": 50
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -34040,6 +36485,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -34073,6 +36524,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Create a mail label",
       "facade": {
         "domain": "mail",
@@ -34082,6 +36537,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/characters/{character_id}/mail/labels"
       },
+      "maximumBatchSize": null,
       "operationId": "PostCharactersCharacterIdMailLabels",
       "pagination": {
         "kind": "none",
@@ -34190,6 +36646,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -34240,6 +36697,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -34273,6 +36736,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return locations for a set of item ids, which you can get from corporation assets endpoint. Coordinates for items in hangars or stations are set to (0,0,0)",
       "facade": {
         "domain": "assets",
@@ -34282,6 +36749,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/corporations/{corporation_id}/assets/locations"
       },
+      "maximumBatchSize": 1000,
       "operationId": "PostCorporationsCorporationIdAssetsLocations",
       "pagination": {
         "kind": "none",
@@ -34363,6 +36831,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 1000
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -34413,6 +36888,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-asset",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34449,6 +36930,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Return names for a set of item ids, which you can get from corporation assets endpoint. Only valid for items that can customize names, like containers or ships",
       "facade": {
         "domain": "assets",
@@ -34458,6 +36943,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/corporations/{corporation_id}/assets/names"
       },
+      "maximumBatchSize": 1000,
       "operationId": "PostCorporationsCorporationIdAssetsNames",
       "pagination": {
         "kind": "none",
@@ -34539,6 +37025,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 1000
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -34589,6 +37082,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "corp-asset",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -34625,6 +37124,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Invite a character into the fleet. If a character has a CSPA charge set it is not possible to invite them to the fleet using ESI",
       "facade": {
         "domain": "fleets",
@@ -34634,6 +37137,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/fleets/{fleet_id}/members"
       },
+      "maximumBatchSize": null,
       "operationId": "PostFleetsFleetIdMembers",
       "pagination": {
         "kind": "none",
@@ -34738,6 +37242,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -34781,6 +37286,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -34814,6 +37325,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Create a new wing in a fleet",
       "facade": {
         "domain": "fleets",
@@ -34823,6 +37338,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/fleets/{fleet_id}/wings"
       },
+      "maximumBatchSize": null,
       "operationId": "PostFleetsFleetIdWings",
       "pagination": {
         "kind": "none",
@@ -34887,6 +37403,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -34930,6 +37447,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -34963,6 +37486,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Create a new squad in a fleet",
       "facade": {
         "domain": "fleets",
@@ -34972,6 +37499,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/fleets/{fleet_id}/wings/{wing_id}/squads"
       },
+      "maximumBatchSize": null,
       "operationId": "PostFleetsFleetIdWingsWingIdSquads",
       "pagination": {
         "kind": "none",
@@ -35051,6 +37579,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -35094,6 +37623,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "201"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -35128,6 +37663,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Calculate the systems between the given origin and destination.",
       "facade": {
         "domain": "routes",
@@ -35137,6 +37676,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/route/{origin_system_id}/{destination_system_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "PostRoute",
       "pagination": {
         "kind": "none",
@@ -35225,6 +37765,22 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [
+            "avoid_systems"
+          ],
+          "maximumItems": 1000
+        },
+        {
+          "location": "body",
+          "path": [
+            "connections"
+          ],
+          "maximumItems": 1000
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -35275,6 +37831,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "routes",
+        "maximumTokens": 3600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -35311,6 +37873,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Set a solar system as autopilot waypoint",
       "facade": {
         "domain": "userInterface",
@@ -35320,6 +37886,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/ui/autopilot/waypoint"
       },
+      "maximumBatchSize": null,
       "operationId": "PostUiAutopilotWaypoint",
       "pagination": {
         "kind": "none",
@@ -35414,6 +37981,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -35450,6 +38018,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "ui",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -35483,6 +38057,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Open the contract window inside the client",
       "facade": {
         "domain": "userInterface",
@@ -35492,6 +38070,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/ui/openwindow/contract"
       },
+      "maximumBatchSize": null,
       "operationId": "PostUiOpenwindowContract",
       "pagination": {
         "kind": "none",
@@ -35556,6 +38135,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -35592,6 +38172,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "ui",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -35625,6 +38211,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Open the information window for a character, corporation or alliance inside the client",
       "facade": {
         "domain": "userInterface",
@@ -35634,6 +38224,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/ui/openwindow/information"
       },
+      "maximumBatchSize": null,
       "operationId": "PostUiOpenwindowInformation",
       "pagination": {
         "kind": "none",
@@ -35698,6 +38289,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -35734,6 +38326,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "ui",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -35767,6 +38365,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Open the market details window for a specific typeID inside the client",
       "facade": {
         "domain": "userInterface",
@@ -35776,6 +38378,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/ui/openwindow/marketdetails"
       },
+      "maximumBatchSize": null,
       "operationId": "PostUiOpenwindowMarketdetails",
       "pagination": {
         "kind": "none",
@@ -35840,6 +38443,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       ],
       "requestBody": null,
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "headers",
@@ -35876,6 +38480,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "ui",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -35909,6 +38519,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Open the New Mail window, according to settings from the request if applicable",
       "facade": {
         "domain": "userInterface",
@@ -35918,6 +38532,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/ui/openwindow/newmail"
       },
+      "maximumBatchSize": 50,
       "operationId": "PostUiOpenwindowNewmail",
       "pagination": {
         "kind": "none",
@@ -36012,6 +38627,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [
+            "recipients"
+          ],
+          "maximumItems": 50
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36048,6 +38672,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "ui",
+        "maximumTokens": 900,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -36079,6 +38709,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Resolve a set of names to IDs in the following categories: agents, alliances, characters, constellations, corporations factions, inventory_types, regions, stations, and systems. Only exact matches will be returned. All names searched for are cached for 12 hours",
       "facade": {
         "domain": "universe",
@@ -36088,6 +38722,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/universe/ids"
       },
+      "maximumBatchSize": 500,
       "operationId": "PostUniverseIds",
       "pagination": {
         "kind": "none",
@@ -36157,6 +38792,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 500
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36200,6 +38842,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -36234,6 +38879,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "read",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Resolve a set of IDs to names and categories. Supported ID's for resolving are: Characters, Corporations, Alliances, Stations, Solar Systems, Constellations, Regions, Types, Factions",
       "facade": {
         "domain": "universe",
@@ -36243,6 +38892,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "POST",
         "path": "/universe/names"
       },
+      "maximumBatchSize": 1000,
       "operationId": "PostUniverseNames",
       "pagination": {
         "kind": "none",
@@ -36311,6 +38961,13 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 1000
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36354,6 +39011,9 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "200"
         }
       ],
+      "rateLimit": {
+        "kind": "legacy-only"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": false,
@@ -36395,6 +39055,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         }
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Set your response status to an event",
       "facade": {
         "domain": "calendar",
@@ -36404,6 +39068,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "PUT",
         "path": "/characters/{character_id}/calendar/{event_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "PutCharactersCharacterIdCalendarEventId",
       "pagination": {
         "kind": "none",
@@ -36505,6 +39170,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -36548,6 +39214,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -36581,6 +39253,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Bulk edit contacts with same settings",
       "facade": {
         "domain": "contacts",
@@ -36590,6 +39266,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "PUT",
         "path": "/characters/{character_id}/contacts"
       },
+      "maximumBatchSize": null,
       "operationId": "PutCharactersCharacterIdContacts",
       "pagination": {
         "kind": "none",
@@ -36719,6 +39396,20 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [],
+          "maximumItems": 100
+        },
+        {
+          "location": "query",
+          "path": [
+            "label_ids"
+          ],
+          "maximumItems": 63
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36769,6 +39460,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -36802,6 +39499,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Update metadata about a mail",
       "facade": {
         "domain": "mail",
@@ -36811,6 +39512,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "PUT",
         "path": "/characters/{character_id}/mail/{mail_id}"
       },
+      "maximumBatchSize": 25,
       "operationId": "PutCharactersCharacterIdMailMailId",
       "pagination": {
         "kind": "none",
@@ -36916,6 +39618,15 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [
+        {
+          "location": "body",
+          "path": [
+            "labels"
+          ],
+          "maximumItems": 25
+        }
+      ],
       "requestSchemas": [
         {
           "group": "body",
@@ -36959,6 +39670,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "char-social",
+        "maximumTokens": 600,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -36992,6 +39709,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Update settings about a fleet",
       "facade": {
         "domain": "fleets",
@@ -37001,6 +39722,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "PUT",
         "path": "/fleets/{fleet_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "PutFleetsFleetId",
       "pagination": {
         "kind": "none",
@@ -37086,6 +39808,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -37129,6 +39852,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -37162,6 +39891,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Move a fleet member around",
       "facade": {
         "domain": "fleets",
@@ -37171,6 +39904,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "PUT",
         "path": "/fleets/{fleet_id}/members/{member_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "PutFleetsFleetIdMembersMemberId",
       "pagination": {
         "kind": "none",
@@ -37284,6 +40018,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -37327,6 +40062,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -37360,6 +40101,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Rename a fleet squad",
       "facade": {
         "domain": "fleets",
@@ -37369,6 +40114,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "PUT",
         "path": "/fleets/{fleet_id}/squads/{squad_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "PutFleetsFleetIdSquadsSquadId",
       "pagination": {
         "kind": "none",
@@ -37468,6 +40214,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -37511,6 +40258,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -37544,6 +40297,10 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "extensions": {}
       },
       "classification": "mutation",
+      "conditionalRequestValidators": [
+        "if-modified-since",
+        "if-none-match"
+      ],
       "description": "Rename a fleet wing",
       "facade": {
         "domain": "fleets",
@@ -37553,6 +40310,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "method": "PUT",
         "path": "/fleets/{fleet_id}/wings/{wing_id}"
       },
+      "maximumBatchSize": null,
       "operationId": "PutFleetsFleetIdWingsWingId",
       "pagination": {
         "kind": "none",
@@ -37652,6 +40410,7 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
         "description": null,
         "required": true
       },
+      "requestArrayLimits": [],
       "requestSchemas": [
         {
           "group": "body",
@@ -37695,6 +40454,12 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
           "status": "204"
         }
       ],
+      "rateLimit": {
+        "kind": "declared",
+        "group": "fleet",
+        "maximumTokens": 1800,
+        "window": "15m"
+      },
       "safety": {
         "generic": {
           "requiresClientMutationEnablement": true,
@@ -37713,5 +40478,5 @@ export const operationManifest: SerializableOperationManifest = deepFreeze<Seria
       }
     }
   ],
-  "schemaVersion": 2
+  "schemaVersion": 3
 });

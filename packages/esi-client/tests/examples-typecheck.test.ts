@@ -26,12 +26,15 @@ describe('generated example type-check project', () => {
       inspection.generatedFiles.map((path) => relative(root, path).replaceAll('\\', '/')),
     ).toEqual([
       'examples/generated/authenticated.ts',
+      'examples/generated/custom-fetch.ts',
       ...domainExamples,
       'examples/generated/metadata.ts',
       'examples/generated/mutation-safety.ts',
+      'examples/generated/operation-protocol.ts',
       'examples/generated/paginated.ts',
       'examples/generated/public.ts',
       'examples/generated/schema-validation.ts',
+      'examples/generated/transport-errors.ts',
       'examples/generated/validation-error.ts',
     ]);
   });

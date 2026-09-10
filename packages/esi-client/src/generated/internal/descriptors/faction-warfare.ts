@@ -62,6 +62,7 @@ export const GetFwLeaderboardsCharactersDescriptor: OperationExecutionDescriptor
   requestBody: null,
   requestSchema: GetFwLeaderboardsCharactersRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFwLeaderboardsCharactersResponse },
   ],
@@ -86,6 +87,7 @@ export const GetCharactersCharacterIdFwStatsDescriptor: OperationExecutionDescri
   requestBody: null,
   requestSchema: GetCharactersCharacterIdFwStatsRequestSchema,
   authentication: { scopes: ["esi-characters.read_fw_stats.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdFwStatsResponse },
   ],
@@ -108,6 +110,7 @@ export const GetFwLeaderboardsCorporationsDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: GetFwLeaderboardsCorporationsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFwLeaderboardsCorporationsResponse },
   ],
@@ -132,6 +135,7 @@ export const GetCorporationsCorporationIdFwStatsDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdFwStatsRequestSchema,
   authentication: { scopes: ["esi-corporations.read_fw_stats.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdFwStatsResponse },
   ],
@@ -154,6 +158,7 @@ export const GetFwLeaderboardsDescriptor: OperationExecutionDescriptor<Operation
   requestBody: null,
   requestSchema: GetFwLeaderboardsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFwLeaderboardsResponse },
   ],
@@ -176,6 +181,7 @@ export const GetFwStatsDescriptor: OperationExecutionDescriptor<OperationArgumen
   requestBody: null,
   requestSchema: GetFwStatsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFwStatsResponse },
   ],
@@ -198,6 +204,7 @@ export const GetFwSystemsDescriptor: OperationExecutionDescriptor<OperationArgum
   requestBody: null,
   requestSchema: GetFwSystemsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":1800,"x-client-cache-ttl":1800,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":1800}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFwSystemsResponse },
   ],
@@ -220,6 +227,7 @@ export const GetFwWarsDescriptor: OperationExecutionDescriptor<OperationArgument
   requestBody: null,
   requestSchema: GetFwWarsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"factional-warfare","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetFwWarsResponse },
   ],

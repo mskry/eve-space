@@ -228,10 +228,10 @@ export function assertEsiOperationContracts(
 
   if (state.issues.length > 0)
     throw new Error(
-      `Invalid ESI operation catalog:\n${state.issues
-        .toSorted((left, right) => left.localeCompare(right))
-        .map((issue) => `- ${issue}`)
-        .join('\n')}`,
+      formatValidationIssues(
+        'Invalid ESI operation catalog',
+        state.issues.toSorted((left, right) => left.localeCompare(right)),
+      ),
     )
 }
 
@@ -437,7 +437,9 @@ export function assertConsistentEsiRepresentationRegistration(
       )
   }
   if (issues.length > 0)
-    throw new Error(
-      `Invalid ESI representation registration:\n${issues.map((issue) => `- ${issue}`).join('\n')}`,
-    )
+    throw new Error(formatValidationIssues('Invalid ESI representation registration', issues))
+}
+
+function formatValidationIssues(heading: string, issues: readonly string[]) {
+  return [heading, ...issues.map((issue) => `- ${issue}`)].join('\n')
 }

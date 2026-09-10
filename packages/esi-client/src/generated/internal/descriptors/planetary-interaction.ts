@@ -52,6 +52,7 @@ export const GetCharactersCharacterIdPlanetsPlanetIdDescriptor: OperationExecuti
   requestBody: null,
   requestSchema: GetCharactersCharacterIdPlanetsPlanetIdRequestSchema,
   authentication: { scopes: ["esi-planets.manage_planets.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdPlanetsPlanetIdResponse },
   ],
@@ -76,6 +77,7 @@ export const GetUniverseSchematicsSchematicIdDescriptor: OperationExecutionDescr
   requestBody: null,
   requestSchema: GetUniverseSchematicsSchematicIdRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetUniverseSchematicsSchematicIdResponse },
   ],
@@ -100,6 +102,7 @@ export const GetCharactersCharacterIdPlanetsDescriptor: OperationExecutionDescri
   requestBody: null,
   requestSchema: GetCharactersCharacterIdPlanetsRequestSchema,
   authentication: { scopes: ["esi-planets.manage_planets.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdPlanetsResponse },
   ],
@@ -126,6 +129,7 @@ export const GetCorporationsCorporationIdCustomsOfficesDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdCustomsOfficesRequestSchema,
   authentication: { scopes: ["esi-planets.read_customs_offices.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-industry","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdCustomsOfficesResponse },
   ],

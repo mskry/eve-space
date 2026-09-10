@@ -101,7 +101,13 @@ Required scopes: `esi-alliances.read_contacts.v1`.
 
 Pagination: `offset`. Request parameters: `page`. Response headers: `x-pages`. Generic execution returns only the requested page or cursor response.
 
-Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extension keys: `x-cache-age`, `x-client-cache-ttl`, `x-server-cache-mode`, `x-server-cache-ttl`. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extensions: `x-cache-age=300`, `x-client-cache-ttl=300`, `x-server-cache-mode=ttl-based`, `x-server-cache-ttl=300`. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+
+Declared conditional request validators: `if-modified-since`, `if-none-match`. These declarations identify accepted request headers; they do not by themselves assert support for a `304 Not Modified` response.
+
+Route rate limit: group `alliance-social`, maximum 300 tokens per `15m` window.
+
+Bounded request arrays: none declared. Maximum batch size: unspecified.
 
 ## Mutation safety
 
@@ -123,6 +129,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
+- [Operation protocol](../examples/operation-protocol.md)
 - [Paginated](../examples/paginated.md)
 - [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)

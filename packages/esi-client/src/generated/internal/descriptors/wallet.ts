@@ -64,6 +64,7 @@ export const GetCharactersCharacterIdWalletDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdWalletRequestSchema,
   authentication: { scopes: ["esi-wallet.read_character_wallet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":120,"x-client-cache-ttl":120,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":120}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-wallet","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdWalletResponse },
   ],
@@ -90,6 +91,7 @@ export const GetCharactersCharacterIdWalletJournalDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCharactersCharacterIdWalletJournalRequestSchema,
   authentication: { scopes: ["esi-wallet.read_character_wallet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-wallet","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdWalletJournalResponse },
   ],
@@ -116,6 +118,7 @@ export const GetCharactersCharacterIdWalletTransactionsDescriptor: OperationExec
   requestBody: null,
   requestSchema: GetCharactersCharacterIdWalletTransactionsRequestSchema,
   authentication: { scopes: ["esi-wallet.read_character_wallet.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-wallet","maximumTokens":150,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdWalletTransactionsResponse },
   ],
@@ -140,6 +143,7 @@ export const GetCorporationsCorporationIdWalletsDescriptor: OperationExecutionDe
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdWalletsRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-wallet","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdWalletsResponse },
   ],
@@ -167,6 +171,7 @@ export const GetCorporationsCorporationIdWalletsDivisionJournalDescriptor: Opera
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdWalletsDivisionJournalRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-wallet","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdWalletsDivisionJournalResponse },
   ],
@@ -194,6 +199,7 @@ export const GetCorporationsCorporationIdWalletsDivisionTransactionsDescriptor: 
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdWalletsDivisionTransactionsRequestSchema,
   authentication: { scopes: ["esi-wallet.read_corporation_wallets.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"corp-wallet","maximumTokens":300,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdWalletsDivisionTransactionsResponse },
   ],

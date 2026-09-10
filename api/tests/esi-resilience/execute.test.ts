@@ -115,6 +115,7 @@ describe('ESI representation execution', () => {
     expect(mocks.authorize).toHaveBeenCalledWith(1, 'esi-skills.read_skills.v1')
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),
+      requestTimeoutMs: 30_000,
       token: 'access-token',
       validateResponses: true,
     })
@@ -149,6 +150,7 @@ describe('ESI representation execution', () => {
     expect(mocks.authorize).not.toHaveBeenCalled()
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),
+      requestTimeoutMs: 30_000,
       validateResponses: true,
     })
   })
@@ -174,6 +176,7 @@ describe('ESI representation execution', () => {
 
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),
+      requestTimeoutMs: 30_000,
       validateResponses: false,
     })
   })
@@ -212,6 +215,7 @@ describe('ESI representation execution', () => {
     await expect(executeMutation(representation, { characterId: 1 })).resolves.toBe(7001)
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),
+      requestTimeoutMs: 30_000,
       token: 'access-token',
       validateResponses: true,
       allowGenericMutations: true,

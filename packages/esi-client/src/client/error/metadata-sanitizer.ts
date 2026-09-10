@@ -4,6 +4,7 @@ import type {
   EsiPaginationMetadata,
   EsiResponseMetadata,
   EsiResponseMetadataInput,
+  EsiRouteRateLimitMetadata,
 } from '../response.js';
 import {
   MAX_HEADER_COUNT,
@@ -35,6 +36,8 @@ export function normalizeMetadata(
     pagination?: EsiPaginationMetadata;
     cache?: EsiCacheMetadata;
     errorLimit?: EsiErrorLimitMetadata;
+    retryAfterSeconds?: number;
+    routeRateLimit?: EsiRouteRateLimitMetadata;
   } = {
     status,
     headers: normalizeHeaders(input?.headers, redactor),
@@ -53,6 +56,10 @@ export function normalizeMetadata(
   if (cache !== undefined) metadata.cache = cache;
   const errorLimit = normalizeErrorLimit(input?.errorLimit);
   if (errorLimit !== undefined) metadata.errorLimit = errorLimit;
+  if (isNonnegativeFiniteNumber(input?.retryAfterSeconds))
+    metadata.retryAfterSeconds = input.retryAfterSeconds;
+  const routeRateLimit = normalizeRouteRateLimit(input?.routeRateLimit, redactor);
+  if (routeRateLimit !== undefined) metadata.routeRateLimit = routeRateLimit;
   return Object.freeze(metadata);
 }
 
@@ -126,6 +133,7 @@ function normalizeCache(
     expires?: string;
     lastModified?: string;
     cacheControl?: string;
+    maxAgeSeconds?: number;
   } = {};
   if (input.etag !== undefined) {
     result.etag = sanitizeString(input.etag, redactor, MAX_METADATA_STRING_CHARACTERS, '');
@@ -149,6 +157,7 @@ function normalizeCache(
       '',
     );
   }
+  if (isNonnegativeFiniteNumber(input.maxAgeSeconds)) result.maxAgeSeconds = input.maxAgeSeconds;
   return Object.freeze(result);
 }
 
@@ -157,13 +166,36 @@ function normalizeErrorLimit(
 ): EsiErrorLimitMetadata | undefined {
   if (input === undefined) return undefined;
   const result: { remaining?: number; reset?: number } = {};
-  if (isFiniteNumber(input.remaining)) result.remaining = input.remaining;
-  if (isFiniteNumber(input.reset)) result.reset = input.reset;
+  if (isNonnegativeFiniteNumber(input.remaining)) result.remaining = input.remaining;
+  if (isNonnegativeFiniteNumber(input.reset)) result.reset = input.reset;
   return Object.freeze(result);
+}
+
+function normalizeRouteRateLimit(
+  input: EsiRouteRateLimitMetadata | undefined,
+  redactor: Redactor,
+): EsiRouteRateLimitMetadata | undefined {
+  if (input === undefined) return undefined;
+  const result: {
+    group?: string;
+    limit?: number;
+    used?: number;
+    remaining?: number;
+  } = {};
+  if (input.group !== undefined)
+    result.group = sanitizeString(input.group, redactor, MAX_METADATA_STRING_CHARACTERS, '');
+  if (isNonnegativeFiniteNumber(input.limit)) result.limit = input.limit;
+  if (isNonnegativeFiniteNumber(input.used)) result.used = input.used;
+  if (isNonnegativeFiniteNumber(input.remaining)) result.remaining = input.remaining;
+  return Object.keys(result).length === 0 ? undefined : Object.freeze(result);
 }
 
 function isFiniteNumber(value: number | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isNonnegativeFiniteNumber(value: number | undefined): value is number {
+  return isFiniteNumber(value) && value >= 0;
 }
 
 export function normalizeScopes(

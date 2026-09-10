@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_ESI_BASE_URL,
   DEFAULT_ESI_LANGUAGE,
+  DEFAULT_ESI_REQUEST_TIMEOUT_MS,
   EsiClientConfiguration,
+  MAX_ESI_REQUEST_TIMEOUT_MS,
   PINNED_ESI_COMPATIBILITY_DATE,
 } from '../src/client/configuration.js';
 import type { EsiLanguage } from '../src/client/configuration.js';
@@ -16,6 +18,7 @@ describe('EsiClientConfiguration', () => {
       baseUrl: DEFAULT_ESI_BASE_URL,
       compatibilityDate: PINNED_ESI_COMPATIBILITY_DATE,
       language: DEFAULT_ESI_LANGUAGE,
+      requestTimeoutMs: DEFAULT_ESI_REQUEST_TIMEOUT_MS,
       fetch: globalThis.fetch,
       validateResponses: true,
       validateRequests: false,
@@ -30,6 +33,7 @@ describe('EsiClientConfiguration', () => {
       baseUrl: 'http://localhost:3000/esi/',
       compatibilityDate: '2025-05-06',
       language: 'ja' as EsiLanguage,
+      requestTimeoutMs: 30_000,
       validateResponses: false,
       validateRequests: true,
       allowGenericMutations: true,
@@ -39,6 +43,7 @@ describe('EsiClientConfiguration', () => {
     options.baseUrl = 'https://changed.example';
     options.compatibilityDate = '2024-01-01';
     options.language = 'en';
+    options.requestTimeoutMs = 1;
     options.validateResponses = true;
     options.validateRequests = false;
     options.allowGenericMutations = false;
@@ -47,6 +52,7 @@ describe('EsiClientConfiguration', () => {
       baseUrl: 'http://localhost:3000/esi',
       compatibilityDate: '2025-05-06',
       language: 'ja',
+      requestTimeoutMs: 30_000,
       validateResponses: false,
       validateRequests: true,
       allowGenericMutations: true,
@@ -109,6 +115,11 @@ describe('EsiClientConfiguration', () => {
     ['invalid date format', { compatibilityDate: '20250818' }],
     ['invalid calendar date', { compatibilityDate: '2025-02-29' }],
     ['unsupported language', { language: 'it' }],
+    ['zero request timeout', { requestTimeoutMs: 0 }],
+    ['negative request timeout', { requestTimeoutMs: -1 }],
+    ['fractional request timeout', { requestTimeoutMs: 1.5 }],
+    ['non-finite request timeout', { requestTimeoutMs: Infinity }],
+    ['oversized request timeout', { requestTimeoutMs: MAX_ESI_REQUEST_TIMEOUT_MS + 1 }],
     ['empty token', { token: '' }],
     ['unsafe token whitespace', { token: 'not safe' }],
     ['non-function token provider', { tokenProvider: 'provider' }],

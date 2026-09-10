@@ -92,6 +92,27 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 20,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'query',
+          path: ['contact_ids'],
+          maximumItems: 20,
+        },
+      ],
+    },
     responses: [
       {
         status: '204',
@@ -176,6 +197,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fitting',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -262,6 +298,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -346,6 +397,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -432,6 +498,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -516,6 +597,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -602,6 +698,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -663,6 +774,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -736,6 +864,24 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -825,6 +971,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'alliance-social',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -900,6 +1066,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'alliance-social',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -977,6 +1163,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -1052,6 +1255,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -1138,6 +1353,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-access',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -1214,6 +1449,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-access',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -1289,6 +1544,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -1378,6 +1653,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-asset',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -1453,6 +1748,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -1542,6 +1857,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -1630,6 +1965,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -1714,6 +2069,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -1800,6 +2175,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -1875,6 +2270,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-location',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -1964,6 +2379,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -2039,6 +2474,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -2128,6 +2583,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-contract',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -2212,6 +2687,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-contract',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -2298,6 +2793,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-contract',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -2373,6 +2888,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 86400,
+          'x-client-cache-ttl': 86400,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 86400,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -2450,6 +2982,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-location',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -2525,6 +3077,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fitting',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -2602,6 +3174,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 60,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -2678,6 +3270,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -2753,6 +3360,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -2842,6 +3469,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -2930,6 +3577,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-killmail',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -3006,6 +3673,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-location',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -3081,6 +3768,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-wallet',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -3182,6 +3889,32 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 30,
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 25,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'query',
+          path: ['labels'],
+          maximumItems: 25,
+        },
+      ],
+    },
     responses: [
       {
         status: '200',
@@ -3258,6 +3991,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 30,
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -3333,6 +4086,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -3419,6 +4192,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 30,
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -3494,6 +4287,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -3583,6 +4396,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -3658,6 +4491,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-notification',
+        maximumTokens: 15,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -3735,6 +4588,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -3811,6 +4684,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 60,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-location',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -3886,6 +4779,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 1200,
+          'x-client-cache-ttl': 1200,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1200,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -3975,6 +4885,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -4050,6 +4977,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -4136,6 +5083,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -4212,6 +5179,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -4287,6 +5269,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -4397,6 +5399,29 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 11,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [
+        {
+          location: 'query',
+          path: ['categories'],
+          maximumItems: 11,
+        },
+      ],
+    },
     responses: [
       {
         status: '200',
@@ -4472,6 +5497,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-location',
+        maximumTokens: 1200,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -4549,6 +5594,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -4624,6 +5689,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -4701,6 +5786,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -4777,6 +5882,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -4852,6 +5977,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 120,
+          'x-client-cache-ttl': 120,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 120,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-wallet',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -4941,6 +6086,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-wallet',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -5029,6 +6194,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-wallet',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -5104,6 +6289,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-skinr',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -5181,6 +6386,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-skinr',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -5253,6 +6478,24 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 86400,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 86400,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 86400,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -5329,6 +6572,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-freelance-job',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -5415,6 +6678,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-freelance-job',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -5500,6 +6783,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-activity',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -5575,6 +6878,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-activity',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -5685,6 +7008,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-military-campaign',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -5769,6 +7112,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-military-campaign',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -5879,6 +7242,25 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-paragon-hub',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -5964,6 +7346,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-structure',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -6039,6 +7441,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-structure',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -6127,6 +7549,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -6221,6 +7660,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -6314,6 +7770,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 1800,
+          'x-client-cache-ttl': 1800,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -6402,6 +7875,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 1800,
+          'x-client-cache-ttl': 1800,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -6489,6 +7982,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -6587,6 +8100,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -6663,6 +8196,24 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -6738,6 +8289,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -6827,6 +8395,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-asset',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -6914,6 +8502,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -7003,6 +8611,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-social',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -7078,6 +8706,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-social',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -7167,6 +8815,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -7254,6 +8922,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-contract',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -7352,6 +9040,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-contract',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -7436,6 +9144,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-contract',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -7525,6 +9253,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -7600,6 +9348,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-wallet',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -7677,6 +9445,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -7753,6 +9541,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -7828,6 +9631,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -7926,6 +9746,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-industry',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8013,6 +9853,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-killmail',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -8102,6 +9962,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-detail',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8190,6 +10070,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-detail',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8265,6 +10165,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-member',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -8342,6 +10262,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-member',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8418,6 +10358,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-member',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8493,6 +10453,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-member',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -8582,6 +10562,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 1200,
+          'x-client-cache-ttl': 1200,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1200,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8670,6 +10667,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8745,6 +10759,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-member',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -8834,6 +10868,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-member',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -8921,6 +10975,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-detail',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -9010,6 +11084,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-member',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -9097,6 +11191,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -9195,6 +11309,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -9283,6 +11417,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -9359,6 +11513,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-detail',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -9434,6 +11608,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-wallet',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -9532,6 +11726,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-wallet',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -9628,6 +11842,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-wallet',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -9737,6 +11971,24 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-freelance-job',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -9856,6 +12108,24 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-freelance-job',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -9917,6 +12187,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -10012,6 +12294,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-project',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -10131,6 +12433,24 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-project',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -10215,6 +12535,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-project',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -10335,6 +12675,24 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-project',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -10420,6 +12778,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -10495,6 +12873,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -10581,6 +12979,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -10657,6 +13075,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-structure',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -10730,6 +13168,27 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 31536000,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 31536000,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 604800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'skinr',
+        maximumTokens: 12000,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -10791,6 +13250,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -10867,6 +13338,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -10953,6 +13436,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11014,6 +13509,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -11088,6 +13595,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11160,6 +13679,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -11234,6 +13773,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11307,6 +13866,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11379,6 +13958,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'freelance-job',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -11484,6 +14083,24 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'freelance-job',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11545,6 +14162,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -11608,6 +14240,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11669,6 +14316,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -11732,6 +14394,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11793,6 +14470,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 1800,
+          'x-client-cache-ttl': 1800,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 1800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -11856,6 +14553,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'factional-warfare',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -11917,6 +14629,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'incursion',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -11980,6 +14712,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'industry',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -12042,6 +14794,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'industry',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -12103,6 +14875,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'insurance',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -12189,6 +14981,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 2592000,
+          'x-client-cache-ttl': 2592000,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 2592000,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'killmail',
+        maximumTokens: 3600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -12265,6 +15077,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -12326,6 +15150,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -12403,6 +15239,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -12464,6 +15312,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -12552,6 +15417,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -12659,6 +15536,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'market-order',
+        maximumTokens: 12000,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -12746,6 +15643,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -12835,6 +15749,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -12896,6 +15827,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'meta',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -12959,6 +15910,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'meta',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -13021,6 +15992,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 600,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 600,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'meta',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -13082,6 +16073,24 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'meta',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -13156,6 +16165,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'military-campaign',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -13217,6 +16246,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'military-campaign',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -13302,6 +16351,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'military-campaign',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -13412,6 +16481,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 60,
+          'x-cache-mode': 'event-based',
+          'x-client-cache-ttl': 60,
+          'x-server-cache-mode': 'event-based',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'military-campaign',
+        maximumTokens: 300,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -13505,6 +16594,25 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'paragon-hub',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -13615,6 +16723,25 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-paragon-hub',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -13723,6 +16850,25 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-paragon-hub',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -13833,6 +16979,25 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'event-based',
+          'x-server-cache-mode': 'event-based',
+          'x-tombstone-ttl': 604800,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-paragon-hub',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -13894,6 +17059,27 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 60,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'activity',
+        maximumTokens: 30,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -13957,6 +17143,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'sovereignty',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14018,6 +17224,27 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 300,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 300,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 300,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'sovereignty',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -14081,6 +17308,27 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 30,
+          'x-cache-mode': 'ttl-based',
+          'x-client-cache-ttl': 30,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 30,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'status',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14142,6 +17390,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -14219,6 +17479,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14281,6 +17553,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14342,6 +17626,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -14419,6 +17715,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14480,6 +17788,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -14557,6 +17877,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14619,6 +17951,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14680,6 +18024,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -14757,6 +18113,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14829,6 +18197,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -14903,6 +18283,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -14975,6 +18367,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -15049,6 +18453,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -15111,6 +18527,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -15172,6 +18600,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -15245,6 +18685,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -15322,6 +18774,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -15398,6 +18867,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -15470,6 +18951,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -15547,6 +19040,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -15619,6 +19124,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -15696,6 +19218,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -15757,6 +19296,23 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -15820,6 +19376,23 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -15881,6 +19454,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -15955,6 +19540,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -16027,6 +19624,18 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -16101,6 +19710,18 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -16174,6 +19795,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'killmail',
+        maximumTokens: 3600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -16246,6 +19887,26 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'killmail',
+        maximumTokens: 3600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -16335,6 +19996,26 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'killmail',
+        maximumTokens: 3600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '200',
@@ -16402,6 +20083,29 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '[0]',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 3600,
+          'x-client-cache-ttl': 3600,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 3600,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 1000,
+        },
+      ],
     },
     responses: [
       {
@@ -16486,6 +20190,27 @@ const operationContracts = [
       },
       body: '[0]',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-asset',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 1000,
+        },
+      ],
+    },
     responses: [
       {
         status: '200',
@@ -16568,6 +20293,27 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '[0]',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-asset',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 1000,
+        },
+      ],
     },
     responses: [
       {
@@ -16685,6 +20431,32 @@ const operationContracts = [
       },
       body: '[0]',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 100,
+        },
+        {
+          location: 'query',
+          path: ['label_ids'],
+          maximumItems: 63,
+        },
+      ],
+    },
     responses: [
       {
         status: '201',
@@ -16767,6 +20539,27 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '[0]',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 100,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-detail',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 100,
+        },
+      ],
     },
     responses: [
       {
@@ -16862,6 +20655,27 @@ const operationContracts = [
       },
       body: '{"description":"x","items":[{"flag":"Cargo","quantity":0,"type_id":0}],"name":"x","ship_type_id":0}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 512,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fitting',
+        maximumTokens: 150,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: ['items'],
+          maximumItems: 512,
+        },
+      ],
+    },
     responses: [
       {
         status: '201',
@@ -16954,6 +20768,27 @@ const operationContracts = [
       },
       body: '{"body":"x","recipients":[{"recipient_id":0,"recipient_type":"alliance"}],"subject":"x"}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 50,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: ['recipients'],
+          maximumItems: 50,
+        },
+      ],
+    },
     responses: [
       {
         status: '201',
@@ -17039,6 +20874,21 @@ const operationContracts = [
       },
       body: '{"name":"x"}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '201',
@@ -17122,6 +20972,27 @@ const operationContracts = [
       },
       body: '[0]',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-asset',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 1000,
+        },
+      ],
+    },
     responses: [
       {
         status: '200',
@@ -17204,6 +21075,27 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '[0]',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        kind: 'declared',
+        group: 'corp-asset',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 1000,
+        },
+      ],
     },
     responses: [
       {
@@ -17291,6 +21183,21 @@ const operationContracts = [
       },
       body: '{"character_id":0,"role":"fleet_commander"}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -17363,6 +21270,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -17448,6 +21370,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -17536,6 +21473,35 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '{}',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-mode': 'not-cached',
+          'x-server-cache-mode': 'not-cached',
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'routes',
+        maximumTokens: 3600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: ['avoid_systems'],
+          maximumItems: 1000,
+        },
+        {
+          location: 'body',
+          path: ['connections'],
+          maximumItems: 1000,
+        },
+      ],
     },
     responses: [
       {
@@ -17628,6 +21594,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'ui',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -17700,6 +21681,21 @@ const operationContracts = [
         'if-none-match': 'x',
         'x-tenant': 'x',
       },
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'ui',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -17777,6 +21773,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'ui',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -17853,6 +21864,21 @@ const operationContracts = [
         'x-tenant': 'x',
       },
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'ui',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -17925,6 +21951,27 @@ const operationContracts = [
       },
       body: '{"body":"x","recipients":[0],"subject":"x"}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 50,
+      rateLimit: {
+        kind: 'declared',
+        group: 'ui',
+        maximumTokens: 900,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: ['recipients'],
+          maximumItems: 50,
+        },
+      ],
+    },
     responses: [
       {
         status: '204',
@@ -17993,6 +22040,24 @@ const operationContracts = [
       },
       body: '["x"]',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 500,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 500,
+        },
+      ],
+    },
     responses: [
       {
         status: '200',
@@ -18060,6 +22125,24 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '[0]',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 1000,
+      rateLimit: {
+        kind: 'legacy-only',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 1000,
+        },
+      ],
     },
     responses: [
       {
@@ -18154,6 +22237,26 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '{"response":"accepted"}',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {
+          'x-cache-age': 5,
+          'x-client-cache-ttl': 5,
+          'x-server-cache-mode': 'ttl-based',
+          'x-server-cache-ttl': 5,
+        },
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -18271,6 +22374,32 @@ const operationContracts = [
       },
       body: '[0]',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: [],
+          maximumItems: 100,
+        },
+        {
+          location: 'query',
+          path: ['label_ids'],
+          maximumItems: 63,
+        },
+      ],
+    },
     responses: [
       {
         status: '204',
@@ -18363,6 +22492,27 @@ const operationContracts = [
       },
       body: '{}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: 25,
+      rateLimit: {
+        kind: 'declared',
+        group: 'char-social',
+        maximumTokens: 600,
+        window: '15m',
+      },
+      requestArrayLimits: [
+        {
+          location: 'body',
+          path: ['labels'],
+          maximumItems: 25,
+        },
+      ],
+    },
     responses: [
       {
         status: '204',
@@ -18445,6 +22595,21 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '{}',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -18540,6 +22705,21 @@ const operationContracts = [
       },
       body: '{"role":"fleet_commander"}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -18634,6 +22814,21 @@ const operationContracts = [
       },
       body: '{"name":"x"}',
     },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
+    },
     responses: [
       {
         status: '204',
@@ -18727,6 +22922,21 @@ const operationContracts = [
         'content-type': 'application/json',
       },
       body: '{"name":"x"}',
+    },
+    protocol: {
+      cache: {
+        responseHeaders: ['cache-control', 'etag', 'last-modified'],
+        extensions: {},
+      },
+      conditionalRequestValidators: ['if-modified-since', 'if-none-match'],
+      maximumBatchSize: null,
+      rateLimit: {
+        kind: 'declared',
+        group: 'fleet',
+        maximumTokens: 1800,
+        window: '15m',
+      },
+      requestArrayLimits: [],
     },
     responses: [
       {
@@ -20176,6 +24386,7 @@ describe('generated operation contracts', () => {
     expect(runtime.transport.requestBody).toEqual(contract.requestBody);
     expect(runtime.transport.authentication?.scopes ?? []).toEqual(contract.authentication.scopes);
     expect(runtime.transport.authentication !== null).toBe(contract.authentication.required);
+    expect(runtime.transport.protocol).toEqual(contract.protocol);
 
     expect(manifest.http).toEqual({ method: contract.method, path: contract.pathTemplate });
     expect(
@@ -20200,6 +24411,13 @@ describe('generated operation contracts', () => {
     ).toBe(true);
     expect(manifest.responseType.export).toBe(contract.responseTypeExport);
     expect(manifest.responseType.module).toBe('@evespace/esi-client/types');
+    expect({
+      cache: manifest.cache,
+      conditionalRequestValidators: manifest.conditionalRequestValidators,
+      maximumBatchSize: manifest.maximumBatchSize,
+      rateLimit: manifest.rateLimit,
+      requestArrayLimits: manifest.requestArrayLimits,
+    }).toEqual(contract.protocol);
 
     expect(runtime.requestSchema.parse(contract.arguments)).toEqual(contract.arguments);
     const transport = { ...runtime.transport, requestSchema: undefined };

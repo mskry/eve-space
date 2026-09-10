@@ -90,6 +90,7 @@ export const GetMarketsGroupsMarketGroupIdDescriptor: OperationExecutionDescript
   requestBody: null,
   requestSchema: GetMarketsGroupsMarketGroupIdRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMarketsGroupsMarketGroupIdResponse },
   ],
@@ -116,6 +117,7 @@ export const GetCharactersCharacterIdOrdersHistoryDescriptor: OperationExecution
   requestBody: null,
   requestSchema: GetCharactersCharacterIdOrdersHistoryRequestSchema,
   authentication: { scopes: ["esi-markets.read_character_orders.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdOrdersHistoryResponse },
   ],
@@ -140,6 +142,7 @@ export const GetCharactersCharacterIdOrdersDescriptor: OperationExecutionDescrip
   requestBody: null,
   requestSchema: GetCharactersCharacterIdOrdersRequestSchema,
   authentication: { scopes: ["esi-markets.read_character_orders.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":1200,"x-client-cache-ttl":1200,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":1200}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdOrdersResponse },
   ],
@@ -166,6 +169,7 @@ export const GetCorporationsCorporationIdOrdersHistoryDescriptor: OperationExecu
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdOrdersHistoryRequestSchema,
   authentication: { scopes: ["esi-markets.read_corporation_orders.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdOrdersHistoryResponse },
   ],
@@ -192,6 +196,7 @@ export const GetCorporationsCorporationIdOrdersDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCorporationsCorporationIdOrdersRequestSchema,
   authentication: { scopes: ["esi-markets.read_corporation_orders.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":1200,"x-client-cache-ttl":1200,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":1200}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCorporationsCorporationIdOrdersResponse },
   ],
@@ -214,6 +219,7 @@ export const GetMarketsGroupsDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: null,
   requestSchema: GetMarketsGroupsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMarketsGroupsResponse },
   ],
@@ -236,6 +242,7 @@ export const GetMarketsPricesDescriptor: OperationExecutionDescriptor<OperationA
   requestBody: null,
   requestSchema: GetMarketsPricesRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMarketsPricesResponse },
   ],
@@ -262,6 +269,7 @@ export const GetMarketsRegionIdHistoryDescriptor: OperationExecutionDescriptor<O
   requestBody: null,
   requestSchema: GetMarketsRegionIdHistoryRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMarketsRegionIdHistoryResponse },
   ],
@@ -290,6 +298,7 @@ export const GetMarketsRegionIdOrdersDescriptor: OperationExecutionDescriptor<Op
   requestBody: null,
   requestSchema: GetMarketsRegionIdOrdersRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"market-order","maximumTokens":12000,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMarketsRegionIdOrdersResponse },
   ],
@@ -316,6 +325,7 @@ export const GetMarketsRegionIdTypesDescriptor: OperationExecutionDescriptor<Ope
   requestBody: null,
   requestSchema: GetMarketsRegionIdTypesRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":600,"x-client-cache-ttl":600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMarketsRegionIdTypesResponse },
   ],
@@ -342,6 +352,7 @@ export const GetMarketsStructuresStructureIdDescriptor: OperationExecutionDescri
   requestBody: null,
   requestSchema: GetMarketsStructuresStructureIdRequestSchema,
   authentication: { scopes: ["esi-markets.structure_markets.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":300,"x-client-cache-ttl":300,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":300}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"legacy-only"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetMarketsStructuresStructureIdResponse },
   ],

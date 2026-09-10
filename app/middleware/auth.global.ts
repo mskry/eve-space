@@ -16,7 +16,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     )
     if (session.authenticated) {
       if (isAuthorizationRoute)
-        return navigateTo(getLocalAuthRedirect(to.query.redirect) ?? '/', { replace: true })
+        return navigateTo(getLocalAuthRedirect(to.query.redirect) ?? '/characters', {
+          replace: true,
+        })
       return
     }
   } catch {

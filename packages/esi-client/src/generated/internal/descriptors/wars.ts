@@ -46,6 +46,7 @@ export const GetWarsWarIdDescriptor: OperationExecutionDescriptor<OperationArgum
   requestBody: null,
   requestSchema: GetWarsWarIdRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"killmail","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetWarsWarIdResponse },
   ],
@@ -70,6 +71,7 @@ export const GetWarsDescriptor: OperationExecutionDescriptor<OperationArguments<
   requestBody: null,
   requestSchema: GetWarsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"killmail","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetWarsResponse },
   ],
@@ -96,6 +98,7 @@ export const GetWarsWarIdKillmailsDescriptor: OperationExecutionDescriptor<Opera
   requestBody: null,
   requestSchema: GetWarsWarIdKillmailsRequestSchema,
   authentication: null,
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":3600,"x-client-cache-ttl":3600,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":3600}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"killmail","maximumTokens":3600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetWarsWarIdKillmailsResponse },
   ],

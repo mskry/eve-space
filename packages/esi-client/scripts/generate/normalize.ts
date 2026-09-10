@@ -13,6 +13,32 @@ export type NormalizedSchema = boolean | JsonObject;
 export type HttpMethod = 'DELETE' | 'GET' | 'HEAD' | 'OPTIONS' | 'PATCH' | 'POST' | 'PUT' | 'TRACE';
 export type ParameterPlacement = 'path' | 'query' | 'header' | 'cookie';
 export type PaginationKind = 'none' | 'offset' | 'cursor' | 'offset-and-cursor';
+export type ConditionalRequestValidator = 'if-modified-since' | 'if-none-match';
+export type CacheMode = 'event-based' | 'not-cached' | 'ttl-based';
+
+export interface NormalizedCacheExtensions {
+  readonly 'x-cache-age'?: number;
+  readonly 'x-cache-mode'?: CacheMode;
+  readonly 'x-client-cache-ttl'?: number;
+  readonly 'x-server-cache-mode'?: CacheMode;
+  readonly 'x-server-cache-ttl'?: number;
+  readonly 'x-tombstone-ttl'?: number;
+}
+
+export type NormalizedRouteRateLimit =
+  | { readonly kind: 'legacy-only' }
+  | {
+      readonly kind: 'declared';
+      readonly group: string;
+      readonly maximumTokens: number;
+      readonly window: string;
+    };
+
+export interface NormalizedRequestArrayLimit {
+  readonly location: 'body' | ParameterPlacement;
+  readonly path: readonly string[];
+  readonly maximumItems: number;
+}
 
 export interface NormalizedParameter {
   readonly name: string;
@@ -84,8 +110,12 @@ export interface NormalizedOperation {
   };
   readonly cache: {
     readonly responseHeaders: readonly string[];
-    readonly extensions: JsonObject;
+    readonly extensions: NormalizedCacheExtensions;
   };
+  readonly conditionalRequestValidators: readonly ConditionalRequestValidator[];
+  readonly rateLimit: NormalizedRouteRateLimit;
+  readonly requestArrayLimits: readonly NormalizedRequestArrayLimit[];
+  readonly maximumBatchSize: number | null;
   readonly extensions: JsonObject;
 }
 
@@ -185,6 +215,22 @@ const schemaSingleKeywords = new Set([
   'unevaluatedProperties',
 ]);
 const arbitraryValueKeys = new Set(['const', 'default', 'enum', 'example', 'value']);
+const cacheExtensionNames = [
+  'x-cache-age',
+  'x-cache-mode',
+  'x-client-cache-ttl',
+  'x-server-cache-mode',
+  'x-server-cache-ttl',
+  'x-tombstone-ttl',
+] as const satisfies readonly (keyof NormalizedCacheExtensions)[];
+const cacheExtensionNameSet: ReadonlySet<string> = new Set(cacheExtensionNames);
+const cacheModes: readonly CacheMode[] = ['event-based', 'not-cached', 'ttl-based'];
+const conditionalRequestValidatorNames: readonly ConditionalRequestValidator[] = [
+  'if-modified-since',
+  'if-none-match',
+];
+const rateLimitWindowPattern = /^[1-9]\d*[smhd]$/u;
+const rateLimitGroupPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u;
 
 export async function normalizeOpenApiDocument(
   document: Readonly<Record<string, unknown>>,
@@ -363,6 +409,14 @@ function normalizeOperation(
   const sortedTags = tags.toSorted(compareText);
   const responses = normalizeResponses(document, operation.responses, operationId);
   const extensions = extractExtensions(operation);
+  validatePolicyExtensionNames(extensions, operationId);
+  const requestBody = normalizeRequestBody(document, operation.requestBody, operationId);
+  const requestArrayLimits = normalizeRequestArrayLimits(
+    document,
+    parameters,
+    requestBody,
+    operationId,
+  );
   const responseHeaderNames = [
     ...new Set(
       responses.flatMap((response) => response.headers.map(({ name }) => name.toLowerCase())),
@@ -392,9 +446,15 @@ function normalizeOperation(
   const cacheHeaders = responseHeaderNames.filter((name) =>
     ['cache-control', 'etag', 'expires', 'last-modified'].includes(name),
   );
-  const cacheExtensions = Object.fromEntries(
-    Object.entries(extensions).filter(([name]) => /cache|expires/u.test(name.toLowerCase())),
-  );
+  const cacheExtensions = normalizeCacheExtensions(extensions, operationId);
+  const conditionalRequestValidators = parameters
+    .flatMap(({ name, placement }) => {
+      const normalizedName = name.toLowerCase();
+      return placement === 'header' && isConditionalRequestValidator(normalizedName)
+        ? [normalizedName]
+        : [];
+    })
+    .toSorted(compareText);
 
   return {
     operationId,
@@ -406,7 +466,7 @@ function normalizeOperation(
     summary: optionalString(operation.summary, `${operationId} summary`),
     description: optionalString(operation.description, `${operationId} description`),
     parameters,
-    requestBody: normalizeRequestBody(document, operation.requestBody, operationId),
+    requestBody,
     successResponses: responses,
     security: normalizeSecurity(
       document,
@@ -422,8 +482,234 @@ function normalizeOperation(
       responseHeaders: cacheHeaders,
       extensions: cacheExtensions,
     },
+    conditionalRequestValidators,
+    rateLimit: normalizeRouteRateLimit(extensions, operationId),
+    requestArrayLimits,
+    maximumBatchSize:
+      requestArrayLimits.length === 1 ? (requestArrayLimits[0]?.maximumItems ?? null) : null,
     extensions,
   };
+}
+
+function validatePolicyExtensionNames(extensions: JsonObject, operationId: string): void {
+  for (const name of Object.keys(extensions)) {
+    const lowerName = name.toLowerCase();
+    if (
+      (lowerName.includes('cache') || lowerName.includes('tombstone')) &&
+      !cacheExtensionNameSet.has(name)
+    ) {
+      throw new Error(`Unsupported cache extension for ${operationId}: ${name}`);
+    }
+    if (lowerName.includes('rate-limit') && name !== 'x-rate-limit') {
+      throw new Error(`Unsupported rate-limit extension for ${operationId}: ${name}`);
+    }
+  }
+}
+
+function normalizeCacheExtensions(
+  extensions: JsonObject,
+  operationId: string,
+): NormalizedCacheExtensions {
+  const normalized: {
+    'x-cache-age'?: number;
+    'x-cache-mode'?: CacheMode;
+    'x-client-cache-ttl'?: number;
+    'x-server-cache-mode'?: CacheMode;
+    'x-server-cache-ttl'?: number;
+    'x-tombstone-ttl'?: number;
+  } = {};
+  for (const name of cacheExtensionNames) {
+    if (!Object.hasOwn(extensions, name)) continue;
+    const value = extensions[name];
+    if (name === 'x-cache-mode' || name === 'x-server-cache-mode') {
+      if (!isCacheMode(value)) {
+        throw new Error(
+          `Invalid ${name} extension for ${operationId}: expected ${cacheModes.join(', ')}`,
+        );
+      }
+      if (name === 'x-cache-mode') normalized['x-cache-mode'] = value;
+      else normalized['x-server-cache-mode'] = value;
+      continue;
+    }
+    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+      throw new Error(
+        `Invalid ${name} extension for ${operationId}: expected a non-negative safe integer`,
+      );
+    }
+    if (name === 'x-cache-age') normalized['x-cache-age'] = value;
+    else if (name === 'x-client-cache-ttl') normalized['x-client-cache-ttl'] = value;
+    else if (name === 'x-server-cache-ttl') normalized['x-server-cache-ttl'] = value;
+    else normalized['x-tombstone-ttl'] = value;
+  }
+  return normalized;
+}
+
+function isConditionalRequestValidator(value: string): value is ConditionalRequestValidator {
+  return conditionalRequestValidatorNames.some((name) => name === value);
+}
+
+function isCacheMode(value: unknown): value is CacheMode {
+  return cacheModes.some((mode) => mode === value);
+}
+
+function normalizeRouteRateLimit(
+  extensions: JsonObject,
+  operationId: string,
+): NormalizedRouteRateLimit {
+  if (!Object.hasOwn(extensions, 'x-rate-limit')) return { kind: 'legacy-only' };
+  const extension = extensions['x-rate-limit'];
+  assertRecord(extension, `x-rate-limit extension for ${operationId}`);
+  rejectUnknownKeys(
+    extension,
+    new Set(['group', 'max-tokens', 'window-size']),
+    `x-rate-limit extension for ${operationId}`,
+  );
+  const group = extension.group;
+  const maximumTokens = extension['max-tokens'];
+  const window = extension['window-size'];
+  if (typeof group !== 'string' || !rateLimitGroupPattern.test(group)) {
+    throw new Error(`Invalid x-rate-limit group for ${operationId}: ${describeValue(group)}`);
+  }
+  if (
+    typeof maximumTokens !== 'number' ||
+    !Number.isSafeInteger(maximumTokens) ||
+    maximumTokens <= 0
+  ) {
+    throw new Error(
+      `Invalid x-rate-limit max-tokens for ${operationId}: ${describeValue(maximumTokens)}`,
+    );
+  }
+  if (typeof window !== 'string' || !rateLimitWindowPattern.test(window)) {
+    throw new Error(
+      `Invalid x-rate-limit window-size for ${operationId}: ${describeValue(window)}`,
+    );
+  }
+  return { kind: 'declared', group, maximumTokens, window };
+}
+
+function normalizeRequestArrayLimits(
+  document: Record<string, unknown>,
+  parameters: readonly NormalizedParameter[],
+  requestBody: NormalizedRequestBody | null,
+  operationId: string,
+): NormalizedRequestArrayLimit[] {
+  const limits = new Map<string, NormalizedRequestArrayLimit>();
+  for (const parameter of parameters) {
+    collectRequestArrayLimits(
+      document,
+      parameter.schema,
+      parameter.placement,
+      [parameter.name],
+      `${operationId} parameter ${parameter.name}`,
+      limits,
+      new Set(),
+    );
+  }
+  for (const content of requestBody?.content ?? []) {
+    collectRequestArrayLimits(
+      document,
+      content.schema,
+      'body',
+      [],
+      `${operationId} request body ${content.mediaType}`,
+      limits,
+      new Set(),
+    );
+  }
+  return [...limits.values()].toSorted(
+    (left, right) =>
+      compareText(left.location, right.location) ||
+      compareText(JSON.stringify(left.path), JSON.stringify(right.path)) ||
+      left.maximumItems - right.maximumItems,
+  );
+}
+
+function collectRequestArrayLimits(
+  document: Record<string, unknown>,
+  value: unknown,
+  location: NormalizedRequestArrayLimit['location'],
+  path: readonly string[],
+  context: string,
+  limits: Map<string, NormalizedRequestArrayLimit>,
+  activeReferences: ReadonlySet<string>,
+): void {
+  if (typeof value === 'boolean') return;
+  assertRecord(value, `${context} schema`);
+  if (typeof value.$ref === 'string') {
+    if (activeReferences.has(value.$ref)) return;
+    const target = resolveLocalReference(document, value.$ref);
+    const nextReferences = new Set(activeReferences).add(value.$ref);
+    collectRequestArrayLimits(document, target, location, path, context, limits, nextReferences);
+  }
+
+  if (Object.hasOwn(value, 'maxItems')) {
+    if (value.type !== 'array') {
+      throw new Error(`${context} maxItems requires an array schema`);
+    }
+    if (
+      typeof value.maxItems !== 'number' ||
+      !Number.isSafeInteger(value.maxItems) ||
+      value.maxItems < 0
+    ) {
+      throw new Error(`${context} maxItems must be a non-negative safe integer`);
+    }
+    recordRequestArrayLimit(location, path, value.maxItems, context, limits);
+  }
+
+  if (isObject(value.properties)) {
+    for (const name of Object.keys(value.properties).toSorted(compareText)) {
+      collectRequestArrayLimits(
+        document,
+        value.properties[name],
+        location,
+        [...path, name],
+        context,
+        limits,
+        activeReferences,
+      );
+    }
+  }
+  if (value.type === 'array' && value.items !== undefined) {
+    collectRequestArrayLimits(
+      document,
+      value.items,
+      location,
+      [...path, '*'],
+      context,
+      limits,
+      activeReferences,
+    );
+  }
+  for (const keyword of ['allOf', 'anyOf', 'oneOf', 'prefixItems']) {
+    const schemas = value[keyword];
+    if (!Array.isArray(schemas)) continue;
+    for (const schema of schemas) {
+      collectRequestArrayLimits(
+        document,
+        schema,
+        location,
+        path,
+        context,
+        limits,
+        activeReferences,
+      );
+    }
+  }
+}
+
+function recordRequestArrayLimit(
+  location: NormalizedRequestArrayLimit['location'],
+  path: readonly string[],
+  maximumItems: number,
+  context: string,
+  limits: Map<string, NormalizedRequestArrayLimit>,
+): void {
+  const key = `${location}:${JSON.stringify(path)}`;
+  const previous = limits.get(key);
+  if (previous !== undefined && previous.maximumItems !== maximumItems) {
+    throw new Error(`${context} has ambiguous maxItems declarations at ${key}`);
+  }
+  limits.set(key, { location, path, maximumItems });
 }
 
 function normalizeParameterList(

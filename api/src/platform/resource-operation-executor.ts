@@ -150,32 +150,38 @@ export async function executeInstalledResourceOperation(
     throw new Error(
       `Character-authorized resource ${identity.moduleId}/${identity.resourceId} lacks an authorization source`,
     )
-  let execution: Awaited<ReturnType<typeof executePlatformEsiOperation>>
-  try {
-    execution = await (options.executeEsiOperation ?? executePlatformEsiOperation)({
-      operation,
-      definition,
-      inputs,
-      authorization: authorization
-        ? {
-            kind: 'character-lifecycle',
-            characterId: authorizationCharacterId!,
-            lifecycleId: authorizationCharacterLifecycleId!,
-            generation: authorization.tokenVersion,
-          }
-        : { kind: 'public' },
-    })
-  } catch (error) {
-    if (error instanceof PlatformEsiRequestError) throw new PlatformResourceMappingError(error)
-    if (isAuthorizationResponse(error)) throw new PlatformResourceAuthorizationError(error)
-    throw error
-  }
+  const execution = await executeResourceEsiOperation(options, {
+    operation,
+    definition,
+    inputs,
+    authorization: authorization
+      ? {
+          kind: 'character-lifecycle',
+          characterId: authorizationCharacterId!,
+          lifecycleId: authorizationCharacterLifecycleId!,
+          generation: authorization.tokenVersion,
+        }
+      : { kind: 'public' },
+  })
   return {
     outcome: 'loaded',
     resource: guarded.resource,
     subject,
     authorizationGeneration: execution.authorizationGeneration,
     result: mapResourceResult(execution, implementation, subject, !!options.request),
+  }
+}
+
+async function executeResourceEsiOperation(
+  options: ResourceOperationExecutorOptions,
+  request: Parameters<typeof executePlatformEsiOperation>[0],
+) {
+  try {
+    return await (options.executeEsiOperation ?? executePlatformEsiOperation)(request)
+  } catch (error) {
+    if (error instanceof PlatformEsiRequestError) throw new PlatformResourceMappingError(error)
+    if (isAuthorizationResponse(error)) throw new PlatformResourceAuthorizationError(error)
+    throw error
   }
 }
 

@@ -29,8 +29,7 @@ const attachStatus = computed(() =>
   typeof route.query.attach === 'string' ? route.query.attach : '',
 )
 const attachFeedback = computed(() => {
-  if (attachStatus.value === 'success')
-    return 'Character authorization completed. Roster synchronized.'
+  if (attachStatus.value === 'success') return 'Character authorization completed.'
   if (attachStatus.value === 'conflict') {
     return 'That character is already added to another EVE Space account.'
   }
@@ -100,7 +99,7 @@ watch(
   { immediate: true },
 )
 
-useHead({ title: 'Character Roster // EVE Space' })
+useHead({ title: 'Characters // EVE Space' })
 </script>
 
 <template>
@@ -133,7 +132,7 @@ useHead({ title: 'Character Roster // EVE Space' })
       <div>
         <p class="ui-eyebrow">AUTHORIZATION REQUIRED</p>
         <h2>Connect an EVE character</h2>
-        <p>Your character roster requires a verified EVE Space session.</p>
+        <p>Your authorized characters require a verified EVE Space session.</p>
       </div>
       <NuxtLink class="ui-action-primary" to="/auth">OPEN IDENTITY GATEWAY</NuxtLink>
     </section>
@@ -147,8 +146,8 @@ useHead({ title: 'Character Roster // EVE Space' })
     </UiStatePanel>
     <UiStatePanel
       v-else-if="rosterStatus === 'error' && characters.length === 0"
-      code="ERR / ROSTER"
-      title="Roster unavailable"
+      code="ERR / CHARACTERS"
+      title="Characters unavailable"
       compact
       role="alert"
       tone="error"

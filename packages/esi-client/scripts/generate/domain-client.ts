@@ -479,6 +479,7 @@ export const ${entry.descriptorName}: OperationExecutionDescriptor<${entry.argum
   requestBody: ${requestBody},
   requestSchema: ${entry.schemaName}RequestSchema,
   authentication: ${authentication},
+  protocol: ${JSON.stringify(operationProtocolFacts(entry.operation))},
   successResponses: [
 ${responses.join('\n')}
   ],${entry.compatibilityDateOverride ? '\n  transport: { compatibilityDateOverride: true },' : ''}
@@ -899,6 +900,21 @@ ${[...operationImports]
   .map((name) => `  ${name},`)
   .join('\n')}
 } from '../../src/generated/types.gen.js';`,
+  };
+}
+
+function operationProtocolFacts(
+  operation: NormalizedOperation,
+): Pick<
+  NormalizedOperation,
+  'cache' | 'conditionalRequestValidators' | 'maximumBatchSize' | 'rateLimit' | 'requestArrayLimits'
+> {
+  return {
+    cache: operation.cache,
+    conditionalRequestValidators: operation.conditionalRequestValidators,
+    maximumBatchSize: operation.maximumBatchSize,
+    rateLimit: operation.rateLimit,
+    requestArrayLimits: operation.requestArrayLimits,
   };
 }
 

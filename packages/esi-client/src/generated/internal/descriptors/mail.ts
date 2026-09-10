@@ -80,6 +80,7 @@ export const PostCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDe
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersCharacterIdMailLabelsRequestSchema,
   authentication: { scopes: ["esi-mail.organize_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 201, body: 'json', schema: zPostCharactersCharacterIdMailLabelsResponse },
   ],
@@ -105,6 +106,7 @@ export const DeleteCharactersCharacterIdMailLabelsLabelIdDescriptor: OperationEx
   requestBody: null,
   requestSchema: DeleteCharactersCharacterIdMailLabelsLabelIdRequestSchema,
   authentication: { scopes: ["esi-mail.organize_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -130,6 +132,7 @@ export const DeleteCharactersCharacterIdMailMailIdDescriptor: OperationExecution
   requestBody: null,
   requestSchema: DeleteCharactersCharacterIdMailMailIdRequestSchema,
   authentication: { scopes: ["esi-mail.organize_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 204, body: 'none' },
   ],
@@ -155,6 +158,7 @@ export const GetCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCharactersCharacterIdMailMailIdRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":30,"x-client-cache-ttl":30,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":30}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailMailIdResponse },
   ],
@@ -182,6 +186,7 @@ export const GetCharactersCharacterIdMailDescriptor: OperationExecutionDescripto
   requestBody: null,
   requestSchema: GetCharactersCharacterIdMailRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":30,"x-client-cache-ttl":30,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":30}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":25,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"query","path":["labels"],"maximumItems":25}]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailResponse },
   ],
@@ -206,6 +211,7 @@ export const GetCharactersCharacterIdMailLabelsDescriptor: OperationExecutionDes
   requestBody: null,
   requestSchema: GetCharactersCharacterIdMailLabelsRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":30,"x-client-cache-ttl":30,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":30}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailLabelsResponse },
   ],
@@ -230,6 +236,7 @@ export const GetCharactersCharacterIdMailListsDescriptor: OperationExecutionDesc
   requestBody: null,
   requestSchema: GetCharactersCharacterIdMailListsRequestSchema,
   authentication: { scopes: ["esi-mail.read_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{"x-cache-age":120,"x-client-cache-ttl":120,"x-server-cache-mode":"ttl-based","x-server-cache-ttl":120}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":null,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[]},
   successResponses: [
     { status: 200, body: 'json', schema: zGetCharactersCharacterIdMailListsResponse },
   ],
@@ -255,6 +262,7 @@ export const PostCharactersCharacterIdMailDescriptor: OperationExecutionDescript
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PostCharactersCharacterIdMailRequestSchema,
   authentication: { scopes: ["esi-mail.send_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":50,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"body","path":["recipients"],"maximumItems":50}]},
   successResponses: [
     { status: 201, body: 'json', schema: zPostCharactersCharacterIdMailResponse },
   ],
@@ -281,6 +289,7 @@ export const PutCharactersCharacterIdMailMailIdDescriptor: OperationExecutionDes
   requestBody: { required: true, mediaType: 'application/json' },
   requestSchema: PutCharactersCharacterIdMailMailIdRequestSchema,
   authentication: { scopes: ["esi-mail.organize_mail.v1"] },
+  protocol: {"cache":{"responseHeaders":["cache-control","etag","last-modified"],"extensions":{}},"conditionalRequestValidators":["if-modified-since","if-none-match"],"maximumBatchSize":25,"rateLimit":{"kind":"declared","group":"char-social","maximumTokens":600,"window":"15m"},"requestArrayLimits":[{"location":"body","path":["labels"],"maximumItems":25}]},
   successResponses: [
     { status: 204, body: 'none' },
   ],

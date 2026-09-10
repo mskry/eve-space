@@ -10,10 +10,13 @@ import {
 import { operationDescriptorName, resolveOperationAuthentication } from './domain-client.ts';
 import { domainFileName } from './internal/facade-naming.ts';
 import type {
-  JsonObject,
+  ConditionalRequestValidator,
   JsonValue,
+  NormalizedCacheExtensions,
   NormalizedOpenApiModel,
   NormalizedOperation,
+  NormalizedRequestArrayLimit,
+  NormalizedRouteRateLimit,
 } from './normalize.ts';
 import type { ResolvedOperationMetadata } from './operation-metadata.ts';
 import { operationSchemaName } from './operation-names.ts';
@@ -94,8 +97,12 @@ export interface SerializableOperationManifestEntry {
   };
   readonly cache: {
     readonly responseHeaders: readonly string[];
-    readonly extensions: JsonObject;
+    readonly extensions: NormalizedCacheExtensions;
   };
+  readonly conditionalRequestValidators: readonly ConditionalRequestValidator[];
+  readonly rateLimit: NormalizedRouteRateLimit;
+  readonly requestArrayLimits: readonly NormalizedRequestArrayLimit[];
+  readonly maximumBatchSize: number | null;
   readonly transport: { readonly compatibilityDateOverride: boolean };
   readonly classification: 'read' | 'mutation';
   readonly safety: {
@@ -119,7 +126,7 @@ export interface SerializableOperationManifest {
     readonly specificationSha256: string;
   };
   readonly operations: readonly SerializableOperationManifestEntry[];
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
 }
 
 interface OperationRegistryEntry {
@@ -365,7 +372,7 @@ function createSerializableOperationManifestFromEntries(
   return deepFreeze({
     ...createJsonProvenanceHeader(provenance),
     operations: entries.map(createManifestEntry),
-    schemaVersion: 2 as const,
+    schemaVersion: 3 as const,
   });
 }
 
@@ -379,6 +386,7 @@ import type {
   OperationHttpMethod,
   OperationParameterPlacement,
 } from '../../client/request.js';
+import type { OperationProtocolDescriptor } from '../../client/execute.js';
 
 export interface OperationSchemaReference {
   readonly module: '@evespace/esi-client/types' | '@evespace/esi-client/zod';
@@ -440,9 +448,13 @@ export interface SerializableOperationManifestEntry {
     readonly responseHeaders: readonly string[];
   };
   readonly cache: {
-    readonly responseHeaders: readonly string[];
-    readonly extensions: Readonly<Record<string, JsonValue>>;
+    readonly responseHeaders: OperationProtocolDescriptor['cache']['responseHeaders'];
+    readonly extensions: OperationProtocolDescriptor['cache']['extensions'];
   };
+  readonly conditionalRequestValidators: OperationProtocolDescriptor['conditionalRequestValidators'];
+  readonly rateLimit: OperationProtocolDescriptor['rateLimit'];
+  readonly requestArrayLimits: OperationProtocolDescriptor['requestArrayLimits'];
+  readonly maximumBatchSize: OperationProtocolDescriptor['maximumBatchSize'];
   readonly transport: { readonly compatibilityDateOverride: boolean };
   readonly classification: 'read' | 'mutation';
   readonly safety: {
@@ -465,7 +477,7 @@ export interface SerializableOperationManifest {
     readonly notice: string;
     readonly specificationSha256: string;
   };
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly operations: readonly SerializableOperationManifestEntry[];
 }
 
@@ -495,9 +507,11 @@ function createManifestEntry({
     },
     cache: operation.cache,
     classification,
+    conditionalRequestValidators: operation.conditionalRequestValidators,
     description: operation.description,
     facade: { domain: metadata.domain, method: metadata.method },
     http: { method: operation.method, path: operation.path },
+    maximumBatchSize: operation.maximumBatchSize,
     operationId: operation.operationId,
     pagination: operation.pagination,
     parameters: operation.parameters
@@ -513,6 +527,7 @@ function createManifestEntry({
             description: operation.requestBody.description,
             required: operation.requestBody.required,
           },
+    requestArrayLimits: operation.requestArrayLimits,
     requestSchemas: requestSchemaReferences(operation),
     requestType: generatedReference(typesModule, `${operation.operationId}Data`),
     responseType: generatedReference(typesModule, `${operation.operationId}Response`),
@@ -523,6 +538,7 @@ function createManifestEntry({
       schema: generatedReference(zodModule, `z${operation.operationId}Response`),
       status: response.status,
     })),
+    rateLimit: operation.rateLimit,
     safety: {
       generic: {
         requiresClientMutationEnablement: mutation,

@@ -91,7 +91,13 @@ Public; no access token is required.
 
 Pagination: none declared. Generic execution still performs exactly one request.
 
-Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extension keys: `x-cache-age`, `x-cache-mode`, `x-client-cache-ttl`, `x-server-cache-mode`, `x-server-cache-ttl`. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extensions: `x-cache-age=86400`, `x-cache-mode=ttl-based`, `x-client-cache-ttl=86400`, `x-server-cache-mode=ttl-based`, `x-server-cache-ttl=86400`. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+
+Declared conditional request validators: `if-modified-since`, `if-none-match`. These declarations identify accepted request headers; they do not by themselves assert support for a `304 Not Modified` response.
+
+Route rate limit: `legacy-only`; no route-group declaration is available in the pinned specification.
+
+Bounded request arrays: none declared. Maximum batch size: unspecified.
 
 ## Mutation safety
 
@@ -111,6 +117,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 ## Standalone examples
 
 - [Metadata](../examples/metadata.md)
+- [Operation protocol](../examples/operation-protocol.md)
 - [Public](../examples/public.md)
 - [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)

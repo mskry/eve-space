@@ -105,7 +105,13 @@ Required scopes: `esi-ui.open_window.v1`.
 
 Pagination: none declared. Generic execution still performs exactly one request.
 
-Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extension keys: none. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+Cache response headers: `cache-control`, `etag`, `last-modified`. Cache extensions: none. Metadata-enabled and generic results expose normalized cache fields plus all original response headers.
+
+Declared conditional request validators: `if-modified-since`, `if-none-match`. These declarations identify accepted request headers; they do not by themselves assert support for a `304 Not Modified` response.
+
+Route rate limit: group `ui`, maximum 900 tokens per `15m` window.
+
+Bounded request arrays: `body:$.recipients` (maximum 50). Maximum batch size: 50.
 
 ## Mutation safety
 
@@ -130,6 +136,7 @@ Error serialization is allowlisted and excludes credentials and authorization he
 - [Authenticated](../examples/authenticated.md)
 - [Metadata](../examples/metadata.md)
 - [Mutation safety](../examples/mutation-safety.md)
+- [Operation protocol](../examples/operation-protocol.md)
 - [Schema validation](../examples/schema-validation.md)
 - [Validation error](../examples/validation-error.md)
 

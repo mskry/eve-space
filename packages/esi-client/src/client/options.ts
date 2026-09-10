@@ -6,6 +6,7 @@ export interface EsiClientOptions {
   readonly baseUrl?: string;
   readonly compatibilityDate?: string;
   readonly language?: EsiLanguage;
+  readonly requestTimeoutMs?: number;
   readonly token?: string;
   readonly tokenProvider?: EsiTokenProvider;
   readonly fetch?: EsiFetch;
@@ -18,6 +19,7 @@ export interface SerializedEsiClientConfiguration {
   readonly baseUrl: string;
   readonly compatibilityDate: string;
   readonly language: EsiLanguage;
+  readonly requestTimeoutMs: number;
   readonly validateResponses: boolean;
   readonly validateRequests: boolean;
   readonly allowGenericMutations: boolean;

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 3.1.0 - 2026-09-10
+
+### Added
+
+- Bound every configured-fetch attempt and response body with a 10-second default deadline and a positive-integer `requestTimeoutMs` override.
+- Add credential-safe transport and not-modified errors plus the policy-neutral `classifyEsiFailure` helper.
+- Normalize cache max age, retry delay, route-group rate-limit, and existing response metadata across successful results and structured response errors.
+- Generate conditional validators, documented cache extensions, declared or legacy-only route limits, bounded request arrays, and unambiguous batch limits into operation descriptors, descriptions, search results, documentation, and tests.
+
+### Changed
+
+- Custom fetch implementations now receive a composed cancellation signal and must preserve response-body lifecycle semantics. The SDK still makes exactly one configured-fetch call and does not own retry, caching, OAuth refresh, coordination, telemetry, or health policy.
+
 ## 3.0.1 - 2026-09-07
 
 ### Fixed

@@ -5,6 +5,10 @@ import {
 } from './generated/operations/manifest.js';
 
 export type OperationSearchClassification = SerializableOperationManifestEntry['classification'];
+export type OperationSearchProtocol = Pick<
+  SerializableOperationManifestEntry,
+  'cache' | 'conditionalRequestValidators' | 'maximumBatchSize' | 'rateLimit' | 'requestArrayLimits'
+>;
 
 export interface SearchOperationsOptions {
   readonly query?: string;
@@ -25,6 +29,7 @@ export interface OperationSearchResult {
   readonly authenticated: boolean;
   readonly scopes: readonly string[];
   readonly classification: OperationSearchClassification;
+  readonly protocol: OperationSearchProtocol;
 }
 
 interface SearchField {
@@ -163,6 +168,13 @@ function createSearchResult(entry: SerializableOperationManifestEntry): Operatio
     authenticated: entry.authentication.required,
     scopes: Object.freeze([...entry.authentication.scopes]),
     classification: entry.classification,
+    protocol: Object.freeze({
+      cache: entry.cache,
+      conditionalRequestValidators: entry.conditionalRequestValidators,
+      maximumBatchSize: entry.maximumBatchSize,
+      rateLimit: entry.rateLimit,
+      requestArrayLimits: entry.requestArrayLimits,
+    }),
   });
 }
 

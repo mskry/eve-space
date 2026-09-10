@@ -7,7 +7,7 @@ DO NOT EDIT.
 
 # Metadata and pagination
 
-Normal domain methods return validated bare data. Call `client.<domain>.withMetadata().<method>(...)` for an `EsiResponse<T>` envelope containing status, all response headers, request ID, pagination, cache validators, and ESI error-limit metadata. Generic execution always returns this envelope.
+Normal domain methods return validated bare data. Call `client.<domain>.withMetadata().<method>(...)` for an `EsiResponse<T>` envelope containing status, bounded original response headers, request ID, pagination, cache validators and an unambiguous `maxAgeSeconds`, legacy ESI error-limit metadata, route-group rate-limit metadata, and a delta-seconds `retryAfterSeconds`. Generic execution always returns this envelope.
 
 Generic execution performs exactly one request. For offset pagination, pass the documented page parameter and inspect `meta.pagination.pages`. For cursor pagination, pass the documented cursor and inspect the cursor metadata or response headers. The SDK does not automatically traverse pages.
 

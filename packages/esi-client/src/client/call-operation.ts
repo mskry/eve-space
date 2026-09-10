@@ -1,5 +1,6 @@
 import type { GeneratedOperationContractMap } from '../generated/internal/operation-contracts.js';
 import { operationRegistry } from '../generated/operations/registry.js';
+import { isAbortSignal } from './abort-signal.js';
 import type { EsiClientConfiguration } from './configuration.js';
 import {
   EsiGenericMutationDisabledError,
@@ -20,6 +21,7 @@ export type CallOperationResult<TStableId extends StableOperationId> =
 
 export interface CallOperationOptions {
   readonly confirmMutation?: boolean;
+  readonly signal?: AbortSignal;
 }
 
 export interface EsiOperationCaller {
@@ -67,7 +69,9 @@ export async function executeRegisteredOperation<TStableId extends StableOperati
     entry.classification,
     validatedOptions,
   );
-  return executeOperation(configuration, descriptor, validatedArguments);
+  return executeOperation(configuration, descriptor, validatedArguments, {
+    signal: validatedOptions.signal,
+  });
 }
 
 function assertGenericOperationSafety(
@@ -94,7 +98,7 @@ function validateCallOperationOptions(
     throw callOptionsValidationError(operationId, [], 'Call options must be an object');
   }
   for (const key of Object.keys(options)) {
-    if (key !== 'confirmMutation') {
+    if (key !== 'confirmMutation' && key !== 'signal') {
       throw callOptionsValidationError(operationId, [key], `Unknown call option: ${key}`);
     }
   }
@@ -104,6 +108,9 @@ function validateCallOperationOptions(
       ['confirmMutation'],
       'confirmMutation must be a boolean',
     );
+  }
+  if (options.signal !== undefined && !isAbortSignal(options.signal)) {
+    throw callOptionsValidationError(operationId, ['signal'], 'signal must be an AbortSignal');
   }
   return options;
 }

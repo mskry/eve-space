@@ -1,4 +1,11 @@
-import type { JsonObject, NormalizedOpenApiModel } from './normalize.ts';
+import type {
+  ConditionalRequestValidator,
+  JsonObject,
+  NormalizedCacheExtensions,
+  NormalizedOpenApiModel,
+  NormalizedRequestArrayLimit,
+  NormalizedRouteRateLimit,
+} from './normalize.ts';
 import type {
   OperationSafetyClassification,
   ResolvedOperationMetadata,
@@ -28,6 +35,13 @@ export interface GeneratedOperationAccountingEntry {
   readonly facade: {
     readonly domain: string;
     readonly method: string;
+  };
+  readonly protocol: {
+    readonly cacheExtensions: NormalizedCacheExtensions;
+    readonly conditionalRequestValidators: readonly ConditionalRequestValidator[];
+    readonly rateLimit: NormalizedRouteRateLimit;
+    readonly requestArrayLimits: readonly NormalizedRequestArrayLimit[];
+    readonly maximumBatchSize: number | null;
   };
 }
 
@@ -119,6 +133,9 @@ export function createOperationAccountingReport(
   const excludedById = new Map(
     model.exclusions.map((exclusion) => [exclusion.operationId, exclusion]),
   );
+  const operationsById = new Map(
+    model.operations.map((operation) => [operation.operationId, operation]),
+  );
   validateOperationAccountingSets(
     model,
     sourceIds,
@@ -132,7 +149,13 @@ export function createOperationAccountingReport(
   const operations = [...sourceIds]
     .toSorted(compareText)
     .map((operationId) =>
-      createOperationAccountingEntry(operationId, generatedIds, excludedById, metadataById),
+      createOperationAccountingEntry(
+        operationId,
+        generatedIds,
+        excludedById,
+        metadataById,
+        operationsById,
+      ),
     );
 
   return deepFreeze({
@@ -225,6 +248,7 @@ function createOperationAccountingEntry(
   generatedIds: ReadonlySet<string>,
   excludedById: ReadonlyMap<string, NormalizedOpenApiModel['exclusions'][number]>,
   metadataById: ReadonlyMap<string, OperationAccountingEntryMetadata>,
+  operationsById: ReadonlyMap<string, NormalizedOpenApiModel['operations'][number]>,
 ): GeneratedOperationAccountingEntry | ExcludedOperationAccountingEntry {
   const exclusion = excludedById.get(operationId);
   if (exclusion !== undefined) {
@@ -235,13 +259,21 @@ function createOperationAccountingEntry(
     };
   }
   const metadata = metadataById.get(operationId);
-  if (metadata === undefined || !generatedIds.has(operationId)) {
+  const operation = operationsById.get(operationId);
+  if (metadata === undefined || operation === undefined || !generatedIds.has(operationId)) {
     throw new Error(`Missing operation metadata: ${operationId}`);
   }
   return {
     classification: metadata.classification,
     facade: { domain: metadata.domain, method: metadata.method },
     operationId,
+    protocol: {
+      cacheExtensions: operation.cache.extensions,
+      conditionalRequestValidators: operation.conditionalRequestValidators,
+      maximumBatchSize: operation.maximumBatchSize,
+      rateLimit: operation.rateLimit,
+      requestArrayLimits: operation.requestArrayLimits,
+    },
     status: 'generated',
   };
 }
