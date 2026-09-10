@@ -7,7 +7,10 @@ import {
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { describe, expect, test, vi } from 'vitest'
 import { PlatformEsiRequestError } from '../../src/esi-resilience/platform-execute.js'
-import { validatePlatformResourceBatchClassifications } from '../../src/platform/resource-batch.js'
+import {
+  executeInstalledResourceBatchOperation,
+  validatePlatformResourceBatchClassifications,
+} from '../../src/platform/resource-batch.js'
 import { processInstalledResourceBatch } from '../../src/queue/resource-batch-processor.js'
 import { resourceRefreshJobId } from '../../src/queue/resource-job-contracts.js'
 
@@ -112,6 +115,10 @@ describe('platform resource batch processing', () => {
       inputs: { ids: [1_404_328_063, 1_404_328_064] },
       authorization: { kind: 'public' },
     })
+    expect(resource.implementation.batch.classify).toHaveBeenCalledWith({
+      subjects: [subject(0), subject(1)],
+      data: { observed: true },
+    })
     expect(resource.implementation.map).not.toHaveBeenCalled()
     expect(applyObservation).toHaveBeenNthCalledWith(
       1,
@@ -142,6 +149,22 @@ describe('platform resource batch processing', () => {
     ).rejects.toThrow('Platform resource mapping failed')
     expect(executeEsiOperation).not.toHaveBeenCalled()
     expect(recordFailure).toHaveBeenCalledTimes(2)
+  })
+
+  test('rejects a batch above the ESI operation limit before eligibility or execution', async () => {
+    const resolveEligibility = vi.fn()
+    const executeEsiOperation = vi.fn()
+
+    await expect(
+      executeInstalledResourceBatchOperation(oversizedBatchPayload(), {
+        resources: [completeResource()],
+        resolveEligibility,
+        definitions: { 'universe-resolve-names': batchDefinition() },
+        executeEsiOperation,
+      }),
+    ).rejects.toThrow('batch exceeds 1000 subjects')
+    expect(resolveEligibility).not.toHaveBeenCalled()
+    expect(executeEsiOperation).not.toHaveBeenCalled()
   })
 
   test('rejects caller-owned conditional headers before consulting the batch cache', async () => {
@@ -295,6 +318,18 @@ function batchPayload(count: number) {
     subjectKind: 'character' as const,
     subjects: lifecycleIds.slice(0, count).map((subjectLifecycleId, index) => ({
       subjectLifecycleId,
+      subjectId: String(1_404_328_063 + index),
+    })),
+  }
+}
+
+function oversizedBatchPayload() {
+  return {
+    moduleId: 'member-audit',
+    resourceId: 'trained-skills',
+    subjectKind: 'character' as const,
+    subjects: Array.from({ length: 1_001 }, (_, index) => ({
+      subjectLifecycleId: `00000000-0000-4000-8000-${index.toString(16).padStart(12, '0')}`,
       subjectId: String(1_404_328_063 + index),
     })),
   }
