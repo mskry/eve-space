@@ -9,12 +9,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { PlatformEsiRequestError } from '../../src/esi-resilience/platform-execute.js'
 
 const mocks = vi.hoisted(() => ({
-  createEsiTransport: vi.fn(),
   getCharacterAuthorizationForLifecycle: vi.fn(),
   getCharacterCacheAuthorizationForLifecycle: vi.fn(),
-  getCharacterWithAuthorization: vi.fn(),
-  getEsiResilienceLayer: vi.fn(),
-  getPublic: vi.fn(),
 }))
 
 vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
@@ -22,13 +18,6 @@ vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
   getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorizationForLifecycle,
   getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorizationForLifecycle,
 }))
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: mocks.getEsiResilienceLayer,
-}))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
-
 import { assertInstalledResourceDeclarations } from '../../src/platform/resource-declarations.js'
 import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
@@ -82,10 +71,6 @@ describe('installed resource operation policy', () => {
     mocks.getCharacterCacheAuthorizationForLifecycle.mockResolvedValue({
       scopes: ['esi-wallet.read_character_wallet.v1'],
       tokenVersion: 4,
-    })
-    mocks.getEsiResilienceLayer.mockReturnValue({
-      getCharacterWithAuthorization: mocks.getCharacterWithAuthorization,
-      getPublic: mocks.getPublic,
     })
   })
 
@@ -187,8 +172,6 @@ describe('installed resource operation policy', () => {
     await expect(
       executeInstalledResourceOperation(identity, { resources: [resource], guardExecution }),
     ).resolves.toEqual({ outcome: 'noop', reason: 'disabled' })
-    expect(mocks.getEsiResilienceLayer).not.toHaveBeenCalled()
-    expect(mocks.createEsiTransport).not.toHaveBeenCalled()
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
     expect(implementation.request).not.toHaveBeenCalled()
     expect(implementation.map).not.toHaveBeenCalled()
@@ -244,10 +227,6 @@ describe('installed resource operation policy', () => {
       resource: collectingResource,
       characterId: 1404328063,
       authorization: { tokenVersion: 4 },
-    })
-    mocks.getCharacterWithAuthorization.mockResolvedValue({
-      result: cached(123),
-      authorizationGeneration: 4,
     })
     const options = {
       resources: [collectingResource],

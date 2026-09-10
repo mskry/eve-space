@@ -54,6 +54,18 @@ describe('Sonar project boundaries', () => {
     ]);
   });
 
+  it('limits root analysis to TypeScript projects in this checkout', () => {
+    expect(csv(rootProperties, 'sonar.typescript.tsconfigPaths')).toEqual([
+      'tsconfig.json',
+      'api/tsconfig.test.json',
+      'features/organization-activity/nuxt/tsconfig.json',
+      'features/organization-activity/server/tsconfig.json',
+      'packages/platform-module-contract/tsconfig.json',
+      'packages/platform-module-nuxt/tsconfig.json',
+      'packages/platform-module-server/tsconfig.json',
+    ]);
+  });
+
   it('retains generated, build, dependency, declaration, and coverage exclusions', () => {
     expect(csv(rootProperties, 'sonar.exclusions')).toContain('**/generated/**');
     expect(csv(packageProperties, 'sonar.exclusions')).toEqual(

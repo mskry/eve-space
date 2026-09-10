@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   createEsiClient: vi.fn(),
   getAttributes: vi.fn(),
-  createEsiTransport: vi.fn(),
   getCharacterAuthorization: vi.fn(),
   getCharacterCacheAuthorization: vi.fn(),
   acquire: vi.fn(),
@@ -35,9 +34,6 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
     },
   }
 })
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
 vi.mock('../../src/auth/tokens.js', () => ({
   getCharacterAuthorization: mocks.getCharacterAuthorization,
   getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
@@ -79,7 +75,6 @@ beforeEach(() => {
   vi.resetModules()
   mocks.getAttributes.mockReset()
   mocks.createEsiClient.mockReset()
-  mocks.createEsiTransport.mockReset()
   mocks.getCharacterAuthorization.mockReset()
   mocks.getCharacterCacheAuthorization.mockReset()
   mocks.acquire.mockReset()
@@ -95,7 +90,6 @@ beforeEach(() => {
   mocks.cacheSet.mockReset()
   mocks.cacheDel.mockReset()
 
-  mocks.createEsiTransport.mockReturnValue(vi.fn())
   mocks.getCharacterAuthorization.mockResolvedValue({
     accessToken: 'access-token',
     tokenVersion: 1,
@@ -148,7 +142,6 @@ describe('character attributes', () => {
     expect(characterAttributesScope).toBe(scope)
     expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, scope)
     expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith('attributes', `character-${characterId}`)
     expect(mocks.createEsiClient).toHaveBeenCalledWith({
       fetch: expect.any(Function),
       token: 'access-token',

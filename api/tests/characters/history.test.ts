@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   callOperation: vi.fn(),
-  executePublicRepresentation: vi.fn(),
-  get: vi.fn(),
+  executeRepresentation: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client', async (importOriginal) => ({
@@ -15,17 +14,15 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
   },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    executePublicRepresentation: mocks.executePublicRepresentation,
-    getPublic: mocks.get,
-  }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 vi.mock('../../src/universe/resolution-cache.js', () => ({
   readUniverseNames: () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() }),
   writeUniverseNames: vi.fn(),
   suppressUniverseNameIds: vi.fn(),
 }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const employmentHistoryFixture = [
   { corporation_id: 2, record_id: 2, start_date: '2020-01-01T00:00:00Z' },
@@ -37,19 +34,10 @@ const resolvedNamesFixture = [
 ]
 
 beforeEach(() => {
-  mocks.executePublicRepresentation.mockImplementation((_representation, resource) =>
-    mocks.get(resource),
-  )
-  mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load({})
-    return {
-      data: loaded.data,
-      cachedUntil: '2026-08-20T12:01:00.000Z',
-      quota: {},
-      source: 'esi',
-      stale: false,
-    }
-  })
+  mocks.executeRepresentation.mockImplementation(async (representation, input) => ({
+    ...(await executeRepresentationFixture(representation, input)),
+    cachedUntil: '2026-08-20T12:01:00.000Z',
+  }))
   mocks.callOperation.mockImplementation((operationId: string) => {
     switch (operationId) {
       case 'GetCharactersCharacterIdCorporationhistory':
@@ -80,10 +68,9 @@ describe('character employment history service', () => {
         corporation: { id: 1, name: 'First Corporation', isNpc: true },
       },
     ])
-    expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
-      'employment-history',
-      'universe-resolve-names',
-    ])
+    expect(
+      mocks.executeRepresentation.mock.calls.map(([representation]) => representation.operation),
+    ).toEqual(['employment-history', 'universe-resolve-names'])
   })
 
   test('does not produce cacheable unknown names after a transient resolution failure', async () => {

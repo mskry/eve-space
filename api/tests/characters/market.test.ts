@@ -32,10 +32,8 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
 vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ executeCharacterRepresentation: mocks.executeRepresentation }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 vi.mock('../../src/characters/finance-type-names.js', () => ({
   loadFinanceTypeNames: mocks.loadTypeNames,
@@ -47,6 +45,8 @@ vi.mock('../../src/characters/finance-location-names.js', () => ({
   financeLocationName: (locationId: number, names: ReadonlyMap<number, string>) =>
     names.get(locationId) ?? null,
 }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 90_000_001
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
@@ -67,8 +67,8 @@ const defaultFreshness = {
 }
 
 beforeEach(() => {
-  mocks.executeRepresentation.mockImplementation((_representation, resource) =>
-    loadResource(resource),
+  mocks.executeRepresentation.mockImplementation((representation, input) =>
+    loadResource(representation, input),
   )
   mocks.getOrders.mockResolvedValue(response([]))
   mocks.getOrderHistory.mockResolvedValue(response([], 1))
@@ -165,11 +165,10 @@ describe('character market service', () => {
       page: 3,
       totalPages: 8,
     })
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toMatchObject({
+    expect(mocks.executeRepresentation.mock.calls[0]?.[0]).toMatchObject({
       operation: 'market-order-history',
-      characterId,
-      inputs: { path: { character_id: characterId }, query: { page: 3 } },
     })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ characterId, page: 3 })
     expect(mocks.getOrderHistory).toHaveBeenCalledWith({
       path: { character_id: characterId },
       query: { page: 3 },
@@ -238,14 +237,17 @@ describe('character market service', () => {
   )
 })
 
-async function loadResource(resource: {
-  load: (
-    authority: { accessToken: string; principal: string },
-    revalidation: Record<string, string>,
-  ) => Promise<{ data: unknown }>
-}) {
-  const loaded = await resource.load(authority, revalidation)
-  return { data: loaded.data, ...defaultFreshness }
+async function loadResource(
+  representation: Parameters<typeof executeRepresentationFixture>[0],
+  input: unknown,
+) {
+  return {
+    ...(await executeRepresentationFixture(representation, input, {
+      accessToken: authority.accessToken,
+      revalidation,
+    })),
+    ...defaultFreshness,
+  }
 }
 
 function response<Data>(data: Data, pages?: number) {

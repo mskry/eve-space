@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   callOperation: vi.fn(),
-  executeCharacterRepresentation: vi.fn(),
-  executePublicRepresentation: vi.fn(),
+  executeRepresentation: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client', async (importOriginal) => ({
@@ -19,16 +18,14 @@ vi.mock('../../src/characters/skills.js', () => ({
   getCharacterSkillsData: vi.fn(),
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    executeCharacterRepresentation: mocks.executeCharacterRepresentation,
-    executePublicRepresentation: mocks.executePublicRepresentation,
-  }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 vi.mock('../../src/universe/locations.js', () => ({
   getUniverseSolarSystem: vi.fn(),
   getUniverseStation: vi.fn(),
 }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const wireResponses = {
   GetCharactersCharacterIdLocation: { solar_system_id: 30_000_142, station_id: 60_003_768 },
@@ -58,19 +55,12 @@ beforeEach(async () => {
     data: wireResponses[operationId],
     meta: { headers: {} },
   }))
-  mocks.executeCharacterRepresentation.mockImplementation(
-    async ({ operation }: { operation: 'location' | 'ship' }, resource) => {
-      const loaded = await resource.load(
-        { accessToken: 'access-token', principal: 'character-90000001' },
-        {},
-      )
-      return { ...freshness[operation], data: loaded.data }
-    },
-  )
-  mocks.executePublicRepresentation.mockImplementation(async ({ operation }, resource) => {
-    if (operation !== 'universe-type') throw new Error(`unexpected public operation ${operation}`)
-    const loaded = await resource.load({})
-    return { ...freshness['universe-type'], data: loaded.data }
+  mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+    const operation = representation.operation as keyof typeof freshness
+    const loaded = await executeRepresentationFixture(representation, input, {
+      accessToken: representation.authorization === 'character' ? 'access-token' : undefined,
+    })
+    return { ...freshness[operation], data: loaded.data }
   })
   const { getUniverseSolarSystem, getUniverseStation } =
     await import('../../src/universe/locations.js')
@@ -100,9 +90,7 @@ describe('character overview resources', () => {
     })
     expect(location).not.toHaveProperty('source')
     expect(location).not.toHaveProperty('quota')
-    expect(mocks.executeCharacterRepresentation.mock.calls[0]?.[1]).toMatchObject({
-      inputs: { path: { character_id: 90_000_001 } },
-    })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ characterId: 90_000_001 })
     expect(mocks.callOperation).toHaveBeenCalledWith('GetCharactersCharacterIdLocation', {
       path: { character_id: 90_000_001 },
     })
@@ -119,10 +107,7 @@ describe('character overview resources', () => {
       validatedAt: '2026-09-01T10:57:00.000Z',
       stale: false,
     })
-    expect(mocks.executePublicRepresentation.mock.calls[0]?.[1]).toMatchObject({
-      operation: 'universe-type',
-      inputs: { path: { type_id: 670 } },
-    })
+    expect(mocks.executeRepresentation.mock.calls[1]?.[1]).toEqual({ typeId: 670 })
     expect(mocks.callOperation).toHaveBeenCalledWith('GetUniverseTypesTypeId', {
       path: { type_id: 670 },
     })

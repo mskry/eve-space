@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   callOperation: vi.fn(),
-  executePublicRepresentation: vi.fn(),
-  get: vi.fn(),
+  executeRepresentation: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client', async (importOriginal) => ({
@@ -16,14 +15,7 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
 }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    executePublicRepresentation: mocks.executePublicRepresentation,
-    getPublic: mocks.get,
-  }),
-}))
-
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: vi.fn(),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
 
 vi.mock('../../src/universe/resolution-cache.js', () => ({
@@ -32,12 +24,11 @@ vi.mock('../../src/universe/resolution-cache.js', () => ({
   suppressUniverseNameIds: vi.fn(),
 }))
 
+import { executeRepresentationFixture } from '../support/execute-representation.js'
+
 beforeEach(() => {
-  mocks.executePublicRepresentation.mockImplementation((_representation, resource) =>
-    mocks.get(resource),
-  )
-  mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load({})
+  mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+    const loaded = await executeRepresentationFixture(representation, input)
     return {
       data: loaded.data,
       cachedUntil: '2026-08-22T12:01:00.000Z',
@@ -75,13 +66,15 @@ describe('corporation service', () => {
       memberCount: 10,
     })
 
-    expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
-      'public-corporation',
-    ])
+    expect(
+      mocks.executeRepresentation.mock.calls.map(([representation]) => representation.operation),
+    ).toEqual(['public-corporation'])
   })
 
   test('keeps the public 404 outcome from the resilient resource', async () => {
-    mocks.get.mockRejectedValueOnce(Object.assign(new Error('Not found'), { status: 404 }))
+    mocks.executeRepresentation.mockRejectedValueOnce(
+      Object.assign(new Error('Not found'), { status: 404 }),
+    )
     const { getCorporationPublic } = await import('../../src/corporations/public-data.js')
 
     await expect(getCorporationPublic(90_000_002)).rejects.toMatchObject({ status: 404 })
@@ -107,15 +100,10 @@ describe('corporation service', () => {
       throw new Error(`Unexpected operation ${operationId}`)
     })
     let loaded: { data: unknown } | undefined
-    mocks.get.mockImplementation(async (resource) => {
-      loaded = await resource.load({})
-      return {
-        data: loaded?.data,
-        cachedUntil: '2026-08-22T12:01:00.000Z',
-        quota: {},
-        source: 'esi',
-        stale: false,
-      }
+    mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+      const result = await executeRepresentationFixture(representation, input)
+      loaded = { data: result.data }
+      return { ...result, cachedUntil: '2026-08-22T12:01:00.000Z' }
     })
     const { getCorporationPublic } = await import('../../src/corporations/public-data.js')
 
@@ -130,10 +118,9 @@ describe('corporation service', () => {
     await getCorporationAllianceHistory(90_000_003)
     await expect(getNpcCorporations()).resolves.toEqual([1, 2])
 
-    expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
-      'corporation-alliance-history',
-      'corporation-npc-list',
-    ])
+    expect(
+      mocks.executeRepresentation.mock.calls.map(([representation]) => representation.operation),
+    ).toEqual(['corporation-alliance-history', 'corporation-npc-list'])
   })
 })
 

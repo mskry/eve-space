@@ -15,7 +15,6 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
   staticRows: [] as StaticRow[],
   where: vi.fn(),
-  createEsiTransport: vi.fn(),
   getCharacterAuthorization: vi.fn(),
   getCharacterCacheAuthorization: vi.fn(),
   acquire: vi.fn(),
@@ -48,9 +47,6 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
   }
 })
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
 vi.mock('../../src/auth/tokens.js', () => ({
   getCharacterAuthorization: mocks.getCharacterAuthorization,
   getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
@@ -103,7 +99,6 @@ beforeEach(() => {
   mocks.leftJoin.mockReset()
   mocks.where.mockReset()
   mocks.createEsiClient.mockReset()
-  mocks.createEsiTransport.mockReset()
   mocks.getCharacterAuthorization.mockReset()
   mocks.getCharacterCacheAuthorization.mockReset()
   mocks.acquire.mockReset()
@@ -124,7 +119,6 @@ beforeEach(() => {
   mocks.from.mockReturnValue({ leftJoin: mocks.leftJoin })
   mocks.leftJoin.mockReturnValue({ where: mocks.where })
   mocks.where.mockImplementation(async () => mocks.staticRows)
-  mocks.createEsiTransport.mockReturnValue(vi.fn())
   mocks.getCharacterAuthorization.mockResolvedValue({
     accessToken: 'access-token',
     tokenVersion: 1,
@@ -171,7 +165,6 @@ describe('character skills snapshot', () => {
     expect(characterSkillsScope).toBe(scope)
     expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, scope)
     expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith('skills', `character-${characterId}`)
     expect(mocks.createEsiClient).toHaveBeenCalledWith({
       fetch: expect.any(Function),
       token: 'access-token',

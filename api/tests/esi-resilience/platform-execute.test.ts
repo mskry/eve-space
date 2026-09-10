@@ -1,31 +1,51 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  createTransport: vi.fn(),
-  dispatch: vi.fn(),
-  getCharacterAuthorizationForLifecycle: vi.fn(),
-  getCharacterCacheAuthorizationForLifecycle: vi.fn(),
-  getCharacterWithAuthorization: vi.fn(),
-  getPublic: vi.fn(),
-  validateInputs: vi.fn(),
+  authorize: vi.fn(),
+  authorizeCache: vi.fn(),
+  callOperation: vi.fn(),
+  clientOptions: vi.fn(),
 }))
 
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    constructor(options: unknown) {
+      mocks.clientOptions(options)
+    }
+
+    callOperation(...arguments_: unknown[]) {
+      return mocks.callOperation(...arguments_)
+    }
+  },
+}))
 vi.mock('../../src/auth/tokens.js', () => ({
-  getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorizationForLifecycle,
-  getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorizationForLifecycle,
+  getCharacterAuthorization: vi.fn(),
+  getCharacterAuthorizationForLifecycle: mocks.authorize,
+  getCharacterCacheAuthorization: vi.fn(),
+  getCharacterCacheAuthorizationForLifecycle: mocks.authorizeCache,
 }))
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    getCharacterWithAuthorization: mocks.getCharacterWithAuthorization,
-    getPublic: mocks.getPublic,
-  }),
+vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
+  getSharedCacheRedisConnection: () => ({ get: vi.fn(), set: vi.fn() }),
 }))
-vi.mock('../../src/esi-resilience/module-operation-dispatcher.js', () => ({
-  dispatchModuleEsiOperation: mocks.dispatch,
-  validateModuleEsiOperationInputs: mocks.validateInputs,
+vi.mock('../../src/esi-resilience/coordination.js', () => ({
+  acquireEsiRequestLease: vi.fn().mockResolvedValue(undefined),
+  commitEsiFence: vi.fn(),
+  getCommittedEsiFence: vi.fn(),
+  getEsiRequestLeaseTtl: vi.fn(),
+  getEsiResourceRevision: vi.fn().mockResolvedValue(0),
+  incrementEsiResourceRevision: vi.fn(),
+  initializeCacheNamespace: vi.fn().mockRejectedValue(new Error('coordination unavailable')),
+  releaseEsiRequestLease: vi.fn(),
+  renewEsiRequestLease: vi.fn(),
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createTransport,
+vi.mock('../../src/esi-resilience/permits.js', () => ({
+  acquireEsiRequestPermit: vi.fn(),
+}))
+vi.mock('../../src/esi-resilience/transport.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/esi-resilience/transport.js')>()),
+  createRawEsiTransport: vi.fn(() => vi.fn()),
+  getCoordinationConnection: () => ({}),
 }))
 
 import { installedModuleEsiOperationDefinitions } from '../../src/generated/platform/installed-module-esi.js'
@@ -36,111 +56,28 @@ import {
 
 const characterId = 1_404_328_063
 const lifecycleId = '35acd527-9539-44ad-aacf-9f8e45232267'
-const primaryOperation = 'organization-activity-character-jobs'
-const dependentOperation = 'organization-activity-job-participation'
+const characterOperation = 'organization-activity-character-jobs'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.authorize.mockResolvedValue({ accessToken: 'private-token', tokenVersion: 5 })
+  mocks.authorizeCache.mockResolvedValue({ tokenVersion: 5 })
+  mocks.callOperation.mockResolvedValue({
+    data: { freelance_jobs: [{ id: 'job-one' }] },
+    meta: { status: 200, headers: {} },
+  })
+})
 
 describe('platform ESI execution', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.validateInputs.mockImplementation((_definition, inputs) => inputs)
-    mocks.createTransport.mockReturnValue(vi.fn())
-    mocks.getCharacterAuthorizationForLifecycle.mockResolvedValue({
-      accessToken: 'private-token',
-      tokenVersion: 5,
-    })
-    mocks.getCharacterCacheAuthorizationForLifecycle.mockResolvedValue({ tokenVersion: 5 })
-    mocks.dispatch.mockResolvedValue({
-      data: { freelance_jobs: [{ id: 'job-one' }] },
-      meta: { status: 200, headers: {} },
-    })
-    mocks.getCharacterWithAuthorization.mockImplementation(async (resource, authorization) => {
-      await authorization.recheckCacheAuthorization()
-      const resolved = await authorization.resolve()
-      const loaded = await resource.load(
-        { accessToken: resolved.accessToken, principal: authorization.transportPrincipal },
-        { ifNoneMatch: 'current-etag' },
-      )
-      return {
-        result: cached(loaded.data),
-        authorizationGeneration: resolved.tokenVersion,
-      }
-    })
-  })
-
-  test.each([
-    [
-      primaryOperation,
-      { path: { character_id: characterId } },
-      { freelance_jobs: [{ id: 'job-one' }] },
-    ],
-    [
-      dependentOperation,
-      { path: { character_id: characterId, job_id: '11111111-1111-4111-8111-111111111111' } },
-      { contributed: 2, state: 'Committed' },
-    ],
-  ] as const)(
-    'executes raw installed operation %s with lifecycle authority',
-    async (operation, inputs, raw) => {
-      const definition = installedModuleEsiOperationDefinitions[operation]
-      mocks.dispatch.mockResolvedValueOnce({ data: raw, meta: { status: 200, headers: {} } })
-
-      await expect(
-        executePlatformEsiOperation({
-          operation,
-          definition,
-          inputs,
-          authorization: {
-            kind: 'character-lifecycle',
-            characterId,
-            lifecycleId,
-            generation: 4,
-          },
-        }),
-      ).resolves.toEqual({
-        ...cached(raw),
-        authorizationGeneration: 5,
-      })
-      expect(mocks.getCharacterWithAuthorization).toHaveBeenCalledWith(
-        expect.objectContaining({ operation, inputs }),
-        expect.objectContaining({
-          cacheAuthorization: {
-            kind: 'character',
-            principal: `character-${characterId}-lifecycle-${lifecycleId}`,
-            generation: 4,
-          },
-          transportPrincipal: `character-${characterId}`,
-        }),
-      )
-      expect(mocks.getCharacterAuthorizationForLifecycle).toHaveBeenCalledWith(
-        characterId,
-        lifecycleId,
-        'esi-characters.read_freelance_jobs.v1',
-      )
-      expect(mocks.getCharacterCacheAuthorizationForLifecycle).toHaveBeenCalledWith(
-        characterId,
-        lifecycleId,
-        'esi-characters.read_freelance_jobs.v1',
-      )
-      expect(mocks.dispatch).toHaveBeenCalledWith(definition, {
-        inputs,
-        authorization: { kind: 'character', accessToken: 'private-token' },
-        revalidation: { ifNoneMatch: 'current-etag' },
-        transport: expect.any(Function),
-      })
-    },
-  )
-
-  test('returns a verified cached lifecycle generation without loading token material', async () => {
-    mocks.getCharacterWithAuthorization.mockImplementation(async (_resource, authorization) => ({
-      result: cached({ freelance_jobs: [] }, 'cache'),
-      authorizationGeneration: await authorization.recheckCacheAuthorization(),
-    }))
+  test('executes validated wire data with lifecycle authority and returns its generation', async () => {
+    const definition = installedModuleEsiOperationDefinitions[characterOperation]
+    const inputs = { path: { character_id: characterId } }
 
     await expect(
       executePlatformEsiOperation({
-        operation: primaryOperation,
-        definition: installedModuleEsiOperationDefinitions[primaryOperation],
-        inputs: { path: { character_id: characterId } },
+        operation: characterOperation,
+        definition,
+        inputs,
         authorization: {
           kind: 'character-lifecycle',
           characterId,
@@ -148,20 +85,28 @@ describe('platform ESI execution', () => {
           generation: 4,
         },
       }),
-    ).resolves.toMatchObject({ source: 'cache', authorizationGeneration: 5 })
-    expect(mocks.getCharacterAuthorizationForLifecycle).not.toHaveBeenCalled()
-    expect(mocks.dispatch).not.toHaveBeenCalled()
-    expect(mocks.createTransport).not.toHaveBeenCalled()
+    ).resolves.toMatchObject({
+      data: { freelance_jobs: [{ id: 'job-one' }] },
+      authorizationGeneration: 5,
+      source: 'esi',
+    })
+    expect(mocks.authorize).toHaveBeenCalledWith(
+      characterId,
+      lifecycleId,
+      'esi-characters.read_freelance_jobs.v1',
+    )
+    expect(mocks.clientOptions).toHaveBeenCalledWith({
+      fetch: expect.any(Function),
+      token: 'private-token',
+      validateResponses: true,
+    })
+    expect(mocks.callOperation).toHaveBeenCalledWith(definition.sdkOperationId, inputs)
   })
 
-  test('returns null generation for public platform operations', async () => {
+  test('returns null authorization generation for public operations', async () => {
     const operation = 'organization-activity-campaign-list'
     const definition = installedModuleEsiOperationDefinitions[operation]
-    mocks.getPublic.mockImplementation(async (resource) => {
-      const loaded = await resource.load({})
-      return cached(loaded.data)
-    })
-    mocks.dispatch.mockResolvedValueOnce({
+    mocks.callOperation.mockResolvedValueOnce({
       data: { campaigns: [] },
       meta: { status: 200, headers: {} },
     })
@@ -174,37 +119,55 @@ describe('platform ESI execution', () => {
         authorization: { kind: 'public' },
       }),
     ).resolves.toMatchObject({ data: { campaigns: [] }, authorizationGeneration: null })
-    expect(mocks.createTransport).toHaveBeenCalledWith(operation)
+    expect(mocks.authorize).not.toHaveBeenCalled()
   })
 
-  test('rejects reserved revalidation headers in validated dynamic inputs', async () => {
+  test.each(['IF-NONE-MATCH', 'if-modified-since'])(
+    'rejects caller-supplied %s before network activity',
+    async (headerName) => {
+      const operation = 'organization-activity-campaign-list'
+      const definition = installedModuleEsiOperationDefinitions[operation]
+      const execution = executePlatformEsiOperation({
+        operation,
+        definition: {
+          ...definition,
+          descriptor: {
+            ...definition.descriptor,
+            requestSchema: {
+              parse: (inputs: unknown) => inputs,
+            } as unknown as typeof definition.descriptor.requestSchema,
+          },
+        },
+        inputs: { headers: { [headerName]: 'caller-value' } },
+        authorization: { kind: 'public' },
+      })
+
+      await expect(execution).rejects.toBeInstanceOf(PlatformEsiRequestError)
+      await expect(execution).rejects.toHaveProperty(
+        'cause.message',
+        `ESI request header ${headerName} is executor-owned`,
+      )
+      expect(mocks.clientOptions).not.toHaveBeenCalled()
+      expect(mocks.callOperation).not.toHaveBeenCalled()
+    },
+  )
+
+  test('rejects authorization-kind mismatches before network activity', async () => {
     const operation = 'organization-activity-campaign-list'
-    const definition = installedModuleEsiOperationDefinitions[operation]
-    mocks.validateInputs.mockReturnValue({ headers: { 'IF-MODIFIED-SINCE': 'caller-value' } })
 
-    const execution = executePlatformEsiOperation({
-      operation,
-      definition,
-      inputs: { headers: { 'IF-MODIFIED-SINCE': 'caller-value' } },
-      authorization: { kind: 'public' },
-    })
-
-    await expect(execution).rejects.toBeInstanceOf(PlatformEsiRequestError)
-    await expect(execution).rejects.toHaveProperty(
-      'cause.message',
-      'ESI request header IF-MODIFIED-SINCE is executor-owned',
-    )
-    expect(mocks.getPublic).not.toHaveBeenCalled()
+    await expect(
+      executePlatformEsiOperation({
+        operation,
+        definition: installedModuleEsiOperationDefinitions[operation],
+        inputs: {},
+        authorization: {
+          kind: 'character-lifecycle',
+          characterId,
+          lifecycleId,
+          generation: 4,
+        },
+      }),
+    ).rejects.toThrow('Public platform ESI operation received character authority')
+    expect(mocks.callOperation).not.toHaveBeenCalled()
   })
 })
-
-function cached(data: unknown, source: 'esi' | 'cache' = 'esi') {
-  return {
-    data,
-    cachedUntil: '2026-09-10T12:01:00.000Z',
-    validatedAt: '2026-09-10T12:00:00.000Z',
-    source,
-    stale: false,
-    quota: {},
-  }
-}

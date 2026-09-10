@@ -14,11 +14,10 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
   },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    executePublicRepresentation: (_r: unknown, resource: unknown) => mocks.get(resource),
-  }),
+  esiExecutionLayer: { executeRepresentation: mocks.get },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 import { resolveOrganizationAuthorityCorporation } from '../../src/organization/authority.js'
 import {
@@ -31,10 +30,11 @@ const corporationId = 98_000_001
 const allianceId = 99_000_001
 
 beforeEach(() => {
-  mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load({ ifNoneMatch: 'etag' })
-    return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
-  })
+  mocks.get.mockImplementation((representation, input) =>
+    executeRepresentationFixture(representation, input, {
+      revalidation: { ifNoneMatch: 'etag' },
+    }),
+  )
   mocks.callOperation.mockResolvedValue(
     response({ executor_corporation_id: corporationId, name: 'Alliance' }),
   )
@@ -91,8 +91,8 @@ describe('organization owner authority', () => {
   })
 
   test('rejects stale alliance executor evidence', async () => {
-    mocks.get.mockImplementationOnce(async (resource) => {
-      const loaded = await resource.load({})
+    mocks.get.mockImplementationOnce(async (representation, input) => {
+      const loaded = await executeRepresentationFixture(representation, input)
       return { data: loaded.data, cachedUntil: '', quota: {}, source: 'stale', stale: true }
     })
     await expect(

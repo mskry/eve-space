@@ -34,10 +34,8 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
 vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ executeCharacterRepresentation: mocks.executeRepresentation }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 vi.mock('../../src/characters/finance-location-names.js', () => ({
   loadFinanceLocationNames: mocks.loadLocationNames,
@@ -51,6 +49,8 @@ vi.mock('../../src/characters/finance-type-names.js', () => ({
     names.get(typeId) ?? `Unknown type ${typeId}`,
 }))
 
+import { executeRepresentationFixture } from '../support/execute-representation.js'
+
 const characterId = 90_000_001
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
 const revalidation = {}
@@ -63,8 +63,8 @@ const defaultFreshness = {
 }
 
 beforeEach(() => {
-  mocks.executeRepresentation.mockImplementation((_representation, resource) =>
-    loadResource(resource),
+  mocks.executeRepresentation.mockImplementation((representation, input) =>
+    loadResource(representation, input),
   )
   mocks.getBalance.mockResolvedValue(response(123.45))
   mocks.getJournal.mockResolvedValue(response([]))
@@ -84,11 +84,10 @@ describe('wallet service', () => {
 
     expect(walletScope).toBe('esi-wallet.read_character_wallet.v1')
     expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toMatchObject({
+    expect(mocks.executeRepresentation.mock.calls[0]?.[0]).toMatchObject({
       operation: 'wallet-balance',
-      characterId,
-      inputs: { path: { character_id: characterId } },
     })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ characterId })
     expect(mocks.getBalance).toHaveBeenCalledWith({ path: { character_id: characterId } })
   })
 
@@ -212,10 +211,12 @@ describe('wallet service', () => {
       validatedAt: defaultFreshness.validatedAt,
       stale: false,
     })
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toMatchObject({
+    expect(mocks.executeRepresentation.mock.calls[0]?.[0]).toMatchObject({
       operation: 'wallet-journal',
+    })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({
       characterId: 90_000_004,
-      inputs: { path: { character_id: 90_000_004 }, query: { page: 2 } },
+      page: 2,
     })
     expect(mocks.getJournal).toHaveBeenCalledWith({
       path: { character_id: 90_000_004 },
@@ -251,13 +252,16 @@ describe('wallet service', () => {
   })
 
   test('forwards journal conditional validators independently', async () => {
-    mocks.executeRepresentation.mockImplementationOnce(async (_representation, resource) => {
-      const loaded = await resource.load(authority, {
-        ifNoneMatch: 'journal-etag',
-        ifModifiedSince: 'Wed, 19 Aug 2026 12:00:00 GMT',
-      })
-      return { data: loaded.data, ...defaultFreshness }
-    })
+    mocks.executeRepresentation.mockImplementationOnce(async (representation, input) => ({
+      ...(await executeRepresentationFixture(representation, input, {
+        accessToken: authority.accessToken,
+        revalidation: {
+          ifNoneMatch: 'journal-etag',
+          ifModifiedSince: 'Wed, 19 Aug 2026 12:00:00 GMT',
+        },
+      })),
+      ...defaultFreshness,
+    }))
     const { getWalletJournal } = await import('../../src/characters/wallet.js')
 
     await getWalletJournal(90_000_004, 1)
@@ -316,9 +320,9 @@ describe('wallet service', () => {
     await getWalletTransactions(90_000_004, 700)
     await getWalletTransactions(90_000_004, 600)
 
-    expect(mocks.executeRepresentation.mock.calls.map(([, resource]) => resource.inputs)).toEqual([
-      { path: { character_id: 90_000_004 }, query: { from_id: 700 } },
-      { path: { character_id: 90_000_004 }, query: { from_id: 600 } },
+    expect(mocks.executeRepresentation.mock.calls.map(([, input]) => input)).toEqual([
+      { characterId: 90_000_004, fromId: 700 },
+      { characterId: 90_000_004, fromId: 600 },
     ])
     expect(mocks.getTransactions).toHaveBeenNthCalledWith(1, {
       path: { character_id: 90_000_004 },
@@ -423,14 +427,17 @@ describe('wallet service', () => {
   )
 })
 
-async function loadResource(resource: {
-  load: (
-    authority: { accessToken: string; principal: string },
-    revalidation: Record<string, string>,
-  ) => Promise<{ data: unknown }>
-}) {
-  const loaded = await resource.load(authority, revalidation)
-  return { data: loaded.data, ...defaultFreshness }
+async function loadResource(
+  representation: Parameters<typeof executeRepresentationFixture>[0],
+  input: unknown,
+) {
+  return {
+    ...(await executeRepresentationFixture(representation, input, {
+      accessToken: authority.accessToken,
+      revalidation,
+    })),
+    ...defaultFreshness,
+  }
 }
 
 function response<Data>(data: Data, pages?: number) {

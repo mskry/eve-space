@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  executeCharacterRepresentation: vi.fn(),
+  executeRepresentation: vi.fn(),
   getCorporationRoles: vi.fn(),
 }))
 
@@ -14,22 +14,17 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
   },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    executeCharacterRepresentation: mocks.executeCharacterRepresentation,
-  }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 1_404_328_063
 
 beforeEach(() => {
-  mocks.executeCharacterRepresentation.mockImplementation(async (_representation, resource) => {
-    const loaded = await resource.load(
-      { accessToken: 'access-token', principal: `character-${characterId}` },
-      {},
-    )
-    return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
-  })
+  mocks.executeRepresentation.mockImplementation((representation, input) =>
+    executeRepresentationFixture(representation, input, { accessToken: 'access-token' }),
+  )
 })
 
 describe('character corporation roles', () => {
@@ -52,10 +47,7 @@ describe('character corporation roles', () => {
       rolesAtOther: ['Starbase_Defense_Operator'],
     })
     expect(characterCorporationRolesScope).toBe('esi-characters.read_corporation_roles.v1')
-    expect(mocks.executeCharacterRepresentation.mock.calls[0]?.[1]).toMatchObject({
-      operation: 'character-corporation-roles',
-      inputs: { path: { character_id: characterId } },
-    })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ characterId })
     expect(mocks.getCorporationRoles).toHaveBeenCalledWith('GetCharactersCharacterIdRoles', {
       path: { character_id: characterId },
     })

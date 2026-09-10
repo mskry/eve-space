@@ -34,16 +34,16 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
 vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ executeCharacterRepresentation: mocks.executeRepresentation }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 vi.mock('../../src/characters/finance-type-names.js', () => ({
   loadFinanceTypeNames: mocks.loadTypeNames,
   financeTypeName: (typeId: number, names: ReadonlyMap<number, string>) =>
     names.get(typeId) ?? `Unknown type ${typeId}`,
 }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 90_000_001
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
@@ -58,8 +58,8 @@ const defaultFreshness = {
 }
 
 beforeEach(() => {
-  mocks.executeRepresentation.mockImplementation((_representation, resource) =>
-    loadResource(resource),
+  mocks.executeRepresentation.mockImplementation((representation, input) =>
+    loadResource(representation, input),
   )
   mocks.getContracts.mockResolvedValue(response([], 1))
   mocks.getItems.mockResolvedValue(response([]))
@@ -243,15 +243,10 @@ describe('character contracts service', () => {
       ],
     })
     expect(
-      mocks.executeRepresentation.mock.calls.map(([, resource]) => resource.operation),
+      mocks.executeRepresentation.mock.calls.map(([representation]) => representation.operation),
     ).toEqual(['character-contracts', 'character-contract-items'])
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1].inputs).toEqual({
-      path: { character_id: characterId },
-      query: { page: 2 },
-    })
-    expect(mocks.executeRepresentation.mock.calls[1]?.[1].inputs).toEqual({
-      path: { character_id: characterId, contract_id: 300 },
-    })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ characterId, page: 2 })
+    expect(mocks.executeRepresentation.mock.calls[1]?.[1]).toEqual({ characterId, contractId: 300 })
     expect(mocks.getItems).toHaveBeenCalledWith({
       path: { character_id: characterId, contract_id: 300 },
       headers: revalidationHeaders,
@@ -277,7 +272,7 @@ describe('character contracts service', () => {
     })
     expect(JSON.stringify(result)).not.toContain('90000002')
     expect(
-      mocks.executeRepresentation.mock.calls.map(([, resource]) => resource.operation),
+      mocks.executeRepresentation.mock.calls.map(([representation]) => representation.operation),
     ).toEqual(['character-contracts', 'character-contract-bids'])
   })
 
@@ -359,21 +354,24 @@ function serveParentThenDetail(
   data: { contracts: Array<{ contractId: number }>; page: number; totalPages: number },
   metadata: Partial<typeof defaultFreshness & { refreshFailureClass: string }> = {},
 ) {
-  mocks.executeRepresentation.mockImplementation(async (_representation, resource) => {
-    if (resource.operation === 'character-contracts')
+  mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+    if (representation.operation === 'character-contracts')
       return { data, ...defaultFreshness, source: 'cache', ...metadata }
-    return loadResource(resource)
+    return loadResource(representation, input)
   })
 }
 
-async function loadResource(resource: {
-  load: (
-    authority: { accessToken: string; principal: string },
-    revalidation: Record<string, string>,
-  ) => Promise<{ data: unknown }>
-}) {
-  const loaded = await resource.load(authority, revalidation)
-  return { data: loaded.data, ...defaultFreshness }
+async function loadResource(
+  representation: Parameters<typeof executeRepresentationFixture>[0],
+  input: unknown,
+) {
+  return {
+    ...(await executeRepresentationFixture(representation, input, {
+      accessToken: authority.accessToken,
+      revalidation,
+    })),
+    ...defaultFreshness,
+  }
 }
 
 function response<Data>(data: Data, pages?: number) {

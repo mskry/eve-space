@@ -24,10 +24,8 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
 vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ executePublicRepresentation: mocks.get }),
+  esiExecutionLayer: { executeRepresentation: mocks.get },
 }))
-
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 vi.mock('../../src/esi-resilience/telemetry.js', () => ({
   probeEsiResilienceTelemetry: mocks.probeEsiResilienceTelemetry,
@@ -39,20 +37,17 @@ vi.mock('../../src/domain-events/status.js', () => ({
 
 vi.mock('../../src/queue/status.js', () => ({ probeQueueStatus: mocks.probeQueueStatus }))
 
+import { executeRepresentationFixture } from '../support/execute-representation.js'
+
 beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-08-20T12:00:00.000Z'))
-  mocks.get.mockImplementation(async (_representation, resource) => {
-    const response = await resource.load({})
-    return {
-      data: response.data,
-      cachedUntil: '2026-08-20T12:01:00.000Z',
-      quota: { errorRemaining: 99, errorResetSeconds: 10 },
-      source: 'esi',
-      stale: false,
-    }
-  })
+  mocks.get.mockImplementation(async (representation, input) => ({
+    ...(await executeRepresentationFixture(representation, input)),
+    cachedUntil: '2026-08-20T12:01:00.000Z',
+    quota: { errorRemaining: 99, errorResetSeconds: 10 },
+  }))
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
   mocks.getStatus.mockResolvedValue(statusResponse())
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
@@ -114,8 +109,8 @@ describe('system status service', () => {
   })
 
   test('uses the least-fresh ESI deadline for the composed status response', async () => {
-    mocks.get.mockImplementation(async (_representation, resource) => {
-      const response = await resource.load({})
+    mocks.get.mockImplementation(async (representation, input) => {
+      const response = await executeRepresentationFixture(representation, input)
       return {
         data: response.data,
         cachedUntil: '2026-08-20T12:00:10.000Z',

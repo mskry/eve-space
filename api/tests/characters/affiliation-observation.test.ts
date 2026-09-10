@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  executePublicRepresentation: vi.fn(),
+  executeRepresentation: vi.fn(),
   lookupAffiliations: vi.fn(),
 }))
 
@@ -14,19 +14,18 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
   },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    executePublicRepresentation: mocks.executePublicRepresentation,
-  }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 1_404_328_063
 const validatedAt = '2026-08-31T12:00:00.000Z'
 
 beforeEach(() => {
   mocks.lookupAffiliations.mockResolvedValue({ data: [], meta: { headers: {} } })
-  mocks.executePublicRepresentation.mockImplementation(async (_representation, resource) => {
-    const loaded = await resource.load({})
+  mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+    const loaded = await executeRepresentationFixture(representation, input)
     return {
       data: loaded.data,
       cachedUntil: '2026-08-31T13:00:00.000Z',
@@ -54,10 +53,7 @@ describe('character affiliation observation', () => {
       affiliationCheckedAt: new Date(validatedAt),
       stale: false,
     })
-    expect(mocks.executePublicRepresentation.mock.calls[0]?.[1]).toMatchObject({
-      operation: 'bulk-affiliation',
-      inputs: { body: [characterId] },
-    })
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ body: [characterId] })
     expect(mocks.lookupAffiliations).toHaveBeenCalledWith('PostCharactersAffiliation', {
       body: [characterId],
     })

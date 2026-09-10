@@ -1,22 +1,9 @@
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
-import {
-  getCharacterAuthorizationForLifecycle,
-  getCharacterCacheAuthorizationForLifecycle,
-} from '../auth/tokens.js'
+import { isRecord } from '../type-guards.js'
 import { getEsiOperationContract } from './catalog-access.js'
 import type { EsiOperation } from './catalog.js'
-import { characterEsiPrincipal, characterLifecycleEsiPrincipal } from './identity.js'
-import {
-  getEsiResilienceLayer,
-  type CharacterEsiOperation,
-  type PublicEsiOperation,
-} from './layer.js'
-import {
-  dispatchModuleEsiOperation,
-  validateModuleEsiOperationInputs,
-} from './module-operation-dispatcher.js'
+import { esiExecutionLayer } from './layer.js'
 import { assertNoCallerEsiRevalidationHeaders } from './revalidation.js'
-import { createEsiTransport } from './request-transport.js'
 import type { EsiQuota } from './types.js'
 
 export interface PlatformEsiExecutionRequest {
@@ -51,72 +38,21 @@ export async function executePlatformEsiOperation(
 ): Promise<PlatformEsiExecution<unknown>> {
   const inputs = validatePlatformInputs(request.definition, request.inputs)
   const contract = getEsiOperationContract(request.operation)
-  const resilience = getEsiResilienceLayer()
 
   if (contract.authorization.kind === 'public') {
     if (request.authorization.kind !== 'public')
       throw new PlatformEsiRequestError(
         'Public platform ESI operation received character authority',
       )
-    const result = await resilience.getPublic({
-      operation: request.operation as PublicEsiOperation,
-      inputs,
-      load: (revalidation) =>
-        dispatchModuleEsiOperation(request.definition, {
-          inputs,
-          authorization: { kind: 'public' },
-          revalidation,
-          transport: createEsiTransport(request.operation),
-        }),
-    })
-    return { ...result, authorizationGeneration: null }
+    const execution = await esiExecutionLayer.executePlatformOperation(request, inputs)
+    return { ...execution.result, authorizationGeneration: null }
   }
 
   if (request.authorization.kind !== 'character-lifecycle')
     throw new PlatformEsiRequestError(
       'Character platform ESI operation requires lifecycle authority',
     )
-  const authorization = request.authorization
-  const requiredScope = contract.authorization.scope
-  const transportPrincipal = characterEsiPrincipal(authorization.characterId)
-  const execution = await resilience.getCharacterWithAuthorization(
-    {
-      operation: request.operation as CharacterEsiOperation,
-      inputs,
-      load: (authority, revalidation) =>
-        dispatchModuleEsiOperation(request.definition, {
-          inputs,
-          authorization: { kind: 'character', accessToken: authority.accessToken },
-          revalidation,
-          transport: createEsiTransport(request.operation, authority.principal),
-        }),
-    },
-    {
-      cacheAuthorization: {
-        kind: 'character',
-        principal: characterLifecycleEsiPrincipal(
-          authorization.characterId,
-          authorization.lifecycleId,
-        ),
-        generation: authorization.generation,
-      },
-      transportPrincipal,
-      resolve: () =>
-        getCharacterAuthorizationForLifecycle(
-          authorization.characterId,
-          authorization.lifecycleId,
-          requiredScope,
-        ),
-      recheckCacheAuthorization: async () =>
-        (
-          await getCharacterCacheAuthorizationForLifecycle(
-            authorization.characterId,
-            authorization.lifecycleId,
-            requiredScope,
-          )
-        ).tokenVersion,
-    },
-  )
+  const execution = await esiExecutionLayer.executePlatformOperation(request, inputs)
   return { ...execution.result, authorizationGeneration: execution.authorizationGeneration }
 }
 
@@ -132,7 +68,8 @@ function validatePlatformInputs(
   inputs: Readonly<Record<string, unknown>>,
 ) {
   try {
-    const parsed = validateModuleEsiOperationInputs(definition, inputs)
+    const parsed: unknown = definition.descriptor.requestSchema.parse(inputs)
+    if (!isRecord(parsed)) throw new Error('ESI SDK operation arguments must resolve to an object')
     assertNoCallerEsiRevalidationHeaders(parsed)
     return parsed
   } catch (error) {

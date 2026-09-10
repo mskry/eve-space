@@ -14,7 +14,6 @@ const perceptionAttributeId = 178
 const mocks = vi.hoisted(() => ({
   createEsiClient: vi.fn(),
   callOperation: vi.fn(),
-  createEsiTransport: vi.fn(),
   getCharacterAuthorization: vi.fn(),
   getCharacterCacheAuthorization: vi.fn(),
   acquire: vi.fn(),
@@ -56,9 +55,6 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
   }
 })
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
 vi.mock('../../src/auth/tokens.js', () => ({
   getCharacterAuthorization: mocks.getCharacterAuthorization,
   getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
@@ -110,7 +106,6 @@ beforeEach(() => {
       ? mocks.getState(operationId, ...rest)
       : mocks.listActiveImplants(operationId, ...rest),
   )
-  mocks.createEsiTransport.mockReturnValue(vi.fn())
   mocks.getCharacterAuthorization.mockResolvedValue({
     accessToken: 'access-token',
     tokenVersion: 1,
@@ -222,10 +217,6 @@ describe('character clone state', () => {
     expect(characterClonesScope).toBe(clonesScope)
     expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, clonesScope)
     expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, clonesScope)
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith(
-      'character-clones',
-      `character-${characterId}`,
-    )
     expect(mocks.getState).toHaveBeenCalledWith('GetCharactersCharacterIdClones', {
       path: { character_id: characterId },
     })
@@ -371,10 +362,6 @@ describe('active character implants', () => {
     })
     expect(characterImplantsScope).toBe(implantsScope)
     expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, implantsScope)
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith(
-      'character-implants',
-      `character-${characterId}`,
-    )
     expect(mocks.listActiveImplants).toHaveBeenCalledWith('GetCharactersCharacterIdImplants', {
       path: { character_id: characterId },
     })

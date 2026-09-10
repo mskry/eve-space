@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   callOperation: vi.fn(),
-  executePublicRepresentation: vi.fn(),
-  get: vi.fn(),
+  executeRepresentation: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client', async (importOriginal) => ({
@@ -16,23 +15,16 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
 }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    executePublicRepresentation: mocks.executePublicRepresentation,
-    getPublic: mocks.get,
-  }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 import { resolveDeploymentOrganization } from '../../src/deployment/organization.js'
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 beforeEach(() => {
-  mocks.executePublicRepresentation.mockImplementation((_representation, resource) =>
-    mocks.get(resource),
+  mocks.executeRepresentation.mockImplementation((representation, input) =>
+    executeRepresentationFixture(representation, input),
   )
-  mocks.get.mockImplementation(async (resource) => {
-    const response = await resource.load({})
-    return { data: response.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
-  })
   mocks.callOperation.mockImplementation((operationId: string) => {
     if (operationId === 'GetCorporationsCorporationId')
       return { data: { name: 'Test Corporation', ticker: 'CORP' }, meta: { headers: {} } }
