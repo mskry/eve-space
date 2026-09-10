@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 interface StaticRow {
   typeId: number
@@ -12,10 +12,24 @@ const memoryAttributeId = 177
 const perceptionAttributeId = 178
 
 const mocks = vi.hoisted(() => ({
-  createClonesClient: vi.fn(),
+  createEsiClient: vi.fn(),
+  callOperation: vi.fn(),
   createEsiTransport: vi.fn(),
+  getCharacterAuthorization: vi.fn(),
+  getCharacterCacheAuthorization: vi.fn(),
+  acquire: vi.fn(),
+  commit: vi.fn(),
+  getCommitted: vi.fn(),
+  getLeaseTtl: vi.fn(),
+  getRevision: vi.fn(),
+  incrementRevision: vi.fn(),
+  initialize: vi.fn(),
+  release: vi.fn(),
+  renew: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheSet: vi.fn(),
+  cacheDel: vi.fn(),
   from: vi.fn(),
-  get: vi.fn(),
   getState: vi.fn(),
   leftJoin: vi.fn(),
   limit: vi.fn(),
@@ -26,57 +40,105 @@ const mocks = vi.hoisted(() => ({
   where: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/clones', () => ({
-  createClonesClient: mocks.createClonesClient,
-}))
+vi.mock('@evespace/esi-client', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@evespace/esi-client')>()
+  return {
+    ...original,
+    EsiClient: class {
+      constructor(options: unknown) {
+        mocks.createEsiClient(options)
+      }
+
+      callOperation(...arguments_: unknown[]) {
+        return mocks.callOperation(...arguments_)
+      }
+    },
+  }
+})
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
-}))
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
+}))
+vi.mock('../../src/auth/tokens.js', () => ({
+  getCharacterAuthorization: mocks.getCharacterAuthorization,
+  getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
+}))
+vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
+  getSharedCacheRedisConnection: () => ({
+    get: mocks.cacheGet,
+    set: mocks.cacheSet,
+    del: mocks.cacheDel,
+    ping: vi.fn().mockResolvedValue('PONG'),
+  }),
+}))
+vi.mock('../../src/esi-resilience/transport.js', () => ({ getCoordinationConnection: () => ({}) }))
+vi.mock('../../src/esi-resilience/coordination.js', () => ({
+  acquireEsiRequestLease: mocks.acquire,
+  commitEsiFence: mocks.commit,
+  getCommittedEsiFence: mocks.getCommitted,
+  getEsiRequestLeaseTtl: mocks.getLeaseTtl,
+  getEsiResourceRevision: mocks.getRevision,
+  incrementEsiResourceRevision: mocks.incrementRevision,
+  initializeCacheNamespace: mocks.initialize,
+  releaseEsiRequestLease: mocks.release,
+  renewEsiRequestLease: mocks.renew,
 }))
 vi.mock('../../src/universe/names.js', () => ({
   resolveUniverseNames: mocks.resolveUniverseNames,
 }))
 
 const characterId = 1404328063
-const revalidation = { ifNoneMatch: 'etag', ifModifiedSince: 'date' }
-const esiMetadata = {
+const clonesScope = 'esi-clones.read_clones.v1'
+const implantsScope = 'esi-clones.read_implants.v1'
+const now = Date.parse('2026-09-03T11:00:00.000Z')
+const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
+const publicMetadata = {
   cachedUntil: '2026-09-03T11:02:00.000Z',
   validatedAt: '2026-09-03T11:00:00.000Z',
-  quota: {},
-  source: 'esi' as const,
-  stale: false,
-}
-const publicMetadata = {
-  cachedUntil: esiMetadata.cachedUntil,
-  validatedAt: esiMetadata.validatedAt,
   stale: false,
 }
 
 beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(now)
+  vi.resetModules()
   for (const mock of Object.values(mocks)) if (typeof mock === 'function') mock.mockReset()
   mocks.staticRows.splice(0)
-  mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load(
-      { accessToken: 'access-token', principal: `character-${characterId}` },
-      revalidation,
-    )
-    return { data: loaded.data, ...esiMetadata }
+
+  mocks.callOperation.mockImplementation((operationId: string, ...rest: unknown[]) =>
+    operationId === 'GetCharactersCharacterIdClones'
+      ? mocks.getState(operationId, ...rest)
+      : mocks.listActiveImplants(operationId, ...rest),
+  )
+  mocks.createEsiTransport.mockReturnValue(vi.fn())
+  mocks.getCharacterAuthorization.mockResolvedValue({
+    accessToken: 'access-token',
+    tokenVersion: 1,
   })
-  mocks.createClonesClient.mockReturnValue({
-    withMetadata: () => ({
-      getState: mocks.getState,
-      listActiveImplants: mocks.listActiveImplants,
-    }),
-  })
+  mocks.getCharacterCacheAuthorization.mockImplementation(async (_characterId, scope: string) => ({
+    scopes: [scope],
+    tokenVersion: 1,
+  }))
+  mocks.acquire.mockResolvedValue(lease)
+  mocks.commit.mockResolvedValue(true)
+  mocks.getCommitted.mockResolvedValue(undefined)
+  mocks.getLeaseTtl.mockResolvedValue(0)
+  mocks.initialize.mockResolvedValue('namespace-one')
+  mocks.release.mockResolvedValue(true)
+  mocks.renew.mockResolvedValue(true)
+  mocks.cacheGet.mockResolvedValue(null)
+  mocks.cacheSet.mockResolvedValue('OK')
+  mocks.cacheDel.mockResolvedValue(1)
   mocks.select.mockReturnValue({ from: mocks.from })
   mocks.from.mockReturnValue({ leftJoin: mocks.leftJoin })
   mocks.leftJoin.mockReturnValue({ where: mocks.where })
   mocks.where.mockReturnValue({ limit: mocks.limit })
   mocks.limit.mockImplementation(async () => mocks.staticRows)
   mocks.resolveUniverseNames.mockResolvedValue(new Map())
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('character clone state', () => {
@@ -157,16 +219,16 @@ describe('character clone state', () => {
       lastStationChangeAt: '2026-08-30T12:00:00Z',
       ...publicMetadata,
     })
-    expect(characterClonesScope).toBe('esi-clones.read_clones.v1')
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      operation: 'character-clones',
-      inputs: { characterId },
-    })
+    expect(characterClonesScope).toBe(clonesScope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, clonesScope)
+    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, clonesScope)
     expect(mocks.createEsiTransport).toHaveBeenCalledWith(
       'character-clones',
       `character-${characterId}`,
     )
-    expect(mocks.getState).toHaveBeenCalledWith(characterId, revalidation)
+    expect(mocks.getState).toHaveBeenCalledWith('GetCharactersCharacterIdClones', {
+      path: { character_id: characterId },
+    })
     expect(mocks.resolveUniverseNames).toHaveBeenCalledWith([60_000_001])
     expect(mocks.select).toHaveBeenCalledOnce()
     expect(mocks.limit).toHaveBeenCalledWith(3000)
@@ -211,26 +273,21 @@ describe('character clone state', () => {
   })
 
   test('bounds best-effort station enrichment without delaying clone state', async () => {
-    vi.useFakeTimers()
-    try {
-      mocks.getState.mockResolvedValue(
-        response({
-          home_location: { location_id: 60_000_001, location_type: 'station' },
-          jump_clones: [],
-        }),
-      )
-      mocks.resolveUniverseNames.mockReturnValue(new Promise(() => {}))
-      const { getCharacterClones } = await import('../../src/characters/clones.js')
+    mocks.getState.mockResolvedValue(
+      response({
+        home_location: { location_id: 60_000_001, location_type: 'station' },
+        jump_clones: [],
+      }),
+    )
+    mocks.resolveUniverseNames.mockReturnValue(new Promise(() => {}))
+    const { getCharacterClones } = await import('../../src/characters/clones.js')
 
-      const pending = getCharacterClones(characterId)
-      await vi.advanceTimersByTimeAsync(250)
+    const pending = getCharacterClones(characterId)
+    await vi.advanceTimersByTimeAsync(250)
 
-      await expect(pending).resolves.toMatchObject({
-        homeLocation: { locationId: 60_000_001, locationType: 'station', name: null },
-      })
-    } finally {
-      vi.useRealTimers()
-    }
+    await expect(pending).resolves.toMatchObject({
+      homeLocation: { locationId: 60_000_001, locationType: 'station', name: null },
+    })
   })
 
   test('keeps an omitted home location distinct and ignores non-station resolver results', async () => {
@@ -258,28 +315,20 @@ describe('character clone state', () => {
     expect(mocks.select).not.toHaveBeenCalled()
   })
 
-  test('reruns enrichment for a cached not-modified stale snapshot', async () => {
-    mocks.get.mockResolvedValueOnce({
-      data: {
-        homeLocation: null,
-        jumpClones: [
+  test('serves a repeated request from the L1 cache without another ESI call', async () => {
+    mocks.getState.mockResolvedValue(
+      response({
+        home_location: null,
+        jump_clones: [
           {
-            jumpCloneId: 15,
-            name: null,
-            location: { locationId: 1_035_466_617_946, locationType: 'structure' },
-            implantTypeIds: [4],
+            jump_clone_id: 15,
+            location_id: 1_035_466_617_946,
+            location_type: 'structure',
+            implants: [4],
           },
         ],
-        lastCloneJumpAt: null,
-        lastStationChangeAt: null,
-      },
-      cachedUntil: '2026-09-03T10:00:00.000Z',
-      validatedAt: '2026-09-03T11:00:00.000Z',
-      quota: {},
-      source: 'not-modified',
-      stale: true,
-      refreshFailureClass: 'esi-unavailable',
-    })
+      }),
+    )
     mocks.staticRows.push({
       typeId: 4,
       name: 'Recovered Name',
@@ -288,14 +337,11 @@ describe('character clone state', () => {
     })
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
-    await expect(getCharacterClones(characterId)).resolves.toMatchObject({
-      jumpClones: [{ implants: [{ typeId: 4, name: 'Recovered Name' }] }],
-      stale: true,
-      refreshFailureClass: 'esi-unavailable',
-    })
-    expect(mocks.getState).not.toHaveBeenCalled()
-    expect(mocks.select).toHaveBeenCalledOnce()
-    expect(mocks.resolveUniverseNames).not.toHaveBeenCalled()
+    const first = await getCharacterClones(characterId)
+    const second = await getCharacterClones(characterId)
+
+    expect(second).toEqual(first)
+    expect(mocks.getState).toHaveBeenCalledOnce()
   })
 })
 
@@ -323,16 +369,15 @@ describe('active character implants', () => {
       ],
       ...publicMetadata,
     })
-    expect(characterImplantsScope).toBe('esi-clones.read_implants.v1')
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      operation: 'character-implants',
-      inputs: { characterId },
-    })
+    expect(characterImplantsScope).toBe(implantsScope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, implantsScope)
     expect(mocks.createEsiTransport).toHaveBeenCalledWith(
       'character-implants',
       `character-${characterId}`,
     )
-    expect(mocks.listActiveImplants).toHaveBeenCalledWith(characterId, revalidation)
+    expect(mocks.listActiveImplants).toHaveBeenCalledWith('GetCharactersCharacterIdImplants', {
+      path: { character_id: characterId },
+    })
     expect(mocks.resolveUniverseNames).not.toHaveBeenCalled()
   })
 
