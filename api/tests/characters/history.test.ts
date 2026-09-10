@@ -1,23 +1,18 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  callOperation: vi.fn(),
   executePublicRepresentation: vi.fn(),
   get: vi.fn(),
-  listCorporationHistory: vi.fn(),
-  resolveNames: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', () => ({
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
   EsiClient: class {
     callOperation(...arguments_: unknown[]) {
-      return mocks.resolveNames(...arguments_)
+      return mocks.callOperation(...arguments_)
     }
   },
-}))
-vi.mock('@evespace/esi-client/domains/character', () => ({
-  createCharacterClient: () => ({
-    withMetadata: () => ({ listCorporationHistory: mocks.listCorporationHistory }),
-  }),
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({
@@ -31,6 +26,15 @@ vi.mock('../../src/universe/resolution-cache.js', () => ({
   writeUniverseNames: vi.fn(),
   suppressUniverseNameIds: vi.fn(),
 }))
+
+const employmentHistoryFixture = [
+  { corporation_id: 2, record_id: 2, start_date: '2020-01-01T00:00:00Z' },
+  { corporation_id: 1, record_id: 1, start_date: '2024-01-01T00:00:00Z' },
+]
+const resolvedNamesFixture = [
+  { category: 'corporation', id: 2, name: 'Second Corporation' },
+  { category: 'corporation', id: 1, name: 'First Corporation' },
+]
 
 beforeEach(() => {
   mocks.executePublicRepresentation.mockImplementation((_representation, resource) =>
@@ -46,18 +50,16 @@ beforeEach(() => {
       stale: false,
     }
   })
-  mocks.listCorporationHistory.mockResolvedValue(
-    response([
-      { corporation_id: 2, record_id: 2, start_date: '2020-01-01T00:00:00Z' },
-      { corporation_id: 1, record_id: 1, start_date: '2024-01-01T00:00:00Z' },
-    ]),
-  )
-  mocks.resolveNames.mockResolvedValue(
-    response([
-      { category: 'corporation', id: 2, name: 'Second Corporation' },
-      { category: 'corporation', id: 1, name: 'First Corporation' },
-    ]),
-  )
+  mocks.callOperation.mockImplementation((operationId: string) => {
+    switch (operationId) {
+      case 'GetCharactersCharacterIdCorporationhistory':
+        return response(employmentHistoryFixture)
+      case 'PostUniverseNames':
+        return response(resolvedNamesFixture)
+      default:
+        throw new Error(`Unexpected operation ${operationId}`)
+    }
+  })
 })
 
 describe('character employment history service', () => {
@@ -85,9 +87,11 @@ describe('character employment history service', () => {
   })
 
   test('does not produce cacheable unknown names after a transient resolution failure', async () => {
-    mocks.resolveNames.mockRejectedValueOnce(
-      Object.assign(new Error('Unavailable'), { status: 503 }),
-    )
+    mocks.callOperation.mockImplementation((operationId: string) => {
+      if (operationId === 'PostUniverseNames')
+        return Promise.reject(Object.assign(new Error('Unavailable'), { status: 503 }))
+      return response(employmentHistoryFixture)
+    })
     const { getCharacterEmploymentHistory } = await import('../../src/characters/history.js')
 
     await expect(getCharacterEmploymentHistory(90_000_101)).rejects.toMatchObject({ status: 503 })

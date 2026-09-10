@@ -1,29 +1,18 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  callOperation: vi.fn(),
   executePublicRepresentation: vi.fn(),
   get: vi.fn(),
-  getPublicInfo: vi.fn(),
-  listAllianceHistory: vi.fn(),
-  listNpcCorporations: vi.fn(),
-  resolveNames: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', () => ({
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
   EsiClient: class {
     callOperation(...arguments_: unknown[]) {
-      return mocks.resolveNames(...arguments_)
+      return mocks.callOperation(...arguments_)
     }
   },
-}))
-vi.mock('@evespace/esi-client/domains/corporation', () => ({
-  createCorporationClient: () => ({
-    withMetadata: () => ({
-      getPublicInfo: mocks.getPublicInfo,
-      listAllianceHistory: mocks.listAllianceHistory,
-      listNpcCorporations: mocks.listNpcCorporations,
-    }),
-  }),
 }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
@@ -35,6 +24,12 @@ vi.mock('../../src/esi-resilience/layer.js', () => ({
 
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: vi.fn(),
+}))
+
+vi.mock('../../src/universe/resolution-cache.js', () => ({
+  readUniverseNames: () => ({ fresh: new Map(), stale: new Map(), suppressed: new Set() }),
+  writeUniverseNames: vi.fn(),
+  suppressUniverseNameIds: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -51,12 +46,20 @@ beforeEach(() => {
       stale: false,
     }
   })
-  mocks.getPublicInfo.mockResolvedValue(
-    response({ member_count: 10, name: 'Test', ticker: 'TEST' }),
-  )
-  mocks.listAllianceHistory.mockResolvedValue(response([]))
-  mocks.listNpcCorporations.mockResolvedValue(response([1, 2]))
-  mocks.resolveNames.mockResolvedValue(response([]))
+  mocks.callOperation.mockImplementation((operationId: string) => {
+    switch (operationId) {
+      case 'GetCorporationsCorporationId':
+        return response({ member_count: 10, name: 'Test', ticker: 'TEST' })
+      case 'GetCorporationsCorporationIdAlliancehistory':
+        return response([])
+      case 'GetCorporationsNpccorps':
+        return response([1, 2])
+      case 'PostUniverseNames':
+        return response([])
+      default:
+        throw new Error(`Unexpected operation ${operationId}`)
+    }
+  })
 })
 
 describe('corporation service', () => {
@@ -85,34 +88,35 @@ describe('corporation service', () => {
   })
 
   test('does not produce a cacheable corporation DTO when name resolution is transiently unavailable', async () => {
-    mocks.getPublicInfo.mockResolvedValueOnce(
-      response({ alliance_id: 99, member_count: 10, name: 'Test', ticker: 'TEST' }),
-    )
-    mocks.resolveNames.mockRejectedValueOnce(
-      Object.assign(new Error('Unavailable'), { status: 503 }),
-    )
+    mocks.callOperation.mockImplementation((operationId: string) => {
+      if (operationId === 'GetCorporationsCorporationId')
+        return response({ alliance_id: 99, member_count: 10, name: 'Test', ticker: 'TEST' })
+      if (operationId === 'PostUniverseNames')
+        return Promise.reject(Object.assign(new Error('Unavailable'), { status: 503 }))
+      throw new Error(`Unexpected operation ${operationId}`)
+    })
     const { getCorporationPublic } = await import('../../src/corporations/public-data.js')
 
     await expect(getCorporationPublic(90_000_002)).rejects.toMatchObject({ status: 503 })
   })
 
-  test('caches a validated negative corporation lookup', async () => {
-    mocks.getPublicInfo.mockRejectedValueOnce(
-      Object.assign(new Error('Not found'), {
-        status: 404,
-        metadata: { status: 404, headers: {} },
-      }),
-    )
-    let cached: unknown
-    mocks.get.mockImplementation(async (resource) => {
-      if (cached === undefined) cached = (await resource.load({})).data
-      return { data: cached, cachedUntil: '', quota: {}, source: 'cache', stale: false }
+  test('surfaces a 404 for an unknown corporation without caching a negative lookup', async () => {
+    // The representation's map only runs on a successful call, so a 404 can no longer be cached as
+    // a validated negative result: every lookup of an unknown ID re-queries ESI.
+    mocks.callOperation.mockImplementation((operationId: string) => {
+      if (operationId === 'GetCorporationsCorporationId')
+        return Promise.reject(Object.assign(new Error('Not found'), { status: 404 }))
+      throw new Error(`Unexpected operation ${operationId}`)
     })
     const { getCorporationPublic } = await import('../../src/corporations/public-data.js')
 
     await expect(getCorporationPublic(90_000_004)).rejects.toMatchObject({ status: 404 })
     await expect(getCorporationPublic(90_000_004)).rejects.toMatchObject({ status: 404 })
-    expect(mocks.getPublicInfo).toHaveBeenCalledOnce()
+    expect(
+      mocks.callOperation.mock.calls.filter(
+        ([operationId]) => operationId === 'GetCorporationsCorporationId',
+      ),
+    ).toHaveLength(2)
   })
 
   test('uses separate policies for alliance history and NPC corporations', async () => {

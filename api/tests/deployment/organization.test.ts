@@ -2,28 +2,38 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   allianceInfo: vi.fn(),
-  corporationInfo: vi.fn(),
+  callOperation: vi.fn(),
+  executePublicRepresentation: vi.fn(),
   get: vi.fn(),
+}))
+
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.callOperation(...arguments_)
+    }
+  },
 }))
 
 vi.mock('@evespace/esi-client/domains/alliance', () => ({
   createAllianceClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.allianceInfo }) }),
 }))
 
-vi.mock('@evespace/esi-client/domains/corporation', () => ({
-  createCorporationClient: () => ({
-    withMetadata: () => ({ getPublicInfo: mocks.corporationInfo }),
-  }),
-}))
-
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
+  getEsiResilienceLayer: () => ({
+    executePublicRepresentation: mocks.executePublicRepresentation,
+    getPublic: mocks.get,
+  }),
 }))
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 import { resolveDeploymentOrganization } from '../../src/deployment/organization.js'
 
 beforeEach(() => {
+  mocks.executePublicRepresentation.mockImplementation((_representation, resource) =>
+    mocks.get(resource),
+  )
   mocks.get.mockImplementation(async (resource) => {
     const response = await resource.load({})
     return { data: response.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
@@ -32,9 +42,10 @@ beforeEach(() => {
     data: { name: 'Test Alliance', ticker: 'TEST' },
     meta: { headers: {} },
   })
-  mocks.corporationInfo.mockResolvedValue({
-    data: { name: 'Test Corporation', ticker: 'CORP' },
-    meta: { headers: {} },
+  mocks.callOperation.mockImplementation((operationId: string) => {
+    if (operationId === 'GetCorporationsCorporationId')
+      return { data: { name: 'Test Corporation', ticker: 'CORP' }, meta: { headers: {} } }
+    throw new Error(`Unexpected operation ${operationId}`)
   })
 })
 
@@ -56,6 +67,8 @@ describe('deployment organization resolution', () => {
       name: 'Test Corporation',
       ticker: 'CORP',
     })
-    expect(mocks.corporationInfo).toHaveBeenCalledWith(98, {})
+    expect(mocks.callOperation).toHaveBeenCalledWith('GetCorporationsCorporationId', {
+      path: { corporation_id: 98 },
+    })
   })
 })
