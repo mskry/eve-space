@@ -1,16 +1,32 @@
-import { createStatusClient } from '@evespace/esi-client/domains/status'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import { sql } from '../db/client.js'
 import { probeDomainEventStatus, type DomainEventStatus } from '../domain-events/status.js'
 import { classifyStaleRefreshFailure } from '../esi-resilience/errors.js'
+import { execute } from '../esi-resilience/execute.js'
 import { esiErrorBudgetFloor } from '../esi-resilience/policy.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
 import {
   probeEsiResilienceTelemetry,
   type EsiResilienceTelemetry,
   type EsiUpstreamObservation,
 } from '../esi-resilience/telemetry.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import { probeQueueStatus, type QueueStatus } from '../queue/status.js'
+
+const esiStatusRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'status',
+    name: 'esi-status-core',
+    descriptor: operationRegistry.GetStatus.transport,
+    encodeRequest: (input: Record<string, never>) => input,
+    map: ({ data }) => ({
+      players: data.players,
+      serverVersion: data.server_version,
+      startedAt: data.start_time,
+      vip: data.vip,
+    }),
+  }),
+)
 
 const cacheTtlMs = 30_000
 
@@ -140,14 +156,7 @@ async function probeEsi(): Promise<EsiStatusProbe> {
   const checkedAt = new Date(startedAt).toISOString()
 
   try {
-    const response = await getEsiResilienceLayer().getPublic({
-      operation: 'status',
-      inputs: {},
-      load: (revalidation) =>
-        createStatusClient({ fetch: createEsiTransport('status') })
-          .withMetadata()
-          .get(revalidation),
-    })
+    const response = await execute(esiStatusRepresentation, {})
     const errorBudgetRemaining = response.quota.errorRemaining ?? null
     let status: EsiStatus['status'] = 'operational'
     if (response.stale) status = 'stale'
@@ -163,8 +172,8 @@ async function probeEsi(): Promise<EsiStatusProbe> {
         latencyMs: Date.now() - startedAt,
         checkedAt: response.validatedAt,
         players: response.data.players,
-        serverVersion: response.data.server_version,
-        startedAt: response.data.start_time,
+        serverVersion: response.data.serverVersion,
+        startedAt: response.data.startedAt,
         vip: response.data.vip,
         errorBudgetRemaining,
         errorBudgetResetSeconds: response.quota.errorResetSeconds ?? null,

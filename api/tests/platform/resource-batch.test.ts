@@ -6,6 +6,7 @@ import {
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { describe, expect, test, vi } from 'vitest'
+import { PlatformEsiRequestError } from '../../src/esi-resilience/platform-execute.js'
 import { validatePlatformResourceBatchClassifications } from '../../src/platform/resource-batch.js'
 import { processInstalledResourceBatch } from '../../src/queue/resource-batch-processor.js'
 import { resourceRefreshJobId } from '../../src/queue/resource-job-contracts.js'
@@ -92,27 +93,25 @@ describe('platform resource batch processing', () => {
     const resource = completeResource()
     const payload = batchPayload(2)
     const applyObservation = vi.fn().mockResolvedValue(undefined)
-    const getPublic = batchResilience()
     const definition = batchDefinition()
-    const dispatchOperation = vi.fn().mockResolvedValue({
-      data: { observed: true },
-      meta: { status: 200, headers: {} },
-    })
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution({ observed: true }))
     const queue = batchQueue()
 
     await processInstalledResourceBatch(payload, queue as never, {
       resources: [resource],
       resolveEligibility: eligible as never,
-      resilience: { getPublic: getPublic as never },
       definitions: { 'universe-resolve-names': definition },
-      validateInputs: passthroughInputs,
-      dispatchOperation,
-      createTransport: vi.fn().mockReturnValue(vi.fn()),
+      executeEsiOperation,
       applyObservation: applyObservation as never,
     })
 
-    expect(getPublic).toHaveBeenCalledOnce()
-    expect(dispatchOperation).toHaveBeenCalledOnce()
+    expect(executeEsiOperation).toHaveBeenCalledOnce()
+    expect(executeEsiOperation).toHaveBeenCalledWith({
+      operation: 'universe-resolve-names',
+      definition,
+      inputs: { ids: [1_404_328_063, 1_404_328_064] },
+      authorization: { kind: 'public' },
+    })
     expect(resource.implementation.map).not.toHaveBeenCalled()
     expect(applyObservation).toHaveBeenNthCalledWith(
       1,
@@ -129,42 +128,39 @@ describe('platform resource batch processing', () => {
     const resource = completeResource()
     const payload = batchPayload(2)
     resource.implementation.batch.request.mockReturnValue({ ids: [1, 2] })
-    const getPublic = batchResilience()
+    const executeEsiOperation = vi.fn()
     const recordFailure = vi.fn().mockResolvedValue(undefined)
 
     await expect(
       processInstalledResourceBatch(payload, batchQueue() as never, {
         resources: [resource],
         resolveEligibility: eligible as never,
-        resilience: { getPublic: getPublic as never },
         definitions: { 'universe-resolve-names': batchDefinition() },
-        validateInputs: passthroughInputs,
+        executeEsiOperation,
         recordFailure,
       }),
     ).rejects.toThrow('Platform resource mapping failed')
-    expect(getPublic).not.toHaveBeenCalled()
+    expect(executeEsiOperation).not.toHaveBeenCalled()
     expect(recordFailure).toHaveBeenCalledTimes(2)
   })
 
   test('rejects caller-owned conditional headers before consulting the batch cache', async () => {
     const resource = completeResource()
     const payload = batchPayload(2)
-    const getPublic = batchResilience()
+    const executeEsiOperation = vi
+      .fn()
+      .mockRejectedValue(new PlatformEsiRequestError('Platform ESI request inputs are invalid'))
 
     await expect(
       processInstalledResourceBatch(payload, batchQueue() as never, {
         resources: [resource],
         resolveEligibility: eligible as never,
-        resilience: { getPublic: getPublic as never },
         definitions: { 'universe-resolve-names': batchDefinition() },
+        executeEsiOperation,
         recordFailure: vi.fn().mockResolvedValue(undefined),
-        validateInputs: vi.fn((_definition, inputs) => ({
-          ...inputs,
-          headers: { 'if-modified-since': 'caller-value' },
-        })),
       }),
     ).rejects.toThrow('Platform resource mapping failed')
-    expect(getPublic).not.toHaveBeenCalled()
+    expect(executeEsiOperation).toHaveBeenCalledOnce()
   })
 
   test('records a batch failure only for subjects included in the attempted request', async () => {
@@ -184,9 +180,8 @@ describe('platform resource batch processing', () => {
             nextEligibleAt: null,
           })
           .mockResolvedValueOnce({ status: 'eligible', due: false }),
-        resilience: { getPublic: vi.fn().mockRejectedValue(failure) } as never,
         definitions: { 'universe-resolve-names': batchDefinition() },
-        validateInputs: passthroughInputs,
+        executeEsiOperation: vi.fn().mockRejectedValue(failure),
         recordFailure,
       }),
     ).rejects.toBe(failure)
@@ -206,14 +201,8 @@ describe('platform resource batch processing', () => {
     await processInstalledResourceBatch(payload, queue as never, {
       resources: [resource],
       resolveEligibility: eligible as never,
-      resilience: { getPublic: batchResilience() as never },
       definitions: { 'universe-resolve-names': batchDefinition() },
-      validateInputs: passthroughInputs,
-      dispatchOperation: vi.fn().mockResolvedValue({
-        data: { observed: true },
-        meta: { status: 200, headers: {} },
-      }),
-      createTransport: vi.fn().mockReturnValue(vi.fn()),
+      executeEsiOperation: vi.fn().mockResolvedValue(platformExecution({ observed: true })),
       applyObservation: applyObservation as never,
       getCapacity: vi.fn().mockResolvedValue({
         admitted: true,
@@ -337,20 +326,6 @@ function eligible() {
   })
 }
 
-function batchResilience() {
-  return vi.fn(async (request: { load(revalidation: object): Promise<{ data: unknown }> }) => {
-    const loaded = await request.load({})
-    return {
-      data: loaded.data,
-      cachedUntil: '2026-08-26T15:00:00.000Z',
-      validatedAt: '2026-08-26T14:58:00.000Z',
-      source: 'esi' as const,
-      stale: false,
-      quota: {},
-    }
-  })
-}
-
 function batchDefinition() {
   return {
     sdkOperationId: 'PostUniverseNames',
@@ -359,11 +334,16 @@ function batchDefinition() {
   } satisfies PlatformExecutableEsiOperationDefinition
 }
 
-function passthroughInputs(
-  _definition: PlatformExecutableEsiOperationDefinition,
-  inputs: Readonly<Record<string, unknown>>,
-) {
-  return inputs
+function platformExecution(data: unknown) {
+  return {
+    data,
+    authorizationGeneration: null,
+    cachedUntil: '2026-08-26T15:00:00.000Z',
+    validatedAt: '2026-08-26T14:58:00.000Z',
+    source: 'esi' as const,
+    stale: false,
+    quota: {},
+  }
 }
 
 function batchQueue() {

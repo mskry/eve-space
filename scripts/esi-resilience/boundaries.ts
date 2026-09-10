@@ -32,6 +32,7 @@ const modulesByTier = {
     'local-quota',
     'errors',
     'module-operation-dispatcher',
+    'platform-execute',
     'request-transport',
     'execute',
   ],

@@ -13,13 +13,10 @@ import {
   getExecutableEsiOperationDefinition,
 } from '../esi-resilience/catalog-access.js'
 import type { EsiOperation } from '../esi-resilience/catalog.js'
-import { getEsiResilienceLayer, type PublicEsiOperation } from '../esi-resilience/layer.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import {
-  dispatchModuleEsiOperation,
-  validateModuleEsiOperationInputs,
-} from '../esi-resilience/module-operation-dispatcher.js'
-import { assertNoCallerEsiRevalidationHeaders } from '../esi-resilience/revalidation.js'
+  executePlatformEsiOperation,
+  PlatformEsiRequestError,
+} from '../esi-resilience/platform-execute.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { isPositiveSafeInteger, isRecord } from '../type-guards.js'
 import {
@@ -73,11 +70,8 @@ export class PlatformResourceBatchExecutionError extends Error {
 export interface BatchExecutionOptions {
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
-  readonly resilience?: Pick<ReturnType<typeof getEsiResilienceLayer>, 'getPublic'>
-  readonly createTransport?: typeof createEsiTransport
   readonly definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
-  readonly validateInputs?: typeof validateModuleEsiOperationInputs
-  readonly dispatchOperation?: typeof dispatchModuleEsiOperation
+  readonly executeEsiOperation?: typeof executePlatformEsiOperation
 }
 
 export async function executeInstalledResourceBatchOperation(
@@ -128,31 +122,25 @@ export async function executeInstalledResourceBatchOperation(
   const subjects = eligible.map(({ subject }) => subject)
   let inputs: Readonly<Record<string, unknown>>
   try {
-    inputs = (options.validateInputs ?? validateModuleEsiOperationInputs)(
-      definition,
-      batch.request(subjects),
-    )
+    inputs = batch.request(subjects)
     assertBatchInputs(inputs, contract.identity.field, subjects, contract.identity.maximumItems)
-    assertNoCallerEsiRevalidationHeaders(inputs)
   } catch (error) {
     throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }
-  let result: Awaited<ReturnType<ReturnType<typeof getEsiResilienceLayer>['getPublic']>>
+  let result: Awaited<ReturnType<typeof executePlatformEsiOperation>>
   try {
-    result = await (options.resilience ?? getEsiResilienceLayer()).getPublic({
-      operation: operation as PublicEsiOperation,
+    result = await (options.executeEsiOperation ?? executePlatformEsiOperation)({
+      operation,
+      definition,
       inputs,
-      load: (revalidation) =>
-        (options.dispatchOperation ?? dispatchModuleEsiOperation)(definition, {
-          inputs,
-          authorization: { kind: 'public' },
-          revalidation,
-          transport: (options.createTransport ?? createEsiTransport)(operation),
-        }),
+      authorization: { kind: 'public' },
     })
     assertPlatformResourceRefreshSucceeded(result)
   } catch (error) {
-    throw new PlatformResourceBatchExecutionError(error, eligible)
+    throw new PlatformResourceBatchExecutionError(
+      error instanceof PlatformEsiRequestError ? new PlatformResourceMappingError(error) : error,
+      eligible,
+    )
   }
   let classifications: readonly BatchClassification[]
   try {

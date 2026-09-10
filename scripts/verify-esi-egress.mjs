@@ -28,9 +28,6 @@ const legacyEsiEgressModules = [
   'api/src/deployment/organization.ts',
   'api/src/mail/mailbox.ts',
   'api/src/organization/authority.ts',
-  'api/src/platform/resource-batch.ts',
-  'api/src/platform/resource-operation-executor.ts',
-  'api/src/system/status.ts',
   'api/src/universe/locations.ts',
 ]
 const legacyLayerMethods = new Set([
