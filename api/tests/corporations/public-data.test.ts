@@ -100,23 +100,27 @@ describe('corporation service', () => {
     await expect(getCorporationPublic(90_000_002)).rejects.toMatchObject({ status: 503 })
   })
 
-  test('surfaces a 404 for an unknown corporation without caching a negative lookup', async () => {
-    // The representation's map only runs on a successful call, so a 404 can no longer be cached as
-    // a validated negative result: every lookup of an unknown ID re-queries ESI.
+  test('resolves an unknown corporation into a cacheable negative lookup', async () => {
     mocks.callOperation.mockImplementation((operationId: string) => {
       if (operationId === 'GetCorporationsCorporationId')
         return Promise.reject(Object.assign(new Error('Not found'), { status: 404 }))
       throw new Error(`Unexpected operation ${operationId}`)
     })
+    let loaded: { data: unknown } | undefined
+    mocks.get.mockImplementation(async (resource) => {
+      loaded = await resource.load({})
+      return {
+        data: loaded?.data,
+        cachedUntil: '2026-08-22T12:01:00.000Z',
+        quota: {},
+        source: 'esi',
+        stale: false,
+      }
+    })
     const { getCorporationPublic } = await import('../../src/corporations/public-data.js')
 
     await expect(getCorporationPublic(90_000_004)).rejects.toMatchObject({ status: 404 })
-    await expect(getCorporationPublic(90_000_004)).rejects.toMatchObject({ status: 404 })
-    expect(
-      mocks.callOperation.mock.calls.filter(
-        ([operationId]) => operationId === 'GetCorporationsCorporationId',
-      ),
-    ).toHaveLength(2)
+    expect(loaded).toMatchObject({ data: { found: false } })
   })
 
   test('uses separate policies for alliance history and NPC corporations', async () => {

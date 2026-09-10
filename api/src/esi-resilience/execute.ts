@@ -43,10 +43,17 @@ export async function execute<
       ...(authorization ? { token: authorization.accessToken } : {}),
       validateResponses: policy.responseValidation.kind === 'enabled',
     })
-    const response = (await client.callOperation(
-      representation.descriptor.operationId as StableOperationId,
-      withEsiRevalidation(request, revalidation) as never,
-    )) as unknown as EsiResponse<WireResult>
+    let response: EsiResponse<WireResult>
+    try {
+      response = (await client.callOperation(
+        representation.descriptor.operationId as StableOperationId,
+        withEsiRevalidation(request, revalidation) as never,
+      )) as unknown as EsiResponse<WireResult>
+    } catch (error) {
+      const recovered = representation.recover?.(error, input)
+      if (!recovered) throw error
+      return recovered
+    }
     return { data: await representation.map(response, input), meta: response.meta }
   }
   const resilience = getEsiResilienceLayer()

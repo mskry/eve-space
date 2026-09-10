@@ -72,9 +72,8 @@ beforeEach(async () => {
     const loaded = await resource.load({})
     return { ...freshness['universe-type'], data: loaded.data }
   })
-  const { getUniverseSolarSystem, getUniverseStation } = await import(
-    '../../src/universe/locations.js'
-  )
+  const { getUniverseSolarSystem, getUniverseStation } =
+    await import('../../src/universe/locations.js')
   vi.mocked(getUniverseSolarSystem).mockResolvedValue(
     universeSolarSystemResult as Awaited<ReturnType<typeof getUniverseSolarSystem>>,
   )

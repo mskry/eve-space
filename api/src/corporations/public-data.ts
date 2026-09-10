@@ -1,3 +1,4 @@
+import type { EsiResponseMetadata } from '@evespace/esi-client'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type {
   GetCorporationsCorporationIdAlliancehistoryResponse,
@@ -37,6 +38,12 @@ interface CorporationPublic {
 
 type PublicCorporationResult = Omit<CorporationPublic, 'corporationId' | 'warHistory'>
 
+/**
+ * An unknown corporation ID is a definitive answer, so it is stored like any other response.
+ * Re-querying ESI per lookup would spend five error-budget tokens each time.
+ */
+type CorporationLookup = { found: true; corporation: PublicCorporationResult } | { found: false }
+
 interface AllianceHistoryEntry {
   allianceId: number | null
   allianceName: string | null
@@ -53,7 +60,14 @@ const publicCorporationRepresentation = registerEsiRepresentation(
     encodeRequest: (input: { corporationId: number }) => ({
       path: { corporation_id: input.corporationId },
     }),
-    map: (response) => mapPublicCorporation(response.data),
+    map: async (response): Promise<CorporationLookup> => ({
+      found: true,
+      corporation: await mapPublicCorporation(response.data),
+    }),
+    recover: (error) =>
+      errorStatus(error) === 404
+        ? { data: { found: false as const }, meta: errorMetadata(error) }
+        : undefined,
   }),
 )
 
@@ -86,15 +100,9 @@ export async function getCorporationPublic(corporationId: number): Promise<Corpo
 export async function getCorporationPublicResult(
   corporationId: number,
 ): Promise<EsiCachedResult<CorporationPublic>> {
-  try {
-    const result = await execute(publicCorporationRepresentation, { corporationId })
-    return { ...result, data: { corporationId, warHistory: [], ...result.data } }
-  } catch (error) {
-    // The representation's map only runs on a successful response, so an unknown corporation ID
-    // can no longer be cached as a validated negative lookup; every call re-queries ESI.
-    if (errorStatus(error) !== 404) throw error
-    throw Object.assign(new Error('Corporation not found'), { status: 404 })
-  }
+  const result = await execute(publicCorporationRepresentation, { corporationId })
+  if (!result.data.found) throw Object.assign(new Error('Corporation not found'), { status: 404 })
+  return { ...result, data: { corporationId, warHistory: [], ...result.data.corporation } }
 }
 
 export async function getCorporationAllianceHistory(
@@ -162,6 +170,12 @@ async function mapCorporationAllianceHistory(
     recordId: entry.record_id,
     startDate: entry.start_date,
   }))
+}
+
+function errorMetadata(error: unknown): EsiResponseMetadata {
+  if (typeof error === 'object' && error !== null && 'metadata' in error)
+    return error.metadata as EsiResponseMetadata
+  return { status: 404, headers: {} }
 }
 
 function errorStatus(error: unknown): number | undefined {

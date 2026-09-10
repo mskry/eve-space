@@ -9,9 +9,6 @@
  * migration cannot delete an entry from one and leave the other behind.
  */
 export const legacyEsiEgressModules = [
-  'api/src/characters/history.ts',
-  'api/src/characters/profile.ts',
-  'api/src/corporations/public-data.ts',
   'api/src/deployment/organization.ts',
   'api/src/mail/mailbox.ts',
   'api/src/organization/authority.ts',

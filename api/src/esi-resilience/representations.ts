@@ -4,6 +4,7 @@ import type {
   OperationRequestArguments,
 } from '@evespace/esi-client/operations'
 import type { CharacterMutationEsiOperation, EsiOperation } from './catalog.js'
+import type { EsiLoadResult } from './types.js'
 
 const representationBrand: unique symbol = Symbol('EsiRepresentation')
 
@@ -28,6 +29,12 @@ interface EsiRepresentationOptions<
   descriptor: OperationExecutionDescriptor<Arguments, WireResult>
   encodeRequest: (input: Input) => EsiRepresentationRequest<Arguments>
   map: (response: EsiResponse<WireResult>, input: Input) => Result | Promise<Result>
+  /**
+   * Classifies an upstream failure as a cacheable answer. Returning a result stores it like any
+   * other response, so a definitive negative such as a 404 costs one request instead of one per
+   * lookup. Return undefined to let the error propagate and be retried or classified normally.
+   */
+  recover?: (error: unknown, input: Input) => EsiLoadResult<Result> | undefined
 }
 
 /** Opaque registered binding between an application representation and one SDK operation. */
@@ -48,6 +55,7 @@ export interface EsiRepresentation<
   readonly descriptor: OperationExecutionDescriptor<Arguments, WireResult>
   encodeRequest(input: Input): EsiRepresentationRequest<Arguments>
   map(response: EsiResponse<WireResult>, input: Input): Result | Promise<Result>
+  recover?(error: unknown, input: Input): EsiLoadResult<Result> | undefined
 }
 
 export type EsiCharacterRepresentation<
@@ -132,5 +140,6 @@ function defineEsiRepresentation<
     descriptor: options.descriptor,
     encodeRequest: options.encodeRequest,
     map: options.map,
+    ...(options.recover ? { recover: options.recover } : {}),
   }
 }

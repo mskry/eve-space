@@ -324,7 +324,10 @@ describe('complete character asset collection', () => {
   test('rejects inconsistent pagination and any unavailable required page', async () => {
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) => {
       if (options.query.page === 3) throw new Error('page unavailable')
-      return pageResponse([asset({ item_id: options.query.page })], options.query.page === 2 ? 4 : 3)
+      return pageResponse(
+        [asset({ item_id: options.query.page })],
+        options.query.page === 2 ? 4 : 3,
+      )
     })
 
     await expect(getCharacterAssets(characterId)).rejects.toThrow('page unavailable')
@@ -436,8 +439,7 @@ describe('complete character asset collection', () => {
             ? '2026-09-03T09:00:00.000Z'
             : '2026-09-03T09:30:00.000Z',
         stale: true,
-        refreshFailureClass:
-          resource.inputs.query?.page === 1 ? 'esi-unavailable' : 'esi-cooldown',
+        refreshFailureClass: resource.inputs.query?.page === 1 ? 'esi-unavailable' : 'esi-cooldown',
         retryAt: '2026-09-03T10:00:00.000Z',
       })
     })
