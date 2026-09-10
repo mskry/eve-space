@@ -1,32 +1,32 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  createCharacterClient: vi.fn(),
-  createEsiTransport: vi.fn(),
-  executeNoValue: vi.fn(),
+  executePublicRepresentation: vi.fn(),
   lookupAffiliations: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/character', () => ({
-  createCharacterClient: mocks.createCharacterClient,
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.lookupAffiliations(...arguments_)
+    }
+  },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ executeNoValue: mocks.executeNoValue }),
+  getEsiResilienceLayer: () => ({
+    executePublicRepresentation: mocks.executePublicRepresentation,
+  }),
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
+vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 const characterId = 1_404_328_063
 const validatedAt = '2026-08-31T12:00:00.000Z'
 
 beforeEach(() => {
-  mocks.createCharacterClient.mockReturnValue({
-    withMetadata: () => ({ lookupAffiliations: mocks.lookupAffiliations }),
-  })
   mocks.lookupAffiliations.mockResolvedValue({ data: [], meta: { headers: {} } })
-  mocks.executeNoValue.mockImplementation(async (resource) => {
-    const loaded = await resource.load()
+  mocks.executePublicRepresentation.mockImplementation(async (_representation, resource) => {
+    const loaded = await resource.load({})
     return {
       data: loaded.data,
       cachedUntil: '2026-08-31T13:00:00.000Z',
@@ -54,9 +54,12 @@ describe('character affiliation observation', () => {
       affiliationCheckedAt: new Date(validatedAt),
       stale: false,
     })
-    expect(mocks.executeNoValue.mock.calls[0]?.[0]).toMatchObject({
+    expect(mocks.executePublicRepresentation.mock.calls[0]?.[1]).toMatchObject({
       operation: 'bulk-affiliation',
-      inputs: { characterIds: [characterId] },
+      inputs: { body: [characterId] },
+    })
+    expect(mocks.lookupAffiliations).toHaveBeenCalledWith('PostCharactersAffiliation', {
+      body: [characterId],
     })
   })
 })

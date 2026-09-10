@@ -1,60 +1,82 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  getCharacter: vi.fn(),
-  getPublic: vi.fn(),
+  callOperation: vi.fn(),
+  executeCharacterRepresentation: vi.fn(),
+  executePublicRepresentation: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/location', () => ({ createLocationClient: vi.fn() }))
-vi.mock('@evespace/esi-client/domains/universe', () => ({ createUniverseClient: vi.fn() }))
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.callOperation(...arguments_)
+    }
+  },
+}))
 vi.mock('../../src/characters/skills.js', () => ({
   characterSkillsScope: 'esi-skills.read_skills.v1',
   getCharacterSkillsData: vi.fn(),
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({
-    getCharacter: mocks.getCharacter,
-    getPublic: mocks.getPublic,
+    executeCharacterRepresentation: mocks.executeCharacterRepresentation,
+    executePublicRepresentation: mocks.executePublicRepresentation,
   }),
 }))
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/universe/locations.js', () => ({
+  getUniverseSolarSystem: vi.fn(),
+  getUniverseStation: vi.fn(),
+}))
 
-const results = {
-  location: result(
-    { solar_system_id: 30_000_142, station_id: 60_003_768 },
-    '2026-09-01T11:00:00.000Z',
-    '2026-09-01T11:10:00.000Z',
-  ),
-  'universe-solar-system': result(
-    { name: 'Jita' },
-    '2026-09-01T10:59:00.000Z',
-    '2026-09-01T11:09:00.000Z',
-  ),
-  'universe-station': result(
-    { name: 'Jita IV - Moon 4' },
-    '2026-09-01T10:58:00.000Z',
-    '2026-09-01T11:08:00.000Z',
-    true,
-  ),
-  ship: result(
-    { ship_name: 'My Pod', ship_type_id: 670 },
-    '2026-09-01T11:00:00.000Z',
-    '2026-09-01T11:10:00.000Z',
-  ),
-  'universe-type': result(
-    { name: 'Capsule' },
-    '2026-09-01T10:57:00.000Z',
-    '2026-09-01T11:07:00.000Z',
-  ),
+const wireResponses = {
+  GetCharactersCharacterIdLocation: { solar_system_id: 30_000_142, station_id: 60_003_768 },
+  GetCharactersCharacterIdShip: { ship_name: 'My Pod', ship_type_id: 670, ship_item_id: 1 },
+  GetUniverseTypesTypeId: { name: 'Capsule' },
 }
 
-beforeEach(() => {
-  mocks.getCharacter.mockImplementation(
-    async ({ operation }: { operation: keyof typeof results }) => results[operation],
+const freshness = {
+  location: meta('2026-09-01T11:00:00.000Z', '2026-09-01T11:10:00.000Z'),
+  ship: meta('2026-09-01T11:00:00.000Z', '2026-09-01T11:10:00.000Z'),
+  'universe-type': meta('2026-09-01T10:57:00.000Z', '2026-09-01T11:07:00.000Z'),
+}
+const universeSolarSystemResult = staticResult(
+  { name: 'Jita' },
+  '2026-09-01T10:59:00.000Z',
+  '2026-09-01T11:09:00.000Z',
+)
+const universeStationResult = staticResult(
+  { name: 'Jita IV - Moon 4' },
+  '2026-09-01T10:58:00.000Z',
+  '2026-09-01T11:08:00.000Z',
+  true,
+)
+
+beforeEach(async () => {
+  mocks.callOperation.mockImplementation(async (operationId: keyof typeof wireResponses) => ({
+    data: wireResponses[operationId],
+    meta: { headers: {} },
+  }))
+  mocks.executeCharacterRepresentation.mockImplementation(
+    async ({ operation }: { operation: 'location' | 'ship' }, resource) => {
+      const loaded = await resource.load(
+        { accessToken: 'access-token', principal: 'character-90000001' },
+        {},
+      )
+      return { ...freshness[operation], data: loaded.data }
+    },
   )
-  mocks.getPublic.mockImplementation(
-    async ({ operation }: { operation: keyof typeof results }) => results[operation],
+  mocks.executePublicRepresentation.mockImplementation(async ({ operation }, resource) => {
+    if (operation !== 'universe-type') throw new Error(`unexpected public operation ${operation}`)
+    const loaded = await resource.load({})
+    return { ...freshness['universe-type'], data: loaded.data }
+  })
+  const { getUniverseSolarSystem, getUniverseStation } = await import(
+    '../../src/universe/locations.js'
   )
+  vi.mocked(getUniverseSolarSystem).mockResolvedValue(universeSolarSystemResult)
+  vi.mocked(getUniverseStation).mockResolvedValue(universeStationResult)
 })
 
 describe('character overview resources', () => {
@@ -75,6 +97,12 @@ describe('character overview resources', () => {
     })
     expect(location).not.toHaveProperty('source')
     expect(location).not.toHaveProperty('quota')
+    expect(mocks.executeCharacterRepresentation.mock.calls[0]?.[1]).toMatchObject({
+      inputs: { path: { character_id: 90_000_001 } },
+    })
+    expect(mocks.callOperation).toHaveBeenCalledWith('GetCharactersCharacterIdLocation', {
+      path: { character_id: 90_000_001 },
+    })
   })
 
   test('aggregates freshness across ship and type resources', async () => {
@@ -88,10 +116,21 @@ describe('character overview resources', () => {
       validatedAt: '2026-09-01T10:57:00.000Z',
       stale: false,
     })
+    expect(mocks.executePublicRepresentation.mock.calls[0]?.[1]).toMatchObject({
+      operation: 'universe-type',
+      inputs: { path: { type_id: 670 } },
+    })
+    expect(mocks.callOperation).toHaveBeenCalledWith('GetUniverseTypesTypeId', {
+      path: { type_id: 670 },
+    })
   })
 })
 
-function result<Data>(data: Data, validatedAt: string, cachedUntil: string, stale = false) {
+function meta(validatedAt: string, cachedUntil: string) {
+  return { cachedUntil, validatedAt, source: 'esi' as const, stale: false, quota: {} }
+}
+
+function staticResult<Data>(data: Data, validatedAt: string, cachedUntil: string, stale = false) {
   return {
     data,
     cachedUntil,

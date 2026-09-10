@@ -1,10 +1,29 @@
-import { createCharacterClient } from '@evespace/esi-client/domains/character'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdRolesResponse } from '@evespace/esi-client/types'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 
-export const characterCorporationRolesScope = getCharacterEsiScope('character-corporation-roles')
+interface CharacterCorporationRolesRepresentationInput {
+  characterId: number
+}
+
+const characterCorporationRolesRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-corporation-roles',
+    name: 'character-corporation-roles-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdRoles.transport,
+    encodeRequest: (input: CharacterCorporationRolesRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response) => mapCharacterCorporationRoles(response.data),
+  }),
+)
+
+export const characterCorporationRolesScope = getCharacterEsiScope(
+  characterCorporationRolesRepresentation.operation,
+)
 
 export interface CharacterCorporationRoles {
   roles: string[]
@@ -16,21 +35,7 @@ export interface CharacterCorporationRoles {
 export async function getCharacterCorporationRoles(
   characterId: number,
 ): Promise<CharacterCorporationRoles> {
-  return (
-    await getEsiResilienceLayer().getCharacter({
-      operation: 'character-corporation-roles',
-      inputs: { characterId },
-      load: async (authority, revalidation) => {
-        const response = await createCharacterClient({
-          fetch: createEsiTransport('character-corporation-roles', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .getCorporationRoles(characterId, revalidation)
-        return { data: mapCharacterCorporationRoles(response.data), meta: response.meta }
-      },
-    })
-  ).data
+  return (await execute(characterCorporationRolesRepresentation, { characterId })).data
 }
 
 function mapCharacterCorporationRoles(
