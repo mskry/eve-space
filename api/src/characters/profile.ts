@@ -1,13 +1,15 @@
-import { createAllianceClient } from '@evespace/esi-client/domains/alliance'
-import { createCharacterClient } from '@evespace/esi-client/domains/character'
-import { createUniverseClient } from '@evespace/esi-client/domains/universe'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import type {
+  GetAlliancesAllianceIdResponse,
+  GetCharactersDetailResponse,
+} from '@evespace/esi-client/types'
 import { getCorporationPublicResult } from '../corporations/public-data.js'
-import { eveDescriptionToPlainText } from '../text/eve-description.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
 import { combineEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
-import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
+import { eveDescriptionToPlainText } from '../text/eve-description.js'
 
 // Only the four empire races are playable. These are faction IDs, which the EVE image server
 // serves as empire emblems under its corporations category.
@@ -17,6 +19,91 @@ const raceFactionIds: Record<number, number> = {
   4: 500_003, // Amarr Empire
   8: 500_004, // Gallente Federation
 }
+
+interface PublicCharacterResult {
+  name: string
+  birthday: string
+  gender: string
+  raceId: number
+  bloodlineId: number
+  securityStatus: number
+  achievementScore: number
+  corporationId: number
+  corporationTitle?: string
+  description?: string
+  factionId: number | null
+  allianceId: number | null
+}
+
+/**
+ * Also consumed by organization/authority.ts and deployment/organization.ts, which read
+ * `executorCorporationId`; this file reads `name`/`ticker`. Keep the mapping a superset of all
+ * three callers' fields rather than splitting it per caller.
+ */
+export interface PublicAllianceResult {
+  name: string
+  ticker: string
+  executorCorporationId: number | null
+}
+
+interface PublicRaceResult {
+  raceId: number
+  name: string
+}
+
+interface PublicBloodlineResult {
+  bloodlineId: number
+  name: string
+}
+
+const publicCharacterRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'public-character',
+    name: 'public-character-core',
+    descriptor: operationRegistry.GetCharactersDetail.transport,
+    encodeRequest: (input: { characterId: number }) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response): PublicCharacterResult => mapPublicCharacter(response.data),
+  }),
+)
+
+export const publicAllianceRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'public-alliance',
+    name: 'public-alliance-core',
+    descriptor: operationRegistry.GetAlliancesAllianceId.transport,
+    encodeRequest: (input: { allianceId: number }) => ({
+      path: { alliance_id: input.allianceId },
+    }),
+    map: (response): PublicAllianceResult => mapPublicAlliance(response.data),
+  }),
+)
+
+const universeRacesRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'universe-races',
+    name: 'universe-races-core',
+    descriptor: operationRegistry.GetUniverseRaces.transport,
+    encodeRequest: () => ({}),
+    map: (response): PublicRaceResult[] =>
+      response.data.map((race) => ({ raceId: race.race_id, name: race.name })),
+  }),
+)
+
+const universeBloodlinesRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'universe-bloodlines',
+    name: 'universe-bloodlines-core',
+    descriptor: operationRegistry.GetUniverseBloodlines.transport,
+    encodeRequest: () => ({}),
+    map: (response): PublicBloodlineResult[] =>
+      response.data.map((bloodline) => ({
+        bloodlineId: bloodline.bloodline_id,
+        name: bloodline.name,
+      })),
+  }),
+)
 
 interface CharacterProfileData {
   id: number
@@ -47,51 +134,19 @@ interface CharacterProfileData {
 type CharacterProfile = CharacterProfileData & EsiResultMetadata
 
 export async function getCharacterProfile(characterId: number) {
-  const characterResult = await getEsiResilienceLayer().getPublic({
-    operation: 'public-character',
-    inputs: { characterId },
-    load: (revalidation) =>
-      createCharacterClient({ fetch: createEsiTransport('public-character') })
-        .withMetadata()
-        .getPublicInfo(characterId, revalidation),
-  })
+  const characterResult = await execute(publicCharacterRepresentation, { characterId })
   const character = characterResult.data
   const [corporationResult, races, bloodlines, alliance] = await Promise.all([
-    getCorporationPublicResult(character.corporation_id),
-    getEsiResilienceLayer().getPublic({
-      operation: 'universe-races',
-      inputs: {},
-      load: (revalidation) =>
-        createUniverseClient({ fetch: createEsiTransport('universe-races') })
-          .withMetadata()
-          .listRaces(revalidation),
-    }),
-    getEsiResilienceLayer().getPublic({
-      operation: 'universe-bloodlines',
-      inputs: {},
-      load: (revalidation) =>
-        createUniverseClient({
-          fetch: createEsiTransport('universe-bloodlines'),
-          validateResponses:
-            getEsiOperationContract('universe-bloodlines').responseValidation.kind === 'enabled',
-        })
-          .withMetadata()
-          .listBloodlines(revalidation),
-    }),
-    character.alliance_id
-      ? getEsiResilienceLayer().getPublic({
-          operation: 'public-alliance',
-          inputs: { allianceId: character.alliance_id },
-          load: (revalidation) =>
-            createAllianceClient({ fetch: createEsiTransport('public-alliance') })
-              .withMetadata()
-              .getPublicInfo(character.alliance_id!, revalidation),
-        })
+    getCorporationPublicResult(character.corporationId),
+    execute(universeRacesRepresentation, {}),
+    execute(universeBloodlinesRepresentation, {}),
+    character.allianceId
+      ? execute(publicAllianceRepresentation, { allianceId: character.allianceId })
       : Promise.resolve(null),
   ])
 
   const corporation = corporationResult.data
-  const race = races.data.find((entry) => entry.race_id === character.race_id)
+  const race = races.data.find((entry) => entry.raceId === character.raceId)
   const metadata = combineEsiResultMetadata([
     characterResult,
     corporationResult,
@@ -106,26 +161,26 @@ export async function getCharacterProfile(characterId: number) {
     birthday: character.birthday,
     gender: character.gender,
     race: race?.name ?? 'Unknown',
-    raceFactionId: raceFactionIds[character.race_id] ?? null,
+    raceFactionId: raceFactionIds[character.raceId] ?? null,
     bloodline:
-      bloodlines.data.find((bloodline) => bloodline.bloodline_id === character.bloodline_id)
-        ?.name ?? 'Unknown',
-    securityStatus: character.security_status ?? 0,
-    achievementScore: character.achievement_score,
-    corporationTitle: character.corporation_title,
+      bloodlines.data.find((bloodline) => bloodline.bloodlineId === character.bloodlineId)?.name ??
+      'Unknown',
+    securityStatus: character.securityStatus,
+    achievementScore: character.achievementScore,
+    corporationTitle: character.corporationTitle,
     bio: eveDescriptionToPlainText(character.description),
     // Militia allegiance; unset for characters outside Faction Warfare.
-    factionId: character.faction_id ?? null,
+    factionId: character.factionId,
     corporation: {
-      id: character.corporation_id,
+      id: character.corporationId,
       name: corporation.name,
       ticker: corporation.ticker,
       memberCount: corporation.memberCount,
     },
     alliance:
-      alliance && character.alliance_id
+      alliance && character.allianceId
         ? {
-            id: character.alliance_id,
+            id: character.allianceId,
             name: alliance.data.name,
             ticker: alliance.data.ticker,
           }
@@ -137,19 +192,37 @@ export async function getCharacterProfile(characterId: number) {
 }
 
 export async function getCharacterAffiliation(characterId: number) {
-  const result = await getEsiResilienceLayer().getPublic({
-    operation: 'public-character',
-    inputs: { characterId },
-    load: (revalidation) =>
-      createCharacterClient({ fetch: createEsiTransport('public-character') })
-        .withMetadata()
-        .getPublicInfo(characterId, revalidation),
-  })
+  const result = await execute(publicCharacterRepresentation, { characterId })
   const character = result.data
   return {
-    corporationId: character.corporation_id,
-    allianceId: character.alliance_id ?? null,
+    corporationId: character.corporationId,
+    allianceId: character.allianceId,
     affiliationCheckedAt: new Date(result.validatedAt),
     stale: result.stale,
+  }
+}
+
+function mapPublicCharacter(character: GetCharactersDetailResponse): PublicCharacterResult {
+  return {
+    name: character.name,
+    birthday: character.birthday,
+    gender: character.gender,
+    raceId: character.race_id,
+    bloodlineId: character.bloodline_id,
+    securityStatus: character.security_status ?? 0,
+    achievementScore: character.achievement_score,
+    corporationId: character.corporation_id,
+    corporationTitle: character.corporation_title,
+    description: character.description,
+    factionId: character.faction_id ?? null,
+    allianceId: character.alliance_id ?? null,
+  }
+}
+
+function mapPublicAlliance(alliance: GetAlliancesAllianceIdResponse): PublicAllianceResult {
+  return {
+    name: alliance.name,
+    ticker: alliance.ticker,
+    executorCorporationId: alliance.executor_corporation_id ?? null,
   }
 }

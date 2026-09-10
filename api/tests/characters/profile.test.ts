@@ -1,38 +1,23 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  get: vi.fn(),
-  getAlliance: vi.fn(),
-  getCharacter: vi.fn(),
-  getCorporation: vi.fn(),
-  listBloodlines: vi.fn(),
-  listRaces: vi.fn(),
-  universeClientOptions: [] as unknown[],
+  callOperation: vi.fn(),
+  executeRepresentation: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/character', () => ({
-  createCharacterClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.getCharacter }) }),
-}))
-vi.mock('@evespace/esi-client/domains/corporation', () => ({
-  createCorporationClient: () => ({
-    withMetadata: () => ({ getPublicInfo: mocks.getCorporation }),
-  }),
-}))
-vi.mock('@evespace/esi-client/domains/alliance', () => ({
-  createAllianceClient: () => ({ withMetadata: () => ({ getPublicInfo: mocks.getAlliance }) }),
-}))
-vi.mock('@evespace/esi-client/domains/universe', () => ({
-  createUniverseClient: (options: unknown) => {
-    mocks.universeClientOptions.push(options)
-    return {
-      withMetadata: () => ({ listBloodlines: mocks.listBloodlines, listRaces: mocks.listRaces }),
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.callOperation(...arguments_)
     }
   },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const character = {
   achievement_score: 0,
@@ -40,7 +25,7 @@ const character = {
   birthday: '2008-01-31T00:00:00Z',
   bloodline_id: 5,
   corporation_id: 1_000_166,
-  description: String.raw`<font color="#ffffff">u'\uace0\uc0dd \ub05d\uc5d0 \ub099\uc774 \uc628\ub2e4'</font>`,
+  description: String.raw`<font color="#ffffff">u'고생 끝에 낙이 온다'</font>`,
   gender: 'female',
   name: 'Bandera Primary',
   race_id: 4,
@@ -75,34 +60,29 @@ const getUniverseBloodlinesNullableShipTypeIdFixture = [
 ]
 
 beforeEach(() => {
-  mocks.universeClientOptions.length = 0
-  mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load({})
-    return {
-      data: loaded.data,
-      ...esiMetadata,
+  mocks.executeRepresentation.mockImplementation(async (representation, input) => ({
+    ...(await executeRepresentationFixture(representation, input)),
+    ...esiMetadata,
+  }))
+  mocks.callOperation.mockImplementation((operationId: string) => {
+    switch (operationId) {
+      case 'GetCharactersDetail':
+        return response(character)
+      case 'GetCorporationsCorporationId':
+        return response({ member_count: 1, name: 'Imperial Academy', ticker: 'IAC' })
+      case 'GetUniverseRaces':
+        return response([{ name: 'Amarr', race_id: 4 }])
+      case 'GetUniverseBloodlines':
+        return response(getUniverseBloodlinesNullableShipTypeIdFixture)
+      case 'GetAlliancesAllianceId':
+        return response({ name: 'Alliance', ticker: 'ALLY' })
+      default:
+        throw new Error(`Unexpected operation ${operationId}`)
     }
   })
-  mocks.getCharacter.mockResolvedValue(response(character))
-  mocks.getCorporation.mockResolvedValue(
-    response({ member_count: 1, name: 'Imperial Academy', ticker: 'IAC' }),
-  )
-  mocks.listRaces.mockResolvedValue(response([{ name: 'Amarr', race_id: 4 }]))
-  mocks.listBloodlines.mockResolvedValue(response(getUniverseBloodlinesNullableShipTypeIdFixture))
-  mocks.getAlliance.mockResolvedValue(response({ name: 'Alliance', ticker: 'ALLY' }))
 })
 
 describe('character profile', () => {
-  test('keeps the GetUniverseBloodlines nullable ship_type_id override operation-specific', async () => {
-    const { getCharacterProfile } = await import('../../src/characters/profile.js')
-
-    await expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({ bloodline: 'Khanid' })
-
-    expect(mocks.universeClientOptions).toHaveLength(2)
-    expect(mocks.universeClientOptions[0]).not.toHaveProperty('validateResponses')
-    expect(mocks.universeClientOptions[1]).toMatchObject({ validateResponses: false })
-  })
-
   test('composes independently resilient public resources without changing the DTO', async () => {
     const { getCharacterProfile } = await import('../../src/characters/profile.js')
 
@@ -113,7 +93,9 @@ describe('character profile', () => {
       corporation: { id: 1_000_166, name: 'Imperial Academy', ticker: 'IAC', memberCount: 1 },
       ...publicMetadata,
     })
-    expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
+    expect(
+      mocks.executeRepresentation.mock.calls.map(([representation]) => representation.operation),
+    ).toEqual([
       'public-character',
       'public-corporation',
       'universe-races',
@@ -130,13 +112,13 @@ describe('character profile', () => {
       'universe-bloodlines': '2026-08-20T11:57:00.000Z',
       'public-alliance': '2026-08-20T11:56:00.000Z',
     }
-    mocks.get.mockImplementation(async (resource) => {
-      const loaded = await resource.load({})
-      const stale = resource.operation === 'universe-bloodlines'
+    mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+      const loaded = await executeRepresentationFixture(representation, input)
+      const stale = representation.operation === 'universe-bloodlines'
       return {
         data: loaded.data,
         cachedUntil: '2026-08-20T12:01:00.000Z',
-        validatedAt: validatedAtByOperation[resource.operation],
+        validatedAt: validatedAtByOperation[representation.operation],
         quota: { remaining: 12 },
         source: 'cache',
         stale,
@@ -161,8 +143,8 @@ describe('character profile', () => {
     'shares one mapped corporation representation across consumers with %s ordering',
     async (ordering) => {
       const cache = new Map<string, unknown>()
-      mocks.get.mockImplementation(async (resource) => {
-        const key = JSON.stringify([resource.operation, resource.inputs])
+      mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+        const key = JSON.stringify([representation.name, input])
         if (cache.has(key))
           return {
             data: cache.get(key),
@@ -172,7 +154,7 @@ describe('character profile', () => {
             source: 'cache',
             stale: false,
           }
-        const loaded = await resource.load({})
+        const loaded = await executeRepresentationFixture(representation, input)
         cache.set(key, loaded.data)
         return {
           data: loaded.data,
@@ -209,7 +191,11 @@ describe('character profile', () => {
         name: 'Imperial Academy',
         memberCount: 1,
       })
-      expect(mocks.getCorporation).toHaveBeenCalledOnce()
+      expect(
+        mocks.callOperation.mock.calls.filter(
+          ([operationId]) => operationId === 'GetCorporationsCorporationId',
+        ),
+      ).toHaveLength(1)
     },
   )
 })

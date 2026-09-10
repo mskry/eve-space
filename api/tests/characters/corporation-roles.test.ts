@@ -1,36 +1,30 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  createCharacterClient: vi.fn(),
-  createEsiTransport: vi.fn(),
-  get: vi.fn(),
+  executeRepresentation: vi.fn(),
   getCorporationRoles: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/character', () => ({
-  createCharacterClient: mocks.createCharacterClient,
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.getCorporationRoles(...arguments_)
+    }
+  },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 1_404_328_063
-const revalidation = { ifNoneMatch: 'roles-etag', ifModifiedSince: 'roles-date' }
 
 beforeEach(() => {
-  mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load(
-      { accessToken: 'access-token', principal: `character-${characterId}` },
-      revalidation,
-    )
-    return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
-  })
-  mocks.createCharacterClient.mockReturnValue({
-    withMetadata: () => ({ getCorporationRoles: mocks.getCorporationRoles }),
-  })
+  mocks.executeRepresentation.mockImplementation((representation, input) =>
+    executeRepresentationFixture(representation, input, { accessToken: 'access-token' }),
+  )
 })
 
 describe('character corporation roles', () => {
@@ -53,15 +47,10 @@ describe('character corporation roles', () => {
       rolesAtOther: ['Starbase_Defense_Operator'],
     })
     expect(characterCorporationRolesScope).toBe('esi-characters.read_corporation_roles.v1')
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      operation: 'character-corporation-roles',
-      inputs: { characterId },
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ characterId })
+    expect(mocks.getCorporationRoles).toHaveBeenCalledWith('GetCharactersCharacterIdRoles', {
+      path: { character_id: characterId },
     })
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith(
-      'character-corporation-roles',
-      `character-${characterId}`,
-    )
-    expect(mocks.getCorporationRoles).toHaveBeenCalledWith(characterId, revalidation)
   })
 
   test('normalizes absent role categories', async () => {

@@ -1,12 +1,31 @@
-import { createSkillsClient } from '@evespace/esi-client/domains/skills'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdAttributesResponse } from '@evespace/esi-client/types'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
 
-export const characterAttributesScope = getCharacterEsiScope('attributes')
+interface CharacterAttributesRepresentationInput {
+  characterId: number
+}
+
+const characterAttributesRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'attributes',
+    name: 'character-attributes-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
+    encodeRequest: (input: CharacterAttributesRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response) => mapCharacterAttributes(response.data),
+  }),
+)
+
+export const characterAttributesScope = getCharacterEsiScope(
+  characterAttributesRepresentation.operation,
+)
 
 interface CharacterAttributesData {
   charisma: number
@@ -22,19 +41,7 @@ interface CharacterAttributesData {
 export type CharacterAttributes = CharacterAttributesData & EsiResultMetadata
 
 export async function getCharacterAttributes(characterId: number): Promise<CharacterAttributes> {
-  const result = await getEsiResilienceLayer().getCharacter({
-    operation: 'attributes',
-    inputs: { characterId },
-    load: async (authority, revalidation) => {
-      const response = await createSkillsClient({
-        fetch: createEsiTransport('attributes', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .getAttributes(characterId, revalidation)
-      return { data: mapCharacterAttributes(response.data), meta: response.meta }
-    },
-  })
+  const result = await execute(characterAttributesRepresentation, { characterId })
   return { ...result.data, ...toEsiResultMetadata(result) }
 }
 

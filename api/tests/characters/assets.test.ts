@@ -12,33 +12,32 @@ const mocks = vi.hoisted(() => {
   query.leftJoin.mockImplementation(() => query)
   query.where.mockImplementation(() => query)
   return {
-    createAssetsClient: vi.fn(),
-    createEsiTransport: vi.fn(),
-    get: vi.fn(),
+    executeRepresentation: vi.fn(),
     getStaticLocations: vi.fn(),
     limit: query.limit,
     listCharacterAssets: vi.fn(),
-    listCorporationAssets: vi.fn(),
-    lookupCharacterLocations: vi.fn(),
     lookupCharacterNames: vi.fn(),
-    lookupCorporationLocations: vi.fn(),
-    lookupCorporationNames: vi.fn(),
     query,
     resolveUniverseNamesBestEffort: vi.fn(),
   }
 })
 
-vi.mock('@evespace/esi-client/domains/assets', () => ({
-  createAssetsClient: mocks.createAssetsClient,
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(operation: string, inputs: unknown) {
+      const request = inputs as { path: { character_id: number } }
+      return operation === 'GetCharactersCharacterIdAssets'
+        ? mocks.listCharacterAssets(request.path.character_id, request)
+        : mocks.lookupCharacterNames(request.path.character_id, request)
+    }
+  },
 }))
 vi.mock('../../src/db/client.js', () => ({
   db: { select: vi.fn(() => mocks.query) },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
-}))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
+  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
 }))
 vi.mock('../../src/universe/names.js', () => ({
   resolveUniverseNamesBestEffort: mocks.resolveUniverseNamesBestEffort,
@@ -46,6 +45,8 @@ vi.mock('../../src/universe/names.js', () => ({
 vi.mock('../../src/universe/static-locations.js', () => ({
   getStaticLocations: mocks.getStaticLocations,
 }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 import {
   characterAssetNameBatchSize,
@@ -75,17 +76,9 @@ beforeEach(() => {
   mocks.query.leftJoin.mockImplementation(() => mocks.query)
   mocks.query.where.mockImplementation(() => mocks.query)
   mocks.query.limit.mockResolvedValue([])
-  mocks.get.mockImplementation(loadResource)
-  mocks.createAssetsClient.mockReturnValue({
-    withMetadata: () => ({
-      listCharacterAssets: mocks.listCharacterAssets,
-      listCorporationAssets: mocks.listCorporationAssets,
-      lookupCharacterLocations: mocks.lookupCharacterLocations,
-      lookupCharacterNames: mocks.lookupCharacterNames,
-      lookupCorporationLocations: mocks.lookupCorporationLocations,
-      lookupCorporationNames: mocks.lookupCorporationNames,
-    }),
-  })
+  mocks.executeRepresentation.mockImplementation((representation, input) =>
+    loadResource(representation, input),
+  )
   mocks.listCharacterAssets.mockResolvedValue(pageResponse([asset()], 1))
   mocks.lookupCharacterNames.mockImplementation((_characterId, options) =>
     Promise.resolve(
@@ -218,23 +211,30 @@ describe('complete character asset collection', () => {
       validatedAt: defaultFreshness.validatedAt,
       stale: false,
     })
-    expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
-      'character-assets-page',
-      'character-asset-names',
-    ])
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      inputs: { characterId, page: 1 },
-    })
-    expect(mocks.get.mock.calls[1]?.[0]).toMatchObject({
-      inputs: { characterId, itemIds: [22] },
-    })
+    const pageCalls = mocks.executeRepresentation.mock.calls.filter(
+      ([representation]) => representation.operation === 'character-assets-page',
+    )
+    const namesCall = mocks.executeRepresentation.mock.calls.find(
+      ([representation]) => representation.operation === 'character-asset-names',
+    )
+    expect(pageCalls).toHaveLength(1)
+    expect(pageCalls[0]?.[1]).toEqual({ characterId, page: 1 })
+    expect(namesCall?.[1]).toEqual({ path: { character_id: characterId }, body: [22] })
     expect(mocks.listCharacterAssets).toHaveBeenCalledWith(characterId, {
-      page: 1,
-      ...revalidation,
+      path: { character_id: characterId },
+      query: { page: 1 },
+      headers: {
+        'If-Modified-Since': revalidation.ifModifiedSince,
+        'If-None-Match': revalidation.ifNoneMatch,
+      },
     })
     expect(mocks.lookupCharacterNames).toHaveBeenCalledWith(characterId, {
+      path: { character_id: characterId },
       body: [22],
-      ...revalidation,
+      headers: {
+        'If-Modified-Since': revalidation.ifModifiedSince,
+        'If-None-Match': revalidation.ifNoneMatch,
+      },
     })
     expect(mocks.getStaticLocations).toHaveBeenCalledWith([{ id: 60_000_001, type: 'station' }])
     expect(JSON.stringify(result)).not.toMatch(
@@ -245,7 +245,7 @@ describe('complete character asset collection', () => {
   test('merges out-of-order pages in page order and keeps the first duplicate item', async () => {
     const completionOrder: number[] = []
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) => {
-      const page = options.page
+      const page = options.query.page
       if (page === 2) await wait(10)
       completionOrder.push(page)
       return pageResponse(
@@ -273,13 +273,13 @@ describe('complete character asset collection', () => {
     let active = 0
     let maximumActive = 0
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) => {
-      if (options.page > 1) {
+      if (options.query.page > 1) {
         active += 1
         maximumActive = Math.max(maximumActive, active)
         await wait(2)
         active -= 1
       }
-      return pageResponse([asset({ item_id: options.page })], 10)
+      return pageResponse([asset({ item_id: options.query.page })], 10)
     })
 
     const result = await getCharacterAssets(characterId)
@@ -291,7 +291,7 @@ describe('complete character asset collection', () => {
   test('collects an inventory advertising more than a hundred pages', async () => {
     const advertisedPages = 150
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
-      pageResponse([asset({ item_id: options.page })], advertisedPages),
+      pageResponse([asset({ item_id: options.query.page })], advertisedPages),
     )
 
     const result = await getCharacterAssets(characterId)
@@ -314,15 +314,18 @@ describe('complete character asset collection', () => {
 
   test('rejects inconsistent pagination and any unavailable required page', async () => {
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) => {
-      if (options.page === 3) throw new Error('page unavailable')
-      return pageResponse([asset({ item_id: options.page })], options.page === 2 ? 4 : 3)
+      if (options.query.page === 3) throw new Error('page unavailable')
+      return pageResponse(
+        [asset({ item_id: options.query.page })],
+        options.query.page === 2 ? 4 : 3,
+      )
     })
 
     await expect(getCharacterAssets(characterId)).rejects.toThrow('page unavailable')
     expect(mocks.query.limit).not.toHaveBeenCalled()
 
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
-      pageResponse([asset({ item_id: options.page })], options.page === 2 ? 3 : 2),
+      pageResponse([asset({ item_id: options.query.page })], options.query.page === 2 ? 3 : 2),
     )
     await expect(getCharacterAssets(characterId)).rejects.toBeInstanceOf(
       CharacterAssetsPaginationError,
@@ -334,9 +337,9 @@ describe('complete character asset collection', () => {
     let run = -1
     const callsByRun: number[][] = [[], [], []]
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) => {
-      if (options.page === 1) run += 1
-      callsByRun[run]!.push(options.page)
-      return pageResponse([asset({ item_id: run * 100 + options.page })], advertised[run]!)
+      if (options.query.page === 1) run += 1
+      callsByRun[run]!.push(options.query.page)
+      return pageResponse([asset({ item_id: run * 100 + options.query.page })], advertised[run]!)
     })
 
     await getCharacterAssets(characterId)
@@ -352,15 +355,20 @@ describe('complete character asset collection', () => {
 
   test('passes page-specific validators and conservatively composes not-modified metadata', async () => {
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
-      pageResponse([asset({ item_id: options.page })], 2),
+      pageResponse([asset({ item_id: options.query.page })], 2),
     )
-    mocks.get.mockImplementation(async (resource) => {
-      const page = resource.inputs.page
+    mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+      if (representation.operation !== 'character-assets-page')
+        return loadResource(representation, input)
+      const page = (input as { page: number }).page
       const validators = {
         ifNoneMatch: `etag-${page}`,
         ifModifiedSince: `modified-${page}`,
       }
-      const loaded = await resource.load(authority, validators)
+      const loaded = await executeRepresentationFixture(representation, input, {
+        accessToken: authority.accessToken,
+        revalidation: validators,
+      })
       return cached(loaded.data, {
         cachedUntil: page === 1 ? '2026-09-03T12:00:00.000Z' : '2026-09-03T11:30:00.000Z',
         validatedAt: page === 1 ? '2026-09-03T11:00:00.000Z' : '2026-09-03T10:00:00.000Z',
@@ -371,14 +379,14 @@ describe('complete character asset collection', () => {
     const result = await getCharacterAssets(characterId)
 
     expect(mocks.listCharacterAssets).toHaveBeenNthCalledWith(1, characterId, {
-      page: 1,
-      ifNoneMatch: 'etag-1',
-      ifModifiedSince: 'modified-1',
+      path: { character_id: characterId },
+      query: { page: 1 },
+      headers: { 'If-None-Match': 'etag-1', 'If-Modified-Since': 'modified-1' },
     })
     expect(mocks.listCharacterAssets).toHaveBeenNthCalledWith(2, characterId, {
-      page: 2,
-      ifNoneMatch: 'etag-2',
-      ifModifiedSince: 'modified-2',
+      path: { character_id: characterId },
+      query: { page: 2 },
+      headers: { 'If-None-Match': 'etag-2', 'If-Modified-Since': 'modified-2' },
     })
     expect(result).toMatchObject({
       cachedUntil: '2026-09-03T11:30:00.000Z',
@@ -389,14 +397,19 @@ describe('complete character asset collection', () => {
 
   test('composes a complete stale fallback only after every required page resolves', async () => {
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
-      pageResponse([asset({ item_id: options.page })], 2),
+      pageResponse([asset({ item_id: options.query.page })], 2),
     )
-    mocks.get.mockImplementation(async (resource) => {
-      const loaded = await resource.load(authority, revalidation)
+    mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+      if (representation.operation !== 'character-assets-page')
+        return loadResource(representation, input)
+      const loaded = await executeRepresentationFixture(representation, input, {
+        accessToken: authority.accessToken,
+        revalidation,
+      })
+      const page = (input as { page: number }).page
       return cached(loaded.data, {
         cachedUntil: '2026-09-03T10:00:00.000Z',
-        validatedAt:
-          resource.inputs.page === 1 ? '2026-09-03T09:30:00.000Z' : '2026-09-03T09:00:00.000Z',
+        validatedAt: page === 1 ? '2026-09-03T09:30:00.000Z' : '2026-09-03T09:00:00.000Z',
         stale: true,
         refreshFailureClass: 'esi-unavailable',
       })
@@ -412,15 +425,20 @@ describe('complete character asset collection', () => {
 
   test('only returns retry timing for the selected cooldown failure class', async () => {
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
-      pageResponse([asset({ item_id: options.page })], 2),
+      pageResponse([asset({ item_id: options.query.page })], 2),
     )
-    mocks.get.mockImplementation(async (resource) => {
-      const loaded = await resource.load(authority, revalidation)
+    mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+      if (representation.operation !== 'character-assets-page')
+        return loadResource(representation, input)
+      const loaded = await executeRepresentationFixture(representation, input, {
+        accessToken: authority.accessToken,
+        revalidation,
+      })
+      const page = (input as { page: number }).page
       return cached(loaded.data, {
-        validatedAt:
-          resource.inputs.page === 1 ? '2026-09-03T09:00:00.000Z' : '2026-09-03T09:30:00.000Z',
+        validatedAt: page === 1 ? '2026-09-03T09:00:00.000Z' : '2026-09-03T09:30:00.000Z',
         stale: true,
-        refreshFailureClass: resource.inputs.page === 1 ? 'esi-unavailable' : 'esi-cooldown',
+        refreshFailureClass: page === 1 ? 'esi-unavailable' : 'esi-cooldown',
         retryAt: '2026-09-03T10:00:00.000Z',
       })
     })
@@ -437,11 +455,11 @@ describe('complete character asset collection', () => {
       await wait(5)
       return pageResponse([asset()], 1)
     })
-    mocks.get.mockImplementation((resource) => {
-      const key = `${resource.operation}:${JSON.stringify(resource.inputs)}`
+    mocks.executeRepresentation.mockImplementation((representation, input) => {
+      const key = `${representation.operation}:${JSON.stringify(input)}`
       let current = pending.get(key)
       if (!current) {
-        current = loadResource(resource)
+        current = loadResource(representation, input)
         pending.set(key, current)
       }
       return current
@@ -454,11 +472,15 @@ describe('complete character asset collection', () => {
 
   test('preserves cooldown errors from required pages', async () => {
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
-      pageResponse([asset({ item_id: options.page })], 2),
+      pageResponse([asset({ item_id: options.query.page })], 2),
     )
-    mocks.get.mockImplementation((resource) => {
-      if (resource.inputs.page === 2) throw new EsiQuotaError(19)
-      return loadResource(resource)
+    mocks.executeRepresentation.mockImplementation((representation, input) => {
+      if (
+        representation.operation === 'character-assets-page' &&
+        (input as { page: number }).page === 2
+      )
+        throw new EsiQuotaError(19)
+      return loadResource(representation, input)
     })
 
     await expect(getCharacterAssets(characterId)).rejects.toMatchObject({
@@ -857,23 +879,20 @@ describe('bounded character asset enrichment', () => {
 test('does not expose or call prohibited asset and structure operations', async () => {
   await getCharacterAssets(characterId)
 
-  expect(mocks.lookupCharacterLocations).not.toHaveBeenCalled()
-  expect(mocks.listCorporationAssets).not.toHaveBeenCalled()
-  expect(mocks.lookupCorporationLocations).not.toHaveBeenCalled()
-  expect(mocks.lookupCorporationNames).not.toHaveBeenCalled()
   const source = readFileSync(new URL('../../src/characters/assets.ts', import.meta.url), 'utf8')
   expect(source).not.toMatch(
-    /lookupCharacterLocations|createStructuresClient|listCorporationAssets|lookupCorporation|createUniverseClient|\/corporations\/|\/alliances\//,
+    /lookupCharacterLocations|createStructuresClient|createAssetsClient|listCorporationAssets|lookupCorporation|createUniverseClient|\/corporations\/|\/alliances\//,
   )
 })
 
-async function loadResource(resource: {
-  load: (
-    authority: { accessToken: string; principal: string },
-    revalidation: { ifNoneMatch: string; ifModifiedSince: string },
-  ) => Promise<{ data: unknown }>
-}) {
-  const loaded = await resource.load(authority, revalidation)
+async function loadResource(
+  representation: Parameters<typeof executeRepresentationFixture>[0],
+  input: unknown,
+) {
+  const loaded = await executeRepresentationFixture(representation, input, {
+    accessToken: authority.accessToken,
+    revalidation,
+  })
   return cached(loaded.data)
 }
 

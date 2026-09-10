@@ -33,10 +33,89 @@ describe('ESI representation identity', () => {
   test('projects identity fields from validated SDK request envelopes', () => {
     const flat = identity('wallet-balance', { characterId: 42 })
     const path = identity('wallet-balance', { path: { character_id: 42 } })
-    const batch = identity('universe-resolve-names', { body: { ids: [20, 10] } })
+    const batch = identity('universe-resolve-names', { body: [20, 10] })
 
     expect(path).toEqual(flat)
     expect(batch).toEqual(identity('universe-resolve-names', { ids: [10, 20] }))
+  })
+
+  test('projects all registered array bodies from their post-migration SDK envelopes', () => {
+    expect(identity('universe-resolve-names', { body: [30, 10, 20, 10] })).toEqual(
+      identity('universe-resolve-names', { ids: [20, 30, 10] }),
+    )
+    expect(identity('universe-resolve-ids', { body: ['Jita', 'Amarr', 'Jita'] })).toEqual(
+      identity('universe-resolve-ids', { names: ['Amarr', 'Jita'] }),
+    )
+    expect(
+      identity('character-asset-names', {
+        path: { character_id: 7 },
+        body: [30, 10, 20, 10],
+      }),
+    ).toEqual(identity('character-asset-names', { characterId: 7, itemIds: [20, 30, 10] }))
+    expect(identity('bulk-affiliation', { body: [30, 10, 20, 10] })).toEqual(
+      identity('bulk-affiliation', { characterIds: [20, 30, 10] }),
+    )
+    expect(
+      identity('character-cspa-charge', {
+        path: { character_id: 7 },
+        body: [30, 10, 20],
+      }),
+    ).toEqual(identity('character-cspa-charge', { characterId: 7 }))
+  })
+
+  test('does not recursively recover array-body identity fields from decoy objects', () => {
+    for (const [operation, inputs] of [
+      ['universe-resolve-names', { body: { ids: [10, 20] } }],
+      ['universe-resolve-ids', { body: { names: ['Amarr', 'Jita'] } }],
+      [
+        'character-asset-names',
+        {
+          path: { nested: { character_id: 7 } },
+          body: { nested: { item_ids: [10, 20] } },
+        },
+      ],
+      ['bulk-affiliation', { body: { characterIds: [10, 20] } }],
+      ['character-cspa-charge', { path: { nested: { character_id: 7 } }, body: [10, 20] }],
+    ] as const)
+      expect(() => identity(operation, inputs)).toThrow(/ESI identity/)
+  })
+
+  test('fails closed on empty and oversized post-migration array bodies', () => {
+    const cases = [
+      ['universe-resolve-names', {}, 1_001],
+      ['universe-resolve-ids', {}, 501],
+      ['character-asset-names', { path: { character_id: 7 } }, 1_001],
+      ['bulk-affiliation', {}, 1_001],
+      ['character-cspa-charge', { path: { character_id: 7 } }, 101],
+    ] as const
+
+    for (const [operation, envelope, oversizedLength] of cases) {
+      expect(() => identity(operation, { ...envelope, body: [] })).toThrow('between 1 and')
+      expect(() =>
+        identity(operation, {
+          ...envelope,
+          body: Array.from({ length: oversizedLength }, (_, index) => index + 1),
+        }),
+      ).toThrow('between 1 and')
+    }
+  })
+
+  test('keeps distinct projected sets separate and ignores the CSPA recipient set by contract', () => {
+    expect(identity('universe-resolve-names', { body: [10, 20] }).digest).not.toBe(
+      identity('universe-resolve-names', { body: [10, 30] }).digest,
+    )
+    expect(identity('universe-resolve-ids', { body: ['Amarr'] }).digest).not.toBe(
+      identity('universe-resolve-ids', { body: ['Jita'] }).digest,
+    )
+    expect(
+      identity('character-asset-names', { path: { character_id: 7 }, body: [10] }).digest,
+    ).not.toBe(identity('character-asset-names', { path: { character_id: 7 }, body: [20] }).digest)
+    expect(identity('bulk-affiliation', { body: [10] }).digest).not.toBe(
+      identity('bulk-affiliation', { body: [20] }).digest,
+    )
+    expect(identity('character-cspa-charge', { path: { character_id: 7 }, body: [10] })).toEqual(
+      identity('character-cspa-charge', { path: { character_id: 7 }, body: [20] }),
+    )
   })
 
   test('separates operations, compatibility dates, and representation versions', () => {

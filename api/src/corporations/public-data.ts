@@ -1,8 +1,13 @@
-import { createCorporationClient } from '@evespace/esi-client/domains/corporation'
 import type { EsiResponseMetadata } from '@evespace/esi-client'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import type {
+  GetCorporationsCorporationIdAlliancehistoryResponse,
+  GetCorporationsCorporationIdResponse,
+} from '@evespace/esi-client/types'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
@@ -31,6 +36,14 @@ interface CorporationPublic {
   warHistory: Array<{ time: string; againstId: number; againstType: string }>
 }
 
+type PublicCorporationResult = Omit<CorporationPublic, 'corporationId' | 'warHistory'>
+
+/**
+ * An unknown corporation ID is a definitive answer, so it is stored like any other response.
+ * Re-querying ESI per lookup would spend five error-budget tokens each time.
+ */
+type CorporationLookup = { found: true; corporation: PublicCorporationResult } | { found: false }
+
 interface AllianceHistoryEntry {
   allianceId: number | null
   allianceName: string | null
@@ -39,7 +52,46 @@ interface AllianceHistoryEntry {
   startDate: string
 }
 
-type CorporationLookup = { found: true; corporation: CorporationPublic } | { found: false }
+const publicCorporationRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'public-corporation',
+    name: 'public-corporation-core',
+    descriptor: operationRegistry.GetCorporationsCorporationId.transport,
+    encodeRequest: (input: { corporationId: number }) => ({
+      path: { corporation_id: input.corporationId },
+    }),
+    map: async (response): Promise<CorporationLookup> => ({
+      found: true,
+      corporation: await mapPublicCorporation(response.data),
+    }),
+    recover: (error) =>
+      errorStatus(error) === 404
+        ? { data: { found: false as const }, meta: errorMetadata(error) }
+        : undefined,
+  }),
+)
+
+const corporationAllianceHistoryRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'corporation-alliance-history',
+    name: 'corporation-alliance-history-core',
+    descriptor: operationRegistry.GetCorporationsCorporationIdAlliancehistory.transport,
+    encodeRequest: (input: { corporationId: number }) => ({
+      path: { corporation_id: input.corporationId },
+    }),
+    map: (response) => mapCorporationAllianceHistory(response.data),
+  }),
+)
+
+const corporationNpcListRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'corporation-npc-list',
+    name: 'corporation-npc-list-core',
+    descriptor: operationRegistry.GetCorporationsNpccorps.transport,
+    encodeRequest: () => ({}),
+    map: (response): number[] => response.data,
+  }),
+)
 
 export async function getCorporationPublic(corporationId: number): Promise<CorporationPublic> {
   return (await getCorporationPublicResult(corporationId)).data
@@ -48,124 +100,86 @@ export async function getCorporationPublic(corporationId: number): Promise<Corpo
 export async function getCorporationPublicResult(
   corporationId: number,
 ): Promise<EsiCachedResult<CorporationPublic>> {
-  const result = await getEsiResilienceLayer().getPublic<CorporationLookup>({
-    operation: 'public-corporation',
-    inputs: { corporationId },
-    load: async (revalidation) => {
-      try {
-        const response = await createCorporationClient({
-          fetch: createEsiTransport('public-corporation'),
-        })
-          .withMetadata()
-          .getPublicInfo(corporationId, revalidation)
-        const corporation = response.data
-        const ceoId = corporation.ceo_id ?? null
-        const creatorId = corporation.creator_id ?? null
-        const allianceId = corporation.alliance_id ?? null
-        const homeStationId = corporation.home_station_id ?? null
-        const idsToResolve = [
-          ...new Set(
-            [ceoId, creatorId, allianceId, homeStationId].filter((id): id is number => id !== null),
-          ),
-        ]
-        const names = idsToResolve.length ? await resolveUniverseNames(idsToResolve) : new Map()
-        return {
-          data: {
-            found: true as const,
-            corporation: {
-              corporationId,
-              name: corporation.name,
-              ticker: corporation.ticker,
-              memberCount: corporation.member_count,
-              ceoId,
-              ceoName: ceoId ? (names.get(ceoId)?.name ?? null) : null,
-              creatorId,
-              creatorName: creatorId ? (names.get(creatorId)?.name ?? null) : null,
-              taxRate: corporation.tax_rates?.isk ?? null,
-              dateFounded: corporation.date_founded ?? null,
-              description: eveDescriptionToPlainText(corporation.description) ?? null,
-              url: corporation.url ?? null,
-              factionId: corporation.enlisted_faction_id ?? null,
-              homeStationId,
-              homeStationName: homeStationId ? (names.get(homeStationId)?.name ?? null) : null,
-              shares: corporation.shares ?? null,
-              allianceId,
-              allianceName: allianceId ? (names.get(allianceId)?.name ?? null) : null,
-              type: corporation.type ?? 'unknown',
-              state: corporation.state ?? 'unknown',
-              warEligible: corporation.war_eligible ?? null,
-              warHistory: [],
-            },
-          },
-          meta: response.meta,
-        }
-      } catch (error) {
-        if (errorStatus(error) !== 404) throw error
-        return { data: { found: false as const }, meta: errorMetadata(error) }
-      }
-    },
-  })
+  const result = await execute(publicCorporationRepresentation, { corporationId })
   if (!result.data.found) throw Object.assign(new Error('Corporation not found'), { status: 404 })
-  return { ...result, data: result.data.corporation }
+  return { ...result, data: { corporationId, warHistory: [], ...result.data.corporation } }
 }
 
 export async function getCorporationAllianceHistory(
   corporationId: number,
 ): Promise<AllianceHistoryEntry[]> {
-  return (
-    await getEsiResilienceLayer().getPublic<AllianceHistoryEntry[]>({
-      operation: 'corporation-alliance-history',
-      inputs: { corporationId },
-      load: async (revalidation) => {
-        const response = await createCorporationClient({
-          fetch: createEsiTransport('corporation-alliance-history'),
-        })
-          .withMetadata()
-          .listAllianceHistory(corporationId, revalidation)
-        const allianceIds = [
-          ...new Set(
-            response.data
-              .map((entry) => entry.alliance_id)
-              .filter((id): id is number => id !== null && id !== undefined),
-          ),
-        ]
-        const names = allianceIds.length ? await resolveUniverseNames(allianceIds) : new Map()
-        return {
-          data: response.data.map((entry) => ({
-            allianceId: entry.alliance_id ?? null,
-            allianceName: entry.alliance_id ? (names.get(entry.alliance_id)?.name ?? null) : null,
-            isDeleted: entry.is_deleted ?? false,
-            recordId: entry.record_id,
-            startDate: entry.start_date,
-          })),
-          meta: response.meta,
-        }
-      },
-    })
-  ).data
+  return (await execute(corporationAllianceHistoryRepresentation, { corporationId })).data
 }
 
 export async function getNpcCorporations(): Promise<number[]> {
-  return (
-    await getEsiResilienceLayer().getPublic({
-      operation: 'corporation-npc-list',
-      inputs: {},
-      load: (revalidation) =>
-        createCorporationClient({ fetch: createEsiTransport('corporation-npc-list') })
-          .withMetadata()
-          .listNpcCorporations(revalidation),
-    })
-  ).data
+  return (await execute(corporationNpcListRepresentation, {})).data
 }
 
-function errorStatus(error: unknown): number | undefined {
-  return typeof error === 'object' && error !== null && 'status' in error
-    ? Number((error as { status: unknown }).status)
-    : undefined
+async function mapPublicCorporation(
+  corporation: GetCorporationsCorporationIdResponse,
+): Promise<PublicCorporationResult> {
+  const ceoId = corporation.ceo_id ?? null
+  const creatorId = corporation.creator_id ?? null
+  const allianceId = corporation.alliance_id ?? null
+  const homeStationId = corporation.home_station_id ?? null
+  const idsToResolve = [
+    ...new Set(
+      [ceoId, creatorId, allianceId, homeStationId].filter((id): id is number => id !== null),
+    ),
+  ]
+  const names = idsToResolve.length ? await resolveUniverseNames(idsToResolve) : new Map()
+  return {
+    name: corporation.name,
+    ticker: corporation.ticker,
+    memberCount: corporation.member_count,
+    ceoId,
+    ceoName: ceoId ? (names.get(ceoId)?.name ?? null) : null,
+    creatorId,
+    creatorName: creatorId ? (names.get(creatorId)?.name ?? null) : null,
+    taxRate: corporation.tax_rates?.isk ?? null,
+    dateFounded: corporation.date_founded ?? null,
+    description: eveDescriptionToPlainText(corporation.description) ?? null,
+    url: corporation.url ?? null,
+    factionId: corporation.enlisted_faction_id ?? null,
+    homeStationId,
+    homeStationName: homeStationId ? (names.get(homeStationId)?.name ?? null) : null,
+    shares: corporation.shares ?? null,
+    allianceId,
+    allianceName: allianceId ? (names.get(allianceId)?.name ?? null) : null,
+    type: corporation.type ?? 'unknown',
+    state: corporation.state ?? 'unknown',
+    warEligible: corporation.war_eligible ?? null,
+  }
+}
+
+async function mapCorporationAllianceHistory(
+  entries: GetCorporationsCorporationIdAlliancehistoryResponse,
+): Promise<AllianceHistoryEntry[]> {
+  const allianceIds = [
+    ...new Set(
+      entries
+        .map((entry) => entry.alliance_id)
+        .filter((id): id is number => id !== null && id !== undefined),
+    ),
+  ]
+  const names = allianceIds.length ? await resolveUniverseNames(allianceIds) : new Map()
+  return entries.map((entry) => ({
+    allianceId: entry.alliance_id ?? null,
+    allianceName: entry.alliance_id ? (names.get(entry.alliance_id)?.name ?? null) : null,
+    isDeleted: entry.is_deleted ?? false,
+    recordId: entry.record_id,
+    startDate: entry.start_date,
+  }))
 }
 
 function errorMetadata(error: unknown): EsiResponseMetadata {
   if (typeof error === 'object' && error !== null && 'metadata' in error)
     return error.metadata as EsiResponseMetadata
   return { status: 404, headers: {} }
+}
+
+function errorStatus(error: unknown): number | undefined {
+  return typeof error === 'object' && error !== null && 'status' in error
+    ? Number((error as { status: unknown }).status)
+    : undefined
 }

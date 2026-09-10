@@ -14,12 +14,9 @@ const mocks = vi.hoisted(() => {
   return {
     EsiTransportError,
     calculateCspaCharge: vi.fn(),
-    createCharacterClient: vi.fn(),
-    createMailClient: vi.fn(),
-    createSearchClient: vi.fn(),
-    createEsiTransport: vi.fn(),
-    getCharacter: vi.fn(),
-    executeCharacterMutation: vi.fn(),
+    callOperation: vi.fn(),
+    executeMutationRepresentation: vi.fn(),
+    executeRepresentation: vi.fn(),
     resolveUniverseIds: vi.fn(),
     resolveUniverseNames: vi.fn(),
     listHeaders: vi.fn(),
@@ -35,37 +32,32 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('@evespace/esi-client/domains/character', () => ({
-  createCharacterClient: mocks.createCharacterClient,
-}))
-
-vi.mock('@evespace/esi-client/domains/mail', () => ({
-  createMailClient: mocks.createMailClient,
-}))
-
-vi.mock('@evespace/esi-client/domains/search', () => ({
-  createSearchClient: mocks.createSearchClient,
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.callOperation(...arguments_)
+    }
+  },
 }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({
-    getCharacter: mocks.getCharacter,
-    executeCharacterMutation: mocks.executeCharacterMutation,
-  }),
+  esiExecutionLayer: {
+    executeMutationRepresentation: mocks.executeMutationRepresentation,
+    executeRepresentation: mocks.executeRepresentation,
+  },
 }))
 
 vi.mock('../../src/esi-resilience/transport.js', () => ({
   EsiTransportError: mocks.EsiTransportError,
 }))
 
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
-
 vi.mock('../../src/universe/names.js', () => ({
   resolveUniverseIds: mocks.resolveUniverseIds,
   resolveUniverseNames: mocks.resolveUniverseNames,
 }))
+
+import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 import {
@@ -107,31 +99,33 @@ const sdkMetadata = {
 }
 
 beforeEach(() => {
-  mocks.createEsiTransport.mockImplementation((operation, principal) => `${operation}:${principal}`)
-  mocks.createMailClient.mockReturnValue({
-    withMetadata: () => ({
-      listHeaders: mocks.listHeaders,
-      get: mocks.getMail,
-      listLabels: mocks.listLabels,
-      listMailingLists: mocks.listMailingLists,
-      send: mocks.send,
-      createLabel: mocks.createLabel,
-      update: mocks.update,
-      deleteMail: mocks.deleteMail,
-      deleteLabel: mocks.deleteLabel,
-    }),
+  mocks.executeRepresentation.mockImplementation(async (representation, input) => ({
+    ...(await executeRepresentationFixture(representation, input, {
+      accessToken: authority.accessToken,
+      revalidation: representation.operation === 'character-cspa-charge' ? {} : revalidation,
+    })),
+    ...outerMetadata,
+  }))
+  mocks.executeMutationRepresentation.mockImplementation((representation, input) =>
+    executeRepresentationFixture(representation, input, {
+      accessToken: authority.accessToken,
+    }).then(({ data }) => data),
+  )
+  mocks.callOperation.mockImplementation((operation, inputs) => {
+    if (operation === 'GetCharactersCharacterIdMail') return mocks.listHeaders(inputs)
+    if (operation === 'GetCharactersCharacterIdMailMailId') return mocks.getMail(inputs)
+    if (operation === 'GetCharactersCharacterIdMailLabels') return mocks.listLabels(inputs)
+    if (operation === 'GetCharactersCharacterIdMailLists') return mocks.listMailingLists(inputs)
+    if (operation === 'PostCharactersCharacterIdMail') return mocks.send(inputs)
+    if (operation === 'PostCharactersCharacterIdMailLabels') return mocks.createLabel(inputs)
+    if (operation === 'PutCharactersCharacterIdMailMailId') return mocks.update(inputs)
+    if (operation === 'DeleteCharactersCharacterIdMailMailId') return mocks.deleteMail(inputs)
+    if (operation === 'DeleteCharactersCharacterIdMailLabelsLabelId')
+      return mocks.deleteLabel(inputs)
+    if (operation === 'GetCharactersCharacterIdSearch') return mocks.search(inputs)
+    if (operation === 'PostCharactersCharacterIdCspa') return mocks.calculateCspaCharge(inputs)
+    throw new Error(`Unexpected ESI operation ${String(operation)}`)
   })
-  mocks.createCharacterClient.mockReturnValue({
-    withMetadata: () => ({ calculateCspaCharge: mocks.calculateCspaCharge }),
-  })
-  mocks.createSearchClient.mockReturnValue({
-    withMetadata: () => ({ search: mocks.search }),
-  })
-  mocks.getCharacter.mockImplementation(async (resource) => {
-    const loaded = await resource.load(authority, revalidation)
-    return { data: loaded.data, ...outerMetadata }
-  })
-  mocks.executeCharacterMutation.mockImplementation(async (mutation) => mutation.load(authority))
   mocks.resolveUniverseNames.mockResolvedValue(new Map())
   mocks.resolveUniverseIds.mockResolvedValue([])
   mocks.listHeaders.mockResolvedValue(response([]))
@@ -253,25 +247,31 @@ describe('mail reads', () => {
   test('normalizes label filters for both identity and SDK options and propagates revalidation', async () => {
     await listMailHeaders(characterId, { labels: [9, 3, 9, 5], lastMailId: 800 })
 
-    expect(mocks.getCharacter).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operation: 'mail-headers',
-        inputs: { characterId, labels: [3, 5, 9], lastMailId: 800 },
-      }),
+    expect(mocks.executeRepresentation).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'mail-headers' }),
+      { characterId, labels: [3, 5, 9], lastMailId: 800 },
     )
-    expect(mocks.listHeaders).toHaveBeenCalledWith(characterId, {
-      labels: [3, 5, 9],
-      lastMailId: 800,
-      ...revalidation,
+    expect(mocks.listHeaders).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      query: { labels: [3, 5, 9], last_mail_id: 800 },
+      headers: {
+        'If-None-Match': revalidation.ifNoneMatch,
+        'If-Modified-Since': revalidation.ifModifiedSince,
+      },
     })
 
     await listMailHeaders(characterId, { labels: [] })
-    expect(mocks.getCharacter).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        inputs: { characterId, labels: null, lastMailId: null },
-      }),
+    expect(mocks.executeRepresentation).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operation: 'mail-headers' }),
+      { characterId, labels: null, lastMailId: null },
     )
-    expect(mocks.listHeaders).toHaveBeenLastCalledWith(characterId, revalidation)
+    expect(mocks.listHeaders).toHaveBeenLastCalledWith({
+      path: { character_id: characterId },
+      headers: {
+        'If-None-Match': revalidation.ifNoneMatch,
+        'If-Modified-Since': revalidation.ifModifiedSince,
+      },
+    })
   })
 
   test('normalizes detail bodies and preserves outer cache metadata', async () => {
@@ -305,7 +305,13 @@ describe('mail reads', () => {
       body: 'First & second\n\nFly 고',
       ...outerMetadata,
     })
-    expect(mocks.getMail).toHaveBeenCalledWith(characterId, 44, revalidation)
+    expect(mocks.getMail).toHaveBeenCalledWith({
+      path: { character_id: characterId, mail_id: 44 },
+      headers: {
+        'If-None-Match': revalidation.ifNoneMatch,
+        'If-Modified-Since': revalidation.ifModifiedSince,
+      },
+    })
   })
 
   test('maps null and absent optional detail fields without inventing message state', async () => {
@@ -366,10 +372,15 @@ describe('mail reads', () => {
       ]),
     )
     mocks.resolveUniverseNames.mockRejectedValue(new Error('names unavailable'))
-    mocks.getCharacter.mockImplementation(async (resource) => {
-      if (resource.operation === 'mail-lists') throw new Error('lists unavailable')
-      const loaded = await resource.load(authority, revalidation)
-      return { data: loaded.data, ...outerMetadata }
+    mocks.executeRepresentation.mockImplementation(async (representation, input) => {
+      if (representation.operation === 'mail-lists') throw new Error('lists unavailable')
+      return {
+        ...(await executeRepresentationFixture(representation, input, {
+          accessToken: authority.accessToken,
+          revalidation,
+        })),
+        ...outerMetadata,
+      }
     })
 
     await expect(listMailHeaders(characterId)).resolves.toMatchObject({
@@ -405,13 +416,20 @@ describe('mail reads', () => {
       mailingLists: [{ mailingListId: 99, name: 'A List' }],
       ...outerMetadata,
     })
-    expect(mocks.listLabels).toHaveBeenCalledWith(characterId, revalidation)
-    expect(mocks.listMailingLists).toHaveBeenCalledWith(characterId, revalidation)
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith('mail-labels', authority.principal)
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith('mail-lists', authority.principal)
-    expect(mocks.createMailClient).toHaveBeenCalledWith(
-      expect.objectContaining({ token: authority.accessToken }),
-    )
+    expect(mocks.listLabels).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      headers: {
+        'If-None-Match': revalidation.ifNoneMatch,
+        'If-Modified-Since': revalidation.ifModifiedSince,
+      },
+    })
+    expect(mocks.listMailingLists).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      headers: {
+        'If-None-Match': revalidation.ifNoneMatch,
+        'If-Modified-Since': revalidation.ifModifiedSince,
+      },
+    })
 
     mocks.listLabels.mockResolvedValueOnce(response({}))
     mocks.listMailingLists.mockResolvedValueOnce(response([]))
@@ -420,29 +438,6 @@ describe('mail reads', () => {
       totalUnreadCount: null,
     })
     await expect(getMailingLists(characterId)).resolves.toMatchObject({ mailingLists: [] })
-  })
-
-  test('propagates SDK response metadata from every read loader', async () => {
-    const loadedMetadata = new Map<string, unknown>()
-    mocks.getCharacter.mockImplementation(async (resource) => {
-      const loaded = await resource.load(authority, revalidation)
-      loadedMetadata.set(resource.operation, loaded.meta)
-      return { data: loaded.data, ...outerMetadata }
-    })
-
-    await listMailHeaders(characterId)
-    await getMailDetail(characterId, 1)
-    await getMailLabels(characterId)
-    await getMailingLists(characterId)
-
-    expect(loadedMetadata).toEqual(
-      new Map([
-        ['mail-headers', sdkMetadata],
-        ['mail-message', sdkMetadata],
-        ['mail-labels', sdkMetadata],
-        ['mail-lists', sdkMetadata],
-      ]),
-    )
   })
 })
 
@@ -458,7 +453,8 @@ describe('mail mutations', () => {
     }
 
     await expect(sendMail(characterId, input)).resolves.toEqual({ characterId, mailId: 7001 })
-    expect(mocks.send).toHaveBeenCalledWith(characterId, {
+    expect(mocks.send).toHaveBeenCalledWith({
+      path: { character_id: characterId },
       body: {
         approved_cost: 0,
         body: 'Body',
@@ -469,14 +465,13 @@ describe('mail mutations', () => {
         subject: 'Subject',
       },
     })
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'mail-send', characterId }),
+    expect(mocks.executeMutationRepresentation).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'mail-send' }),
+      { characterId, input },
     )
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith('mail-send', authority.principal)
 
     await sendMail(characterId, { ...input, approvedCost: 25 })
     expect(mocks.send).toHaveBeenLastCalledWith(
-      characterId,
       expect.objectContaining({ body: expect.objectContaining({ approved_cost: 25 }) }),
     )
   })
@@ -485,12 +480,14 @@ describe('mail mutations', () => {
     await expect(
       createMailLabel(characterId, { name: 'Important', color: '#fe0000' }),
     ).resolves.toEqual({ characterId, labelId: 31 })
-    expect(mocks.createLabel).toHaveBeenCalledWith(characterId, {
+    expect(mocks.createLabel).toHaveBeenCalledWith({
+      path: { character_id: characterId },
       body: { name: 'Important', color: '#fe0000' },
     })
 
     await createMailLabel(characterId, { name: 'No color' })
-    expect(mocks.createLabel).toHaveBeenLastCalledWith(characterId, {
+    expect(mocks.createLabel).toHaveBeenLastCalledWith({
+      path: { character_id: characterId },
       body: { name: 'No color' },
     })
   })
@@ -500,11 +497,13 @@ describe('mail mutations', () => {
       characterId,
       mailId: 51,
     })
-    expect(mocks.update).toHaveBeenCalledWith(characterId, 51, {
+    expect(mocks.update).toHaveBeenCalledWith({
+      path: { character_id: characterId, mail_id: 51 },
       body: { labels: [4, 2], read: false },
     })
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'mail-update', characterId }),
+    expect(mocks.executeMutationRepresentation).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'mail-update' }),
+      { characterId, mailId: 51, input: { read: false, labels: [4, 2] } },
     )
   })
 
@@ -512,12 +511,17 @@ describe('mail mutations', () => {
     await expect(deleteMail(characterId, 51)).resolves.toEqual({ characterId, mailId: 51 })
     await expect(deleteMailLabel(characterId, 8)).resolves.toEqual({ characterId, labelId: 8 })
 
-    expect(mocks.deleteMail).toHaveBeenCalledWith(characterId, 51)
-    expect(mocks.deleteLabel).toHaveBeenCalledWith(characterId, 8)
-    expect(mocks.executeCharacterMutation.mock.calls.map(([value]) => value.operation)).toEqual([
-      'mail-delete',
-      'mail-delete-label',
-    ])
+    expect(mocks.deleteMail).toHaveBeenCalledWith({
+      path: { character_id: characterId, mail_id: 51 },
+    })
+    expect(mocks.deleteLabel).toHaveBeenCalledWith({
+      path: { character_id: characterId, label_id: 8 },
+    })
+    expect(
+      mocks.executeMutationRepresentation.mock.calls.map(
+        ([representation]) => representation.operation,
+      ),
+    ).toEqual(['mail-delete', 'mail-delete-label'])
   })
 
   test('does not add a service retry for ambiguous sends or label creation', async () => {
@@ -530,54 +534,23 @@ describe('mail mutations', () => {
         body: 'Body',
       }),
     ).rejects.toBeInstanceOf(MailDeliveryUnknownError)
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledTimes(1)
     expect(mocks.send).toHaveBeenCalledTimes(1)
 
-    mocks.executeCharacterMutation.mockClear()
+    mocks.executeMutationRepresentation.mockClear()
     mocks.createLabel.mockRejectedValueOnce(new mocks.EsiTransportError(new Error('socket closed')))
     await expect(createMailLabel(characterId, { name: 'One attempt' })).rejects.toBeInstanceOf(
       MailUnavailableError,
     )
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledTimes(1)
+    expect(mocks.executeMutationRepresentation).toHaveBeenCalledTimes(1)
     expect(mocks.createLabel).toHaveBeenCalledTimes(1)
   })
 
   test('treats provider 404 from either delete as converged success', async () => {
-    mocks.executeCharacterMutation
-      .mockRejectedValueOnce(providerError(404, 'mail content'))
-      .mockRejectedValueOnce(providerError(404, 'label content'))
+    mocks.deleteMail.mockRejectedValueOnce(providerError(404, 'mail content'))
+    mocks.deleteLabel.mockRejectedValueOnce(providerError(404, 'label content'))
 
     await expect(deleteMail(characterId, 51)).resolves.toEqual({ characterId, mailId: 51 })
     await expect(deleteMailLabel(characterId, 8)).resolves.toEqual({ characterId, labelId: 8 })
-  })
-
-  test('propagates SDK metadata to the mutation executor without exposing it in results', async () => {
-    const loadedMetadata = new Map<string, unknown>()
-    mocks.executeCharacterMutation.mockImplementation(async (mutation) => {
-      const loaded = await mutation.load(authority)
-      loadedMetadata.set(mutation.operation, loaded.meta)
-      return loaded
-    })
-
-    await sendMail(characterId, {
-      recipients: [{ id: 100, type: 'character' }],
-      subject: 'Subject',
-      body: 'Body',
-    })
-    await createMailLabel(characterId, { name: 'Label' })
-    await updateMail(characterId, 2, { read: true })
-    await deleteMail(characterId, 2)
-    await deleteMailLabel(characterId, 3)
-
-    expect(loadedMetadata).toEqual(
-      new Map([
-        ['mail-send', { ...sdkMetadata, status: 201 }],
-        ['mail-create-label', { ...sdkMetadata, status: 201 }],
-        ['mail-update', { ...sdkMetadata, status: 204 }],
-        ['mail-delete', { ...sdkMetadata, status: 204 }],
-        ['mail-delete-label', { ...sdkMetadata, status: 204 }],
-      ]),
-    )
   })
 })
 
@@ -600,7 +573,7 @@ describe('mail recipient composition services', () => {
     expect(mocks.resolveUniverseIds).toHaveBeenCalledWith(['Alliance', 'Character'])
   })
 
-  test('searches fixed addressable categories in English and resolves returned IDs', async () => {
+  test('searches fixed addressable categories and resolves returned IDs', async () => {
     mocks.search.mockResolvedValue(
       response({ alliance: [10], character: [20, 21], corporation: [30] }),
     )
@@ -622,21 +595,20 @@ describe('mail recipient composition services', () => {
       ],
       ...outerMetadata,
     })
-    expect(mocks.getCharacter).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operation: 'character-search',
-        inputs: { characterId, search: 'pil' },
-      }),
+    expect(mocks.executeRepresentation).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'character-search' }),
+      { characterId, search: 'pil' },
     )
-    expect(mocks.createSearchClient).toHaveBeenCalledWith({
-      fetch: `character-search:${authority.principal}`,
-      token: authority.accessToken,
-      language: 'en',
-    })
-    expect(mocks.search).toHaveBeenCalledWith(characterId, {
-      categories: ['alliance', 'character', 'corporation'],
-      search: 'pil',
-      ...revalidation,
+    expect(mocks.search).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      query: {
+        categories: ['alliance', 'character', 'corporation'],
+        search: 'pil',
+      },
+      headers: {
+        'If-None-Match': revalidation.ifNoneMatch,
+        'If-Modified-Since': revalidation.ifModifiedSince,
+      },
     })
     expect(mocks.resolveUniverseNames).toHaveBeenCalledWith([10, 20, 30, 21])
   })
@@ -672,21 +644,21 @@ describe('mail recipient composition services', () => {
     ])
   })
 
-  test('calculates CSPA through the uncached character executor', async () => {
+  test('calculates CSPA through the registered uncached read', async () => {
     mocks.calculateCspaCharge.mockResolvedValue(response(12.5, 201))
 
     await expect(calculateMailCspaCharge(characterId, [20, 30])).resolves.toEqual({
       characterId,
       cost: 12.5,
     })
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'character-cspa-charge', characterId }),
+    expect(mocks.executeRepresentation).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'character-cspa-charge' }),
+      { characterId, characterIds: [20, 30] },
     )
-    expect(mocks.createCharacterClient).toHaveBeenCalledWith({
-      fetch: `character-cspa-charge:${authority.principal}`,
-      token: authority.accessToken,
+    expect(mocks.calculateCspaCharge).toHaveBeenCalledWith({
+      path: { character_id: characterId },
+      body: [20, 30],
     })
-    expect(mocks.calculateCspaCharge).toHaveBeenCalledWith(characterId, { body: [20, 30] })
   })
 })
 
@@ -696,7 +668,7 @@ describe('safe mail errors', () => {
     new TokenRefreshUnavailableError(),
     new EsiQuotaError(15),
   ])('preserves shared service error %s unchanged', async (sharedError) => {
-    mocks.getCharacter.mockRejectedValueOnce(sharedError)
+    mocks.executeRepresentation.mockRejectedValueOnce(sharedError)
 
     await expect(listMailHeaders(characterId)).rejects.toBe(sharedError)
   })
@@ -704,7 +676,7 @@ describe('safe mail errors', () => {
   test.each([401, 403] as const)(
     'maps status %i to a safe status-only authorization error',
     async (status) => {
-      mocks.getCharacter.mockRejectedValueOnce(
+      mocks.executeRepresentation.mockRejectedValueOnce(
         providerError(status, 'secret provider authorization'),
       )
 
@@ -718,10 +690,12 @@ describe('safe mail errors', () => {
   )
 
   test('maps only detail 404 to safe mail-not-found', async () => {
-    mocks.getCharacter.mockRejectedValueOnce(providerError(404, 'raw missing-mail details'))
+    mocks.executeRepresentation.mockRejectedValueOnce(
+      providerError(404, 'raw missing-mail details'),
+    )
     await expect(getMailDetail(characterId, 99)).rejects.toEqual(new MailNotFoundError())
 
-    mocks.getCharacter.mockRejectedValueOnce(providerError(404, 'raw page details'))
+    mocks.executeRepresentation.mockRejectedValueOnce(providerError(404, 'raw page details'))
     await expect(listMailHeaders(characterId)).rejects.toEqual(new MailUnavailableError())
   })
 
@@ -738,7 +712,7 @@ describe('safe mail errors', () => {
   ])(
     'maps ambiguous send %s failures without retaining provider content',
     async (_kind, provider) => {
-      mocks.executeCharacterMutation.mockRejectedValueOnce(provider)
+      mocks.executeMutationRepresentation.mockRejectedValueOnce(provider)
 
       const error = await caught(
         sendMail(characterId, {
@@ -757,7 +731,7 @@ describe('safe mail errors', () => {
 
   test('maps definitive non-auth send 4xx to a sanitized rejection', async () => {
     const provider = providerError(422, 'recipient and private body rejected')
-    mocks.executeCharacterMutation.mockRejectedValueOnce(provider)
+    mocks.executeMutationRepresentation.mockRejectedValueOnce(provider)
 
     const error = await caught(
       sendMail(characterId, {
@@ -774,22 +748,24 @@ describe('safe mail errors', () => {
   })
 
   test('maps definitive organize 4xx and all other failures to sanitized service errors', async () => {
-    mocks.executeCharacterMutation.mockRejectedValueOnce(providerError(409, 'raw label conflict'))
+    mocks.executeMutationRepresentation.mockRejectedValueOnce(
+      providerError(409, 'raw label conflict'),
+    )
     await expect(createMailLabel(characterId, { name: 'Label' })).rejects.toEqual(
       new MailMutationRejectedError(),
     )
 
-    mocks.executeCharacterMutation.mockRejectedValueOnce(providerError(503, 'raw outage'))
+    mocks.executeMutationRepresentation.mockRejectedValueOnce(providerError(503, 'raw outage'))
     await expect(updateMail(characterId, 1, { read: true })).rejects.toEqual(
       new MailUnavailableError(),
     )
 
-    mocks.getCharacter.mockRejectedValueOnce(new Error('internal sensitive details'))
+    mocks.executeRepresentation.mockRejectedValueOnce(new Error('internal sensitive details'))
     await expect(getMailLabels(characterId)).rejects.toEqual(new MailUnavailableError())
   })
 
   test('maps a definitive CSPA 4xx to a sanitized charge rejection', async () => {
-    mocks.executeCharacterMutation.mockRejectedValueOnce(providerError(400, 'raw recipient error'))
+    mocks.executeRepresentation.mockRejectedValueOnce(providerError(400, 'raw recipient error'))
 
     const error = await caught(calculateMailCspaCharge(characterId, [20]))
 

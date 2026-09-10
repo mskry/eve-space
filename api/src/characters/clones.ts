@@ -1,4 +1,4 @@
-import { createClonesClient } from '@evespace/esi-client/domains/clones'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type {
   GetCharactersCharacterIdClonesResponse,
   GetCharactersCharacterIdImplantsResponse,
@@ -8,9 +8,10 @@ import { db } from '../db/client.js'
 import { sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import type { ImplantBonus } from '../universe/implant-attributes.js'
 import {
@@ -22,8 +23,38 @@ import {
 } from '../universe/implant-attributes.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
-export const characterClonesScope = getCharacterEsiScope('character-clones')
-export const characterImplantsScope = getCharacterEsiScope('character-implants')
+interface CharacterCloneStateRepresentationInput {
+  characterId: number
+}
+
+const characterClonesRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-clones',
+    name: 'character-clones-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdClones.transport,
+    encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response) => mapCharacterClonesSnapshot(response.data),
+  }),
+)
+
+const characterImplantsRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-implants',
+    name: 'character-implants-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdImplants.transport,
+    encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response) => mapCharacterImplantsSnapshot(response.data),
+  }),
+)
+
+export const characterClonesScope = getCharacterEsiScope(characterClonesRepresentation.operation)
+export const characterImplantsScope = getCharacterEsiScope(
+  characterImplantsRepresentation.operation,
+)
 
 const maximumImplantTypeLookupIds = 500
 const stationNameEnrichmentTimeoutMs = 250
@@ -106,37 +137,13 @@ export type CharacterImplants = CharacterImplantsData & EsiResultMetadata
 function getCharacterClonesData(
   characterId: number,
 ): Promise<EsiCachedResult<CharacterClonesSnapshot>> {
-  return getEsiResilienceLayer().getCharacter({
-    operation: 'character-clones',
-    inputs: { characterId },
-    load: async (authority, revalidation) => {
-      const response = await createClonesClient({
-        fetch: createEsiTransport('character-clones', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .getState(characterId, revalidation)
-      return { data: mapCharacterClonesSnapshot(response.data), meta: response.meta }
-    },
-  })
+  return execute(characterClonesRepresentation, { characterId })
 }
 
 function getCharacterImplantsData(
   characterId: number,
 ): Promise<EsiCachedResult<CharacterImplantsSnapshot>> {
-  return getEsiResilienceLayer().getCharacter({
-    operation: 'character-implants',
-    inputs: { characterId },
-    load: async (authority, revalidation) => {
-      const response = await createClonesClient({
-        fetch: createEsiTransport('character-implants', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .listActiveImplants(characterId, revalidation)
-      return { data: mapCharacterImplantsSnapshot(response.data), meta: response.meta }
-    },
-  })
+  return execute(characterImplantsRepresentation, { characterId })
 }
 
 export async function getCharacterClones(characterId: number): Promise<CharacterClones> {

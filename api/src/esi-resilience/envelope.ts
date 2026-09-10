@@ -58,6 +58,20 @@ const envelopeMetadataSchema = z.object({
   resourceRevision: resourceRevisionSchema.optional(),
 }) satisfies z.ZodType<Omit<EsiCacheEnvelope<unknown>, 'data'>>
 
+/**
+ * The envelope has one string slot for representation identity, so a named representation is
+ * folded into it rather than added as a second field the untrusted-input parser would have to
+ * validate independently.
+ */
+export function composeEnvelopeRepresentationVersion(
+  representationVersion: string,
+  representationName?: string,
+) {
+  return representationName
+    ? `${representationName}@${representationVersion}`
+    : representationVersion
+}
+
 export function createCacheEnvelope<Data>(options: {
   data: Data
   metadata?: EsiResponseMetadata

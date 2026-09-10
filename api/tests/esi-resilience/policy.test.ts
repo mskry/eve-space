@@ -784,6 +784,11 @@ describe('ESI operation policies', () => {
       'relative freshness must use positive whole seconds',
     ],
     [
+      'mutation',
+      () => ({ ...validModuleOperation(), mutation: { kind: 'character' } }),
+      'invalid mutation metadata',
+    ],
+    [
       'cache behavior',
       () => ({
         ...validModuleOperation(),
@@ -948,7 +953,6 @@ describe('ESI mutation contracts', () => {
       ['mail-update', false],
       ['mail-delete', true],
       ['mail-delete-label', true],
-      ['character-cspa-charge', false],
     ])
   })
 

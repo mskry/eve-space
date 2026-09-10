@@ -3,6 +3,7 @@ import { isRecord } from '../type-guards.js'
 import { getEsiOperationContract } from './catalog-access.js'
 import type { EsiOperation } from './catalog.js'
 import type { EsiOperationContract } from './contract-types.js'
+import { projectRegisteredEsiRequestIdentity } from './identity-projectors.js'
 import type { EsiResourceRevision } from './types.js'
 
 const maximumStringLength = 256
@@ -15,6 +16,7 @@ export interface EsiRepresentationIdentity {
   value: string
   coordinationDigest: string
   representationVersion: string
+  representationName?: string
   resourceRevision?: EsiResourceRevision
 }
 
@@ -41,15 +43,17 @@ export function createEsiRepresentationIdentity(options: {
   inputs: Readonly<Record<string, unknown>>
   compatibilityDate: string
   representationVersion: string
+  representationName?: string
   resourceRevision?: EsiResourceRevision
 }): EsiRepresentationIdentity {
   const contract = getEsiOperationContract(options.operation)
-  const normalizedInputs = normalizeInputs(contract.identity, options.inputs)
+  const normalizedInputs = normalizeInputs(options.operation, contract.identity, options.inputs)
   const canonicalBase = {
     operation: options.operation,
     inputs: normalizedInputs,
     compatibilityDate: options.compatibilityDate,
     representationVersion: options.representationVersion,
+    representationName: options.representationName,
   }
   const canonical = JSON.stringify({
     ...canonicalBase,
@@ -65,11 +69,13 @@ export function createEsiRepresentationIdentity(options: {
     value: `${options.operation}:${digest}`,
     coordinationDigest,
     representationVersion: options.representationVersion,
+    representationName: options.representationName,
     resourceRevision: options.resourceRevision,
   }
 }
 
 function normalizeInputs(
+  operation: EsiOperation,
   identity: EsiOperationContract['identity'],
   inputs: Readonly<Record<string, unknown>>,
 ) {
@@ -78,7 +84,7 @@ function normalizeInputs(
   else if (identity.kind === 'set') allowedFields = [identity.field]
   else allowedFields = identity.fields.map(({ field }) => field)
   const identityInputs = isSdkRequestEnvelope(inputs)
-    ? projectSdkRequestIdentity(inputs, allowedFields)
+    ? projectSdkRequestIdentity(operation, inputs, allowedFields)
     : inputs
   const nullableFields =
     identity.kind === 'mixed'
@@ -148,6 +154,7 @@ function isSdkRequestEnvelope(inputs: Readonly<Record<string, unknown>>) {
 }
 
 function projectSdkRequestIdentity(
+  operation: EsiOperation,
   inputs: Readonly<Record<string, unknown>>,
   fields: readonly string[],
 ) {
@@ -158,6 +165,9 @@ function projectSdkRequestIdentity(
     throw new Error(
       `Unexpected ESI request inputs: ${unexpected.toSorted((left, right) => left.localeCompare(right)).join(', ')}`,
     )
+
+  const registeredProjection = projectRegisteredEsiRequestIdentity(operation, inputs)
+  if (registeredProjection) return registeredProjection
 
   return Object.fromEntries(
     fields.flatMap((field) => {

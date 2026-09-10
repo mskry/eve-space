@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  createStatusClient: vi.fn(),
   get: vi.fn(),
   getStatus: vi.fn(),
   probeDomainEventStatus: vi.fn(),
@@ -10,17 +9,23 @@ const mocks = vi.hoisted(() => ({
   sql: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/status', () => ({
-  createStatusClient: mocks.createStatusClient,
-}))
+vi.mock('@evespace/esi-client', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@evespace/esi-client')>()
+  return {
+    ...original,
+    EsiClient: class {
+      callOperation(...arguments_: unknown[]) {
+        return mocks.getStatus(...arguments_)
+      }
+    },
+  }
+})
 
 vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
 
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
+  esiExecutionLayer: { executeRepresentation: mocks.get },
 }))
-
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 
 vi.mock('../../src/esi-resilience/telemetry.js', () => ({
   probeEsiResilienceTelemetry: mocks.probeEsiResilienceTelemetry,
@@ -32,23 +37,17 @@ vi.mock('../../src/domain-events/status.js', () => ({
 
 vi.mock('../../src/queue/status.js', () => ({ probeQueueStatus: mocks.probeQueueStatus }))
 
+import { executeRepresentationFixture } from '../support/execute-representation.js'
+
 beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-08-20T12:00:00.000Z'))
-  mocks.createStatusClient.mockReturnValue({
-    withMetadata: () => ({ get: mocks.getStatus }),
-  })
-  mocks.get.mockImplementation(async (resource) => {
-    const response = await resource.load({})
-    return {
-      data: response.data,
-      cachedUntil: '2026-08-20T12:01:00.000Z',
-      quota: { errorRemaining: 99, errorResetSeconds: 10 },
-      source: 'esi',
-      stale: false,
-    }
-  })
+  mocks.get.mockImplementation(async (representation, input) => ({
+    ...(await executeRepresentationFixture(representation, input)),
+    cachedUntil: '2026-08-20T12:01:00.000Z',
+    quota: { errorRemaining: 99, errorResetSeconds: 10 },
+  }))
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
   mocks.getStatus.mockResolvedValue(statusResponse())
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
@@ -78,7 +77,7 @@ describe('system status service', () => {
     })
     expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
       operation: 'status',
-      inputs: {},
+      name: 'esi-status-core',
     })
     expect(mocks.get).toHaveBeenCalledOnce()
     const observationPending = mocks.probeEsiResilienceTelemetry.mock.calls[0]?.[0]
@@ -87,7 +86,7 @@ describe('system status service', () => {
 
   test('passes stale refresh failure details to telemetry without exposing them in the service DTO', async () => {
     mocks.get.mockResolvedValue({
-      data: statusResponse().data,
+      data: mappedStatus(),
       cachedUntil: '2026-08-20T12:01:00.000Z',
       validatedAt: '2026-08-20T11:59:00.000Z',
       quota: { errorRemaining: 99, errorResetSeconds: 10 },
@@ -110,8 +109,8 @@ describe('system status service', () => {
   })
 
   test('uses the least-fresh ESI deadline for the composed status response', async () => {
-    mocks.get.mockImplementation(async (resource) => {
-      const response = await resource.load({})
+    mocks.get.mockImplementation(async (representation, input) => {
+      const response = await executeRepresentationFixture(representation, input)
       return {
         data: response.data,
         cachedUntil: '2026-08-20T12:00:10.000Z',
@@ -291,4 +290,14 @@ function resilienceTelemetry() {
       operations: [],
     },
   }
+}
+
+function mappedStatus() {
+  const {
+    players,
+    server_version: serverVersion,
+    start_time: startedAt,
+    vip,
+  } = statusResponse().data
+  return { players, serverVersion, startedAt, vip }
 }

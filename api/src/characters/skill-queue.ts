@@ -1,12 +1,13 @@
-import { createSkillsClient } from '@evespace/esi-client/domains/skills'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdSkillqueueResponse } from '@evespace/esi-client/types'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiResultMetadata } from '../esi-resilience/types.js'
 import {
   skillAttributeFromDogmaValue,
@@ -15,7 +16,25 @@ import {
 } from '../skills/training.js'
 import type { SkillAttribute } from '../skills/training.js'
 
-export const characterSkillQueueScope = getCharacterEsiScope('skill-queue')
+interface CharacterSkillQueueRepresentationInput {
+  characterId: number
+}
+
+const characterSkillQueueRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'skill-queue',
+    name: 'character-skill-queue-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdSkillqueue.transport,
+    encodeRequest: (input: CharacterSkillQueueRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response) => mapCharacterSkillQueue(response.data),
+  }),
+)
+
+export const characterSkillQueueScope = getCharacterEsiScope(
+  characterSkillQueueRepresentation.operation,
+)
 
 type SkillQueueState = 'training' | 'paused' | 'empty' | 'lapsed'
 
@@ -67,19 +86,7 @@ export function resolveSkillQueueState(
 }
 
 export async function getCharacterSkillQueue(characterId: number): Promise<CharacterSkillQueue> {
-  const result = await getEsiResilienceLayer().getCharacter({
-    operation: 'skill-queue',
-    inputs: { characterId },
-    load: async (authority, revalidation) => {
-      const response = await createSkillsClient({
-        fetch: createEsiTransport('skill-queue', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .getSkillQueue(characterId, revalidation)
-      return { data: await mapCharacterSkillQueue(response.data), meta: response.meta }
-    },
-  })
+  const result = await execute(characterSkillQueueRepresentation, { characterId })
 
   return {
     ...resolveSkillQueueState(result.data.entries, Date.now()),

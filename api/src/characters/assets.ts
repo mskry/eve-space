@@ -1,15 +1,13 @@
-import { createAssetsClient } from '@evespace/esi-client/domains/assets'
-import type {
-  GetCharactersCharacterIdAssetsResponse,
-  PostCharactersCharacterIdAssetsNamesResponse,
-} from '@evespace/esi-client/types'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import type { GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-client/types'
 import { eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeCategories, sdeGroups, sdeTypes } from '../db/schema.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { resolveUniverseNamesBestEffort } from '../universe/names.js'
@@ -58,6 +56,44 @@ interface CharacterAssetLocationData {
   solarSystemId: number | null
   solarSystemSecurityStatus: number | null
 }
+
+interface CharacterAssetNameSnapshot {
+  itemId: number
+  name: string
+}
+
+interface CharacterAssetsPageRepresentationInput {
+  characterId: number
+  page: number
+}
+
+const characterAssetsPageRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-assets-page',
+    name: 'character-assets-page-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
+    encodeRequest: (input: CharacterAssetsPageRepresentationInput) => ({
+      path: { character_id: input.characterId },
+      query: { page: input.page },
+    }),
+    map: (response, input): CharacterAssetPageSnapshot => ({
+      page: input.page,
+      totalPages: validatePageCount(response.meta.pagination?.pages),
+      assets: response.data.map(mapAssetSnapshot),
+    }),
+  }),
+)
+
+const characterAssetNamesRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-asset-names',
+    name: 'character-asset-names-core',
+    descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames.transport,
+    encodeRequest: (input: { path: { character_id: number }; body: number[] }) => input,
+    map: ({ data }): CharacterAssetNameSnapshot[] =>
+      data.map(({ item_id: itemId, name }) => ({ itemId, name })),
+  }),
+)
 
 export interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAssetTypeData {
   totalVolume: number | null
@@ -140,26 +176,7 @@ export async function getCharacterAssets(characterId: number): Promise<Character
 }
 
 async function loadCharacterAssetPage(characterId: number, page: number) {
-  return getEsiResilienceLayer().getCharacter<CharacterAssetPageSnapshot>({
-    operation: 'character-assets-page',
-    inputs: { characterId, page },
-    load: async (authority, revalidation) => {
-      const response = await createAssetsClient({
-        fetch: createEsiTransport('character-assets-page', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .listCharacterAssets(characterId, { page, ...revalidation })
-      return {
-        data: {
-          page,
-          totalPages: validatePageCount(response.meta.pagination?.pages),
-          assets: response.data.map(mapAssetSnapshot),
-        },
-        meta: response.meta,
-      }
-    },
-  })
+  return execute(characterAssetsPageRepresentation, { characterId, page })
 }
 
 function validatePageCount(value: unknown) {
@@ -268,8 +285,8 @@ async function loadAssetNames(characterId: number, assets: readonly CharacterAss
     if (result.status === 'rejected') continue
     successfulBatches += 1
     for (const entry of result.value)
-      if (candidateSet.has(entry.item_id) && !values.has(entry.item_id))
-        values.set(entry.item_id, entry.name)
+      if (candidateSet.has(entry.itemId) && !values.has(entry.itemId))
+        values.set(entry.itemId, entry.name)
   }
   return {
     values,
@@ -282,19 +299,10 @@ async function loadAssetNames(characterId: number, assets: readonly CharacterAss
 
 function loadCharacterAssetNameBatch(characterId: number, itemIds: readonly number[]) {
   const normalizedItemIds = normalizeCharacterAssetNameBatch(itemIds)
-  return getEsiResilienceLayer()
-    .getCharacter<PostCharactersCharacterIdAssetsNamesResponse>({
-      operation: 'character-asset-names',
-      inputs: { characterId, itemIds: normalizedItemIds },
-      load: (authority, revalidation) =>
-        createAssetsClient({
-          fetch: createEsiTransport('character-asset-names', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .lookupCharacterNames(characterId, { body: normalizedItemIds, ...revalidation }),
-    })
-    .then((result) => result.data)
+  return execute(characterAssetNamesRepresentation, {
+    path: { character_id: characterId },
+    body: normalizedItemIds,
+  }).then((result) => result.data)
 }
 
 export function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {

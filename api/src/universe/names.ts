@@ -1,9 +1,8 @@
-import {
-  createUniverseClient,
-  type UniverseDomainClientWithMetadata,
-} from '@evespace/esi-client/domains/universe'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
+import { operationRegistry } from '@evespace/esi-client/operations'
+import type { PostUniverseIdsResponse } from '@evespace/esi-client/types'
+import { execute } from '../esi-resilience/execute.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
 import {
   readUniverseIds,
   readUniverseNames,
@@ -46,8 +45,6 @@ interface ResolutionSplitState {
   count: number
 }
 
-type UniverseIdsData = Awaited<ReturnType<UniverseDomainClientWithMetadata['resolveIds']>>['data']
-
 class UniverseNameResolutionLimitError extends Error {
   readonly status = 424
 
@@ -56,6 +53,27 @@ class UniverseNameResolutionLimitError extends Error {
     this.name = 'UniverseNameResolutionLimitError'
   }
 }
+
+const universeNamesRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'universe-resolve-names',
+    name: 'universe-names-core',
+    descriptor: operationRegistry.PostUniverseNames.transport,
+    encodeRequest: (input: { body: number[] }) => input,
+    map: ({ data }): UniverseName[] =>
+      data.map(({ id, name, category }) => ({ id, name, category })),
+  }),
+)
+
+const universeIdsRepresentation = registerEsiRepresentation(
+  definePublicEsiRepresentation({
+    operation: 'universe-resolve-ids',
+    name: 'universe-ids-core',
+    descriptor: operationRegistry.PostUniverseIds.transport,
+    encodeRequest: (input: { body: string[] }) => input,
+    map: ({ data }) => mapUniverseIds(data),
+  }),
+)
 
 export async function resolveUniverseNames(ids: readonly number[]) {
   const result = await resolveUniverseNameResults(ids)
@@ -129,14 +147,7 @@ async function loadUniverseNameChunk(
   names: Map<number, UniverseName>,
   missingIds: number[],
 ) {
-  const response = await getEsiResilienceLayer().getPublic({
-    operation: 'universe-resolve-names',
-    inputs: { ids: chunk },
-    load: (revalidation) =>
-      createUniverseClient({ fetch: createEsiTransport('universe-resolve-names') })
-        .withMetadata()
-        .resolveNames({ body: chunk, ...revalidation }),
-  })
+  const response = await execute(universeNamesRepresentation, { body: chunk })
   for (const entry of response.data) names.set(entry.id, entry)
   if (response.stale) return
   const returnedIds = new Set(response.data.map((entry) => entry.id))
@@ -149,14 +160,7 @@ async function loadUniverseIdChunk(
   resolved: Map<string, UniverseId>,
   missingNames: string[],
 ) {
-  const response = await getEsiResilienceLayer().getPublic({
-    operation: 'universe-resolve-ids',
-    inputs: { names: chunk },
-    load: (revalidation) =>
-      createUniverseClient({ fetch: createEsiTransport('universe-resolve-ids') })
-        .withMetadata()
-        .resolveIds({ body: chunk, ...revalidation }),
-  })
+  const response = await execute(universeIdsRepresentation, { body: chunk })
   const chunkEntries = collectUniverseIds(response.data, resolved)
   const byName = groupUniverseIdsByInputName(chunk, chunkEntries)
   if (response.stale) return
@@ -191,18 +195,19 @@ async function resolveChunkWithSplitting<Item>(
   }
 }
 
-function collectUniverseIds(data: UniverseIdsData, resolved: Map<string, UniverseId>) {
-  const chunkEntries: UniverseId[] = []
-  for (const [group, category] of Object.entries(universeIdCategories)) {
-    const entries = data[group as keyof typeof universeIdCategories] ?? []
-    for (const entry of entries) {
-      if (entry.id === undefined || entry.name === undefined) continue
-      const resolvedEntry = { id: entry.id, name: entry.name, category }
-      chunkEntries.push(resolvedEntry)
-      resolved.set(`${category}:${entry.id}`, resolvedEntry)
-    }
-  }
-  return chunkEntries
+function mapUniverseIds(data: PostUniverseIdsResponse) {
+  return Object.entries(universeIdCategories).flatMap(([group, category]) =>
+    (data[group as keyof typeof universeIdCategories] ?? []).flatMap((entry) =>
+      entry.id === undefined || entry.name === undefined
+        ? []
+        : [{ id: entry.id, name: entry.name, category }],
+    ),
+  )
+}
+
+function collectUniverseIds(data: readonly UniverseId[], resolved: Map<string, UniverseId>) {
+  for (const entry of data) resolved.set(`${entry.category}:${entry.id}`, entry)
+  return [...data]
 }
 
 function groupUniverseIdsByInputName(chunk: string[], chunkEntries: UniverseId[]) {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 interface StaticRow {
   groupId: number
@@ -8,26 +8,74 @@ interface StaticRow {
 }
 
 const mocks = vi.hoisted(() => ({
-  createSkillsClient: vi.fn(),
-  get: vi.fn(),
+  createEsiClient: vi.fn(),
   getSkills: vi.fn(),
   leftJoin: vi.fn(),
   from: vi.fn(),
   select: vi.fn(),
   staticRows: [] as StaticRow[],
   where: vi.fn(),
+  getCharacterAuthorization: vi.fn(),
+  getCharacterCacheAuthorization: vi.fn(),
+  acquire: vi.fn(),
+  commit: vi.fn(),
+  getCommitted: vi.fn(),
+  getLeaseTtl: vi.fn(),
+  getRevision: vi.fn(),
+  incrementRevision: vi.fn(),
+  initialize: vi.fn(),
+  release: vi.fn(),
+  renew: vi.fn(),
+  cacheGet: vi.fn(),
+  cacheSet: vi.fn(),
+  cacheDel: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/skills', () => ({
-  createSkillsClient: mocks.createSkillsClient,
-}))
+vi.mock('@evespace/esi-client', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@evespace/esi-client')>()
+  return {
+    ...original,
+    EsiClient: class {
+      constructor(options: unknown) {
+        mocks.createEsiClient(options)
+      }
+
+      callOperation(...arguments_: unknown[]) {
+        return mocks.getSkills(...arguments_)
+      }
+    },
+  }
+})
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
+vi.mock('../../src/auth/tokens.js', () => ({
+  getCharacterAuthorization: mocks.getCharacterAuthorization,
+  getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
 }))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
+vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
+  getSharedCacheRedisConnection: () => ({
+    get: mocks.cacheGet,
+    set: mocks.cacheSet,
+    del: mocks.cacheDel,
+    ping: vi.fn().mockResolvedValue('PONG'),
+  }),
+}))
+vi.mock('../../src/esi-resilience/transport.js', () => ({ getCoordinationConnection: () => ({}) }))
+vi.mock('../../src/esi-resilience/coordination.js', () => ({
+  acquireEsiRequestLease: mocks.acquire,
+  commitEsiFence: mocks.commit,
+  getCommittedEsiFence: mocks.getCommitted,
+  getEsiRequestLeaseTtl: mocks.getLeaseTtl,
+  getEsiResourceRevision: mocks.getRevision,
+  incrementEsiResourceRevision: mocks.incrementRevision,
+  initializeCacheNamespace: mocks.initialize,
+  releaseEsiRequestLease: mocks.release,
+  renewEsiRequestLease: mocks.renew,
+}))
 
 const characterId = 1404328063
+const scope = 'esi-skills.read_skills.v1'
+const now = Date.parse('2026-09-01T11:00:00.000Z')
+const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
 const esiMetadata = {
   cachedUntil: '2026-09-01T11:01:00.000Z',
   validatedAt: '2026-09-01T11:00:00.000Z',
@@ -42,28 +90,54 @@ const publicMetadata = {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(now)
   vi.resetModules()
-  mocks.get.mockReset()
   mocks.getSkills.mockReset()
   mocks.select.mockReset()
   mocks.from.mockReset()
   mocks.leftJoin.mockReset()
   mocks.where.mockReset()
-  mocks.createSkillsClient.mockReset()
+  mocks.createEsiClient.mockReset()
+  mocks.getCharacterAuthorization.mockReset()
+  mocks.getCharacterCacheAuthorization.mockReset()
+  mocks.acquire.mockReset()
+  mocks.commit.mockReset()
+  mocks.getCommitted.mockReset()
+  mocks.getLeaseTtl.mockReset()
+  mocks.getRevision.mockReset()
+  mocks.incrementRevision.mockReset()
+  mocks.initialize.mockReset()
+  mocks.release.mockReset()
+  mocks.renew.mockReset()
+  mocks.cacheGet.mockReset()
+  mocks.cacheSet.mockReset()
+  mocks.cacheDel.mockReset()
   mocks.staticRows.splice(0)
 
-  mocks.get.mockImplementation(async (resource) => {
-    const loaded = await resource.load(
-      { accessToken: 'access-token', principal: `character-${characterId}` },
-      {},
-    )
-    return { data: loaded.data, ...esiMetadata }
-  })
-  mocks.createSkillsClient.mockReturnValue({ withMetadata: () => ({ getSkills: mocks.getSkills }) })
   mocks.select.mockReturnValue({ from: mocks.from })
   mocks.from.mockReturnValue({ leftJoin: mocks.leftJoin })
   mocks.leftJoin.mockReturnValue({ where: mocks.where })
   mocks.where.mockImplementation(async () => mocks.staticRows)
+  mocks.getCharacterAuthorization.mockResolvedValue({
+    accessToken: 'access-token',
+    tokenVersion: 1,
+  })
+  mocks.getCharacterCacheAuthorization.mockResolvedValue({ scopes: [scope], tokenVersion: 1 })
+  mocks.acquire.mockResolvedValue(lease)
+  mocks.commit.mockResolvedValue(true)
+  mocks.getCommitted.mockResolvedValue(undefined)
+  mocks.getLeaseTtl.mockResolvedValue(0)
+  mocks.initialize.mockResolvedValue('namespace-one')
+  mocks.release.mockResolvedValue(true)
+  mocks.renew.mockResolvedValue(true)
+  mocks.cacheGet.mockResolvedValue(null)
+  mocks.cacheSet.mockResolvedValue('OK')
+  mocks.cacheDel.mockResolvedValue(1)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('character skills snapshot', () => {
@@ -88,11 +162,16 @@ describe('character skills snapshot', () => {
       },
       ...esiMetadata,
     })
-    expect(characterSkillsScope).toBe('esi-skills.read_skills.v1')
-    expect(mocks.get).toHaveBeenCalledOnce()
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      operation: 'skills',
-      inputs: { characterId },
+    expect(characterSkillsScope).toBe(scope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, scope)
+    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
+    expect(mocks.createEsiClient).toHaveBeenCalledWith({
+      fetch: expect.any(Function),
+      token: 'access-token',
+      validateResponses: true,
+    })
+    expect(mocks.getSkills).toHaveBeenCalledWith('GetCharactersCharacterIdSkills', {
+      path: { character_id: characterId },
     })
     expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).not.toHaveBeenCalled()
@@ -110,6 +189,21 @@ describe('character skills snapshot', () => {
       ...publicMetadata,
     })
     expect(mocks.select).not.toHaveBeenCalled()
+  })
+
+  test('serves a repeated request from the L1 cache without another ESI call', async () => {
+    mocks.getSkills.mockResolvedValue(
+      response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }),
+    )
+    const { getCharacterSkillsData } = await import('../../src/characters/skills.js')
+
+    const first = await getCharacterSkillsData(characterId)
+    const second = await getCharacterSkillsData(characterId)
+
+    expect(first.source).toBe('esi')
+    expect(second).toMatchObject({ source: 'cache', stale: false, data: first.data })
+    expect(mocks.getSkills).toHaveBeenCalledOnce()
+    expect(mocks.getCharacterAuthorization).toHaveBeenCalledOnce()
   })
 })
 
@@ -195,11 +289,6 @@ describe('detailed character skills catalogue', () => {
       ...publicMetadata,
     })
     expect(skillCategoryId).toBe(16)
-    expect(mocks.get).toHaveBeenCalledOnce()
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      operation: 'skills',
-      inputs: { characterId },
-    })
     expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).toHaveBeenCalledOnce()
     expect(Object.keys(mocks.select.mock.calls[0]![0])).toEqual([
@@ -247,28 +336,26 @@ describe('detailed character skills catalogue', () => {
   })
 
   test('composes a cached normalized snapshot without another ESI request', async () => {
-    mocks.get.mockResolvedValueOnce({
-      data: {
-        totalSp: 19_000,
-        unallocatedSp: 25,
-        skills: [{ typeId: 2, skillpoints: 2000, activeLevel: 2, trainedLevel: 2 }],
-      },
-      cachedUntil: '',
-      validatedAt: '2026-09-01T11:00:00.000Z',
-      quota: {},
-      source: 'cache',
-      stale: false,
-    })
+    mocks.getSkills.mockResolvedValue(
+      response({
+        total_sp: 19_000,
+        unallocated_sp: 25,
+        skills: [skill(2, 2000, 2, 2)],
+      }),
+    )
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkills(characterId)).resolves.toMatchObject({
+    await getCharacterSkills(characterId)
+    const cached = await getCharacterSkills(characterId)
+
+    expect(cached).toMatchObject({
       totalSp: 19_000,
       unallocatedSp: 25,
       injectedSkillCount: 1,
       groups: [{ groupId: 10, trainedSp: 2000 }],
     })
-    expect(mocks.getSkills).not.toHaveBeenCalled()
+    expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).toHaveBeenCalledOnce()
   })
 

@@ -2,8 +2,16 @@ import { basename, extname } from 'node:path'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  support: ['numeric', 'timing'],
-  representation: ['types', 'keys', 'identity', 'envelope', 'l1-cache', 'cache-redaction'],
+  support: ['numeric', 'revalidation', 'timing'],
+  representation: [
+    'types',
+    'keys',
+    'identity',
+    'identity-projectors',
+    'envelope',
+    'l1-cache',
+    'cache-redaction',
+  ],
   contract: [
     'operation-metadata',
     'catalog-validation',
@@ -11,6 +19,8 @@ const modulesByTier = {
     'catalog',
     'catalog-access',
     'policy',
+    'representations',
+    'representation-registry',
   ],
   infrastructure: ['cache-redis', 'coordination', 'transport'],
   execution: [
@@ -20,8 +30,8 @@ const modulesByTier = {
     'permits',
     'local-quota',
     'errors',
-    'module-operation-dispatcher',
-    'request-transport',
+    'platform-execute',
+    'execute',
   ],
   observability: ['telemetry', 'telemetry-counters', 'rate-measurement', 'result-metadata'],
 } as const

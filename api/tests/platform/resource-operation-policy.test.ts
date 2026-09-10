@@ -6,14 +6,11 @@ import type {
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import type { StableOperationId } from '@evespace/esi-client/operations'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { PlatformEsiRequestError } from '../../src/esi-resilience/platform-execute.js'
 
 const mocks = vi.hoisted(() => ({
-  createEsiTransport: vi.fn(),
   getCharacterAuthorizationForLifecycle: vi.fn(),
   getCharacterCacheAuthorizationForLifecycle: vi.fn(),
-  getCharacterWithAuthorization: vi.fn(),
-  getEsiResilienceLayer: vi.fn(),
-  getPublic: vi.fn(),
 }))
 
 vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
@@ -21,13 +18,6 @@ vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
   getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorizationForLifecycle,
   getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorizationForLifecycle,
 }))
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: mocks.getEsiResilienceLayer,
-}))
-vi.mock('../../src/esi-resilience/request-transport.js', () => ({
-  createEsiTransport: mocks.createEsiTransport,
-}))
-
 import { assertInstalledResourceDeclarations } from '../../src/platform/resource-declarations.js'
 import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
@@ -82,43 +72,11 @@ describe('installed resource operation policy', () => {
       scopes: ['esi-wallet.read_character_wallet.v1'],
       tokenVersion: 4,
     })
-    mocks.getEsiResilienceLayer.mockReturnValue({
-      getCharacterWithAuthorization: mocks.getCharacterWithAuthorization,
-      getPublic: mocks.getPublic,
-    })
   })
 
-  test('binds an installed character operation to the shared executor and transport', async () => {
-    const transport = vi.fn()
-    const dispatchOperation = vi.fn().mockResolvedValue({
-      data: 123.45,
-      meta: { status: 200, headers: {}, cache: { cacheControl: 'max-age=120' } },
-    })
-    const validateInputs = vi.fn((_definition, inputs) => inputs)
+  test('maps platform executor wire data before returning a resource observation', async () => {
     const definition = executableDefinition('GetCharactersCharacterIdWallet')
-    const loadCharacterAuthorization = vi
-      .fn()
-      .mockResolvedValue({ accessToken: 'private', tokenVersion: 5 })
-    mocks.createEsiTransport.mockReturnValue(transport)
-    mocks.getCharacterWithAuthorization.mockImplementation(async (operation, authorization) => {
-      expect(operation.operation).toBe('wallet-balance')
-      expect(operation.inputs).toEqual({ characterId: 1404328063 })
-      expect(authorization).toMatchObject({
-        cacheAuthorization: {
-          kind: 'character',
-          principal: 'character-1404328063-lifecycle-35acd527-9539-44ad-aacf-9f8e45232267',
-          generation: 4,
-        },
-        transportPrincipal: 'character-1404328063',
-      })
-      await authorization.recheckCacheAuthorization()
-      const resolved = await authorization.resolve()
-      const loaded = await operation.load(
-        { accessToken: resolved.accessToken, principal: authorization.transportPrincipal },
-        { ifNoneMatch: 'wallet-etag' },
-      )
-      return { result: cached(loaded.data), authorizationGeneration: resolved.tokenVersion }
-    })
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution('123.45', 5))
     const guardExecution = vi.fn().mockResolvedValue({
       outcome: 'ready',
       resource,
@@ -131,34 +89,23 @@ describe('installed resource operation policy', () => {
         resources: [resource],
         guardExecution,
         definitions: { 'wallet-balance': definition },
-        validateInputs,
-        dispatchOperation,
-        loadCharacterAuthorization,
+        executeEsiOperation,
       }),
     ).resolves.toMatchObject({
       outcome: 'loaded',
       authorizationGeneration: 5,
       result: { data: 123.45 },
     })
-    expect(mocks.getEsiResilienceLayer).toHaveBeenCalledOnce()
-    expect(mocks.getCharacterWithAuthorization).toHaveBeenCalledOnce()
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith('wallet-balance', 'character-1404328063')
-    expect(loadCharacterAuthorization).toHaveBeenCalledWith(
-      1404328063,
-      identity.subjectLifecycleId,
-      'esi-wallet.read_character_wallet.v1',
-    )
-    expect(mocks.getCharacterCacheAuthorizationForLifecycle).toHaveBeenCalledWith(
-      1404328063,
-      identity.subjectLifecycleId,
-      'esi-wallet.read_character_wallet.v1',
-    )
-    expect(validateInputs).toHaveBeenCalledWith(definition, { characterId: 1404328063 })
-    expect(dispatchOperation).toHaveBeenCalledWith(definition, {
+    expect(executeEsiOperation).toHaveBeenCalledWith({
+      operation: 'wallet-balance',
+      definition,
       inputs: { characterId: 1404328063 },
-      authorization: { kind: 'character', accessToken: 'private' },
-      revalidation: { ifNoneMatch: 'wallet-etag' },
-      transport,
+      authorization: {
+        kind: 'character-lifecycle',
+        characterId: 1404328063,
+        lifecycleId: identity.subjectLifecycleId,
+        generation: 4,
+      },
     })
     expect(implementation.map).toHaveBeenCalledWith({
       subject: {
@@ -166,16 +113,12 @@ describe('installed resource operation policy', () => {
         characterId: 1404328063,
         lifecycleId: identity.subjectLifecycleId,
       },
-      data: 123.45,
+      data: '123.45',
     })
   })
 
   test('does not resolve lifecycle token material for a fresh cached result', async () => {
-    const loadCharacterAuthorization = vi.fn()
-    mocks.getCharacterWithAuthorization.mockImplementation(async (_operation, authorization) => ({
-      result: cached(123.45),
-      authorizationGeneration: authorization.cacheAuthorization.generation,
-    }))
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution(123.45, 4, 'cache'))
     const guardExecution = vi.fn().mockResolvedValue({
       outcome: 'ready',
       resource,
@@ -188,23 +131,16 @@ describe('installed resource operation policy', () => {
         resources: [resource],
         guardExecution,
         definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
-        validateInputs: vi.fn((_definition, inputs) => inputs),
-        loadCharacterAuthorization,
+        executeEsiOperation,
       }),
     ).resolves.toMatchObject({ outcome: 'loaded', authorizationGeneration: 4 })
-    expect(loadCharacterAuthorization).not.toHaveBeenCalled()
-    expect(mocks.createEsiTransport).not.toHaveBeenCalled()
+    expect(executeEsiOperation).toHaveBeenCalledOnce()
   })
 
-  test('uses the default lifecycle authorization loader when a refresh needs token material', async () => {
-    mocks.getCharacterAuthorizationForLifecycle.mockResolvedValue({
-      accessToken: 'private',
-      tokenVersion: 5,
-    })
-    mocks.getCharacterWithAuthorization.mockImplementation(async (_operation, authorization) => {
-      const resolved = await authorization.resolve()
-      return { result: cached(123.45), authorizationGeneration: resolved.tokenVersion }
-    })
+  test('rejects caller-owned conditional headers before consulting the cache', async () => {
+    const executeEsiOperation = vi
+      .fn()
+      .mockRejectedValue(new PlatformEsiRequestError('Platform ESI request inputs are invalid'))
     const guardExecution = vi.fn().mockResolvedValue({
       outcome: 'ready',
       resource,
@@ -217,14 +153,10 @@ describe('installed resource operation policy', () => {
         resources: [resource],
         guardExecution,
         definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
-        validateInputs: vi.fn((_definition, inputs) => inputs),
+        executeEsiOperation,
       }),
-    ).resolves.toMatchObject({ outcome: 'loaded', authorizationGeneration: 5 })
-    expect(mocks.getCharacterAuthorizationForLifecycle).toHaveBeenCalledWith(
-      1404328063,
-      identity.subjectLifecycleId,
-      'esi-wallet.read_character_wallet.v1',
-    )
+    ).rejects.toThrow('Platform resource mapping failed')
+    expect(executeEsiOperation).toHaveBeenCalledOnce()
   })
 
   test('does not reach the executor, transport, or module implementation when disabled', async () => {
@@ -240,8 +172,6 @@ describe('installed resource operation policy', () => {
     await expect(
       executeInstalledResourceOperation(identity, { resources: [resource], guardExecution }),
     ).resolves.toEqual({ outcome: 'noop', reason: 'disabled' })
-    expect(mocks.getEsiResilienceLayer).not.toHaveBeenCalled()
-    expect(mocks.createEsiTransport).not.toHaveBeenCalled()
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
     expect(implementation.request).not.toHaveBeenCalled()
     expect(implementation.map).not.toHaveBeenCalled()
@@ -298,15 +228,11 @@ describe('installed resource operation policy', () => {
       characterId: 1404328063,
       authorization: { tokenVersion: 4 },
     })
-    mocks.getCharacterWithAuthorization.mockResolvedValue({
-      result: cached(123),
-      authorizationGeneration: 4,
-    })
     const options = {
       resources: [collectingResource],
       guardExecution,
       definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
-      validateInputs: vi.fn((_definition, inputs) => inputs),
+      executeEsiOperation: vi.fn().mockResolvedValue(platformExecution(123, 4)),
       loadCollectionContext: vi
         .fn()
         .mockResolvedValue({ organizationVersion: 2, corporationId: 98000001 }),
@@ -350,10 +276,7 @@ describe('installed resource operation policy', () => {
       complete: true,
       data: await context.execute('wallet-balance', {}),
     }))
-    mocks.getCharacterWithAuthorization.mockResolvedValue({
-      result: cached(123),
-      authorizationGeneration: 5,
-    })
+    options.executeEsiOperation.mockResolvedValue(platformExecution(123, 5))
     await expect(executeInstalledResourceOperation(identity, options)).rejects.toThrow(
       'authority changed',
     )
@@ -443,5 +366,17 @@ function cached(data: unknown) {
     source: 'esi' as const,
     stale: false,
     quota: {},
+  }
+}
+
+function platformExecution(
+  data: unknown,
+  authorizationGeneration: number,
+  source: 'esi' | 'cache' = 'esi',
+) {
+  return {
+    ...cached(data),
+    source,
+    authorizationGeneration,
   }
 }
