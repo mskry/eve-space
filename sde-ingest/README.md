@@ -2,6 +2,8 @@
 
 Run database migrations first, then run `pnpm sde:ingest` from the repository root. The importer reads `DATABASE_URL` from the root `.env` and downloads the latest official JSONL SDE. Deployment instructions are in [docs/railway.md](../docs/railway.md).
 
+The command delegates the complete workflow to `SdeIngestor::run()`. A matching build and projection returns an unchanged outcome without acquiring the archive. A completed reload returns row counts and any optional raw datasets that were skipped. Required projections, raw-retention policy, table replacement, and the build marker are owned by one projection plan and publish in one PostgreSQL transaction.
+
 Projection version 3 adds `sde_solar_systems` (English system names and full-precision security status) and `sde_npc_stations` (NPC station IDs and their solar system IDs). It requires migration `041_sde_locations.sql`. A previously ingested SDE build is reloaded when its projection version differs, even if the upstream build has not changed.
 
 These projections are mandatory parts of the existing atomic reload: invalid or missing location data rolls back the transaction and preserves the previous build. The full raw `mapSolarSystems` and `npcStations` datasets remain in `sde_dataset_rows` as well.
