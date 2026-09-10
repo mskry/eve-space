@@ -8,7 +8,7 @@ interface StaticRow {
 }
 
 const mocks = vi.hoisted(() => ({
-  createSkillsClient: vi.fn(),
+  createEsiClient: vi.fn(),
   getSkills: vi.fn(),
   leftJoin: vi.fn(),
   from: vi.fn(),
@@ -32,9 +32,21 @@ const mocks = vi.hoisted(() => ({
   cacheDel: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/skills', () => ({
-  createSkillsClient: mocks.createSkillsClient,
-}))
+vi.mock('@evespace/esi-client', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@evespace/esi-client')>()
+  return {
+    ...original,
+    EsiClient: class {
+      constructor(options: unknown) {
+        mocks.createEsiClient(options)
+      }
+
+      callOperation(...arguments_: unknown[]) {
+        return mocks.getSkills(...arguments_)
+      }
+    },
+  }
+})
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
@@ -90,7 +102,7 @@ beforeEach(() => {
   mocks.from.mockReset()
   mocks.leftJoin.mockReset()
   mocks.where.mockReset()
-  mocks.createSkillsClient.mockReset()
+  mocks.createEsiClient.mockReset()
   mocks.createEsiTransport.mockReset()
   mocks.getCharacterAuthorization.mockReset()
   mocks.getCharacterCacheAuthorization.mockReset()
@@ -108,7 +120,6 @@ beforeEach(() => {
   mocks.cacheDel.mockReset()
   mocks.staticRows.splice(0)
 
-  mocks.createSkillsClient.mockReturnValue({ withMetadata: () => ({ getSkills: mocks.getSkills }) })
   mocks.select.mockReturnValue({ from: mocks.from })
   mocks.from.mockReturnValue({ leftJoin: mocks.leftJoin })
   mocks.leftJoin.mockReturnValue({ where: mocks.where })
@@ -160,6 +171,15 @@ describe('character skills snapshot', () => {
     expect(characterSkillsScope).toBe(scope)
     expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, scope)
     expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
+    expect(mocks.createEsiTransport).toHaveBeenCalledWith('skills', `character-${characterId}`)
+    expect(mocks.createEsiClient).toHaveBeenCalledWith({
+      fetch: expect.any(Function),
+      token: 'access-token',
+      validateResponses: true,
+    })
+    expect(mocks.getSkills).toHaveBeenCalledWith('GetCharactersCharacterIdSkills', {
+      path: { character_id: characterId },
+    })
     expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).not.toHaveBeenCalled()
   })

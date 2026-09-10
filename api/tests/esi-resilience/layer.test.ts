@@ -33,6 +33,12 @@ import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
 import { cacheResourceRevisionRepairKey } from '../../src/esi-resilience/keys.js'
 import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
 import { EsiResilienceLayer } from '../../src/esi-resilience/layer.js'
+import { registerEsiRepresentation } from '../../src/esi-resilience/representation-registry.js'
+import {
+  defineCharacterEsiMutation,
+  defineCharacterEsiRepresentation,
+  definePublicEsiRepresentation,
+} from '../../src/esi-resilience/representations.js'
 import {
   dispatchModuleEsiOperation,
   validateModuleEsiOperationInputs,
@@ -78,6 +84,51 @@ describe('ESI resilience layer', () => {
     expect(load).toHaveBeenCalledOnce()
     expect(cache.set).toHaveBeenCalledOnce()
     expect(cache.ping).not.toHaveBeenCalled()
+  })
+
+  test('canonicalizes SDK array bodies while isolating public representation caches', async () => {
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 3)
+    const firstLoad = vi.fn().mockResolvedValue(result('first'))
+    const secondLoad = vi.fn().mockResolvedValue(result('second'))
+    const firstRepresentation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'universe-resolve-names',
+        name: 'universe-names-layer-first',
+        descriptor: operationRegistry.PostUniverseNames.transport,
+        encodeRequest: (input: { body: number[] }) => input,
+        map: () => 'first',
+      }),
+    )
+    const secondRepresentation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'universe-resolve-names',
+        name: 'universe-names-layer-second',
+        descriptor: operationRegistry.PostUniverseNames.transport,
+        encodeRequest: (input: { body: number[] }) => input,
+        map: () => 'second',
+      }),
+    )
+
+    await layer.executePublicRepresentation(firstRepresentation, {
+      operation: 'universe-resolve-names',
+      inputs: { body: [2, 1, 2] },
+      load: firstLoad,
+    })
+    await expect(
+      layer.executePublicRepresentation(firstRepresentation, {
+        operation: 'universe-resolve-names',
+        inputs: { body: [1, 2] },
+        load: firstLoad,
+      }),
+    ).resolves.toMatchObject({ data: 'first', source: 'cache' })
+    await layer.executePublicRepresentation(secondRepresentation, {
+      operation: 'universe-resolve-names',
+      inputs: { body: [1, 2] },
+      load: secondLoad,
+    })
+
+    expect(firstLoad).toHaveBeenCalledOnce()
+    expect(secondLoad).toHaveBeenCalledOnce()
   })
 
   test('renews a long-running owner lease and releases it after publication', async () => {
@@ -311,6 +362,80 @@ describe('ESI resilience layer', () => {
     expect(authorizers.cache).toHaveBeenCalledTimes(3)
     expect(authorizers.full).not.toHaveBeenCalled()
     expect(load).toHaveBeenCalledOnce()
+  })
+
+  test('isolates named representations from each other and from the legacy cache identity', async () => {
+    const authorizers = authorize()
+    const layer = new EsiResilienceLayer(redis() as never, redis() as never, 4, authorizers)
+    const firstLoad = vi.fn().mockResolvedValue(result('first'))
+    const secondLoad = vi.fn().mockResolvedValue(result('second'))
+    const legacyLoad = vi.fn().mockResolvedValue(result('legacy'))
+    const inputs = { path: { character_id: 1 } }
+    const legacyInputs = { characterId: 1 }
+    const firstRepresentation = registerEsiRepresentation(
+      defineCharacterEsiRepresentation({
+        operation: 'skills',
+        name: 'skills-layer-first',
+        descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+        encodeRequest: (input: { characterId: number }) => ({
+          path: { character_id: input.characterId },
+        }),
+        map: () => 'first',
+      }),
+    )
+    const secondRepresentation = registerEsiRepresentation(
+      defineCharacterEsiRepresentation({
+        operation: 'skills',
+        name: 'skills-layer-second',
+        descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+        encodeRequest: (input: { characterId: number }) => ({
+          path: { character_id: input.characterId },
+        }),
+        map: () => 'second',
+      }),
+    )
+
+    await layer.executeCharacterRepresentation(firstRepresentation, {
+      operation: 'skills',
+      characterId: 1,
+      inputs,
+      load: firstLoad,
+    })
+    await layer.executeCharacterRepresentation(secondRepresentation, {
+      operation: 'skills',
+      characterId: 1,
+      inputs,
+      load: secondLoad,
+    })
+    await layer.getCharacter({
+      operation: 'skills',
+      inputs: legacyInputs,
+      load: legacyLoad,
+      ...({ representationName: 'skills-layer-first' } as object),
+    })
+
+    await expect(
+      layer.executeCharacterRepresentation(firstRepresentation, {
+        operation: 'skills',
+        characterId: 1,
+        inputs,
+        load: firstLoad,
+      }),
+    ).resolves.toMatchObject({ data: 'first', source: 'cache' })
+    await expect(
+      layer.executeCharacterRepresentation(secondRepresentation, {
+        operation: 'skills',
+        characterId: 1,
+        inputs,
+        load: secondLoad,
+      }),
+    ).resolves.toMatchObject({ data: 'second', source: 'cache' })
+    await expect(
+      layer.getCharacter({ operation: 'skills', inputs: legacyInputs, load: legacyLoad }),
+    ).resolves.toMatchObject({ data: 'legacy', source: 'cache' })
+    expect(firstLoad).toHaveBeenCalledOnce()
+    expect(secondLoad).toHaveBeenCalledOnce()
+    expect(legacyLoad).toHaveBeenCalledOnce()
   })
 
   test('rechecks the token generation before returning a fresh private snapshot', async () => {
@@ -1056,14 +1181,30 @@ describe('ESI resilience layer', () => {
     expect(cache.set).toHaveBeenCalledOnce()
   })
 
-  test('executes non-idempotent character mutations once and invalidates after ambiguity', async () => {
+  test('executes a registered non-idempotent mutation once and invalidates after ambiguity', async () => {
     const cache = redis()
     const authorizers = authorize()
     const layer = new EsiResilienceLayer(cache as never, redis() as never, 2, authorizers)
     const load = vi.fn().mockRejectedValue(new EsiTransportError(new Error('delivery unknown')))
+    const representation = registerEsiRepresentation(
+      defineCharacterEsiMutation({
+        operation: 'mail-send',
+        name: 'mail-send-layer-fixture',
+        descriptor: operationRegistry.PostCharactersCharacterIdMail.transport,
+        encodeRequest: (input: { characterId: number }) => ({
+          path: { character_id: input.characterId },
+          body: { approved_cost: 0, body: '', recipients: [], subject: '' },
+        }),
+        map: ({ data }) => data,
+      }),
+    )
 
     await expect(
-      layer.executeCharacterMutation({ operation: 'mail-send', characterId: 1, load }),
+      layer.executeCharacterMutationRepresentation(representation, {
+        operation: 'mail-send',
+        characterId: 1,
+        load,
+      }),
     ).rejects.toBeInstanceOf(EsiTransportError)
 
     expect(authorizers.full).toHaveBeenCalledWith(1, 'esi-mail.send_mail.v1')
@@ -1137,7 +1278,7 @@ describe('ESI resilience layer', () => {
       .mockRejectedValueOnce(new EsiTransportError(new Error('network unavailable')))
       .mockResolvedValueOnce(result(12.5))
 
-    const pending = layer.executeCharacterMutation({
+    const pending = layer.executeCharacterUncachedRead({
       operation: 'character-cspa-charge',
       characterId: 1,
       load,

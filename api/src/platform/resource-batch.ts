@@ -19,6 +19,7 @@ import {
   dispatchModuleEsiOperation,
   validateModuleEsiOperationInputs,
 } from '../esi-resilience/module-operation-dispatcher.js'
+import { assertNoCallerEsiRevalidationHeaders } from '../esi-resilience/revalidation.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { isPositiveSafeInteger, isRecord } from '../type-guards.js'
 import {
@@ -132,6 +133,7 @@ export async function executeInstalledResourceBatchOperation(
       batch.request(subjects),
     )
     assertBatchInputs(inputs, contract.identity.field, subjects, contract.identity.maximumItems)
+    assertNoCallerEsiRevalidationHeaders(inputs)
   } catch (error) {
     throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }

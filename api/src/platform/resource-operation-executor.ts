@@ -14,6 +14,7 @@ import {
   dispatchModuleEsiOperation,
   validateModuleEsiOperationInputs,
 } from '../esi-resilience/module-operation-dispatcher.js'
+import { assertNoCallerEsiRevalidationHeaders } from '../esi-resilience/revalidation.js'
 import {
   characterEsiPrincipal,
   characterLifecycleEsiPrincipal,
@@ -159,6 +160,7 @@ export async function executeInstalledResourceOperation(
   } catch (error) {
     throw new PlatformResourceMappingError(error)
   }
+  assertNoCallerEsiRevalidationHeaders(inputs)
   const policy = getEsiOperationContract(operation)
   const resilience = getEsiResilienceLayer()
 

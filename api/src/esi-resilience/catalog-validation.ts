@@ -397,15 +397,23 @@ export function isIsoCalendarDate(value: string) {
 export interface EsiRepresentationRegistrationDescriptor {
   readonly name: string
   readonly operation: string
-  readonly authorization: 'character'
+  readonly authorization: 'public' | 'character'
+  readonly execution: 'read' | 'mutation'
+  readonly descriptorOperationId: string
 }
 
 export function assertConsistentEsiRepresentationRegistration(
   registration: EsiRepresentationRegistrationDescriptor,
-  state: { duplicateName: boolean; contract: EsiOperationContract | undefined },
+  state: {
+    duplicateName: boolean
+    descriptorRegistered: boolean
+    contract: EsiOperationContract | undefined
+  },
 ) {
   const issues: string[] = []
   if (state.duplicateName) issues.push(`representation ${registration.name} is already registered`)
+  if (!state.descriptorRegistered)
+    issues.push(`representation ${registration.name} does not bind the registered SDK descriptor`)
   if (!state.contract)
     issues.push(
       `representation ${registration.name} references unregistered ESI operation ${registration.operation}`,
@@ -415,9 +423,17 @@ export function assertConsistentEsiRepresentationRegistration(
       issues.push(
         `representation ${registration.name} declares ${registration.authorization} authorization but operation ${registration.operation} requires ${state.contract.authorization.kind}`,
       )
-    if (state.contract.mutation)
+    if (state.contract.audit.esiOperationId !== registration.descriptorOperationId)
       issues.push(
-        `representation ${registration.name} cannot be a core representation of mutation operation ${registration.operation}`,
+        `representation ${registration.name} binds SDK operation ${registration.descriptorOperationId} instead of ${state.contract.audit.esiOperationId}`,
+      )
+    if (state.contract.mutation && registration.execution !== 'mutation')
+      issues.push(
+        `representation ${registration.name} cannot read mutation operation ${registration.operation}`,
+      )
+    if (!state.contract.mutation && registration.execution === 'mutation')
+      issues.push(
+        `representation ${registration.name} cannot mutate undeclared operation ${registration.operation}`,
       )
   }
   if (issues.length > 0)

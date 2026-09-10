@@ -18,8 +18,10 @@ const mocks = vi.hoisted(() => {
     createMailClient: vi.fn(),
     createSearchClient: vi.fn(),
     createEsiTransport: vi.fn(),
+    executeMutation: vi.fn(),
     getCharacter: vi.fn(),
     executeCharacterMutation: vi.fn(),
+    executeCharacterUncachedRead: vi.fn(),
     resolveUniverseIds: vi.fn(),
     resolveUniverseNames: vi.fn(),
     listHeaders: vi.fn(),
@@ -51,7 +53,12 @@ vi.mock('../../src/esi-resilience/layer.js', () => ({
   getEsiResilienceLayer: () => ({
     getCharacter: mocks.getCharacter,
     executeCharacterMutation: mocks.executeCharacterMutation,
+    executeCharacterUncachedRead: mocks.executeCharacterUncachedRead,
   }),
+}))
+
+vi.mock('../../src/esi-resilience/execute.js', () => ({
+  executeMutation: mocks.executeMutation,
 }))
 
 vi.mock('../../src/esi-resilience/transport.js', () => ({
@@ -131,7 +138,11 @@ beforeEach(() => {
     const loaded = await resource.load(authority, revalidation)
     return { data: loaded.data, ...outerMetadata }
   })
+  mocks.executeMutation.mockImplementation(async (representation, input) =>
+    representation.map(response(7001, 201), input),
+  )
   mocks.executeCharacterMutation.mockImplementation(async (mutation) => mutation.load(authority))
+  mocks.executeCharacterUncachedRead.mockImplementation(async (read) => read.load(authority))
   mocks.resolveUniverseNames.mockResolvedValue(new Map())
   mocks.resolveUniverseIds.mockResolvedValue([])
   mocks.listHeaders.mockResolvedValue(response([]))
@@ -458,7 +469,10 @@ describe('mail mutations', () => {
     }
 
     await expect(sendMail(characterId, input)).resolves.toEqual({ characterId, mailId: 7001 })
-    expect(mocks.send).toHaveBeenCalledWith(characterId, {
+    const [representation, representationInput] = mocks.executeMutation.mock.calls[0]!
+    expect(representation.operation).toBe('mail-send')
+    expect(representation.encodeRequest(representationInput)).toEqual({
+      path: { character_id: characterId },
       body: {
         approved_cost: 0,
         body: 'Body',
@@ -469,16 +483,13 @@ describe('mail mutations', () => {
         subject: 'Subject',
       },
     })
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledWith(
-      expect.objectContaining({ operation: 'mail-send', characterId }),
-    )
-    expect(mocks.createEsiTransport).toHaveBeenCalledWith('mail-send', authority.principal)
+    expect(mocks.executeCharacterMutation).not.toHaveBeenCalled()
 
     await sendMail(characterId, { ...input, approvedCost: 25 })
-    expect(mocks.send).toHaveBeenLastCalledWith(
-      characterId,
-      expect.objectContaining({ body: expect.objectContaining({ approved_cost: 25 }) }),
-    )
+    const [lastRepresentation, lastInput] = mocks.executeMutation.mock.calls.at(-1)!
+    expect(lastRepresentation.encodeRequest(lastInput)).toMatchObject({
+      body: { approved_cost: 25 },
+    })
   })
 
   test('creates labels once with exact optional payloads and returns selected identity', async () => {
@@ -521,7 +532,9 @@ describe('mail mutations', () => {
   })
 
   test('does not add a service retry for ambiguous sends or label creation', async () => {
-    mocks.send.mockRejectedValueOnce(new mocks.EsiTransportError(new Error('socket closed')))
+    mocks.executeMutation.mockRejectedValueOnce(
+      new mocks.EsiTransportError(new Error('socket closed')),
+    )
 
     await expect(
       sendMail(characterId, {
@@ -530,8 +543,7 @@ describe('mail mutations', () => {
         body: 'Body',
       }),
     ).rejects.toBeInstanceOf(MailDeliveryUnknownError)
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledTimes(1)
-    expect(mocks.send).toHaveBeenCalledTimes(1)
+    expect(mocks.executeMutation).toHaveBeenCalledTimes(1)
 
     mocks.executeCharacterMutation.mockClear()
     mocks.createLabel.mockRejectedValueOnce(new mocks.EsiTransportError(new Error('socket closed')))
@@ -559,11 +571,6 @@ describe('mail mutations', () => {
       return loaded
     })
 
-    await sendMail(characterId, {
-      recipients: [{ id: 100, type: 'character' }],
-      subject: 'Subject',
-      body: 'Body',
-    })
     await createMailLabel(characterId, { name: 'Label' })
     await updateMail(characterId, 2, { read: true })
     await deleteMail(characterId, 2)
@@ -571,7 +578,6 @@ describe('mail mutations', () => {
 
     expect(loadedMetadata).toEqual(
       new Map([
-        ['mail-send', { ...sdkMetadata, status: 201 }],
         ['mail-create-label', { ...sdkMetadata, status: 201 }],
         ['mail-update', { ...sdkMetadata, status: 204 }],
         ['mail-delete', { ...sdkMetadata, status: 204 }],
@@ -679,7 +685,7 @@ describe('mail recipient composition services', () => {
       characterId,
       cost: 12.5,
     })
-    expect(mocks.executeCharacterMutation).toHaveBeenCalledWith(
+    expect(mocks.executeCharacterUncachedRead).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'character-cspa-charge', characterId }),
     )
     expect(mocks.createCharacterClient).toHaveBeenCalledWith({
@@ -738,7 +744,7 @@ describe('safe mail errors', () => {
   ])(
     'maps ambiguous send %s failures without retaining provider content',
     async (_kind, provider) => {
-      mocks.executeCharacterMutation.mockRejectedValueOnce(provider)
+      mocks.executeMutation.mockRejectedValueOnce(provider)
 
       const error = await caught(
         sendMail(characterId, {
@@ -757,7 +763,7 @@ describe('safe mail errors', () => {
 
   test('maps definitive non-auth send 4xx to a sanitized rejection', async () => {
     const provider = providerError(422, 'recipient and private body rejected')
-    mocks.executeCharacterMutation.mockRejectedValueOnce(provider)
+    mocks.executeMutation.mockRejectedValueOnce(provider)
 
     const error = await caught(
       sendMail(characterId, {
@@ -789,7 +795,9 @@ describe('safe mail errors', () => {
   })
 
   test('maps a definitive CSPA 4xx to a sanitized charge rejection', async () => {
-    mocks.executeCharacterMutation.mockRejectedValueOnce(providerError(400, 'raw recipient error'))
+    mocks.executeCharacterUncachedRead.mockRejectedValueOnce(
+      providerError(400, 'raw recipient error'),
+    )
 
     const error = await caught(calculateMailCspaCharge(characterId, [20]))
 

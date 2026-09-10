@@ -146,6 +146,27 @@ describe('platform resource batch processing', () => {
     expect(recordFailure).toHaveBeenCalledTimes(2)
   })
 
+  test('rejects caller-owned conditional headers before consulting the batch cache', async () => {
+    const resource = completeResource()
+    const payload = batchPayload(2)
+    const getPublic = batchResilience()
+
+    await expect(
+      processInstalledResourceBatch(payload, batchQueue() as never, {
+        resources: [resource],
+        resolveEligibility: eligible as never,
+        resilience: { getPublic: getPublic as never },
+        definitions: { 'universe-resolve-names': batchDefinition() },
+        recordFailure: vi.fn().mockResolvedValue(undefined),
+        validateInputs: vi.fn((_definition, inputs) => ({
+          ...inputs,
+          headers: { 'if-modified-since': 'caller-value' },
+        })),
+      }),
+    ).rejects.toThrow('Platform resource mapping failed')
+    expect(getPublic).not.toHaveBeenCalled()
+  })
+
   test('records a batch failure only for subjects included in the attempted request', async () => {
     const payload = batchPayload(2)
     const failure = new Error('ESI unavailable')

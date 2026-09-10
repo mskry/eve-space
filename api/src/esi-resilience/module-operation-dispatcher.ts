@@ -2,6 +2,7 @@ import { EsiClient } from '@evespace/esi-client'
 import type { PlatformEsiRevalidation } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { isRecord } from '../type-guards.js'
+import { withEsiRevalidation } from './revalidation.js'
 import type { EsiLoadResult } from './types.js'
 
 export function validateModuleEsiOperationInputs(
@@ -31,24 +32,6 @@ export async function dispatchModuleEsiOperation(
   })
   return client.callOperation(
     definition.sdkOperationId,
-    withRevalidation(input.inputs, input.revalidation) as never,
+    withEsiRevalidation(input.inputs, input.revalidation) as never,
   )
-}
-
-function withRevalidation(
-  inputs: Readonly<Record<string, unknown>>,
-  revalidation: PlatformEsiRevalidation,
-) {
-  if (!revalidation.ifNoneMatch && !revalidation.ifModifiedSince) return inputs
-  const headers = isRecord(inputs.headers) ? inputs.headers : {}
-  return {
-    ...inputs,
-    headers: {
-      ...headers,
-      ...(revalidation.ifNoneMatch ? { 'If-None-Match': revalidation.ifNoneMatch } : {}),
-      ...(revalidation.ifModifiedSince
-        ? { 'If-Modified-Since': revalidation.ifModifiedSince }
-        : {}),
-    },
-  }
 }

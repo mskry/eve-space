@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => {
   return {
     createAssetsClient: vi.fn(),
     createEsiTransport: vi.fn(),
+    executeRepresentation: vi.fn(),
     get: vi.fn(),
     getStaticLocations: vi.fn(),
     limit: query.limit,
@@ -31,11 +32,23 @@ const mocks = vi.hoisted(() => {
 vi.mock('@evespace/esi-client/domains/assets', () => ({
   createAssetsClient: mocks.createAssetsClient,
 }))
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(_operation: string, inputs: unknown) {
+      const request = inputs as { path: { character_id: number } }
+      return mocks.lookupCharacterNames(request.path.character_id, request)
+    }
+  },
+}))
 vi.mock('../../src/db/client.js', () => ({
   db: { select: vi.fn(() => mocks.query) },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getCharacter: mocks.get }),
+  getEsiResilienceLayer: () => ({
+    executeCharacterRepresentation: mocks.executeRepresentation,
+    getCharacter: mocks.get,
+  }),
 }))
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({
   createEsiTransport: mocks.createEsiTransport,
@@ -76,6 +89,9 @@ beforeEach(() => {
   mocks.query.where.mockImplementation(() => mocks.query)
   mocks.query.limit.mockResolvedValue([])
   mocks.get.mockImplementation(loadResource)
+  mocks.executeRepresentation.mockImplementation((_representation, resource) =>
+    loadResource(resource),
+  )
   mocks.createAssetsClient.mockReturnValue({
     withMetadata: () => ({
       listCharacterAssets: mocks.listCharacterAssets,
@@ -220,21 +236,28 @@ describe('complete character asset collection', () => {
     })
     expect(mocks.get.mock.calls.map(([resource]) => resource.operation)).toEqual([
       'character-assets-page',
-      'character-asset-names',
     ])
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toMatchObject({
+      operation: 'character-asset-names',
+    })
     expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
       inputs: { characterId, page: 1 },
     })
-    expect(mocks.get.mock.calls[1]?.[0]).toMatchObject({
-      inputs: { characterId, itemIds: [22] },
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toMatchObject({
+      characterId,
+      inputs: { path: { character_id: characterId }, body: [22] },
     })
     expect(mocks.listCharacterAssets).toHaveBeenCalledWith(characterId, {
       page: 1,
       ...revalidation,
     })
     expect(mocks.lookupCharacterNames).toHaveBeenCalledWith(characterId, {
+      path: { character_id: characterId },
       body: [22],
-      ...revalidation,
+      headers: {
+        'If-Modified-Since': revalidation.ifModifiedSince,
+        'If-None-Match': revalidation.ifNoneMatch,
+      },
     })
     expect(mocks.getStaticLocations).toHaveBeenCalledWith([{ id: 60_000_001, type: 'station' }])
     expect(JSON.stringify(result)).not.toMatch(

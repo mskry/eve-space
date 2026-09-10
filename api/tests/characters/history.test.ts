@@ -1,21 +1,29 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  executePublicRepresentation: vi.fn(),
   get: vi.fn(),
   listCorporationHistory: vi.fn(),
   resolveNames: vi.fn(),
 }))
 
+vi.mock('@evespace/esi-client', () => ({
+  EsiClient: class {
+    callOperation(...arguments_: unknown[]) {
+      return mocks.resolveNames(...arguments_)
+    }
+  },
+}))
 vi.mock('@evespace/esi-client/domains/character', () => ({
   createCharacterClient: () => ({
     withMetadata: () => ({ listCorporationHistory: mocks.listCorporationHistory }),
   }),
 }))
-vi.mock('@evespace/esi-client/domains/universe', () => ({
-  createUniverseClient: () => ({ withMetadata: () => ({ resolveNames: mocks.resolveNames }) }),
-}))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getPublic: mocks.get }),
+  getEsiResilienceLayer: () => ({
+    executePublicRepresentation: mocks.executePublicRepresentation,
+    getPublic: mocks.get,
+  }),
 }))
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 vi.mock('../../src/universe/resolution-cache.js', () => ({
@@ -25,6 +33,9 @@ vi.mock('../../src/universe/resolution-cache.js', () => ({
 }))
 
 beforeEach(() => {
+  mocks.executePublicRepresentation.mockImplementation((_representation, resource) =>
+    mocks.get(resource),
+  )
   mocks.get.mockImplementation(async (resource) => {
     const loaded = await resource.load({})
     return {

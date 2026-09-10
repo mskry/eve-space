@@ -13,13 +13,16 @@ const mocks = vi.hoisted(() => ({
   writeUniverseNames: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client/domains/universe', () => ({
-  createUniverseClient: () => ({
-    withMetadata: () => ({ resolveIds: mocks.resolveIds, resolveNames: mocks.resolveNames }),
-  }),
+vi.mock('@evespace/esi-client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
+  EsiClient: class {
+    callOperation(operation: string, inputs: unknown) {
+      return operation === 'PostUniverseIds' ? mocks.resolveIds(inputs) : mocks.resolveNames(inputs)
+    }
+  },
 }))
 vi.mock('../../src/esi-resilience/layer.js', () => ({
-  getEsiResilienceLayer: () => ({ getPublic: mocks.getPublic }),
+  getEsiResilienceLayer: () => ({ executePublicRepresentation: mocks.getPublic }),
 }))
 vi.mock('../../src/esi-resilience/request-transport.js', () => ({ createEsiTransport: vi.fn() }))
 vi.mock('../../src/universe/resolution-cache.js', () => ({
@@ -41,7 +44,7 @@ const postUniverseNamesCharacter90666561Fixture = {
 beforeEach(() => {
   mocks.readUniverseIds.mockImplementation(emptyCache)
   mocks.readUniverseNames.mockImplementation(emptyCache)
-  mocks.getPublic.mockImplementation(async (resource) => {
+  mocks.getPublic.mockImplementation(async (_representation, resource) => {
     const loaded = await resource.load({ ifNoneMatch: '"names"' })
     return { data: loaded.data, cachedUntil: '', quota: {}, source: 'esi', stale: false }
   })
@@ -64,13 +67,13 @@ describe('universe name resolver', () => {
     const names = await resolveUniverseNames([2, 1, 2])
 
     expect([...names.keys()]).toEqual([2, 1])
-    expect(mocks.getPublic.mock.calls[0]?.[0]).toMatchObject({
+    expect(mocks.getPublic.mock.calls[0]?.[1]).toMatchObject({
       operation: 'universe-resolve-names',
-      inputs: { ids: [2, 1] },
+      inputs: { body: [2, 1] },
     })
     expect(mocks.resolveNames).toHaveBeenCalledWith({
       body: [2, 1],
-      ifNoneMatch: '"names"',
+      headers: { 'If-None-Match': '"names"' },
     })
   })
 
@@ -265,13 +268,13 @@ describe('universe ID resolver', () => {
       { id: 6, name: 'Type', category: 'inventory_type' },
       { id: 7, name: 'System', category: 'solar_system' },
     ])
-    expect(mocks.getPublic.mock.calls.at(-1)?.[0]).toMatchObject({
+    expect(mocks.getPublic.mock.calls.at(-1)?.[1]).toMatchObject({
       operation: 'universe-resolve-ids',
-      inputs: { names: ['Character', 'Alliance'] },
+      inputs: { body: ['Character', 'Alliance'] },
     })
     expect(mocks.resolveIds).toHaveBeenCalledWith({
       body: ['Character', 'Alliance'],
-      ifNoneMatch: '"names"',
+      headers: { 'If-None-Match': '"names"' },
     })
   })
 
@@ -320,7 +323,7 @@ describe('universe ID resolver', () => {
 
   test('does not refresh ID entries from a stale aggregate response', async () => {
     mocks.getPublic.mockResolvedValue({
-      data: { characters: [{ id: 5, name: 'Alpha' }] },
+      data: [{ category: 'character', id: 5, name: 'Alpha' }],
       cachedUntil: '',
       quota: {},
       source: 'cache',

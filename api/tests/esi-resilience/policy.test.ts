@@ -953,7 +953,6 @@ describe('ESI mutation contracts', () => {
       ['mail-update', false],
       ['mail-delete', true],
       ['mail-delete-label', true],
-      ['character-cspa-charge', false],
     ])
   })
 

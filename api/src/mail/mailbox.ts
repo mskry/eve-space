@@ -1,9 +1,13 @@
 import { createMailClient } from '@evespace/esi-client/domains/mail'
 import { createCharacterClient } from '@evespace/esi-client/domains/character'
 import { createSearchClient } from '@evespace/esi-client/domains/search'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { executeMutation } from '../esi-resilience/execute.js'
 import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { defineCharacterEsiMutation } from '../esi-resilience/representations.js'
 import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
@@ -172,6 +176,27 @@ interface EsiMailParties {
   from?: number
   recipients?: EsiMailRecipient[]
 }
+
+const mailSendRepresentation = registerEsiRepresentation(
+  defineCharacterEsiMutation({
+    operation: 'mail-send',
+    name: 'mail-send-core',
+    descriptor: operationRegistry.PostCharactersCharacterIdMail.transport,
+    encodeRequest: ({ characterId, input }: { characterId: number; input: SendMailInput }) => ({
+      path: { character_id: characterId },
+      body: {
+        approved_cost: input.approvedCost ?? 0,
+        body: input.body,
+        recipients: input.recipients.map((recipient) => ({
+          recipient_id: recipient.id,
+          recipient_type: recipient.type,
+        })),
+        subject: input.subject,
+      },
+    }),
+    map: ({ data }, { characterId }): SentMailResult => ({ characterId, mailId: data }),
+  }),
+)
 
 class InvalidMailHeaderError extends Error {}
 
@@ -432,7 +457,7 @@ export async function calculateMailCspaCharge(
   characterIds: readonly number[],
 ): Promise<MailCspaChargeResult> {
   try {
-    const response = await getEsiResilienceLayer().executeCharacterMutation({
+    const response = await getEsiResilienceLayer().executeCharacterUncachedRead({
       operation: 'character-cspa-charge',
       characterId,
       load: (authority) =>
@@ -451,28 +476,7 @@ export async function calculateMailCspaCharge(
 
 export async function sendMail(characterId: number, input: SendMailInput): Promise<SentMailResult> {
   try {
-    const response = await getEsiResilienceLayer().executeCharacterMutation({
-      operation: 'mail-send',
-      characterId,
-      load: (authority) =>
-        createMailClient({
-          fetch: createEsiTransport('mail-send', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .send(characterId, {
-            body: {
-              approved_cost: input.approvedCost ?? 0,
-              body: input.body,
-              recipients: input.recipients.map((recipient) => ({
-                recipient_id: recipient.id,
-                recipient_type: recipient.type,
-              })),
-              subject: input.subject,
-            },
-          }),
-    })
-    return { characterId, mailId: response.data }
+    return await executeMutation(mailSendRepresentation, { characterId, input })
   } catch (error) {
     throwMailMutationError(error, 'send')
   }

@@ -1,14 +1,13 @@
-import { createSkillsClient } from '@evespace/esi-client/domains/skills'
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdSkillsResponse } from '@evespace/esi-client/types'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypes } from '../db/schema.js'
 import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
 import { execute } from '../esi-resilience/execute.js'
-import { registerCharacterEsiRepresentation } from '../esi-resilience/representation-registry.js'
+import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
 import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
 import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
 import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
 import { skillCategoryId } from '../skills/training.js'
 
@@ -16,24 +15,15 @@ interface CharacterSkillsRepresentationInput {
   characterId: number
 }
 
-const characterSkillsRepresentation = registerCharacterEsiRepresentation(
-  defineCharacterEsiRepresentation<
-    'skills',
-    CharacterSkillsRepresentationInput,
-    CharacterSkillsSnapshot
-  >({
+const characterSkillsRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
     operation: 'skills',
     name: 'character-skills-core',
-    encodeIdentity: (input) => ({ characterId: input.characterId }),
-    load: async (input, authority, revalidation) => {
-      const response = await createSkillsClient({
-        fetch: createEsiTransport('skills', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .getSkills(input.characterId, revalidation)
-      return { data: mapCharacterSkillsSnapshot(response.data), meta: response.meta }
-    },
+    descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+    encodeRequest: (input: CharacterSkillsRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response) => mapCharacterSkillsSnapshot(response.data),
   }),
 )
 

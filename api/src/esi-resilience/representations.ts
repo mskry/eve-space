@@ -1,51 +1,136 @@
-import type { EsiOperation } from './catalog.js'
-import type { EsiLoadResult, EsiRevalidation } from './types.js'
+import type { EsiResponse } from '@evespace/esi-client'
+import type {
+  OperationExecutionDescriptor,
+  OperationRequestArguments,
+} from '@evespace/esi-client/operations'
+import type { CharacterMutationEsiOperation, EsiOperation } from './catalog.js'
 
-const representationBrand: unique symbol = Symbol('EsiCharacterRepresentation')
+const representationBrand: unique symbol = Symbol('EsiRepresentation')
 
-export interface EsiCharacterRepresentationAuthority {
-  readonly accessToken: string
-  readonly principal: string
+type EsiRepresentationAuthorization = 'public' | 'character'
+type EsiRepresentationExecution = 'read' | 'mutation'
+type EsiRepresentationRequest<Arguments extends OperationRequestArguments> = Omit<
+  Arguments,
+  'headers'
+> & {
+  readonly headers?: never
 }
 
-/**
- * Opaque: only `defineCharacterEsiRepresentation` can produce a value of this shape, because the
- * brand key is a module-private symbol. Feature code passes the whole value to `execute` rather
- * than constructing one inline or pulling `load` out to call ESI directly.
- */
-export interface EsiCharacterRepresentation<Operation extends EsiOperation, Input, Result> {
+interface EsiRepresentationOptions<
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+> {
+  operation: Operation
+  name: string
+  descriptor: OperationExecutionDescriptor<Arguments, WireResult>
+  encodeRequest: (input: Input) => EsiRepresentationRequest<Arguments>
+  map: (response: EsiResponse<WireResult>, input: Input) => Result | Promise<Result>
+}
+
+/** Opaque registered binding between an application representation and one SDK operation. */
+export interface EsiRepresentation<
+  Authorization extends EsiRepresentationAuthorization,
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+  Execution extends EsiRepresentationExecution = 'read',
+> {
   readonly [representationBrand]: true
   readonly operation: Operation
   readonly name: string
-  readonly authorization: 'character'
-  encodeIdentity(input: Input): Readonly<Record<string, unknown>>
-  load(
-    input: Input,
-    authority: EsiCharacterRepresentationAuthority,
-    revalidation: EsiRevalidation,
-  ): Promise<EsiLoadResult<Result>>
+  readonly authorization: Authorization
+  readonly execution: Execution
+  readonly descriptor: OperationExecutionDescriptor<Arguments, WireResult>
+  encodeRequest(input: Input): EsiRepresentationRequest<Arguments>
+  map(response: EsiResponse<WireResult>, input: Input): Result | Promise<Result>
 }
+
+export type EsiCharacterRepresentation<
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+> = EsiRepresentation<'character', Operation, Input, Arguments, WireResult, Result>
+
+export type EsiCharacterMutation<
+  Operation extends CharacterMutationEsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+> = EsiRepresentation<'character', Operation, Input, Arguments, WireResult, Result, 'mutation'>
+
+export type EsiPublicRepresentation<
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+> = EsiRepresentation<'public', Operation, Input, Arguments, WireResult, Result>
 
 export function defineCharacterEsiRepresentation<
   Operation extends EsiOperation,
   Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
   Result,
->(options: {
-  operation: Operation
-  name: string
-  encodeIdentity: (input: Input) => Readonly<Record<string, unknown>>
-  load: (
-    input: Input,
-    authority: EsiCharacterRepresentationAuthority,
-    revalidation: EsiRevalidation,
-  ) => Promise<EsiLoadResult<Result>>
-}): EsiCharacterRepresentation<Operation, Input, Result> {
+>(
+  options: EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
+): EsiCharacterRepresentation<Operation, Input, Arguments, WireResult, Result> {
+  return defineEsiRepresentation('read', 'character', options)
+}
+
+export function defineCharacterEsiMutation<
+  Operation extends CharacterMutationEsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+>(
+  options: EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
+): EsiCharacterMutation<Operation, Input, Arguments, WireResult, Result> {
+  return defineEsiRepresentation('mutation', 'character', options)
+}
+
+export function definePublicEsiRepresentation<
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+>(
+  options: EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
+): EsiPublicRepresentation<Operation, Input, Arguments, WireResult, Result> {
+  return defineEsiRepresentation('read', 'public', options)
+}
+
+function defineEsiRepresentation<
+  Execution extends EsiRepresentationExecution,
+  Authorization extends EsiRepresentationAuthorization,
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+>(
+  execution: Execution,
+  authorization: Authorization,
+  options: EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
+): EsiRepresentation<Authorization, Operation, Input, Arguments, WireResult, Result, Execution> {
   return {
     [representationBrand]: true,
     operation: options.operation,
     name: options.name,
-    authorization: 'character',
-    encodeIdentity: options.encodeIdentity,
-    load: options.load,
+    authorization,
+    execution,
+    descriptor: options.descriptor,
+    encodeRequest: options.encodeRequest,
+    map: options.map,
   }
 }

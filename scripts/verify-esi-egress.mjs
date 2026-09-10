@@ -4,6 +4,51 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { moduleServerSourceExtensions } from './module-registry/source-extensions.mjs'
 
+/**
+ * Core modules still reaching ESI through the pre-representation seam.
+ *
+ * This list may only shrink. A module that no longer imports the seam is reported as a stale
+ * entry, so a completed migration must delete its line, and a module that starts importing the
+ * seam without being listed is rejected. When the list empties, the seam itself can be deleted.
+ */
+const legacyEsiEgressModules = [
+  'api/src/characters/affiliation-sync.ts',
+  'api/src/characters/assets.ts',
+  'api/src/characters/attributes.ts',
+  'api/src/characters/clones.ts',
+  'api/src/characters/contracts.ts',
+  'api/src/characters/corporation-roles.ts',
+  'api/src/characters/history.ts',
+  'api/src/characters/market.ts',
+  'api/src/characters/overview.ts',
+  'api/src/characters/profile.ts',
+  'api/src/characters/skill-queue.ts',
+  'api/src/characters/wallet.ts',
+  'api/src/corporations/public-data.ts',
+  'api/src/deployment/organization.ts',
+  'api/src/mail/mailbox.ts',
+  'api/src/organization/authority.ts',
+  'api/src/platform/resource-batch.ts',
+  'api/src/platform/resource-operation-executor.ts',
+  'api/src/system/status.ts',
+  'api/src/universe/locations.ts',
+]
+const legacyLayerMethods = new Set([
+  'executeCharacterMutation',
+  'executeCharacterRepresentation',
+  'executeCharacterUncachedRead',
+  'executeNoValue',
+  'getCharacter',
+  'getCharacterWithAuthorization',
+  'getPublic',
+])
+const genericEsiClientOwnerPaths = new Set([
+  'api/src/esi-resilience/approved-mutation-adapter.ts',
+  'api/src/esi-resilience/execute.ts',
+  'api/src/esi-resilience/module-operation-dispatcher.ts',
+])
+const approvedMutationAdapterPath = 'api/src/esi-resilience/approved-mutation-adapter.ts'
+
 const root = resolveRoot(process.argv.slice(2))
 const apiSourceRoot = join(root, 'api', 'src')
 const apiSources = await loadSources(root, apiSourceRoot, new Set(['.ts']))
@@ -35,9 +80,73 @@ function resolveRoot(arguments_) {
 }
 
 function coreEgressViolations(sources, operationIds, executorPolicies) {
-  return sources.flatMap(({ path, source }) =>
-    coreSourceEgressViolations(path, source, operationIds, executorPolicies),
+  return [
+    ...sources.flatMap(({ path, source }) =>
+      coreSourceEgressViolations(path, source, operationIds, executorPolicies),
+    ),
+    ...legacyEgressAllowlistViolations(sources),
+  ]
+}
+
+function legacyEgressAllowlistViolations(sources) {
+  const allowed = new Set(legacyEsiEgressModules)
+  const remaining = sources.filter(
+    ({ path, source }) =>
+      !path.startsWith('api/src/esi-resilience/') && usesLegacyEsiEgress(path, source),
   )
+  const remainingPaths = new Set(remaining.map(({ path }) => path))
+
+  return [
+    ...remaining
+      .filter(({ path }) => !allowed.has(path))
+      .map((entry) => `${entry.path}: ESI egress outside the representation seam is not allowed`),
+    ...legacyEsiEgressModules
+      .filter((path) => !remainingPaths.has(path))
+      .map((path) => `${path}: stale legacy ESI egress allowlist entry, delete it`),
+  ]
+}
+
+function usesLegacyEsiEgress(path, source) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind(path),
+  )
+  let importsLegacyLayer = false
+  let callsLegacyLayer = false
+  let importsLegacyEgress = false
+  const recordImport = (specifier) => {
+    if (
+      specifier.endsWith('/request-transport.js') ||
+      specifier.startsWith('@evespace/esi-client/domains/')
+    )
+      importsLegacyEgress = true
+    if (specifier.endsWith('/esi-resilience/layer.js')) importsLegacyLayer = true
+  }
+  visit(sourceFile, (node) => {
+    if (ts.isImportDeclaration(node) && hasRuntimeImportClause(node.importClause)) {
+      const specifier = stringLiteralValue(node.moduleSpecifier)
+      if (specifier) recordImport(specifier)
+    }
+    if (ts.isExportDeclaration(node) && !node.isTypeOnly && node.moduleSpecifier) {
+      const specifier = stringLiteralValue(node.moduleSpecifier)
+      if (specifier) recordImport(specifier)
+    }
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      ts.isStringLiteral(node.arguments[0])
+    )
+      recordImport(node.arguments[0].text)
+    if (
+      ts.isCallExpression(node) &&
+      legacyLayerMethods.has(calledFunctionName(node.expression) ?? '')
+    )
+      callsLegacyLayer = true
+  })
+  return importsLegacyEgress || (importsLegacyLayer && callsLegacyLayer)
 }
 
 function coreSourceEgressViolations(path, source, operationIds, executorPolicies) {
@@ -46,6 +155,17 @@ function coreSourceEgressViolations(path, source, operationIds, executorPolicies
     ...sdkClientConstructionViolations(path, source, 'core'),
     ...characterExecutorViolations(path, source, executorPolicies),
   )
+  if (!genericEsiClientOwnerPaths.has(path) && hasRuntimeEsiRootImport(path, source))
+    findings.push(`${path}: runtime ESI SDK root imports are reserved for shared executors`)
+  if (
+    path !== approvedMutationAdapterPath &&
+    /\b(?:allowGenericMutations|confirmMutation)\b/.test(source)
+  )
+    findings.push(
+      `${path}: generic mutation approval is reserved for the approved mutation adapter`,
+    )
+  if (hasDirectEsiFetch(path, source))
+    findings.push(`${path}: direct ESI fetch bypasses the shared transport`)
 
   const transportOperations = operationArguments(source, 'createEsiTransport')
   const executorOperations = operationProperties(source)
@@ -114,7 +234,14 @@ function characterExecutorPolicies(source) {
       cacheValue && ts.isObjectLiteralExpression(cacheValue)
         ? stringLiteralValue(propertyInitializer(cacheValue, 'kind'))
         : undefined
-    policies.set(operation, cacheKind === 'none' ? 'executeCharacterMutation' : 'getCharacter')
+    policies.set(
+      operation,
+      cacheKind === 'none'
+        ? objectProperty(contract, 'mutation')
+          ? 'executeCharacterMutation'
+          : 'executeCharacterUncachedRead'
+        : 'getCharacter',
+    )
   })
   return policies
 }
@@ -126,7 +253,9 @@ function enclosingCharacterExecutor(node) {
       const call = current.parent
       const executor = calledFunctionName(call.expression)
       if (
-        (executor === 'getCharacter' || executor === 'executeCharacterMutation') &&
+        (executor === 'getCharacter' ||
+          executor === 'executeCharacterMutation' ||
+          executor === 'executeCharacterUncachedRead') &&
         call.arguments.some((argument) => unwrapExpression(argument) === current)
       )
         return {
@@ -143,6 +272,7 @@ function calledFunctionName(expression) {
   const value = unwrapExpression(expression)
   if (ts.isIdentifier(value)) return value.text
   if (ts.isPropertyAccessExpression(value)) return value.name.text
+  if (ts.isElementAccessExpression(value)) return stringLiteralValue(value.argumentExpression)
   return undefined
 }
 
@@ -230,6 +360,18 @@ function operationProperties(source) {
 }
 
 function hasRuntimeEsiSdkImport(path, source) {
+  return hasRuntimeModuleImport(path, source, isEsiSdkSpecifier)
+}
+
+function hasRuntimeEsiRootImport(path, source) {
+  return hasRuntimeModuleImport(
+    path,
+    source,
+    (specifier) => stringLiteralValue(specifier) === '@evespace/esi-client',
+  )
+}
+
+function hasRuntimeModuleImport(path, source, matches) {
   const sourceFile = ts.createSourceFile(
     path,
     source,
@@ -243,18 +385,35 @@ function hasRuntimeEsiSdkImport(path, source) {
     if (
       ts.isImportDeclaration(node) &&
       hasRuntimeImportClause(node.importClause) &&
-      isEsiSdkSpecifier(node.moduleSpecifier)
+      matches(node.moduleSpecifier)
     )
       found = true
     if (
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword &&
       ts.isStringLiteral(node.arguments[0]) &&
-      isEsiSdkSpecifier(node.arguments[0])
+      matches(node.arguments[0])
     )
       found = true
   })
 
+  return found
+}
+
+function hasDirectEsiFetch(path, source) {
+  const sourceFile = ts.createSourceFile(
+    path,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind(path),
+  )
+  let found = false
+  visit(sourceFile, (node) => {
+    if (!ts.isCallExpression(node) || calledFunctionName(node.expression) !== 'fetch') return
+    const target = stringLiteralValue(node.arguments[0])
+    if (target?.includes('esi.evetech.net')) found = true
+  })
   return found
 }
 
@@ -276,21 +435,32 @@ function sdkClientConstructionViolations(path, source, owner) {
     true,
     scriptKind(path),
   )
-  const { factories, namespaces, declarations } = collectSdkClientReferences(sourceFile)
+  const { factories, classes, namespaces, declarations } = collectSdkClientReferences(sourceFile)
   resolveSdkClientFactoryAliases(sourceFile, declarations, factories, namespaces)
-  return findSdkClientConstructionViolations(sourceFile, path, owner, factories, namespaces)
+  resolveSdkClientClassAliases(sourceFile, declarations, classes, namespaces)
+  return findSdkClientConstructionViolations(
+    sourceFile,
+    path,
+    owner,
+    factories,
+    classes,
+    namespaces,
+  )
 }
 
 function collectSdkClientReferences(sourceFile) {
   const factories = new Set()
+  const classes = new Set()
   const namespaces = new Set()
   const declarations = []
 
-  visit(sourceFile, (node) => collectSdkClientReference(node, factories, namespaces, declarations))
-  return { factories, namespaces, declarations }
+  visit(sourceFile, (node) =>
+    collectSdkClientReference(node, factories, classes, namespaces, declarations),
+  )
+  return { factories, classes, namespaces, declarations }
 }
 
-function collectSdkClientReference(node, factories, namespaces, declarations) {
+function collectSdkClientReference(node, factories, classes, namespaces, declarations) {
   if (ts.isVariableDeclaration(node)) declarations.push(node)
   if (!ts.isImportDeclaration(node) || !isEsiSdkSpecifier(node.moduleSpecifier)) return
 
@@ -303,6 +473,7 @@ function collectSdkClientReference(node, factories, namespaces, declarations) {
   for (const element of clause.namedBindings.elements) {
     const imported = element.propertyName?.text ?? element.name.text
     if (!element.isTypeOnly && isSdkClientFactoryName(imported)) factories.add(element.name.text)
+    if (!element.isTypeOnly && imported === 'EsiClient') classes.add(element.name.text)
   }
 }
 
@@ -313,6 +484,42 @@ function resolveSdkClientFactoryAliases(sourceFile, declarations, factories, nam
     for (const declaration of declarations)
       changed =
         registerSdkClientFactoryAlias(sourceFile, declaration, factories, namespaces) || changed
+  }
+}
+
+function resolveSdkClientClassAliases(sourceFile, declarations, classes, namespaces) {
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const declaration of declarations) {
+      if (
+        ts.isIdentifier(declaration.name) &&
+        declaration.initializer &&
+        isSdkClientClassExpression(declaration.initializer, classes, namespaces) &&
+        !classes.has(declaration.name.text)
+      ) {
+        classes.add(declaration.name.text)
+        changed = true
+      }
+      if (
+        ts.isObjectBindingPattern(declaration.name) &&
+        declaration.initializer &&
+        ts.isIdentifier(unwrapExpression(declaration.initializer)) &&
+        namespaces.has(unwrapExpression(declaration.initializer).text)
+      )
+        for (const element of declaration.name.elements) {
+          const imported =
+            element.propertyName?.getText(sourceFile) ?? element.name.getText(sourceFile)
+          if (
+            imported === 'EsiClient' &&
+            ts.isIdentifier(element.name) &&
+            !classes.has(element.name.text)
+          ) {
+            classes.add(element.name.text)
+            changed = true
+          }
+        }
+    }
   }
 }
 
@@ -358,20 +565,52 @@ function registerDestructuredFactoryAliases(sourceFile, declaration, factories, 
   return changed
 }
 
-function findSdkClientConstructionViolations(sourceFile, path, owner, factories, namespaces) {
+function findSdkClientConstructionViolations(
+  sourceFile,
+  path,
+  owner,
+  factories,
+  classes,
+  namespaces,
+) {
   const findings = []
   visit(sourceFile, (node) =>
-    collectSdkClientConstructionViolation(node, path, owner, factories, namespaces, findings),
+    collectSdkClientConstructionViolation(
+      node,
+      path,
+      owner,
+      factories,
+      classes,
+      namespaces,
+      findings,
+    ),
   )
   return findings
 }
 
-function collectSdkClientConstructionViolation(node, path, owner, factories, namespaces, findings) {
-  if (
-    !ts.isCallExpression(node) ||
-    !isSdkClientFactoryExpression(node.expression, factories, namespaces)
-  )
-    return
+function collectSdkClientConstructionViolation(
+  node,
+  path,
+  owner,
+  factories,
+  classes,
+  namespaces,
+  findings,
+) {
+  const isFactoryCall =
+    ts.isCallExpression(node) &&
+    isSdkClientFactoryExpression(node.expression, factories, namespaces)
+  const isGenericConstruction =
+    ts.isNewExpression(node) && isSdkClientClassExpression(node.expression, classes, namespaces)
+  if (!isFactoryCall && !isGenericConstruction) return
+  if (owner === 'core' && isGenericConstruction) {
+    if (!genericEsiClientOwnerPaths.has(path)) {
+      findings.push(`${path}: generic ESI SDK client construction is reserved for shared executors`)
+      return
+    }
+    const transportOwner = path.endsWith('/module-operation-dispatcher.ts') ? 'module' : owner
+    if (usesRequiredTransport(node, transportOwner)) return
+  }
   if (owner === 'core' && usesRequiredTransport(node, owner)) return
 
   findings.push(
@@ -382,7 +621,7 @@ function collectSdkClientConstructionViolation(node, path, owner, factories, nam
 }
 
 function usesRequiredTransport(call, owner) {
-  const options = call.arguments[0]
+  const options = call.arguments?.[0]
   if (!options || !ts.isObjectLiteralExpression(unwrapExpression(options))) return false
   const fetchProperty = unwrapExpression(options).properties.find(
     (property) =>
@@ -400,6 +639,24 @@ function usesRequiredTransport(call, owner) {
   return (
     (ts.isIdentifier(transport) && transport.text === 'transport') ||
     (ts.isPropertyAccessExpression(transport) && transport.name.text === 'transport')
+  )
+}
+
+function isSdkClientClassExpression(expression, classes, namespaces) {
+  const value = unwrapExpression(expression)
+  if (ts.isIdentifier(value)) return classes.has(value.text)
+  if (
+    ts.isPropertyAccessExpression(value) &&
+    ts.isIdentifier(unwrapExpression(value.expression)) &&
+    namespaces.has(unwrapExpression(value.expression).text) &&
+    value.name.text === 'EsiClient'
+  )
+    return true
+  return (
+    ts.isElementAccessExpression(value) &&
+    ts.isIdentifier(unwrapExpression(value.expression)) &&
+    namespaces.has(unwrapExpression(value.expression).text) &&
+    stringLiteralValue(value.argumentExpression) === 'EsiClient'
   )
 }
 

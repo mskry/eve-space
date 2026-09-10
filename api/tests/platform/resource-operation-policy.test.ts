@@ -196,6 +196,29 @@ describe('installed resource operation policy', () => {
     expect(mocks.createEsiTransport).not.toHaveBeenCalled()
   })
 
+  test('rejects caller-owned conditional headers before consulting the cache', async () => {
+    const guardExecution = vi.fn().mockResolvedValue({
+      outcome: 'ready',
+      resource,
+      characterId: 1404328063,
+      authorization: { scopes: ['esi-wallet.read_character_wallet.v1'], tokenVersion: 4 },
+    })
+
+    await expect(
+      executeInstalledResourceOperation(identity, {
+        resources: [resource],
+        guardExecution,
+        definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
+        validateInputs: vi.fn(() => ({
+          characterId: 1404328063,
+          headers: { 'IF-NONE-MATCH': 'caller-value' },
+        })),
+      }),
+    ).rejects.toThrow('ESI request header IF-NONE-MATCH is executor-owned')
+    expect(mocks.getEsiResilienceLayer).not.toHaveBeenCalled()
+    expect(mocks.getCharacterWithAuthorization).not.toHaveBeenCalled()
+  })
+
   test('uses the default lifecycle authorization loader when a refresh needs token material', async () => {
     mocks.getCharacterAuthorizationForLifecycle.mockResolvedValue({
       accessToken: 'private',

@@ -4,6 +4,7 @@ import {
   retry,
   sharedPrivateCache,
   sharedPublicCache,
+  type EsiMutationContract,
   type EsiOperationContract,
 } from './contract-types.js'
 
@@ -190,7 +191,6 @@ export const coreEsiOperationCatalog = {
   'character-cspa-charge': defineContract('character-cspa-charge', {
     identity: { kind: 'ordered', fields: ['characterId'] },
     cache: { kind: 'none' },
-    mutation: { kind: 'character', appliedOnMissing: false },
     retry,
   }),
   'character-corporation-roles': defineContract('character-corporation-roles', {
@@ -292,4 +292,11 @@ export const esiOperationCatalog = {
 } as const satisfies Record<string, EsiOperationContract>
 
 export type EsiOperation = keyof typeof esiOperationCatalog
+export type CharacterMutationEsiOperation = {
+  [Operation in EsiOperation]: (typeof esiOperationCatalog)[Operation] extends {
+    mutation: EsiMutationContract
+  }
+    ? Operation
+    : never
+}[EsiOperation]
 export const esiOperations = Object.keys(esiOperationCatalog) as EsiOperation[]

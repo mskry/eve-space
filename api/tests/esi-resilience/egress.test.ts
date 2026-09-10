@@ -7,6 +7,28 @@ import { promisify } from 'node:util'
 import { describe, expect, test } from 'vitest'
 
 const execFileAsync = promisify(execFile)
+const legacyEgressPaths = [
+  'api/src/characters/affiliation-sync.ts',
+  'api/src/characters/assets.ts',
+  'api/src/characters/attributes.ts',
+  'api/src/characters/clones.ts',
+  'api/src/characters/contracts.ts',
+  'api/src/characters/corporation-roles.ts',
+  'api/src/characters/history.ts',
+  'api/src/characters/market.ts',
+  'api/src/characters/overview.ts',
+  'api/src/characters/profile.ts',
+  'api/src/characters/skill-queue.ts',
+  'api/src/characters/wallet.ts',
+  'api/src/corporations/public-data.ts',
+  'api/src/deployment/organization.ts',
+  'api/src/mail/mailbox.ts',
+  'api/src/organization/authority.ts',
+  'api/src/platform/resource-batch.ts',
+  'api/src/platform/resource-operation-executor.ts',
+  'api/src/system/status.ts',
+  'api/src/universe/locations.ts',
+] as const
 
 describe('ESI egress verification', () => {
   test('permits only the resilience transport and layer-owned cache or cooldown state', async () => {
@@ -56,7 +78,7 @@ describe('ESI egress verification', () => {
   test('accepts registered character operations nested in their required executors', async () => {
     const fixture = await createEgressFixture({
       'api/src/esi-resilience/catalog.ts': characterExecutorCatalog(),
-      'api/src/mail/valid.ts': `
+      'api/src/mail/mailbox.ts': `
         import { createMailClient } from '@evespace/esi-client/domains/mail'
         import { createEsiTransport } from '../../esi-resilience/request-transport.js'
 
@@ -79,6 +101,102 @@ describe('ESI egress verification', () => {
 
     try {
       await expect(runVerifier(fixture)).resolves.toEqual(expect.objectContaining({ stderr: '' }))
+    } finally {
+      await rm(fixture, { recursive: true, force: true })
+    }
+  })
+
+  test('rejects legacy ESI egress from a module outside the shrinking allowlist', async () => {
+    const fixture = await createEgressFixture({
+      'api/src/characters/new-egress.ts': `
+        import { createSkillsClient } from "@evespace/esi-client/domains/skills"
+        export const client = createSkillsClient
+      `,
+      'api/src/characters/layer-bypass.ts': `
+        import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+        export const load = (resource) => getEsiResilienceLayer().getCharacter(resource)
+      `,
+      'api/src/characters/dynamic-egress.ts': `
+        export const load = () => import('@evespace/esi-client/domains/skills')
+      `,
+      'api/src/characters/raw-esi.ts': `
+        export const load = () => fetch('https://esi.evetech.net/latest/status')
+      `,
+    })
+
+    try {
+      const stderr = await verifierFailure(fixture)
+      expect(stderr).toContain(
+        'api/src/characters/new-egress.ts: ESI egress outside the representation seam is not allowed',
+      )
+      expect(stderr).toContain(
+        'api/src/characters/layer-bypass.ts: ESI egress outside the representation seam is not allowed',
+      )
+      expect(stderr).toContain(
+        'api/src/characters/dynamic-egress.ts: ESI egress outside the representation seam is not allowed',
+      )
+      expect(stderr).toContain(
+        'api/src/characters/raw-esi.ts: direct ESI fetch bypasses the shared transport',
+      )
+    } finally {
+      await rm(fixture, { recursive: true, force: true })
+    }
+  })
+
+  test('reserves generic ESI SDK client construction for the representation executor', async () => {
+    const genericClient = `
+      import { EsiClient } from '@evespace/esi-client'
+      const createEsiTransport = () => fetch
+      export const client = new EsiClient({ fetch: createEsiTransport() })
+    `
+    const fixture = await createEgressFixture({
+      'api/src/esi-resilience/execute.ts': genericClient,
+      'api/src/characters/generic-client.ts': genericClient,
+    })
+
+    try {
+      const stderr = await verifierFailure(fixture)
+      expect(stderr).toContain(
+        'api/src/characters/generic-client.ts: generic ESI SDK client construction is reserved for shared executors',
+      )
+      expect(stderr).not.toContain(
+        'api/src/esi-resilience/execute.ts: generic ESI SDK client construction is reserved for shared executors',
+      )
+    } finally {
+      await rm(fixture, { recursive: true, force: true })
+    }
+  })
+
+  test('reserves generic mutation approval for the approved mutation adapter', async () => {
+    const fixture = await createEgressFixture({
+      'api/src/esi-resilience/approved-mutation-adapter.ts': `
+        export const approved = { allowGenericMutations: true, confirmMutation: true }
+      `,
+      'api/src/esi-resilience/execute.ts': `
+        export const bypass = { allowGenericMutations: true, confirmMutation: true }
+      `,
+    })
+
+    try {
+      const stderr = await verifierFailure(fixture)
+      expect(stderr).toContain(
+        'api/src/esi-resilience/execute.ts: generic mutation approval is reserved for the approved mutation adapter',
+      )
+      expect(stderr).not.toContain(
+        'api/src/esi-resilience/approved-mutation-adapter.ts: generic mutation approval is reserved for the approved mutation adapter',
+      )
+    } finally {
+      await rm(fixture, { recursive: true, force: true })
+    }
+  })
+
+  test('rejects a stale legacy ESI egress allowlist entry', async () => {
+    const stalePath = legacyEgressPaths[0]
+    const fixture = await createEgressFixture({ [stalePath]: 'export const migrated = true' })
+
+    try {
+      const stderr = await verifierFailure(fixture)
+      expect(stderr).toContain(`${stalePath}: stale legacy ESI egress allowlist entry, delete it`)
     } finally {
       await rm(fixture, { recursive: true, force: true })
     }
@@ -197,6 +315,7 @@ describe('ESI egress verification', () => {
 async function createEgressFixture(files: Readonly<Record<string, string>>) {
   const root = await mkdtemp(join(tmpdir(), 'eve-space-esi-egress-'))
   const required = {
+    ...legacyEgressFixtureFiles(),
     'features/installed-modules.json': JSON.stringify({ modules: ['alpha'] }),
     'api/src/esi-resilience/catalog.ts': "defineContract('status', {})",
     'api/src/generated/platform/installed-module-esi.ts': `
@@ -216,6 +335,15 @@ async function createEgressFixture(files: Readonly<Record<string, string>>) {
   return root
 }
 
+function legacyEgressFixtureFiles() {
+  return Object.fromEntries(
+    legacyEgressPaths.map((path) => [
+      path,
+      "import { createEsiTransport } from '../../esi-resilience/request-transport.js'\nvoid createEsiTransport",
+    ]),
+  )
+}
+
 function runVerifier(root: string) {
   const repositoryRoot = fileURLToPath(new URL('../../..', import.meta.url))
   return execFileAsync('node', ['scripts/verify-esi-egress.mjs', '--root', root], {
@@ -232,6 +360,7 @@ function characterExecutorCatalog() {
     defineContract('mail-send', {
       resourceRevision: { kind: 'character', namespace: 'mailbox' },
       cache: { kind: 'none' },
+      mutation: { kind: 'character', appliedOnMissing: false },
     })
   `
 }
