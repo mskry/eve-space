@@ -1,4 +1,4 @@
-import { publicAllianceRepresentation } from '../characters/profile.js'
+import { publicAllianceRepresentation } from '../alliances/public-data.js'
 import { execute } from '../esi-resilience/execute.js'
 import {
   OrganizationAuthorityError,
