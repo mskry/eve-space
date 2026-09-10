@@ -1,14 +1,17 @@
-import { createMailClient } from '@evespace/esi-client/domains/mail'
-import { createCharacterClient } from '@evespace/esi-client/domains/character'
-import { createSearchClient } from '@evespace/esi-client/domains/search'
 import { operationRegistry } from '@evespace/esi-client/operations'
+import type {
+  GetCharactersCharacterIdMailMailIdResponse,
+  GetCharactersCharacterIdMailResponse,
+  GetCharactersCharacterIdSearchResponse,
+} from '@evespace/esi-client/types'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { executeMutation } from '../esi-resilience/execute.js'
-import { getEsiResilienceLayer } from '../esi-resilience/layer.js'
+import { execute, executeMutation } from '../esi-resilience/execute.js'
 import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiMutation } from '../esi-resilience/representations.js'
-import { createEsiTransport } from '../esi-resilience/request-transport.js'
+import {
+  defineCharacterEsiMutation,
+  defineCharacterEsiRepresentation,
+} from '../esi-resilience/representations.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
 import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
@@ -17,6 +20,7 @@ import { resolveUniverseIds, resolveUniverseNames, type UniverseName } from '../
 type MailRecipientType = 'alliance' | 'character' | 'corporation' | 'mailing_list'
 type MailPartyType = MailRecipientType | 'unknown'
 const maximumMailRecipientSearchResults = 50
+const mailSearchCategories = ['alliance', 'character', 'corporation'] as const
 
 interface MailParty {
   id: number
@@ -177,6 +181,128 @@ interface EsiMailParties {
   recipients?: EsiMailRecipient[]
 }
 
+interface MailHeadersRepresentationInput {
+  characterId: number
+  labels: number[] | null
+  lastMailId: number | null
+}
+
+const mailHeadersRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'mail-headers',
+    name: 'mail-headers-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdMail.transport,
+    encodeRequest: (input: MailHeadersRepresentationInput) => ({
+      path: { character_id: input.characterId },
+      ...(input.labels === null && input.lastMailId === null
+        ? {}
+        : {
+            query: {
+              ...(input.labels === null ? {} : { labels: input.labels }),
+              ...(input.lastMailId === null ? {} : { last_mail_id: input.lastMailId }),
+            },
+          }),
+    }),
+    map: (response, input) => mapMailHeaders(input.characterId, response.data),
+  }),
+)
+
+interface MailDetailRepresentationInput {
+  characterId: number
+  mailId: number
+}
+
+const mailDetailRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'mail-message',
+    name: 'mail-message-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdMailMailId.transport,
+    encodeRequest: (input: MailDetailRepresentationInput) => ({
+      path: { character_id: input.characterId, mail_id: input.mailId },
+    }),
+    map: (response, input) => mapMailDetail(input.characterId, input.mailId, response.data),
+  }),
+)
+
+interface CharacterRepresentationInput {
+  characterId: number
+}
+
+const mailLabelsRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'mail-labels',
+    name: 'mail-labels-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
+    encodeRequest: (input: CharacterRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response) => ({
+      labels: (response.data.labels ?? []).map((label) => ({
+        labelId: label.label_id ?? null,
+        name: label.name ?? null,
+        color: label.color ?? null,
+        unreadCount: label.unread_count ?? null,
+      })),
+      totalUnreadCount: response.data.total_unread_count ?? null,
+    }),
+  }),
+)
+
+const mailListsRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'mail-lists',
+    name: 'mail-lists-core',
+    descriptor: operationRegistry.GetCharactersCharacterIdMailLists.transport,
+    encodeRequest: (input: CharacterRepresentationInput) => ({
+      path: { character_id: input.characterId },
+    }),
+    map: (response): MailingList[] =>
+      response.data.map((list) => ({
+        mailingListId: list.mailing_list_id,
+        name: list.name,
+      })),
+  }),
+)
+
+interface CharacterSearchRepresentationInput {
+  characterId: number
+  search: string
+}
+
+const characterSearchRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-search',
+    name: 'character-search-mail',
+    descriptor: operationRegistry.GetCharactersCharacterIdSearch.transport,
+    encodeRequest: (input: CharacterSearchRepresentationInput) => ({
+      path: { character_id: input.characterId },
+      query: {
+        categories: [...mailSearchCategories],
+        search: input.search,
+      },
+    }),
+    map: (response) => mapMailRecipientSearch(response.data),
+  }),
+)
+
+interface CharacterCspaChargeRepresentationInput {
+  characterId: number
+  characterIds: readonly number[]
+}
+
+const characterCspaChargeRepresentation = registerEsiRepresentation(
+  defineCharacterEsiRepresentation({
+    operation: 'character-cspa-charge',
+    name: 'character-cspa-charge-mail',
+    descriptor: operationRegistry.PostCharactersCharacterIdCspa.transport,
+    encodeRequest: (input: CharacterCspaChargeRepresentationInput) => ({
+      path: { character_id: input.characterId },
+      body: [...input.characterIds],
+    }),
+    map: (response): number => response.data,
+  }),
+)
+
 const mailSendRepresentation = registerEsiRepresentation(
   defineCharacterEsiMutation({
     operation: 'mail-send',
@@ -195,6 +321,83 @@ const mailSendRepresentation = registerEsiRepresentation(
       },
     }),
     map: ({ data }, { characterId }): SentMailResult => ({ characterId, mailId: data }),
+  }),
+)
+
+interface MailCreateLabelRepresentationInput {
+  characterId: number
+  input: CreateMailLabelInput
+}
+
+const mailCreateLabelRepresentation = registerEsiRepresentation(
+  defineCharacterEsiMutation({
+    operation: 'mail-create-label',
+    name: 'mail-create-label-core',
+    descriptor: operationRegistry.PostCharactersCharacterIdMailLabels.transport,
+    encodeRequest: ({ characterId, input }: MailCreateLabelRepresentationInput) => ({
+      path: { character_id: characterId },
+      body: { name: input.name, ...(input.color ? { color: input.color } : {}) },
+    }),
+    map: ({ data }, { characterId }): CreatedMailLabelResult => ({
+      characterId,
+      labelId: data,
+    }),
+  }),
+)
+
+interface MailUpdateRepresentationInput {
+  characterId: number
+  mailId: number
+  input: UpdateMailInput
+}
+
+const mailUpdateRepresentation = registerEsiRepresentation(
+  defineCharacterEsiMutation({
+    operation: 'mail-update',
+    name: 'mail-update-core',
+    descriptor: operationRegistry.PutCharactersCharacterIdMailMailId.transport,
+    encodeRequest: ({ characterId, mailId, input }: MailUpdateRepresentationInput) => ({
+      path: { character_id: characterId, mail_id: mailId },
+      body: {
+        ...(input.labels === undefined ? {} : { labels: [...input.labels] }),
+        ...(input.read === undefined ? {} : { read: input.read }),
+      },
+    }),
+    map: (_response, { characterId, mailId }): UpdatedMailResult => ({ characterId, mailId }),
+  }),
+)
+
+interface MailDeleteRepresentationInput {
+  characterId: number
+  mailId: number
+}
+
+const mailDeleteRepresentation = registerEsiRepresentation(
+  defineCharacterEsiMutation({
+    operation: 'mail-delete',
+    name: 'mail-delete-core',
+    descriptor: operationRegistry.DeleteCharactersCharacterIdMailMailId.transport,
+    encodeRequest: (input: MailDeleteRepresentationInput) => ({
+      path: { character_id: input.characterId, mail_id: input.mailId },
+    }),
+    map: (_response, input): DeletedMailResult => input,
+  }),
+)
+
+interface MailDeleteLabelRepresentationInput {
+  characterId: number
+  labelId: number
+}
+
+const mailDeleteLabelRepresentation = registerEsiRepresentation(
+  defineCharacterEsiMutation({
+    operation: 'mail-delete-label',
+    name: 'mail-delete-label-core',
+    descriptor: operationRegistry.DeleteCharactersCharacterIdMailLabelsLabelId.transport,
+    encodeRequest: (input: MailDeleteLabelRepresentationInput) => ({
+      path: { character_id: input.characterId, label_id: input.labelId },
+    }),
+    map: (_response, input): DeletedMailLabelResult => input,
   }),
 )
 
@@ -256,44 +459,10 @@ export async function listMailHeaders(
   const labels = normalizeLabelFilter(options.labels)
   const lastMailId = options.lastMailId ?? null
   try {
-    const { data, ...metadata } = await getEsiResilienceLayer().getCharacter<{
-      messages: MailHeader[]
-      nextLastMailId: number | null
-    }>({
-      operation: 'mail-headers',
-      inputs: { characterId, labels, lastMailId },
-      load: async (authority, revalidation) => {
-        const response = await createMailClient({
-          fetch: createEsiTransport('mail-headers', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .listHeaders(characterId, {
-            ...(labels ? { labels } : {}),
-            ...(lastMailId === null ? {} : { lastMailId }),
-            ...revalidation,
-          })
-        const headers = response.data.map((header) => {
-          if (header.mail_id === undefined) throw new InvalidMailHeaderError()
-          return header as typeof header & { mail_id: number }
-        })
-        const parties = await enrichParties(characterId, headers)
-        return {
-          data: {
-            messages: headers.map((header) => ({
-              mailId: header.mail_id,
-              sender: senderParty(header.from, parties),
-              recipients: recipientParties(header.recipients, parties),
-              subject: header.subject ?? null,
-              sentAt: header.timestamp ?? null,
-              labelIds: header.labels ?? [],
-              isRead: header.is_read ?? null,
-            })),
-            nextLastMailId: headers.length === 50 ? headers.at(-1)!.mail_id : null,
-          },
-          meta: response.meta,
-        }
-      },
+    const { data, ...metadata } = await execute(mailHeadersRepresentation, {
+      characterId,
+      labels,
+      lastMailId,
     })
     return { characterId, ...data, ...metadata }
   } catch (error) {
@@ -303,33 +472,9 @@ export async function listMailHeaders(
 
 export async function getMailDetail(characterId: number, mailId: number): Promise<MailDetail> {
   try {
-    const { data, ...metadata } = await getEsiResilienceLayer().getCharacter<
-      Omit<MailDetail, keyof MailReadMetadata | 'characterId'>
-    >({
-      operation: 'mail-message',
-      inputs: { characterId, mailId },
-      load: async (authority, revalidation) => {
-        const response = await createMailClient({
-          fetch: createEsiTransport('mail-message', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .get(characterId, mailId, revalidation)
-        const parties = await enrichParties(characterId, [response.data])
-        return {
-          data: {
-            mailId,
-            sender: senderParty(response.data.from, parties),
-            recipients: recipientParties(response.data.recipients, parties),
-            subject: response.data.subject ?? null,
-            sentAt: response.data.timestamp ?? null,
-            labelIds: response.data.labels ?? [],
-            isRead: response.data.read ?? null,
-            body: eveDescriptionToPlainText(response.data.body) ?? null,
-          },
-          meta: response.meta,
-        }
-      },
+    const { data, ...metadata } = await execute(mailDetailRepresentation, {
+      characterId,
+      mailId,
     })
     return { characterId, ...data, ...metadata }
   } catch (error) {
@@ -339,33 +484,7 @@ export async function getMailDetail(characterId: number, mailId: number): Promis
 
 export async function getMailLabels(characterId: number): Promise<MailLabels> {
   try {
-    const { data, ...metadata } = await getEsiResilienceLayer().getCharacter<{
-      labels: MailLabel[]
-      totalUnreadCount: number | null
-    }>({
-      operation: 'mail-labels',
-      inputs: { characterId },
-      load: async (authority, revalidation) => {
-        const response = await createMailClient({
-          fetch: createEsiTransport('mail-labels', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .listLabels(characterId, revalidation)
-        return {
-          data: {
-            labels: (response.data.labels ?? []).map((label) => ({
-              labelId: label.label_id ?? null,
-              name: label.name ?? null,
-              color: label.color ?? null,
-              unreadCount: label.unread_count ?? null,
-            })),
-            totalUnreadCount: response.data.total_unread_count ?? null,
-          },
-          meta: response.meta,
-        }
-      },
-    })
+    const { data, ...metadata } = await execute(mailLabelsRepresentation, { characterId })
     return { characterId, ...data, ...metadata }
   } catch (error) {
     throwMailReadError(error)
@@ -374,7 +493,7 @@ export async function getMailLabels(characterId: number): Promise<MailLabels> {
 
 export async function getMailingLists(characterId: number): Promise<MailingLists> {
   try {
-    const { data, ...metadata } = await loadMailingLists(characterId)
+    const { data, ...metadata } = await execute(mailListsRepresentation, { characterId })
     return { characterId, mailingLists: data, ...metadata }
   } catch (error) {
     throwMailReadError(error)
@@ -399,52 +518,9 @@ export async function searchMailRecipients(
   search: string,
 ): Promise<MailRecipientSearchResult> {
   try {
-    const { data, ...metadata } = await getEsiResilienceLayer().getCharacter<MailRecipient[]>({
-      operation: 'character-search',
-      inputs: { characterId, search },
-      load: async (authority, revalidation) => {
-        const response = await createSearchClient({
-          fetch: createEsiTransport('character-search', authority.principal),
-          token: authority.accessToken,
-          language: 'en',
-        })
-          .withMetadata()
-          .search(characterId, {
-            categories: ['alliance', 'character', 'corporation'],
-            search,
-            ...revalidation,
-          })
-        const matchGroups = [
-          { ids: response.data.alliance ?? [], type: 'alliance' as const },
-          { ids: response.data.character ?? [], type: 'character' as const },
-          { ids: response.data.corporation ?? [], type: 'corporation' as const },
-        ]
-        const matches: Array<Pick<MailRecipient, 'id' | 'type'>> = []
-        const seen = new Set<string>()
-        const maximumGroupLength = Math.max(...matchGroups.map((group) => group.ids.length))
-        for (let index = 0; index < maximumGroupLength; index += 1) {
-          for (const group of matchGroups) {
-            const id = group.ids[index]
-            if (id === undefined) continue
-            const key = `${group.type}:${id}`
-            if (seen.has(key)) continue
-            seen.add(key)
-            matches.push({ id, type: group.type })
-            if (matches.length === maximumMailRecipientSearchResults) break
-          }
-          if (matches.length === maximumMailRecipientSearchResults) break
-        }
-        const names = await resolveUniverseNames(matches.map((match) => match.id))
-        return {
-          data: matches.flatMap((match) => {
-            const resolved = names.get(match.id)
-            return resolved?.category === match.type
-              ? [{ id: match.id, type: match.type, name: resolved.name }]
-              : []
-          }),
-          meta: response.meta,
-        }
-      },
+    const { data, ...metadata } = await execute(characterSearchRepresentation, {
+      characterId,
+      search,
     })
     return { characterId, recipients: data, ...metadata }
   } catch (error) {
@@ -457,17 +533,7 @@ export async function calculateMailCspaCharge(
   characterIds: readonly number[],
 ): Promise<MailCspaChargeResult> {
   try {
-    const response = await getEsiResilienceLayer().executeCharacterUncachedRead({
-      operation: 'character-cspa-charge',
-      characterId,
-      load: (authority) =>
-        createCharacterClient({
-          fetch: createEsiTransport('character-cspa-charge', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .calculateCspaCharge(characterId, { body: [...characterIds] }),
-    })
+    const response = await execute(characterCspaChargeRepresentation, { characterId, characterIds })
     return { characterId, cost: response.data }
   } catch (error) {
     throwMailMutationError(error, 'cspa')
@@ -487,20 +553,7 @@ export async function createMailLabel(
   input: CreateMailLabelInput,
 ): Promise<CreatedMailLabelResult> {
   try {
-    const response = await getEsiResilienceLayer().executeCharacterMutation({
-      operation: 'mail-create-label',
-      characterId,
-      load: (authority) =>
-        createMailClient({
-          fetch: createEsiTransport('mail-create-label', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .createLabel(characterId, {
-            body: { name: input.name, ...(input.color ? { color: input.color } : {}) },
-          }),
-    })
-    return { characterId, labelId: response.data }
+    return await executeMutation(mailCreateLabelRepresentation, { characterId, input })
   } catch (error) {
     throwMailMutationError(error, 'organize')
   }
@@ -512,23 +565,7 @@ export async function updateMail(
   input: UpdateMailInput,
 ): Promise<UpdatedMailResult> {
   try {
-    await getEsiResilienceLayer().executeCharacterMutation({
-      operation: 'mail-update',
-      characterId,
-      load: (authority) =>
-        createMailClient({
-          fetch: createEsiTransport('mail-update', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .update(characterId, mailId, {
-            body: {
-              ...(input.labels === undefined ? {} : { labels: [...input.labels] }),
-              ...(input.read === undefined ? {} : { read: input.read }),
-            },
-          }),
-    })
-    return { characterId, mailId }
+    return await executeMutation(mailUpdateRepresentation, { characterId, mailId, input })
   } catch (error) {
     throwMailMutationError(error, 'organize')
   }
@@ -536,18 +573,7 @@ export async function updateMail(
 
 export async function deleteMail(characterId: number, mailId: number): Promise<DeletedMailResult> {
   try {
-    await getEsiResilienceLayer().executeCharacterMutation({
-      operation: 'mail-delete',
-      characterId,
-      load: (authority) =>
-        createMailClient({
-          fetch: createEsiTransport('mail-delete', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .deleteMail(characterId, mailId),
-    })
-    return { characterId, mailId }
+    return await executeMutation(mailDeleteRepresentation, { characterId, mailId })
   } catch (error) {
     if (errorStatus(error) === 404) return { characterId, mailId }
     throwMailMutationError(error, 'organize')
@@ -559,22 +585,79 @@ export async function deleteMailLabel(
   labelId: number,
 ): Promise<DeletedMailLabelResult> {
   try {
-    await getEsiResilienceLayer().executeCharacterMutation({
-      operation: 'mail-delete-label',
-      characterId,
-      load: (authority) =>
-        createMailClient({
-          fetch: createEsiTransport('mail-delete-label', authority.principal),
-          token: authority.accessToken,
-        })
-          .withMetadata()
-          .deleteLabel(characterId, labelId),
-    })
-    return { characterId, labelId }
+    return await executeMutation(mailDeleteLabelRepresentation, { characterId, labelId })
   } catch (error) {
     if (errorStatus(error) === 404) return { characterId, labelId }
     throwMailMutationError(error, 'organize')
   }
+}
+
+async function mapMailHeaders(characterId: number, response: GetCharactersCharacterIdMailResponse) {
+  const headers = response.map((header) => {
+    if (header.mail_id === undefined) throw new InvalidMailHeaderError()
+    return header as typeof header & { mail_id: number }
+  })
+  const parties = await enrichParties(characterId, headers)
+  return {
+    messages: headers.map((header) => ({
+      mailId: header.mail_id,
+      sender: senderParty(header.from, parties),
+      recipients: recipientParties(header.recipients, parties),
+      subject: header.subject ?? null,
+      sentAt: header.timestamp ?? null,
+      labelIds: header.labels ?? [],
+      isRead: header.is_read ?? null,
+    })),
+    nextLastMailId: headers.length === 50 ? headers.at(-1)!.mail_id : null,
+  }
+}
+
+async function mapMailDetail(
+  characterId: number,
+  mailId: number,
+  response: GetCharactersCharacterIdMailMailIdResponse,
+) {
+  const parties = await enrichParties(characterId, [response])
+  return {
+    mailId,
+    sender: senderParty(response.from, parties),
+    recipients: recipientParties(response.recipients, parties),
+    subject: response.subject ?? null,
+    sentAt: response.timestamp ?? null,
+    labelIds: response.labels ?? [],
+    isRead: response.read ?? null,
+    body: eveDescriptionToPlainText(response.body) ?? null,
+  }
+}
+
+async function mapMailRecipientSearch(response: GetCharactersCharacterIdSearchResponse) {
+  const matchGroups = [
+    { ids: response.alliance ?? [], type: 'alliance' as const },
+    { ids: response.character ?? [], type: 'character' as const },
+    { ids: response.corporation ?? [], type: 'corporation' as const },
+  ]
+  const matches: Array<Pick<MailRecipient, 'id' | 'type'>> = []
+  const seen = new Set<string>()
+  const maximumGroupLength = Math.max(...matchGroups.map((group) => group.ids.length))
+  for (let index = 0; index < maximumGroupLength; index += 1) {
+    for (const group of matchGroups) {
+      const id = group.ids[index]
+      if (id === undefined) continue
+      const key = `${group.type}:${id}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      matches.push({ id, type: group.type })
+      if (matches.length === maximumMailRecipientSearchResults) break
+    }
+    if (matches.length === maximumMailRecipientSearchResults) break
+  }
+  const names = await resolveUniverseNames(matches.map((match) => match.id))
+  return matches.flatMap((match) => {
+    const resolved = names.get(match.id)
+    return resolved?.category === match.type
+      ? [{ id: match.id, type: match.type, name: resolved.name }]
+      : []
+  })
 }
 
 function normalizeLabelFilter(labels: readonly number[] | null | undefined) {
@@ -583,25 +666,7 @@ function normalizeLabelFilter(labels: readonly number[] | null | undefined) {
 }
 
 async function loadMailingLists(characterId: number) {
-  return getEsiResilienceLayer().getCharacter<MailingList[]>({
-    operation: 'mail-lists',
-    inputs: { characterId },
-    load: async (authority, revalidation) => {
-      const response = await createMailClient({
-        fetch: createEsiTransport('mail-lists', authority.principal),
-        token: authority.accessToken,
-      })
-        .withMetadata()
-        .listMailingLists(characterId, revalidation)
-      return {
-        data: response.data.map((list) => ({
-          mailingListId: list.mailing_list_id,
-          name: list.name,
-        })),
-        meta: response.meta,
-      }
-    },
-  })
+  return execute(mailListsRepresentation, { characterId })
 }
 
 async function enrichParties(characterId: number, records: readonly EsiMailParties[]) {
