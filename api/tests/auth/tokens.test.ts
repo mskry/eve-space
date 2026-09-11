@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('../../src/auth/store.js', () => ({
+vi.mock('../../src/auth/character-token-store.js', () => ({
   CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
   deleteCharacterTokenAuthorization: mocks.deleteCharacterTokenAuthorization,
   TokenRefreshLockUnavailableError: mocks.TokenRefreshLockUnavailableError,
@@ -234,6 +234,29 @@ describe('token refresh', () => {
     })
 
     await expect(getCharacterAccessToken(characterId, scope)).resolves.toBe('new-access')
+    expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+  })
+
+  test('cancels a job-owned refresh without mutating token state', async () => {
+    const controller = new AbortController()
+    mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
+      operation(expired, {}),
+    )
+    mocks.refreshAccessToken.mockImplementation(
+      (_refreshToken: string, signal: AbortSignal) =>
+        new Promise((_, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        }),
+    )
+
+    const pending = getCharacterAuthorization(characterId, scope, controller.signal)
+    await vi.waitFor(() => expect(mocks.refreshAccessToken).toHaveBeenCalledOnce())
+    controller.abort()
+
+    await expect(pending).rejects.toBe(controller.signal.reason)
+    expect(controller.signal.reason).toMatchObject({ name: 'AbortError' })
+    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    expect(mocks.deleteCharacterTokenAuthorization).not.toHaveBeenCalled()
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })
 

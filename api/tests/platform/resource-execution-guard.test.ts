@@ -9,7 +9,7 @@ vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
   getCharacterCacheAuthorizationForLifecycle: authMocks.getCharacterCacheAuthorizationForLifecycle,
 }))
 
-import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
+import { CharacterTokenNotFoundError } from '../../src/auth/character-token-store.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
 import { coreResources } from '../../src/platform/core-resources.js'

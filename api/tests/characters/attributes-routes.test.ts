@@ -6,14 +6,13 @@ const mocks = vi.hoisted(() => ({
   getCharacterAttributes: vi.fn(),
 }))
 
-vi.mock('../../src/auth/store.js', () => ({
-  CharacterTokenNotFoundError: class CharacterTokenNotFoundError extends Error {},
+vi.mock('../../src/auth/character-lifecycle.js', () => ({
   deleteCharacter: vi.fn(),
   findOwnedCharacter: mocks.findOwnedCharacter,
-  findSession: mocks.findSession,
   listUserCharacters: vi.fn(),
   setMainCharacter: vi.fn(),
 }))
+vi.mock('../../src/auth/session-store.js', () => ({ findSession: mocks.findSession }))
 vi.mock('../../src/env.js', () => ({
   env: { EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback' },
 }))

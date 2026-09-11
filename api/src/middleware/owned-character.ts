@@ -1,7 +1,7 @@
 import { createMiddleware } from 'hono/factory'
 import { z } from 'zod'
-import type { OwnedCharacterSummary, SessionAccount } from '../auth/store.js'
-import { findOwnedCharacter } from '../auth/store.js'
+import { findOwnedCharacter, type OwnedCharacterSummary } from '../auth/character-lifecycle.js'
+import type { SessionAccount } from '../auth/session-store.js'
 import { authRequiredBody } from '../http/contracts.js'
 
 export const characterIdParams = z.object({

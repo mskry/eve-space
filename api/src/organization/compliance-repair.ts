@@ -20,6 +20,7 @@ export async function repairOrganizationCompliance(
     .select({ organizationVersion: deploymentSettings.organizationVersion })
     .from(deploymentSettings)
     .where(eq(deploymentSettings.id, 1))
+  options.signal?.throwIfAborted()
   if (!organization) return { repaired: 0 }
   await expireOrganizationCharacterExceptions(now, limit)
   options.signal?.throwIfAborted()
@@ -46,6 +47,7 @@ export async function repairOrganizationCompliance(
     )
     .orderBy(asc(users.id))
     .limit(limit)
+  options.signal?.throwIfAborted()
   let remaining = limit - missing.length
   const due =
     remaining > 0
@@ -84,6 +86,7 @@ export async function repairOrganizationCompliance(
           )
           .limit(remaining)
       : []
+  options.signal?.throwIfAborted()
   remaining -= due.length
   const oldest =
     remaining > 0
@@ -105,6 +108,7 @@ export async function repairOrganizationCompliance(
           )
           .limit(remaining)
       : []
+  options.signal?.throwIfAborted()
   const userIds = [...new Set([...missing, ...due, ...oldest].map(({ userId }) => userId))]
   const failures: unknown[] = []
   let repaired = 0
@@ -120,6 +124,7 @@ export async function repairOrganizationCompliance(
       })
       repaired += 1
     } catch (error) {
+      options.signal?.throwIfAborted()
       failures.push(error)
     }
   }

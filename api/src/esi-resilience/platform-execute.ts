@@ -10,6 +10,7 @@ export interface PlatformEsiExecutionRequest {
   readonly operation: EsiOperation
   readonly definition: PlatformExecutableEsiOperationDefinition
   readonly inputs: Readonly<Record<string, unknown>>
+  readonly signal?: AbortSignal
   readonly authorization:
     | { readonly kind: 'public' }
     | {

@@ -98,7 +98,7 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('../../src/env.js', () => ({ env: { WEB_ORIGIN: 'http://localhost:3000' } }))
-vi.mock('../../src/auth/store.js', () => ({ findSession: mocks.findSession }))
+vi.mock('../../src/auth/session-store.js', () => ({ findSession: mocks.findSession }))
 vi.mock('../../src/organization/activity.js', () => ({
   aggregateOrganizationActivities: mocks.aggregateOrganizationActivities,
 }))

@@ -25,8 +25,10 @@ const mocks = vi.hoisted(() => ({
   moduleEnabled: vi.fn(),
 }))
 
-vi.mock('../../api/src/auth/store.js', () => ({
+vi.mock('../../api/src/auth/character-lifecycle.js', () => ({
   findOwnedCharacter: mocks.findOwnedCharacter,
+}))
+vi.mock('../../api/src/auth/session-store.js', () => ({
   findSession: mocks.findSession,
 }))
 vi.mock('../../api/src/platform/module-settings.js', () => ({

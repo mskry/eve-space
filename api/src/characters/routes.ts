@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { deleteCharacter } from '../auth/store.js'
+import { deleteCharacter } from '../auth/character-lifecycle.js'
 import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { loadSession } from '../middleware/auth-session.js'

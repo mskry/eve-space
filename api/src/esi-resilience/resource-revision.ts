@@ -40,7 +40,9 @@ export class EsiResourceRevisionRegistry {
   async resolve(
     policy: EsiOperationContract,
     authorization: EsiCacheAuthorization | undefined,
+    signal?: AbortSignal,
   ): Promise<EsiResourceRevision | undefined | null> {
+    signal?.throwIfAborted()
     if (!policy.resourceRevision) return undefined
     if (authorization?.kind !== 'character')
       throw new Error('Revision-sensitive ESI operation is missing character authorization')
@@ -48,6 +50,7 @@ export class EsiResourceRevisionRegistry {
     const keys = this.#keys(namespace, authorization.principal)
 
     const needsRepair = await this.#needsRepair(keys)
+    signal?.throwIfAborted()
     if (needsRepair === undefined) return null
 
     try {
@@ -55,8 +58,10 @@ export class EsiResourceRevisionRegistry {
         ? await incrementEsiResourceRevision(this.coordination, namespace, authorization.principal)
         : await getEsiResourceRevision(this.coordination, namespace, authorization.principal)
       if (needsRepair) await this.#clearRepair(keys)
+      signal?.throwIfAborted()
       return { namespace, value }
     } catch {
+      signal?.throwIfAborted()
       recordEsiCoordinationFailure()
       return null
     }

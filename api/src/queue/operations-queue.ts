@@ -10,7 +10,7 @@ export interface OperationsQueueHandle {
   readonly queue: Queue
   readonly connection: CoordinationRedisConnection
   close(): Promise<void>
-  disconnect(): void
+  disconnect(): Promise<void>
 }
 
 export function createOperationsQueueHandle(
@@ -37,9 +37,9 @@ export function createOperationsQueueHandle(
       ]).then(() => undefined)
       return closing
     },
-    disconnect() {
+    async disconnect() {
       connection.disconnect()
-      void queue.disconnect().catch(() => {})
+      await queue.disconnect().catch(() => {})
     },
   }
 }

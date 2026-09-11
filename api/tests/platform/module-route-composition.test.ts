@@ -13,8 +13,10 @@ const mocks = vi.hoisted(() => ({
   createPlatformModuleCollectionStatusReads: vi.fn(() => ({ read: vi.fn() })),
 }))
 
-vi.mock('../../src/auth/store.js', () => ({
+vi.mock('../../src/auth/character-lifecycle.js', () => ({
   findOwnedCharacter: mocks.findOwnedCharacter,
+}))
+vi.mock('../../src/auth/session-store.js', () => ({
   findSession: mocks.findSession,
 }))
 vi.mock('../../src/platform/module-settings.js', () => ({

@@ -14,7 +14,7 @@ export interface DomainEventHandler {
   eventType: DomainEventType
   payloadVersion: number
   idempotency: DomainEventIdempotencyStrategy
-  handle(event: DomainEventEnvelope): Promise<void>
+  handle(event: DomainEventEnvelope, signal?: AbortSignal): Promise<void>
 }
 
 export class DomainEventNotFoundError extends Error {
@@ -23,7 +23,10 @@ export class DomainEventNotFoundError extends Error {
   }
 }
 
-type CharacterCollectionStateRepair = (options: { characterId: number }) => Promise<unknown>
+type CharacterCollectionStateRepair = (options: {
+  characterId: number
+  signal?: AbortSignal
+}) => Promise<unknown>
 
 const characterCollectionStateEventTypes = [
   'character.attached',
@@ -56,9 +59,12 @@ export function createPlatformCollectionStateEventHandlers(
     eventType,
     payloadVersion: 1,
     idempotency: 'convergent-state',
-    async handle(event) {
+    async handle(event, signal) {
       if (!isCharacterCollectionStateEvent(event)) return
-      await repair({ characterId: event.payload.characterId })
+      await repair({
+        characterId: event.payload.characterId,
+        ...(signal ? { signal } : {}),
+      })
     },
   }))
 }
@@ -84,8 +90,9 @@ export function createManagedCorporationComplianceEventHandlers(
     eventType,
     payloadVersion: 1,
     idempotency: 'convergent-state',
-    async handle(event) {
+    async handle(event, signal) {
       if (!isManagedCorporationEvent(event)) return
+      signal?.throwIfAborted()
       await recompute(event.payload)
     },
   }))
@@ -114,8 +121,9 @@ export function createCharacterComplianceEventHandlers(
     eventType,
     payloadVersion: 1,
     idempotency: 'convergent-state',
-    async handle(event) {
+    async handle(event, signal) {
       if (!isCharacterComplianceEvent(event)) return
+      signal?.throwIfAborted()
       await recompute(event.payload.userId)
     },
   }))
@@ -143,9 +151,12 @@ export async function dispatchDomainEvent(
   eventId: string,
   handlers: readonly DomainEventHandler[] = domainEventHandlers,
   loader: typeof loadDomainEvent = loadDomainEvent,
+  signal?: AbortSignal,
 ) {
   verifyDomainEventHandlers(handlers)
+  signal?.throwIfAborted()
   const event = await loader(eventId)
+  signal?.throwIfAborted()
   if (!event) throw new DomainEventNotFoundError()
 
   await Promise.all(
@@ -154,7 +165,7 @@ export async function dispatchDomainEvent(
         (handler) =>
           handler.eventType === event.eventType && handler.payloadVersion === event.payloadVersion,
       )
-      .map((handler) => handler.handle(event)),
+      .map((handler) => (signal ? handler.handle(event, signal) : handler.handle(event))),
   )
   return event
 }

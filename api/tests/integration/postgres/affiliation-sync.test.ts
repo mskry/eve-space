@@ -8,7 +8,7 @@ let container: StartedTestContainer
 let databaseUrl: string
 let connection: postgres.Sql
 let affiliation: typeof import('../../../src/characters/affiliation-sync.js')
-let authStore: typeof import('../../../src/auth/store.js')
+let characterLifecycle: typeof import('../../../src/auth/character-lifecycle.js')
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
 
@@ -34,7 +34,7 @@ beforeAll(async () => {
 
   await runMigrations(connection)
   affiliation = await import('../../../src/characters/affiliation-sync.js')
-  authStore = await import('../../../src/auth/store.js')
+  characterLifecycle = await import('../../../src/auth/character-lifecycle.js')
   dbClient = await import('../../../src/db/client.js')
 })
 
@@ -80,7 +80,7 @@ describe('affiliation persistence', () => {
 
   test('SSO observations schedule an active refresh and older batches cannot overwrite them', async () => {
     const expiresAt = new Date(Date.now() + 60_000)
-    await authStore.saveLogin({
+    await characterLifecycle.saveLogin({
       characterId: 1,
       characterName: 'Login Pilot',
       corporationId: 100,

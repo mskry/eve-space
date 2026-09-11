@@ -13,10 +13,10 @@ export function getCoordinationConnection(): CoordinationRedisConnection {
   return coordinationConnection
 }
 
-export function closeSharedCoordinationRedisConnection(): Promise<void> {
+export function closeSharedCoordinationRedisConnection(timeoutMs?: number): Promise<void> {
   if (pendingClose) return pendingClose
   if (!coordinationConnection) return Promise.resolve()
-  pendingClose = closeCoordinationRedisConnection(coordinationConnection).finally(() => {
+  pendingClose = closeCoordinationRedisConnection(coordinationConnection, timeoutMs).finally(() => {
     coordinationConnection = undefined
     pendingClose = undefined
   })

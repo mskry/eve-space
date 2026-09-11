@@ -1,5 +1,9 @@
 import { Hono } from 'hono'
-import { deleteCharacter, listUserCharacters, setMainCharacter } from '../auth/store.js'
+import {
+  deleteCharacter,
+  listUserCharacters,
+  setMainCharacter,
+} from '../auth/character-lifecycle.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { combineEsiResultMetadata } from '../esi-resilience/result-metadata.js'
 import { privateNoStore } from '../http/private-response.js'

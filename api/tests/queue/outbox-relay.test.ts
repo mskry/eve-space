@@ -83,6 +83,25 @@ describe('outbox relay batch', () => {
     expect(serializedLogs).not.toContain('Payload Pilot')
   })
 
+  test('does not record publication failure when enqueue is cancelled', async () => {
+    const controller = new AbortController()
+    const producer = createInMemoryQueueProducer()
+    producer.enqueue = vi.fn().mockImplementation(async () => {
+      controller.abort()
+      throw controller.signal.reason
+    })
+    const outcomes = outcomeRecorder()
+    const store = relayStore()
+
+    const pending = runOutboxRelayBatch(producer, outcomes, store, { signal: controller.signal })
+    const rejected = pending.catch((error: unknown) => error)
+    await vi.waitFor(() => expect(controller.signal.aborted).toBe(true))
+
+    await expect(rejected).resolves.toBe(controller.signal.reason)
+    expect(store.recordFailure).not.toHaveBeenCalled()
+    expect(outcomes.recordOutbox).not.toHaveBeenCalled()
+  })
+
   test('turns expected producer rejection into recoverable queue rejection', async () => {
     const producer = createInMemoryQueueProducer()
     producer.enqueue = vi.fn().mockResolvedValue({

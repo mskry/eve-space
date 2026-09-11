@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vite
 let container: StartedTestContainer
 let redisUrl: string
 let containerRunning = false
-let platforms: Array<{ close(timeoutMs?: number): Promise<unknown> }> = []
+let platforms: Array<{ close(timeoutMs?: number): Promise<unknown>; forceClose(): void }> = []
 
 beforeAll(async () => {
   container = await new GenericContainer('redis:7.4.7-alpine')
@@ -21,6 +21,8 @@ beforeAll(async () => {
 afterEach(async () => {
   await Promise.all(platforms.map((platform) => platform.close()))
   platforms = []
+  vi.doUnmock('../../../src/queue/job-handlers.js')
+  vi.doUnmock('../../../src/queue/worker-lifecycle.js')
   vi.resetModules()
   vi.restoreAllMocks()
 })
@@ -180,6 +182,82 @@ describe('durable worker platform', () => {
     }
   })
 
+  test('cancels platform startup before claiming waiting work and settles owned cleanup', async () => {
+    await flushQueueRedis()
+    const seed = await openQueue()
+    await seed.queue.add('diagnostic', { operationId: 'queue-diagnostic' })
+    await seed.close()
+    let heartbeatStarted!: () => void
+    const heartbeatStarting = new Promise<void>((resolve) => {
+      heartbeatStarted = resolve
+    })
+    vi.doMock('../../../src/queue/worker-lifecycle.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/queue/worker-lifecycle.js')>()),
+      startWorkerHeartbeat: vi.fn(() => {
+        heartbeatStarted()
+        return new Promise<() => void>(() => {})
+      }),
+    }))
+    const workerClose = vi.spyOn(Worker.prototype, 'close')
+    const queueClose = vi.spyOn(Queue.prototype, 'close')
+    const { startWorkerPlatform } = await loadPlatform(vi.fn())
+    const controller = new AbortController()
+    const starting = startWorkerPlatform(controller.signal)
+    await heartbeatStarting
+
+    controller.abort(new Error('startup cancelled'))
+    await expect(starting).rejects.toThrow('startup cancelled')
+
+    const inspection = await openQueue()
+    try {
+      expect(await countJobs(inspection.queue, 'waiting', 'diagnostic')).toBe(1)
+      expect(workerClose).toHaveBeenCalledWith(true)
+      expect(queueClose).toHaveBeenCalled()
+    } finally {
+      await inspection.queue.drain(true)
+      await inspection.close()
+    }
+  })
+
+  test('awaits BullMQ cleanup when platform startup fails', async () => {
+    await flushQueueRedis()
+    const startupError = new Error('heartbeat failed')
+    vi.doMock('../../../src/queue/worker-lifecycle.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/queue/worker-lifecycle.js')>()),
+      startWorkerHeartbeat: vi.fn().mockRejectedValue(startupError),
+    }))
+    const originalWorkerClose = Worker.prototype.close
+    let releaseCleanup!: () => void
+    const cleanupHeld = new Promise<void>((resolve) => {
+      releaseCleanup = resolve
+    })
+    const workerClose = vi.spyOn(Worker.prototype, 'close').mockImplementation(async function (
+      this: Worker,
+      force?: boolean,
+    ) {
+      await originalWorkerClose.call(this, force)
+      await cleanupHeld
+    })
+    const queueClose = vi.spyOn(Queue.prototype, 'close')
+    const { startWorkerPlatform } = await loadPlatform(vi.fn())
+    const starting = startWorkerPlatform()
+    let startupSettled = false
+    void starting
+      .finally(() => {
+        startupSettled = true
+      })
+      .catch(() => {})
+
+    await vi.waitFor(() => expect(workerClose).toHaveBeenCalledWith(true))
+    expect(startupSettled).toBe(false)
+    releaseCleanup()
+    await expect(starting).rejects.toBe(startupError)
+
+    expect(startupSettled).toBe(true)
+    expect(workerClose).toHaveBeenCalledWith(true)
+    expect(queueClose).toHaveBeenCalled()
+  })
+
   test('reconstructs deterministic authoritative work after deliberate queue loss', async () => {
     await flushQueueRedis()
     process.env.QUEUE_REDIS_URL = redisUrl
@@ -236,11 +314,96 @@ describe('durable worker platform', () => {
     }
   })
 
+  test('stops admission and drains an active job before closing worker resources', async () => {
+    await flushQueueRedis()
+    let markJobActive!: () => void
+    let releaseJob!: () => void
+    const jobActive = new Promise<void>((resolve) => {
+      markJobActive = resolve
+    })
+    const heldJob = new Promise<Array<{ ok: number }>>((resolve) => {
+      releaseJob = () => resolve([{ ok: 1 }])
+    })
+    const sql = vi.fn(() => {
+      markJobActive()
+      return heldJob
+    })
+    const { startWorkerPlatform, enqueueDiagnostic } = await loadPlatform(sql)
+    const platform = await startWorkerPlatform()
+    platforms.push(platform)
+    await enqueueDiagnostic('on-demand')
+    await jobActive
+
+    const closing = platform.close(5_000)
+    let closed = false
+    void closing.then(() => {
+      closed = true
+    })
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(closed).toBe(false)
+
+    releaseJob()
+    await expect(closing).resolves.toEqual({ drained: true, timedOut: false })
+  })
+
+  test('aborts active response consumption when graceful drain reaches its deadline', async () => {
+    await flushQueueRedis()
+    let markResponseOpen!: () => void
+    let markResponseAborted!: () => void
+    let markResponseUnwound!: () => void
+    const responseOpen = new Promise<void>((resolve) => {
+      markResponseOpen = resolve
+    })
+    const responseAborted = new Promise<void>((resolve) => {
+      markResponseAborted = resolve
+    })
+    const responseUnwound = new Promise<void>((resolve) => {
+      markResponseUnwound = resolve
+    })
+    vi.doMock('../../../src/queue/job-handlers.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/queue/job-handlers.js')>()),
+      executeJobHandler: vi.fn(
+        async (_name, _payload, context: { signal: AbortSignal }) =>
+          new Promise<{ type: 'completed' }>((resolve) => {
+            markResponseOpen()
+            context.signal.addEventListener(
+              'abort',
+              () => {
+                expect(context.signal.reason).toMatchObject({ name: 'AbortError' })
+                markResponseAborted()
+                setTimeout(() => {
+                  markResponseUnwound()
+                  resolve({ type: 'completed' })
+                }, 10)
+              },
+              { once: true },
+            )
+          }),
+      ),
+    }))
+    const { startWorkerPlatform, enqueueDiagnostic } = await loadPlatform(vi.fn())
+    const platform = await startWorkerPlatform()
+    platforms.push(platform)
+    await enqueueDiagnostic('on-demand')
+    await responseOpen
+
+    const closing = platform.close(100)
+    let closed = false
+    void closing.then(() => {
+      closed = true
+    })
+    await responseAborted
+    expect(closed).toBe(false)
+    await responseUnwound
+    await expect(closing).resolves.toEqual({ drained: false, timedOut: true })
+  })
+
   // Must stay last because it stops the suite's shared Redis container.
   test('bounds shutdown when queue Redis stops answering', async () => {
     await flushQueueRedis()
-    const timeoutLog = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    const workerDisconnect = vi.spyOn(Worker.prototype, 'disconnect')
+    const workerClose = vi
+      .spyOn(Worker.prototype, 'close')
+      .mockReturnValue(new Promise<void>(() => {}))
     const { startWorkerPlatform } = await loadPlatform(vi.fn().mockResolvedValue([{ ok: 1 }]))
     const platform = await startWorkerPlatform()
 
@@ -250,12 +413,11 @@ describe('durable worker platform', () => {
       .spyOn(Worker.prototype, 'pause')
       .mockReturnValue(new Promise<void>(() => {}))
     const startedAt = Date.now()
-    await expect(platform.close(1_000)).resolves.toBeTypeOf('boolean')
+    await expect(platform.close(1_000)).resolves.toEqual({ drained: false, timedOut: true })
     expect(Date.now() - startedAt).toBeLessThan(3_000)
-    expect(timeoutLog).toHaveBeenCalledWith(
-      'Worker shutdown exceeded its timeout; dropping queue connections',
-    )
-    expect(workerDisconnect).toHaveBeenCalled()
+    expect(workerClose).toHaveBeenCalledWith(true)
+    platform.forceClose()
+    expect(workerClose).toHaveBeenCalledOnce()
     workerPause.mockRestore()
   })
 })

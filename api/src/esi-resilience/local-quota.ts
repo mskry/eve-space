@@ -60,7 +60,9 @@ export async function acquireLocalEsiRequestPermit(options: {
   principal: string
   sharedConcurrency: number
   deadline: number
+  signal?: AbortSignal
 }): Promise<LocalEsiPermitResult> {
+  options.signal?.throwIfAborted()
   const limit = Math.max(1, Math.floor(options.sharedConcurrency / 2))
   while (Date.now() < options.deadline) {
     const now = Date.now()
@@ -88,7 +90,7 @@ export async function acquireLocalEsiRequestPermit(options: {
       }
     }
     // oxlint-disable-next-line no-await-in-loop
-    await wait(Math.min(permitPollMs, Math.max(1, options.deadline - Date.now())))
+    await wait(Math.min(permitPollMs, Math.max(1, options.deadline - Date.now())), options.signal)
   }
   return { kind: 'timeout', retryAfterSeconds: 1 }
 }

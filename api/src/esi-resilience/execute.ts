@@ -14,8 +14,11 @@ export async function execute<
 >(
   representation: EsiRepresentation<Authorization, Operation, Input, Arguments, WireResult, Result>,
   input: Input,
+  signal?: AbortSignal,
 ): Promise<EsiCachedResult<Result>> {
-  return esiExecutionLayer.executeRepresentation(representation, input)
+  return signal
+    ? esiExecutionLayer.executeRepresentation(representation, input, signal)
+    : esiExecutionLayer.executeRepresentation(representation, input)
 }
 
 export async function executeMutation<

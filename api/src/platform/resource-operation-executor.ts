@@ -40,6 +40,7 @@ type PlatformResourceOperationExecution =
     }
 
 interface ResourceOperationExecutorOptions {
+  readonly signal?: AbortSignal
   readonly request?: {
     readonly operationId: string
     readonly inputs: Readonly<Record<string, unknown>>
@@ -56,10 +57,13 @@ export async function executeInstalledResourceOperation(
   identity: PlatformCollectionStateIdentity,
   options: ResourceOperationExecutorOptions = {},
 ): Promise<PlatformResourceOperationExecution> {
+  options.signal?.throwIfAborted()
   const resources = options.resources ?? platformResources
   const guarded = await (options.guardExecution ?? guardInstalledResourceExecution)(identity, {
     resources,
+    signal: options.signal,
   })
+  options.signal?.throwIfAborted()
   if (guarded.outcome === 'noop') return guarded
 
   const subject =
@@ -75,7 +79,11 @@ export async function executeInstalledResourceOperation(
     PlatformResourceSubject
   >
   if (implementation.collect && !options.request) {
-    const context = await (options.loadCollectionContext ?? loadResourceCollectionContext)(subject)
+    const context = await (options.loadCollectionContext ?? loadResourceCollectionContext)(
+      subject,
+      options.signal,
+    )
+    options.signal?.throwIfAborted()
     let requests = 0
     let latest: EsiCachedResult<unknown> | undefined
     const collected = await implementation.collect({
@@ -87,6 +95,7 @@ export async function executeInstalledResourceOperation(
       ),
       requestBudget: 32,
       async execute(operationId, inputs) {
+        options.signal?.throwIfAborted()
         if (++requests > 32) throw new Error('Resource collection request budget exceeded')
         if (
           operationId !== guarded.resource.operationId &&
@@ -110,6 +119,7 @@ export async function executeInstalledResourceOperation(
           ...options,
           request: { operationId, inputs },
         })
+        options.signal?.throwIfAborted()
         if (
           result.outcome !== 'loaded' ||
           result.authorizationGeneration !== (guarded.authorization?.tokenVersion ?? null)
@@ -119,6 +129,7 @@ export async function executeInstalledResourceOperation(
         return { data: result.result.data, validatedAt: result.result.validatedAt }
       },
     })
+    options.signal?.throwIfAborted()
     if (!latest) throw new Error('Resource collection must validate an observation')
     return {
       outcome: 'loaded',
@@ -162,7 +173,9 @@ export async function executeInstalledResourceOperation(
           generation: authorization.tokenVersion,
         }
       : { kind: 'public' },
+    ...(options.signal ? { signal: options.signal } : {}),
   })
+  options.signal?.throwIfAborted()
   return {
     outcome: 'loaded',
     resource: guarded.resource,
@@ -179,6 +192,7 @@ async function executeResourceEsiOperation(
   try {
     return await (options.executeEsiOperation ?? executePlatformEsiOperation)(request)
   } catch (error) {
+    options.signal?.throwIfAborted()
     if (error instanceof PlatformEsiRequestError) throw new PlatformResourceMappingError(error)
     if (isAuthorizationResponse(error)) throw new PlatformResourceAuthorizationError(error)
     throw error

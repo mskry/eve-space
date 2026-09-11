@@ -48,21 +48,30 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('../../src/auth/store.js', () => ({
+vi.mock('../../src/auth/character-lifecycle.js', () => ({
   CharacterOwnershipConflictError: mocks.CharacterOwnershipConflictError,
-  CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
   attachCharacter: mocks.attachCharacter,
-  consumeOAuthState: mocks.consumeOAuthState,
   deleteCharacter: mocks.deleteCharacter,
-  deleteSession: mocks.deleteSession,
-  findCharacterToken: mocks.findCharacterToken,
   findOwnedCharacter: mocks.findOwnedCharacter,
-  findSession: mocks.findSession,
   listUserCharacters: mocks.listUserCharacters,
   reauthorizeCharacter: mocks.reauthorizeCharacter,
   saveLogin: mocks.saveLogin,
   setMainCharacter: mocks.setMainCharacter,
+}))
+
+vi.mock('../../src/auth/oauth-state-store.js', () => ({
+  consumeOAuthState: mocks.consumeOAuthState,
   storeOAuthState: mocks.storeOAuthState,
+}))
+
+vi.mock('../../src/auth/session-store.js', () => ({
+  deleteSession: mocks.deleteSession,
+  findSession: mocks.findSession,
+}))
+
+vi.mock('../../src/auth/character-token-store.js', () => ({
+  CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
+  findCharacterToken: mocks.findCharacterToken,
   updateCharacterToken: mocks.updateCharacterToken,
 }))
 

@@ -41,6 +41,7 @@ export async function runResourcePlanner(
     highWaterMark,
     preservePausedState: true,
   })
+  signal?.throwIfAborted()
   if (admission.status === 'rejected')
     return { selected: 0, planned: 0, reason: 'capacity' as const, admission }
 
@@ -52,7 +53,7 @@ export async function runResourcePlanner(
   if (limit === 0) return { selected: 0, planned: 0, reason: 'capacity' as const, admission }
 
   signal?.throwIfAborted()
-  const candidates = await selectDueInstalledResources({ limit, resources })
+  const candidates = await selectDueInstalledResources({ limit, resources, signal })
   signal?.throwIfAborted()
   if (candidates.length === 0)
     return { selected: 0, planned: 0, reason: 'idle' as const, admission }

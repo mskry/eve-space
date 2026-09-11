@@ -639,8 +639,8 @@ describe('feature server import boundaries', () => {
   it.each([
     ["import { sql } from '../../../../api/src/db/client.js'", '../../../../api/src/db/client.js'],
     [
-      "export { findOwnedCharacter } from '../../../../api/src/auth/store.js'",
-      '../../../../api/src/auth/store.js',
+      "export { findOwnedCharacter } from '../../../../api/src/auth/character-lifecycle.js'",
+      '../../../../api/src/auth/character-lifecycle.js',
     ],
     [
       "const token = import('../../../../api/src/auth/tokens.js')",

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { CharacterTokenNotFoundError } from '../../src/auth/store.js'
+import { CharacterTokenNotFoundError } from '../../src/auth/character-token-store.js'
 import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
 import { OrganizationAuthorityError } from '../../src/organization/authority-policy.js'

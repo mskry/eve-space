@@ -34,6 +34,7 @@ import {
 } from './resource-failures.js'
 
 interface ResourceRefreshProcessingOptions {
+  readonly signal?: AbortSignal
   readonly executeOperation?: typeof executeInstalledResourceOperation
   readonly applyObservation?: typeof applyInstalledResourceObservation
   readonly recordFailure?: typeof recordInstalledResourceCollectionFailure
@@ -43,14 +44,19 @@ export async function processInstalledResourceRefresh(
   identity: PlatformCollectionStateIdentity,
   options: ResourceRefreshProcessingOptions = {},
 ) {
+  options.signal?.throwIfAborted()
   let execution: Awaited<ReturnType<typeof executeInstalledResourceOperation>>
   try {
-    execution = await (options.executeOperation ?? executeInstalledResourceOperation)(identity)
+    execution = await (options.executeOperation ?? executeInstalledResourceOperation)(identity, {
+      signal: options.signal,
+    })
   } catch (error) {
+    options.signal?.throwIfAborted()
     await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, error)
     throw error
   }
   if (execution.outcome === 'noop') return
+  options.signal?.throwIfAborted()
 
   try {
     await (options.applyObservation ?? applyInstalledResourceObservation)({
@@ -63,8 +69,10 @@ export async function processInstalledResourceRefresh(
       complete: execution.complete,
       outcome: 'complete',
       data: execution.result.data,
+      signal: options.signal,
     })
   } catch (error) {
+    options.signal?.throwIfAborted()
     const failure = new PlatformResourcePersistenceError(error)
     await (options.recordFailure ?? recordInstalledResourceCollectionFailure)(identity, failure)
     throw failure
@@ -79,9 +87,11 @@ type PlatformResourceObservation = {
   readonly validatedAt: string
   readonly organizationVersion?: number
   readonly complete?: boolean
+  readonly signal?: AbortSignal
 } & ({ readonly outcome: 'complete'; readonly data: unknown } | { readonly outcome: 'unchanged' })
 
 export async function applyInstalledResourceObservation(observation: PlatformResourceObservation) {
+  observation.signal?.throwIfAborted()
   if (observation.resource.moduleId === 'core') {
     await applyCoreResourceObservation(observation)
     return
@@ -102,12 +112,14 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
         ${resourceRefreshLockKey(observation.identity)}
       )
     `
+    observation.signal?.throwIfAborted()
     await transaction`
       select module_id
       from deployment_modules
       where module_id = ${observation.identity.moduleId}
       for share
     `
+    observation.signal?.throwIfAborted()
     if (observation.subject.kind === 'character')
       await transaction`
         select pg_advisory_xact_lock_shared(
@@ -115,9 +127,11 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
           ${characterLockKey(observation.subject.characterId)}
         )
       `
+    observation.signal?.throwIfAborted()
     const eligibility = await resolveInstalledResourceEligibility(observation.identity, {
       connection: transaction,
       resources: [observation.resource],
+      signal: observation.signal,
     })
     if (
       eligibility.status !== 'eligible' ||
@@ -131,6 +145,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       const [settings] = await transaction<{ version: number }[]>`
         select organization_version::integer as version from deployment_settings where id = 1
       `
+      observation.signal?.throwIfAborted()
       if (settings?.version !== observation.organizationVersion) return
     }
     if (observation.outcome === 'complete') {
@@ -149,6 +164,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
           sde: sdeCoreReads,
         },
       })
+      observation.signal?.throwIfAborted()
       const suppressed = persistence.suppressedFailure()
       if (suppressed) throw suppressed.error
       if (materialized?.outcome === 'obsolete') return
@@ -163,6 +179,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
           and subject_lifecycle_id = ${observation.identity.subjectLifecycleId}
           and subject_id = ${observation.identity.subjectId}
       `
+      observation.signal?.throwIfAborted()
       await upsertPlatformCollectionStateInTransaction(
         {
           ...observation.identity,
@@ -173,6 +190,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
         },
         transaction,
       )
+      observation.signal?.throwIfAborted()
       return
     }
     await recordInstalledResourceCollectionSuccess(
@@ -184,6 +202,7 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
         upsertState: (input) => upsertPlatformCollectionStateInTransaction(input, transaction),
       },
     )
+    observation.signal?.throwIfAborted()
   })
 }
 
@@ -200,7 +219,9 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
         ${resourceRefreshLockKey(observation.identity)}
       )`,
     )
+    observation.signal?.throwIfAborted()
     const currentState = await loadPlatformCollectionState(observation.identity, transaction)
+    observation.signal?.throwIfAborted()
     if (currentState?.validatedAt && currentState.validatedAt >= validatedAt) return
 
     const applied = await materializeCoreResourceObservation(transaction, {
@@ -210,6 +231,7 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
       validatedAt,
       authorizationGeneration: observation.authorizationGeneration,
     })
+    observation.signal?.throwIfAborted()
     if (!applied) return
 
     await recordInstalledResourceCollectionSuccess(
@@ -221,6 +243,7 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
         upsertState: (input) => upsertPlatformCollectionState(input, transaction),
       },
     )
+    observation.signal?.throwIfAborted()
     if (applied.recomputeAllAccounts)
       await recomputeAllOrganizationAccountsInTransaction(transaction, {
         deploymentId: 1,
@@ -234,5 +257,6 @@ async function applyCoreResourceObservation(observation: PlatformResourceObserva
         corporationIds: applied.affectedCorporationIds,
         now: new Date(),
       })
+    observation.signal?.throwIfAborted()
   })
 }

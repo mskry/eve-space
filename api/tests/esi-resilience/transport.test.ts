@@ -145,6 +145,37 @@ describe('ESI request transport through registered execution', () => {
     await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
   })
 
+  test('aborts open response consumption when the execution caller is cancelled', async () => {
+    vi.useFakeTimers()
+    let transportSignal: AbortSignal | undefined
+    const fetch = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      transportSignal = init?.signal ?? undefined
+      if (transportSignal?.aborted) return Promise.reject(transportSignal.reason)
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          transportSignal?.addEventListener(
+            'abort',
+            () => controller.error(transportSignal?.reason),
+            { once: true },
+          )
+        },
+      })
+      return Promise.resolve(statusResponse(body))
+    })
+    vi.stubGlobal('fetch', fetch)
+    const controller = new AbortController()
+    const caught = executeStatus(controller.signal).catch((error: unknown) => error)
+
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    controller.abort()
+    await vi.runAllTimersAsync()
+
+    await expect(caught).resolves.toBe(controller.signal.reason)
+    expect(controller.signal.reason).toMatchObject({ name: 'AbortError' })
+    expect(transportSignal?.aborted).toBe(true)
+    await vi.waitFor(() => expect(mocks.release).toHaveBeenCalledOnce())
+  })
+
   test('serializes permit renewal and waits for it before release', async () => {
     vi.useFakeTimers()
     let resolveRenewal: ((renewed: boolean) => void) | undefined
@@ -237,7 +268,7 @@ describe('ESI request transport through registered execution', () => {
   })
 })
 
-async function executeStatus() {
+async function executeStatus(signal?: AbortSignal) {
   const { definePublicEsiRepresentation } =
     await import('../../src/esi-resilience/representations.js')
   const { registerEsiRepresentation } =
@@ -252,7 +283,7 @@ async function executeStatus() {
       map: ({ data }) => data,
     }),
   )
-  return execute(representation, undefined)
+  return execute(representation, undefined, signal)
 }
 
 function statusResponse(body?: ReadableStream<Uint8Array>) {

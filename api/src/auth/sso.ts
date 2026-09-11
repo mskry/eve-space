@@ -44,7 +44,7 @@ const metadataUrl = 'https://login.eveonline.com/.well-known/oauth-authorization
 // against TOKEN_REFRESH_LOCK_TIMEOUT_MS.
 const tokenTimeoutMs = env.EVE_SSO_TIMEOUT_MS
 const discoveryTimeoutMs = Math.ceil(env.EVE_SSO_TIMEOUT_MS / 2)
-let metadataPromise: ReturnType<typeof loadMetadata> | undefined
+let cachedMetadata: z.infer<typeof metadataSchema> | undefined
 
 export class EveSsoTokenRefreshError extends SsoTokenRejectedError {
   constructor(
@@ -55,26 +55,27 @@ export class EveSsoTokenRefreshError extends SsoTokenRejectedError {
   }
 }
 
-async function loadMetadata() {
+async function loadMetadata(signal?: AbortSignal) {
   const response = await fetchSso(metadataUrl, {
-    signal: AbortSignal.timeout(discoveryTimeoutMs),
+    signal: withSsoTimeout(discoveryTimeoutMs, signal),
   })
-  if (!response.ok) throw new SsoHttpError('EVE SSO metadata', response.status)
+  if (!response.ok) {
+    await cancelResponseBody(response)
+    throw new SsoHttpError('EVE SSO metadata', response.status)
+  }
   return metadataSchema.parse(await readJson(response))
 }
 
-function getEveMetadata() {
-  // Cache the success only; a retained rejection would fail every later SSO call in this process.
-  metadataPromise ??= loadMetadata().catch((error: unknown) => {
-    metadataPromise = undefined
-    throw error
-  })
-  return metadataPromise
+async function getEveMetadata(signal?: AbortSignal) {
+  if (cachedMetadata) return cachedMetadata
+  const metadata = await loadMetadata(signal)
+  cachedMetadata ??= metadata
+  return cachedMetadata
 }
 
-export async function createAuthorizationUrl(state: string) {
+export async function createAuthorizationUrl(state: string, signal?: AbortSignal) {
   const config = getSsoConfig()
-  const metadata = await getEveMetadata()
+  const metadata = await getEveMetadata(signal)
   const url = new URL(metadata.authorization_endpoint)
 
   url.searchParams.set('response_type', 'code')
@@ -86,9 +87,9 @@ export async function createAuthorizationUrl(state: string) {
   return url
 }
 
-export async function exchangeAuthorizationCode(code: string) {
+export async function exchangeAuthorizationCode(code: string, signal?: AbortSignal) {
   const config = getSsoConfig()
-  const metadata = await getEveMetadata()
+  const metadata = await getEveMetadata(signal)
   const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')
   const response = await fetchSso(metadata.token_endpoint, {
     method: 'POST',
@@ -96,19 +97,23 @@ export async function exchangeAuthorizationCode(code: string) {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
+    signal: withSsoTimeout(tokenTimeoutMs, signal),
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
     }),
   })
 
-  if (!response.ok) throw new SsoHttpError('EVE token exchange', response.status)
+  if (!response.ok) {
+    await cancelResponseBody(response)
+    throw new SsoHttpError('EVE token exchange', response.status)
+  }
   return tokenResponseSchema.parse(await readJson(response))
 }
 
-export async function refreshAccessToken(refreshToken: string) {
+export async function refreshAccessToken(refreshToken: string, signal?: AbortSignal) {
   const config = getSsoConfig()
-  const metadata = await getEveMetadata()
+  const metadata = await getEveMetadata(signal)
   const credentials = Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')
   const response = await fetchSso(metadata.token_endpoint, {
     method: 'POST',
@@ -116,7 +121,7 @@ export async function refreshAccessToken(refreshToken: string) {
       Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    signal: AbortSignal.timeout(tokenTimeoutMs),
+    signal: withSsoTimeout(tokenTimeoutMs, signal),
     body: new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
@@ -127,12 +132,12 @@ export async function refreshAccessToken(refreshToken: string) {
   return refreshResponseSchema.parse(await readJson(response))
 }
 
-export async function verifyAccessToken(accessToken: string) {
+export async function verifyAccessToken(accessToken: string, signal?: AbortSignal) {
   const config = getSsoConfig()
-  const metadata = await getEveMetadata()
+  const metadata = await getEveMetadata(signal)
   const jwks = createRemoteJWKSet(new URL(metadata.jwks_uri), {
     timeoutDuration: discoveryTimeoutMs,
-    [customFetch]: fetchJwks,
+    [customFetch]: (url, options) => fetchJwks(url, options, signal),
   })
   const { payload } = await jwtVerify(accessToken, jwks, {
     issuer: [metadata.issuer, 'https://login.eveonline.com/', 'login.eveonline.com'],
@@ -161,11 +166,27 @@ async function fetchSso(input: string | URL, init?: RequestInit) {
   }
 }
 
+function withSsoTimeout(timeoutMs: number, ...signals: Array<AbortSignal | null | undefined>) {
+  return AbortSignal.any([
+    ...signals.filter((signal): signal is AbortSignal => signal !== null && signal !== undefined),
+    AbortSignal.timeout(timeoutMs),
+  ])
+}
+
 async function readResponseBody(response: Response) {
   try {
     return await response.text()
   } catch (cause) {
+    await cancelResponseBody(response)
     throw new SsoTransportError(cause)
+  }
+}
+
+async function cancelResponseBody(response: Response) {
+  try {
+    await response.body?.cancel()
+  } catch {
+    // Preserve the classified SSO failure when disposal itself fails.
   }
 }
 
@@ -189,13 +210,21 @@ async function throwRefreshError(response: Response): Promise<never> {
     const parsed = oauthErrorSchema.safeParse(await readErrorJson(response))
     if (parsed.success && ['invalid_grant', 'invalid_token'].includes(parsed.data.error))
       throw new EveSsoTokenRefreshError(response.status, true)
+  } else {
+    await cancelResponseBody(response)
   }
   throw new SsoHttpError('EVE token refresh', response.status)
 }
 
-async function fetchJwks(url: string, options: Parameters<typeof fetch>[1]) {
-  const response = await fetchSso(url, options)
-  if (!response.ok) throw new SsoHttpError('EVE SSO JWKS', response.status)
+async function fetchJwks(url: string, options: Parameters<typeof fetch>[1], signal?: AbortSignal) {
+  const response = await fetchSso(url, {
+    ...options,
+    signal: withSsoTimeout(discoveryTimeoutMs, signal, options?.signal),
+  })
+  if (!response.ok) {
+    await cancelResponseBody(response)
+    throw new SsoHttpError('EVE SSO JWKS', response.status)
+  }
   const body = await readResponseBody(response)
   // The body is already decoded here, so the upstream transfer headers no longer describe it.
   const headers = new Headers(response.headers)

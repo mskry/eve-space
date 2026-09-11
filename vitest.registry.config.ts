@@ -13,6 +13,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: [
+      'tests/platform/auth-boundaries.test.ts',
       'tests/platform/esi-resilience-boundaries.test.ts',
       'tests/platform/organization-boundaries.test.ts',
       'tests/platform/platform-boundaries.test.ts',

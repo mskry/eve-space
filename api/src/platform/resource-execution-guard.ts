@@ -2,7 +2,7 @@ import type {
   PlatformInstalledResourceDescriptor,
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract'
-import { CharacterTokenNotFoundError } from '../auth/store.js'
+import { CharacterTokenNotFoundError } from '../auth/character-token-store.js'
 import {
   getCharacterAuthorizationForLifecycle,
   getCharacterCacheAuthorizationForLifecycle,
@@ -44,6 +44,7 @@ export type PlatformResourceExecutionGuard =
     }
 
 interface ResourceExecutionGuardOptions {
+  readonly signal?: AbortSignal
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
   readonly loadCharacterCacheAuthorization?: typeof getCharacterCacheAuthorizationForLifecycle
@@ -54,11 +55,13 @@ export async function guardInstalledResourceExecution(
   identity: PlatformCollectionStateIdentity,
   options: ResourceExecutionGuardOptions = {},
 ): Promise<PlatformResourceExecutionGuard> {
+  options.signal?.throwIfAborted()
   const resources = options.resources ?? platformResources
   const resolveEligibility = options.resolveEligibility ?? resolveInstalledResourceEligibility
   const initialEligibility = classifyExecutionEligibility(
-    await resolveEligibility(identity, { resources }),
+    await resolveEligibility(identity, { resources, signal: options.signal }),
   )
+  options.signal?.throwIfAborted()
   if (initialEligibility.outcome === 'noop') return initialEligibility
   const eligibility = initialEligibility.eligibility
 
@@ -80,12 +83,25 @@ export async function guardInstalledResourceExecution(
 
   let authorization: CharacterAuthorization
   try {
-    authorization = await (
+    const loadAuthorization =
       options.loadCharacterCacheAuthorization ??
       options.loadCharacterAuthorization ??
       getCharacterCacheAuthorizationForLifecycle
-    )(authorizationCharacterId, authorizationCharacterLifecycleId, operation.authorization.scope)
+    authorization = options.signal
+      ? await loadAuthorization(
+          authorizationCharacterId,
+          authorizationCharacterLifecycleId,
+          operation.authorization.scope,
+          options.signal,
+        )
+      : await loadAuthorization(
+          authorizationCharacterId,
+          authorizationCharacterLifecycleId,
+          operation.authorization.scope,
+        )
+    options.signal?.throwIfAborted()
   } catch (error) {
+    options.signal?.throwIfAborted()
     return mapCharacterAuthorizationError(error, subject.kind)
   }
 
@@ -99,8 +115,9 @@ export async function guardInstalledResourceExecution(
   if (authorization.tokenVersion === eligibility.authorizationGeneration) return ready
 
   const refreshedEligibility = classifyExecutionEligibility(
-    await resolveEligibility(identity, { resources }),
+    await resolveEligibility(identity, { resources, signal: options.signal }),
   )
+  options.signal?.throwIfAborted()
   if (refreshedEligibility.outcome === 'noop') return refreshedEligibility
   const refreshed = refreshedEligibility.eligibility
   const refreshedAuthorization = resolveAuthorizationIdentity(refreshed, subject)

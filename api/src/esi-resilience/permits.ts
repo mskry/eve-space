@@ -28,7 +28,9 @@ export async function acquireEsiRequestPermit(options: {
   principal?: string
   concurrency: number
   queueTimeoutMs?: number
+  signal?: AbortSignal
 }): Promise<EsiRequestPermit> {
+  options.signal?.throwIfAborted()
   const principal = normalizeEsiPrincipal(options.principal)
   const deadline = Date.now() + (options.queueTimeoutMs ?? env.ESI_OPERATION_QUEUE_TIMEOUT_MS)
   try {
@@ -41,8 +43,15 @@ export async function acquireEsiRequestPermit(options: {
         principal,
         now,
       })
+      options.signal?.throwIfAborted()
       if (!cooldown.coordinationAvailable)
-        return acquireLocalPermit(options.operation, principal, options.concurrency, deadline)
+        return acquireLocalPermit(
+          options.operation,
+          principal,
+          options.concurrency,
+          deadline,
+          options.signal,
+        )
       if (cooldown.active) throw new EsiQuotaError(cooldown.retryAfterSeconds!, now)
 
       // oxlint-disable-next-line no-await-in-loop
@@ -51,14 +60,28 @@ export async function acquireEsiRequestPermit(options: {
         options.operation,
         options.concurrency,
       )
-      if (permit) return permit
+      if (permit) {
+        if (options.signal?.aborted) {
+          // oxlint-disable-next-line no-await-in-loop
+          await permit.release().catch(() => {})
+          options.signal.throwIfAborted()
+        }
+        return permit
+      }
       // oxlint-disable-next-line no-await-in-loop
-      await wait(Math.min(permitPollMs, Math.max(1, deadline - Date.now())))
+      await wait(Math.min(permitPollMs, Math.max(1, deadline - Date.now())), options.signal)
     }
     throw new EsiQuotaError(1)
   } catch (error) {
+    options.signal?.throwIfAborted()
     if (error instanceof EsiQuotaError) throw error
-    return acquireLocalPermit(options.operation, principal, options.concurrency, deadline)
+    return acquireLocalPermit(
+      options.operation,
+      principal,
+      options.concurrency,
+      deadline,
+      options.signal,
+    )
   }
 }
 
@@ -67,14 +90,22 @@ async function acquireLocalPermit(
   principal: string,
   sharedConcurrency: number,
   deadline: number,
+  signal?: AbortSignal,
 ) {
   const result = await acquireLocalEsiRequestPermit({
     operation,
     principal,
     sharedConcurrency,
     deadline,
+    signal,
   })
-  if (result.kind === 'acquired') return result.permit
+  if (result.kind === 'acquired') {
+    if (signal?.aborted) {
+      await result.permit.release().catch(() => {})
+      signal.throwIfAborted()
+    }
+    return result.permit
+  }
   throw new EsiQuotaError(result.retryAfterSeconds)
 }
 
