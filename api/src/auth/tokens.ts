@@ -166,7 +166,6 @@ export async function getCharacterAuthorizationForLifecycle(
           stored,
           transaction,
           () => findCharacterTokenForLifecycle(characterId, subjectLifecycleId, transaction),
-          signal,
         )
       },
       signal,
@@ -184,8 +183,8 @@ export async function getCharacterAuthorizationForLifecycle(
  */
 async function withRefreshCapacity<T>(operation: () => Promise<T>, signal?: AbortSignal) {
   await acquireRefreshSlot(signal)
-  signal?.throwIfAborted()
   try {
+    signal?.throwIfAborted()
     return await operation()
   } finally {
     activeRefreshes -= 1
@@ -246,16 +245,17 @@ async function refreshCharacterToken(
 ) {
   const result = await withRefreshLock(
     characterId,
-    (stored, transaction) =>
-      refreshLockedCharacterToken(
+    (stored, transaction) => {
+      signal?.throwIfAborted()
+      return refreshLockedCharacterToken(
         characterId,
         requiredScope,
         original,
         stored,
         transaction,
         () => findCharacterToken(characterId, transaction),
-        signal,
-      ),
+      )
+    },
     signal,
   )
   signal?.throwIfAborted()
@@ -270,19 +270,16 @@ async function refreshLockedCharacterToken(
   stored: StoredCharacterToken,
   transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
   findWinner: () => Promise<StoredCharacterToken | null>,
-  signal?: AbortSignal,
 ): Promise<CharacterRefreshResult> {
-  signal?.throwIfAborted()
   if (stored.tokenVersion !== original.tokenVersion)
     return toRefreshedCharacterAuthorization(stored, requiredScope)
 
   const currentTokens = decryptTokens(stored.encryptedTokens)
   let refreshed: Awaited<ReturnType<typeof refreshAccessToken>>
   try {
-    refreshed = await refreshAccessToken(currentTokens.refreshToken, signal)
-    signal?.throwIfAborted()
+    // Once refresh starts, its deadline owns cancellation so any rotated credential is committed.
+    refreshed = await refreshAccessToken(currentTokens.refreshToken)
   } catch (error) {
-    signal?.throwIfAborted()
     if (isDefinitiveTokenRejection(error)) {
       await deleteRevokedCharacterAuthorization(characterId, stored, transaction)
       return { authorizationRevoked: error }
@@ -291,10 +288,8 @@ async function refreshLockedCharacterToken(
   }
   let identity: Awaited<ReturnType<typeof verifyAccessToken>>
   try {
-    identity = await verifyAccessToken(refreshed.access_token, signal)
-    signal?.throwIfAborted()
+    identity = await verifyAccessToken(refreshed.access_token)
   } catch (error) {
-    signal?.throwIfAborted()
     rethrowRefreshError(error)
   }
   if (identity.characterId !== characterId)
@@ -308,7 +303,6 @@ async function refreshLockedCharacterToken(
   const organizationVersion = scopesChanged
     ? await lockCurrentOrganizationVersionForCompliance(transaction)
     : null
-  signal?.throwIfAborted()
 
   // The advisory lock currently serializes writers. Keep the compare-and-set as a final guard
   // against a future uncoordinated caller overwriting a rotated refresh token.
@@ -325,8 +319,7 @@ async function refreshLockedCharacterToken(
     },
     transaction,
   )
-  signal?.throwIfAborted()
-  if (!updated) return readRefreshWinner(findWinner, requiredScope, signal)
+  if (!updated) return readRefreshWinner(findWinner, requiredScope)
 
   if (scopesChanged)
     await recordRefreshedScopeChange(
@@ -337,7 +330,6 @@ async function refreshLockedCharacterToken(
       organizationVersion,
       transaction,
     )
-  signal?.throwIfAborted()
   return {
     authorization: { accessToken: refreshed.access_token, tokenVersion: stored.tokenVersion + 1 },
     scopes: nextScopes,
@@ -352,10 +344,8 @@ function rethrowRefreshError(error: unknown): never {
 async function readRefreshWinner(
   findWinner: () => Promise<StoredCharacterToken | null>,
   requiredScope: string,
-  signal?: AbortSignal,
 ) {
   const winner = await findWinner()
-  signal?.throwIfAborted()
   if (!winner) throw new CharacterTokenNotFoundError()
   return toRefreshedCharacterAuthorization(winner, requiredScope)
 }

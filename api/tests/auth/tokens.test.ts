@@ -237,27 +237,91 @@ describe('token refresh', () => {
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
   })
 
-  test('cancels a job-owned refresh without mutating token state', async () => {
+  test('persists a rotated refresh token before reporting job cancellation', async () => {
     const controller = new AbortController()
+    let resolveRefresh:
+      | ((value: {
+          access_token: string
+          refresh_token: string
+          expires_in: number
+          token_type: string
+        }) => void)
+      | undefined
     mocks.withCharacterTokenRefreshLock.mockImplementation(async (_characterId, operation) =>
       operation(expired, {}),
     )
+    mocks.updateCharacterToken.mockResolvedValue(true)
     mocks.refreshAccessToken.mockImplementation(
-      (_refreshToken: string, signal: AbortSignal) =>
-        new Promise((_, reject) => {
-          signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+      () =>
+        new Promise((resolve) => {
+          resolveRefresh = resolve
         }),
     )
 
     const pending = getCharacterAuthorization(characterId, scope, controller.signal)
     await vi.waitFor(() => expect(mocks.refreshAccessToken).toHaveBeenCalledOnce())
     controller.abort()
+    resolveRefresh?.({
+      access_token: 'new-access',
+      refresh_token: 'rotated-refresh',
+      expires_in: 1200,
+      token_type: 'Bearer',
+    })
 
     await expect(pending).rejects.toBe(controller.signal.reason)
     expect(controller.signal.reason).toMatchObject({ name: 'AbortError' })
-    expect(mocks.updateCharacterToken).not.toHaveBeenCalled()
+    expect(mocks.refreshAccessToken).toHaveBeenCalledWith('original-refresh')
+    expect(mocks.verifyAccessToken).toHaveBeenCalledWith('new-access')
+    expect(mocks.encryptTokens).toHaveBeenCalledWith({
+      accessToken: 'new-access',
+      refreshToken: 'rotated-refresh',
+    })
+    expect(mocks.updateCharacterToken).toHaveBeenCalledOnce()
     expect(mocks.deleteCharacterTokenAuthorization).not.toHaveBeenCalled()
     expect(mocks.appendDomainEvent).not.toHaveBeenCalled()
+  })
+
+  test('releases refresh capacity when cancellation follows slot acquisition', async () => {
+    const controller = new AbortController()
+    const cancelled = getCharacterAuthorization(characterId, scope, controller.signal)
+    queueMicrotask(() => controller.abort())
+
+    const cancellation = await cancelled.catch((error: unknown) => error)
+    expect(cancellation).toBe(controller.signal.reason)
+    expect(mocks.withCharacterTokenRefreshLock).not.toHaveBeenCalled()
+
+    let releaseRefreshes: (() => void) | undefined
+    const refreshGate = new Promise<void>((resolve) => {
+      releaseRefreshes = resolve
+    })
+    mocks.withCharacterTokenRefreshLock.mockImplementation(async (lockedCharacterId, operation) =>
+      operation({ ...expired, encryptedTokens: String(lockedCharacterId) }, {}),
+    )
+    mocks.refreshAccessToken.mockImplementation(async (refreshToken: string) => {
+      await refreshGate
+      return {
+        access_token: `new-access-${refreshToken.replace('-refresh', '')}`,
+        refresh_token: 'new-refresh',
+        expires_in: 1200,
+        token_type: 'Bearer',
+      }
+    })
+    mocks.verifyAccessToken.mockImplementation((accessToken: string) => ({
+      characterId: Number(accessToken.replace('new-access-', '')),
+      characterName: 'Test',
+      scopes: [scope],
+    }))
+    mocks.updateCharacterToken.mockResolvedValue(true)
+
+    const refreshes = Array.from({ length: 4 }, (_, index) =>
+      getCharacterAccessToken(characterId + index + 1, scope),
+    )
+    try {
+      await vi.waitFor(() => expect(mocks.refreshAccessToken).toHaveBeenCalledTimes(4))
+    } finally {
+      releaseRefreshes?.()
+    }
+    await expect(Promise.all(refreshes)).resolves.toHaveLength(4)
   })
 
   test('rechecks each caller scope after sharing an in-flight refresh', async () => {
