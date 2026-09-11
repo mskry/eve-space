@@ -60,9 +60,16 @@ describe('character affiliation synchronization', () => {
   test('converts shared ESI cooldowns into worker deferrals before persistence', async () => {
     const lookup = vi.fn().mockRejectedValue(new EsiQuotaError(45))
 
-    await expect(processAffiliationBatch([1], { lookup })).rejects.toEqual(
-      new AffiliationCooldownError(45),
+    const error = await processAffiliationBatch([1], { lookup }).catch(
+      (caughtError: unknown) => caughtError,
     )
+
+    expect(error).toBeInstanceOf(AffiliationCooldownError)
+    expect(error).toMatchObject({
+      message: 'Character affiliation refresh is deferred by ESI cooldown',
+      retryAfterSeconds: 45,
+      retryAt: expect.any(Date),
+    })
   })
 
   test('pauses planner admission during cooldown and reconstructs deterministic batches after it', async () => {
