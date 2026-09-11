@@ -172,7 +172,7 @@ function transferBlockerGuidance(blocker: Exclude<TransferPreview, { eligible: t
       </p>
     </div>
 
-    <p v-if="feedback" class="auth-feedback" role="status">{{ feedback }}</p>
+    <output v-if="feedback" class="auth-feedback">{{ feedback }}</output>
     <p v-if="errorMessage" class="ui-inline-error" role="alert">{{ errorMessage }}</p>
 
     <form class="admin-form admin-transfer-form" @submit.prevent="previewMutation.mutate()">

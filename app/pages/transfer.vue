@@ -25,7 +25,7 @@ const transferMutation = useMutation({
     return response.json()
   },
   onSuccess: ({ authorizationUrl }) => {
-    window.location.assign(authorizationUrl)
+    globalThis.location.assign(authorizationUrl)
   },
 })
 
@@ -36,13 +36,13 @@ const transferError = computed(() => {
 })
 
 onMounted(() => {
-  const parameters = new URLSearchParams(window.location.hash.slice(1))
+  const parameters = new URLSearchParams(globalThis.location.hash.slice(1))
   approvalId.value = parameters.get('approval') ?? ''
   linkSecret.value = parameters.get('secret') ?? ''
-  window.history.replaceState(
-    window.history.state,
+  globalThis.history.replaceState(
+    globalThis.history.state,
     '',
-    `${window.location.pathname}${window.location.search}`,
+    `${globalThis.location.pathname}${globalThis.location.search}`,
   )
   linkState.value = approvalId.value && linkSecret.value ? 'ready' : 'invalid'
 })
@@ -67,10 +67,10 @@ useHead({ title: 'Character Transfer // EVE Space' })
       access by itself; the intended destination session and exact EVE character are still required.
     </p>
 
-    <div v-if="linkState === 'loading' || authLoading" class="auth-progress" role="status">
+    <output v-if="linkState === 'loading' || authLoading" class="auth-progress">
       <span class="app-scanner" aria-hidden="true" />
       <strong>Checking destination session</strong>
-    </div>
+    </output>
 
     <div v-else-if="linkState === 'invalid'" class="transfer-guidance" role="alert">
       <strong>TRANSFER LINK UNAVAILABLE</strong>

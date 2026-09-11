@@ -11,6 +11,7 @@ export default defineVitestConfig({
     environment: 'nuxt',
     include: [
       'tests/assets/**/*.nuxt.test.ts',
+      'tests/auth/**/*.nuxt.test.ts',
       'tests/character/**/*.nuxt.test.ts',
       'tests/finance/**/*.nuxt.test.ts',
       'tests/organization/**/*.nuxt.test.ts',

@@ -230,8 +230,7 @@ export async function loadTransferApprovalForStart(input: {
       .from(characterTransferApprovals)
       .where(eq(characterTransferApprovals.approvalId, input.approvalId))
     if (
-      !approval ||
-      approval.destinationUserId !== input.destinationUserId ||
+      approval?.destinationUserId !== input.destinationUserId ||
       approval.consumedAt ||
       approval.revokedAt ||
       !tokensMatch(hashToken(input.secret), approval.linkSecretHash)
@@ -261,7 +260,7 @@ export async function loadTransferApprovalForStart(input: {
       .where(eq(deploymentInstallationSettings.id, 1))
     if (
       source?.userId !== approval.sourceUserId ||
-      source.subjectLifecycleId !== approval.sourceSubjectLifecycleId ||
+      source?.subjectLifecycleId !== approval.sourceSubjectLifecycleId ||
       !destinationMain ||
       administrator?.administratorId !== approval.approvedByAdministratorId
     )
@@ -372,13 +371,7 @@ function toPublicPreview(
 }
 
 function toApprovalDto(approval: typeof characterTransferApprovals.$inferSelect, now: Date) {
-  const status = approval.consumedAt
-    ? ('consumed' as const)
-    : approval.revokedAt
-      ? ('revoked' as const)
-      : approval.expiresAt <= now
-        ? ('expired' as const)
-        : ('pending' as const)
+  const status = transferApprovalStatus(approval, now)
   return {
     approvalId: approval.approvalId,
     character: { characterId: approval.characterId, name: approval.characterName },
@@ -395,4 +388,13 @@ function toApprovalDto(approval: typeof characterTransferApprovals.$inferSelect,
     revokedAt: approval.revokedAt,
     revocationReason: approval.revocationReason,
   }
+}
+
+function transferApprovalStatus(
+  approval: typeof characterTransferApprovals.$inferSelect,
+  now: Date,
+) {
+  if (approval.consumedAt) return 'consumed' as const
+  if (approval.revokedAt) return 'revoked' as const
+  return approval.expiresAt <= now ? ('expired' as const) : ('pending' as const)
 }

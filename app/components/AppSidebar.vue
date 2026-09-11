@@ -78,7 +78,7 @@ function handleAccountAction(value: string) {
 function handleToggle() {
   if (warpTimer) clearTimeout(warpTimer)
 
-  if (import.meta.client && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (import.meta.client && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     warpDirection.value = undefined
     emit('toggle')
     return

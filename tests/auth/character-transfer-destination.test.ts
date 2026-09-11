@@ -11,10 +11,10 @@ describe('destination character transfer page', () => {
   })
 
   it('reads the approval secret once and removes it from browser history', () => {
-    expect(page).toContain('new URLSearchParams(window.location.hash.slice(1))')
+    expect(page).toContain('new URLSearchParams(globalThis.location.hash.slice(1))')
     expect(page).toContain("parameters.get('approval')")
     expect(page).toContain("parameters.get('secret')")
-    expect(page).toContain('window.history.replaceState(')
+    expect(page).toContain('globalThis.history.replaceState(')
     expect(page).toContain('onBeforeUnmount(() => {')
     expect(page).not.toMatch(/use(?:State|Cookie|Storage)\(/)
     expect(page).not.toContain('localStorage')

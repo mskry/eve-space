@@ -34,7 +34,7 @@ function scrollToElement(target: HTMLElement, offset = 0) {
     offset
   element.scrollTo({
     top: Math.max(top, 0),
-    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    behavior: globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
   })
 }
 

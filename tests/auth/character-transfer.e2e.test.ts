@@ -127,6 +127,16 @@ describe('explicit character transfer production journeys', async () => {
   })
 
   it('revokes terminal links and repairs a non-main split without crossing account authority', async () => {
+    infrastructure.api.resetRequests()
+    expect((await fetch(`${webOrigin}/transfer`)).status).toBe(200)
+    expect((await fetch(`${webOrigin}/admin`)).status).toBe(200)
+    expect(
+      infrastructure.api.requests.filter(({ url }) => {
+        const path = new URL(url).pathname
+        return path === '/auth/session' || path === '/api/admin/session'
+      }),
+    ).toEqual([])
+
     const sourceContext = await browserContext()
     const destinationContext = await browserContext()
     const adminContext = await browserContext()
@@ -141,16 +151,6 @@ describe('explicit character transfer production journeys', async () => {
     const destinationUserId = await characterUserId(destinationMain.characterId)
     await seedOrganizationOwner(sourceUserId, destinationUserId)
     await seedAdministrator(adminContext)
-
-    infrastructure.api.resetRequests()
-    expect((await fetch(`${webOrigin}/transfer`)).status).toBe(200)
-    expect((await fetch(`${webOrigin}/admin`)).status).toBe(200)
-    expect(
-      infrastructure.api.requests.filter(({ url }) => {
-        const path = new URL(url).pathname
-        return path === '/auth/session' || path === '/api/admin/session'
-      }),
-    ).toEqual([])
 
     const hostileReason = '<img src=x onerror="globalThis.compromised=true">'
     await adminPage.goto(`${webOrigin}/admin`)
