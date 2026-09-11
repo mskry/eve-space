@@ -23,6 +23,12 @@ type ResolvedQueueCommand = {
   readonly identity: string
 }
 
+type CoalescingLookup = {
+  readonly commandIndex: number
+  readonly kind: 'job-id' | 'simple'
+  readonly key: string
+}
+
 export function createBullMqQueueProducer(
   configuration: {
     readonly handle?: OperationsQueueHandle
@@ -170,7 +176,7 @@ async function prepareCommands(
   return Promise.all(
     resolved.map(({ command, contract, identity }, index) =>
       coalesced[index]
-        ? null
+        ? Promise.resolve(null)
         : prepareDeliveryOptions(command, contract, identity, plannerDelay, signal),
     ),
   )
@@ -212,41 +218,56 @@ async function findCoalescedCommands(
   handle: OperationsQueueHandle,
   commands: readonly ResolvedQueueCommand[],
 ) {
-  const lookups: Array<{
-    readonly commandIndex: number
-    readonly kind: 'job-id' | 'simple'
-    readonly key: string
-  }> = []
-  for (const [commandIndex, { command, contract, identity }] of commands.entries()) {
-    if (contract.activeWorkDeduplication === 'job-id') {
-      if (command.name !== 'domain-event')
-        lookups.push({ commandIndex, kind: 'job-id', key: handle.queue.toKey(identity) })
-      continue
-    }
-    if (usesSimpleDeduplication(command, contract.activeWorkDeduplication))
-      lookups.push({
-        commandIndex,
-        kind: 'simple',
-        key: `${handle.queue.toKey('de')}:${identity}`,
-      })
-  }
+  const lookups = commands
+    .map((command, commandIndex) => createCoalescingLookup(handle, command, commandIndex))
+    .filter((lookup): lookup is CoalescingLookup => lookup !== undefined)
   if (lookups.length === 0) return commands.map(() => false)
 
   const pipeline = handle.connection.pipeline()
-  for (const lookup of lookups)
-    if (lookup.kind === 'job-id') pipeline.exists(lookup.key)
-    else pipeline.get(lookup.key)
+  for (const lookup of lookups) enqueueCoalescingLookup(pipeline, lookup)
   const responses = await pipeline.exec()
-  if (!responses || responses.length !== lookups.length)
+  if (responses?.length !== lookups.length)
     throw new Error('Queue deduplication batch returned an invalid response')
 
   const coalesced = commands.map(() => false)
   for (const [index, [error, value]] of responses.entries()) {
     if (error) throw error
     const lookup = lookups[index]!
-    coalesced[lookup.commandIndex] = lookup.kind === 'job-id' ? value === 1 : value !== null
+    coalesced[lookup.commandIndex] = isLookupCoalesced(lookup, value)
   }
   return coalesced
+}
+
+function createCoalescingLookup(
+  handle: OperationsQueueHandle,
+  { command, contract, identity }: ResolvedQueueCommand,
+  commandIndex: number,
+): CoalescingLookup | undefined {
+  if (contract.activeWorkDeduplication === 'job-id') {
+    if (command.name === 'domain-event') return
+    return { commandIndex, kind: 'job-id', key: handle.queue.toKey(identity) }
+  }
+  if (!usesSimpleDeduplication(command, contract.activeWorkDeduplication)) return
+  return {
+    commandIndex,
+    kind: 'simple',
+    key: `${handle.queue.toKey('de')}:${identity}`,
+  }
+}
+
+function enqueueCoalescingLookup(
+  pipeline: ReturnType<OperationsQueueHandle['connection']['pipeline']>,
+  lookup: CoalescingLookup,
+) {
+  if (lookup.kind === 'job-id') {
+    pipeline.exists(lookup.key)
+    return
+  }
+  pipeline.get(lookup.key)
+}
+
+function isLookupCoalesced(lookup: CoalescingLookup, value: unknown) {
+  return lookup.kind === 'job-id' ? value === 1 : value !== null
 }
 
 function usesSimpleDeduplication(

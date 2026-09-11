@@ -149,7 +149,7 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
   }
 }
 
-const shutdownTimeout = Symbol('shutdown-timeout')
+const shutdownTimeout = new Error('Worker shutdown timed out')
 
 function createPlatformShutdownBudget(timeoutMs: number) {
   const boundedTimeoutMs = Math.max(0, timeoutMs)
