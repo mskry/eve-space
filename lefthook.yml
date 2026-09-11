@@ -1,8 +1,8 @@
 # https://lefthook.dev/configuration/
 #
-# Nothing lands unless lint and formatting are clean, both test suites pass, and
-# knip reports no dead code. Use `pnpm lint:fix` / `pnpm format` for the
-# mechanical fixes and `pnpm knip` to see what is unreachable.
+# Keep commits fast by checking lint and formatting only. Pushes are the local
+# quality gate: they rerun those checks, verify dead code and types, and run the
+# unit and integration suites. Coverage remains a CI concern.
 #
 # Workspace checks remain repository-wide because dead-code and dependency
 # boundaries are cross-file properties. ESI lint and formatting remain
@@ -11,12 +11,40 @@
 # `typecheck` runs on push only. It is the slowest check (~20s for vue-tsc across
 # the Nuxt app) and it is the one that catches `.vue` and type-level regressions
 # that lint, knip, and Vitest all miss, so it guards the shared branch without
-# taxing every local commit. Coverage remains a CI concern; pre-push adds only
-# type checking and integration suites to the unit tests already run on commit.
+# taxing every local commit.
 
 glob_matcher: doublestar
 
 pre-commit:
+  parallel: false
+  jobs:
+    - name: lint:workspace
+      run: pnpm lint:workspace
+
+    - name: lint:esi-client
+      exclude:
+        - 'packages/esi-client/docs/generated/**'
+        - 'packages/esi-client/examples/generated/**'
+        - 'packages/esi-client/openapi/generated/**'
+        - 'packages/esi-client/src/generated/**'
+        - 'packages/esi-client/tests/generated/**'
+      glob: 'packages/esi-client/**'
+      run: pnpm --filter @evespace/esi-client lint
+
+    - name: format:workspace
+      run: pnpm format:check:workspace
+
+    - name: format:esi-client
+      exclude:
+        - 'packages/esi-client/docs/generated/**'
+        - 'packages/esi-client/examples/generated/**'
+        - 'packages/esi-client/openapi/generated/**'
+        - 'packages/esi-client/src/generated/**'
+        - 'packages/esi-client/tests/generated/**'
+      glob: 'packages/esi-client/**'
+      run: pnpm --filter @evespace/esi-client format:check
+
+pre-push:
   parallel: false
   jobs:
     - name: lint:workspace
@@ -59,38 +87,6 @@ pre-commit:
 
     - name: test:api
       run: pnpm test:api
-
-pre-push:
-  parallel: false
-  jobs:
-    - name: lint:workspace
-      run: pnpm lint:workspace
-
-    - name: lint:esi-client
-      exclude:
-        - 'packages/esi-client/docs/generated/**'
-        - 'packages/esi-client/examples/generated/**'
-        - 'packages/esi-client/openapi/generated/**'
-        - 'packages/esi-client/src/generated/**'
-        - 'packages/esi-client/tests/generated/**'
-      glob: 'packages/esi-client/**'
-      run: pnpm --filter @evespace/esi-client lint
-
-    - name: format:workspace
-      run: pnpm format:check:workspace
-
-    - name: format:esi-client
-      exclude:
-        - 'packages/esi-client/docs/generated/**'
-        - 'packages/esi-client/examples/generated/**'
-        - 'packages/esi-client/openapi/generated/**'
-        - 'packages/esi-client/src/generated/**'
-        - 'packages/esi-client/tests/generated/**'
-      glob: 'packages/esi-client/**'
-      run: pnpm --filter @evespace/esi-client format:check
-
-    - name: knip
-      run: pnpm knip
 
     - name: typecheck
       run: pnpm typecheck
