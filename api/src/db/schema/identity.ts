@@ -17,8 +17,14 @@ import {
 } from 'drizzle-orm/pg-core'
 import { auditTimestamps } from './shared.js'
 import { organizationEpochs } from './organization-epochs.js'
+import { characterTransferApprovals } from './character-transfer-approvals.js'
 
-export type AuthorizationIntent = 'login' | 'attach' | 'reauthorize' | 'claim-organization-owner'
+export type AuthorizationIntent =
+  | 'login'
+  | 'attach'
+  | 'reauthorize'
+  | 'claim-organization-owner'
+  | 'transfer'
 
 export const users = pgTable('users', {
   id: uuid().defaultRandom().primaryKey().notNull(),
@@ -100,6 +106,9 @@ export const oauthStates = pgTable(
     organizationDeploymentId: smallint('organization_deployment_id'),
     organizationId: bigint('organization_id', { mode: 'number' }),
     organizationVersion: bigint('organization_version', { mode: 'number' }),
+    transferApprovalId: uuid('transfer_approval_id'),
+    transferSourceUserId: uuid('transfer_source_user_id'),
+    transferSourceSubjectLifecycleId: uuid('transfer_source_subject_lifecycle_id'),
     returnPath: varchar('return_path', { length: 512 }),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
@@ -122,6 +131,16 @@ export const oauthStates = pgTable(
       name: 'oauth_states_user_id_fkey',
     }).onDelete('cascade'),
     foreignKey({
+      columns: [table.transferApprovalId],
+      foreignColumns: [characterTransferApprovals.approvalId],
+      name: 'oauth_states_transfer_approval_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.transferSourceUserId],
+      foreignColumns: [users.id],
+      name: 'oauth_states_transfer_source_user_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
       columns: [table.characterId],
       foreignColumns: [characters.characterId],
       name: 'oauth_states_character_id_fkey',
@@ -140,7 +159,7 @@ export const oauthStates = pgTable(
       .where(sql`organization_deployment_id is not null`),
     check(
       'oauth_states_intent_check',
-      sql`intent in ('login', 'attach', 'reauthorize', 'claim-organization-owner')`,
+      sql`intent in ('login', 'attach', 'reauthorize', 'claim-organization-owner', 'transfer')`,
     ),
     check(
       'oauth_states_context_check',
@@ -151,6 +170,9 @@ export const oauthStates = pgTable(
           and organization_deployment_id is null
           and organization_id is null
           and organization_version is null
+          and transfer_approval_id is null
+          and transfer_source_user_id is null
+          and transfer_source_subject_lifecycle_id is null
         )
         or (
           intent = 'attach'
@@ -159,6 +181,9 @@ export const oauthStates = pgTable(
           and organization_deployment_id is null
           and organization_id is null
           and organization_version is null
+          and transfer_approval_id is null
+          and transfer_source_user_id is null
+          and transfer_source_subject_lifecycle_id is null
         )
         or (
           intent = 'reauthorize'
@@ -167,6 +192,9 @@ export const oauthStates = pgTable(
           and organization_deployment_id is null
           and organization_id is null
           and organization_version is null
+          and transfer_approval_id is null
+          and transfer_source_user_id is null
+          and transfer_source_subject_lifecycle_id is null
         )
         or (
           intent = 'claim-organization-owner'
@@ -175,6 +203,20 @@ export const oauthStates = pgTable(
           and organization_deployment_id = 1
           and organization_id is not null
           and organization_version is not null
+          and transfer_approval_id is null
+          and transfer_source_user_id is null
+          and transfer_source_subject_lifecycle_id is null
+        )
+        or (
+          intent = 'transfer'
+          and user_id is not null
+          and character_id is not null
+          and organization_deployment_id is null
+          and organization_id is null
+          and organization_version is null
+          and transfer_approval_id is not null
+          and transfer_source_user_id is not null
+          and transfer_source_subject_lifecycle_id is not null
         )`,
     ),
     check(

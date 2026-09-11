@@ -48,8 +48,8 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
 })
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
 vi.mock('../../src/auth/tokens.js', () => ({
-  getCharacterAuthorization: mocks.getCharacterAuthorization,
-  getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
+  getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorization,
+  getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorization,
 }))
 vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
@@ -75,6 +75,7 @@ vi.mock('../../src/esi-resilience/coordination.js', () => ({
 }))
 
 const characterId = 1404328063
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const scope = 'esi-skills.read_skills.v1'
 const now = Date.parse('2026-09-01T11:00:00.000Z')
 const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
@@ -153,7 +154,7 @@ describe('character skills snapshot', () => {
     const { characterSkillsScope, getCharacterSkillsData } =
       await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkillsData(characterId)).resolves.toEqual({
+    await expect(getCharacterSkillsData(characterId, subjectLifecycleId)).resolves.toEqual({
       data: {
         totalSp: 19_000,
         unallocatedSp: 0,
@@ -165,8 +166,16 @@ describe('character skills snapshot', () => {
       ...esiMetadata,
     })
     expect(characterSkillsScope).toBe(scope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, scope)
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      scope,
+    )
+    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      scope,
+    )
     expect(mocks.createEsiClient).toHaveBeenCalledWith({
       fetch: expect.any(Function),
       requestTimeoutMs: 30_000,
@@ -186,7 +195,7 @@ describe('character skills snapshot', () => {
     )
     const { getCharacterSkillsSummary } = await import('../../src/characters/overview.js')
 
-    await expect(getCharacterSkillsSummary(characterId)).resolves.toEqual({
+    await expect(getCharacterSkillsSummary(characterId, subjectLifecycleId)).resolves.toEqual({
       totalSp: 2500,
       unallocatedSp: 125,
       ...publicMetadata,
@@ -200,8 +209,8 @@ describe('character skills snapshot', () => {
     )
     const { getCharacterSkillsData } = await import('../../src/characters/skills.js')
 
-    const first = await getCharacterSkillsData(characterId)
-    const second = await getCharacterSkillsData(characterId)
+    const first = await getCharacterSkillsData(characterId, subjectLifecycleId)
+    const second = await getCharacterSkillsData(characterId, subjectLifecycleId)
 
     expect(first.source).toBe('esi')
     expect(second).toMatchObject({ source: 'cache', stale: false, data: first.data })
@@ -228,7 +237,7 @@ describe('detailed character skills catalogue', () => {
     )
     const { getCharacterSkills, skillCategoryId } = await import('../../src/characters/skills.js')
 
-    const result = await getCharacterSkills(characterId)
+    const result = await getCharacterSkills(characterId, subjectLifecycleId)
     expect(result).toEqual({
       totalSp: 19_000,
       unallocatedSp: 125,
@@ -313,7 +322,7 @@ describe('detailed character skills catalogue', () => {
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkills(characterId)).resolves.toEqual({
+    await expect(getCharacterSkills(characterId, subjectLifecycleId)).resolves.toEqual({
       totalSp: 0,
       unallocatedSp: 0,
       injectedSkillCount: 0,
@@ -349,8 +358,8 @@ describe('detailed character skills catalogue', () => {
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    await getCharacterSkills(characterId)
-    const cached = await getCharacterSkills(characterId)
+    await getCharacterSkills(characterId, subjectLifecycleId)
+    const cached = await getCharacterSkills(characterId, subjectLifecycleId)
 
     expect(cached).toMatchObject({
       totalSp: 19_000,
@@ -367,8 +376,8 @@ describe('detailed character skills catalogue', () => {
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    await getCharacterSkills(characterId)
-    await getCharacterSkills(characterId + 1)
+    await getCharacterSkills(characterId, subjectLifecycleId)
+    await getCharacterSkills(characterId + 1, subjectLifecycleId)
 
     expect(mocks.getSkills).toHaveBeenCalledTimes(2)
     expect(mocks.select).toHaveBeenCalledOnce()
@@ -380,8 +389,8 @@ describe('detailed character skills catalogue', () => {
     mocks.where.mockReturnValue(catalogue.promise)
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    const first = getCharacterSkills(characterId)
-    const second = getCharacterSkills(characterId + 1)
+    const first = getCharacterSkills(characterId, subjectLifecycleId)
+    const second = getCharacterSkills(characterId + 1, subjectLifecycleId)
     await vi.waitFor(() => expect(mocks.select).toHaveBeenCalledOnce())
     catalogue.resolve([staticSkill(10, 'Engineering', 2, 'Capacitor Management')])
 
@@ -393,10 +402,12 @@ describe('detailed character skills catalogue', () => {
     mocks.getSkills.mockResolvedValue(response({ total_sp: 0, skills: [] }))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkills(characterId)).resolves.toMatchObject({ groups: [] })
+    await expect(getCharacterSkills(characterId, subjectLifecycleId)).resolves.toMatchObject({
+      groups: [],
+    })
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
 
-    await expect(getCharacterSkills(characterId + 1)).resolves.toMatchObject({
+    await expect(getCharacterSkills(characterId + 1, subjectLifecycleId)).resolves.toMatchObject({
       groups: [{ groupId: 10, skills: [{ typeId: 2, injected: false }] }],
     })
     expect(mocks.select).toHaveBeenCalledTimes(2)
@@ -407,10 +418,12 @@ describe('detailed character skills catalogue', () => {
     mocks.where.mockRejectedValueOnce(new Error('temporary PostgreSQL failure'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkills(characterId)).rejects.toThrow('temporary PostgreSQL failure')
+    await expect(getCharacterSkills(characterId, subjectLifecycleId)).rejects.toThrow(
+      'temporary PostgreSQL failure',
+    )
     mocks.where.mockResolvedValueOnce([staticSkill(10, 'Engineering', 2, 'Capacitor Management')])
 
-    await expect(getCharacterSkills(characterId)).resolves.toMatchObject({
+    await expect(getCharacterSkills(characterId, subjectLifecycleId)).resolves.toMatchObject({
       injectedSkillCount: 0,
       groups: [{ groupId: 10 }],
     })

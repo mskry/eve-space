@@ -86,6 +86,15 @@ describe('organization foundation migration', () => {
       from organization_role_grants
       where role = 'organization_owner' and revoked_at is null
     `
+    const [installation] = await connection<{ owner_admin_id: string | null }[]>`
+      select owner_admin_id from deployment_installation_settings where id = 1
+    `
+    const [legacyOwnerColumn] = await connection<{ present: boolean }[]>`
+      select exists(
+        select 1 from information_schema.columns
+        where table_name = 'deployment_settings' and column_name = 'owner_admin_id'
+      ) as present
+    `
 
     expect(settings).toEqual({
       organization_version: '1',
@@ -106,6 +115,8 @@ describe('organization foundation migration', () => {
     })
     expect(token).toEqual({ encrypted_tokens: encryptedTokens, scopes, token_version: 7 })
     expect(ownerGrants?.count).toBe(0)
+    expect(installation?.owner_admin_id).toBe(adminId)
+    expect(legacyOwnerColumn?.present).toBe(false)
   })
 
   test('requires roster observations to identify a valid authorization generation', async () => {

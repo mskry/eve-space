@@ -59,6 +59,7 @@ import {
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 
 const characterId = 1404328063
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const revalidation = { ifNoneMatch: 'page-etag', ifModifiedSince: 'page-date' }
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
 const defaultFreshness = {
@@ -156,7 +157,7 @@ describe('complete character asset collection', () => {
       },
     ])
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(result).toEqual({
       characterId,
@@ -258,7 +259,7 @@ describe('complete character asset collection', () => {
       )
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(completionOrder).toEqual([1, 3, 2])
     expect(result.assets.map(({ itemId, typeId }) => ({ itemId, typeId }))).toEqual([
@@ -282,7 +283,7 @@ describe('complete character asset collection', () => {
       return pageResponse([asset({ item_id: options.query.page })], 10)
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(result.assets).toHaveLength(10)
     expect(maximumActive).toBe(characterAssetWorkerConcurrency)
@@ -294,7 +295,7 @@ describe('complete character asset collection', () => {
       pageResponse([asset({ item_id: options.query.page })], advertisedPages),
     )
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(result.assets).toHaveLength(advertisedPages)
     expect(mocks.listCharacterAssets).toHaveBeenCalledTimes(advertisedPages)
@@ -305,7 +306,7 @@ describe('complete character asset collection', () => {
     async (pages) => {
       mocks.listCharacterAssets.mockResolvedValue(response([asset()], pages))
 
-      await expect(getCharacterAssets(characterId)).rejects.toBeInstanceOf(
+      await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toBeInstanceOf(
         CharacterAssetsPaginationError,
       )
       expect(mocks.listCharacterAssets).toHaveBeenCalledOnce()
@@ -321,13 +322,15 @@ describe('complete character asset collection', () => {
       )
     })
 
-    await expect(getCharacterAssets(characterId)).rejects.toThrow('page unavailable')
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toThrow(
+      'page unavailable',
+    )
     expect(mocks.query.limit).not.toHaveBeenCalled()
 
     mocks.listCharacterAssets.mockImplementation(async (_characterId, options) =>
       pageResponse([asset({ item_id: options.query.page })], options.query.page === 2 ? 3 : 2),
     )
-    await expect(getCharacterAssets(characterId)).rejects.toBeInstanceOf(
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toBeInstanceOf(
       CharacterAssetsPaginationError,
     )
   })
@@ -342,9 +345,9 @@ describe('complete character asset collection', () => {
       return pageResponse([asset({ item_id: run * 100 + options.query.page })], advertised[run]!)
     })
 
-    await getCharacterAssets(characterId)
-    await getCharacterAssets(characterId)
-    await getCharacterAssets(characterId)
+    await getCharacterAssets(characterId, subjectLifecycleId)
+    await getCharacterAssets(characterId, subjectLifecycleId)
+    await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(callsByRun.map((pages) => pages.toSorted((left, right) => left - right))).toEqual([
       [1, 2, 3],
@@ -376,7 +379,7 @@ describe('complete character asset collection', () => {
       })
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(mocks.listCharacterAssets).toHaveBeenNthCalledWith(1, characterId, {
       path: { character_id: characterId },
@@ -415,7 +418,7 @@ describe('complete character asset collection', () => {
       })
     })
 
-    await expect(getCharacterAssets(characterId)).resolves.toMatchObject({
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).resolves.toMatchObject({
       stale: true,
       validatedAt: '2026-09-03T09:00:00.000Z',
       refreshFailureClass: 'esi-unavailable',
@@ -443,7 +446,7 @@ describe('complete character asset collection', () => {
       })
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(result).toMatchObject({ refreshFailureClass: 'esi-unavailable' })
     expect(result).not.toHaveProperty('retryAt')
@@ -465,7 +468,10 @@ describe('complete character asset collection', () => {
       return current
     })
 
-    await Promise.all([getCharacterAssets(characterId), getCharacterAssets(characterId)])
+    await Promise.all([
+      getCharacterAssets(characterId, subjectLifecycleId),
+      getCharacterAssets(characterId, subjectLifecycleId),
+    ])
 
     expect(mocks.listCharacterAssets).toHaveBeenCalledOnce()
   })
@@ -483,7 +489,7 @@ describe('complete character asset collection', () => {
       return loadResource(representation, input)
     })
 
-    await expect(getCharacterAssets(characterId)).rejects.toMatchObject({
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toMatchObject({
       retryAfterSeconds: 19,
     })
   })
@@ -514,7 +520,7 @@ describe('bounded character asset enrichment', () => {
       )
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(bodies).toHaveLength(characterAssetWorkerConcurrency + 1)
     expect(bodies.flat()).toEqual(Array.from({ length: candidateCount }, (_, index) => index + 1))
@@ -539,7 +545,7 @@ describe('bounded character asset enrichment', () => {
       return response([{ item_id: 1, name: 'Retained name' }])
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(mocks.lookupCharacterNames).toHaveBeenCalledTimes(2)
     expect(result.assets).toHaveLength(candidateCount)
@@ -595,7 +601,7 @@ describe('bounded character asset enrichment', () => {
       },
     ])
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(mocks.query.limit).toHaveBeenCalledWith(3)
     expect(result.assets).toEqual(
@@ -621,7 +627,7 @@ describe('bounded character asset enrichment', () => {
     )
     mocks.query.limit.mockRejectedValue(new Error('SDE unavailable'))
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(result.assets.map(({ typeName }) => typeName)).toEqual([
       'Unknown type 10',
@@ -653,7 +659,7 @@ describe('bounded character asset enrichment', () => {
       complete: true,
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(mocks.resolveUniverseNamesBestEffort).toHaveBeenCalledWith([30_000_142, 60_000_001])
     expect(result.assets.map(({ itemId, locationName }) => ({ itemId, locationName }))).toEqual([
@@ -697,7 +703,7 @@ describe('bounded character asset enrichment', () => {
       })),
     )
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(mocks.getStaticLocations).toHaveBeenCalledTimes(1)
     expect(mocks.getStaticLocations).toHaveBeenCalledWith(roots)
@@ -718,7 +724,7 @@ describe('bounded character asset enrichment', () => {
       complete: true,
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(result.assets[0]).toMatchObject({
       locationName: 'Known station',
@@ -757,7 +763,7 @@ describe('bounded character asset enrichment', () => {
       },
     ])
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(
       result.assets.map(({ locationName, solarSystemId, solarSystemSecurityStatus }) => ({
@@ -808,7 +814,7 @@ describe('bounded character asset enrichment', () => {
       },
     ])
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(
       result.assets.map(({ itemId, solarSystemId, solarSystemSecurityStatus }) => ({
@@ -846,7 +852,7 @@ describe('bounded character asset enrichment', () => {
       complete: false,
     })
 
-    const result = await getCharacterAssets(characterId)
+    const result = await getCharacterAssets(characterId, subjectLifecycleId)
 
     expect(result.assets[0]?.locationName).toBe('Jita IV - Moon 4')
     expect(result.assets[1]?.locationName).toBeNull()
@@ -861,7 +867,7 @@ describe('bounded character asset enrichment', () => {
     mocks.query.limit.mockRejectedValue(new Error('SDE unavailable'))
     mocks.resolveUniverseNamesBestEffort.mockRejectedValue(new Error('locations unavailable'))
 
-    await expect(getCharacterAssets(characterId)).resolves.toMatchObject({
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).resolves.toMatchObject({
       stale: false,
       enrichment: { types: 'unavailable', names: 'unavailable', locations: 'unavailable' },
       assets: [
@@ -877,7 +883,7 @@ describe('bounded character asset enrichment', () => {
 })
 
 test('does not expose or call prohibited asset and structure operations', async () => {
-  await getCharacterAssets(characterId)
+  await getCharacterAssets(characterId, subjectLifecycleId)
 
   const source = readFileSync(new URL('../../src/characters/assets.ts', import.meta.url), 'utf8')
   expect(source).not.toMatch(

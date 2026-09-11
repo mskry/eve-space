@@ -49,6 +49,7 @@ vi.mock('../../src/characters/finance-location-names.js', () => ({
 import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 90_000_001
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
 const revalidation = {
   ifNoneMatch: 'orders-etag',
@@ -97,7 +98,7 @@ describe('character market service', () => {
     const { getCharacterMarketOrders, marketOrdersScope } =
       await import('../../src/characters/market.js')
 
-    const result = await getCharacterMarketOrders(characterId)
+    const result = await getCharacterMarketOrders(characterId, subjectLifecycleId)
 
     expect(result).toEqual({
       orders: [
@@ -155,7 +156,7 @@ describe('character market service', () => {
     mocks.loadTypeNames.mockResolvedValue(new Map([[36, 'Mexallon']]))
     const { getCharacterMarketOrderHistory } = await import('../../src/characters/market.js')
 
-    const result = await getCharacterMarketOrderHistory(characterId, 3)
+    const result = await getCharacterMarketOrderHistory(characterId, 3, subjectLifecycleId)
 
     expect(result).toMatchObject({
       orders: [
@@ -193,7 +194,9 @@ describe('character market service', () => {
     })
     const { getCharacterMarketOrderHistory } = await import('../../src/characters/market.js')
 
-    await expect(getCharacterMarketOrderHistory(characterId, 4)).resolves.toEqual({
+    await expect(
+      getCharacterMarketOrderHistory(characterId, 4, subjectLifecycleId),
+    ).resolves.toEqual({
       orders: [],
       page: 4,
       totalPages: 9,
@@ -210,16 +213,18 @@ describe('character market service', () => {
     const { getCharacterMarketOrders, MarketQuotaError } =
       await import('../../src/characters/market.js')
 
-    await expect(getCharacterMarketOrders(characterId)).rejects.toEqual(new MarketQuotaError(45))
+    await expect(getCharacterMarketOrders(characterId, subjectLifecycleId)).rejects.toEqual(
+      new MarketQuotaError(45),
+    )
     expect(mocks.getOrders).not.toHaveBeenCalled()
   })
 
   test('rejects invalid history pages before cache access', async () => {
     const { getCharacterMarketOrderHistory } = await import('../../src/characters/market.js')
 
-    await expect(getCharacterMarketOrderHistory(characterId, 0)).rejects.toThrow(
-      'Market order history page must be a positive safe integer',
-    )
+    await expect(
+      getCharacterMarketOrderHistory(characterId, 0, subjectLifecycleId),
+    ).rejects.toThrow('Market order history page must be a positive safe integer')
     expect(mocks.executeRepresentation).not.toHaveBeenCalled()
   })
 
@@ -229,7 +234,9 @@ describe('character market service', () => {
       mocks.getOrderHistory.mockResolvedValue(response([], pages))
       const { getCharacterMarketOrderHistory } = await import('../../src/characters/market.js')
 
-      await expect(getCharacterMarketOrderHistory(characterId, 3)).resolves.toMatchObject({
+      await expect(
+        getCharacterMarketOrderHistory(characterId, 3, subjectLifecycleId),
+      ).resolves.toMatchObject({
         page: 3,
         totalPages: 3,
       })

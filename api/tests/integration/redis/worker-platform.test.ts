@@ -23,6 +23,12 @@ afterEach(async () => {
   platforms = []
   vi.doUnmock('../../../src/queue/job-handlers.js')
   vi.doUnmock('../../../src/queue/worker-lifecycle.js')
+  vi.doUnmock('../../../src/auth/tokens.js')
+  vi.doUnmock('../../../src/esi-resilience/catalog-access.js')
+  vi.doUnmock('../../../src/esi-resilience/platform-execute.js')
+  vi.doUnmock('../../../src/generated/platform/installed-module-worker.js')
+  vi.doUnmock('../../../src/platform/resource-eligibility.js')
+  vi.doUnmock('../../../src/platform/resources.js')
   vi.resetModules()
   vi.restoreAllMocks()
 })
@@ -396,6 +402,106 @@ describe('durable worker platform', () => {
     expect(closed).toBe(false)
     await responseUnwound
     await expect(closing).resolves.toEqual({ drained: false, timedOut: true })
+  })
+
+  test('completes obsolete scalar and batch lifecycle work before private resource effects', async () => {
+    await flushQueueRedis()
+    const loadAuthorization = vi.fn()
+    const executeEsiOperation = vi.fn()
+    const request = vi.fn()
+    const map = vi.fn()
+    const materialize = vi.fn()
+    const batchRequest = vi.fn()
+    const classify = vi.fn()
+    const resource = {
+      moduleId: 'worker-test',
+      resourceId: 'wallet-balance',
+      operationId: 'wallet-balance',
+      batch: { mode: 'change-hint', operationId: 'universe-resolve-names' },
+      subjectKind: 'character',
+      materializationIntervalSeconds: 900,
+      eligibility: { kind: 'current-owned-character' },
+      implementation: {
+        operation: 'wallet-balance',
+        request,
+        map,
+        materialize,
+        batch: {
+          operation: 'universe-resolve-names',
+          mode: 'change-hint',
+          request: batchRequest,
+          classify,
+        },
+      },
+    } as const
+    vi.doMock('../../../src/auth/tokens.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/auth/tokens.js')>()),
+      getCharacterAuthorizationForLifecycle: loadAuthorization,
+      getCharacterCacheAuthorizationForLifecycle: loadAuthorization,
+    }))
+    vi.doMock('../../../src/esi-resilience/catalog-access.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/esi-resilience/catalog-access.js')>()),
+      getExecutableEsiOperationDefinition: vi.fn(() => ({})),
+    }))
+    vi.doMock('../../../src/esi-resilience/platform-execute.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/esi-resilience/platform-execute.js')>()),
+      executePlatformEsiOperation: executeEsiOperation,
+    }))
+    vi.doMock('../../../src/generated/platform/installed-module-worker.js', () => ({
+      installedModuleResources: [resource],
+    }))
+    vi.doMock('../../../src/platform/resource-eligibility.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/platform/resource-eligibility.js')>()),
+      resolveInstalledResourceEligibility: vi.fn().mockResolvedValue({ status: 'obsolete' }),
+    }))
+    vi.doMock('../../../src/platform/resources.js', () => ({ platformResources: [resource] }))
+
+    const { startWorkerPlatform } = await loadPlatform(vi.fn())
+    const platform = await startWorkerPlatform()
+    platforms.push(platform)
+    const handle = await openQueue()
+    const identity = {
+      moduleId: resource.moduleId,
+      resourceId: resource.resourceId,
+      subjectKind: resource.subjectKind,
+      subjectLifecycleId: '11111111-1111-4111-8111-111111111111',
+      subjectId: '90000001',
+    }
+    try {
+      await handle.queue.add('resource-refresh', identity)
+      await handle.queue.add('resource-batch', {
+        moduleId: resource.moduleId,
+        resourceId: resource.resourceId,
+        subjectKind: resource.subjectKind,
+        subjects: [
+          {
+            subjectLifecycleId: identity.subjectLifecycleId,
+            subjectId: identity.subjectId,
+          },
+        ],
+      })
+      await waitFor(
+        async () =>
+          (await countJobs(handle.queue, 'completed', 'resource-refresh')) === 1 &&
+          (await countJobs(handle.queue, 'completed', 'resource-batch')) === 1,
+      )
+
+      expect(loadAuthorization).not.toHaveBeenCalled()
+      expect(executeEsiOperation).not.toHaveBeenCalled()
+      expect(request).not.toHaveBeenCalled()
+      expect(batchRequest).not.toHaveBeenCalled()
+      expect(classify).not.toHaveBeenCalled()
+      expect(map).not.toHaveBeenCalled()
+      expect(materialize).not.toHaveBeenCalled()
+      expect(await countJobs(handle.queue, 'completed', 'resource-refresh')).toBe(1)
+      expect(
+        (await handle.queue.getJobs(['failed', 'waiting', 'delayed', 'prioritized'])).filter(
+          (job) => job.name === 'resource-refresh' || job.name === 'resource-batch',
+        ),
+      ).toEqual([])
+    } finally {
+      await handle.close()
+    }
   })
 
   // Must stay last because it stops the suite's shared Redis container.

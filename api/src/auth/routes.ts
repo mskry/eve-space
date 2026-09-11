@@ -5,7 +5,7 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import {
   attachCharacter,
-  CharacterOwnershipConflictError,
+  CharacterTransferApprovalRequiredError,
   reauthorizeCharacter,
   saveLogin,
 } from './character-lifecycle.js'
@@ -20,7 +20,8 @@ import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-chara
 import { loadSession, sessionCookie } from '../middleware/auth-session.js'
 import { createOpaqueToken, tokensMatch } from './security.js'
 import { authRequiredBody, routeNotFoundBody } from '../http/contracts.js'
-import { setPrivateHeaders } from '../http/private-response.js'
+import { privateNoStore, setPrivateHeaders } from '../http/private-response.js'
+import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
 import { zValidator } from '../http/validation.js'
 import { logSafeError } from '../logging.js'
 import { loadCurrentOrganizationIdentity } from '../organization/context.js'
@@ -38,6 +39,8 @@ import {
   claimOrganizationOwnership,
   OrganizationOwnerClaimError,
 } from '../organization/owner-claim.js'
+import { loadTransferApprovalForStart } from './character-transfer-approvals.js'
+import { CharacterTransferError, transferCharacter } from './character-transfer.js'
 
 const oauthStateCookie = 'eve_space_oauth_state'
 const sessionDurationSeconds = 7 * 24 * 60 * 60
@@ -58,6 +61,12 @@ const returnDestinationQuery = z.object({
 const localFixtureSessionForm = z.object({
   sessionToken: z.string().min(32).max(200),
 })
+const transferStartBody = z
+  .object({
+    approvalId: z.uuid('Transfer approval is invalid.'),
+    secret: z.string().min(32, 'Transfer approval is invalid.').max(200),
+  })
+  .strict()
 const invalidReturnDestination = new HTTPException(400, {
   message: 'Return destination must be a safe application route.',
 })
@@ -77,8 +86,14 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       await next()
     },
     zValidator('query', returnDestinationQuery),
+    loadSession,
     async (context) => {
       const { returnTo } = context.req.valid('query')
+      const session = context.var.session
+      if (session) {
+        setPrivateHeaders(context)
+        return startAuthorization(context, { intent: 'attach', userId: session.userId })
+      }
       return startAuthorization(context, {
         intent: 'login',
         ...(returnTo ? { returnPath: normalizeLoginReturnPath(returnTo) } : {}),
@@ -92,6 +107,36 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       return context.json({ code: 'AUTH_REQUIRED', message: 'Log in with EVE Online first.' }, 401)
     return startAuthorization(context, { intent: 'attach', userId: session.userId })
   })
+  .post(
+    '/eve/transfer',
+    privateNoStore,
+    requireTrustedMutationOrigin,
+    loadSession,
+    async (context, next) => {
+      if (!context.var.session) return context.json(authRequiredBody, 401)
+      await next()
+    },
+    zValidator('json', transferStartBody),
+    async (context) => {
+      const binding = await loadTransferApprovalForStart({
+        ...context.req.valid('json'),
+        destinationUserId: context.var.session!.userId,
+      })
+      if (!binding)
+        return context.json(
+          {
+            code: 'TRANSFER_APPROVAL_UNUSABLE',
+            message: 'Transfer approval is no longer usable.',
+          },
+          409,
+        )
+      const { authorizationUrl } = await prepareAuthorization(context, {
+        intent: 'transfer',
+        ...binding,
+      })
+      return context.json({ authorizationUrl: authorizationUrl.toString() }, 200)
+    },
+  )
   .get(
     '/eve/claim-organization-owner/:characterId',
     zValidator('param', characterIdParams),
@@ -158,17 +203,26 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     if (!code) return redirectForIntent(context, stateContext, 'error')
 
     if (!(await hasBoundSession(context, stateContext)))
-      return redirectForIntent(context, stateContext, 'error')
+      return redirectForIntent(
+        context,
+        stateContext,
+        stateContext.intent === 'transfer' ? 'approval-unusable' : 'error',
+      )
 
     try {
       const tokens = await exchangeAuthorizationCode(code, context.req.raw.signal)
       const identity = await verifyAccessToken(tokens.access_token, context.req.raw.signal)
       if (
         (stateContext.intent === 'reauthorize' ||
-          stateContext.intent === 'claim-organization-owner') &&
+          stateContext.intent === 'claim-organization-owner' ||
+          stateContext.intent === 'transfer') &&
         identity.characterId !== stateContext.characterId
       ) {
-        return redirectForIntent(context, stateContext, 'error')
+        return redirectForIntent(
+          context,
+          stateContext,
+          stateContext.intent === 'transfer' ? 'approval-unusable' : 'error',
+        )
       }
       const affiliation =
         stateContext.intent === 'claim-organization-owner'
@@ -191,10 +245,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
 
       return redirectForIntent(context, stateContext, 'success', identity.characterId)
     } catch (error) {
-      if (error instanceof CharacterOwnershipConflictError)
-        return redirectForIntent(context, stateContext, 'conflict')
-      logSafeError('EVE SSO callback failed', error)
-      return redirectForIntent(context, stateContext, 'error')
+      return redirectForCallbackError(context, stateContext, error)
     }
   })
   .post(
@@ -232,7 +283,25 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
     return context.body(null, 204)
   })
 
+function redirectForCallbackError(
+  context: Context,
+  stateContext: OAuthStateContext,
+  error: unknown,
+) {
+  if (stateContext.intent === 'attach' && error instanceof CharacterTransferApprovalRequiredError)
+    return redirectForIntent(context, stateContext, 'approval-required')
+  if (stateContext.intent === 'transfer' && error instanceof CharacterTransferError)
+    return redirectForIntent(context, stateContext, error.code)
+  logSafeError('EVE SSO callback failed', error)
+  return redirectForIntent(context, stateContext, 'error')
+}
+
 async function startAuthorization(context: Context, stateContext: OAuthStateContext) {
+  const { authorizationUrl } = await prepareAuthorization(context, stateContext)
+  return context.redirect(authorizationUrl.toString())
+}
+
+async function prepareAuthorization(context: Context, stateContext: OAuthStateContext) {
   if (!isSsoConfigured()) {
     throw new HTTPException(503, { message: 'EVE SSO credentials have not been configured.' })
   }
@@ -247,7 +316,7 @@ async function startAuthorization(context: Context, stateContext: OAuthStateCont
     priority: 'High',
     maxAge: 10 * 60,
   })
-  return context.redirect((await createAuthorizationUrl(state, context.req.raw.signal)).toString())
+  return { authorizationUrl: await createAuthorizationUrl(state, context.req.raw.signal) }
 }
 
 async function consumeValidOAuthState(state: string | undefined, cookieState: string | undefined) {
@@ -282,17 +351,37 @@ async function saveAuthorizationForIntent(
       return
     }
     case 'attach':
-      await attachCharacter({ ...authorization, userId: stateContext.userId })
+      await attachCharacter({
+        ...authorization,
+        userId: stateContext.userId,
+        sessionToken: getCookie(context, sessionCookie)!,
+      })
       return
     case 'reauthorize':
       await reauthorizeCharacter({
         ...authorization,
         userId: stateContext.userId,
         expectedCharacterId: stateContext.characterId,
+        sessionToken: getCookie(context, sessionCookie)!,
       })
       return
     case 'claim-organization-owner':
-      await saveOrganizationOwnerClaim(stateContext, authorization)
+      await saveOrganizationOwnerClaim(
+        stateContext,
+        authorization,
+        getCookie(context, sessionCookie)!,
+      )
+      return
+    case 'transfer':
+      await transferCharacter({
+        approvalId: stateContext.approvalId,
+        sourceUserId: stateContext.sourceUserId,
+        sourceSubjectLifecycleId: stateContext.sourceSubjectLifecycleId,
+        destinationUserId: stateContext.userId,
+        characterId: stateContext.characterId,
+        destinationSessionToken: getCookie(context, sessionCookie)!,
+        authorization,
+      })
       return
   }
 }
@@ -300,6 +389,7 @@ async function saveAuthorizationForIntent(
 async function saveOrganizationOwnerClaim(
   state: Extract<OAuthStateContext, { intent: 'claim-organization-owner' }>,
   authorization: CharacterAuthorization,
+  sessionToken: string,
 ) {
   const organization = await loadCurrentOrganizationIdentity()
   if (
@@ -313,16 +403,18 @@ async function saveOrganizationOwnerClaim(
     organization,
     authorization,
   )
-  const affiliationCheckedAt = await reauthorizeCharacter({
+  const { affiliationCheckedAt, subjectLifecycleId } = await reauthorizeCharacter({
     ...authorization,
     userId: state.userId,
     expectedCharacterId: state.characterId,
+    sessionToken,
   })
-  const roles = await getCharacterCorporationRoles(state.characterId)
+  const roles = await getCharacterCorporationRoles(state.characterId, subjectLifecycleId)
   assertOrganizationOwnerDirectorRole(roles)
   await claimOrganizationOwnership({
     userId: state.userId,
     characterId: state.characterId,
+    subjectLifecycleId,
     organizationId: state.organizationId,
     organizationVersion: state.organizationVersion,
     authorityCorporationId,
@@ -336,12 +428,23 @@ async function saveOrganizationOwnerClaim(
 function redirectForIntent(
   context: Context,
   state: OAuthStateContext,
-  status: 'success' | 'cancelled' | 'conflict' | 'error',
+  status:
+    | 'success'
+    | 'cancelled'
+    | 'approval-required'
+    | 'approval-unusable'
+    | 'main-character'
+    | 'authority-evidence'
+    | 'corporation-source'
+    | 'error',
   characterId?: number,
 ) {
   if (state.intent === 'login') {
     const destination = new URL('/auth', env.WEB_ORIGIN)
-    destination.searchParams.set('auth', status === 'conflict' ? 'error' : status)
+    destination.searchParams.set(
+      'auth',
+      status === 'success' || status === 'cancelled' ? status : 'error',
+    )
     if (status === 'success' && characterId)
       destination.searchParams.set('character', String(characterId))
     if (state.returnPath) destination.searchParams.set('redirect', state.returnPath)
@@ -350,12 +453,15 @@ function redirectForIntent(
 
   if (state.intent === 'claim-organization-owner') {
     const destination = new URL('/settings/integrations', env.WEB_ORIGIN)
-    destination.searchParams.set('organizationOwner', status === 'conflict' ? 'error' : status)
+    destination.searchParams.set(
+      'organizationOwner',
+      status === 'success' || status === 'cancelled' ? status : 'error',
+    )
     return context.redirect(destination.toString())
   }
 
   const stateDestination = new URL(
-    state.intent === 'attach'
+    state.intent === 'attach' || state.intent === 'transfer'
       ? '/characters'
       : (state.returnPath ?? `/characters/${state.characterId}`),
     env.WEB_ORIGIN,
@@ -364,8 +470,15 @@ function redirectForIntent(
     `${stateDestination.pathname}${stateDestination.search}`,
     env.WEB_ORIGIN,
   )
-  destination.searchParams.set(state.intent === 'attach' ? 'attach' : 'reauthorize', status)
-  if (state.intent === 'attach' && status === 'success' && characterId)
+  destination.searchParams.set(
+    state.intent === 'attach' || state.intent === 'transfer' ? 'attach' : 'reauthorize',
+    status,
+  )
+  if (
+    (state.intent === 'attach' || state.intent === 'transfer') &&
+    status === 'success' &&
+    characterId
+  )
     destination.searchParams.set('character', String(characterId))
   return context.redirect(destination.toString())
 }

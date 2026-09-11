@@ -30,8 +30,23 @@ const attachStatus = computed(() =>
 )
 const attachFeedback = computed(() => {
   if (attachStatus.value === 'success') return 'Character authorization completed.'
+  if (attachStatus.value === 'approval-required') {
+    return 'Moving this character requires deployment-administrator approval. Ask for a valid transfer link and open it while signed in to the intended destination account.'
+  }
+  if (attachStatus.value === 'approval-unusable') {
+    return 'This transfer approval can no longer be used. Ask a deployment administrator for a new transfer link.'
+  }
+  if (attachStatus.value === 'main-character') {
+    return 'Sign in to the source account and choose another main character, then return to the intended destination and retry the approval link while valid or request a replacement.'
+  }
+  if (attachStatus.value === 'authority-evidence') {
+    return 'Remove active organization authority through the authorized organization workflow, then retry the approval link while valid or request a replacement.'
+  }
+  if (attachStatus.value === 'corporation-source') {
+    return 'Replace or revoke the active corporation data source through the authorized workflow, then retry the approval link while valid or request a replacement.'
+  }
   if (attachStatus.value === 'conflict') {
-    return 'That character is already added to another EVE Space account.'
+    return 'The character could not be added. Start a new character authorization and try again.'
   }
   if (attachStatus.value === 'cancelled') return 'Adding the character was cancelled.'
   if (attachStatus.value === 'error') return 'The character could not be added.'
@@ -89,7 +104,7 @@ watch(
 
     if (callbackStatus === 'success' && callbackHandled.value !== route.fullPath) {
       callbackHandled.value = route.fullPath
-      await Promise.all([initializeAuth(true), refetchCharacterRoster()])
+      await Promise.allSettled([initializeAuth(true), refetchCharacterRoster()])
       return
     }
     if (rosterStatus.value === 'idle' && characters.value.length === 0) {

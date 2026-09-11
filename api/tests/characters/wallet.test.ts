@@ -52,6 +52,7 @@ vi.mock('../../src/characters/finance-type-names.js', () => ({
 import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 90_000_001
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
 const revalidation = {}
 const defaultFreshness = {
@@ -77,7 +78,7 @@ describe('wallet service', () => {
   test('passes the private wallet operation to the registered execution interface', async () => {
     const { getWalletBalance, walletScope } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletBalance(characterId)).resolves.toMatchObject({
+    await expect(getWalletBalance(characterId, subjectLifecycleId)).resolves.toMatchObject({
       balance: 123.45,
       validatedAt: defaultFreshness.validatedAt,
     })
@@ -102,7 +103,7 @@ describe('wallet service', () => {
     })
     const { getWalletBalance } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletBalance(90_000_002)).resolves.toEqual({
+    await expect(getWalletBalance(90_000_002, subjectLifecycleId)).resolves.toEqual({
       balance: 500,
       cachedUntil: '2026-08-20T12:05:00.000Z',
       validatedAt: '2026-08-20T12:00:00.000Z',
@@ -122,7 +123,7 @@ describe('wallet service', () => {
     })
     const { getWalletBalance } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletBalance(90_000_005)).resolves.toMatchObject({
+    await expect(getWalletBalance(90_000_005, subjectLifecycleId)).resolves.toMatchObject({
       balance: 500,
       validatedAt: '2026-08-20T12:00:00.000Z',
     })
@@ -133,7 +134,7 @@ describe('wallet service', () => {
     mocks.executeRepresentation.mockRejectedValueOnce(scopeError)
     const { getWalletBalance } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletBalance(90_000_006)).rejects.toBe(scopeError)
+    await expect(getWalletBalance(90_000_006, subjectLifecycleId)).rejects.toBe(scopeError)
     expect(mocks.getBalance).not.toHaveBeenCalled()
   })
 
@@ -141,7 +142,9 @@ describe('wallet service', () => {
     mocks.executeRepresentation.mockRejectedValueOnce(new mocks.EsiQuotaError(30))
     const { getWalletBalance, WalletQuotaError } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletBalance(90_000_003)).rejects.toEqual(new WalletQuotaError(30))
+    await expect(getWalletBalance(90_000_003, subjectLifecycleId)).rejects.toEqual(
+      new WalletQuotaError(30),
+    )
     expect(mocks.getBalance).not.toHaveBeenCalled()
   })
 
@@ -178,7 +181,7 @@ describe('wallet service', () => {
     )
     const { getWalletJournal } = await import('../../src/characters/wallet.js')
 
-    const result = await getWalletJournal(90_000_004, 2)
+    const result = await getWalletJournal(90_000_004, 2, subjectLifecycleId)
 
     expect(result).toEqual({
       entries: [
@@ -239,7 +242,7 @@ describe('wallet service', () => {
     })
     const { getWalletJournal } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletJournal(90_000_004, 3)).resolves.toEqual({
+    await expect(getWalletJournal(90_000_004, 3, subjectLifecycleId)).resolves.toEqual({
       entries: [],
       page: 3,
       totalPages: 7,
@@ -264,7 +267,7 @@ describe('wallet service', () => {
     }))
     const { getWalletJournal } = await import('../../src/characters/wallet.js')
 
-    await getWalletJournal(90_000_004, 1)
+    await getWalletJournal(90_000_004, 1, subjectLifecycleId)
 
     expect(mocks.getJournal).toHaveBeenCalledWith({
       path: { character_id: 90_000_004 },
@@ -292,7 +295,7 @@ describe('wallet service', () => {
     mocks.loadLocationNames.mockResolvedValue(new Map([[60_000_001, 'Jita IV - Moon 4']]))
     const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
-    const result = await getWalletTransactions(90_000_004)
+    const result = await getWalletTransactions(90_000_004, undefined, subjectLifecycleId)
     expect(result).toMatchObject({
       transactions: [
         {
@@ -317,8 +320,8 @@ describe('wallet service', () => {
   test('keys and forwards each transaction continuation independently', async () => {
     const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
-    await getWalletTransactions(90_000_004, 700)
-    await getWalletTransactions(90_000_004, 600)
+    await getWalletTransactions(90_000_004, 700, subjectLifecycleId)
+    await getWalletTransactions(90_000_004, 600, subjectLifecycleId)
 
     expect(mocks.executeRepresentation.mock.calls.map(([, input]) => input)).toEqual([
       { characterId: 90_000_004, fromId: 700 },
@@ -337,7 +340,7 @@ describe('wallet service', () => {
   test('omits the continuation query entirely for an unset transaction range', async () => {
     const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
-    await getWalletTransactions(90_000_004)
+    await getWalletTransactions(90_000_004, undefined, subjectLifecycleId)
 
     expect(mocks.getTransactions).toHaveBeenCalledWith({
       path: { character_id: 90_000_004 },
@@ -355,7 +358,9 @@ describe('wallet service', () => {
     )
     const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletTransactions(90_000_004, 3_000)).resolves.toMatchObject({
+    await expect(
+      getWalletTransactions(90_000_004, 3_000, subjectLifecycleId),
+    ).resolves.toMatchObject({
       transactions: [],
       fromId: 3_000,
       nextFromId: 1,
@@ -379,7 +384,9 @@ describe('wallet service', () => {
     )
     const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletTransactions(90_000_004)).resolves.toMatchObject({
+    await expect(
+      getWalletTransactions(90_000_004, undefined, subjectLifecycleId),
+    ).resolves.toMatchObject({
       transactions: [
         { transactionId: 100, typeName: 'Tritanium' },
         { transactionId: 60, typeName: 'Mexallon' },
@@ -395,7 +402,7 @@ describe('wallet service', () => {
     )
     const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
-    await expect(getWalletTransactions(90_000_004, 50)).resolves.toMatchObject({
+    await expect(getWalletTransactions(90_000_004, 50, subjectLifecycleId)).resolves.toMatchObject({
       fromId: 50,
       nextFromId: null,
     })
@@ -406,7 +413,7 @@ describe('wallet service', () => {
     async (fromId) => {
       const { getWalletTransactions } = await import('../../src/characters/wallet.js')
 
-      await expect(getWalletTransactions(90_000_004, fromId)).rejects.toThrow(
+      await expect(getWalletTransactions(90_000_004, fromId, subjectLifecycleId)).rejects.toThrow(
         'Wallet transaction continuation must be a positive safe integer',
       )
       expect(mocks.executeRepresentation).not.toHaveBeenCalled()
@@ -419,7 +426,7 @@ describe('wallet service', () => {
       mocks.getJournal.mockResolvedValue(response([], pages))
       const { getWalletJournal } = await import('../../src/characters/wallet.js')
 
-      await expect(getWalletJournal(90_000_004, 3)).resolves.toMatchObject({
+      await expect(getWalletJournal(90_000_004, 3, subjectLifecycleId)).resolves.toMatchObject({
         page: 3,
         totalPages: 3,
       })

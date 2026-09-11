@@ -183,6 +183,7 @@ interface EsiMailParties {
 
 interface MailHeadersRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
   labels: number[] | null
   lastMailId: number | null
 }
@@ -203,12 +204,14 @@ const mailHeadersRepresentation = registerEsiRepresentation(
             },
           }),
     }),
-    map: (response, input) => mapMailHeaders(input.characterId, response.data),
+    map: (response, input) =>
+      mapMailHeaders(input.characterId, input.subjectLifecycleId, response.data),
   }),
 )
 
 interface MailDetailRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
   mailId: number
 }
 
@@ -220,7 +223,8 @@ const mailDetailRepresentation = registerEsiRepresentation(
     encodeRequest: (input: MailDetailRepresentationInput) => ({
       path: { character_id: input.characterId, mail_id: input.mailId },
     }),
-    map: (response, input) => mapMailDetail(input.characterId, input.mailId, response.data),
+    map: (response, input) =>
+      mapMailDetail(input.characterId, input.subjectLifecycleId, input.mailId, response.data),
   }),
 )
 
@@ -455,45 +459,70 @@ export class MailUnavailableError extends Error {
 export async function listMailHeaders(
   characterId: number,
   options: { labels?: readonly number[] | null; lastMailId?: number | null } = {},
+  subjectLifecycleId: string,
 ): Promise<MailHeaderPage> {
   const labels = normalizeLabelFilter(options.labels)
   const lastMailId = options.lastMailId ?? null
   try {
-    const { data, ...metadata } = await execute(mailHeadersRepresentation, {
-      characterId,
-      labels,
-      lastMailId,
-    })
+    const { data, ...metadata } = await execute(
+      mailHeadersRepresentation,
+      {
+        characterId,
+        subjectLifecycleId,
+        labels,
+        lastMailId,
+      },
+      { subjectLifecycleId },
+    )
     return { characterId, ...data, ...metadata }
   } catch (error) {
     throwMailReadError(error)
   }
 }
 
-export async function getMailDetail(characterId: number, mailId: number): Promise<MailDetail> {
+export async function getMailDetail(
+  characterId: number,
+  mailId: number,
+  subjectLifecycleId: string,
+): Promise<MailDetail> {
   try {
-    const { data, ...metadata } = await execute(mailDetailRepresentation, {
-      characterId,
-      mailId,
-    })
+    const { data, ...metadata } = await execute(
+      mailDetailRepresentation,
+      {
+        characterId,
+        subjectLifecycleId,
+        mailId,
+      },
+      { subjectLifecycleId },
+    )
     return { characterId, ...data, ...metadata }
   } catch (error) {
     throwMailReadError(error, true)
   }
 }
 
-export async function getMailLabels(characterId: number): Promise<MailLabels> {
+export async function getMailLabels(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<MailLabels> {
   try {
-    const { data, ...metadata } = await execute(mailLabelsRepresentation, { characterId })
+    const { data, ...metadata } = await execute(
+      mailLabelsRepresentation,
+      { characterId },
+      { subjectLifecycleId },
+    )
     return { characterId, ...data, ...metadata }
   } catch (error) {
     throwMailReadError(error)
   }
 }
 
-export async function getMailingLists(characterId: number): Promise<MailingLists> {
+export async function getMailingLists(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<MailingLists> {
   try {
-    const { data, ...metadata } = await execute(mailListsRepresentation, { characterId })
+    const { data, ...metadata } = await loadMailingLists(characterId, subjectLifecycleId)
     return { characterId, mailingLists: data, ...metadata }
   } catch (error) {
     throwMailReadError(error)
@@ -516,12 +545,17 @@ export async function resolveMailRecipients(
 export async function searchMailRecipients(
   characterId: number,
   search: string,
+  subjectLifecycleId: string,
 ): Promise<MailRecipientSearchResult> {
   try {
-    const { data, ...metadata } = await execute(characterSearchRepresentation, {
-      characterId,
-      search,
-    })
+    const { data, ...metadata } = await execute(
+      characterSearchRepresentation,
+      {
+        characterId,
+        search,
+      },
+      { subjectLifecycleId },
+    )
     return { characterId, recipients: data, ...metadata }
   } catch (error) {
     throwMailReadError(error)
@@ -531,18 +565,31 @@ export async function searchMailRecipients(
 export async function calculateMailCspaCharge(
   characterId: number,
   characterIds: readonly number[],
+  subjectLifecycleId: string,
 ): Promise<MailCspaChargeResult> {
   try {
-    const response = await execute(characterCspaChargeRepresentation, { characterId, characterIds })
+    const response = await execute(
+      characterCspaChargeRepresentation,
+      { characterId, characterIds },
+      { subjectLifecycleId },
+    )
     return { characterId, cost: response.data }
   } catch (error) {
     throwMailMutationError(error, 'cspa')
   }
 }
 
-export async function sendMail(characterId: number, input: SendMailInput): Promise<SentMailResult> {
+export async function sendMail(
+  characterId: number,
+  input: SendMailInput,
+  subjectLifecycleId: string,
+): Promise<SentMailResult> {
   try {
-    return await executeMutation(mailSendRepresentation, { characterId, input })
+    return await executeMutation(
+      mailSendRepresentation,
+      { characterId, input },
+      { subjectLifecycleId },
+    )
   } catch (error) {
     throwMailMutationError(error, 'send')
   }
@@ -551,9 +598,14 @@ export async function sendMail(characterId: number, input: SendMailInput): Promi
 export async function createMailLabel(
   characterId: number,
   input: CreateMailLabelInput,
+  subjectLifecycleId: string,
 ): Promise<CreatedMailLabelResult> {
   try {
-    return await executeMutation(mailCreateLabelRepresentation, { characterId, input })
+    return await executeMutation(
+      mailCreateLabelRepresentation,
+      { characterId, input },
+      { subjectLifecycleId },
+    )
   } catch (error) {
     throwMailMutationError(error, 'organize')
   }
@@ -563,17 +615,30 @@ export async function updateMail(
   characterId: number,
   mailId: number,
   input: UpdateMailInput,
+  subjectLifecycleId: string,
 ): Promise<UpdatedMailResult> {
   try {
-    return await executeMutation(mailUpdateRepresentation, { characterId, mailId, input })
+    return await executeMutation(
+      mailUpdateRepresentation,
+      { characterId, mailId, input },
+      { subjectLifecycleId },
+    )
   } catch (error) {
     throwMailMutationError(error, 'organize')
   }
 }
 
-export async function deleteMail(characterId: number, mailId: number): Promise<DeletedMailResult> {
+export async function deleteMail(
+  characterId: number,
+  mailId: number,
+  subjectLifecycleId: string,
+): Promise<DeletedMailResult> {
   try {
-    return await executeMutation(mailDeleteRepresentation, { characterId, mailId })
+    return await executeMutation(
+      mailDeleteRepresentation,
+      { characterId, mailId },
+      { subjectLifecycleId },
+    )
   } catch (error) {
     if (errorStatus(error) === 404) return { characterId, mailId }
     throwMailMutationError(error, 'organize')
@@ -583,21 +648,30 @@ export async function deleteMail(characterId: number, mailId: number): Promise<D
 export async function deleteMailLabel(
   characterId: number,
   labelId: number,
+  subjectLifecycleId: string,
 ): Promise<DeletedMailLabelResult> {
   try {
-    return await executeMutation(mailDeleteLabelRepresentation, { characterId, labelId })
+    return await executeMutation(
+      mailDeleteLabelRepresentation,
+      { characterId, labelId },
+      { subjectLifecycleId },
+    )
   } catch (error) {
     if (errorStatus(error) === 404) return { characterId, labelId }
     throwMailMutationError(error, 'organize')
   }
 }
 
-async function mapMailHeaders(characterId: number, response: GetCharactersCharacterIdMailResponse) {
+async function mapMailHeaders(
+  characterId: number,
+  subjectLifecycleId: string,
+  response: GetCharactersCharacterIdMailResponse,
+) {
   const headers = response.map((header) => {
     if (header.mail_id === undefined) throw new InvalidMailHeaderError()
     return header as typeof header & { mail_id: number }
   })
-  const parties = await enrichParties(characterId, headers)
+  const parties = await enrichParties(characterId, subjectLifecycleId, headers)
   return {
     messages: headers.map((header) => ({
       mailId: header.mail_id,
@@ -614,10 +688,11 @@ async function mapMailHeaders(characterId: number, response: GetCharactersCharac
 
 async function mapMailDetail(
   characterId: number,
+  subjectLifecycleId: string,
   mailId: number,
   response: GetCharactersCharacterIdMailMailIdResponse,
 ) {
-  const parties = await enrichParties(characterId, [response])
+  const parties = await enrichParties(characterId, subjectLifecycleId, [response])
   return {
     mailId,
     sender: senderParty(response.from, parties),
@@ -665,11 +740,15 @@ function normalizeLabelFilter(labels: readonly number[] | null | undefined) {
   return [...new Set(labels)].toSorted((left, right) => left - right)
 }
 
-async function loadMailingLists(characterId: number) {
-  return execute(mailListsRepresentation, { characterId })
+async function loadMailingLists(characterId: number, subjectLifecycleId: string) {
+  return execute(mailListsRepresentation, { characterId }, { subjectLifecycleId })
 }
 
-async function enrichParties(characterId: number, records: readonly EsiMailParties[]) {
+async function enrichParties(
+  characterId: number,
+  subjectLifecycleId: string,
+  records: readonly EsiMailParties[],
+) {
   const universeIds = new Set<number>()
   const mailingListIds = new Set<number>()
   for (const record of records) {
@@ -682,7 +761,7 @@ async function enrichParties(characterId: number, records: readonly EsiMailParti
 
   const [universeNames, mailingListNames] = await Promise.all([
     resolveNamesBestEffort([...universeIds]),
-    resolveMailingListNamesBestEffort(characterId, mailingListIds.size > 0),
+    resolveMailingListNamesBestEffort(characterId, subjectLifecycleId, mailingListIds.size > 0),
   ])
   return { universeNames, mailingListNames }
 }
@@ -696,10 +775,14 @@ async function resolveNamesBestEffort(ids: number[]) {
   }
 }
 
-async function resolveMailingListNamesBestEffort(characterId: number, needed: boolean) {
+async function resolveMailingListNamesBestEffort(
+  characterId: number,
+  subjectLifecycleId: string,
+  needed: boolean,
+) {
   if (!needed) return new Map<number, string>()
   try {
-    const result = await loadMailingLists(characterId)
+    const result = await loadMailingLists(characterId, subjectLifecycleId)
     return new Map(result.data.map((list) => [list.mailingListId, list.name]))
   } catch {
     return new Map<number, string>()

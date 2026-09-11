@@ -62,8 +62,11 @@ watch(
   () => adminSession.value,
   (session) => {
     if (session?.authenticated) {
-      organizationType.value = session.account.organization.type
-      organizationId.value = String(session.account.organization.id)
+      const organization = session.account.organization
+      if (organization) {
+        organizationType.value = organization.type
+        organizationId.value = String(organization.id)
+      }
     } else if (session && import.meta.client) {
       void navigateTo('/admin/login')
     }
@@ -109,7 +112,7 @@ useHead({ title: 'Administration // EVE Space' })
       </section>
 
       <form class="admin-panel admin-form" @submit.prevent="organizationMutation.mutate()">
-        <div class="admin-organization-current">
+        <div v-if="adminSession.account.organization" class="admin-organization-current">
           <UiEveImage
             :kind="adminSession.account.organization.type"
             :id="adminSession.account.organization.id"
@@ -125,6 +128,9 @@ useHead({ title: 'Administration // EVE Space' })
             </span>
           </div>
         </div>
+        <p v-else class="admin-organization-empty">
+          No managed organization is currently configured.
+        </p>
         <label
           >Organization type
           <select v-model="organizationType">
@@ -145,6 +151,8 @@ useHead({ title: 'Administration // EVE Space' })
           {{ submitting ? 'VERIFYING...' : 'UPDATE ORGANIZATION' }}
         </button>
       </form>
+
+      <AdminCharacterTransferApprovals />
     </template>
   </div>
 </template>

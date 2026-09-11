@@ -61,14 +61,14 @@ import { executeRepresentationFixture } from '../support/execute-representation.
 
 import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
 import {
-  calculateMailCspaCharge,
-  createMailLabel,
-  deleteMail,
-  deleteMailLabel,
-  getMailDetail,
-  getMailLabels,
-  getMailingLists,
-  listMailHeaders,
+  calculateMailCspaCharge as calculateMailCspaChargeForLifecycle,
+  createMailLabel as createMailLabelForLifecycle,
+  deleteMail as deleteMailForLifecycle,
+  deleteMailLabel as deleteMailLabelForLifecycle,
+  getMailDetail as getMailDetailForLifecycle,
+  getMailLabels as getMailLabelsForLifecycle,
+  getMailingLists as getMailingListsForLifecycle,
+  listMailHeaders as listMailHeadersForLifecycle,
   MailAuthorizationError,
   MailCspaRejectedError,
   MailDeliveryUnknownError,
@@ -77,13 +77,14 @@ import {
   MailRejectedError,
   MailUnavailableError,
   resolveMailRecipients,
-  searchMailRecipients,
-  sendMail,
-  updateMail,
+  searchMailRecipients as searchMailRecipientsForLifecycle,
+  sendMail as sendMailForLifecycle,
+  updateMail as updateMailForLifecycle,
 } from '../../src/mail/mailbox.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
 
 const characterId = 90_000_001
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const authority = { accessToken: 'access-token', principal: 'character-90000001' }
 const revalidation = { ifNoneMatch: 'mail-etag', ifModifiedSince: 'Wed, 26 Aug 2026 12:00:00 GMT' }
 const outerMetadata = {
@@ -97,6 +98,36 @@ const sdkMetadata = {
   status: 200,
   headers: { etag: 'mail-etag', expires: 'Thu, 27 Aug 2026 12:00:30 GMT' },
 }
+
+const listMailHeaders = (
+  targetCharacterId: number,
+  options: Parameters<typeof listMailHeadersForLifecycle>[1] = {},
+) => listMailHeadersForLifecycle(targetCharacterId, options, subjectLifecycleId)
+const getMailDetail = (targetCharacterId: number, mailId: number) =>
+  getMailDetailForLifecycle(targetCharacterId, mailId, subjectLifecycleId)
+const getMailLabels = (targetCharacterId: number) =>
+  getMailLabelsForLifecycle(targetCharacterId, subjectLifecycleId)
+const getMailingLists = (targetCharacterId: number) =>
+  getMailingListsForLifecycle(targetCharacterId, subjectLifecycleId)
+const searchMailRecipients = (targetCharacterId: number, search: string) =>
+  searchMailRecipientsForLifecycle(targetCharacterId, search, subjectLifecycleId)
+const calculateMailCspaCharge = (targetCharacterId: number, characterIds: readonly number[]) =>
+  calculateMailCspaChargeForLifecycle(targetCharacterId, characterIds, subjectLifecycleId)
+const sendMail = (targetCharacterId: number, input: Parameters<typeof sendMailForLifecycle>[1]) =>
+  sendMailForLifecycle(targetCharacterId, input, subjectLifecycleId)
+const createMailLabel = (
+  targetCharacterId: number,
+  input: Parameters<typeof createMailLabelForLifecycle>[1],
+) => createMailLabelForLifecycle(targetCharacterId, input, subjectLifecycleId)
+const updateMail = (
+  targetCharacterId: number,
+  mailId: number,
+  input: Parameters<typeof updateMailForLifecycle>[2],
+) => updateMailForLifecycle(targetCharacterId, mailId, input, subjectLifecycleId)
+const deleteMail = (targetCharacterId: number, mailId: number) =>
+  deleteMailForLifecycle(targetCharacterId, mailId, subjectLifecycleId)
+const deleteMailLabel = (targetCharacterId: number, labelId: number) =>
+  deleteMailLabelForLifecycle(targetCharacterId, labelId, subjectLifecycleId)
 
 beforeEach(() => {
   mocks.executeRepresentation.mockImplementation(async (representation, input) => ({
@@ -249,7 +280,8 @@ describe('mail reads', () => {
 
     expect(mocks.executeRepresentation).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'mail-headers' }),
-      { characterId, labels: [3, 5, 9], lastMailId: 800 },
+      { characterId, subjectLifecycleId, labels: [3, 5, 9], lastMailId: 800 },
+      { subjectLifecycleId },
     )
     expect(mocks.listHeaders).toHaveBeenCalledWith({
       path: { character_id: characterId },
@@ -263,7 +295,8 @@ describe('mail reads', () => {
     await listMailHeaders(characterId, { labels: [] })
     expect(mocks.executeRepresentation).toHaveBeenLastCalledWith(
       expect.objectContaining({ operation: 'mail-headers' }),
-      { characterId, labels: null, lastMailId: null },
+      { characterId, subjectLifecycleId, labels: null, lastMailId: null },
+      { subjectLifecycleId },
     )
     expect(mocks.listHeaders).toHaveBeenLastCalledWith({
       path: { character_id: characterId },
@@ -468,6 +501,7 @@ describe('mail mutations', () => {
     expect(mocks.executeMutationRepresentation).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'mail-send' }),
       { characterId, input },
+      { subjectLifecycleId },
     )
 
     await sendMail(characterId, { ...input, approvedCost: 25 })
@@ -504,6 +538,7 @@ describe('mail mutations', () => {
     expect(mocks.executeMutationRepresentation).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'mail-update' }),
       { characterId, mailId: 51, input: { read: false, labels: [4, 2] } },
+      { subjectLifecycleId },
     )
   })
 
@@ -598,6 +633,7 @@ describe('mail recipient composition services', () => {
     expect(mocks.executeRepresentation).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'character-search' }),
       { characterId, search: 'pil' },
+      { subjectLifecycleId },
     )
     expect(mocks.search).toHaveBeenCalledWith({
       path: { character_id: characterId },
@@ -654,6 +690,7 @@ describe('mail recipient composition services', () => {
     expect(mocks.executeRepresentation).toHaveBeenCalledWith(
       expect.objectContaining({ operation: 'character-cspa-charge' }),
       { characterId, characterIds: [20, 30] },
+      { subjectLifecycleId },
     )
     expect(mocks.calculateCspaCharge).toHaveBeenCalledWith({
       path: { character_id: characterId },

@@ -12,6 +12,23 @@
     width: max-content;
   }
 
+  .admin-transfer-heading,
+  .admin-transfer-identities,
+  .admin-transfer-approval dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-transfer-approval dt {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .admin-transfer-link,
+  .admin-transfer-status,
+  .admin-transfer-revoke {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .admin-setup-section {
     padding: 1.25rem;
   }

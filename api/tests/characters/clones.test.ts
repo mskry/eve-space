@@ -56,8 +56,8 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
 })
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
 vi.mock('../../src/auth/tokens.js', () => ({
-  getCharacterAuthorization: mocks.getCharacterAuthorization,
-  getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
+  getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorization,
+  getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorization,
 }))
 vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
@@ -86,6 +86,7 @@ vi.mock('../../src/universe/names.js', () => ({
 }))
 
 const characterId = 1404328063
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const clonesScope = 'esi-clones.read_clones.v1'
 const implantsScope = 'esi-clones.read_implants.v1'
 const now = Date.parse('2026-09-03T11:00:00.000Z')
@@ -174,7 +175,7 @@ describe('character clone state', () => {
     const { characterClonesScope, getCharacterClones } =
       await import('../../src/characters/clones.js')
 
-    const result = await getCharacterClones(characterId)
+    const result = await getCharacterClones(characterId, subjectLifecycleId)
 
     expect(result).toEqual({
       homeLocation: {
@@ -217,8 +218,16 @@ describe('character clone state', () => {
       ...publicMetadata,
     })
     expect(characterClonesScope).toBe(clonesScope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, clonesScope)
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, clonesScope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      clonesScope,
+    )
+    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      clonesScope,
+    )
     expect(mocks.getState).toHaveBeenCalledWith('GetCharactersCharacterIdClones', {
       path: { character_id: characterId },
     })
@@ -248,7 +257,7 @@ describe('character clone state', () => {
     mocks.resolveUniverseNames.mockRejectedValue(new Error('name resolution unavailable'))
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
-    await expect(getCharacterClones(characterId)).resolves.toEqual({
+    await expect(getCharacterClones(characterId, subjectLifecycleId)).resolves.toEqual({
       homeLocation: { locationId: null, locationType: 'station', name: null },
       jumpClones: [
         {
@@ -275,7 +284,7 @@ describe('character clone state', () => {
     mocks.resolveUniverseNames.mockReturnValue(new Promise(() => {}))
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
-    const pending = getCharacterClones(characterId)
+    const pending = getCharacterClones(characterId, subjectLifecycleId)
     await vi.advanceTimersByTimeAsync(250)
 
     await expect(pending).resolves.toMatchObject({
@@ -301,7 +310,7 @@ describe('character clone state', () => {
     )
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
-    await expect(getCharacterClones(characterId)).resolves.toMatchObject({
+    await expect(getCharacterClones(characterId, subjectLifecycleId)).resolves.toMatchObject({
       homeLocation: null,
       jumpClones: [{ location: { name: null } }],
     })
@@ -330,8 +339,8 @@ describe('character clone state', () => {
     })
     const { getCharacterClones } = await import('../../src/characters/clones.js')
 
-    const first = await getCharacterClones(characterId)
-    const second = await getCharacterClones(characterId)
+    const first = await getCharacterClones(characterId, subjectLifecycleId)
+    const second = await getCharacterClones(characterId, subjectLifecycleId)
 
     expect(second).toEqual(first)
     expect(mocks.getState).toHaveBeenCalledOnce()
@@ -349,7 +358,7 @@ describe('active character implants', () => {
     const { characterImplantsScope, getCharacterImplants } =
       await import('../../src/characters/clones.js')
 
-    await expect(getCharacterImplants(characterId)).resolves.toEqual({
+    await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toEqual({
       implants: [
         { typeId: 4, name: 'Beta Implant', slot: 1, bonuses: [] },
         {
@@ -363,7 +372,11 @@ describe('active character implants', () => {
       ...publicMetadata,
     })
     expect(characterImplantsScope).toBe(implantsScope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, implantsScope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      implantsScope,
+    )
     expect(mocks.listActiveImplants).toHaveBeenCalledWith('GetCharactersCharacterIdImplants', {
       path: { character_id: characterId },
     })
@@ -381,7 +394,7 @@ describe('active character implants', () => {
     )
     const { getCharacterImplants } = await import('../../src/characters/clones.js')
 
-    await expect(getCharacterImplants(characterId)).resolves.toMatchObject({
+    await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toMatchObject({
       implants: [
         {
           typeId: 8,
@@ -401,7 +414,7 @@ describe('active character implants', () => {
     mocks.listActiveImplants.mockResolvedValue(response([]))
     const { getCharacterImplants } = await import('../../src/characters/clones.js')
 
-    await expect(getCharacterImplants(characterId)).resolves.toEqual({
+    await expect(getCharacterImplants(characterId, subjectLifecycleId)).resolves.toEqual({
       implants: [],
       ...publicMetadata,
     })

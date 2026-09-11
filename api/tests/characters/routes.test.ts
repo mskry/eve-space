@@ -127,6 +127,7 @@ const altCharacter = {
   isMain: false,
 }
 const altSubjectLifecycleId = 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011'
+const mainSubjectLifecycleId = '614247fe-7206-4a65-8783-30670002d833'
 const ownedAltCharacter = { ...altCharacter, subjectLifecycleId: altSubjectLifecycleId }
 const session = { userId, mainCharacter }
 const freshness = {
@@ -155,7 +156,10 @@ beforeEach(() => {
   mocks.deleteCharacter.mockResolvedValue('deleted')
   mocks.findSession.mockResolvedValue(session)
   mocks.findOwnedCharacter.mockResolvedValue(ownedAltCharacter)
-  mocks.listUserCharacters.mockResolvedValue([mainCharacter, altCharacter])
+  mocks.listUserCharacters.mockResolvedValue([
+    { ...mainCharacter, subjectLifecycleId: mainSubjectLifecycleId },
+    { ...altCharacter, subjectLifecycleId: altSubjectLifecycleId },
+  ])
   mocks.setMainCharacter.mockResolvedValue({ ...altCharacter, isMain: true })
   mocks.getCharacterProfile.mockResolvedValue(profile)
   mocks.getCharacterEmploymentHistory.mockResolvedValue([
@@ -248,10 +252,22 @@ describe('character roster', () => {
     expect(mocks.listUserCharacters).toHaveBeenCalledWith(userId)
     expect(mocks.getCharacterProfile).toHaveBeenCalledWith(mainCharacter.characterId)
     expect(mocks.getCharacterProfile).toHaveBeenCalledWith(altCharacter.characterId)
-    expect(mocks.getCharacterLocation).toHaveBeenCalledWith(mainCharacter.characterId)
-    expect(mocks.getCharacterLocation).toHaveBeenCalledWith(altCharacter.characterId)
-    expect(mocks.getCharacterShip).toHaveBeenCalledWith(mainCharacter.characterId)
-    expect(mocks.getCharacterShip).toHaveBeenCalledWith(altCharacter.characterId)
+    expect(mocks.getCharacterLocation).toHaveBeenCalledWith(
+      mainCharacter.characterId,
+      mainSubjectLifecycleId,
+    )
+    expect(mocks.getCharacterLocation).toHaveBeenCalledWith(
+      altCharacter.characterId,
+      altSubjectLifecycleId,
+    )
+    expect(mocks.getCharacterShip).toHaveBeenCalledWith(
+      mainCharacter.characterId,
+      mainSubjectLifecycleId,
+    )
+    expect(mocks.getCharacterShip).toHaveBeenCalledWith(
+      altCharacter.characterId,
+      altSubjectLifecycleId,
+    )
     expect(JSON.stringify(body)).not.toMatch(/token|refresh|encrypted/i)
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('vary')).toBe('Cookie')
@@ -354,9 +370,18 @@ describe('owned character overview', () => {
       ...freshness,
     })
     expect(mocks.getCharacterProfile).toHaveBeenCalledWith(altCharacter.characterId)
-    expect(mocks.getCharacterLocation).toHaveBeenCalledWith(altCharacter.characterId)
-    expect(mocks.getCharacterShip).toHaveBeenCalledWith(altCharacter.characterId)
-    expect(mocks.getCharacterSkillsSummary).toHaveBeenCalledWith(altCharacter.characterId)
+    expect(mocks.getCharacterLocation).toHaveBeenCalledWith(
+      altCharacter.characterId,
+      altSubjectLifecycleId,
+    )
+    expect(mocks.getCharacterShip).toHaveBeenCalledWith(
+      altCharacter.characterId,
+      altSubjectLifecycleId,
+    )
+    expect(mocks.getCharacterSkillsSummary).toHaveBeenCalledWith(
+      altCharacter.characterId,
+      altSubjectLifecycleId,
+    )
   })
 
   test('reports stale location and ship metadata at the overview root', async () => {
@@ -430,7 +455,10 @@ describe('owned character wallet', () => {
       characterId: altCharacter.characterId,
       balance: 1_234_567.89,
     })
-    expect(mocks.getWalletBalance).toHaveBeenCalledWith(altCharacter.characterId)
+    expect(mocks.getWalletBalance).toHaveBeenCalledWith(
+      altCharacter.characterId,
+      altSubjectLifecycleId,
+    )
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('vary')).toBe('Cookie')
   })
@@ -489,7 +517,11 @@ describe('owned character wallet', () => {
       characterId: altCharacter.characterId,
       transactions: [{ transactionId: 1, typeName: 'Tritanium' }],
     })
-    expect(mocks.getWalletTransactions).toHaveBeenCalledWith(altCharacter.characterId, null)
+    expect(mocks.getWalletTransactions).toHaveBeenCalledWith(
+      altCharacter.characterId,
+      null,
+      altSubjectLifecycleId,
+    )
     expect(response.headers.get('cache-control')).toBe('private, no-store')
   })
 

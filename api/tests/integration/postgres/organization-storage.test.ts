@@ -59,6 +59,7 @@ const databasePassword = randomUUID()
 const adminId = randomUUID()
 const userId = randomUUID()
 const characterId = 1_404_328_063
+let subjectLifecycleId: string
 
 beforeAll(async () => {
   container = await new GenericContainer('postgres:17-alpine')
@@ -137,6 +138,13 @@ beforeEach(async () => {
     'truncate organization_epochs, deployment_admins, users, domain_events restart identity cascade',
   )
   await seedDeployment()
+  const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+    select subject_lifecycle_id
+    from platform_subject_lifecycles
+    where character_id = ${characterId}
+  `
+  if (!lifecycle) throw new Error('Seeded character lifecycle is missing')
+  subjectLifecycleId = lifecycle.subject_lifecycle_id
   ownerEvidenceMocks.getCharacterAffiliationObservation.mockResolvedValue({
     characterId,
     corporationId: 98_000_001,
@@ -169,9 +177,9 @@ describe('organization storage invariants', () => {
       ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
     `
     const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
-      insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
-      values ('character', ${String(characterId)}, ${characterId})
-      returning subject_lifecycle_id
+      select subject_lifecycle_id
+      from platform_subject_lifecycles
+      where character_id = ${characterId}
     `
     await connection`update characters set is_main = false where character_id = ${characterId}`
 
@@ -980,7 +988,7 @@ describe('organization storage invariants', () => {
   test('serializes competing first owner claims so exactly one claimant succeeds', async () => {
     const secondUserId = randomUUID()
     const secondCharacterId = characterId + 1
-    await seedCharacter(secondUserId, secondCharacterId)
+    const secondSubjectLifecycleId = await seedCharacter(secondUserId, secondCharacterId)
 
     const results = await Promise.allSettled([
       claimOrganizationOwnership(
@@ -990,6 +998,7 @@ describe('organization storage invariants', () => {
         ownerClaimInput({
           userId: secondUserId,
           characterId: secondCharacterId,
+          subjectLifecycleId: secondSubjectLifecycleId,
           affiliationCheckedAt: await loadAffiliationCheckedAt(secondCharacterId),
         }),
       ),
@@ -1205,7 +1214,10 @@ describe('organization storage invariants', () => {
     `
     const replacementUserId = randomUUID()
     const replacementCharacterId = characterId + 1
-    await seedCharacter(replacementUserId, replacementCharacterId)
+    const replacementSubjectLifecycleId = await seedCharacter(
+      replacementUserId,
+      replacementCharacterId,
+    )
     await expect(getOrganizationAccessContext(replacementUserId)).resolves.toMatchObject({
       claimAvailable: true,
     })
@@ -1214,6 +1226,7 @@ describe('organization storage invariants', () => {
       ownerClaimInput({
         userId: replacementUserId,
         characterId: replacementCharacterId,
+        subjectLifecycleId: replacementSubjectLifecycleId,
         affiliationCheckedAt: await loadAffiliationCheckedAt(replacementCharacterId),
       }),
     )
@@ -1251,7 +1264,7 @@ describe('organization storage invariants', () => {
     `
     const claimantUserId = randomUUID()
     const claimantCharacterId = characterId + 1
-    await seedCharacter(claimantUserId, claimantCharacterId)
+    const claimantSubjectLifecycleId = await seedCharacter(claimantUserId, claimantCharacterId)
 
     await expect(getOrganizationAccessContext(claimantUserId)).resolves.toMatchObject({
       claimAvailable: false,
@@ -1261,6 +1274,7 @@ describe('organization storage invariants', () => {
         ownerClaimInput({
           userId: claimantUserId,
           characterId: claimantCharacterId,
+          subjectLifecycleId: claimantSubjectLifecycleId,
           affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
         }),
       ),
@@ -1273,13 +1287,14 @@ describe('organization storage invariants', () => {
     )
     const claimantUserId = randomUUID()
     const claimantCharacterId = characterId + 1
-    await seedCharacter(claimantUserId, claimantCharacterId)
+    const claimantSubjectLifecycleId = await seedCharacter(claimantUserId, claimantCharacterId)
 
     await expect(
       claimOrganizationOwnership(
         ownerClaimInput({
           userId: claimantUserId,
           characterId: claimantCharacterId,
+          subjectLifecycleId: claimantSubjectLifecycleId,
           affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
         }),
       ),
@@ -1296,7 +1311,7 @@ describe('organization storage invariants', () => {
     )
     const claimantUserId = randomUUID()
     const claimantCharacterId = characterId + 1
-    await seedCharacter(claimantUserId, claimantCharacterId)
+    const claimantSubjectLifecycleId = await seedCharacter(claimantUserId, claimantCharacterId)
     await blockOrganizationMember({
       actorUserId: userId,
       targetUserId: claimantUserId,
@@ -1320,6 +1335,7 @@ describe('organization storage invariants', () => {
         ownerClaimInput({
           userId: claimantUserId,
           characterId: claimantCharacterId,
+          subjectLifecycleId: claimantSubjectLifecycleId,
           affiliationCheckedAt: await loadAffiliationCheckedAt(claimantCharacterId),
         }),
       ),
@@ -2578,6 +2594,11 @@ async function seedDeployment() {
     values (${adminId}, 'owner@example.com', 'test-password-hash')
   `
   await connection`
+    insert into deployment_installation_settings (id, owner_admin_id)
+    values (1, ${adminId})
+    on conflict (id) do update set owner_admin_id = excluded.owner_admin_id
+  `
+  await connection`
     insert into organization_epochs (
       deployment_id,
       organization_version,
@@ -2590,13 +2611,12 @@ async function seedDeployment() {
   await connection`
     insert into deployment_settings (
       id,
-      owner_admin_id,
       organization_type,
       organization_id,
       organization_name,
       organization_ticker,
       organization_version
-    ) values (1, ${adminId}, 'corporation', 98000001, 'First Corporation', 'ONE', 1)
+    ) values (1, 'corporation', 98000001, 'First Corporation', 'ONE', 1)
   `
   await connection`
     insert into organization_managed_corporations (
@@ -2668,6 +2688,12 @@ async function seedCharacter(seedUserId: string, seedCharacterId: number) {
       '["esi-characters.read_corporation_roles.v1"]'::jsonb
     )
   `
+  const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+    insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+    values ('character', ${String(seedCharacterId)}, ${seedCharacterId})
+    returning subject_lifecycle_id
+  `
+  return lifecycle!.subject_lifecycle_id
 }
 
 function ownerClaimInput(
@@ -2678,6 +2704,7 @@ function ownerClaimInput(
   return {
     userId,
     characterId,
+    subjectLifecycleId,
     organizationId: 98_000_001,
     organizationVersion: 1,
     authorityCorporationId: 98_000_001,

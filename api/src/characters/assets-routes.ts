@@ -18,9 +18,9 @@ export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
   loadSession,
   loadOwnedCharacter,
   async (context) => {
-    const characterId = context.var.ownedCharacter.characterId
+    const { characterId, subjectLifecycleId } = context.var.ownedCharacter
     try {
-      return context.json(await getCharacterAssets(characterId), 200)
+      return context.json(await getCharacterAssets(characterId, subjectLifecycleId), 200)
     } catch (error) {
       if (error instanceof CharacterAssetsPaginationError)
         return context.json(

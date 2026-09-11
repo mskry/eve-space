@@ -85,8 +85,15 @@ export function resolveSkillQueueState(
   return { state: 'training', activeQueuePosition: unfinished.queuePosition }
 }
 
-export async function getCharacterSkillQueue(characterId: number): Promise<CharacterSkillQueue> {
-  const result = await execute(characterSkillQueueRepresentation, { characterId })
+export async function getCharacterSkillQueue(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterSkillQueue> {
+  const result = await execute(
+    characterSkillQueueRepresentation,
+    { characterId },
+    { subjectLifecycleId },
+  )
 
   return {
     ...resolveSkillQueueState(result.data.entries, Date.now()),

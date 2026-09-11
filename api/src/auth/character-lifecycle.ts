@@ -1,16 +1,6 @@
 import { and, asc, desc, eq, isNull, lte, or } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
-import {
-  characters,
-  deploymentSettings,
-  eveTokens,
-  organizationAuthorityEvidence,
-  organizationCorporationSources,
-  organizationManagedCorporations,
-  organizationRoleGrants,
-  platformSubjectLifecycles,
-  users,
-} from '../db/schema.js'
+import { characters, eveTokens, platformSubjectLifecycles, users } from '../db/schema.js'
 import { appendDomainEvent } from '../domain-events/store.js'
 import { env } from '../env.js'
 import {
@@ -18,10 +8,11 @@ import {
   recomputeOrganizationAccountCompliance,
 } from '../organization/compliance.js'
 import { normalizeScopeSet } from '../scopes.js'
-import { lockCharacter } from './character-lock.js'
+import { findCharacterDetachmentBlocker } from '../organization/character-detachment-guards.js'
+import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
 import { saveCharacterToken } from './character-token-store.js'
 import { encryptTokens } from './security.js'
-import { saveSession, type CharacterSummary } from './session-store.js'
+import { hasActiveSession, saveSession, type CharacterSummary } from './session-store.js'
 
 const characterSelection = {
   characterId: characters.characterId,
@@ -46,9 +37,9 @@ export interface OwnedCharacterSummary extends CharacterSummary {
   subjectLifecycleId: string
 }
 
-export class CharacterOwnershipConflictError extends Error {
+export class CharacterTransferApprovalRequiredError extends Error {
   constructor() {
-    super('Character belongs to another user')
+    super('Cross-user character attachment requires approval')
   }
 }
 
@@ -61,6 +52,7 @@ export async function saveLogin(
   const token = prepareToken(input)
 
   await db.transaction(async (transaction) => {
+    await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
 
@@ -113,13 +105,21 @@ export async function saveLogin(
   })
 }
 
-export async function attachCharacter(input: CharacterAuthorizationInput & { userId: string }) {
+export async function attachCharacter(
+  input: CharacterAuthorizationInput & { userId: string; sessionToken?: string },
+) {
   const token = prepareToken(input)
 
   await db.transaction(async (transaction) => {
+    await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
     if (!(await lockUserRow(transaction, input.userId))) throw new CharacterOwnershipError()
+    if (
+      input.sessionToken &&
+      !(await hasActiveSession(transaction, input.sessionToken, input.userId))
+    )
+      throw new CharacterOwnershipError()
     const [existingCharacter] = await transaction
       .select(authorizationCharacterSelection)
       .from(characters)
@@ -127,7 +127,7 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
       .where(eq(characters.characterId, input.characterId))
 
     if (existingCharacter && existingCharacter.userId !== input.userId)
-      throw new CharacterOwnershipConflictError()
+      throw new CharacterTransferApprovalRequiredError()
 
     if (existingCharacter) await updateCharacterIdentity(transaction, input)
     else {
@@ -162,20 +162,37 @@ export async function attachCharacter(input: CharacterAuthorizationInput & { use
 }
 
 export async function reauthorizeCharacter(
-  input: CharacterAuthorizationInput & { userId: string; expectedCharacterId: number },
+  input: CharacterAuthorizationInput & {
+    userId: string
+    expectedCharacterId: number
+    sessionToken?: string
+  },
 ) {
   if (input.characterId !== input.expectedCharacterId)
     throw new ReauthorizationCharacterMismatchError()
 
   const token = prepareToken(input)
   return db.transaction(async (transaction) => {
+    await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, input.characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
     if (!(await lockUserRow(transaction, input.userId))) throw new CharacterOwnershipError()
+    if (
+      input.sessionToken &&
+      !(await hasActiveSession(transaction, input.sessionToken, input.userId))
+    )
+      throw new CharacterOwnershipError()
     const [ownedCharacter] = await transaction
-      .select(authorizationCharacterSelection)
+      .select({
+        ...authorizationCharacterSelection,
+        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
+      })
       .from(characters)
       .leftJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
+      .innerJoin(
+        platformSubjectLifecycles,
+        eq(platformSubjectLifecycles.characterId, characters.characterId),
+      )
       .where(
         and(eq(characters.characterId, input.characterId), eq(characters.userId, input.userId)),
       )
@@ -196,14 +213,18 @@ export async function reauthorizeCharacter(
         { deploymentId: 1, organizationVersion, userId: input.userId },
         transaction,
       )
-    return affiliationCheckedAt
+    return { affiliationCheckedAt, subjectLifecycleId: ownedCharacter.subjectLifecycleId }
   })
 }
 
-export async function listUserCharacters(userId: string): Promise<CharacterSummary[]> {
+export async function listUserCharacters(userId: string): Promise<OwnedCharacterSummary[]> {
   return db
-    .select(characterSelection)
+    .select(ownedCharacterSelection)
     .from(characters)
+    .innerJoin(
+      platformSubjectLifecycles,
+      eq(platformSubjectLifecycles.characterId, characters.characterId),
+    )
     .where(eq(characters.userId, userId))
     .orderBy(desc(characters.isMain), asc(characters.name), asc(characters.characterId))
 }
@@ -228,6 +249,7 @@ export async function setMainCharacter(
   characterId: number,
 ): Promise<CharacterSummary | null> {
   return db.transaction(async (transaction) => {
+    await setAuthTransactionLockTimeout(transaction)
     if (!(await lockUserRow(transaction, userId))) return null
 
     const [target] = await transaction
@@ -269,6 +291,7 @@ export async function deleteCharacter(
   subjectLifecycleId: string,
 ) {
   return db.transaction(async (transaction) => {
+    await setAuthTransactionLockTimeout(transaction)
     await lockCharacter(transaction, characterId)
     const organizationVersion = await lockCurrentOrganizationVersionForCompliance(transaction)
     if (!(await lockUserRow(transaction, userId))) return 'not-found' as const
@@ -292,61 +315,8 @@ export async function deleteCharacter(
       )
     if (!target) return 'not-found' as const
     if (target.isMain) return 'main-character' as const
-    const [retainedAuthorityEvidence] = await transaction
-      .select({ evidenceId: organizationAuthorityEvidence.evidenceId })
-      .from(organizationAuthorityEvidence)
-      .innerJoin(
-        organizationRoleGrants,
-        eq(organizationRoleGrants.grantId, organizationAuthorityEvidence.grantId),
-      )
-      .where(
-        and(
-          eq(organizationAuthorityEvidence.characterId, characterId),
-          isNull(organizationRoleGrants.revokedAt),
-        ),
-      )
-      .limit(1)
-    if (retainedAuthorityEvidence) return 'authority-evidence' as const
-    const [activeCorporationSource] = await transaction
-      .select({ sourceId: organizationCorporationSources.sourceId })
-      .from(organizationCorporationSources)
-      .innerJoin(
-        deploymentSettings,
-        and(
-          eq(deploymentSettings.id, organizationCorporationSources.deploymentId),
-          eq(
-            deploymentSettings.organizationVersion,
-            organizationCorporationSources.organizationVersion,
-          ),
-        ),
-      )
-      .innerJoin(
-        organizationManagedCorporations,
-        and(
-          eq(
-            organizationManagedCorporations.deploymentId,
-            organizationCorporationSources.deploymentId,
-          ),
-          eq(
-            organizationManagedCorporations.organizationVersion,
-            organizationCorporationSources.organizationVersion,
-          ),
-          eq(
-            organizationManagedCorporations.corporationId,
-            organizationCorporationSources.corporationId,
-          ),
-          eq(organizationManagedCorporations.isCurrent, true),
-        ),
-      )
-      .where(
-        and(
-          eq(organizationCorporationSources.characterId, characterId),
-          isNull(organizationCorporationSources.revokedAt),
-        ),
-      )
-      .for('update')
-      .limit(1)
-    if (activeCorporationSource) return 'corporation-source' as const
+    const blocker = await findCharacterDetachmentBlocker(transaction, characterId)
+    if (blocker) return blocker
 
     const [deleted] = await transaction
       .delete(characters)
@@ -368,7 +338,7 @@ export async function deleteCharacter(
   })
 }
 
-interface CharacterAuthorizationInput {
+export interface CharacterAuthorizationInput {
   characterId: number
   characterName: string
   corporationId: number

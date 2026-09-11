@@ -1489,6 +1489,10 @@ describe('multi-process safety', () => {
       values (${characterId}, ${userId}, 'Refresh Test', 1000166, true)
     `
     await connection`
+      insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+      values ('character', ${String(characterId)}, ${characterId})
+    `
+    await connection`
       insert into eve_tokens (
         character_id, encrypted_tokens, access_token_expires_at, scopes
       ) values (
@@ -1498,6 +1502,12 @@ describe('multi-process safety', () => {
         ${connection.json([scope])}
       )
     `
+    const [lifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+      select subject_lifecycle_id
+      from platform_subject_lifecycles
+      where character_id = ${characterId}
+    `
+    if (!lifecycle) throw new Error('Character lifecycle is missing')
 
     let releaseRefresh: () => void
     const refreshReleased = new Promise<void>((resolve) => {
@@ -1534,9 +1544,17 @@ describe('multi-process safety', () => {
     const secondClient = await import('../../../src/db/client.js')
 
     try {
-      const first = firstService.getCharacterAccessToken(characterId, scope)
+      const first = firstService.getCharacterAccessToken(
+        characterId,
+        lifecycle.subject_lifecycle_id,
+        scope,
+      )
       await refreshStarted
-      const second = secondService.getCharacterAccessToken(characterId, scope)
+      const second = secondService.getCharacterAccessToken(
+        characterId,
+        lifecycle.subject_lifecycle_id,
+        scope,
+      )
       releaseRefresh!()
 
       await expect(Promise.all([first, second])).resolves.toEqual([

@@ -17,9 +17,9 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterAttributes(characterId))
+        return context.json(await getCharacterAttributes(characterId, subjectLifecycleId))
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterAttributesScope,
@@ -36,9 +36,9 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterSkillQueue(characterId))
+        return context.json(await getCharacterSkillQueue(characterId, subjectLifecycleId))
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterSkillQueueScope,
@@ -55,9 +55,9 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterSkills(characterId))
+        return context.json(await getCharacterSkills(characterId, subjectLifecycleId))
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterSkillsScope,

@@ -2,17 +2,23 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
   class AlreadyConfigured extends Error {}
+  class TransferApprovalError extends Error {}
   return {
     AlreadyConfigured,
+    TransferApprovalError,
     createAdminSession: vi.fn(),
     createDeployment: vi.fn(),
+    createCharacterTransferApproval: vi.fn(),
     deleteAdminSession: vi.fn(),
     findAdminCredentials: vi.fn(),
     findAdminSession: vi.fn(),
     isDeploymentConfigured: vi.fn(),
+    inspectCharacterTransferApproval: vi.fn(),
     listInstalledModuleSettings: vi.fn(),
     loadInstalledShellNavigationOrder: vi.fn(),
     resolveOrganization: vi.fn(),
+    previewCharacterTransfer: vi.fn(),
+    revokeCharacterTransferApproval: vi.fn(),
     saveInstalledShellNavigationOrder: vi.fn(),
     setInstalledModuleEnabled: vi.fn(),
     updateOrganization: vi.fn(),
@@ -40,6 +46,14 @@ vi.mock('../../src/admin/store.js', () => ({
 
 vi.mock('../../src/deployment/organization.js', () => ({
   resolveDeploymentOrganization: mocks.resolveOrganization,
+}))
+
+vi.mock('../../src/auth/character-transfer-approvals.js', () => ({
+  CharacterTransferApprovalError: mocks.TransferApprovalError,
+  createCharacterTransferApproval: mocks.createCharacterTransferApproval,
+  inspectCharacterTransferApproval: mocks.inspectCharacterTransferApproval,
+  previewCharacterTransfer: mocks.previewCharacterTransfer,
+  revokeCharacterTransferApproval: mocks.revokeCharacterTransferApproval,
 }))
 
 vi.mock('../../src/platform/module-settings.js', async (importOriginal) => ({
@@ -71,6 +85,29 @@ const moduleSetting = {
   defaultEnabled: false,
   updatedAt: '2026-08-25T12:00:00.000Z',
 }
+const previewId = '688e2f93-b245-40af-807a-798550540e47'
+const approvalId = '66503848-72b8-4fa3-8af5-de056001a37e'
+const transferPreview = {
+  eligible: true as const,
+  previewId,
+  character: { characterId: 1_404_328_063, name: 'Moving Pilot' },
+  destinationMain: { characterId: 2_112_625_428, name: 'Destination Pilot' },
+  sourceCharacterCount: 1,
+  expiresAt: new Date('2026-09-11T12:05:00Z'),
+}
+const transferApproval = {
+  approvalId,
+  character: transferPreview.character,
+  destinationMain: transferPreview.destinationMain,
+  sourceCharacterCount: 1,
+  reason: 'Repair split account',
+  status: 'pending' as const,
+  createdAt: new Date('2026-09-11T12:00:00Z'),
+  expiresAt: new Date('2026-09-11T12:15:00Z'),
+  consumedAt: null,
+  revokedAt: null,
+  revocationReason: null,
+}
 const shellNavigationOrder = {
   dashboard: [
     { ownerId: 'core', navigationId: 'core-overview' },
@@ -100,6 +137,21 @@ beforeEach(() => {
   mocks.loadInstalledShellNavigationOrder.mockResolvedValue(shellNavigationOrder)
   mocks.saveInstalledShellNavigationOrder.mockResolvedValue(shellNavigationOrder)
   mocks.setInstalledModuleEnabled.mockResolvedValue(moduleSetting)
+  mocks.previewCharacterTransfer.mockResolvedValue(transferPreview)
+  mocks.createCharacterTransferApproval.mockResolvedValue({
+    approval: transferApproval,
+    secret: 'transfer-link-secret-value-that-is-long-enough',
+  })
+  mocks.inspectCharacterTransferApproval.mockResolvedValue({
+    approval: transferApproval,
+    audit: [],
+  })
+  mocks.revokeCharacterTransferApproval.mockResolvedValue({
+    ...transferApproval,
+    status: 'revoked',
+    revokedAt: new Date('2026-09-11T12:01:00Z'),
+    revocationReason: 'Approval no longer needed',
+  })
 })
 
 describe('deployment administration routes', () => {
@@ -166,6 +218,181 @@ describe('deployment administration routes', () => {
     })
     expect(logout.status).toBe(204)
     expect(mocks.deleteAdminSession).toHaveBeenCalledWith('session-token')
+  })
+
+  test('denies transfer preview before resolving ownership when the admin session is missing', async () => {
+    mocks.findAdminSession.mockResolvedValueOnce(null)
+
+    const response = await transferPreviewRequest()
+
+    expect(response.status).toBe(401)
+    expect(mocks.previewCharacterTransfer).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['preview', '/character-transfer-approvals/preview', 'POST'],
+    ['creation', '/character-transfer-approvals', 'POST'],
+    ['inspection', `/character-transfer-approvals/${approvalId}`, 'GET'],
+    ['revocation', `/character-transfer-approvals/${approvalId}/revoke`, 'POST'],
+  ])(
+    'denies transfer %s to an ordinary EVE or organization-owner session before validation',
+    async (_name, path, method) => {
+      const response = await adminRoutes.request(path, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: 'eve_space_session=member-or-organization-owner-session',
+          ...(method === 'POST' ? { Origin: 'http://localhost:3000' } : {}),
+        },
+        body: method === 'POST' ? '{"invalid":true}' : undefined,
+      })
+
+      expect(response.status).toBe(401)
+      expect(mocks.previewCharacterTransfer).not.toHaveBeenCalled()
+      expect(mocks.createCharacterTransferApproval).not.toHaveBeenCalled()
+      expect(mocks.inspectCharacterTransferApproval).not.toHaveBeenCalled()
+      expect(mocks.revokeCharacterTransferApproval).not.toHaveBeenCalled()
+    },
+  )
+
+  test('rejects transfer mutations from an untrusted origin before resolving ownership', async () => {
+    const response = await transferPreviewRequest('https://attacker.invalid')
+
+    expect(response.status).toBe(403)
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+    expect(mocks.findAdminSession).not.toHaveBeenCalled()
+    expect(mocks.previewCharacterTransfer).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['creation', '/character-transfer-approvals', JSON.stringify({ previewId })],
+    [
+      'revocation',
+      `/character-transfer-approvals/${approvalId}/revoke`,
+      JSON.stringify({ reason: 'Approval no longer needed' }),
+    ],
+  ])(
+    'rejects transfer %s CSRF before administrator or approval resolution',
+    async (_name, path, body) => {
+      const response = await adminRoutes.request(path, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: 'eve_space_admin_session=session-token',
+          Origin: 'https://attacker.invalid',
+        },
+        body,
+      })
+
+      expect(response.status).toBe(403)
+      expect(mocks.findAdminSession).not.toHaveBeenCalled()
+      expect(mocks.createCharacterTransferApproval).not.toHaveBeenCalled()
+      expect(mocks.revokeCharacterTransferApproval).not.toHaveBeenCalled()
+    },
+  )
+
+  test('previews only the specified transfer through the authenticated administrator', async () => {
+    const response = await transferPreviewRequest()
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      preview: { ...transferPreview, expiresAt: transferPreview.expiresAt.toISOString() },
+    })
+    expect(mocks.previewCharacterTransfer).toHaveBeenCalledWith({
+      administratorId: account.adminId,
+      characterId: transferPreview.character.characterId,
+      destinationMainCharacterId: transferPreview.destinationMain.characterId,
+      reason: 'Repair split account',
+    })
+  })
+
+  test('accepts and trims the maximum transfer reason length', async () => {
+    const reason = 'r'.repeat(1000)
+
+    const response = await transferPreviewRequest('http://localhost:3000', {
+      reason: ` ${reason} `,
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.previewCharacterTransfer).toHaveBeenCalledWith(expect.objectContaining({ reason }))
+  })
+
+  test.each([
+    ['blank', { reason: '   ' }],
+    ['too long', { reason: 'r'.repeat(1001) }],
+    ['non-string', { reason: 7 }],
+    ['an unexpected field', { reason: 'Repair split account', sourceUserId: 'forged-user' }],
+  ])('rejects %s transfer preview input before resolution', async (_name, body) => {
+    const response = await transferPreviewRequest('http://localhost:3000', body)
+
+    expect(response.status).toBe(400)
+    expect(mocks.previewCharacterTransfer).not.toHaveBeenCalled()
+  })
+
+  test('creates a fragment-only destination link without returning the secret separately', async () => {
+    const response = await adminRoutes.request('/character-transfer-approvals', {
+      method: 'POST',
+      headers: adminMutationHeaders(),
+      body: JSON.stringify({ previewId }),
+    })
+
+    expect(response.status).toBe(201)
+    const body = await response.json()
+    expect(body).toEqual({
+      approval: {
+        ...transferApproval,
+        createdAt: transferApproval.createdAt.toISOString(),
+        expiresAt: transferApproval.expiresAt.toISOString(),
+      },
+      transferLink: `http://localhost:3000/transfer#approval=${approvalId}&secret=transfer-link-secret-value-that-is-long-enough`,
+    })
+    expect(JSON.stringify(body)).not.toContain('"secret"')
+  })
+
+  test('inspects and revokes a bounded approval through administrator authentication', async () => {
+    const inspect = await adminRoutes.request(`/character-transfer-approvals/${approvalId}`, {
+      headers: { Cookie: 'eve_space_admin_session=session-token' },
+    })
+    const revoke = await adminRoutes.request(`/character-transfer-approvals/${approvalId}/revoke`, {
+      method: 'POST',
+      headers: adminMutationHeaders(),
+      body: JSON.stringify({ reason: 'Approval no longer needed' }),
+    })
+
+    expect(inspect.status).toBe(200)
+    expect(await inspect.json()).toEqual({
+      approval: {
+        ...transferApproval,
+        createdAt: transferApproval.createdAt.toISOString(),
+        expiresAt: transferApproval.expiresAt.toISOString(),
+      },
+      audit: [],
+    })
+    expect(revoke.status).toBe(200)
+    expect(mocks.inspectCharacterTransferApproval).toHaveBeenCalledWith(approvalId)
+    expect(mocks.revokeCharacterTransferApproval).toHaveBeenCalledWith({
+      administratorId: account.adminId,
+      approvalId,
+      reason: 'Approval no longer needed',
+    })
+  })
+
+  test('trims a bounded revocation reason before mutation', async () => {
+    const response = await adminRoutes.request(
+      `/character-transfer-approvals/${approvalId}/revoke`,
+      {
+        method: 'POST',
+        headers: adminMutationHeaders(),
+        body: JSON.stringify({ reason: '  Approval no longer needed  ' }),
+      },
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.revokeCharacterTransferApproval).toHaveBeenCalledWith({
+      administratorId: account.adminId,
+      approvalId,
+      reason: 'Approval no longer needed',
+    })
   })
 
   test('creates a session for valid local owner credentials', async () => {
@@ -368,4 +595,28 @@ function moduleEnablementRequest(
     },
     body: JSON.stringify(body),
   })
+}
+
+function transferPreviewRequest(
+  origin = 'http://localhost:3000',
+  overrides: Record<string, unknown> = {},
+) {
+  return adminRoutes.request('/character-transfer-approvals/preview', {
+    method: 'POST',
+    headers: { ...adminMutationHeaders(), Origin: origin },
+    body: JSON.stringify({
+      characterId: transferPreview.character.characterId,
+      destinationMainCharacterId: transferPreview.destinationMain.characterId,
+      reason: '  Repair split account  ',
+      ...overrides,
+    }),
+  })
+}
+
+function adminMutationHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    Cookie: 'eve_space_admin_session=session-token',
+    Origin: 'http://localhost:3000',
+  }
 }

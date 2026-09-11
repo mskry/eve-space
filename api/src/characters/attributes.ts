@@ -40,8 +40,15 @@ interface CharacterAttributesData {
 
 export type CharacterAttributes = CharacterAttributesData & EsiResultMetadata
 
-export async function getCharacterAttributes(characterId: number): Promise<CharacterAttributes> {
-  const result = await execute(characterAttributesRepresentation, { characterId })
+export async function getCharacterAttributes(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterAttributes> {
+  const result = await execute(
+    characterAttributesRepresentation,
+    { characterId },
+    { subjectLifecycleId },
+  )
   return { ...result.data, ...toEsiResultMetadata(result) }
 }
 

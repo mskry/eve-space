@@ -2,9 +2,15 @@ import { testClient } from 'hono/testing'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
-  class OwnershipConflict extends Error {}
+  class ApprovalRequired extends Error {}
+  class TransferFailure extends Error {
+    constructor(readonly code: string) {
+      super(code)
+    }
+  }
   return {
-    OwnershipConflict,
+    ApprovalRequired,
+    TransferFailure,
     attachCharacter: vi.fn(),
     assertOrganizationOwnerDirectorRole: vi.fn(),
     assertOrganizationOwnerScope: vi.fn(),
@@ -19,11 +25,13 @@ const mocks = vi.hoisted(() => {
     getCharacterAffiliationObservation: vi.fn(),
     getCharacterCorporationRoles: vi.fn(),
     loadCurrentOrganizationIdentity: vi.fn(),
+    loadTransferApprovalForStart: vi.fn(),
     isSsoConfigured: vi.fn(),
     reauthorizeCharacter: vi.fn(),
     resolveOrganizationAuthorityCorporation: vi.fn(),
     saveLogin: vi.fn(),
     storeOAuthState: vi.fn(),
+    transferCharacter: vi.fn(),
     verifyAccessToken: vi.fn(),
   }
 })
@@ -48,7 +56,7 @@ vi.mock('../../src/env.js', () => ({
 }))
 
 vi.mock('../../src/auth/character-lifecycle.js', () => ({
-  CharacterOwnershipConflictError: mocks.OwnershipConflict,
+  CharacterTransferApprovalRequiredError: mocks.ApprovalRequired,
   attachCharacter: mocks.attachCharacter,
   deleteCharacter: vi.fn(),
   findOwnedCharacter: mocks.findOwnedCharacter,
@@ -61,6 +69,15 @@ vi.mock('../../src/auth/character-lifecycle.js', () => ({
 vi.mock('../../src/auth/oauth-state-store.js', () => ({
   consumeOAuthState: mocks.consumeOAuthState,
   storeOAuthState: mocks.storeOAuthState,
+}))
+
+vi.mock('../../src/auth/character-transfer-approvals.js', () => ({
+  loadTransferApprovalForStart: mocks.loadTransferApprovalForStart,
+}))
+
+vi.mock('../../src/auth/character-transfer.js', () => ({
+  CharacterTransferError: mocks.TransferFailure,
+  transferCharacter: mocks.transferCharacter,
 }))
 
 vi.mock('../../src/auth/session-store.js', () => ({
@@ -124,6 +141,10 @@ const mainCharacter = {
   isMain: true,
 }
 const account = { userId, mainCharacter }
+const transferApprovalId = '66503848-72b8-4fa3-8af5-de056001a37e'
+const transferSourceUserId = '115c2738-0d19-4903-8a60-295800e20c0a'
+const transferSourceSubjectLifecycleId = '2eb78a4f-9309-4b49-a852-9cbaf32ec227'
+const ownerClaimSubjectLifecycleId = '8c069b76-e15f-4084-9f76-1aba185dd94b'
 
 beforeEach(() => {
   mocks.isSsoConfigured.mockReturnValue(true)
@@ -160,7 +181,10 @@ beforeEach(() => {
     rolesAtHeadquarters: [],
     rolesAtOther: [],
   })
-  mocks.reauthorizeCharacter.mockResolvedValue(new Date('2026-08-31T12:00:00Z'))
+  mocks.reauthorizeCharacter.mockResolvedValue({
+    affiliationCheckedAt: new Date('2026-08-31T12:00:00Z'),
+    subjectLifecycleId: ownerClaimSubjectLifecycleId,
+  })
   mocks.resolveOrganizationAuthorityCorporation.mockResolvedValue(mainCharacter.corporationId)
   mocks.findSession.mockResolvedValue(account)
   mocks.findOwnedCharacter.mockResolvedValue(mainCharacter)
@@ -169,6 +193,13 @@ beforeEach(() => {
     organizationType: 'corporation',
     organizationId: mainCharacter.corporationId,
     organizationVersion: 1,
+  })
+  mocks.loadTransferApprovalForStart.mockResolvedValue({
+    approvalId: transferApprovalId,
+    sourceUserId: transferSourceUserId,
+    sourceSubjectLifecycleId: transferSourceSubjectLifecycleId,
+    userId,
+    characterId: 2_112_625_428,
   })
 })
 
@@ -214,6 +245,40 @@ describe('EVE SSO start routes', () => {
     expect(response.headers.get('set-cookie')).toContain('HttpOnly')
     expect(response.headers.get('set-cookie')).toContain('SameSite=Lax')
     expect(response.headers.get('set-cookie')).toContain('Priority=High')
+  })
+
+  test('uses the issued application session for immediate attachment authorization', async () => {
+    const response = await client.auth.eve.start.$get({ query: {} }, { headers: sessionHeader() })
+    const state = mocks.storeOAuthState.mock.calls[0]?.[0] as string
+
+    expect(response.status).toBe(302)
+    expect(mocks.findSession).toHaveBeenCalledWith('active-session')
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, { intent: 'attach', userId })
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
+
+  test('ignores a login return path when an authenticated browser follows a stale login link', async () => {
+    const returnTo = `/characters/${mainCharacter.characterId}?tab=wallet#activity`
+
+    const response = await client.auth.eve.start.$get(
+      { query: { returnTo } },
+      { headers: sessionHeader() },
+    )
+
+    expect(response.status).toBe(302)
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(expect.any(String), {
+      intent: 'attach',
+      userId,
+    })
+  })
+
+  test('keeps login intent for an expired, revoked, or unknown application session', async () => {
+    mocks.findSession.mockResolvedValueOnce(null)
+
+    const response = await client.auth.eve.start.$get({ query: {} }, { headers: sessionHeader() })
+
+    expect(response.status).toBe(302)
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(expect.any(String), { intent: 'login' })
   })
 
   test('stores a validated login return path in OAuth state', async () => {
@@ -265,6 +330,89 @@ describe('EVE SSO start routes', () => {
 
     expect(response.status).toBe(302)
     expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, { intent: 'attach', userId })
+  })
+
+  test('starts transfer SSO only from an authenticated trusted-origin POST', async () => {
+    const response = await transferStartRequest()
+    const state = mocks.storeOAuthState.mock.calls[0]?.[0] as string
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      authorizationUrl: `https://login.eveonline.com/v2/oauth/authorize?state=${state}`,
+    })
+    expect(mocks.loadTransferApprovalForStart).toHaveBeenCalledWith({
+      approvalId: transferApprovalId,
+      secret: 'transfer-link-secret-value-that-is-long-enough',
+      destinationUserId: userId,
+    })
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, {
+      intent: 'transfer',
+      approvalId: transferApprovalId,
+      sourceUserId: transferSourceUserId,
+      sourceSubjectLifecycleId: transferSourceSubjectLifecycleId,
+      userId,
+      characterId: 2_112_625_428,
+    })
+    expect(response.headers.get('set-cookie')).toContain('eve_space_oauth_state=')
+    expect(response.headers.get('cache-control')).toBe('private, no-store')
+  })
+
+  test.each(['GET', 'HEAD'])('%s transfer-link inspection cannot start SSO', async (method) => {
+    const response = await app.request('/auth/eve/transfer', {
+      method,
+      headers: sessionHeader(),
+    })
+
+    expect(response.status).toBe(404)
+    expect(mocks.loadTransferApprovalForStart).not.toHaveBeenCalled()
+    expect(mocks.storeOAuthState).not.toHaveBeenCalled()
+    expect(mocks.createAuthorizationUrl).not.toHaveBeenCalled()
+  })
+
+  test('does not inspect or start transfer SSO without destination authentication or trusted origin', async () => {
+    const anonymous = await transferStartRequest({ session: false })
+    expect(anonymous.status).toBe(401)
+    expect(mocks.loadTransferApprovalForStart).not.toHaveBeenCalled()
+
+    const untrusted = await transferStartRequest({ origin: 'https://attacker.invalid' })
+    expect(untrusted.status).toBe(403)
+    expect(mocks.loadTransferApprovalForStart).not.toHaveBeenCalled()
+    expect(mocks.storeOAuthState).not.toHaveBeenCalled()
+  })
+
+  test('returns generic guidance without OAuth state for a wrong account or unusable link', async () => {
+    mocks.loadTransferApprovalForStart.mockResolvedValueOnce(null)
+
+    const response = await transferStartRequest()
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'TRANSFER_APPROVAL_UNUSABLE',
+      message: 'Transfer approval is no longer usable.',
+    })
+    expect(mocks.storeOAuthState).not.toHaveBeenCalled()
+  })
+
+  test('does not expose a transfer-link secret through failure telemetry', async () => {
+    const secret = 'transfer-link-secret-value-that-is-long-enough'
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {})
+    apiLogger.enableLogging()
+    mocks.loadTransferApprovalForStart.mockRejectedValueOnce(new Error(secret))
+
+    try {
+      const response = await transferStartRequest()
+
+      expect(response.status).toBe(500)
+      expect(await response.json()).toEqual({ message: 'Internal server error' })
+      expect(JSON.stringify([...consoleError.mock.calls, ...consoleInfo.mock.calls])).not.toContain(
+        secret,
+      )
+    } finally {
+      apiLogger.disableLogging()
+      consoleError.mockRestore()
+      consoleInfo.mockRestore()
+    }
   })
 
   test('validates and owns a character before starting reauthorization', async () => {
@@ -413,6 +561,46 @@ describe('EVE SSO start routes', () => {
 })
 
 describe('EVE SSO callback intents', () => {
+  test('attaches a second character immediately after first login using the issued session cookie', async () => {
+    const firstCallback = await callbackRequest('login-state', 'login-state', 'code=first-code')
+    const issuedSessionCookie = cookiePair(firstCallback, 'eve_space_session')
+
+    mocks.storeOAuthState.mockClear()
+    const secondStart = await app.request('/auth/eve/start', {
+      headers: { Cookie: issuedSessionCookie },
+    })
+    const attachmentState = mocks.storeOAuthState.mock.calls[0]?.[0] as string
+
+    expect(secondStart.status).toBe(302)
+    expect(mocks.storeOAuthState).toHaveBeenCalledWith(attachmentState, {
+      intent: 'attach',
+      userId,
+    })
+
+    mocks.consumeOAuthState.mockResolvedValueOnce({ intent: 'attach', userId })
+    mocks.verifyAccessToken.mockResolvedValueOnce({
+      characterId: 2_112_625_428,
+      characterName: 'Bandera Alt',
+      scopes: ['esi-skills.read_skills.v1'],
+    })
+    const secondCallback = await callbackRequest(
+      attachmentState,
+      attachmentState,
+      'code=second-code',
+      issuedSessionCookie,
+    )
+
+    expect(mocks.saveLogin).toHaveBeenCalledOnce()
+    expect(mocks.attachCharacter).toHaveBeenCalledOnce()
+    expect(mocks.attachCharacter).toHaveBeenCalledWith(
+      expect.objectContaining({ userId, characterId: 2_112_625_428 }),
+    )
+    expect(secondCallback.headers.get('set-cookie')).not.toContain('eve_space_session=')
+    expect(secondCallback.headers.get('location')).toBe(
+      'http://localhost:3000/characters?attach=success&character=2112625428',
+    )
+  })
+
   test('redirects invalid, mismatched, expired, and replayed state safely', async () => {
     const mismatched = await callbackRequest('query-state', 'cookie-state')
     expect(mismatched.headers.get('location')).toBe('http://localhost:3000/auth?auth=error')
@@ -488,6 +676,153 @@ describe('EVE SSO callback intents', () => {
     expect(mocks.attachCharacter).not.toHaveBeenCalled()
   })
 
+  test('transfers only the exact state-bound character without replacing the destination session', async () => {
+    mocks.consumeOAuthState.mockResolvedValue(transferState())
+    mocks.verifyAccessToken.mockResolvedValue({
+      characterId: 2_112_625_428,
+      characterName: 'Bandera Alt',
+      scopes: ['esi-skills.read_skills.v1'],
+    })
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(mocks.transferCharacter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        approvalId: transferApprovalId,
+        sourceUserId: transferSourceUserId,
+        sourceSubjectLifecycleId: transferSourceSubjectLifecycleId,
+        destinationUserId: userId,
+        destinationSessionToken: 'active-session',
+        characterId: 2_112_625_428,
+        authorization: expect.objectContaining({
+          characterId: 2_112_625_428,
+          accessToken: 'access-token',
+        }),
+      }),
+    )
+    expect(mocks.saveLogin).not.toHaveBeenCalled()
+    expect(mocks.attachCharacter).not.toHaveBeenCalled()
+    expect(response.headers.get('set-cookie')).not.toContain('eve_space_session=')
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/characters?attach=success&character=2112625428',
+    )
+  })
+
+  test.each([
+    ['missing', null],
+    ['changed', { ...account, userId: 'different-user' }],
+  ])(
+    'maps a %s transfer-bound session to safe unusable-approval feedback',
+    async (_name, session) => {
+      mocks.consumeOAuthState.mockResolvedValue(transferState())
+      mocks.findSession.mockResolvedValue(session)
+
+      const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+      expect(response.headers.get('location')).toBe(
+        'http://localhost:3000/characters?attach=approval-unusable',
+      )
+      expect(mocks.exchangeAuthorizationCode).not.toHaveBeenCalled()
+      expect(mocks.transferCharacter).not.toHaveBeenCalled()
+      expect(mocks.saveLogin).not.toHaveBeenCalled()
+      expect(mocks.attachCharacter).not.toHaveBeenCalled()
+      expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+    },
+  )
+
+  test('preserves transfer cancellation and general failure redirects', async () => {
+    mocks.consumeOAuthState.mockResolvedValueOnce(transferState())
+    const cancelled = await callbackRequest(
+      'valid-state',
+      'valid-state',
+      'error=access_denied',
+      true,
+    )
+    expect(cancelled.headers.get('location')).toBe(
+      'http://localhost:3000/characters?attach=cancelled',
+    )
+    expect(mocks.saveLogin).not.toHaveBeenCalled()
+    expect(mocks.attachCharacter).not.toHaveBeenCalled()
+    expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+
+    mocks.consumeOAuthState.mockResolvedValueOnce(transferState())
+    const failed = await callbackRequest('valid-state', 'valid-state', undefined, true)
+    expect(failed.headers.get('location')).toBe('http://localhost:3000/characters?attach=error')
+    expect(mocks.exchangeAuthorizationCode).not.toHaveBeenCalled()
+    expect(mocks.transferCharacter).not.toHaveBeenCalled()
+  })
+
+  test('consumes failed transfer state once without invoking another persistence path', async () => {
+    mocks.consumeOAuthState
+      .mockResolvedValueOnce(transferState(mainCharacter.characterId))
+      .mockResolvedValueOnce(null)
+    mocks.transferCharacter.mockRejectedValueOnce(new Error('transfer persistence failed'))
+
+    const failed = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+    const replayed = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(failed.headers.get('location')).toBe('http://localhost:3000/characters?attach=error')
+    expect(failed.headers.get('set-cookie')).not.toContain('eve_space_session=')
+    expect(replayed.headers.get('location')).toBe('http://localhost:3000/auth?auth=error')
+    expect(mocks.exchangeAuthorizationCode).toHaveBeenCalledOnce()
+    expect(mocks.transferCharacter).toHaveBeenCalledOnce()
+    expect(mocks.saveLogin).not.toHaveBeenCalled()
+    expect(mocks.attachCharacter).not.toHaveBeenCalled()
+    expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+  })
+
+  test('rejects a wrong transfer character before affiliation or persistence', async () => {
+    mocks.consumeOAuthState.mockResolvedValue(transferState())
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/characters?attach=approval-unusable',
+    )
+    expect(mocks.getCharacterAffiliation).not.toHaveBeenCalled()
+    expect(mocks.transferCharacter).not.toHaveBeenCalled()
+    expect(mocks.saveLogin).not.toHaveBeenCalled()
+    expect(mocks.attachCharacter).not.toHaveBeenCalled()
+    expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['main-character', 'main-character'],
+    ['authority-evidence', 'authority-evidence'],
+    ['corporation-source', 'corporation-source'],
+    ['approval-unusable', 'approval-unusable'],
+  ])('maps transfer blocker %s to safe roster feedback', async (code, status) => {
+    mocks.consumeOAuthState.mockResolvedValue(transferState(mainCharacter.characterId))
+    mocks.transferCharacter.mockRejectedValue(new mocks.TransferFailure(code))
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      `http://localhost:3000/characters?attach=${status}`,
+    )
+  })
+
+  test.each([
+    ['expires', 'approval-unusable'],
+    ['is revoked', 'approval-unusable'],
+    ['loses its destination session', 'approval-unusable'],
+  ])('maps a transfer approval that %s during SSO to safe feedback', async (_name, code) => {
+    mocks.consumeOAuthState.mockResolvedValue(transferState(mainCharacter.characterId))
+    mocks.transferCharacter.mockRejectedValue(new mocks.TransferFailure(code))
+
+    const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+
+    expect(response.headers.get('location')).toBe(
+      'http://localhost:3000/characters?attach=approval-unusable',
+    )
+    expect(mocks.exchangeAuthorizationCode).toHaveBeenCalledOnce()
+    expect(mocks.verifyAccessToken).toHaveBeenCalledOnce()
+    expect(mocks.transferCharacter).toHaveBeenCalledOnce()
+    expect(mocks.saveLogin).not.toHaveBeenCalled()
+    expect(mocks.attachCharacter).not.toHaveBeenCalled()
+    expect(mocks.reauthorizeCharacter).not.toHaveBeenCalled()
+  })
+
   test('requires an owner-claim callback session to match its immutable state user', async () => {
     mocks.consumeOAuthState.mockResolvedValue({
       intent: 'claim-organization-owner',
@@ -526,17 +861,75 @@ describe('EVE SSO callback intents', () => {
     )
   })
 
-  test('maps cross-user attachment conflict without exposing the owning account', async () => {
+  test('requires approval for cross-user attachment without exposing the owning account', async () => {
     mocks.consumeOAuthState.mockResolvedValue({ intent: 'attach', userId })
-    mocks.attachCharacter.mockRejectedValue(new mocks.OwnershipConflict())
+    mocks.attachCharacter.mockRejectedValue(new mocks.ApprovalRequired())
 
     const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
 
     expect(response.headers.get('location')).toBe(
-      'http://localhost:3000/characters?attach=conflict',
+      'http://localhost:3000/characters?attach=approval-required',
     )
     expect(response.headers.get('location')).not.toContain(userId)
   })
+
+  test('does not broaden specialized callback errors beyond their stored intents', async () => {
+    mocks.consumeOAuthState.mockResolvedValueOnce({ intent: 'attach', userId })
+    mocks.attachCharacter.mockRejectedValueOnce(new mocks.TransferFailure('main-character'))
+
+    const attachment = await callbackRequest('valid-state', 'valid-state', 'code=eve-code', true)
+    expect(attachment.headers.get('location')).toBe('http://localhost:3000/characters?attach=error')
+
+    mocks.consumeOAuthState.mockResolvedValueOnce({
+      intent: 'reauthorize',
+      userId,
+      characterId: mainCharacter.characterId,
+    })
+    mocks.reauthorizeCharacter.mockRejectedValueOnce(new mocks.ApprovalRequired())
+
+    const reauthorization = await callbackRequest(
+      'valid-state',
+      'valid-state',
+      'code=eve-code',
+      true,
+    )
+    expect(reauthorization.headers.get('location')).toBe(
+      `http://localhost:3000/characters/${mainCharacter.characterId}?reauthorize=error`,
+    )
+  })
+
+  test.each([
+    ['login', { intent: 'login' as const }, [1, 0, 0]],
+    ['attachment', { intent: 'attach' as const, userId }, [0, 1, 0]],
+    [
+      'reauthorization',
+      { intent: 'reauthorize' as const, userId, characterId: mainCharacter.characterId },
+      [0, 0, 1],
+    ],
+  ])(
+    'does not upgrade %s state with forged transfer callback parameters',
+    async (_name, state, expectedWriterCalls) => {
+      mocks.consumeOAuthState.mockResolvedValue(state)
+      const forgedParameters = new URLSearchParams({
+        code: 'eve-code',
+        approvalId: transferApprovalId,
+        secret: 'forged-transfer-secret',
+        intent: 'transfer',
+        sourceUserId: transferSourceUserId,
+        sourceSubjectLifecycleId: transferSourceSubjectLifecycleId,
+        characterId: String(mainCharacter.characterId),
+      })
+
+      await callbackRequest('valid-state', 'valid-state', forgedParameters.toString(), true)
+
+      expect(mocks.transferCharacter).not.toHaveBeenCalled()
+      expect([
+        mocks.saveLogin.mock.calls.length,
+        mocks.attachCharacter.mock.calls.length,
+        mocks.reauthorizeCharacter.mock.calls.length,
+      ]).toEqual(expectedWriterCalls)
+    },
+  )
 
   test('rejects a wrong-character reauthorization before affiliation or persistence', async () => {
     mocks.consumeOAuthState.mockResolvedValue({
@@ -611,11 +1004,15 @@ describe('EVE SSO callback intents', () => {
         characterId: mainCharacter.characterId,
       }),
     )
-    expect(mocks.getCharacterCorporationRoles).toHaveBeenCalledWith(mainCharacter.characterId)
+    expect(mocks.getCharacterCorporationRoles).toHaveBeenCalledWith(
+      mainCharacter.characterId,
+      ownerClaimSubjectLifecycleId,
+    )
     expect(mocks.claimOrganizationOwnership).toHaveBeenCalledWith(
       expect.objectContaining({
         userId,
         characterId: mainCharacter.characterId,
+        subjectLifecycleId: ownerClaimSubjectLifecycleId,
         organizationId: mainCharacter.corporationId,
         organizationVersion: 1,
         authorityCorporationId: mainCharacter.corporationId,
@@ -906,10 +1303,15 @@ describe('account sessions', () => {
   })
 })
 
-function callbackRequest(state: string, cookieState: string, query = '', withSession = false) {
+function callbackRequest(
+  state: string,
+  cookieState: string,
+  query = '',
+  session: boolean | string = false,
+) {
   const suffix = query ? `&${query}` : ''
   const cookie = `eve_space_oauth_state=${cookieState}${
-    withSession ? '; eve_space_session=active-session' : ''
+    session ? `; ${typeof session === 'string' ? session : 'eve_space_session=active-session'}` : ''
   }`
   return app.request(`/auth/eve/callback?state=${state}${suffix}`, {
     headers: { Cookie: cookie },
@@ -925,4 +1327,39 @@ function reauthorizationRequest(returnTo: string) {
   return app.request(`/auth/eve/reauthorize/${mainCharacter.characterId}?${query}`, {
     headers: sessionHeader(),
   })
+}
+
+function transferStartRequest(options: { origin?: string; session?: boolean } = {}) {
+  return app.request('/auth/eve/transfer', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: options.origin ?? 'http://localhost:3000',
+      ...(options.session === false ? {} : sessionHeader()),
+    },
+    body: JSON.stringify({
+      approvalId: transferApprovalId,
+      secret: 'transfer-link-secret-value-that-is-long-enough',
+    }),
+  })
+}
+
+function transferState(characterId = 2_112_625_428) {
+  return {
+    intent: 'transfer' as const,
+    approvalId: transferApprovalId,
+    sourceUserId: transferSourceUserId,
+    sourceSubjectLifecycleId: transferSourceSubjectLifecycleId,
+    userId,
+    characterId,
+  }
+}
+
+function cookiePair(response: Response, name: string) {
+  const cookie = response.headers
+    .getSetCookie()
+    .find((value) => value.startsWith(`${name}=`))
+    ?.split(';', 1)[0]
+  if (!cookie) throw new Error(`Response did not issue ${name}`)
+  return cookie
 }

@@ -5,9 +5,20 @@ import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 const modulesByTier = {
   policy: ['sso-errors'],
   primitive: ['security'],
-  persistence: ['character-lock', 'character-token-store', 'oauth-state-store', 'session-store'],
+  persistence: [
+    'character-lock',
+    'character-token-store',
+    'character-transfer-store',
+    'oauth-state-store',
+    'session-store',
+  ],
   provider: ['sso'],
-  application: ['character-lifecycle', 'tokens'],
+  application: [
+    'character-lifecycle',
+    'character-transfer',
+    'character-transfer-approvals',
+    'tokens',
+  ],
   transport: ['routes'],
 } as const
 
@@ -40,7 +51,12 @@ const allowedExternalImportsByTier: Partial<Record<AuthTier, ReadonlySet<string>
 }
 
 const persistenceImports: Record<string, ReadonlySet<string>> = {
-  'character-lock': new Set(['drizzle-orm', 'api/src/db/client.js', 'api/src/db/locks.js']),
+  'character-lock': new Set([
+    'drizzle-orm',
+    'api/src/db/client.js',
+    'api/src/db/locks.js',
+    'api/src/env.js',
+  ]),
   'character-token-store': new Set([
     'drizzle-orm',
     'api/src/db/client.js',
@@ -48,6 +64,11 @@ const persistenceImports: Record<string, ReadonlySet<string>> = {
     'api/src/env.js',
     'api/src/scopes.js',
     'api/src/auth/character-lock.js',
+  ]),
+  'character-transfer-store': new Set([
+    'drizzle-orm',
+    'api/src/db/client.js',
+    'api/src/db/schema.js',
   ]),
   'oauth-state-store': new Set([
     'drizzle-orm',

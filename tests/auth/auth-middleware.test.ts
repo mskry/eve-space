@@ -101,6 +101,13 @@ describe('authentication route middleware', () => {
     expect(navigateTo).not.toHaveBeenCalled()
   })
 
+  it('keeps deployment administration independent from the EVE member session', async () => {
+    await authMiddleware(route('/admin', '/admin'))
+
+    expect(fetchSession).not.toHaveBeenCalled()
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
   it('adds the deep link to the EVE login URL', () => {
     expect(
       getAuthLoginUrl('http://localhost:8788/auth/eve/start', '/characters/7?tab=wallet#activity'),

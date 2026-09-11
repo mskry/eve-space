@@ -6,10 +6,9 @@ import { env } from '../env.js'
 import type { CoordinationRedisConnection } from '../coordination-redis.js'
 import { isPositiveSafeInteger, isRecord } from '../type-guards.js'
 import {
-  getCharacterAuthorization,
   getCharacterAuthorizationForLifecycle,
-  getCharacterCacheAuthorization,
   getCharacterCacheAuthorizationForLifecycle,
+  withCharacterAuthorizationForLifecycle,
   type CharacterAuthorization,
 } from '../auth/tokens.js'
 import { getSharedCacheRedisConnection, type CacheRedisConnection } from './cache-redis.js'
@@ -71,9 +70,11 @@ import { assertNoCallerEsiRevalidationHeaders, withEsiRevalidation } from './rev
 import { acquireEsiRequestPermit, type EsiRequestPermit } from './permits.js'
 import { recordEsiRateMeasurement } from './rate-measurement.js'
 import type {
+  CharacterEsiExecutionOptions,
   EsiCacheAuthorization,
   EsiCachedResult,
   EsiCacheEnvelope,
+  EsiExecutionOptions,
   EsiLoadResult,
   EsiRevalidation,
 } from './types.js'
@@ -128,6 +129,7 @@ interface DirectInternalEsiResource<Data> {
   inputs: Readonly<Record<string, unknown>>
   representationName?: string
   authorization?: EsiCacheAuthorization
+  resourceRevisionPrincipal?: string
   signal?: AbortSignal
   load(revalidation: EsiRevalidation): Promise<EsiCanonicalLoad<Data>>
   resolveAuthorization?: undefined
@@ -139,6 +141,7 @@ interface LazyInternalEsiResource<Data> {
   inputs: Readonly<Record<string, unknown>>
   representationName?: string
   authorization: EsiCacheAuthorization
+  resourceRevisionPrincipal?: string
   signal?: AbortSignal
   load?: undefined
   resolveAuthorization(): Promise<{
@@ -177,8 +180,6 @@ type ResolvedEsiRequestContext<Data> = Omit<EsiRequestContext<Data>, 'resource'>
 
 class EsiResilienceLayer {
   readonly #l1: BoundedEsiL1Cache
-  readonly #authorizeCharacter: typeof getCharacterAuthorization
-  readonly #authorizeCharacterCache: typeof getCharacterCacheAuthorization
   #namespace = 'unavailable'
   #namespaceValidatedAt = 0
   #namespaceInitialization: Promise<string> | undefined
@@ -188,16 +189,8 @@ class EsiResilienceLayer {
     private readonly cache: CacheRedisConnection,
     private readonly coordination: CoordinationRedisConnection,
     l1Capacity = env.ESI_CACHE_L1_MAX_ENTRIES,
-    authorizers:
-      | {
-          full: typeof getCharacterAuthorization
-          cache: typeof getCharacterCacheAuthorization
-        }
-      | undefined = undefined,
   ) {
     this.#l1 = new BoundedEsiL1Cache(l1Capacity)
-    this.#authorizeCharacter = authorizers?.full ?? getCharacterAuthorization
-    this.#authorizeCharacterCache = authorizers?.cache ?? getCharacterCacheAuthorization
     this.#resourceRevisions = new EsiResourceRevisionRegistry(cache, coordination, () =>
       this.#l1.clear(),
     )
@@ -220,8 +213,9 @@ class EsiResilienceLayer {
       Result
     >,
     input: Input,
-    signal?: AbortSignal,
+    options?: EsiExecutionOptions | CharacterEsiExecutionOptions,
   ): Promise<EsiCachedResult<Result>> {
+    const signal = options?.signal
     signal?.throwIfAborted()
     this.#assertRegisteredRepresentation(
       representation,
@@ -256,9 +250,12 @@ class EsiResilienceLayer {
         signal,
       )
 
+    if (!options || !('subjectLifecycleId' in options))
+      throw new Error('Character ESI execution requires lifecycle authority')
     return this.#executeCharacter(
       { ...resource, characterId: characterIdFromRequest(request) },
       representation.name,
+      options.subjectLifecycleId,
     )
   }
 
@@ -271,7 +268,9 @@ class EsiResilienceLayer {
   >(
     representation: EsiCharacterMutation<Operation, Input, Arguments, WireResult, Result>,
     input: Input,
+    options: CharacterEsiExecutionOptions,
   ): Promise<Result> {
+    options.signal?.throwIfAborted()
     this.#assertRegisteredRepresentation(
       representation,
       representation.operation,
@@ -285,15 +284,19 @@ class EsiResilienceLayer {
       )
     const request = representation.encodeRequest(input)
     assertNoCallerEsiRevalidationHeaders(request)
-    const result = await this.#executeCharacterMutation({
-      operation: representation.operation,
-      characterId: characterIdFromRequest(request),
-      inputs: request,
-      load: (authorization) => {
-        if (!authorization) throw new Error('Character ESI authorization is required')
-        return this.#dispatchMutation(representation, input, request, authorization)
+    const result = await this.#executeCharacterMutation(
+      {
+        operation: representation.operation,
+        characterId: characterIdFromRequest(request),
+        inputs: request,
+        signal: options.signal,
+        load: (authorization) => {
+          if (!authorization) throw new Error('Character ESI authorization is required')
+          return this.#dispatchMutation(representation, input, request, authorization)
+        },
       },
-    })
+      options.subjectLifecycleId,
+    )
     return result.data
   }
 
@@ -579,7 +582,11 @@ class EsiResilienceLayer {
       )
   }
 
-  async #executeCharacter<Data>(resource: EsiExecutionResource<Data>, representationName: string) {
+  async #executeCharacter<Data>(
+    resource: EsiExecutionResource<Data>,
+    representationName: string,
+    subjectLifecycleId: string,
+  ) {
     resource.signal?.throwIfAborted()
     const characterId = resource.characterId
     if (!Number.isSafeInteger(characterId)) throw new Error('Character ESI identity is invalid')
@@ -588,26 +595,54 @@ class EsiResilienceLayer {
       throw new Error(`ESI operation ${resource.operation} is not character-authorized`)
     const requiredScope = policy.authorization.scope
     const cacheAuthority = resource.signal
-      ? await this.#authorizeCharacterCache(Number(characterId), requiredScope, resource.signal)
-      : await this.#authorizeCharacterCache(Number(characterId), requiredScope)
+      ? await getCharacterCacheAuthorizationForLifecycle(
+          Number(characterId),
+          subjectLifecycleId,
+          requiredScope,
+          resource.signal,
+        )
+      : await getCharacterCacheAuthorizationForLifecycle(
+          Number(characterId),
+          subjectLifecycleId,
+          requiredScope,
+        )
     resource.signal?.throwIfAborted()
-    const principal = characterEsiPrincipal(Number(characterId))
+    const transportPrincipal = characterEsiPrincipal(Number(characterId))
+    const principal = characterLifecycleEsiPrincipal(Number(characterId), subjectLifecycleId)
     const authorization = {
       cacheAuthorization: {
         kind: 'character' as const,
         principal,
         generation: cacheAuthority.tokenVersion,
       },
-      transportPrincipal: principal,
+      transportPrincipal,
       resolve: (signal?: AbortSignal) =>
         signal
-          ? this.#authorizeCharacter(Number(characterId), requiredScope, signal)
-          : this.#authorizeCharacter(Number(characterId), requiredScope),
+          ? getCharacterAuthorizationForLifecycle(
+              Number(characterId),
+              subjectLifecycleId,
+              requiredScope,
+              signal,
+            )
+          : getCharacterAuthorizationForLifecycle(
+              Number(characterId),
+              subjectLifecycleId,
+              requiredScope,
+            ),
       recheckCacheAuthorization: async (signal?: AbortSignal) =>
         (
           await (signal
-            ? this.#authorizeCharacterCache(Number(characterId), requiredScope, signal)
-            : this.#authorizeCharacterCache(Number(characterId), requiredScope))
+            ? getCharacterCacheAuthorizationForLifecycle(
+                Number(characterId),
+                subjectLifecycleId,
+                requiredScope,
+                signal,
+              )
+            : getCharacterCacheAuthorizationForLifecycle(
+                Number(characterId),
+                subjectLifecycleId,
+                requiredScope,
+              ))
         ).tokenVersion,
     }
     const execution = await this.#recordCharacterResult(
@@ -625,28 +660,33 @@ class EsiResilienceLayer {
 
   async #executeCharacterMutation<Data>(
     mutation: EsiExecutionResource<Data> & { characterId: number },
+    subjectLifecycleId: string,
   ): Promise<EsiLoadResult<Data>> {
     if (!isPositiveSafeInteger(mutation.characterId))
       throw new Error('Character ESI identity is invalid')
     const policy: EsiOperationContract = getEsiOperationContract(mutation.operation)
     if (!policy.mutation || policy.authorization.kind !== 'character')
       throw new Error(`ESI operation ${mutation.operation} is not a character mutation`)
-    const authority = await this.#authorizeCharacter(
-      mutation.characterId,
-      policy.authorization.scope,
-    )
     const principal = characterEsiPrincipal(mutation.characterId)
     let load: EsiCanonicalLoad<Data>
     try {
-      load = await this.#loadWithRetry(
-        {
-          operation: mutation.operation,
-          inputs: mutation.inputs,
-          load: () => mutation.load({ accessToken: authority.accessToken, principal }, {}),
-        },
-        {},
-        undefined,
-        policy,
+      load = await withCharacterAuthorizationForLifecycle(
+        mutation.characterId,
+        subjectLifecycleId,
+        policy.authorization.scope,
+        (authority) =>
+          this.#loadWithRetry(
+            {
+              operation: mutation.operation,
+              inputs: mutation.inputs,
+              signal: mutation.signal,
+              load: () => mutation.load({ accessToken: authority.accessToken, principal }, {}),
+            },
+            {},
+            undefined,
+            policy,
+          ),
+        mutation.signal,
       )
     } catch (error) {
       if (shouldAdvanceRevisionAfterMutationError(policy, error))
@@ -670,6 +710,7 @@ class EsiResilienceLayer {
       inputs: resource.inputs,
       representationName,
       authorization: cacheAuthorization,
+      resourceRevisionPrincipal: authorization.transportPrincipal,
       signal: resource.signal,
       resolveAuthorization: async () => {
         const resolved = await authorization.resolve(resource.signal)
@@ -691,8 +732,6 @@ class EsiResilienceLayer {
         }
       },
     })
-    if (result.source !== 'cache') return { result, authorizationGeneration }
-
     const currentGeneration = await authorization.recheckCacheAuthorization(resource.signal)
     resource.signal?.throwIfAborted()
     if (currentGeneration === authorizationGeneration) return { result, authorizationGeneration }
@@ -746,6 +785,7 @@ class EsiResilienceLayer {
       policy,
       resource.authorization,
       resource.signal,
+      resource.resourceRevisionPrincipal,
     )
     resource.signal?.throwIfAborted()
     if (resourceRevision === null) return this.#loadUncached(resource)
@@ -1186,10 +1226,10 @@ type EsiExecutionLayer = Pick<
 let executionLayerInstance: EsiResilienceLayer | undefined
 
 export const esiExecutionLayer: EsiExecutionLayer = {
-  executeRepresentation: (representation, input, signal) =>
-    executionLayer().executeRepresentation(representation, input, signal),
-  executeMutationRepresentation: (representation, input) =>
-    executionLayer().executeMutationRepresentation(representation, input),
+  executeRepresentation: (representation, input, options) =>
+    executionLayer().executeRepresentation(representation, input, options),
+  executeMutationRepresentation: (representation, input, options) =>
+    executionLayer().executeMutationRepresentation(representation, input, options),
   executePlatformOperation: (request, inputs) =>
     executionLayer().executePlatformOperation(request, inputs),
 }

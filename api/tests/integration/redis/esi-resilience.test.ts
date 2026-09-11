@@ -33,6 +33,11 @@ let cache: Redis
 let coordination: Redis
 let authorizationVersion = 1
 let lifecycleAuthorizationResolutions = 0
+let lifecycleCacheAuthorizationResolutions = 0
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
+const replacementSubjectLifecycleId = '22222222-2222-4222-8222-222222222222'
+let currentSubjectLifecycleId = subjectLifecycleId
+const lifecycleInvalidated = new Error('character lifecycle is no longer current')
 
 vi.mock('../../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => cache,
@@ -41,18 +46,39 @@ vi.mock('../../../src/esi-resilience/coordination-connection.js', () => ({
   getCoordinationConnection: () => coordination,
 }))
 vi.mock('../../../src/auth/tokens.js', () => ({
+  TokenRefreshUnavailableError: class TokenRefreshUnavailableError extends Error {},
   getCharacterAuthorization: async () => ({
     accessToken: 'token',
     tokenVersion: authorizationVersion,
   }),
   getCharacterCacheAuthorization: async () => ({ tokenVersion: authorizationVersion }),
-  getCharacterAuthorizationForLifecycle: async () => {
+  getCharacterAuthorizationForLifecycle: async (
+    _characterId: number,
+    requestedSubjectLifecycleId: string,
+  ) => {
     lifecycleAuthorizationResolutions += 1
+    assertCurrentSubjectLifecycle(requestedSubjectLifecycleId)
     return { accessToken: 'token', tokenVersion: authorizationVersion }
   },
-  getCharacterCacheAuthorizationForLifecycle: async () => ({
-    tokenVersion: authorizationVersion,
-  }),
+  getCharacterCacheAuthorizationForLifecycle: async (
+    _characterId: number,
+    requestedSubjectLifecycleId: string,
+  ) => {
+    lifecycleCacheAuthorizationResolutions += 1
+    assertCurrentSubjectLifecycle(requestedSubjectLifecycleId)
+    return { tokenVersion: authorizationVersion }
+  },
+  withCharacterAuthorizationForLifecycle: async (
+    _characterId: number,
+    requestedSubjectLifecycleId: string,
+    _scope: string,
+    operation: (authorization: { accessToken: string; tokenVersion: number }) => Promise<unknown>,
+  ) => {
+    assertCurrentSubjectLifecycle(requestedSubjectLifecycleId)
+    const result = await operation({ accessToken: 'token', tokenVersion: authorizationVersion })
+    assertCurrentSubjectLifecycle(requestedSubjectLifecycleId)
+    return result
+  },
 }))
 
 beforeAll(async () => {
@@ -71,9 +97,12 @@ beforeAll(async () => {
 })
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await Promise.all([cache.flushdb(), coordination.flushdb()])
   authorizationVersion = 1
   lifecycleAuthorizationResolutions = 0
+  lifecycleCacheAuthorizationResolutions = 0
+  currentSubjectLifecycleId = subjectLifecycleId
   vi.resetModules()
   vi.unstubAllGlobals()
 })
@@ -245,7 +274,7 @@ describe('ESI resilience Redis coordination', () => {
     expect(fetch).toHaveBeenCalledOnce()
   })
 
-  test('shares private representations only for the current token generation', async () => {
+  test('shares private representations only for the current lifecycle and token generation', async () => {
     const fetch = vi
       .fn()
       .mockResolvedValueOnce(esiResponse(10))
@@ -255,14 +284,18 @@ describe('ESI resilience Redis coordination', () => {
     let representation = await walletRepresentation()
     let { execute } = await import('../../../src/esi-resilience/execute.js')
 
-    await expect(execute(representation, { characterId: 90_000_001 })).resolves.toMatchObject({
+    await expect(
+      execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+    ).resolves.toMatchObject({
       data: 10,
       source: 'esi',
     })
     vi.resetModules()
     representation = await walletRepresentation()
     ;({ execute } = await import('../../../src/esi-resilience/execute.js'))
-    await expect(execute(representation, { characterId: 90_000_001 })).resolves.toMatchObject({
+    await expect(
+      execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+    ).resolves.toMatchObject({
       data: 10,
       source: 'cache',
     })
@@ -271,11 +304,20 @@ describe('ESI resilience Redis coordination', () => {
     vi.resetModules()
     representation = await walletRepresentation()
     ;({ execute } = await import('../../../src/esi-resilience/execute.js'))
-    await expect(execute(representation, { characterId: 90_000_001 })).resolves.toMatchObject({
+    await expect(
+      execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+    ).resolves.toMatchObject({
       data: 20,
       source: 'esi',
     })
-    await expect(execute(representation, { characterId: 90_000_002 })).resolves.toMatchObject({
+    currentSubjectLifecycleId = replacementSubjectLifecycleId
+    await expect(
+      execute(
+        representation,
+        { characterId: 90_000_001 },
+        { subjectLifecycleId: replacementSubjectLifecycleId },
+      ),
+    ).resolves.toMatchObject({
       data: 30,
       source: 'esi',
     })
@@ -328,28 +370,37 @@ describe('ESI resilience Redis coordination', () => {
   })
 
   test('collapses revision-sensitive mail reads across executor instances', async () => {
-    let releaseFetch: ((response: Response) => void) | undefined
+    const pendingResponses: Array<(response: Response) => void> = []
     const fetch = vi.fn(
       () =>
         new Promise<Response>((resolve) => {
-          releaseFetch = resolve
+          pendingResponses.push(resolve)
         }),
     )
     vi.stubGlobal('fetch', fetch)
     const representation = await mailRepresentation()
     const { execute } = await import('../../../src/esi-resilience/execute.js')
-    const owner = execute(representation, { characterId: 90_000_001, mailId: 7 })
+    const owner = execute(
+      representation,
+      { characterId: 90_000_001, mailId: 7 },
+      { subjectLifecycleId },
+    )
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
 
     vi.resetModules()
     const followerRepresentation = await mailRepresentation()
     const { execute: executeFollower } = await import('../../../src/esi-resilience/execute.js')
-    const follower = executeFollower(followerRepresentation, {
-      characterId: 90_000_001,
-      mailId: 7,
-    })
+    const follower = executeFollower(
+      followerRepresentation,
+      {
+        characterId: 90_000_001,
+        mailId: 7,
+      },
+      { subjectLifecycleId },
+    )
     await wait(20)
-    releaseFetch?.(esiResponse({ body: 'owner' }, 30))
+    expect(fetch).toHaveBeenCalledOnce()
+    pendingResponses[0]?.(esiResponse({ body: 'owner' }, 30))
 
     await expect(Promise.all([owner, follower])).resolves.toEqual([
       expect.objectContaining({ data: { body: 'owner' }, source: 'esi' }),
@@ -357,6 +408,89 @@ describe('ESI resilience Redis coordination', () => {
     ])
     expect(fetch).toHaveBeenCalledOnce()
   })
+
+  test('rejects every same-process collapsed caller when its lifecycle changes in flight', async () => {
+    const pendingResponses: Array<(response: Response) => void> = []
+    const fetch = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          pendingResponses.push(resolve)
+        }),
+    )
+    vi.stubGlobal('fetch', fetch)
+    const representation = await mailRepresentation()
+    const { execute } = await import('../../../src/esi-resilience/execute.js')
+    const callers = Array.from({ length: 3 }, () =>
+      execute(representation, { characterId: 90_000_001, mailId: 7 }, { subjectLifecycleId }),
+    )
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(lifecycleCacheAuthorizationResolutions).toBe(3))
+    currentSubjectLifecycleId = replacementSubjectLifecycleId
+    pendingResponses[0]?.(esiResponse({ body: 'former' }, 30))
+
+    await Promise.all(callers.map((caller) => expect(caller).rejects.toBe(lifecycleInvalidated)))
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  test.each(['l1', 'shared'] as const)(
+    'rejects an old %s outage-stale result when lifecycle rotation races Cache Redis failure',
+    async (source) => {
+      let rejectRefresh!: (error: Error) => void
+      const refreshFailed = new Promise<Response>((_resolve, reject) => {
+        rejectRefresh = reject
+      })
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(esiResponse(10, 0))
+        .mockImplementationOnce(() => refreshFailed)
+        .mockResolvedValueOnce(esiResponse(20, 0))
+      vi.stubGlobal('fetch', fetch)
+      let representation = await walletRepresentation()
+      let { execute } = await import('../../../src/esi-resilience/execute.js')
+
+      await expect(
+        execute(representation, { characterId: 90_000_001 }, { subjectLifecycleId }),
+      ).resolves.toMatchObject({ data: 10, source: 'esi' })
+      const namespace = await initializeCacheNamespace(coordination)
+      const key = cacheEnvelopeKey(
+        namespace,
+        representationIdentity('wallet-balance', { characterId: 90_000_001 }, representation.name),
+      )
+      await expect(cache.get(key)).resolves.toContain(subjectLifecycleId)
+
+      if (source === 'shared') {
+        vi.resetModules()
+        representation = await walletRepresentation()
+        ;({ execute } = await import('../../../src/esi-resilience/execute.js'))
+      }
+      const cacheRead = vi.spyOn(cache, 'get')
+      if (source === 'l1') cacheRead.mockRejectedValue(new Error('Cache Redis unavailable'))
+
+      try {
+        const formerRequest = execute(
+          representation,
+          { characterId: 90_000_001 },
+          { subjectLifecycleId },
+        )
+        await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+        if (source === 'shared') cacheRead.mockRejectedValue(new Error('Cache Redis unavailable'))
+        currentSubjectLifecycleId = replacementSubjectLifecycleId
+        rejectRefresh(new TypeError('ESI unavailable'))
+
+        await expect(formerRequest).rejects.toBe(lifecycleInvalidated)
+        await expect(
+          execute(
+            representation,
+            { characterId: 90_000_001 },
+            { subjectLifecycleId: replacementSubjectLifecycleId },
+          ),
+        ).resolves.toMatchObject({ data: 20, source: 'esi' })
+        expect(fetch).toHaveBeenCalledTimes(3)
+      } finally {
+        cacheRead.mockRestore()
+      }
+    },
+  )
 
   test('rejects prior authorization generations and mailbox revisions', async () => {
     const fetch = vi
@@ -367,20 +501,20 @@ describe('ESI resilience Redis coordination', () => {
     vi.stubGlobal('fetch', fetch)
     let representation = await mailRepresentation()
     let { execute } = await import('../../../src/esi-resilience/execute.js')
-    await execute(representation, { characterId: 90_000_001, mailId: 7 })
+    await execute(representation, { characterId: 90_000_001, mailId: 7 }, { subjectLifecycleId })
 
     authorizationVersion = 2
     vi.resetModules()
     representation = await mailRepresentation()
     ;({ execute } = await import('../../../src/esi-resilience/execute.js'))
-    await execute(representation, { characterId: 90_000_001, mailId: 7 })
+    await execute(representation, { characterId: 90_000_001, mailId: 7 }, { subjectLifecycleId })
     await incrementEsiResourceRevision(coordination, 'mailbox', 'character-90000001')
 
     vi.resetModules()
     representation = await mailRepresentation()
     ;({ execute } = await import('../../../src/esi-resilience/execute.js'))
     await expect(
-      execute(representation, { characterId: 90_000_001, mailId: 7 }),
+      execute(representation, { characterId: 90_000_001, mailId: 7 }, { subjectLifecycleId }),
     ).resolves.toMatchObject({ data: { body: 'organized' }, source: 'esi' })
     expect(fetch).toHaveBeenCalledTimes(3)
   })
@@ -397,11 +531,15 @@ describe('ESI resilience Redis coordination', () => {
     const { executeMutation } = await import('../../../src/esi-resilience/execute.js')
 
     await expect(
-      executeMutation(representation, {
-        characterId: 90_000_001,
-        body: 'Body',
-        subject: 'Subject',
-      }),
+      executeMutation(
+        representation,
+        {
+          characterId: 90_000_001,
+          body: 'Body',
+          subject: 'Subject',
+        },
+        { subjectLifecycleId },
+      ),
     ).resolves.toBe(7001)
     await expect(
       getEsiResourceRevision(coordination, 'mailbox', 'character-90000001'),
@@ -709,6 +847,10 @@ describe('ESI resilience Redis coordination', () => {
     ).resolves.toMatchObject({ coordinationAvailable: true })
   })
 })
+
+function assertCurrentSubjectLifecycle(requestedSubjectLifecycleId: string) {
+  if (requestedSubjectLifecycleId !== currentSubjectLifecycleId) throw lifecycleInvalidated
+}
 
 function createClient(container: StartedTestContainer) {
   const connection = new Redis(`redis://${container.getHost()}:${container.getMappedPort(6379)}`, {

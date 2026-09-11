@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   initializeNamespace: vi.fn(),
   getLeaseTtl: vi.fn(),
   releaseLease: vi.fn(),
+  withAuthorization: vi.fn(),
 }))
 
 vi.mock('@evespace/esi-client', async (importOriginal) => ({
@@ -32,8 +33,9 @@ vi.mock('@evespace/esi-client', async (importOriginal) => ({
 }))
 vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/auth/tokens.js')>()),
-  getCharacterAuthorization: mocks.authorize,
-  getCharacterCacheAuthorization: mocks.authorizeCache,
+  getCharacterAuthorizationForLifecycle: mocks.authorize,
+  getCharacterCacheAuthorizationForLifecycle: mocks.authorizeCache,
+  withCharacterAuthorizationForLifecycle: mocks.withAuthorization,
 }))
 vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
@@ -65,10 +67,14 @@ vi.mock('../../src/esi-resilience/transport.js', async (importOriginal) => ({
 }))
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.resetAllMocks()
   mocks.acquireLease.mockResolvedValue(undefined)
   mocks.authorize.mockResolvedValue({ accessToken: 'access-token', tokenVersion: 1 })
   mocks.authorizeCache.mockResolvedValue({ tokenVersion: 1 })
+  mocks.withAuthorization.mockImplementation(
+    async (characterId, subjectLifecycleId, scope, operation) =>
+      operation(await mocks.authorize(characterId, subjectLifecycleId, scope)),
+  )
   mocks.cacheGet.mockResolvedValue(null)
   mocks.cacheDelete.mockResolvedValue(1)
   mocks.cacheSet.mockResolvedValue('OK')
@@ -110,13 +116,27 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    await expect(execute(representation, { characterId: 1 })).resolves.toMatchObject({
+    await expect(
+      execute(
+        representation,
+        { characterId: 1 },
+        { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+      ),
+    ).resolves.toMatchObject({
       data: { totalSp: 1 },
       source: 'esi',
     })
 
-    expect(mocks.authorizeCache).toHaveBeenCalledWith(1, 'esi-skills.read_skills.v1')
-    expect(mocks.authorize).toHaveBeenCalledWith(1, 'esi-skills.read_skills.v1')
+    expect(mocks.authorizeCache).toHaveBeenCalledWith(
+      1,
+      '11111111-1111-4111-8111-111111111111',
+      'esi-skills.read_skills.v1',
+    )
+    expect(mocks.authorize).toHaveBeenCalledWith(
+      1,
+      '11111111-1111-4111-8111-111111111111',
+      'esi-skills.read_skills.v1',
+    )
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),
       requestTimeoutMs: 30_000,
@@ -127,6 +147,85 @@ describe('ESI representation execution', () => {
       path: { character_id: 1 },
     })
     expect(map).toHaveBeenCalledWith(response, { characterId: 1 })
+  })
+
+  test('discards a completed read when its captured lifecycle disappears in flight', async () => {
+    const lifecycleExpired = new Error('captured lifecycle no longer exists')
+    let resolveUpstream:
+      | ((response: ReturnType<typeof responseWith<{ total_sp: number; skills: never[] }>>) => void)
+      | undefined
+    mocks.callOperation.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveUpstream = resolve
+        }),
+    )
+    mocks.authorizeCache
+      .mockReset()
+      .mockResolvedValueOnce({ tokenVersion: 1 })
+      .mockRejectedValueOnce(lifecycleExpired)
+    const { defineCharacterEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const representation = registerEsiRepresentation(
+      defineCharacterEsiRepresentation({
+        operation: 'skills',
+        name: 'skills-lifecycle-race-fixture',
+        descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+        encodeRequest: (input: { characterId: number }) => ({
+          path: { character_id: input.characterId },
+        }),
+        map: ({ data }) => data,
+      }),
+    )
+
+    const pending = execute(
+      representation,
+      { characterId: 1 },
+      { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+    )
+    await vi.waitFor(() => expect(mocks.callOperation).toHaveBeenCalledOnce())
+    resolveUpstream?.(responseWith({ total_sp: 1, skills: [] }))
+
+    await expect(pending).rejects.toBe(lifecycleExpired)
+  })
+
+  test('does not reuse private L1 data after the same character enters a new lifecycle', async () => {
+    mocks.callOperation
+      .mockResolvedValueOnce(responseWith({ total_sp: 1, skills: [] }))
+      .mockResolvedValueOnce(responseWith({ total_sp: 2, skills: [] }))
+    const { defineCharacterEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const representation = registerEsiRepresentation(
+      defineCharacterEsiRepresentation({
+        operation: 'skills',
+        name: 'skills-new-lifecycle-cache-fixture',
+        descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+        encodeRequest: (input: { characterId: number }) => ({
+          path: { character_id: input.characterId },
+        }),
+        map: ({ data }) => data.total_sp,
+      }),
+    )
+
+    await execute(
+      representation,
+      { characterId: 1 },
+      { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+    )
+    const newLifecycle = await execute(
+      representation,
+      { characterId: 1 },
+      { subjectLifecycleId: '22222222-2222-4222-8222-222222222222' },
+    )
+
+    expect(newLifecycle).toMatchObject({ data: 2, source: 'esi' })
+    expect(mocks.callOperation).toHaveBeenCalledTimes(2)
   })
 
   test('executes public representations without resolving character authorization', async () => {
@@ -216,7 +315,13 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    await expect(executeMutation(representation, { characterId: 1 })).resolves.toBe(7001)
+    await expect(
+      executeMutation(
+        representation,
+        { characterId: 1 },
+        { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+      ),
+    ).resolves.toBe(7001)
     expect(mocks.clientOptions).toHaveBeenCalledWith({
       fetch: expect.any(Function),
       requestTimeoutMs: 30_000,
@@ -443,7 +548,7 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    const pending = execute(representation, undefined, controller.signal)
+    const pending = execute(representation, undefined, { signal: controller.signal })
     await vi.waitFor(() => expect(mocks.getLeaseTtl).toHaveBeenCalledOnce())
     controller.abort()
 
@@ -472,7 +577,7 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    const pending = execute(representation, undefined, controller.signal)
+    const pending = execute(representation, undefined, { signal: controller.signal })
     const caught = pending.catch((error: unknown) => error)
     await vi.advanceTimersByTimeAsync(0)
     expect(mocks.callOperation).toHaveBeenCalledOnce()
@@ -510,9 +615,17 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    await execute(representation, { characterId: 1 })
+    await execute(
+      representation,
+      { characterId: 1 },
+      { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+    )
     await vi.advanceTimersByTimeAsync(60_001)
-    const pending = execute(representation, { characterId: 1 })
+    const pending = execute(
+      representation,
+      { characterId: 1 },
+      { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+    )
     await vi.runAllTimersAsync()
 
     await expect(pending).resolves.toMatchObject({
@@ -532,6 +645,7 @@ describe('ESI representation execution', () => {
       .mockResolvedValueOnce({ accessToken: 'token-2', tokenVersion: 2 })
     mocks.authorizeCache
       .mockReset()
+      .mockResolvedValueOnce({ tokenVersion: 1 })
       .mockResolvedValueOnce({ tokenVersion: 1 })
       .mockResolvedValueOnce({ tokenVersion: 1 })
       .mockResolvedValue({ tokenVersion: 2 })
@@ -571,13 +685,29 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    await execute(representation, { characterId: 1 })
+    await execute(
+      representation,
+      { characterId: 1 },
+      { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+    )
     await vi.advanceTimersByTimeAsync(1_001)
-    await expect(execute(representation, { characterId: 1 })).resolves.toMatchObject({
+    await expect(
+      execute(
+        representation,
+        { characterId: 1 },
+        { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+      ),
+    ).resolves.toMatchObject({
       data: 10,
       source: 'not-modified',
     })
-    await expect(execute(representation, { characterId: 1 })).resolves.toMatchObject({
+    await expect(
+      execute(
+        representation,
+        { characterId: 1 },
+        { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+      ),
+    ).resolves.toMatchObject({
       data: 10,
       source: 'cache',
     })
@@ -585,7 +715,7 @@ describe('ESI representation execution', () => {
     expect(mocks.callOperation).toHaveBeenCalledTimes(2)
     expect(map304).toHaveBeenCalledOnce()
     expect(mocks.authorize).toHaveBeenCalledTimes(2)
-    expect(mocks.authorizeCache).toHaveBeenCalledTimes(4)
+    expect(mocks.authorizeCache).toHaveBeenCalledTimes(6)
   })
 
   test('advances the mailbox revision after an ambiguous registered mutation failure', async () => {
@@ -616,7 +746,13 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    await expect(executeMutation(representation, { characterId: 1 })).rejects.toBe(failure)
+    await expect(
+      executeMutation(
+        representation,
+        { characterId: 1 },
+        { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+      ),
+    ).rejects.toBe(failure)
     expect(mocks.callOperation).toHaveBeenCalledOnce()
     expect(mocks.incrementRevision).toHaveBeenCalledWith(
       expect.anything(),
@@ -660,7 +796,13 @@ describe('ESI representation execution', () => {
       }),
     )
 
-    await expect(executeMutation(representation, { characterId: 1 })).rejects.toBe(mapperError)
+    await expect(
+      executeMutation(
+        representation,
+        { characterId: 1 },
+        { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+      ),
+    ).rejects.toBe(mapperError)
     expect(sequence).toEqual(['upstream', 'revision', 'map'])
     expect(mocks.callOperation).toHaveBeenCalledOnce()
     expect(mocks.incrementRevision).toHaveBeenCalledOnce()
@@ -733,9 +875,13 @@ describe('ESI representation execution', () => {
         }),
       )
 
-      await expect(execute(representation, { characterId: 1 })).rejects.toThrow(
-        `ESI request header ${headerName} is executor-owned`,
-      )
+      await expect(
+        execute(
+          representation,
+          { characterId: 1 },
+          { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+        ),
+      ).rejects.toThrow(`ESI request header ${headerName} is executor-owned`)
       expect(mocks.clientOptions).not.toHaveBeenCalled()
       expect(mocks.callOperation).not.toHaveBeenCalled()
     },
@@ -756,9 +902,13 @@ describe('ESI representation execution', () => {
       map: ({ data }) => data,
     })
 
-    await expect(executeMutation(representation, { characterId: 1 })).rejects.toThrow(
-      'ESI representation mail-send-unregistered was not registered',
-    )
+    await expect(
+      executeMutation(
+        representation,
+        { characterId: 1 },
+        { subjectLifecycleId: '11111111-1111-4111-8111-111111111111' },
+      ),
+    ).rejects.toThrow('ESI representation mail-send-unregistered was not registered')
     expect(mocks.clientOptions).not.toHaveBeenCalled()
     expect(mocks.callOperation).not.toHaveBeenCalled()
   })

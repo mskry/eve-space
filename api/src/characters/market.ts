@@ -119,9 +119,14 @@ export class MarketQuotaError extends Error {
 
 export async function getCharacterMarketOrders(
   characterId: number,
+  subjectLifecycleId: string,
 ): Promise<CharacterMarketOrdersResult> {
   try {
-    const result = await execute(characterMarketOrdersRepresentation, { characterId })
+    const result = await execute(
+      characterMarketOrdersRepresentation,
+      { characterId },
+      { subjectLifecycleId },
+    )
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwMarketError(error)
@@ -131,10 +136,15 @@ export async function getCharacterMarketOrders(
 export async function getCharacterMarketOrderHistory(
   characterId: number,
   page: number,
+  subjectLifecycleId: string,
 ): Promise<CharacterMarketOrderHistoryResult> {
   assertPositiveSafeInteger(page, 'Market order history page')
   try {
-    const result = await execute(characterMarketOrderHistoryRepresentation, { characterId, page })
+    const result = await execute(
+      characterMarketOrderHistoryRepresentation,
+      { characterId, page },
+      { subjectLifecycleId },
+    )
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwMarketError(error)

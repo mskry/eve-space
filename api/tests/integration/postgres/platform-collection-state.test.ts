@@ -861,9 +861,9 @@ describe('platform collection state PostgreSQL persistence', () => {
       `
       await connection`
         insert into deployment_settings (
-          id, owner_admin_id, organization_type, organization_id,
+          id, organization_type, organization_id,
           organization_name, organization_ticker, organization_version
-        ) values (1, ${adminId}, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
+        ) values (1, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
       `
       await connection`
         insert into platform_subject_lifecycles (
@@ -943,9 +943,9 @@ describe('platform collection state PostgreSQL persistence', () => {
       `
       await connection`
         insert into deployment_settings (
-          id, owner_admin_id, organization_type, organization_id,
+          id, organization_type, organization_id,
           organization_name, organization_ticker, organization_version
-        ) values (1, ${adminId}, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
+        ) values (1, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
       `
       await connection`
         insert into platform_subject_lifecycles (
@@ -1030,9 +1030,9 @@ describe('platform collection state PostgreSQL persistence', () => {
       `
       await connection`
         insert into deployment_settings (
-          id, owner_admin_id, organization_type, organization_id,
+          id, organization_type, organization_id,
           organization_name, organization_ticker, organization_version
-        ) values (1, ${adminId}, 'corporation', 98000001, 'Managed Corporation', 'CORP', 1)
+        ) values (1, 'corporation', 98000001, 'Managed Corporation', 'CORP', 1)
       `
       await connection`
         insert into organization_managed_corporations (
@@ -1220,9 +1220,9 @@ describe('platform collection state PostgreSQL persistence', () => {
       `
       await connection`
         insert into deployment_settings (
-          id, owner_admin_id, organization_type, organization_id,
+          id, organization_type, organization_id,
           organization_name, organization_ticker, organization_version
-        ) values (1, ${adminId}, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
+        ) values (1, 'alliance', 99000001, 'Managed Alliance', 'ALLY', 1)
       `
       await connection`
         insert into platform_subject_lifecycles (

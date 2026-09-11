@@ -136,18 +136,23 @@ export type CharacterImplants = CharacterImplantsData & EsiResultMetadata
 
 function getCharacterClonesData(
   characterId: number,
+  subjectLifecycleId: string,
 ): Promise<EsiCachedResult<CharacterClonesSnapshot>> {
-  return execute(characterClonesRepresentation, { characterId })
+  return execute(characterClonesRepresentation, { characterId }, { subjectLifecycleId })
 }
 
 function getCharacterImplantsData(
   characterId: number,
+  subjectLifecycleId: string,
 ): Promise<EsiCachedResult<CharacterImplantsSnapshot>> {
-  return execute(characterImplantsRepresentation, { characterId })
+  return execute(characterImplantsRepresentation, { characterId }, { subjectLifecycleId })
 }
 
-export async function getCharacterClones(characterId: number): Promise<CharacterClones> {
-  const snapshot = await getCharacterClonesData(characterId)
+export async function getCharacterClones(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterClones> {
+  const snapshot = await getCharacterClonesData(characterId, subjectLifecycleId)
   const implantTypeIds = snapshot.data.jumpClones.flatMap((clone) => clone.implantTypeIds)
   const stationIds = collectStationIds(snapshot.data)
   const [implantStaticData, stationNames] = await Promise.all([
@@ -172,8 +177,11 @@ export async function getCharacterClones(characterId: number): Promise<Character
   }
 }
 
-export async function getCharacterImplants(characterId: number): Promise<CharacterImplants> {
-  const snapshot = await getCharacterImplantsData(characterId)
+export async function getCharacterImplants(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterImplants> {
+  const snapshot = await getCharacterImplantsData(characterId, subjectLifecycleId)
   const implantStaticData = await loadImplantStaticData(snapshot.data.implantTypeIds)
   return {
     implants: enrichImplants(snapshot.data.implantTypeIds, implantStaticData),

@@ -48,6 +48,7 @@ const character = {
   corporationId: 1000166,
   allianceId: null,
   isMain: true,
+  subjectLifecycleId: 'de1e1285-0d02-4dd0-9ca4-c3b7a28e0011',
 }
 const session = {
   userId: '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c',
@@ -67,7 +68,10 @@ describe('character skill queue route', () => {
 
     expect(response.status).toBe(200)
     expect(await response.json()).toEqual(queue)
-    expect(mocks.getCharacterSkillQueue).toHaveBeenCalledWith(character.characterId)
+    expect(mocks.getCharacterSkillQueue).toHaveBeenCalledWith(
+      character.characterId,
+      character.subjectLifecycleId,
+    )
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('vary')).toBe('Cookie')
   })

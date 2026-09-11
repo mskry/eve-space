@@ -184,10 +184,11 @@ export class ContractQuotaError extends Error {
 export async function getCharacterContracts(
   characterId: number,
   page: number,
+  subjectLifecycleId: string,
 ): Promise<CharacterContractsResult> {
   assertPositiveSafeInteger(page, 'Character contract page')
   try {
-    const result = await loadCharacterContracts(characterId, page)
+    const result = await loadCharacterContracts(characterId, subjectLifecycleId, page)
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwContractError(error)
@@ -198,11 +199,16 @@ export async function getCharacterContractItems(
   characterId: number,
   contractId: number,
   contractPage: number,
+  subjectLifecycleId: string,
 ): Promise<CharacterContractItemsResult> {
   assertContractDetailInputs(contractId, contractPage)
   try {
-    await requirePersonalContract(characterId, contractId, contractPage)
-    const result = await execute(characterContractItemsRepresentation, { characterId, contractId })
+    await requirePersonalContract(characterId, subjectLifecycleId, contractId, contractPage)
+    const result = await execute(
+      characterContractItemsRepresentation,
+      { characterId, contractId },
+      { subjectLifecycleId },
+    )
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwContractError(error)
@@ -213,23 +219,33 @@ export async function getCharacterContractBids(
   characterId: number,
   contractId: number,
   contractPage: number,
+  subjectLifecycleId: string,
 ): Promise<CharacterContractBidsResult> {
   assertContractDetailInputs(contractId, contractPage)
   try {
-    await requirePersonalContract(characterId, contractId, contractPage)
-    const result = await execute(characterContractBidsRepresentation, { characterId, contractId })
+    await requirePersonalContract(characterId, subjectLifecycleId, contractId, contractPage)
+    const result = await execute(
+      characterContractBidsRepresentation,
+      { characterId, contractId },
+      { subjectLifecycleId },
+    )
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwContractError(error)
   }
 }
 
-function loadCharacterContracts(characterId: number, page: number) {
-  return execute(characterContractsRepresentation, { characterId, page })
+function loadCharacterContracts(characterId: number, subjectLifecycleId: string, page: number) {
+  return execute(characterContractsRepresentation, { characterId, page }, { subjectLifecycleId })
 }
 
-async function requirePersonalContract(characterId: number, contractId: number, page: number) {
-  const parent = await loadCharacterContracts(characterId, page)
+async function requirePersonalContract(
+  characterId: number,
+  subjectLifecycleId: string,
+  contractId: number,
+  page: number,
+) {
+  const parent = await loadCharacterContracts(characterId, subjectLifecycleId, page)
   if (!parent.data.contracts.some((contract) => contract.contractId === contractId))
     throw new ContractNotFoundError()
 }

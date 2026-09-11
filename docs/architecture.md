@@ -77,6 +77,7 @@ Authenticated public EVE records:
 Deployment administration (an application session is also required):
 
 - `/api/admin/setup`, `/login`, `/session`, and `/logout` manage the separate local administrator identity.
+- Active deployment-administrator authority is bound through the installation singleton, independently of whether a managed EVE organization is currently configured.
 - `PUT /api/admin/organization` changes the owning EVE corporation or alliance.
 - `GET /api/admin/modules` and `PUT /api/admin/modules/:moduleId` read or change installed-module enablement.
 - `GET|PUT /api/admin/shell-navigation-order` reads or rearranges deployment-wide shell navigation.
@@ -99,16 +100,16 @@ failure, retained data, telemetry, and explicit removal are documented in
 
 ## Security Decisions
 
-- OAuth state is bound to an HttpOnly SameSite cookie, stored as a SHA-256 hash, consumed once, and bound server-side to login, attachment, exact-character reauthorization, or organization-owner claim intent.
+- OAuth state is bound to an HttpOnly SameSite cookie, stored as a SHA-256 hash, consumed once, and bound server-side to login, attachment, exact-character reauthorization, organization-owner claim, or approved-transfer intent.
 - Session bearer values are stored only as SHA-256 hashes.
 - EVE access and refresh tokens are encrypted with AES-256-GCM.
 - Character-ID-scoped routes verify `(user_id, character_id)` ownership before reading or refreshing token material; unknown and non-owned IDs share the same response.
-- A character already attached to another EVE Space user is rejected rather than merging accounts.
+- Ordinary attachment rejects a character already attached to another EVE Space user without revealing the owning account. An explicit cross-user transfer instead requires an unexpired, unrevoked deployment-administrator approval bound to the source lifecycle and destination user, plus a destination-bound session and exact-character EVE SSO proof.
 - JWT signature, expiration, issuer, and both required audiences are verified.
 - EVE endpoints are discovered from the official OAuth metadata document.
 - Refresh tokens never reach Nuxt or the browser.
 - CORS allows credentials only from `WEB_ORIGIN`.
-- Deployment-administrator authority grants no organization membership, HR, director, owner, or private organization-data access.
+- Deployment-administrator authority grants no organization membership, HR, director, owner, or private organization-data access. It permits only the minimal source/destination identity and blocker preview needed for an explicit character transfer; this does not create a general character-lookup permission.
 - Organization grants, compliance, groups, blocks, corporation sources, and roster observations are bound to the current organization version; changing the configured organization prevents old-version state from authorizing current access.
 - Protected organization routes apply current compliance, role, group, and explicit-block decisions before module handlers or private data reads execute.
 - Organization authority, exception, compliance, group, block, and entitlement decisions append immutable audit records without token or raw private ESI fields.

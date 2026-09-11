@@ -191,9 +191,10 @@ These rules apply to every source directory. Keep a directory flat by default, w
 - Character disclosure may be mandatory organization policy, but neither EVE SSO nor EVE Space can discover every character on an account or prove that no undisclosed character exists. UI, logs, audits, and APIs must describe only disclosed registration and observed corporation-roster coverage.
 - Exactly one attached character is main for session identity. Character views and protected resources require an explicit owned character ID.
 - The registered callback URL is `http://localhost:8788/auth/eve/callback` in local development.
-- OAuth state is random, bound to an HttpOnly SameSite cookie, stored only as a SHA-256 hash, and persisted with login, attachment, or exact-character reauthorization intent.
-- Attachment and reauthorization callbacks require the state-bound application session; reauthorization must return the expected character.
-- Reject characters owned by another application user; do not merge users implicitly or reveal ownership through character lookup outcomes.
+- OAuth state is random, bound to an HttpOnly SameSite cookie, stored only as a SHA-256 hash, and persisted with login, attachment, exact-character reauthorization, organization-owner claim, or approved-transfer intent.
+- Attachment, reauthorization, and transfer callbacks require the state-bound application session; reauthorization and transfer must return the exact expected character.
+- Ordinary attachment must reject a character owned by another application user without merging users or revealing ownership. Cross-user transfer is allowed only through an unexpired, unrevoked deployment-administrator approval bound to the source lifecycle and destination user, followed by destination-session and exact-character EVE SSO proof.
+- Deployment administrators may preview the minimum source/destination identity and blocker data needed to approve a transfer. This narrow permission grants no general character lookup, organization authority, or private organization-data access.
 - Session bearer values are random and stored only as SHA-256 hashes.
 - EVE access and refresh tokens are encrypted with AES-256-GCM before persistence.
 - Refresh tokens, the EVE client secret, and `TOKEN_ENCRYPTION_KEY` must never reach Nuxt or logs.

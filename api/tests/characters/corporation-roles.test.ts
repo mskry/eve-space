@@ -20,6 +20,7 @@ vi.mock('../../src/esi-resilience/layer.js', () => ({
 import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 1_404_328_063
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 
 beforeEach(() => {
   mocks.executeRepresentation.mockImplementation((representation, input) =>
@@ -40,7 +41,7 @@ describe('character corporation roles', () => {
     const { characterCorporationRolesScope, getCharacterCorporationRoles } =
       await import('../../src/characters/corporation-roles.js')
 
-    await expect(getCharacterCorporationRoles(characterId)).resolves.toEqual({
+    await expect(getCharacterCorporationRoles(characterId, subjectLifecycleId)).resolves.toEqual({
       roles: ['Director', 'Accountant'],
       rolesAtBase: ['Factory_Manager'],
       rolesAtHeadquarters: ['Station_Manager'],
@@ -58,7 +59,7 @@ describe('character corporation roles', () => {
     const { getCharacterCorporationRoles } =
       await import('../../src/characters/corporation-roles.js')
 
-    await expect(getCharacterCorporationRoles(characterId)).resolves.toEqual({
+    await expect(getCharacterCorporationRoles(characterId, subjectLifecycleId)).resolves.toEqual({
       roles: [],
       rolesAtBase: [],
       rolesAtHeadquarters: [],

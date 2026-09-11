@@ -46,6 +46,7 @@ vi.mock('../../src/characters/finance-type-names.js', () => ({
 import { executeRepresentationFixture } from '../support/execute-representation.js'
 
 const characterId = 90_000_001
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const authority = { accessToken: 'access-token', principal: `character-${characterId}` }
 const revalidation = { ifNoneMatch: 'contract-etag' }
 const revalidationHeaders = { 'If-None-Match': revalidation.ifNoneMatch }
@@ -93,7 +94,7 @@ describe('character contracts service', () => {
     const { characterContractsScope, getCharacterContracts } =
       await import('../../src/characters/contracts.js')
 
-    const result = await getCharacterContracts(characterId, 2)
+    const result = await getCharacterContracts(characterId, 2, subjectLifecycleId)
 
     expect(result).toEqual({
       contracts: [
@@ -148,7 +149,7 @@ describe('character contracts service', () => {
     )
     const { getCharacterContracts } = await import('../../src/characters/contracts.js')
 
-    const result = await getCharacterContracts(characterId, 1)
+    const result = await getCharacterContracts(characterId, 1, subjectLifecycleId)
 
     expect(result.contracts.map((entry) => [entry.contractId, entry.role])).toEqual([
       [110, 'assigned'],
@@ -164,7 +165,7 @@ describe('character contracts service', () => {
     )
     const { getCharacterContracts } = await import('../../src/characters/contracts.js')
 
-    await expect(getCharacterContracts(characterId, 4)).resolves.toMatchObject({
+    await expect(getCharacterContracts(characterId, 4, subjectLifecycleId)).resolves.toMatchObject({
       contracts: [
         {
           contractId: 201,
@@ -198,7 +199,7 @@ describe('character contracts service', () => {
     })
     const { getCharacterContracts } = await import('../../src/characters/contracts.js')
 
-    await expect(getCharacterContracts(characterId, 5)).resolves.toEqual({
+    await expect(getCharacterContracts(characterId, 5, subjectLifecycleId)).resolves.toEqual({
       contracts: [],
       page: 5,
       totalPages: 7,
@@ -222,7 +223,7 @@ describe('character contracts service', () => {
     mocks.loadTypeNames.mockResolvedValue(new Map([[35, 'Blueprint Copy']]))
     const { getCharacterContractItems } = await import('../../src/characters/contracts.js')
 
-    const result = await getCharacterContractItems(characterId, 300, 2)
+    const result = await getCharacterContractItems(characterId, 300, 2, subjectLifecycleId)
 
     expect(result).toMatchObject({
       items: [
@@ -265,7 +266,7 @@ describe('character contracts service', () => {
     )
     const { getCharacterContractBids } = await import('../../src/characters/contracts.js')
 
-    const result = await getCharacterContractBids(characterId, 400, 1)
+    const result = await getCharacterContractBids(characterId, 400, 1, subjectLifecycleId)
 
     expect(result).toMatchObject({
       bids: [{ bidId: 20, amount: 250, bidAt: '2026-08-20T13:00:00Z' }],
@@ -287,8 +288,8 @@ describe('character contracts service', () => {
       const module = await import('../../src/characters/contracts.js')
       const request =
         detail === 'items'
-          ? module.getCharacterContractItems(characterId, 500, 3)
-          : module.getCharacterContractBids(characterId, 500, 3)
+          ? module.getCharacterContractItems(characterId, 500, 3, subjectLifecycleId)
+          : module.getCharacterContractBids(characterId, 500, 3, subjectLifecycleId)
 
       await expect(request).rejects.toBeInstanceOf(module.ContractNotFoundError)
       expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
@@ -302,7 +303,9 @@ describe('character contracts service', () => {
     mocks.executeRepresentation.mockRejectedValueOnce(failure)
     const { getCharacterContractItems } = await import('../../src/characters/contracts.js')
 
-    await expect(getCharacterContractItems(characterId, 600, 1)).rejects.toBe(failure)
+    await expect(getCharacterContractItems(characterId, 600, 1, subjectLifecycleId)).rejects.toBe(
+      failure,
+    )
     expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
     expect(mocks.getItems).not.toHaveBeenCalled()
   })
@@ -312,7 +315,7 @@ describe('character contracts service', () => {
     const { ContractQuotaError, getCharacterContractBids } =
       await import('../../src/characters/contracts.js')
 
-    await expect(getCharacterContractBids(characterId, 700, 1)).rejects.toEqual(
+    await expect(getCharacterContractBids(characterId, 700, 1, subjectLifecycleId)).rejects.toEqual(
       new ContractQuotaError(30),
     )
     expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
@@ -330,9 +333,9 @@ describe('character contracts service', () => {
     const { ContractQuotaError, getCharacterContractItems } =
       await import('../../src/characters/contracts.js')
 
-    await expect(getCharacterContractItems(characterId, 800, 1)).rejects.toEqual(
-      new ContractQuotaError(20),
-    )
+    await expect(
+      getCharacterContractItems(characterId, 800, 1, subjectLifecycleId),
+    ).rejects.toEqual(new ContractQuotaError(20))
     expect(mocks.executeRepresentation).toHaveBeenCalledTimes(2)
   })
 
@@ -342,7 +345,9 @@ describe('character contracts service', () => {
       mocks.getContracts.mockResolvedValue(response([], pages))
       const { getCharacterContracts } = await import('../../src/characters/contracts.js')
 
-      await expect(getCharacterContracts(characterId, 3)).resolves.toMatchObject({
+      await expect(
+        getCharacterContracts(characterId, 3, subjectLifecycleId),
+      ).resolves.toMatchObject({
         page: 3,
         totalPages: 3,
       })

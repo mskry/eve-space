@@ -16,6 +16,14 @@ export type OAuthStateContext =
       organizationId: number
       organizationVersion: number
     }
+  | {
+      intent: 'transfer'
+      approvalId: string
+      sourceUserId: string
+      sourceSubjectLifecycleId: string
+      userId: string
+      characterId: number
+    }
 
 export async function storeOAuthState(state: string, context: OAuthStateContext) {
   await db.delete(oauthStates).where(lte(oauthStates.expiresAt, new Date()))
@@ -24,7 +32,9 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
     intent: context.intent,
     userId: context.intent === 'login' ? null : context.userId,
     characterId:
-      context.intent === 'reauthorize' || context.intent === 'claim-organization-owner'
+      context.intent === 'reauthorize' ||
+      context.intent === 'claim-organization-owner' ||
+      context.intent === 'transfer'
         ? context.characterId
         : null,
     returnPath:
@@ -35,6 +45,10 @@ export async function storeOAuthState(state: string, context: OAuthStateContext)
     organizationId: context.intent === 'claim-organization-owner' ? context.organizationId : null,
     organizationVersion:
       context.intent === 'claim-organization-owner' ? context.organizationVersion : null,
+    transferApprovalId: context.intent === 'transfer' ? context.approvalId : null,
+    transferSourceUserId: context.intent === 'transfer' ? context.sourceUserId : null,
+    transferSourceSubjectLifecycleId:
+      context.intent === 'transfer' ? context.sourceSubjectLifecycleId : null,
     expiresAt: new Date(Date.now() + oauthStateTtlMs),
   })
 }
@@ -50,6 +64,9 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
       returnPath: oauthStates.returnPath,
       organizationId: oauthStates.organizationId,
       organizationVersion: oauthStates.organizationVersion,
+      transferApprovalId: oauthStates.transferApprovalId,
+      transferSourceUserId: oauthStates.transferSourceUserId,
+      transferSourceSubjectLifecycleId: oauthStates.transferSourceSubjectLifecycleId,
     })
 
   if (!record) return null
@@ -80,6 +97,22 @@ export async function consumeOAuthState(state: string): Promise<OAuthStateContex
       characterId: record.characterId,
       organizationId: record.organizationId,
       organizationVersion: record.organizationVersion,
+    }
+  if (
+    record.intent === 'transfer' &&
+    record.transferApprovalId &&
+    record.transferSourceUserId &&
+    record.transferSourceSubjectLifecycleId &&
+    record.userId &&
+    record.characterId
+  )
+    return {
+      intent: 'transfer',
+      approvalId: record.transferApprovalId,
+      sourceUserId: record.transferSourceUserId,
+      sourceSubjectLifecycleId: record.transferSourceSubjectLifecycleId,
+      userId: record.userId,
+      characterId: record.characterId,
     }
   throw new Error('Stored OAuth state has invalid authorization context')
 }
