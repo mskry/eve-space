@@ -53,14 +53,14 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock('../../src/auth/store.js', () => ({
-  CharacterTokenNotFoundError: class CharacterTokenNotFoundError extends Error {},
+vi.mock('../../src/auth/character-lifecycle.js', () => ({
   deleteCharacter: mocks.deleteCharacter,
   findOwnedCharacter: mocks.findOwnedCharacter,
-  findSession: mocks.findSession,
   listUserCharacters: mocks.listUserCharacters,
   setMainCharacter: mocks.setMainCharacter,
 }))
+
+vi.mock('../../src/auth/session-store.js', () => ({ findSession: mocks.findSession }))
 
 vi.mock('../../src/env.js', () => ({
   env: {

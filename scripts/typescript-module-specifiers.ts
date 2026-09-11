@@ -14,6 +14,7 @@ export function typescriptModuleSpecifiers(path: string, source: string) {
     if (
       ts.isCallExpression(node) &&
       node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments[0] &&
       ts.isStringLiteral(node.arguments[0])
     )
       specifiers.push(node.arguments[0].text)

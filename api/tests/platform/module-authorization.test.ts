@@ -49,21 +49,27 @@ vi.mock('../../src/env.js', () => ({
   isSsoConfigured: () => false,
 }))
 
-vi.mock('../../src/auth/store.js', () => ({
+vi.mock('../../src/auth/character-lifecycle.js', () => ({
   attachCharacter: vi.fn(),
   CharacterOwnershipConflictError: mocks.CharacterOwnershipConflictError,
-  CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
-  consumeOAuthState: vi.fn(),
   deleteCharacter: vi.fn(),
-  deleteSession: vi.fn(),
-  findCharacterToken: vi.fn(),
   findOwnedCharacter: mocks.findOwnedCharacter,
-  findSession: mocks.findSession,
   listUserCharacters: vi.fn(),
   reauthorizeCharacter: vi.fn(),
   saveLogin: vi.fn(),
   setMainCharacter: vi.fn(),
+}))
+vi.mock('../../src/auth/oauth-state-store.js', () => ({
+  consumeOAuthState: vi.fn(),
   storeOAuthState: vi.fn(),
+}))
+vi.mock('../../src/auth/session-store.js', () => ({
+  deleteSession: vi.fn(),
+  findSession: mocks.findSession,
+}))
+vi.mock('../../src/auth/character-token-store.js', () => ({
+  CharacterTokenNotFoundError: mocks.CharacterTokenNotFoundError,
+  findCharacterToken: vi.fn(),
   TokenRefreshLockUnavailableError: mocks.TokenRefreshLockUnavailableError,
   updateCharacterToken: vi.fn(),
   withCharacterTokenRefreshLock: vi.fn(),

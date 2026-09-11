@@ -6,14 +6,11 @@ import { z } from 'zod'
 import {
   attachCharacter,
   CharacterOwnershipConflictError,
-  consumeOAuthState,
-  deleteSession,
-  findSession,
   reauthorizeCharacter,
   saveLogin,
-  storeOAuthState,
-} from './store.js'
-import type { OAuthStateContext } from './store.js'
+} from './character-lifecycle.js'
+import { consumeOAuthState, storeOAuthState, type OAuthStateContext } from './oauth-state-store.js'
+import { deleteSession, findSession } from './session-store.js'
 import { getCharacterAffiliation } from '../characters/profile.js'
 import { getCharacterAffiliationObservation } from '../characters/affiliation-sync.js'
 import { env, isSsoConfigured } from '../env.js'
@@ -164,8 +161,8 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       return redirectForIntent(context, stateContext, 'error')
 
     try {
-      const tokens = await exchangeAuthorizationCode(code)
-      const identity = await verifyAccessToken(tokens.access_token)
+      const tokens = await exchangeAuthorizationCode(code, context.req.raw.signal)
+      const identity = await verifyAccessToken(tokens.access_token, context.req.raw.signal)
       if (
         (stateContext.intent === 'reauthorize' ||
           stateContext.intent === 'claim-organization-owner') &&
@@ -250,7 +247,7 @@ async function startAuthorization(context: Context, stateContext: OAuthStateCont
     priority: 'High',
     maxAge: 10 * 60,
   })
-  return context.redirect((await createAuthorizationUrl(state)).toString())
+  return context.redirect((await createAuthorizationUrl(state, context.req.raw.signal)).toString())
 }
 
 async function consumeValidOAuthState(state: string | undefined, cookieState: string | undefined) {

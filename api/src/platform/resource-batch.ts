@@ -68,6 +68,7 @@ export class PlatformResourceBatchExecutionError extends Error {
 }
 
 export interface BatchExecutionOptions {
+  readonly signal?: AbortSignal
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
   readonly definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
@@ -78,6 +79,7 @@ export async function executeInstalledResourceBatchOperation(
   payload: PlatformResourceBatchPayload,
   options: BatchExecutionOptions = {},
 ): Promise<BatchExecution> {
+  options.signal?.throwIfAborted()
   // Queue intake owns the configured planner page bound; this tier enforces the ESI operation cap.
   const parsed = platformResourceBatchPayloadSchema.parse(payload)
   const resources = options.resources ?? installedModuleResources
@@ -108,9 +110,13 @@ export async function executeInstalledResourceBatchOperation(
   assertUniqueBatchSubjects(candidates.map(({ subject }) => subject))
   const eligibility = await Promise.all(
     candidates.map(({ identity }) =>
-      (options.resolveEligibility ?? resolveInstalledResourceEligibility)(identity, { resources }),
+      (options.resolveEligibility ?? resolveInstalledResourceEligibility)(identity, {
+        resources,
+        signal: options.signal,
+      }),
     ),
   )
+  options.signal?.throwIfAborted()
   const eligible = candidates.flatMap((candidate, index) => {
     const resolved = eligibility[index]
     return resolved?.status === 'eligible' && resolved.due
@@ -125,6 +131,7 @@ export async function executeInstalledResourceBatchOperation(
     inputs = batch.request(subjects)
     assertBatchInputs(inputs, contract.identity.field, subjects, contract.identity.maximumItems)
   } catch (error) {
+    options.signal?.throwIfAborted()
     throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }
   let result: Awaited<ReturnType<typeof executePlatformEsiOperation>>
@@ -134,14 +141,17 @@ export async function executeInstalledResourceBatchOperation(
       definition,
       inputs,
       authorization: { kind: 'public' },
+      ...(options.signal ? { signal: options.signal } : {}),
     })
     assertPlatformResourceRefreshSucceeded(result)
   } catch (error) {
+    options.signal?.throwIfAborted()
     throw new PlatformResourceBatchExecutionError(
       error instanceof PlatformEsiRequestError ? new PlatformResourceMappingError(error) : error,
       eligible,
     )
   }
+  options.signal?.throwIfAborted()
   let classifications: readonly BatchClassification[]
   try {
     classifications = validatePlatformResourceBatchClassifications(
@@ -150,6 +160,7 @@ export async function executeInstalledResourceBatchOperation(
       batch.classify({ subjects, data: result.data }),
     )
   } catch (error) {
+    options.signal?.throwIfAborted()
     throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
   }
   const eligibleBySubject = new Map(

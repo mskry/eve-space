@@ -1,6 +1,7 @@
 import { createDeployment } from '../admin/store.js'
+import { saveLogin } from '../auth/character-lifecycle.js'
 import { createOpaqueToken, hashPassword } from '../auth/security.js'
-import { findSession, saveLogin } from '../auth/store.js'
+import { findSession } from '../auth/session-store.js'
 import { sql } from '../db/client.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { registerOrganizationCorporationSource } from '../organization/corporation-sources.js'

@@ -27,8 +27,9 @@ export async function processInstalledResourceBatch(
 ) {
   let execution: Awaited<ReturnType<typeof executeInstalledResourceBatchOperation>>
   try {
-    execution = await executeInstalledResourceBatchOperation(payload, options)
+    execution = await executeInstalledResourceBatchOperation(payload, { ...options, signal })
   } catch (error) {
+    signal?.throwIfAborted()
     const failure = error instanceof PlatformResourceBatchExecutionError ? error.cause : error
     const attempted = error instanceof PlatformResourceBatchExecutionError ? error.attempted : []
     await Promise.all(
@@ -41,8 +42,9 @@ export async function processInstalledResourceBatch(
     throw failure
   }
   if (execution.outcome === 'noop') return
+  signal?.throwIfAborted()
 
-  const changed = await applyBatchClassifications(execution, options)
+  const changed = await applyBatchClassifications(execution, options, signal)
   if (changed.length === 0) return
 
   await producer.enqueueMany(
@@ -59,9 +61,11 @@ export async function processInstalledResourceBatch(
 async function applyBatchClassifications(
   execution: LoadedBatchExecution,
   options: BatchExecutionOptions,
+  signal?: AbortSignal,
 ) {
   const changed = [] as EligibleBatchSubject[]
   for (const classification of execution.classifications) {
+    signal?.throwIfAborted()
     if (classification.outcome === 'changed') {
       changed.push(classification)
       continue
@@ -77,8 +81,10 @@ async function applyBatchClassifications(
         ...(classification.outcome === 'complete'
           ? { outcome: 'complete', data: classification.data }
           : { outcome: 'unchanged' }),
+        signal,
       })
     } catch (error) {
+      signal?.throwIfAborted()
       const failure = new PlatformResourcePersistenceError(error)
       // oxlint-disable-next-line no-await-in-loop
       await recordInstalledResourceCollectionFailure(classification.identity, failure, {

@@ -43,8 +43,11 @@ export interface AffiliationObservation {
   allianceId: number | null
 }
 
-export async function getCharacterAffiliationObservation(characterId: number) {
-  const result = await lookupAffiliationResult([characterId])
+export async function getCharacterAffiliationObservation(
+  characterId: number,
+  signal?: AbortSignal,
+) {
+  const result = await lookupAffiliationResult([characterId], signal)
   const observation = result.data.find((entry) => entry.characterId === characterId)
   if (!observation) return null
   return {
@@ -93,7 +96,11 @@ export async function processAffiliationBatch(
   characterIds: readonly number[],
   options: {
     observedAt?: Date
-    lookup?: (ids: readonly number[]) => Promise<readonly AffiliationObservation[]>
+    lookup?: (
+      ids: readonly number[],
+      signal?: AbortSignal,
+    ) => Promise<readonly AffiliationObservation[]>
+    signal?: AbortSignal
   } = {},
 ) {
   const parsed = affiliationJobPayload.parse({
@@ -104,19 +111,27 @@ export async function processAffiliationBatch(
   const lookup = options.lookup ?? lookupAffiliations
   let observations: readonly AffiliationObservation[]
   try {
-    observations = await lookup(parsed.characterIds)
+    observations = await lookup(parsed.characterIds, options.signal)
   } catch (error) {
     if (error instanceof EsiQuotaError) throw new AffiliationCooldownError(error.retryAfterSeconds)
     throw error
   }
-  await persistAffiliationObservations(parsed.characterIds, observations, observedAt)
+  options.signal?.throwIfAborted()
+  await persistAffiliationObservations(
+    parsed.characterIds,
+    observations,
+    observedAt,
+    options.signal,
+  )
 }
 
 export async function persistAffiliationObservations(
   requestedCharacterIds: readonly number[],
   observations: readonly AffiliationObservation[],
   observedAt: Date,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted()
   const requested = new Set(requestedCharacterIds)
   const returned = new Map<number, AffiliationObservation>()
   for (const observation of observations) {
@@ -156,6 +171,7 @@ export async function persistAffiliationObservations(
             or character.affiliation_checked_at <= ${observedAtValue}::timestamptz
           )
       `)
+      signal?.throwIfAborted()
     }
 
     if (omitted.length > 0) {
@@ -176,12 +192,14 @@ export async function persistAffiliationObservations(
             sql`(${characters.affiliationCheckedAt} is null or ${characters.affiliationCheckedAt} <= ${observedAt.toISOString()}::timestamptz)`,
           ),
         )
+      signal?.throwIfAborted()
     }
     const affectedCharacters = await transaction
       .select({ userId: characters.userId, characterId: characters.characterId })
       .from(characters)
       .where(inArray(characters.characterId, [...requested]))
       .orderBy(asc(characters.userId), asc(characters.characterId))
+    signal?.throwIfAborted()
     for (const character of affectedCharacters)
       // oxlint-disable-next-line no-await-in-loop -- Event sequence follows stable character order.
       await appendDomainEvent(transaction, {
@@ -191,15 +209,16 @@ export async function persistAffiliationObservations(
         payload: character,
         occurredAt: observedAt,
       })
+    signal?.throwIfAborted()
   })
 }
 
-async function lookupAffiliations(characterIds: readonly number[]) {
-  return (await lookupAffiliationResult(characterIds)).data
+async function lookupAffiliations(characterIds: readonly number[], signal?: AbortSignal) {
+  return (await lookupAffiliationResult(characterIds, signal)).data
 }
 
-async function lookupAffiliationResult(characterIds: readonly number[]) {
-  return execute(bulkAffiliationRepresentation, { body: [...characterIds] })
+async function lookupAffiliationResult(characterIds: readonly number[], signal?: AbortSignal) {
+  return execute(bulkAffiliationRepresentation, { body: [...characterIds] }, signal)
 }
 
 function nextAffiliationCheckSql(observedAt: string) {

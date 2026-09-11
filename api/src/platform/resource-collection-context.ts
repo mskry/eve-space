@@ -1,7 +1,11 @@
 import type { PlatformResourceSubject } from '@eve-space/platform-module-contract'
 import { sql } from '../db/client.js'
 
-export async function loadResourceCollectionContext(subject: PlatformResourceSubject) {
+export async function loadResourceCollectionContext(
+  subject: PlatformResourceSubject,
+  signal?: AbortSignal,
+) {
+  signal?.throwIfAborted()
   const [context] = await sql<{ organizationVersion: number; corporationId: number | null }[]>`
     select settings.organization_version::integer as "organizationVersion",
       case when lifecycle.subject_kind = 'character' then character.corporation_id
@@ -18,6 +22,7 @@ export async function loadResourceCollectionContext(subject: PlatformResourceSub
            or lifecycle.organization_version = settings.organization_version)
       and (source.source_id is null or source.organization_version = settings.organization_version)
   `
+  signal?.throwIfAborted()
   if (!context) throw new Error('Resource collection context is obsolete')
   return context
 }

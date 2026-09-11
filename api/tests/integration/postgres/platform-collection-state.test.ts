@@ -5,7 +5,7 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { runMigrations } from '../../../src/db/migration-runner.js'
 import * as schema from '../../../src/db/schema.js'
-import { findCharacterTokenForLifecycle } from '../../../src/auth/store.js'
+import { findCharacterTokenForLifecycle } from '../../../src/auth/character-token-store.js'
 import {
   loadPlatformCollectionState,
   upsertPlatformCollectionState,

@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   commitFence: vi.fn(),
   incrementRevision: vi.fn(),
   initializeNamespace: vi.fn(),
+  getLeaseTtl: vi.fn(),
   releaseLease: vi.fn(),
 }))
 
@@ -45,7 +46,7 @@ vi.mock('../../src/esi-resilience/coordination.js', () => ({
   acquireEsiRequestLease: mocks.acquireLease,
   commitEsiFence: mocks.commitFence,
   getCommittedEsiFence: vi.fn().mockResolvedValue(undefined),
-  getEsiRequestLeaseTtl: vi.fn().mockResolvedValue(0),
+  getEsiRequestLeaseTtl: mocks.getLeaseTtl,
   getEsiResourceRevision: vi.fn().mockResolvedValue(0),
   incrementEsiResourceRevision: mocks.incrementRevision,
   initializeCacheNamespace: mocks.initializeNamespace,
@@ -74,6 +75,7 @@ beforeEach(() => {
   mocks.commitFence.mockResolvedValue(false)
   mocks.incrementRevision.mockResolvedValue(1)
   mocks.initializeNamespace.mockRejectedValue(new Error('coordination unavailable'))
+  mocks.getLeaseTtl.mockResolvedValue(0)
   mocks.releaseLease.mockResolvedValue(true)
   mocks.acquirePermit.mockResolvedValue({
     ttlMs: 30_000,
@@ -417,6 +419,68 @@ describe('ESI representation execution', () => {
 
     await expect(pending).resolves.toMatchObject({ data: { players: 1 }, source: 'esi' })
     expect(mocks.callOperation).toHaveBeenCalledTimes(3)
+  })
+
+  test('aborts request-collapse polling without starting an upstream request', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    mocks.initializeNamespace.mockResolvedValue('namespace-collapse-cancellation')
+    mocks.acquireLease.mockResolvedValue(undefined)
+    mocks.getLeaseTtl.mockResolvedValue(15_000)
+    const controller = new AbortController()
+    const { definePublicEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const representation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'status',
+        name: 'status-collapse-cancellation-fixture',
+        descriptor: operationRegistry.GetStatus.transport,
+        encodeRequest: () => ({}),
+        map: ({ data }) => data,
+      }),
+    )
+
+    const pending = execute(representation, undefined, controller.signal)
+    await vi.waitFor(() => expect(mocks.getLeaseTtl).toHaveBeenCalledOnce())
+    controller.abort()
+
+    await expect(pending).rejects.toBe(controller.signal.reason)
+    expect(mocks.callOperation).not.toHaveBeenCalled()
+    vi.setSystemTime(3_000)
+  })
+
+  test('aborts an idempotent retry delay before another upstream attempt', async () => {
+    vi.useFakeTimers()
+    const { EsiTransportError } = await import('../../src/esi-resilience/transport.js')
+    mocks.callOperation.mockRejectedValue(new EsiTransportError(new Error('network unavailable')))
+    const controller = new AbortController()
+    const { definePublicEsiRepresentation } =
+      await import('../../src/esi-resilience/representations.js')
+    const { registerEsiRepresentation } =
+      await import('../../src/esi-resilience/representation-registry.js')
+    const { execute } = await import('../../src/esi-resilience/execute.js')
+    const representation = registerEsiRepresentation(
+      definePublicEsiRepresentation({
+        operation: 'status',
+        name: 'status-retry-cancellation-fixture',
+        descriptor: operationRegistry.GetStatus.transport,
+        encodeRequest: () => ({}),
+        map: ({ data }) => data,
+      }),
+    )
+
+    const pending = execute(representation, undefined, controller.signal)
+    const caught = pending.catch((error: unknown) => error)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mocks.callOperation).toHaveBeenCalledOnce()
+    controller.abort()
+    await vi.runAllTimersAsync()
+
+    await expect(caught).resolves.toBe(controller.signal.reason)
+    expect(mocks.callOperation).toHaveBeenCalledOnce()
   })
 
   test('serves retained private data after a registered refresh encounters an outage', async () => {

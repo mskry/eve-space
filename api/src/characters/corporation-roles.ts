@@ -34,8 +34,9 @@ export interface CharacterCorporationRoles {
 
 export async function getCharacterCorporationRoles(
   characterId: number,
+  signal?: AbortSignal,
 ): Promise<CharacterCorporationRoles> {
-  return (await execute(characterCorporationRolesRepresentation, { characterId })).data
+  return (await execute(characterCorporationRolesRepresentation, { characterId }, signal)).data
 }
 
 function mapCharacterCorporationRoles(

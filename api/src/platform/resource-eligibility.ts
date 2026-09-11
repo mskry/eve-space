@@ -93,6 +93,7 @@ interface EligibilityOptions {
   readonly connection?: postgres.Sql | postgres.TransactionSql
   readonly now?: Date
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
+  readonly signal?: AbortSignal
 }
 
 export interface DueInstalledResource {
@@ -109,6 +110,7 @@ export async function resolveInstalledResourceEligibility(
   identity: PlatformCollectionStateIdentity,
   options: EligibilityOptions = {},
 ): Promise<PlatformResourceEligibility> {
+  options.signal?.throwIfAborted()
   const parsed = platformCollectionStateIdentitySchema.parse(identity)
   const resources = options.resources ?? platformResources
   const resource = resources.find(
@@ -145,12 +147,14 @@ export async function resolveInstalledResourceEligibility(
       ${parsed.subjectId}
     )
   `
+  options.signal?.throwIfAborted()
   return row ? parseClassification(row) : { status: 'obsolete' }
 }
 
 export async function selectDueInstalledResources(
   options: SelectDueResourcesOptions,
 ): Promise<readonly DueInstalledResource[]> {
+  options.signal?.throwIfAborted()
   if (!isPositiveSafeInteger(options.limit))
     throw new Error('Resource planning limit must be a positive safe integer')
   const resources = options.resources ?? platformResources
@@ -185,6 +189,7 @@ export async function selectDueInstalledResources(
       subject_lifecycle_id, subject_id
     limit ${options.limit}
   `
+  options.signal?.throwIfAborted()
 
   return rows.map((row) => {
     const classification = parseClassification(row)

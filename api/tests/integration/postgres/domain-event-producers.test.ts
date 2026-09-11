@@ -28,8 +28,10 @@ vi.mock('../../../src/auth/sso.js', () => ({
 
 let container: StartedTestContainer
 let databaseUrl: string
-let authStore: typeof import('../../../src/auth/store.js')
+let characterLifecycle: typeof import('../../../src/auth/character-lifecycle.js')
+let characterTokenStore: typeof import('../../../src/auth/character-token-store.js')
 let tokenService: typeof import('../../../src/auth/tokens.js')
+let sessionStore: typeof import('../../../src/auth/session-store.js')
 let dbClient: typeof import('../../../src/db/client.js')
 const databasePassword = randomUUID()
 
@@ -59,8 +61,10 @@ beforeAll(async () => {
     await migrationConnection.end()
   }
 
-  authStore = await import('../../../src/auth/store.js')
+  characterLifecycle = await import('../../../src/auth/character-lifecycle.js')
+  characterTokenStore = await import('../../../src/auth/character-token-store.js')
   tokenService = await import('../../../src/auth/tokens.js')
+  sessionStore = await import('../../../src/auth/session-store.js')
   dbClient = await import('../../../src/db/client.js')
 })
 
@@ -129,7 +133,7 @@ describe('transactional domain event producers', () => {
       }),
     ])
 
-    await authStore.deleteSession('third-session')
+    await sessionStore.deleteSession('third-session')
     expect(await readEvents()).toHaveLength(2)
   })
 
@@ -137,22 +141,26 @@ describe('transactional domain event producers', () => {
     const scopes = ['scope.one', 'scope.two']
     await saveLogin(authorizationInput(mainCharacterId, scopes), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
-    const character = await authStore.findOwnedCharacter(userId, mainCharacterId)
+    const character = await characterLifecycle.findOwnedCharacter(userId, mainCharacterId)
     if (!character) throw new Error('Expected owned character')
 
-    await expect(authStore.findCharacterCacheAuthorization(mainCharacterId)).resolves.toEqual({
+    await expect(
+      characterTokenStore.findCharacterCacheAuthorization(mainCharacterId),
+    ).resolves.toEqual({
       scopes,
       tokenVersion: 0,
     })
-    await expect(authStore.findCharacterCacheAuthorization(otherCharacterId)).resolves.toBeNull()
     await expect(
-      authStore.findCharacterCacheAuthorizationForLifecycle(
+      characterTokenStore.findCharacterCacheAuthorization(otherCharacterId),
+    ).resolves.toBeNull()
+    await expect(
+      characterTokenStore.findCharacterCacheAuthorizationForLifecycle(
         mainCharacterId,
         '00000000-0000-4000-8000-000000000001',
       ),
     ).resolves.toBeNull()
     await expect(
-      authStore.findCharacterCacheAuthorizationForLifecycle(
+      characterTokenStore.findCharacterCacheAuthorizationForLifecycle(
         mainCharacterId,
         character.subjectLifecycleId,
       ),
@@ -165,7 +173,7 @@ describe('transactional domain event producers', () => {
     await clearEvents()
 
     const alt = authorizationInput(altCharacterId, ['z.scope', 'a.scope'])
-    await authStore.attachCharacter({ ...alt, userId })
+    await characterLifecycle.attachCharacter({ ...alt, userId })
     expect(await readEvents()).toEqual([
       expect.objectContaining({
         event_type: 'character.attached',
@@ -173,9 +181,9 @@ describe('transactional domain event producers', () => {
       }),
     ])
 
-    await authStore.attachCharacter({ ...alt, userId, scopes: ['a.scope', 'z.scope'] })
+    await characterLifecycle.attachCharacter({ ...alt, userId, scopes: ['a.scope', 'z.scope'] })
     expect(await readEvents()).toHaveLength(1)
-    await authStore.attachCharacter({ ...alt, userId, scopes: ['z.scope', 'new.scope'] })
+    await characterLifecycle.attachCharacter({ ...alt, userId, scopes: ['z.scope', 'new.scope'] })
     expect(await readEvents()).toEqual([
       expect.objectContaining({ event_type: 'character.attached' }),
       expect.objectContaining({
@@ -192,9 +200,9 @@ describe('transactional domain event producers', () => {
     await saveLogin(authorizationInput(otherCharacterId, []), 'other-session')
     const otherUserId = await findCharacterUserId(otherCharacterId)
     await clearEvents()
-    await expect(authStore.attachCharacter({ ...alt, userId: otherUserId })).rejects.toBeInstanceOf(
-      authStore.CharacterOwnershipConflictError,
-    )
+    await expect(
+      characterLifecycle.attachCharacter({ ...alt, userId: otherUserId }),
+    ).rejects.toBeInstanceOf(characterLifecycle.CharacterOwnershipConflictError)
     await expect(readEvents()).resolves.toEqual([])
     await expect(findCharacterUserId(altCharacterId)).resolves.toBe(userId)
   })
@@ -209,7 +217,7 @@ describe('transactional domain event producers', () => {
       userId,
       expectedCharacterId: mainCharacterId,
     }
-    await authStore.reauthorizeCharacter(reauthorization)
+    await characterLifecycle.reauthorizeCharacter(reauthorization)
     expect(await readEvents()).toEqual([
       expect.objectContaining({
         event_type: 'character.scopes-changed',
@@ -222,13 +230,13 @@ describe('transactional domain event producers', () => {
       }),
     ])
 
-    await authStore.reauthorizeCharacter({
+    await characterLifecycle.reauthorizeCharacter({
       ...reauthorization,
       scopes: ['z.scope', 'new.scope'],
     })
     expect(await readEvents()).toHaveLength(1)
     await expect(
-      authStore.reauthorizeCharacter({
+      characterLifecycle.reauthorizeCharacter({
         ...reauthorization,
         expectedCharacterId: altCharacterId,
       }),
@@ -239,10 +247,12 @@ describe('transactional domain event producers', () => {
   test('main selection emits only an actual transition with its prior character', async () => {
     await saveLogin(authorizationInput(mainCharacterId, []), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
-    await authStore.attachCharacter({ ...authorizationInput(altCharacterId, []), userId })
+    await characterLifecycle.attachCharacter({ ...authorizationInput(altCharacterId, []), userId })
     await clearEvents()
 
-    await expect(authStore.setMainCharacter(userId, altCharacterId)).resolves.toMatchObject({
+    await expect(
+      characterLifecycle.setMainCharacter(userId, altCharacterId),
+    ).resolves.toMatchObject({
       characterId: altCharacterId,
       isMain: true,
     })
@@ -258,19 +268,21 @@ describe('transactional domain event producers', () => {
       }),
     ])
 
-    await authStore.setMainCharacter(userId, altCharacterId)
-    await expect(authStore.setMainCharacter(userId, otherCharacterId)).resolves.toBeNull()
+    await characterLifecycle.setMainCharacter(userId, altCharacterId)
+    await expect(characterLifecycle.setMainCharacter(userId, otherCharacterId)).resolves.toBeNull()
     expect(await readEvents()).toHaveLength(1)
   })
 
   test('repairs a missing main without fabricating a main-change event', async () => {
     await saveLogin(authorizationInput(mainCharacterId, []), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
-    await authStore.attachCharacter({ ...authorizationInput(altCharacterId, []), userId })
+    await characterLifecycle.attachCharacter({ ...authorizationInput(altCharacterId, []), userId })
     await dbClient.sql`update characters set is_main = false where user_id = ${userId}`
     await clearEvents()
 
-    await expect(authStore.setMainCharacter(userId, altCharacterId)).resolves.toMatchObject({
+    await expect(
+      characterLifecycle.setMainCharacter(userId, altCharacterId),
+    ).resolves.toMatchObject({
       characterId: altCharacterId,
       isMain: true,
     })
@@ -284,24 +296,24 @@ describe('transactional domain event producers', () => {
   test('successful non-main deletion emits the complete pre-delete snapshot', async () => {
     await saveLogin(authorizationInput(mainCharacterId, ['main.scope']), 'main-session')
     const userId = await findCharacterUserId(mainCharacterId)
-    await authStore.attachCharacter({
+    await characterLifecycle.attachCharacter({
       ...authorizationInput(altCharacterId, ['z.scope', 'a.scope', 'z.scope']),
       userId,
     })
     await clearEvents()
 
-    const main = await authStore.findOwnedCharacter(userId, mainCharacterId)
-    const alt = await authStore.findOwnedCharacter(userId, altCharacterId)
-    await expect(authStore.deleteCharacter(userId, otherCharacterId, randomUUID())).resolves.toBe(
-      'not-found',
-    )
+    const main = await characterLifecycle.findOwnedCharacter(userId, mainCharacterId)
+    const alt = await characterLifecycle.findOwnedCharacter(userId, altCharacterId)
     await expect(
-      authStore.deleteCharacter(userId, mainCharacterId, main!.subjectLifecycleId),
+      characterLifecycle.deleteCharacter(userId, otherCharacterId, randomUUID()),
+    ).resolves.toBe('not-found')
+    await expect(
+      characterLifecycle.deleteCharacter(userId, mainCharacterId, main!.subjectLifecycleId),
     ).resolves.toBe('main-character')
     await expect(readEvents()).resolves.toEqual([])
 
     await expect(
-      authStore.deleteCharacter(userId, altCharacterId, alt!.subjectLifecycleId),
+      characterLifecycle.deleteCharacter(userId, altCharacterId, alt!.subjectLifecycleId),
     ).resolves.toBe('deleted')
     expect(await readEvents()).toEqual([
       expect.objectContaining({
@@ -326,7 +338,10 @@ describe('transactional domain event producers', () => {
 
     try {
       await expect(
-        authStore.attachCharacter({ ...authorizationInput(altCharacterId, ['a.scope']), userId }),
+        characterLifecycle.attachCharacter({
+          ...authorizationInput(altCharacterId, ['a.scope']),
+          userId,
+        }),
       ).rejects.toMatchObject({
         cause: { constraint_name: 'reject_attached_event' },
       })
@@ -463,7 +478,7 @@ function authorizationInput(characterId: number, scopes: string[]) {
 }
 
 function saveLogin(input: ReturnType<typeof authorizationInput>, sessionToken: string) {
-  return authStore.saveLogin({
+  return characterLifecycle.saveLogin({
     ...input,
     sessionToken,
     sessionExpiresAt: new Date(Date.now() + 60_000),

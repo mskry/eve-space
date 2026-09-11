@@ -16,12 +16,14 @@ export async function runAffiliationPlanner(context: QueuePlanningContext) {
   try {
     signal?.throwIfAborted()
     if (await affiliationCooldownActive()) {
+      signal?.throwIfAborted()
       await producer.pausePlanner()
       await recordAffiliationPlannerOutcome(outcomes, 'cooldown', planned)
       return { planned, reason: 'cooldown' as const }
     }
 
     const due = await selectDueAffiliationCharacterIds()
+    signal?.throwIfAborted()
     const characterIds = due
       .map((character) => character.characterId)
       .toSorted((left, right) => left - right)
@@ -52,6 +54,7 @@ export async function runAffiliationPlanner(context: QueuePlanningContext) {
     await recordAffiliationPlannerOutcome(outcomes, planned === 0 ? 'idle' : 'scheduled', planned)
     return { planned, reason: 'scheduled' as const }
   } catch (error) {
+    signal?.throwIfAborted()
     await recordAffiliationPlannerOutcome(outcomes, 'failed', planned)
     throw error
   }

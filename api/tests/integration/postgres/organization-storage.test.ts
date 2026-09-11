@@ -41,7 +41,7 @@ let getOrganizationAccessContext: typeof import('../../../src/organization/role-
 let listCurrentOrganizationRoles: typeof import('../../../src/organization/role-store.js').listCurrentOrganizationRoles
 let revokeOrganizationRole: typeof import('../../../src/organization/role-store.js').revokeOrganizationRole
 let registerOrganizationCorporationSource: typeof import('../../../src/organization/corporation-sources.js').registerOrganizationCorporationSource
-let deleteCharacter: typeof import('../../../src/auth/store.js').deleteCharacter
+let deleteCharacter: typeof import('../../../src/auth/character-lifecycle.js').deleteCharacter
 let recomputeOrganizationAccountCompliance: typeof import('../../../src/organization/compliance.js').recomputeOrganizationAccountCompliance
 let recomputeComplianceForManagedCorporation: typeof import('../../../src/organization/compliance.js').recomputeComplianceForManagedCorporation
 let recomputeAllOrganizationAccountsInTransaction: typeof import('../../../src/organization/compliance.js').recomputeAllOrganizationAccountsInTransaction
@@ -107,7 +107,7 @@ beforeAll(async () => {
   } = await import('../../../src/organization/role-store.js'))
   ;({ registerOrganizationCorporationSource } =
     await import('../../../src/organization/corporation-sources.js'))
-  ;({ deleteCharacter } = await import('../../../src/auth/store.js'))
+  ;({ deleteCharacter } = await import('../../../src/auth/character-lifecycle.js'))
   ;({
     recomputeAllOrganizationAccountsInTransaction,
     recomputeComplianceForManagedCorporation,

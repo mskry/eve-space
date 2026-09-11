@@ -28,6 +28,7 @@ const optionalEncryptionKey = optionalValue.refine(
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8788),
+  API_SHUTDOWN_TIMEOUT_MS: positiveInteger.default(30_000),
   DATABASE_URL: z.url(),
   DATABASE_POOL_MAX: positiveInteger.default(10),
   WEB_ORIGIN: z.url().default('http://localhost:3000'),

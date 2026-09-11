@@ -3,7 +3,9 @@ import type { QueuePlanningContext } from './planning-context.js'
 
 export async function runOrganizationOwnerEvidencePlanner(context: QueuePlanningContext) {
   const { producer, signal } = context
+  signal?.throwIfAborted()
   const due = await selectDueOrganizationOwnerEvidence()
+  signal?.throwIfAborted()
   let planned = 0
   for (const { grantId } of due) {
     signal?.throwIfAborted()

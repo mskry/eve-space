@@ -121,6 +121,30 @@ describe('job handlers', () => {
       executeJobHandler('diagnostic', { operationId: 'queue-diagnostic' }, context),
     ).resolves.toEqual({ type: 'retryable', error: failure })
   })
+
+  test('rethrows shutdown cancellation without classifying it', async () => {
+    const controller = new AbortController()
+    mocks.resourceRefresh.mockImplementationOnce(async () => {
+      controller.abort()
+      throw controller.signal.reason
+    })
+    const { executeJobHandler } = await import('../../src/queue/job-handlers.js')
+    const context = { ...executionContext(), signal: controller.signal }
+
+    await expect(
+      executeJobHandler(
+        'resource-refresh',
+        {
+          moduleId: 'member-audit',
+          resourceId: 'trained-skills',
+          subjectKind: 'character',
+          subjectLifecycleId: '35acd527-9539-44ad-aacf-9f8e45232267',
+          subjectId: '1404328063',
+        },
+        context,
+      ),
+    ).rejects.toBe(controller.signal.reason)
+  })
 })
 
 function executionContext() {

@@ -38,8 +38,10 @@ export async function runOutboxRelayBatch(
   options.signal?.throwIfAborted()
   const highWaterMark = options.highWaterMark ?? env.QUEUE_HIGH_WATER_MARK
   const admission = await producer.inspectCapacity({ source: 'outbox', highWaterMark })
+  options.signal?.throwIfAborted()
   if (admission.status === 'rejected') {
     await recordRelayOutcome(outcomes, 'paused', null)
+    options.signal?.throwIfAborted()
     return { admission, claimed: 0, published: 0, failed: 0 }
   }
 
@@ -47,6 +49,7 @@ export async function runOutboxRelayBatch(
   const limit = Math.min(options.batchSize ?? env.OUTBOX_RELAY_BATCH_SIZE, remainingCapacity)
   if (limit === 0) {
     await recordRelayOutcome(outcomes, 'idle', null)
+    options.signal?.throwIfAborted()
     return { admission, claimed: 0, published: 0, failed: 0 }
   }
 
@@ -54,11 +57,13 @@ export async function runOutboxRelayBatch(
     limit,
     claimTtlMs: options.claimTtlMs ?? env.OUTBOX_RELAY_CLAIM_TTL_MS,
   })
+  options.signal?.throwIfAborted()
   const publications = await Promise.all(
     claims.map(async (claim) => {
       options.signal?.throwIfAborted()
       const eventId = claim.event.eventId
       if (!claim.valid) {
+        options.signal?.throwIfAborted()
         const category = 'invalid-event' as const
         console.error('Outbox relay event failed', { eventId, category })
         await store.recordFailure({
@@ -67,6 +72,7 @@ export async function runOutboxRelayBatch(
           category,
           retryDelayMs: options.retryDelayMs ?? env.OUTBOX_RELAY_RETRY_DELAY_MS,
         })
+        options.signal?.throwIfAborted()
         return { outcome: 'failed' as const, category }
       }
       try {
@@ -80,6 +86,7 @@ export async function runOutboxRelayBatch(
         )
         if (produced.status === 'rejected') throw new RelayPublicationError('queue-rejected')
         const acknowledged = await store.acknowledge(eventId, claim.claimToken)
+        options.signal?.throwIfAborted()
         if (!acknowledged) throw new RelayPublicationError('unknown')
         console.info('Outbox relay event published', {
           eventId,
@@ -88,6 +95,7 @@ export async function runOutboxRelayBatch(
         })
         return { outcome: 'published' as const, category: null }
       } catch (error) {
+        options.signal?.throwIfAborted()
         const category = categorizeRelayFailure(error)
         console.error('Outbox relay event failed', {
           eventId,
@@ -101,10 +109,12 @@ export async function runOutboxRelayBatch(
           category,
           retryDelayMs: options.retryDelayMs ?? env.OUTBOX_RELAY_RETRY_DELAY_MS,
         })
+        options.signal?.throwIfAborted()
         return { outcome: 'failed' as const, category }
       }
     }),
   )
+  options.signal?.throwIfAborted()
   const published = publications.filter((result) => result.outcome === 'published').length
   const failed = publications.length - published
   const category = publications.find((result) => result.category)?.category ?? null
@@ -112,6 +122,7 @@ export async function runOutboxRelayBatch(
   if (failed === 0) relayOutcome = published === 0 ? 'idle' : 'published'
   else relayOutcome = published === 0 ? 'failed' : 'partial-failure'
   await recordRelayOutcome(outcomes, relayOutcome, category)
+  options.signal?.throwIfAborted()
 
   return { admission, claimed: claims.length, published, failed }
 }

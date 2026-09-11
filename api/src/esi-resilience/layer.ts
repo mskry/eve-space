@@ -98,8 +98,8 @@ interface RegisteredEsiRepresentationReference {
 interface CharacterEsiAuthorizationResolver {
   readonly cacheAuthorization: EsiCacheAuthorization
   readonly transportPrincipal: string
-  resolve(): Promise<CharacterAuthorization>
-  recheckCacheAuthorization(): Promise<number>
+  resolve(signal?: AbortSignal): Promise<CharacterAuthorization>
+  recheckCacheAuthorization(signal?: AbortSignal): Promise<number>
 }
 
 interface CharacterEsiExecutionResult<Data> {
@@ -116,6 +116,7 @@ interface EsiExecutionResource<Data> {
   operation: EsiOperation
   characterId?: number
   inputs: Readonly<Record<string, unknown>>
+  signal?: AbortSignal
   load(
     authority: { accessToken: string; principal: string } | undefined,
     revalidation: EsiRevalidation,
@@ -127,6 +128,7 @@ interface DirectInternalEsiResource<Data> {
   inputs: Readonly<Record<string, unknown>>
   representationName?: string
   authorization?: EsiCacheAuthorization
+  signal?: AbortSignal
   load(revalidation: EsiRevalidation): Promise<EsiCanonicalLoad<Data>>
   resolveAuthorization?: undefined
 }
@@ -137,6 +139,7 @@ interface LazyInternalEsiResource<Data> {
   inputs: Readonly<Record<string, unknown>>
   representationName?: string
   authorization: EsiCacheAuthorization
+  signal?: AbortSignal
   load?: undefined
   resolveAuthorization(): Promise<{
     authorization: EsiCacheAuthorization
@@ -217,7 +220,9 @@ class EsiResilienceLayer {
       Result
     >,
     input: Input,
+    signal?: AbortSignal,
   ): Promise<EsiCachedResult<Result>> {
+    signal?.throwIfAborted()
     this.#assertRegisteredRepresentation(
       representation,
       representation.operation,
@@ -229,8 +234,16 @@ class EsiResilienceLayer {
     const resource: EsiExecutionResource<Result> = {
       operation: representation.operation,
       inputs: request,
+      signal,
       load: (authorization, revalidation) =>
-        this.#dispatchRepresentation(representation, input, request, revalidation, authorization),
+        this.#dispatchRepresentation(
+          representation,
+          input,
+          request,
+          revalidation,
+          authorization,
+          signal,
+        ),
     }
     if (representation.authorization === 'public')
       return this.#recordResult(
@@ -240,6 +253,7 @@ class EsiResilienceLayer {
           representationName: representation.name,
           load: (revalidation) => resource.load(undefined, revalidation),
         }),
+        signal,
       )
 
     return this.#executeCharacter(
@@ -295,9 +309,11 @@ class EsiResilienceLayer {
             readonly lifecycleId: string
             readonly generation: number
           }
+      readonly signal?: AbortSignal
     },
     inputs: Readonly<Record<string, unknown>>,
   ): Promise<CharacterEsiExecutionResult<unknown>> {
+    request.signal?.throwIfAborted()
     const contract: EsiOperationContract = getEsiOperationContract(request.operation)
     if (contract.authorization.kind === 'public') {
       const result = await this.#recordResult(
@@ -305,14 +321,18 @@ class EsiResilienceLayer {
         this.#get({
           operation: request.operation,
           inputs,
+          signal: request.signal,
           load: (revalidation) =>
             this.#dispatchPlatformOperation(
               request.operation,
               request.definition,
               inputs,
               revalidation,
+              undefined,
+              request.signal,
             ),
         }),
+        request.signal,
       )
       return { result, authorizationGeneration: 0 }
     }
@@ -327,6 +347,7 @@ class EsiResilienceLayer {
         {
           operation: request.operation,
           inputs,
+          signal: request.signal,
           load: (authority, revalidation) => {
             if (!authority) throw new Error('Character ESI authorization is required')
             return this.#dispatchPlatformOperation(
@@ -335,6 +356,7 @@ class EsiResilienceLayer {
               inputs,
               revalidation,
               authority,
+              request.signal,
             )
           },
         },
@@ -348,22 +370,37 @@ class EsiResilienceLayer {
             generation: authorization.generation,
           },
           transportPrincipal: characterEsiPrincipal(authorization.characterId),
-          resolve: () =>
-            getCharacterAuthorizationForLifecycle(
-              authorization.characterId,
-              authorization.lifecycleId,
-              requiredScope,
-            ),
-          recheckCacheAuthorization: async () =>
-            (
-              await getCharacterCacheAuthorizationForLifecycle(
-                authorization.characterId,
-                authorization.lifecycleId,
-                requiredScope,
-              )
-            ).tokenVersion,
+          resolve: (signal) =>
+            signal
+              ? getCharacterAuthorizationForLifecycle(
+                  authorization.characterId,
+                  authorization.lifecycleId,
+                  requiredScope,
+                  signal,
+                )
+              : getCharacterAuthorizationForLifecycle(
+                  authorization.characterId,
+                  authorization.lifecycleId,
+                  requiredScope,
+                ),
+          recheckCacheAuthorization: async (signal) => {
+            const cacheAuthorization = signal
+              ? await getCharacterCacheAuthorizationForLifecycle(
+                  authorization.characterId,
+                  authorization.lifecycleId,
+                  requiredScope,
+                  signal,
+                )
+              : await getCharacterCacheAuthorizationForLifecycle(
+                  authorization.characterId,
+                  authorization.lifecycleId,
+                  requiredScope,
+                )
+            return cacheAuthorization.tokenVersion
+          },
         },
       ),
+      request.signal,
     )
   }
 
@@ -387,10 +424,11 @@ class EsiResilienceLayer {
     request: OperationRequestArguments,
     revalidation: EsiRevalidation,
     authorization?: { readonly accessToken: string; readonly principal: string },
+    signal?: AbortSignal,
   ): Promise<EsiCanonicalLoad<Result>> {
     const policy = getEsiOperationContract(representation.operation)
     const client = new EsiClient({
-      fetch: this.#createTransport(representation.operation, authorization?.principal),
+      fetch: this.#createTransport(representation.operation, authorization?.principal, signal),
       requestTimeoutMs: env.ESI_REQUEST_TIMEOUT_MS,
       ...(authorization ? { token: authorization.accessToken } : {}),
       validateResponses: policy.responseValidation.kind === 'enabled',
@@ -401,7 +439,9 @@ class EsiResilienceLayer {
         representation.descriptor.operationId as StableOperationId,
         withEsiRevalidation(request, revalidation) as never,
       )) as unknown as EsiResponse<WireResult>
+      signal?.throwIfAborted()
     } catch (error) {
+      signal?.throwIfAborted()
       const recovered = representation.recover?.(error, input)
       if (!recovered) throw error
       return { meta: recovered.meta, map: async () => recovered.data }
@@ -447,9 +487,10 @@ class EsiResilienceLayer {
     inputs: Readonly<Record<string, unknown>>,
     revalidation: EsiRevalidation,
     authorization?: { readonly accessToken: string; readonly principal: string },
+    signal?: AbortSignal,
   ): Promise<EsiCanonicalLoad<unknown>> {
     const client = new EsiClient({
-      fetch: this.#createTransport(operation, authorization?.principal),
+      fetch: this.#createTransport(operation, authorization?.principal, signal),
       requestTimeoutMs: env.ESI_REQUEST_TIMEOUT_MS,
       ...(authorization ? { token: authorization.accessToken } : {}),
       validateResponses: definition.contract.responseValidation.kind === 'enabled',
@@ -458,27 +499,37 @@ class EsiResilienceLayer {
       definition.sdkOperationId,
       withEsiRevalidation(inputs, revalidation) as never,
     )
+    signal?.throwIfAborted()
     return { meta: response.meta, map: async () => response.data }
   }
 
-  #createTransport(operation: EsiOperation, principal?: string): typeof globalThis.fetch {
+  #createTransport(
+    operation: EsiOperation,
+    principal?: string,
+    executionSignal?: AbortSignal,
+  ): typeof globalThis.fetch {
     return async (input, init) => {
       const permit = await acquireEsiRequestPermit({
         connection: getCoordinationConnection(),
         operation,
         principal,
         concurrency: env.ESI_OPERATION_CONCURRENCY,
+        signal: executionSignal,
       })
       const permitLifecycle = new EsiRequestPermitLifecycle(permit)
       const transport = createRawEsiTransport({
         onResponseBodySettled: () => void permitLifecycle.release(),
       })
       try {
+        executionSignal?.throwIfAborted()
         const callerSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined)
-        const signal = callerSignal
-          ? AbortSignal.any([callerSignal, permitLifecycle.signal])
-          : permitLifecycle.signal
+        const signal = AbortSignal.any(
+          [callerSignal, executionSignal, permitLifecycle.signal].filter(
+            (candidate): candidate is AbortSignal => candidate !== undefined,
+          ),
+        )
         const response = await transport(input, { ...init, signal })
+        executionSignal?.throwIfAborted()
         const cache = getSharedCacheRedisConnection()
         void Promise.all([
           recordEsiRateMeasurement(cache, { operation, principal, status: response.status }),
@@ -496,9 +547,11 @@ class EsiResilienceLayer {
           status: response.status,
           headers: response.headers,
         }).catch(() => {})
+        executionSignal?.throwIfAborted()
         return response
       } catch (error) {
         await permitLifecycle.release()
+        executionSignal?.throwIfAborted()
         throw error
       }
     }
@@ -527,13 +580,17 @@ class EsiResilienceLayer {
   }
 
   async #executeCharacter<Data>(resource: EsiExecutionResource<Data>, representationName: string) {
+    resource.signal?.throwIfAborted()
     const characterId = resource.characterId
     if (!Number.isSafeInteger(characterId)) throw new Error('Character ESI identity is invalid')
     const policy: EsiOperationContract = getEsiOperationContract(resource.operation)
     if (policy.authorization.kind !== 'character')
       throw new Error(`ESI operation ${resource.operation} is not character-authorized`)
     const requiredScope = policy.authorization.scope
-    const cacheAuthority = await this.#authorizeCharacterCache(Number(characterId), requiredScope)
+    const cacheAuthority = resource.signal
+      ? await this.#authorizeCharacterCache(Number(characterId), requiredScope, resource.signal)
+      : await this.#authorizeCharacterCache(Number(characterId), requiredScope)
+    resource.signal?.throwIfAborted()
     const principal = characterEsiPrincipal(Number(characterId))
     const authorization = {
       cacheAuthorization: {
@@ -542,9 +599,16 @@ class EsiResilienceLayer {
         generation: cacheAuthority.tokenVersion,
       },
       transportPrincipal: principal,
-      resolve: () => this.#authorizeCharacter(Number(characterId), requiredScope),
-      recheckCacheAuthorization: async () =>
-        (await this.#authorizeCharacterCache(Number(characterId), requiredScope)).tokenVersion,
+      resolve: (signal?: AbortSignal) =>
+        signal
+          ? this.#authorizeCharacter(Number(characterId), requiredScope, signal)
+          : this.#authorizeCharacter(Number(characterId), requiredScope),
+      recheckCacheAuthorization: async (signal?: AbortSignal) =>
+        (
+          await (signal
+            ? this.#authorizeCharacterCache(Number(characterId), requiredScope, signal)
+            : this.#authorizeCharacterCache(Number(characterId), requiredScope))
+        ).tokenVersion,
     }
     const execution = await this.#recordCharacterResult(
       resource.operation,
@@ -554,6 +618,7 @@ class EsiResilienceLayer {
         authorization.cacheAuthorization,
         representationName,
       ),
+      resource.signal,
     )
     return execution.result
   }
@@ -598,14 +663,17 @@ class EsiResilienceLayer {
     cacheAuthorization = authorization.cacheAuthorization,
     representationName?: string,
   ): Promise<CharacterEsiExecutionResult<Data>> {
+    resource.signal?.throwIfAborted()
     let authorizationGeneration = cacheAuthorization.generation
     const result = await this.#get({
       operation: resource.operation,
       inputs: resource.inputs,
       representationName,
       authorization: cacheAuthorization,
+      signal: resource.signal,
       resolveAuthorization: async () => {
-        const resolved = await authorization.resolve()
+        const resolved = await authorization.resolve(resource.signal)
+        resource.signal?.throwIfAborted()
         authorizationGeneration = resolved.tokenVersion
         return {
           authorization: {
@@ -625,7 +693,8 @@ class EsiResilienceLayer {
     })
     if (result.source !== 'cache') return { result, authorizationGeneration }
 
-    const currentGeneration = await authorization.recheckCacheAuthorization()
+    const currentGeneration = await authorization.recheckCacheAuthorization(resource.signal)
+    resource.signal?.throwIfAborted()
     if (currentGeneration === authorizationGeneration) return { result, authorizationGeneration }
     return this.#getCharacterAuthorized(
       resource,
@@ -641,31 +710,44 @@ class EsiResilienceLayer {
   async #recordCharacterResult<Data>(
     operation: EsiOperation,
     pending: Promise<CharacterEsiExecutionResult<Data>>,
+    signal?: AbortSignal,
   ) {
     try {
       const execution = await pending
       recordEsiCacheSource(operation, execution.result.source, execution.result.stale)
       return execution
     } catch (error) {
+      signal?.throwIfAborted()
       markEsiOperationErrorCompleted(error)
       throw error
     }
   }
 
-  async #recordResult<Data>(operation: EsiOperation, pending: Promise<EsiCachedResult<Data>>) {
+  async #recordResult<Data>(
+    operation: EsiOperation,
+    pending: Promise<EsiCachedResult<Data>>,
+    signal?: AbortSignal,
+  ) {
     try {
       const result = await pending
       recordEsiCacheSource(operation, result.source, result.stale)
       return result
     } catch (error) {
+      signal?.throwIfAborted()
       markEsiOperationErrorCompleted(error)
       throw error
     }
   }
 
   async #get<Data>(resource: InternalEsiResource<Data>): Promise<EsiCachedResult<Data>> {
+    resource.signal?.throwIfAborted()
     const policy = getEsiOperationContract(resource.operation)
-    const resourceRevision = await this.#resourceRevisions.resolve(policy, resource.authorization)
+    const resourceRevision = await this.#resourceRevisions.resolve(
+      policy,
+      resource.authorization,
+      resource.signal,
+    )
+    resource.signal?.throwIfAborted()
     if (resourceRevision === null) return this.#loadUncached(resource)
     const identity = createEsiRepresentationIdentity({
       operation: resource.operation,
@@ -677,7 +759,8 @@ class EsiResilienceLayer {
     })
     if (policy.cache.kind === 'none') return this.#loadUncached(resource)
 
-    const dependencies = await this.#resolveDependencies()
+    const dependencies = await this.#resolveDependencies(resource.signal)
+    resource.signal?.throwIfAborted()
     const context: EsiRequestContext<Data> = {
       resource,
       identity,
@@ -686,6 +769,7 @@ class EsiResilienceLayer {
       dependencies,
     }
     const envelope = await this.#readCachedEnvelope(context)
+    resource.signal?.throwIfAborted()
 
     if (envelope && isEnvelopeFresh(envelope)) return toCachedResult(envelope, 'cache', false)
 
@@ -700,6 +784,7 @@ class EsiResilienceLayer {
     if (l1Envelope || !context.dependencies.canReadL2) return l1Envelope
 
     const l2Envelope = await this.#readL2<Data>(context)
+    context.resource.signal?.throwIfAborted()
     if (l2Envelope) this.#l1.set(context.key, l2Envelope)
     return l2Envelope
   }
@@ -719,7 +804,13 @@ class EsiResilienceLayer {
     let lease: EsiRequestLease | undefined
     try {
       lease = await acquireEsiRequestLease(this.coordination, context.identity)
+      if (context.resource.signal?.aborted) {
+        await this.#releaseLease(lease)
+        context.resource.signal.throwIfAborted()
+      }
+      context.resource.signal?.throwIfAborted()
     } catch {
+      context.resource.signal?.throwIfAborted()
       this.#namespaceValidatedAt = 0
       return this.#loadAndStore(withoutL2Writes(context), stale, undefined)
     }
@@ -732,6 +823,7 @@ class EsiResilienceLayer {
       if (follower.published) return toCachedResult(follower.published, 'cache', false)
       return this.#loadAndStore(context, stale, follower.lease)
     } catch (error) {
+      context.resource.signal?.throwIfAborted()
       return this.#serveStaleOrThrow(stale, policy, error)
     }
   }
@@ -742,11 +834,14 @@ class EsiResilienceLayer {
     let load: EsiCanonicalLoad<Data>
     try {
       resolved = await this.#resolveResourceAuthorization(resource)
+      resource.signal?.throwIfAborted()
       load = await this.#loadWithRetry(resolved, {}, undefined, policy)
     } catch (error) {
+      resource.signal?.throwIfAborted()
       throw toEsiQuotaError(error)
     }
     const result = { data: await load.map(), meta: load.meta }
+    resource.signal?.throwIfAborted()
     const envelope = createCacheEnvelope({
       data: result.data,
       metadata: result.meta,
@@ -772,8 +867,10 @@ class EsiResilienceLayer {
       let resolvedContext: ResolvedEsiRequestContext<Data>
       try {
         const resource = await this.#resolveResourceAuthorization(context.resource)
+        context.resource.signal?.throwIfAborted()
         resolvedContext = { ...context, resource }
       } catch (error) {
+        context.resource.signal?.throwIfAborted()
         return await this.#recoverLoadFailure(context, stale, fallback, lease, error)
       }
       const { resource } = resolvedContext
@@ -790,6 +887,7 @@ class EsiResilienceLayer {
           context.policy,
         )
       } catch (error) {
+        context.resource.signal?.throwIfAborted()
         return await this.#recoverLoadFailure(resolvedContext, stale, fallback, lease, error)
       }
       return await this.#mapAndPublish(resolvedContext, load, lease)
@@ -806,6 +904,7 @@ class EsiResilienceLayer {
   ) {
     const { policy } = context
     const response = { data: await load.map(), meta: load.meta }
+    context.resource.signal?.throwIfAborted()
     const envelope = createCacheEnvelope({
       data: response.data,
       metadata: response.meta,
@@ -819,6 +918,7 @@ class EsiResilienceLayer {
       fence: lease?.fence ?? 0,
     })
     if (await this.#publish(context, envelope, lease)) this.#l1.set(context.key, envelope)
+    context.resource.signal?.throwIfAborted()
     return toCachedResult(envelope, 'esi', false, undefined, getEsiQuota(response.meta))
   }
 
@@ -831,10 +931,12 @@ class EsiResilienceLayer {
     const attempts = policy.retry.kind === 'idempotent' ? policy.retry.attempts : 1
     let delay = policy.retry.kind === 'idempotent' ? policy.retry.initialDelayMilliseconds : 0
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      resource.signal?.throwIfAborted()
       try {
         // oxlint-disable-next-line no-await-in-loop
         return await resource.load(revalidation)
       } catch (error) {
+        resource.signal?.throwIfAborted()
         if (
           // Prefer an already validated stale value over spending more upstream attempts.
           this.#canServeStale(stale, policy, error) ||
@@ -843,7 +945,7 @@ class EsiResilienceLayer {
         )
           throw error
         // oxlint-disable-next-line no-await-in-loop
-        await wait(randomInt(delay + 1))
+        await wait(randomInt(delay + 1), resource.signal)
         if (policy.retry.kind === 'idempotent')
           delay = Math.min(delay * 2, policy.retry.maximumDelayMilliseconds)
       }
@@ -858,6 +960,7 @@ class EsiResilienceLayer {
     lease: EsiRequestLease | undefined,
     error: unknown,
   ): Promise<EsiCachedResult<Data>> {
+    context.resource.signal?.throwIfAborted()
     const metadata = getErrorMetadata(error)
     if (getErrorStatus(error) === 304 && revalidationEnvelope) {
       const envelope = updateNotModifiedEnvelope({
@@ -868,6 +971,7 @@ class EsiResilienceLayer {
         authorization: context.resource.authorization,
       })
       if (await this.#publish(context, envelope, lease)) this.#l1.set(context.key, envelope)
+      context.resource.signal?.throwIfAborted()
       return toCachedResult(envelope, 'not-modified', false, undefined, getEsiQuota(metadata))
     }
     return this.#serveStaleOrThrow(fallbackEnvelope, context.policy, toEsiQuotaError(error))
@@ -883,6 +987,7 @@ class EsiResilienceLayer {
       inputs: resource.inputs,
       representationName: resource.representationName,
       authorization,
+      signal: resource.signal,
       load,
     }
   }
@@ -934,19 +1039,26 @@ class EsiResilienceLayer {
   }> {
     const deadline = Date.now() + env.ESI_OPERATION_QUEUE_TIMEOUT_MS
     while (Date.now() < deadline) {
+      context.resource.signal?.throwIfAborted()
       let ttlMs: number
       try {
         // oxlint-disable-next-line no-await-in-loop
         ttlMs = await getEsiRequestLeaseTtl(this.coordination, context.identity)
+        context.resource.signal?.throwIfAborted()
       } catch {
+        context.resource.signal?.throwIfAborted()
         this.#namespaceValidatedAt = 0
         return { lease: undefined, coordinationUnavailable: true }
       }
       if (ttlMs > 0) {
         // oxlint-disable-next-line no-await-in-loop
-        await wait(Math.min(followerWaitMs, ttlMs, Math.max(1, deadline - Date.now())))
+        await wait(
+          Math.min(followerWaitMs, ttlMs, Math.max(1, deadline - Date.now())),
+          context.resource.signal,
+        )
         // oxlint-disable-next-line no-await-in-loop
         const published = await this.#readL2<Data>(context)
+        context.resource.signal?.throwIfAborted()
         if (published && isEnvelopeFresh(published)) {
           this.#l1.set(context.key, published)
           return { lease: undefined, published }
@@ -956,7 +1068,14 @@ class EsiResilienceLayer {
       try {
         // oxlint-disable-next-line no-await-in-loop
         lease = await acquireEsiRequestLease(this.coordination, context.identity)
+        if (context.resource.signal?.aborted) {
+          // oxlint-disable-next-line no-await-in-loop
+          await this.#releaseLease(lease)
+          context.resource.signal.throwIfAborted()
+        }
+        context.resource.signal?.throwIfAborted()
       } catch {
+        context.resource.signal?.throwIfAborted()
         this.#namespaceValidatedAt = 0
         return { lease: undefined, coordinationUnavailable: true }
       }
@@ -965,13 +1084,15 @@ class EsiResilienceLayer {
     throw new EsiRequestWaitTimeoutError()
   }
 
-  async #resolveDependencies(): Promise<EsiCacheDependencies> {
+  async #resolveDependencies(signal?: AbortSignal): Promise<EsiCacheDependencies> {
+    signal?.throwIfAborted()
     if (this.#namespaceValidatedAt + namespaceValidationIntervalMs > Date.now())
       return this.#availableDependencies()
 
     try {
       this.#namespaceInitialization ??= initializeCacheNamespace(this.coordination)
       const namespace = await this.#namespaceInitialization
+      signal?.throwIfAborted()
       if (namespace !== this.#namespace) {
         this.#namespace = namespace
         this.#l1.clear()
@@ -979,6 +1100,7 @@ class EsiResilienceLayer {
       this.#namespaceValidatedAt = Date.now()
       return this.#availableDependencies()
     } catch {
+      signal?.throwIfAborted()
       // Coordination loss invalidates every distributed fence; only L1 may be used conservatively.
       this.#namespaceValidatedAt = 0
       return {
@@ -1017,6 +1139,7 @@ class EsiResilienceLayer {
         this.cache.get(context.key),
         getCommittedEsiFence(this.coordination, context.identity),
       ])
+      context.resource.signal?.throwIfAborted()
       if (!serialized || committedFence === undefined) return undefined
       const parsed = parseEnvelope<Data>(serialized)
       if (!parsed.success) {
@@ -1032,6 +1155,7 @@ class EsiResilienceLayer {
         return undefined
       return envelope
     } catch {
+      context.resource.signal?.throwIfAborted()
       return undefined
     }
   }
@@ -1045,9 +1169,11 @@ class EsiResilienceLayer {
     const committed = await commitEsiFence(this.coordination, context.identity, lease).catch(
       () => false,
     )
+    context.resource.signal?.throwIfAborted()
     if (!committed) return false
     const ttlMs = Math.max(1, envelope.retainUntil - Date.now())
     await this.cache.set(context.key, JSON.stringify(envelope), 'PX', ttlMs).catch(() => {})
+    context.resource.signal?.throwIfAborted()
     return true
   }
 }
@@ -1060,8 +1186,8 @@ type EsiExecutionLayer = Pick<
 let executionLayerInstance: EsiResilienceLayer | undefined
 
 export const esiExecutionLayer: EsiExecutionLayer = {
-  executeRepresentation: (representation, input) =>
-    executionLayer().executeRepresentation(representation, input),
+  executeRepresentation: (representation, input, signal) =>
+    executionLayer().executeRepresentation(representation, input, signal),
   executeMutationRepresentation: (representation, input) =>
     executionLayer().executeMutationRepresentation(representation, input),
   executePlatformOperation: (request, inputs) =>

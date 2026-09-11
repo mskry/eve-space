@@ -27,6 +27,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -38,6 +39,123 @@ function metadataResponse() {
 }
 
 describe('EVE SSO requests', () => {
+  test('bounds metadata discovery without exposing credentials', async () => {
+    const { controllers, timeout } = mockTimeoutSignals()
+    fetchMock.mockImplementation(waitForAbort)
+    const { createAuthorizationUrl } = await import('../../src/auth/sso.js')
+    const pending = createAuthorizationUrl('sensitive-state').catch((error: unknown) => error)
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce())
+    controllers[0]!.abort(timeoutFailure())
+
+    const error = await pending
+    expect(timeout).toHaveBeenCalledWith(7_500)
+    expectSafeSsoTransportFailure(error, ['test-secret', 'sensitive-state'])
+  })
+
+  test('bounds authorization-code exchange without exposing the code or client secret', async () => {
+    const { controllers, timeout } = mockTimeoutSignals()
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockImplementationOnce(waitForAbort)
+    const { exchangeAuthorizationCode } = await import('../../src/auth/sso.js')
+    const code = 'sensitive-authorization-code'
+    const pending = exchangeAuthorizationCode(code).catch((error: unknown) => error)
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    controllers.at(-1)!.abort(timeoutFailure())
+
+    const error = await pending
+    expect(timeout).toHaveBeenLastCalledWith(15_000)
+    expectSafeSsoTransportFailure(error, [code, 'test-secret'])
+  })
+
+  test('bounds refresh without exposing the refresh token or client secret', async () => {
+    const { controllers, timeout } = mockTimeoutSignals()
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockImplementationOnce(waitForAbort)
+    const { refreshAccessToken } = await import('../../src/auth/sso.js')
+    const refreshToken = 'sensitive-refresh-token'
+    const pending = refreshAccessToken(refreshToken).catch((error: unknown) => error)
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    controllers.at(-1)!.abort(timeoutFailure())
+
+    const error = await pending
+    expect(timeout).toHaveBeenLastCalledWith(15_000)
+    expectSafeSsoTransportFailure(error, [refreshToken, 'test-secret'])
+  })
+
+  test('bounds key retrieval without exposing the access token or client secret', async () => {
+    const { controllers, timeout } = mockTimeoutSignals()
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockImplementationOnce(waitForAbort)
+    const { verifyAccessToken } = await import('../../src/auth/sso.js')
+    const accessToken = [
+      Buffer.from(JSON.stringify({ alg: 'RS256', kid: 'sensitive-key' })).toString('base64url'),
+      Buffer.from(JSON.stringify({ aud: 'EVE Online' })).toString('base64url'),
+      'sensitive-signature',
+    ].join('.')
+    const pending = verifyAccessToken(accessToken).catch((error: unknown) => error)
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    controllers.at(-1)!.abort(timeoutFailure())
+
+    const error = await pending
+    expect(timeout).toHaveBeenCalledWith(7_500)
+    expectSafeSsoTransportFailure(error, [accessToken, 'sensitive-signature', 'test-secret'])
+  })
+
+  test('stops an authorization-code exchange when its caller cancels', async () => {
+    mockTimeoutSignals()
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockImplementationOnce(waitForAbort)
+    const { exchangeAuthorizationCode } = await import('../../src/auth/sso.js')
+    const { isTransientSsoError } = await import('../../src/auth/sso-errors.js')
+    const caller = new AbortController()
+    const pending = exchangeAuthorizationCode('sensitive-code', caller.signal).catch(
+      (error: unknown) => error,
+    )
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    caller.abort(new DOMException('Caller cancelled', 'AbortError'))
+
+    const error = await pending
+    expectSafeSsoTransportFailure(error, ['sensitive-code', 'test-secret'], 'AbortError')
+    expect(isTransientSsoError(error)).toBe(true)
+  })
+
+  test('isolates concurrent metadata discovery cancellation by caller', async () => {
+    let resolveSecond: ((response: Response) => void) | undefined
+    fetchMock.mockImplementationOnce(waitForAbort).mockImplementationOnce(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          resolveSecond = resolve
+          const signal = init?.signal
+          if (!signal) throw new Error('Expected a bounded EVE SSO signal')
+          if (signal.aborted) return reject(signal.reason)
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        }),
+    )
+    const { createAuthorizationUrl } = await import('../../src/auth/sso.js')
+    const firstCaller = new AbortController()
+    const secondCaller = new AbortController()
+    const first = createAuthorizationUrl('state-one', firstCaller.signal).catch(
+      (error: unknown) => error,
+    )
+    const second = createAuthorizationUrl('state-two', secondCaller.signal)
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    firstCaller.abort(new DOMException('First caller cancelled', 'AbortError'))
+
+    await expect(first).resolves.toMatchObject({
+      name: 'SsoTransportError',
+      cause: expect.objectContaining({ name: 'AbortError' }),
+    })
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit | undefined)?.signal?.aborted).toBe(true)
+    expect((fetchMock.mock.calls[1]?.[1] as RequestInit | undefined)?.signal?.aborted).toBe(false)
+
+    resolveSecond?.(metadataResponse())
+    await expect(second).resolves.toBeInstanceOf(URL)
+    await expect(createAuthorizationUrl('state-three')).resolves.toBeInstanceOf(URL)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   test('retries after a failed discovery instead of caching the rejection', async () => {
     fetchMock.mockRejectedValueOnce(new Error('The operation was aborted due to timeout'))
     const { createAuthorizationUrl } = await import('../../src/auth/sso.js')
@@ -70,6 +188,50 @@ describe('EVE SSO requests', () => {
 
     fetchMock.mockResolvedValueOnce(metadataResponse())
     await expect(createAuthorizationUrl('state-two')).resolves.toBeInstanceOf(URL)
+  })
+
+  test('cancels every unneeded failed response body before preserving HTTP classification', async () => {
+    const metadataFailure = cancellableFailureResponse(503, new Error('cancel failed'))
+    fetchMock.mockResolvedValueOnce(metadataFailure.response)
+    let sso = await import('../../src/auth/sso.js')
+
+    await expect(sso.createAuthorizationUrl('state')).rejects.toMatchObject({
+      name: 'SsoHttpError',
+      operation: 'EVE SSO metadata',
+      upstreamStatus: 503,
+    })
+    expect(metadataFailure.cancel).toHaveBeenCalledOnce()
+
+    vi.resetModules()
+    fetchMock.mockReset()
+    const exchangeFailure = cancellableFailureResponse(502)
+    const refreshFailure = cancellableFailureResponse(503)
+    const jwksFailure = cancellableFailureResponse(429)
+    fetchMock
+      .mockResolvedValueOnce(metadataResponse())
+      .mockResolvedValueOnce(exchangeFailure.response)
+      .mockResolvedValueOnce(refreshFailure.response)
+      .mockResolvedValueOnce(jwksFailure.response)
+    sso = await import('../../src/auth/sso.js')
+
+    await expect(sso.exchangeAuthorizationCode('code')).rejects.toMatchObject({
+      name: 'SsoHttpError',
+      operation: 'EVE token exchange',
+      upstreamStatus: 502,
+    })
+    await expect(sso.refreshAccessToken('refresh')).rejects.toMatchObject({
+      name: 'SsoHttpError',
+      operation: 'EVE token refresh',
+      upstreamStatus: 503,
+    })
+    await expect(sso.verifyAccessToken(unsignedToken())).rejects.toMatchObject({
+      name: 'SsoHttpError',
+      operation: 'EVE SSO JWKS',
+      upstreamStatus: 429,
+    })
+    expect(exchangeFailure.cancel).toHaveBeenCalledOnce()
+    expect(refreshFailure.cancel).toHaveBeenCalledOnce()
+    expect(jwksFailure.cancel).toHaveBeenCalledOnce()
   })
 
   test('identifies discovery transport and transient HTTP failures', async () => {
@@ -143,12 +305,11 @@ describe('EVE SSO requests', () => {
     expect(errors.isTransientSsoError(unavailable)).toBe(true)
 
     vi.resetModules()
-    fetchMock.mockResolvedValueOnce(metadataResponse()).mockResolvedValueOnce(
-      new Response(JSON.stringify({ error: 'invalid_grant' }), {
-        status: 400,
-        headers: { 'content-type': 'application/json' },
-      }),
-    )
+    const rejectionResponse = new Response(JSON.stringify({ error: 'invalid_grant' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    })
+    fetchMock.mockResolvedValueOnce(metadataResponse()).mockResolvedValueOnce(rejectionResponse)
     sso = await import('../../src/auth/sso.js')
     errors = await import('../../src/auth/sso-errors.js')
 
@@ -158,6 +319,7 @@ describe('EVE SSO requests', () => {
       status: 401,
       upstreamStatus: 400,
     })
+    expect(rejectionResponse.bodyUsed).toBe(true)
     expect(errors.isTransientSsoError(rejected)).toBe(false)
   })
 
@@ -272,3 +434,67 @@ describe('EVE SSO requests', () => {
     })
   })
 })
+
+function mockTimeoutSignals() {
+  const controllers: AbortController[] = []
+  const timeout = vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
+    const controller = new AbortController()
+    controllers.push(controller)
+    return controller.signal
+  })
+  return { controllers, timeout }
+}
+
+function waitForAbort(_input: RequestInfo | URL, init?: RequestInit) {
+  return new Promise<Response>((_resolve, reject) => {
+    const signal = init?.signal
+    if (!signal) throw new Error('Expected a bounded EVE SSO signal')
+    if (signal.aborted) return reject(signal.reason)
+    signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+  })
+}
+
+function cancellableFailureResponse(status: number, cancelFailure?: Error) {
+  const cancel = vi.fn(() => {
+    if (cancelFailure) return Promise.reject(cancelFailure)
+  })
+  const response = new Response(
+    new ReadableStream<Uint8Array>({
+      cancel,
+    }),
+    { status },
+  )
+  return { cancel, response }
+}
+
+function unsignedToken() {
+  return [
+    Buffer.from(JSON.stringify({ alg: 'RS256', kid: 'key' })).toString('base64url'),
+    Buffer.from(JSON.stringify({ aud: 'EVE Online' })).toString('base64url'),
+    'signature',
+  ].join('.')
+}
+
+function timeoutFailure() {
+  return new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+}
+
+function expectSafeSsoTransportFailure(
+  error: unknown,
+  sensitiveValues: string[],
+  causeName = 'TimeoutError',
+) {
+  expect(error).toMatchObject({
+    name: 'SsoTransportError',
+    message: 'EVE SSO request failed',
+    cause: expect.objectContaining({ name: causeName }),
+  })
+  const rendered = renderError(error)
+  for (const sensitiveValue of sensitiveValues) expect(rendered).not.toContain(sensitiveValue)
+}
+
+function renderError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error)
+  const cause = 'cause' in error ? renderError(error.cause) : ''
+  return [error.name, error.message, error.stack, cause].join('\n')
+}

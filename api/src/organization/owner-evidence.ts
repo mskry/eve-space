@@ -1,5 +1,5 @@
 import { and, eq, isNull, lte, or } from 'drizzle-orm'
-import { CharacterTokenNotFoundError } from '../auth/store.js'
+import { CharacterTokenNotFoundError } from '../auth/character-token-store.js'
 import { EveSsoTokenRefreshError } from '../auth/sso.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { getCharacterCorporationRoles } from '../characters/corporation-roles.js'
@@ -43,6 +43,7 @@ interface SuccessfulEvidenceRefresh {
   observedAllianceId: number | null
   observedAt: Date
   checkedAt: Date
+  signal?: AbortSignal
 }
 
 export async function selectDueOrganizationOwnerEvidence(
@@ -90,14 +91,23 @@ export async function selectDueOrganizationOwnerEvidence(
     .limit(Math.max(1, limit))
 }
 
-export async function refreshOrganizationOwnerEvidence(grantId: string) {
+export async function refreshOrganizationOwnerEvidence(
+  grantId: string,
+  options: { readonly signal?: AbortSignal } = {},
+) {
+  options.signal?.throwIfAborted()
   const snapshot = await loadRefreshSnapshot(grantId)
+  options.signal?.throwIfAborted()
   if (!snapshot) return 'ineligible' as const
 
   const checkedAt = new Date()
   try {
-    const affiliation = await getCharacterAffiliationObservation(snapshot.characterId)
+    const affiliation = await getCharacterAffiliationObservation(
+      snapshot.characterId,
+      options.signal,
+    )
     if (!affiliation || affiliation.stale) throw new OrganizationAuthorityError('stale-affiliation')
+    options.signal?.throwIfAborted()
     await persistAffiliationObservations(
       [snapshot.characterId],
       [
@@ -108,7 +118,9 @@ export async function refreshOrganizationOwnerEvidence(grantId: string) {
         },
       ],
       affiliation.affiliationCheckedAt,
+      options.signal,
     )
+    options.signal?.throwIfAborted()
     const authorityCorporationId = await resolveOrganizationAuthorityCorporation(
       {
         organizationType: snapshot.organizationType,
@@ -116,7 +128,9 @@ export async function refreshOrganizationOwnerEvidence(grantId: string) {
       },
       affiliation,
     )
-    const roles = await getCharacterCorporationRoles(snapshot.characterId)
+    options.signal?.throwIfAborted()
+    const roles = await getCharacterCorporationRoles(snapshot.characterId, options.signal)
+    options.signal?.throwIfAborted()
     assertOrganizationOwnerDirectorRole(roles)
     const outcome = await applySuccessfulEvidenceRefresh({
       grantId,
@@ -126,18 +140,28 @@ export async function refreshOrganizationOwnerEvidence(grantId: string) {
       observedAllianceId: affiliation.allianceId,
       observedAt: affiliation.affiliationCheckedAt,
       checkedAt,
+      signal: options.signal,
     })
+    options.signal?.throwIfAborted()
     if (outcome !== 'superseded') return outcome
     return applyEvidenceFailure(
       grantId,
       snapshot.organizationVersion,
       { kind: 'strict', failureClass: 'affiliation-changed' },
       checkedAt,
+      options.signal,
     )
   } catch (error) {
+    options.signal?.throwIfAborted()
     const failure = classifyOrganizationAuthorityFailure(error)
     if (!failure) throw error
-    return applyEvidenceFailure(grantId, snapshot.organizationVersion, failure, checkedAt)
+    return applyEvidenceFailure(
+      grantId,
+      snapshot.organizationVersion,
+      failure,
+      checkedAt,
+      options.signal,
+    )
   }
 }
 
@@ -202,12 +226,14 @@ async function loadRefreshSnapshot(grantId: string) {
 }
 
 async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) {
+  input.signal?.throwIfAborted()
   return db.transaction(async (transaction) => {
     const [organization] = await transaction
       .select({ organizationVersion: deploymentSettings.organizationVersion })
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
       .for('update')
+    input.signal?.throwIfAborted()
     if (organization?.organizationVersion !== input.organizationVersion)
       return 'superseded' as const
 
@@ -231,6 +257,7 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
         ),
       )
       .for('update')
+    input.signal?.throwIfAborted()
     if (
       current?.corporationId !== input.authorityCorporationId ||
       current.allianceId !== input.observedAllianceId ||
@@ -254,6 +281,7 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
         updatedAt: input.checkedAt,
       })
       .where(eq(organizationAuthorityEvidence.grantId, input.grantId))
+    input.signal?.throwIfAborted()
     return 'fresh' as const
   })
 }
@@ -263,7 +291,9 @@ async function applyEvidenceFailure(
   organizationVersion: number,
   failure: AuthorityFailure,
   checkedAt: Date,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted()
   return db.transaction(async (transaction) => {
     const [organization] = await transaction
       .select({
@@ -275,6 +305,7 @@ async function applyEvidenceFailure(
       .from(deploymentSettings)
       .where(eq(deploymentSettings.id, 1))
       .for('update')
+    signal?.throwIfAborted()
     if (organization?.organizationVersion !== organizationVersion) return 'superseded' as const
 
     const [current] = await transaction
@@ -293,6 +324,7 @@ async function applyEvidenceFailure(
       )
       .where(eq(organizationAuthorityEvidence.grantId, grantId))
       .for('update')
+    signal?.throwIfAborted()
     if (!current || current.revokedAt) return 'superseded' as const
 
     const newDeadline = new Date(
@@ -318,6 +350,7 @@ async function applyEvidenceFailure(
           updatedAt: checkedAt,
         })
         .where(eq(organizationRoleGrants.grantId, grantId))
+      signal?.throwIfAborted()
       await transaction
         .update(organizationAuthorityEvidence)
         .set({
@@ -329,6 +362,7 @@ async function applyEvidenceFailure(
           updatedAt: checkedAt,
         })
         .where(eq(organizationAuthorityEvidence.grantId, grantId))
+      signal?.throwIfAborted()
       await appendOrganizationAuditEvent(transaction, {
         deploymentId: 1,
         organizationVersion,
@@ -342,6 +376,7 @@ async function applyEvidenceFailure(
         outcome: 'revoked',
         occurredAt: checkedAt,
       })
+      signal?.throwIfAborted()
       return 'revoked' as const
     }
 
@@ -356,6 +391,7 @@ async function applyEvidenceFailure(
         updatedAt: checkedAt,
       })
       .where(eq(organizationAuthorityEvidence.grantId, grantId))
+    signal?.throwIfAborted()
     return 'review-required' as const
   })
 }

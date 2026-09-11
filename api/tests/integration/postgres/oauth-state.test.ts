@@ -6,7 +6,7 @@ import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.
 
 let container: StartedTestContainer
 let connection: postgres.Sql
-let authStore: typeof import('../../../src/auth/store.js')
+let oauthStateStore: typeof import('../../../src/auth/oauth-state-store.js')
 let dbClient: typeof import('../../../src/db/client.js')
 let legacyReturnPath: string | null | undefined
 const databasePassword = randomUUID()
@@ -55,7 +55,7 @@ beforeAll(async () => {
   legacyReturnPath = legacyState?.return_path
   await runMigrations(connection, [migrations[loginReturnPathMigrationIndex]!])
 
-  authStore = await import('../../../src/auth/store.js')
+  oauthStateStore = await import('../../../src/auth/oauth-state-store.js')
   dbClient = await import('../../../src/db/client.js')
 })
 
@@ -141,7 +141,7 @@ describe('OAuth state return path persistence', () => {
     const state = 'raw-oauth-state'
     const returnPath = `/characters/${characterId}/mail?label=7`
 
-    await authStore.storeOAuthState(state, {
+    await oauthStateStore.storeOAuthState(state, {
       intent: 'reauthorize',
       userId,
       characterId,
@@ -153,13 +153,13 @@ describe('OAuth state return path persistence', () => {
 
     expect(stored).toEqual({ state_hash: hashState(state), return_path: returnPath })
     expect(stored?.state_hash).not.toBe(state)
-    await expect(authStore.consumeOAuthState(state)).resolves.toEqual({
+    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toEqual({
       intent: 'reauthorize',
       userId,
       characterId,
       returnPath,
     })
-    await expect(authStore.consumeOAuthState(state)).resolves.toBeNull()
+    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toBeNull()
     const [remaining] = await connection<{ count: number }[]>`
       select count(*)::integer as count from oauth_states
     `
@@ -170,23 +170,23 @@ describe('OAuth state return path persistence', () => {
     const state = 'login-oauth-state'
     const returnPath = `/characters/${characterId}?tab=wallet#activity`
 
-    await authStore.storeOAuthState(state, { intent: 'login', returnPath })
+    await oauthStateStore.storeOAuthState(state, { intent: 'login', returnPath })
 
-    await expect(authStore.consumeOAuthState(state)).resolves.toEqual({
+    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toEqual({
       intent: 'login',
       returnPath,
     })
-    await expect(authStore.consumeOAuthState(state)).resolves.toBeNull()
+    await expect(oauthStateStore.consumeOAuthState(state)).resolves.toBeNull()
   })
 
   test('preserves legacy omitted paths and stores null for other intents', async () => {
     const userId = await insertOwnedCharacter()
-    await authStore.storeOAuthState('legacy-reauthorization', {
+    await oauthStateStore.storeOAuthState('legacy-reauthorization', {
       intent: 'reauthorize',
       userId,
       characterId,
     })
-    await authStore.storeOAuthState('login-state', { intent: 'login' })
+    await oauthStateStore.storeOAuthState('login-state', { intent: 'login' })
     const rows = await connection<{ intent: string; return_path: string | null }[]>`
       select intent, return_path from oauth_states order by intent
     `
@@ -195,7 +195,7 @@ describe('OAuth state return path persistence', () => {
       { intent: 'login', return_path: null },
       { intent: 'reauthorize', return_path: null },
     ])
-    await expect(authStore.consumeOAuthState('legacy-reauthorization')).resolves.toEqual({
+    await expect(oauthStateStore.consumeOAuthState('legacy-reauthorization')).resolves.toEqual({
       intent: 'reauthorize',
       userId,
       characterId,
@@ -210,11 +210,11 @@ describe('OAuth state return path persistence', () => {
       characterId,
       returnPath: `/characters/${characterId}/mail`,
     }
-    await authStore.storeOAuthState('concurrent-state', context)
+    await oauthStateStore.storeOAuthState('concurrent-state', context)
 
     const results = await Promise.all([
-      authStore.consumeOAuthState('concurrent-state'),
-      authStore.consumeOAuthState('concurrent-state'),
+      oauthStateStore.consumeOAuthState('concurrent-state'),
+      oauthStateStore.consumeOAuthState('concurrent-state'),
     ])
 
     expect(results.filter((result) => result === null)).toHaveLength(1)
@@ -241,7 +241,7 @@ describe('OAuth state return path persistence', () => {
       organizationId: 1_000_166,
       organizationVersion: 1,
     }
-    await authStore.storeOAuthState('owner-claim-state', context)
+    await oauthStateStore.storeOAuthState('owner-claim-state', context)
 
     const [stored] = await connection<
       {
@@ -261,8 +261,8 @@ describe('OAuth state return path persistence', () => {
     })
 
     const results = await Promise.all([
-      authStore.consumeOAuthState('owner-claim-state'),
-      authStore.consumeOAuthState('owner-claim-state'),
+      oauthStateStore.consumeOAuthState('owner-claim-state'),
+      oauthStateStore.consumeOAuthState('owner-claim-state'),
     ])
     expect(results.filter(Boolean)).toEqual([context])
     expect(results.filter((result) => result === null)).toHaveLength(1)

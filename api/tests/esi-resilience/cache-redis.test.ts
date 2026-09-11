@@ -38,6 +38,7 @@ vi.mock('ioredis', () => ({
 }))
 
 afterEach(() => {
+  vi.useRealTimers()
   mocks.instances.length = 0
   vi.resetModules()
 })
@@ -110,6 +111,23 @@ describe('cache Redis connections', () => {
 
     expect(connection.disconnect).toHaveBeenCalledOnce()
     expect(connection.quit).not.toHaveBeenCalled()
+  })
+
+  test('disconnects a connected client when bounded closure expires', async () => {
+    vi.useFakeTimers()
+    const { closeCacheRedisConnection } = await import('../../src/esi-resilience/cache-redis.js')
+    const connection = {
+      status: 'ready',
+      disconnect: vi.fn(),
+      quit: vi.fn(() => new Promise(() => {})),
+    }
+
+    const closing = closeCacheRedisConnection(connection as never, 1_000)
+    await vi.advanceTimersByTimeAsync(1_000)
+    await closing
+
+    expect(connection.quit).toHaveBeenCalledOnce()
+    expect(connection.disconnect).toHaveBeenCalledOnce()
   })
 
   test('clears the shared reference before waiting for close', async () => {

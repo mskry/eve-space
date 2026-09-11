@@ -81,6 +81,7 @@ services:
     build:
       context: .
       dockerfile: api/Dockerfile
+    stop_grace_period: 40s
     # Pool, refresh, cache, and heartbeat tuning is documented in `.env.example` and read by
     # `env.ts` in both processes. The explicit `environment` map below still wins, so topology
     # stays container-relative.

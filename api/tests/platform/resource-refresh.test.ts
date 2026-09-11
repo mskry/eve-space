@@ -179,6 +179,24 @@ describe('local resource observations', () => {
     expect(recordFailure).toHaveBeenCalledWith(identity, failure)
   })
 
+  test('does not record collection failure when execution is cancelled', async () => {
+    const controller = new AbortController()
+    const recordFailure = vi.fn()
+    const executeOperation = vi.fn().mockImplementation(async () => {
+      controller.abort()
+      throw controller.signal.reason
+    })
+
+    await expect(
+      processInstalledResourceRefresh(identity, {
+        signal: controller.signal,
+        executeOperation,
+        recordFailure,
+      }),
+    ).rejects.toBe(controller.signal.reason)
+    expect(recordFailure).not.toHaveBeenCalled()
+  })
+
   test('records post-ESI materialization failures as permanent persistence failures', async () => {
     const input = observation(vi.fn())
     const recordFailure = vi.fn().mockResolvedValue(undefined)

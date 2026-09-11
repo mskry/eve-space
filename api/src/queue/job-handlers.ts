@@ -58,8 +58,8 @@ const jobHandlers = {
       error instanceof DomainEventValidationError || error instanceof DomainEventNotFoundError
         ? { type: 'permanent' }
         : retryable(error),
-    async process({ eventId }) {
-      await dispatchDomainEvent(eventId)
+    async process({ eventId }, context) {
+      await dispatchDomainEvent(eventId, undefined, undefined, context.signal)
     },
   }),
   'outbox-relay': handler({
@@ -84,22 +84,22 @@ const jobHandlers = {
   affiliation: handler({
     name: 'affiliation',
     classifyError: delayedOr(retryable),
-    async process({ characterIds }) {
-      await processAffiliationBatch(characterIds)
+    async process({ characterIds }, context) {
+      await processAffiliationBatch(characterIds, { signal: context.signal })
     },
   }),
   'organization-owner-evidence': handler({
     name: 'organization-owner-evidence',
     classifyError: retryable,
-    async process({ grantId }) {
-      await refreshOrganizationOwnerEvidence(grantId)
+    async process({ grantId }, context) {
+      await refreshOrganizationOwnerEvidence(grantId, { signal: context.signal })
     },
   }),
   'resource-refresh': handler({
     name: 'resource-refresh',
     classifyError: delayedOr(() => ({ type: 'permanent' })),
-    async process(payload) {
-      await processInstalledResourceRefresh(payload)
+    async process(payload, context) {
+      await processInstalledResourceRefresh(payload, { signal: context.signal })
     },
   }),
   'resource-batch': handler({
@@ -121,6 +121,7 @@ export async function executeJobHandler<Name extends JobName>(
     await job.process(payload, context)
     return { type: 'completed' }
   } catch (error) {
+    context.signal.throwIfAborted()
     return job.classifyError(error)
   }
 }

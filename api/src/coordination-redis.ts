@@ -1,5 +1,6 @@
 import { Redis, type RedisOptions } from 'ioredis'
 import { env } from './env.js'
+import { closeRedisConnection } from './redis-close.js'
 
 const boundedRetryLimit = 3
 const retryDelayMs = 100
@@ -33,15 +34,9 @@ export function createCoordinationRedisClient(url: string, options: RedisOptions
   return connection
 }
 
-export async function closeCoordinationRedisConnection(connection: CoordinationRedisConnection) {
-  if (connection.status === 'end') return
-  if (connection.status === 'wait') {
-    connection.disconnect()
-    return
-  }
-  try {
-    await connection.quit()
-  } catch {
-    connection.disconnect()
-  }
+export function closeCoordinationRedisConnection(
+  connection: CoordinationRedisConnection,
+  timeoutMs?: number,
+) {
+  return closeRedisConnection(connection, timeoutMs)
 }

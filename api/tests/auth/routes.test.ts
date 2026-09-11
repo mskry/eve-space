@@ -47,22 +47,25 @@ vi.mock('../../src/env.js', () => ({
   isSsoConfigured: mocks.isSsoConfigured,
 }))
 
-vi.mock('../../src/auth/store.js', () => ({
-  CharacterTokenNotFoundError: class CharacterTokenNotFoundError extends Error {},
+vi.mock('../../src/auth/character-lifecycle.js', () => ({
   CharacterOwnershipConflictError: mocks.OwnershipConflict,
   attachCharacter: mocks.attachCharacter,
-  consumeOAuthState: mocks.consumeOAuthState,
   deleteCharacter: vi.fn(),
-  deleteSession: mocks.deleteSession,
-  findCharacterToken: vi.fn(),
   findOwnedCharacter: mocks.findOwnedCharacter,
-  findSession: mocks.findSession,
   listUserCharacters: vi.fn(),
   reauthorizeCharacter: mocks.reauthorizeCharacter,
   saveLogin: mocks.saveLogin,
   setMainCharacter: vi.fn(),
+}))
+
+vi.mock('../../src/auth/oauth-state-store.js', () => ({
+  consumeOAuthState: mocks.consumeOAuthState,
   storeOAuthState: mocks.storeOAuthState,
-  updateCharacterToken: vi.fn(),
+}))
+
+vi.mock('../../src/auth/session-store.js', () => ({
+  deleteSession: mocks.deleteSession,
+  findSession: mocks.findSession,
 }))
 
 vi.mock('../../src/auth/sso.js', () => ({
@@ -207,7 +210,7 @@ describe('EVE SSO start routes', () => {
     expect(response.status).toBe(302)
     expect(state).toHaveLength(43)
     expect(mocks.storeOAuthState).toHaveBeenCalledWith(state, { intent: 'login' })
-    expect(mocks.createAuthorizationUrl).toHaveBeenCalledWith(state)
+    expect(mocks.createAuthorizationUrl).toHaveBeenCalledWith(state, expect.any(AbortSignal))
     expect(response.headers.get('set-cookie')).toContain('HttpOnly')
     expect(response.headers.get('set-cookie')).toContain('SameSite=Lax')
     expect(response.headers.get('set-cookie')).toContain('Priority=High')
@@ -443,6 +446,7 @@ describe('EVE SSO callback intents', () => {
 
   test('logs in, creates an account session cookie, and redirects to auth success', async () => {
     const response = await callbackRequest('valid-state', 'valid-state', 'code=eve-code')
+    const requestSignal = mocks.exchangeAuthorizationCode.mock.calls[0]?.[1]
 
     expect(response.headers.get('location')).toBe(
       `http://localhost:3000/auth?auth=success&character=${mainCharacter.characterId}`,
@@ -456,6 +460,8 @@ describe('EVE SSO callback intents', () => {
       }),
     )
     expect(mocks.attachCharacter).not.toHaveBeenCalled()
+    expect(requestSignal).toBeInstanceOf(AbortSignal)
+    expect(mocks.verifyAccessToken).toHaveBeenCalledWith('access-token', requestSignal)
     expect(response.headers.get('set-cookie')).toContain('eve_space_session=')
     expect(response.headers.get('set-cookie')).toContain('HttpOnly')
   })

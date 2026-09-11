@@ -1,5 +1,6 @@
 import { Redis, type RedisOptions } from 'ioredis'
 import { env } from '../env.js'
+import { closeRedisConnection } from '../redis-close.js'
 import { recordCacheConnectionError } from './telemetry-counters.js'
 
 const retryBaseDelayMs = 100
@@ -41,21 +42,15 @@ export function waitForCacheRedisConnection(connection: CacheRedisConnection): P
   return initialConnections.get(connection) ?? connection.connect()
 }
 
-export async function closeCacheRedisConnection(connection: CacheRedisConnection): Promise<void> {
-  if (connection.status === 'end') return
-  if (connection.status === 'wait') {
-    connection.disconnect()
-    return
-  }
-  try {
-    await connection.quit()
-  } catch {
-    connection.disconnect()
-  }
+export function closeCacheRedisConnection(
+  connection: CacheRedisConnection,
+  closeTimeoutMs?: number,
+): Promise<void> {
+  return closeRedisConnection(connection, closeTimeoutMs)
 }
 
-export async function closeSharedCacheRedisConnection(): Promise<void> {
+export async function closeSharedCacheRedisConnection(closeTimeoutMs?: number): Promise<void> {
   const connection = sharedCacheConnection
   sharedCacheConnection = undefined
-  if (connection) await closeCacheRedisConnection(connection)
+  if (connection) await closeCacheRedisConnection(connection, closeTimeoutMs)
 }

@@ -225,6 +225,31 @@ describe('platform resource batch processing', () => {
     })
   })
 
+  test('does not record subject failures when batch execution is cancelled', async () => {
+    const controller = new AbortController()
+    const executeEsiOperation = vi.fn().mockImplementation(async () => {
+      controller.abort()
+      throw controller.signal.reason
+    })
+
+    const pending = processInstalledResourceBatch(
+      batchPayload(2),
+      batchQueue(),
+      controller.signal,
+      {
+        resources: [completeResource()],
+        resolveEligibility: eligible as never,
+        definitions: { 'universe-resolve-names': batchDefinition() },
+        executeEsiOperation,
+      },
+    )
+    const rejected = pending.catch((error: unknown) => error)
+    await vi.waitFor(() => expect(controller.signal.aborted).toBe(true))
+
+    await expect(rejected).resolves.toBe(controller.signal.reason)
+    expect(processorMocks.recordFailure).not.toHaveBeenCalled()
+  })
+
   test('admits scalar refreshes only for changed hints and leaves the capacity suffix untouched', async () => {
     const resource = changeHintResource()
     const payload = batchPayload(3)
