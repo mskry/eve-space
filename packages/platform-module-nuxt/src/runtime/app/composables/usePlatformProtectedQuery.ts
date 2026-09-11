@@ -34,7 +34,7 @@ export function usePlatformProtectedQuery<
       Boolean(moduleId) &&
       canRunPlatformProtectedQuery({
         ...access,
-        isClient: typeof window !== 'undefined',
+        isClient: globalThis.window !== undefined,
         subject,
       })
     const key =

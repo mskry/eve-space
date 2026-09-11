@@ -122,7 +122,7 @@ describe('typed character asset route', () => {
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual(assets)
-    expect(mocks.getCharacterAssets).toHaveBeenCalledWith(characterId)
+    expect(mocks.getCharacterAssets).toHaveBeenCalledWith(characterId, character.subjectLifecycleId)
     expectPrivateHeaders(response)
   })
 

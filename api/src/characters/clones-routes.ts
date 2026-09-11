@@ -20,9 +20,9 @@ export const characterClonesRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterClones(characterId), 200)
+        return context.json(await getCharacterClones(characterId, subjectLifecycleId), 200)
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterClonesScope,
@@ -41,9 +41,9 @@ export const characterClonesRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterImplants(characterId), 200)
+        return context.json(await getCharacterImplants(characterId, subjectLifecycleId), 200)
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterImplantsScope,

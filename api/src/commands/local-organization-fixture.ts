@@ -1,5 +1,5 @@
 import { createDeployment } from '../admin/store.js'
-import { saveLogin } from '../auth/character-lifecycle.js'
+import { findOwnedCharacter, saveLogin } from '../auth/character-lifecycle.js'
 import { createOpaqueToken, hashPassword } from '../auth/security.js'
 import { findSession } from '../auth/session-store.js'
 import { sql } from '../db/client.js'
@@ -102,10 +102,16 @@ export async function seedLocalOrganizationFixture({
     })
     const account = await findSession(applicationSessionToken)
     if (!account) throw new Error('Local organization fixture session was not persisted')
+    const character = await findOwnedCharacter(
+      account.userId,
+      localOrganizationFixture.directorCharacterId,
+    )
+    if (!character) throw new Error('Local organization fixture character was not persisted')
 
     await claimOrganizationOwnership({
       userId: account.userId,
       characterId: localOrganizationFixture.directorCharacterId,
+      subjectLifecycleId: character.subjectLifecycleId,
       organizationId: localOrganizationFixture.corporationId,
       organizationVersion,
       authorityCorporationId: localOrganizationFixture.corporationId,

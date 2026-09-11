@@ -49,8 +49,8 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
 })
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
 vi.mock('../../src/auth/tokens.js', () => ({
-  getCharacterAuthorization: mocks.getCharacterAuthorization,
-  getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
+  getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorization,
+  getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorization,
 }))
 vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
@@ -76,6 +76,7 @@ vi.mock('../../src/esi-resilience/coordination.js', () => ({
 }))
 
 const characterId = 1404328063
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const scope = 'esi-skills.read_skillqueue.v1'
 const now = Date.parse('2026-09-01T11:00:00.000Z')
 const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
@@ -162,7 +163,7 @@ describe('character skill queue', () => {
     const { characterSkillQueueScope, getCharacterSkillQueue } =
       await import('../../src/characters/skill-queue.js')
 
-    await expect(getCharacterSkillQueue(characterId)).resolves.toMatchObject({
+    await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
       ...publicMetadata,
       entries: [
         {
@@ -189,8 +190,16 @@ describe('character skill queue', () => {
       ],
     })
     expect(characterSkillQueueScope).toBe(scope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, scope)
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      scope,
+    )
+    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      scope,
+    )
     expect(mocks.getSkillQueue).toHaveBeenCalledWith('GetCharactersCharacterIdSkillqueue', {
       path: { character_id: characterId },
     })
@@ -201,7 +210,7 @@ describe('character skill queue', () => {
     mocks.getSkillQueue.mockResolvedValue(response([queueEntry(0, 999999, 1)]))
     const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
 
-    await expect(getCharacterSkillQueue(characterId)).resolves.toMatchObject({
+    await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
       entries: [
         expect.objectContaining({
           typeId: 999999,
@@ -219,7 +228,7 @@ describe('character skill queue', () => {
     mocks.getSkillQueue.mockResolvedValue(response([]))
     const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
 
-    await expect(getCharacterSkillQueue(characterId)).resolves.toMatchObject({
+    await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
       state: 'empty',
       activeQueuePosition: null,
       entries: [],
@@ -232,8 +241,8 @@ describe('character skill queue', () => {
     mocks.staticRows.push(staticRow(3300, 'Gunnery', 255, 'Gunnery', 180, 167))
     const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
 
-    const first = await getCharacterSkillQueue(characterId)
-    const second = await getCharacterSkillQueue(characterId)
+    const first = await getCharacterSkillQueue(characterId, subjectLifecycleId)
+    const second = await getCharacterSkillQueue(characterId, subjectLifecycleId)
 
     expect(second).toEqual(first)
     expect(mocks.getSkillQueue).toHaveBeenCalledOnce()
@@ -253,19 +262,19 @@ describe('character skill queue', () => {
     )
     const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
 
-    await expect(getCharacterSkillQueue(characterId)).resolves.toMatchObject({
+    await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
       state: 'training',
       activeQueuePosition: 0,
     })
 
     vi.setSystemTime(new Date('2026-09-01T11:00:15.000Z'))
-    await expect(getCharacterSkillQueue(characterId)).resolves.toMatchObject({
+    await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
       state: 'training',
       activeQueuePosition: 1,
     })
 
     vi.setSystemTime(new Date('2026-09-01T11:00:45.000Z'))
-    await expect(getCharacterSkillQueue(characterId)).resolves.toMatchObject({
+    await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject({
       state: 'lapsed',
       activeQueuePosition: null,
     })

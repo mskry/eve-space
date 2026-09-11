@@ -1,9 +1,8 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { db, type DatabaseTransaction } from '../db/client.js'
 import { characters, eveTokens, platformSubjectLifecycles } from '../db/schema.js'
-import { env } from '../env.js'
 import { normalizeScopeSet } from '../scopes.js'
-import { lockCharacter } from './character-lock.js'
+import { lockCharacter, setAuthTransactionLockTimeout } from './character-lock.js'
 
 type TokenReader = Pick<DatabaseTransaction, 'select'>
 type TokenWriter = Pick<DatabaseTransaction, 'update'>
@@ -207,6 +206,22 @@ export async function saveCharacterToken(
     })
 }
 
+export async function insertCharacterToken(
+  transaction: DatabaseTransaction,
+  input: {
+    characterId: number
+    scopes: string[]
+    encryptedTokens: string
+    accessTokenExpiresAt: Date
+    tokenVersion: number
+  },
+) {
+  await transaction.insert(eveTokens).values({
+    ...input,
+    scopes: normalizeScopeSet(input.scopes),
+  })
+}
+
 async function withCharacterTokenLock<T>(
   characterId: number,
   findToken: (transaction: DatabaseTransaction) => Promise<StoredCharacterToken | null>,
@@ -214,9 +229,7 @@ async function withCharacterTokenLock<T>(
 ) {
   try {
     return await db.transaction(async (transaction) => {
-      await transaction.execute(
-        sql.raw(`set local lock_timeout = '${env.TOKEN_REFRESH_LOCK_TIMEOUT_MS}ms'`),
-      )
+      await setAuthTransactionLockTimeout(transaction)
       await lockCharacter(transaction, characterId)
       const token = await findToken(transaction)
       if (!token) throw new CharacterTokenNotFoundError()

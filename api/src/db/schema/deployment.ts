@@ -37,12 +37,19 @@ export const deploymentInstallationSettings = pgTable(
   'deployment_installation_settings',
   {
     id: smallint().default(1).primaryKey().notNull(),
+    ownerAdminId: uuid('owner_admin_id'),
     plannerScheduleOffsetMs: integer('planner_schedule_offset_ms')
       .default(sql`floor(random() * 60000)::integer`)
       .notNull(),
     ...auditTimestamps(),
   },
-  (_table) => [
+  (table) => [
+    uniqueIndex('deployment_installation_settings_owner_admin_id_key').on(table.ownerAdminId),
+    foreignKey({
+      columns: [table.ownerAdminId],
+      foreignColumns: [deploymentAdmins.id],
+      name: 'deployment_installation_settings_owner_admin_id_fkey',
+    }).onDelete('restrict'),
     check('deployment_installation_settings_singleton_check', sql`id = 1`),
     check(
       'deployment_installation_settings_planner_offset_check',
@@ -55,7 +62,6 @@ export const deploymentSettings = pgTable(
   'deployment_settings',
   {
     id: smallint().default(1).primaryKey().notNull(),
-    ownerAdminId: uuid('owner_admin_id').notNull(),
     organizationType: text('organization_type').$type<DeploymentOrganizationType>().notNull(),
     organizationId: bigint('organization_id', { mode: 'number' }).notNull(),
     organizationName: text('organization_name').notNull(),
@@ -77,12 +83,6 @@ export const deploymentSettings = pgTable(
     ...auditTimestamps(),
   },
   (table) => [
-    uniqueIndex('deployment_settings_owner_admin_id_key').on(table.ownerAdminId),
-    foreignKey({
-      columns: [table.ownerAdminId],
-      foreignColumns: [deploymentAdmins.id],
-      name: 'deployment_settings_owner_admin_id_fkey',
-    }).onDelete('restrict'),
     foreignKey({
       columns: [table.id, table.organizationVersion],
       foreignColumns: [organizationEpochs.deploymentId, organizationEpochs.organizationVersion],

@@ -13,6 +13,7 @@ import {
   deploymentSettings,
   organizationAuthorityEvidence,
   organizationRoleGrants,
+  platformSubjectLifecycles,
 } from '../db/schema.js'
 import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
 import { EsiTransportError } from '../esi-resilience/transport.js'
@@ -39,6 +40,7 @@ interface SuccessfulEvidenceRefresh {
   grantId: string
   organizationVersion: number
   characterId: number
+  subjectLifecycleId: string
   authorityCorporationId: number
   observedAllianceId: number | null
   observedAt: Date
@@ -129,13 +131,18 @@ export async function refreshOrganizationOwnerEvidence(
       affiliation,
     )
     options.signal?.throwIfAborted()
-    const roles = await getCharacterCorporationRoles(snapshot.characterId, options.signal)
+    const roles = await getCharacterCorporationRoles(
+      snapshot.characterId,
+      snapshot.subjectLifecycleId,
+      options.signal,
+    )
     options.signal?.throwIfAborted()
     assertOrganizationOwnerDirectorRole(roles)
     const outcome = await applySuccessfulEvidenceRefresh({
       grantId,
       organizationVersion: snapshot.organizationVersion,
       characterId: snapshot.characterId,
+      subjectLifecycleId: snapshot.subjectLifecycleId,
       authorityCorporationId,
       observedAllianceId: affiliation.allianceId,
       observedAt: affiliation.affiliationCheckedAt,
@@ -200,6 +207,7 @@ async function loadRefreshSnapshot(grantId: string) {
       organizationId: deploymentSettings.organizationId,
       organizationVersion: deploymentSettings.organizationVersion,
       characterId: organizationAuthorityEvidence.characterId,
+      subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
     })
     .from(organizationAuthorityEvidence)
     .innerJoin(
@@ -215,6 +223,10 @@ async function loadRefreshSnapshot(grantId: string) {
           organizationAuthorityEvidence.organizationVersion,
         ),
       ),
+    )
+    .innerJoin(
+      platformSubjectLifecycles,
+      eq(platformSubjectLifecycles.characterId, organizationAuthorityEvidence.characterId),
     )
     .where(
       and(
@@ -242,6 +254,7 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
         corporationId: characters.corporationId,
         allianceId: characters.allianceId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
+        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
       })
       .from(organizationAuthorityEvidence)
       .innerJoin(
@@ -249,10 +262,15 @@ async function applySuccessfulEvidenceRefresh(input: SuccessfulEvidenceRefresh) 
         eq(organizationRoleGrants.grantId, organizationAuthorityEvidence.grantId),
       )
       .innerJoin(characters, eq(characters.characterId, organizationAuthorityEvidence.characterId))
+      .innerJoin(
+        platformSubjectLifecycles,
+        eq(platformSubjectLifecycles.characterId, characters.characterId),
+      )
       .where(
         and(
           eq(organizationAuthorityEvidence.grantId, input.grantId),
           eq(organizationAuthorityEvidence.characterId, input.characterId),
+          eq(platformSubjectLifecycles.subjectLifecycleId, input.subjectLifecycleId),
           isNull(organizationRoleGrants.revokedAt),
         ),
       )

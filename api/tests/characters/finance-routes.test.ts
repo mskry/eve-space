@@ -311,7 +311,11 @@ describe('owned-character Finance route successes', () => {
     const response = await authorizedRequest(`/${characterId}/wallet/transactions`)
 
     expect(response.status).toBe(200)
-    expect(mocks.getWalletTransactions).toHaveBeenCalledWith(characterId, null)
+    expect(mocks.getWalletTransactions).toHaveBeenCalledWith(
+      characterId,
+      null,
+      ownedCharacter.subjectLifecycleId,
+    )
     await expect(response.json()).resolves.toMatchObject({ fromId: null, nextFromId: 501 })
   })
 
@@ -527,7 +531,12 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
       code: 'CONTRACT_NOT_FOUND',
       message: 'Contract not found in the referenced page.',
     })
-    expect(service).toHaveBeenCalledWith(characterId, contractId, 4)
+    expect(service).toHaveBeenCalledWith(
+      characterId,
+      contractId,
+      4,
+      ownedCharacter.subjectLifecycleId,
+    )
     expectPrivateNoStore(response)
   })
 
@@ -585,56 +594,56 @@ function successCases() {
       name: 'wallet balance',
       path: `/${characterId}/wallet`,
       service: mocks.getWalletBalance,
-      args: [characterId],
+      args: [characterId, ownedCharacter.subjectLifecycleId],
       body: { characterId, ...walletBalance },
     },
     {
       name: 'wallet journal page',
       path: `/${characterId}/wallet/journal?page=2`,
       service: mocks.getWalletJournal,
-      args: [characterId, 2],
+      args: [characterId, 2, ownedCharacter.subjectLifecycleId],
       body: { characterId, ...walletJournal },
     },
     {
       name: 'wallet transaction continuation',
       path: `/${characterId}/wallet/transactions?fromId=600`,
       service: mocks.getWalletTransactions,
-      args: [characterId, 600],
+      args: [characterId, 600, ownedCharacter.subjectLifecycleId],
       body: { characterId, ...walletTransactions },
     },
     {
       name: 'personal market orders',
       path: `/${characterId}/market/orders`,
       service: mocks.getCharacterMarketOrders,
-      args: [characterId],
+      args: [characterId, ownedCharacter.subjectLifecycleId],
       body: { characterId, ...marketOrders },
     },
     {
       name: 'personal market order history page',
       path: `/${characterId}/market/orders/history?page=3`,
       service: mocks.getCharacterMarketOrderHistory,
-      args: [characterId, 3],
+      args: [characterId, 3, ownedCharacter.subjectLifecycleId],
       body: { characterId, ...marketOrderHistory },
     },
     {
       name: 'personal contract page',
       path: `/${characterId}/contracts?page=4`,
       service: mocks.getCharacterContracts,
-      args: [characterId, 4],
+      args: [characterId, 4, ownedCharacter.subjectLifecycleId],
       body: { characterId, ...contracts },
     },
     {
       name: 'contract items with parent-page authorization',
       path: `/${characterId}/contracts/${contractId}/items?contractPage=4`,
       service: mocks.getCharacterContractItems,
-      args: [characterId, contractId, 4],
+      args: [characterId, contractId, 4, ownedCharacter.subjectLifecycleId],
       body: { characterId, contractId, ...contractItems },
     },
     {
       name: 'contract bids with parent-page authorization',
       path: `/${characterId}/contracts/${contractId}/bids?contractPage=4`,
       service: mocks.getCharacterContractBids,
-      args: [characterId, contractId, 4],
+      args: [characterId, contractId, 4, ownedCharacter.subjectLifecycleId],
       body: { characterId, contractId, ...contractBids },
     },
   ]

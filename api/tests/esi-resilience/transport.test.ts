@@ -283,7 +283,7 @@ async function executeStatus(signal?: AbortSignal) {
       map: ({ data }) => data,
     }),
   )
-  return execute(representation, undefined, signal)
+  return execute(representation, undefined, { signal })
 }
 
 function statusResponse(body?: ReadableStream<Uint8Array>) {

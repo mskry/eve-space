@@ -132,14 +132,18 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       const query = context.req.valid('query')
       try {
         return context.json(
-          await listMailHeaders(characterId, {
-            labels: query.labels,
-            lastMailId: query.lastMailId,
-          }),
+          await listMailHeaders(
+            characterId,
+            {
+              labels: query.labels,
+              lastMailId: query.lastMailId,
+            },
+            subjectLifecycleId,
+          ),
           200,
         )
       } catch (error) {
@@ -155,9 +159,12 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await sendMail(characterId, context.req.valid('json')), 201)
+        return context.json(
+          await sendMail(characterId, context.req.valid('json'), subjectLifecycleId),
+          201,
+        )
       } catch (error) {
         return mailError(context, error, characterId, sendMailScope)
       }
@@ -186,10 +193,14 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
-          await searchMailRecipients(characterId, context.req.valid('query').search),
+          await searchMailRecipients(
+            characterId,
+            context.req.valid('query').search,
+            subjectLifecycleId,
+          ),
           200,
         )
       } catch (error) {
@@ -205,10 +216,14 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
-          await calculateMailCspaCharge(characterId, context.req.valid('json').characterIds),
+          await calculateMailCspaCharge(
+            characterId,
+            context.req.valid('json').characterIds,
+            subjectLifecycleId,
+          ),
           200,
         )
       } catch (error) {
@@ -223,9 +238,9 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getMailLabels(characterId), 200)
+        return context.json(await getMailLabels(characterId, subjectLifecycleId), 200)
       } catch (error) {
         return mailError(context, error, characterId, readMailScope)
       }
@@ -239,9 +254,12 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await createMailLabel(characterId, context.req.valid('json')), 201)
+        return context.json(
+          await createMailLabel(characterId, context.req.valid('json'), subjectLifecycleId),
+          201,
+        )
       } catch (error) {
         return mailError(context, error, characterId, organizeMailScope)
       }
@@ -254,9 +272,9 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        await deleteMailLabel(characterId, context.req.valid('param').labelId)
+        await deleteMailLabel(characterId, context.req.valid('param').labelId, subjectLifecycleId)
         return context.body(null, 204)
       } catch (error) {
         return mailError(context, error, characterId, organizeMailScope)
@@ -270,9 +288,9 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getMailingLists(characterId), 200)
+        return context.json(await getMailingLists(characterId, subjectLifecycleId), 200)
       } catch (error) {
         return mailError(context, error, characterId, readMailScope)
       }
@@ -285,10 +303,10 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
-          await getMailDetail(characterId, context.req.valid('param').mailId),
+          await getMailDetail(characterId, context.req.valid('param').mailId, subjectLifecycleId),
           200,
         )
       } catch (error) {
@@ -304,9 +322,14 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        await updateMail(characterId, context.req.valid('param').mailId, context.req.valid('json'))
+        await updateMail(
+          characterId,
+          context.req.valid('param').mailId,
+          context.req.valid('json'),
+          subjectLifecycleId,
+        )
         return context.body(null, 204)
       } catch (error) {
         return mailError(context, error, characterId, organizeMailScope)
@@ -320,9 +343,9 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        await deleteMail(characterId, context.req.valid('param').mailId)
+        await deleteMail(characterId, context.req.valid('param').mailId, subjectLifecycleId)
         return context.body(null, 204)
       } catch (error) {
         return mailError(context, error, characterId, organizeMailScope)

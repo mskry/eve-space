@@ -287,10 +287,14 @@ describe('typed mail route successes', () => {
     )
     expect(headers.status).toBe(200)
     await expect(headers.json()).resolves.toEqual(headerPage)
-    expect(mocks.listMailHeaders).toHaveBeenCalledWith(characterId, {
-      labels: [3, 9],
-      lastMailId: 800,
-    })
+    expect(mocks.listMailHeaders).toHaveBeenCalledWith(
+      characterId,
+      {
+        labels: [3, 9],
+        lastMailId: 800,
+      },
+      altCharacter.subjectLifecycleId,
+    )
 
     const sent = await routerClient[':characterId'].mail.$post(
       { param: { characterId: String(characterId) }, json: sendInput },
@@ -298,10 +302,14 @@ describe('typed mail route successes', () => {
     )
     expect(sent.status).toBe(201)
     await expect(sent.json()).resolves.toEqual({ characterId, mailId: 7002 })
-    expect(mocks.sendMail).toHaveBeenCalledWith(characterId, {
-      ...sendInput,
-      approvedCost: 0,
-    })
+    expect(mocks.sendMail).toHaveBeenCalledWith(
+      characterId,
+      {
+        ...sendInput,
+        approvedCost: 0,
+      },
+      altCharacter.subjectLifecycleId,
+    )
 
     const resolved = await routerClient[':characterId'].mail.recipients.resolve.$post(
       {
@@ -320,7 +328,11 @@ describe('typed mail route successes', () => {
     )
     expect(searched.status).toBe(200)
     await expect(searched.json()).resolves.toEqual(searchedRecipientsDto)
-    expect(mocks.searchMailRecipients).toHaveBeenCalledWith(characterId, 'pil')
+    expect(mocks.searchMailRecipients).toHaveBeenCalledWith(
+      characterId,
+      'pil',
+      altCharacter.subjectLifecycleId,
+    )
 
     const cspa = await routerClient[':characterId'].mail.cspa.$post(
       { param: { characterId: String(characterId) }, json: { characterIds: [91, 92] } },
@@ -328,7 +340,11 @@ describe('typed mail route successes', () => {
     )
     expect(cspa.status).toBe(200)
     await expect(cspa.json()).resolves.toEqual({ characterId, cost: 25 })
-    expect(mocks.calculateMailCspaCharge).toHaveBeenCalledWith(characterId, [91, 92])
+    expect(mocks.calculateMailCspaCharge).toHaveBeenCalledWith(
+      characterId,
+      [91, 92],
+      altCharacter.subjectLifecycleId,
+    )
 
     const labels = await routerClient[':characterId'].mail.labels.$get(
       { param: { characterId: String(characterId) } },
@@ -336,7 +352,7 @@ describe('typed mail route successes', () => {
     )
     expect(labels.status).toBe(200)
     await expect(labels.json()).resolves.toEqual(labelsDto)
-    expect(mocks.getMailLabels).toHaveBeenCalledWith(characterId)
+    expect(mocks.getMailLabels).toHaveBeenCalledWith(characterId, altCharacter.subjectLifecycleId)
 
     const createdLabel = await routerClient[':characterId'].mail.labels.$post(
       {
@@ -347,10 +363,14 @@ describe('typed mail route successes', () => {
     )
     expect(createdLabel.status).toBe(201)
     await expect(createdLabel.json()).resolves.toEqual({ characterId, labelId })
-    expect(mocks.createMailLabel).toHaveBeenCalledWith(characterId, {
-      name: 'Priority',
-      color: '#fe0000',
-    })
+    expect(mocks.createMailLabel).toHaveBeenCalledWith(
+      characterId,
+      {
+        name: 'Priority',
+        color: '#fe0000',
+      },
+      altCharacter.subjectLifecycleId,
+    )
 
     const deletedLabel = await routerClient[':characterId'].mail.labels[':labelId'].$delete(
       { param: { characterId: String(characterId), labelId: String(labelId) } },
@@ -358,7 +378,11 @@ describe('typed mail route successes', () => {
     )
     expect(deletedLabel.status).toBe(204)
     await expect(deletedLabel.text()).resolves.toBe('')
-    expect(mocks.deleteMailLabel).toHaveBeenCalledWith(characterId, labelId)
+    expect(mocks.deleteMailLabel).toHaveBeenCalledWith(
+      characterId,
+      labelId,
+      altCharacter.subjectLifecycleId,
+    )
 
     const lists = await routerClient[':characterId'].mail.lists.$get(
       { param: { characterId: String(characterId) } },
@@ -366,7 +390,7 @@ describe('typed mail route successes', () => {
     )
     expect(lists.status).toBe(200)
     await expect(lists.json()).resolves.toEqual(listsDto)
-    expect(mocks.getMailingLists).toHaveBeenCalledWith(characterId)
+    expect(mocks.getMailingLists).toHaveBeenCalledWith(characterId, altCharacter.subjectLifecycleId)
 
     const detail = await routerClient[':characterId'].mail[':mailId'].$get(
       { param: { characterId: String(characterId), mailId: String(mailId) } },
@@ -374,7 +398,11 @@ describe('typed mail route successes', () => {
     )
     expect(detail.status).toBe(200)
     await expect(detail.json()).resolves.toEqual(detailDto)
-    expect(mocks.getMailDetail).toHaveBeenCalledWith(characterId, mailId)
+    expect(mocks.getMailDetail).toHaveBeenCalledWith(
+      characterId,
+      mailId,
+      altCharacter.subjectLifecycleId,
+    )
 
     const updated = await routerClient[':characterId'].mail[':mailId'].$put(
       {
@@ -385,10 +413,15 @@ describe('typed mail route successes', () => {
     )
     expect(updated.status).toBe(204)
     await expect(updated.text()).resolves.toBe('')
-    expect(mocks.updateMail).toHaveBeenCalledWith(characterId, mailId, {
-      read: false,
-      labels: [],
-    })
+    expect(mocks.updateMail).toHaveBeenCalledWith(
+      characterId,
+      mailId,
+      {
+        read: false,
+        labels: [],
+      },
+      altCharacter.subjectLifecycleId,
+    )
 
     const deleted = await routerClient[':characterId'].mail[':mailId'].$delete(
       { param: { characterId: String(characterId), mailId: String(mailId) } },
@@ -396,7 +429,11 @@ describe('typed mail route successes', () => {
     )
     expect(deleted.status).toBe(204)
     await expect(deleted.text()).resolves.toBe('')
-    expect(mocks.deleteMail).toHaveBeenCalledWith(characterId, mailId)
+    expect(mocks.deleteMail).toHaveBeenCalledWith(
+      characterId,
+      mailId,
+      altCharacter.subjectLifecycleId,
+    )
 
     for (const response of [
       headers,
@@ -422,10 +459,14 @@ describe('typed mail route successes', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(mocks.listMailHeaders).toHaveBeenCalledWith(characterId, {
-      labels: [7],
-      lastMailId: undefined,
-    })
+    expect(mocks.listMailHeaders).toHaveBeenCalledWith(
+      characterId,
+      {
+        labels: [7],
+        lastMailId: undefined,
+      },
+      altCharacter.subjectLifecycleId,
+    )
   })
 
   test('returns an unmatched exact name as a normal empty result', async () => {
@@ -730,7 +771,11 @@ describe('mail route authentication and ownership', () => {
     expect(session.mainCharacter.characterId).not.toBe(characterId)
     expect(response.status).toBe(200)
     expect(mocks.findOwnedCharacter).toHaveBeenCalledWith(session.userId, characterId)
-    expect(mocks.getMailDetail).toHaveBeenCalledWith(characterId, mailId)
+    expect(mocks.getMailDetail).toHaveBeenCalledWith(
+      characterId,
+      mailId,
+      altCharacter.subjectLifecycleId,
+    )
     expect(mocks.getMailDetail).not.toHaveBeenCalledWith(mainCharacterId, mailId)
   })
 
@@ -909,11 +954,20 @@ describe('mounted mail routes', () => {
     await expect(read.json()).resolves.toEqual(headerPage)
     expect(mutation.status).toBe(204)
     await expect(mutation.text()).resolves.toBe('')
-    expect(mocks.listMailHeaders).toHaveBeenCalledWith(characterId, {
-      labels: undefined,
-      lastMailId: undefined,
-    })
-    expect(mocks.updateMail).toHaveBeenCalledWith(characterId, mailId, { read: true })
+    expect(mocks.listMailHeaders).toHaveBeenCalledWith(
+      characterId,
+      {
+        labels: undefined,
+        lastMailId: undefined,
+      },
+      altCharacter.subjectLifecycleId,
+    )
+    expect(mocks.updateMail).toHaveBeenCalledWith(
+      characterId,
+      mailId,
+      { read: true },
+      altCharacter.subjectLifecycleId,
+    )
     expectMountedSecurity(read)
     expectMountedSecurity(mutation)
   })
@@ -940,8 +994,16 @@ describe('mounted mail routes', () => {
     expect(searched.status).toBe(200)
     expect(cspa.status).toBe(200)
     expect(mocks.resolveMailRecipients).toHaveBeenCalledWith(['Pilot'])
-    expect(mocks.searchMailRecipients).toHaveBeenCalledWith(characterId, 'pilot')
-    expect(mocks.calculateMailCspaCharge).toHaveBeenCalledWith(characterId, [91])
+    expect(mocks.searchMailRecipients).toHaveBeenCalledWith(
+      characterId,
+      'pilot',
+      altCharacter.subjectLifecycleId,
+    )
+    expect(mocks.calculateMailCspaCharge).toHaveBeenCalledWith(
+      characterId,
+      [91],
+      altCharacter.subjectLifecycleId,
+    )
     for (const response of [resolved, searched, cspa]) expectMountedSecurity(response)
   })
 

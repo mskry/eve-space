@@ -66,9 +66,12 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json({ characterId, ...(await getWalletBalance(characterId)) }, 200)
+        return context.json(
+          { characterId, ...(await getWalletBalance(characterId, subjectLifecycleId)) },
+          200,
+        )
       } catch (error) {
         return financeError(context, error, characterId, {
           requiredScope: walletScope,
@@ -87,12 +90,16 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
           {
             characterId,
-            ...(await getWalletJournal(characterId, context.req.valid('query').page)),
+            ...(await getWalletJournal(
+              characterId,
+              context.req.valid('query').page,
+              subjectLifecycleId,
+            )),
           },
           200,
         )
@@ -114,7 +121,7 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
           {
@@ -122,6 +129,7 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
             ...(await getWalletTransactions(
               characterId,
               context.req.valid('query').fromId ?? null,
+              subjectLifecycleId,
             )),
           },
           200,
@@ -143,9 +151,15 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json({ characterId, ...(await getCharacterMarketOrders(characterId)) }, 200)
+        return context.json(
+          {
+            characterId,
+            ...(await getCharacterMarketOrders(characterId, subjectLifecycleId)),
+          },
+          200,
+        )
       } catch (error) {
         return financeError(context, error, characterId, {
           requiredScope: marketOrdersScope,
@@ -164,12 +178,16 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
           {
             characterId,
-            ...(await getCharacterMarketOrderHistory(characterId, context.req.valid('query').page)),
+            ...(await getCharacterMarketOrderHistory(
+              characterId,
+              context.req.valid('query').page,
+              subjectLifecycleId,
+            )),
           },
           200,
         )
@@ -191,12 +209,16 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
           {
             characterId,
-            ...(await getCharacterContracts(characterId, context.req.valid('query').page)),
+            ...(await getCharacterContracts(
+              characterId,
+              context.req.valid('query').page,
+              subjectLifecycleId,
+            )),
           },
           200,
         )
@@ -218,7 +240,7 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       const { contractId } = context.req.valid('param')
       try {
         return context.json(
@@ -229,6 +251,7 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
               characterId,
               contractId,
               context.req.valid('query').contractPage,
+              subjectLifecycleId,
             )),
           },
           200,
@@ -252,7 +275,7 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       const { contractId } = context.req.valid('param')
       try {
         return context.json(
@@ -263,6 +286,7 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
               characterId,
               contractId,
               context.req.valid('query').contractPage,
+              subjectLifecycleId,
             )),
           },
           200,

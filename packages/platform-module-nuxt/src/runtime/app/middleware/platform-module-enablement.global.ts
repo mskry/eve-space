@@ -9,7 +9,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const moduleId = to.meta.platformModuleId
   if (typeof moduleId !== 'string') return
 
-  if (typeof window === 'undefined') {
+  if (globalThis.window === undefined) {
     let enabledModuleIds: readonly string[]
     try {
       const runtimeState = await loadPlatformModuleRuntimeState(useRuntimeConfig().public.apiBase)

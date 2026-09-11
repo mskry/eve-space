@@ -32,6 +32,7 @@ const wireResponses = {
   GetCharactersCharacterIdShip: { ship_name: 'My Pod', ship_type_id: 670, ship_item_id: 1 },
   GetUniverseTypesTypeId: { name: 'Capsule' },
 }
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 
 const freshness = {
   location: meta('2026-09-01T11:00:00.000Z', '2026-09-01T11:10:00.000Z'),
@@ -76,7 +77,7 @@ describe('character overview resources', () => {
   test('aggregates freshness across location and station resources', async () => {
     const { getCharacterLocation } = await import('../../src/characters/overview.js')
 
-    const location = await getCharacterLocation(90_000_001)
+    const location = await getCharacterLocation(90_000_001, subjectLifecycleId)
 
     expect(location).toEqual({
       solarSystemId: 30_000_142,
@@ -99,7 +100,7 @@ describe('character overview resources', () => {
   test('aggregates freshness across ship and type resources', async () => {
     const { getCharacterShip } = await import('../../src/characters/overview.js')
 
-    await expect(getCharacterShip(90_000_001)).resolves.toEqual({
+    await expect(getCharacterShip(90_000_001, subjectLifecycleId)).resolves.toEqual({
       typeId: 670,
       typeName: 'Capsule',
       name: 'My Pod',

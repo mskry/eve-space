@@ -35,8 +35,8 @@ vi.mock('@evespace/esi-client', async (importOriginal) => {
   }
 })
 vi.mock('../../src/auth/tokens.js', () => ({
-  getCharacterAuthorization: mocks.getCharacterAuthorization,
-  getCharacterCacheAuthorization: mocks.getCharacterCacheAuthorization,
+  getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorization,
+  getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorization,
 }))
 vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
@@ -62,6 +62,7 @@ vi.mock('../../src/esi-resilience/coordination.js', () => ({
 }))
 
 const characterId = 1404328063
+const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const scope = 'esi-skills.read_skills.v1'
 const now = Date.parse('2026-09-01T11:00:00.000Z')
 const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
@@ -130,7 +131,7 @@ describe('character attributes', () => {
     const { characterAttributesScope, getCharacterAttributes } =
       await import('../../src/characters/attributes.js')
 
-    await expect(getCharacterAttributes(characterId)).resolves.toEqual({
+    await expect(getCharacterAttributes(characterId, subjectLifecycleId)).resolves.toEqual({
       charisma: 19,
       intelligence: 27,
       memory: 23,
@@ -142,8 +143,16 @@ describe('character attributes', () => {
       ...publicMetadata,
     })
     expect(characterAttributesScope).toBe(scope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(characterId, scope)
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(characterId, scope)
+    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      scope,
+    )
+    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(
+      characterId,
+      subjectLifecycleId,
+      scope,
+    )
     expect(mocks.createEsiClient).toHaveBeenCalledWith({
       fetch: expect.any(Function),
       requestTimeoutMs: 30_000,
@@ -162,7 +171,7 @@ describe('character attributes', () => {
     )
     const { getCharacterAttributes } = await import('../../src/characters/attributes.js')
 
-    await expect(getCharacterAttributes(characterId)).resolves.toMatchObject({
+    await expect(getCharacterAttributes(characterId, subjectLifecycleId)).resolves.toMatchObject({
       bonusRemaps: 0,
       accruedRemapCooldownDate: null,
       lastRemapDate: null,
@@ -175,8 +184,8 @@ describe('character attributes', () => {
     )
     const { getCharacterAttributes } = await import('../../src/characters/attributes.js')
 
-    const first = await getCharacterAttributes(characterId)
-    const second = await getCharacterAttributes(characterId)
+    const first = await getCharacterAttributes(characterId, subjectLifecycleId)
+    const second = await getCharacterAttributes(characterId, subjectLifecycleId)
 
     expect(second).toEqual(first)
     expect(mocks.getAttributes).toHaveBeenCalledOnce()

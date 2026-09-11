@@ -1,5 +1,13 @@
 import type { EsiResponseMetadata } from '@evespace/esi-client'
 
+export interface EsiExecutionOptions {
+  readonly signal?: AbortSignal
+}
+
+export interface CharacterEsiExecutionOptions extends EsiExecutionOptions {
+  readonly subjectLifecycleId: string
+}
+
 export interface EsiQuota {
   group?: string
   limit?: string

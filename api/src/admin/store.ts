@@ -4,6 +4,7 @@ import { deploymentSetupLockId } from '../db/locks.js'
 import {
   adminSessions,
   deploymentAdmins,
+  deploymentInstallationSettings,
   deploymentSettings,
   organizationAccountCompliance,
   organizationAuthorityEvidence,
@@ -27,19 +28,20 @@ export interface DeploymentSettingsRecord {
   }
 }
 
-export interface AdminSessionAccount extends DeploymentSettingsRecord {
+export interface AdminSessionAccount {
   adminId: string
   email: string
   role: 'owner'
+  organization: DeploymentSettingsRecord['organization'] | null
 }
 
 export class DeploymentAlreadyConfiguredError extends Error {}
 
 interface SettingsColumns {
-  organizationType: DeploymentOrganizationType
-  organizationId: number
-  organizationName: string
-  organizationTicker: string
+  organizationType: DeploymentOrganizationType | null
+  organizationId: number | null
+  organizationName: string | null
+  organizationTicker: string | null
 }
 
 const settingsSelection = {
@@ -50,8 +52,11 @@ const settingsSelection = {
 }
 
 export async function isDeploymentConfigured() {
-  const [record] = await db.select({ id: deploymentSettings.id }).from(deploymentSettings).limit(1)
-  return Boolean(record)
+  const [record] = await db
+    .select({ ownerAdminId: deploymentInstallationSettings.ownerAdminId })
+    .from(deploymentInstallationSettings)
+    .where(eq(deploymentInstallationSettings.id, 1))
+  return Boolean(record?.ownerAdminId)
 }
 
 export async function createDeployment(input: {
@@ -63,17 +68,24 @@ export async function createDeployment(input: {
 }): Promise<AdminSessionAccount> {
   return db.transaction(async (transaction) => {
     await transaction.execute(sql`select pg_advisory_xact_lock(${deploymentSetupLockId})`)
-    const [existing] = await transaction
-      .select({ id: deploymentSettings.id })
-      .from(deploymentSettings)
-      .limit(1)
-    if (existing) throw new DeploymentAlreadyConfiguredError()
+    const [installation] = await transaction
+      .select({ ownerAdminId: deploymentInstallationSettings.ownerAdminId })
+      .from(deploymentInstallationSettings)
+      .where(eq(deploymentInstallationSettings.id, 1))
+      .for('update')
+    if (!installation) throw new Error('Deployment installation settings are missing')
+    if (installation.ownerAdminId) throw new DeploymentAlreadyConfiguredError()
 
     const [admin] = await transaction
       .insert(deploymentAdmins)
       .values({ email: input.email, passwordHash: input.passwordHash })
       .returning({ id: deploymentAdmins.id, email: deploymentAdmins.email })
     if (!admin) throw new Error('Failed to create deployment owner')
+
+    await transaction
+      .update(deploymentInstallationSettings)
+      .set({ ownerAdminId: admin.id, updatedAt: new Date() })
+      .where(eq(deploymentInstallationSettings.id, 1))
 
     await transaction.insert(organizationEpochs).values({
       deploymentId: 1,
@@ -85,7 +97,6 @@ export async function createDeployment(input: {
     })
     await transaction.insert(deploymentSettings).values({
       id: 1,
-      ownerAdminId: admin.id,
       organizationType: input.organization.type,
       organizationId: input.organization.id,
       organizationName: input.organization.name,
@@ -119,6 +130,10 @@ export async function findAdminCredentials(email: string) {
       passwordHash: deploymentAdmins.passwordHash,
     })
     .from(deploymentAdmins)
+    .innerJoin(
+      deploymentInstallationSettings,
+      eq(deploymentInstallationSettings.ownerAdminId, deploymentAdmins.id),
+    )
     .where(eq(deploymentAdmins.email, email))
   return record ?? null
 }
@@ -140,7 +155,11 @@ export async function findAdminSession(sessionToken: string): Promise<AdminSessi
     })
     .from(adminSessions)
     .innerJoin(deploymentAdmins, eq(deploymentAdmins.id, adminSessions.adminId))
-    .innerJoin(deploymentSettings, eq(deploymentSettings.ownerAdminId, deploymentAdmins.id))
+    .innerJoin(
+      deploymentInstallationSettings,
+      eq(deploymentInstallationSettings.ownerAdminId, deploymentAdmins.id),
+    )
+    .leftJoin(deploymentSettings, eq(deploymentSettings.id, deploymentInstallationSettings.id))
     .where(
       and(
         eq(adminSessions.sessionHash, hashToken(sessionToken)),
@@ -317,7 +336,14 @@ export async function updateDeploymentOrganization(
   })
 }
 
-function toOrganization(record: SettingsColumns) {
+function toOrganization(record: SettingsColumns): DeploymentSettingsRecord['organization'] | null {
+  if (
+    !record.organizationType ||
+    record.organizationId === null ||
+    !record.organizationName ||
+    !record.organizationTicker
+  )
+    return null
   return {
     type: record.organizationType,
     id: record.organizationId,
@@ -328,7 +354,7 @@ function toOrganization(record: SettingsColumns) {
 
 function toAccount(
   admin: { id?: string; adminId?: string; email: string },
-  organization: DeploymentSettingsRecord['organization'],
+  organization: DeploymentSettingsRecord['organization'] | null,
 ): AdminSessionAccount {
   return {
     adminId: admin.id ?? admin.adminId!,

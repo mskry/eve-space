@@ -9,8 +9,8 @@ const sha256Pattern = /^[0-9a-f]{64}$/
 const initialManifestLength = 29
 const initialTailSequence = 41
 const initialManifestSha256 = '99a59d7fcd462086fb274c08834b5512f47e5c9d75577065ed5b1b0690300996'
-const acceptedManifestLength = 29
-const acceptedManifestSha256 = '99a59d7fcd462086fb274c08834b5512f47e5c9d75577065ed5b1b0690300996'
+const acceptedManifestLength = 31
+const acceptedManifestSha256 = '5aa04871069c38442ca03f7201f72f521011da0c2844fba881b81d6d4d763d4e'
 
 export interface CoreMigrationIdentity {
   readonly name: string
@@ -51,6 +51,8 @@ export const activeCoreMigrationManifest = defineManifest(`
 039_refresh_roster_collection_contract.sql 2014900c8a5b98ebdcd9f96d77b052dc224e827e7dfcaf4d205bb0e0ff5d4513
 040_platform_deployment_resources.sql 9841e5dadc33b2264782b0b13ed932c62a44e4d84e8de610ba47c620566912ba
 041_sde_locations.sql 056ac12603bb4e523aad2a796f8bc86979ecc10c1233b2809f4d1c04762365cd
+042_character_transfer_approvals.sql ecbebd289473052b64242b946888379a00b5e91d92c727e2e008f31feea5a3d7
+043_decouple_deployment_administrator.sql 1579ca2ef767072fb593c670565b5f71b2693a64ee0a2c8bd2a89a1c84d83d0d
 `)
 
 export const latestCoreMigrationName = activeCoreMigrationManifest.at(-1)!.name

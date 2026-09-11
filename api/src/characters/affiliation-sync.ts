@@ -218,7 +218,7 @@ async function lookupAffiliations(characterIds: readonly number[], signal?: Abor
 }
 
 async function lookupAffiliationResult(characterIds: readonly number[], signal?: AbortSignal) {
-  return execute(bulkAffiliationRepresentation, { body: [...characterIds] }, signal)
+  return execute(bulkAffiliationRepresentation, { body: [...characterIds] }, { signal })
 }
 
 function nextAffiliationCheckSql(observedAt: string) {

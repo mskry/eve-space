@@ -122,8 +122,11 @@ describe('typed character clone routes', () => {
     expect(implantResponse.status).toBe(200)
     await expect(implantResponse.json()).resolves.toEqual(implants)
     expectPrivateHeaders(implantResponse)
-    expect(mocks.getCharacterClones).toHaveBeenCalledWith(characterId)
-    expect(mocks.getCharacterImplants).toHaveBeenCalledWith(characterId)
+    expect(mocks.getCharacterClones).toHaveBeenCalledWith(characterId, character.subjectLifecycleId)
+    expect(mocks.getCharacterImplants).toHaveBeenCalledWith(
+      characterId,
+      character.subjectLifecycleId,
+    )
   })
 
   test.each(['clones', 'implants'] as const)(

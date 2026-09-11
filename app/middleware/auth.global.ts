@@ -2,7 +2,7 @@ import { getLocalAuthRedirect } from '../utils/auth-redirect'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const isAuthorizationRoute = to.path === '/auth'
-  if (to.path === '/admin/login' || to.meta.platformAudience === 'public') return
+  if (to.path.startsWith('/admin') || to.meta.platformAudience === 'public') return
   // The API session cookie is host-only; protected data stays client-gated while auth resolves.
   if (import.meta.server) return
   const runtimeConfig = useRuntimeConfig()

@@ -20,7 +20,7 @@ export function usePlatformModuleRuntime() {
   const queryCache = useQueryCache()
   const runtimeQuery = useQuery({
     key: platformModuleRuntimeQueryKey,
-    enabled: typeof window !== 'undefined',
+    enabled: globalThis.window !== undefined,
     staleTime: 30_000,
     query: ({ signal }) => loadPlatformModuleRuntimeState(runtimeConfig.public.apiBase, signal),
   })

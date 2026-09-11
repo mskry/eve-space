@@ -18,6 +18,13 @@ import {
   updateDeploymentOrganization,
   type AdminSessionAccount,
 } from './store.js'
+import {
+  CharacterTransferApprovalError,
+  createCharacterTransferApproval,
+  inspectCharacterTransferApproval,
+  previewCharacterTransfer,
+  revokeCharacterTransferApproval,
+} from '../auth/character-transfer-approvals.js'
 import { resolveDeploymentOrganization } from '../deployment/organization.js'
 import { env } from '../env.js'
 import { platformNavigationDefaults } from '../generated/platform/installed-module-runtime.js'
@@ -29,7 +36,8 @@ import {
   setInstalledModuleEnabled,
 } from '../platform/module-settings.js'
 import { createOpaqueToken, hashPassword, tokensMatch, verifyPassword } from '../auth/security.js'
-import { setPrivateHeaders } from '../http/private-response.js'
+import { privateNoStore, setPrivateHeaders } from '../http/private-response.js'
+import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
 import { zValidator } from '../http/validation.js'
 
 type AdminEnv = { Variables: { adminSession: AdminSessionAccount | null } }
@@ -77,14 +85,17 @@ const shellNavigationOrderSchema = z
 const shellNavigationOrderRequestSchema = z
   .object({ shellNavigationOrder: shellNavigationOrderSchema })
   .strict()
-
-const requireTrustedOrigin: MiddlewareHandler<AdminEnv> = async (context, next) => {
-  if (context.req.method === 'GET' || context.req.method === 'HEAD') return next()
-  if (context.req.header('Origin') !== env.WEB_ORIGIN) {
-    return context.json({ code: 'INVALID_ORIGIN', message: 'Request origin is not allowed.' }, 403)
-  }
-  return next()
-}
+const transferReasonSchema = z.string().trim().min(1, 'A reason is required.').max(1000)
+const transferPreviewSchema = z
+  .object({
+    characterId: z.number().int().positive(),
+    destinationMainCharacterId: z.number().int().positive(),
+    reason: transferReasonSchema,
+  })
+  .strict()
+const transferApprovalCreateSchema = z.object({ previewId: z.uuid() }).strict()
+const transferApprovalParamsSchema = z.object({ approvalId: z.uuid() })
+const transferApprovalRevokeSchema = z.object({ reason: transferReasonSchema }).strict()
 
 const loadAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
   setPrivateHeaders(context)
@@ -103,7 +114,8 @@ const requireAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) =
 }
 
 export const adminRoutes = new Hono<AdminEnv>()
-  .use('*', requireTrustedOrigin)
+  .use('*', privateNoStore)
+  .use('*', requireTrustedMutationOrigin)
   .get('/setup', async (context) => {
     setPrivateHeaders(context)
     return context.json({
@@ -247,6 +259,75 @@ export const adminRoutes = new Hono<AdminEnv>()
         200,
       ),
   )
+  .post(
+    '/character-transfer-approvals/preview',
+    loadAdminSession,
+    requireAdminSession,
+    zValidator('json', transferPreviewSchema),
+    async (context) => {
+      const preview = await previewCharacterTransfer({
+        administratorId: context.var.adminSession!.adminId,
+        ...context.req.valid('json'),
+      })
+      return context.json({ preview }, 200)
+    },
+  )
+  .post(
+    '/character-transfer-approvals',
+    loadAdminSession,
+    requireAdminSession,
+    zValidator('json', transferApprovalCreateSchema),
+    async (context) => {
+      try {
+        const { approval, secret } = await createCharacterTransferApproval({
+          administratorId: context.var.adminSession!.adminId,
+          previewId: context.req.valid('json').previewId,
+        })
+        const transferLink = new URL('/transfer', env.WEB_ORIGIN)
+        transferLink.hash = new URLSearchParams({
+          approval: approval.approvalId,
+          secret,
+        }).toString()
+        return context.json({ approval, transferLink: transferLink.toString() }, 201)
+      } catch (error) {
+        return transferApprovalFailure(context, error)
+      }
+    },
+  )
+  .get(
+    '/character-transfer-approvals/:approvalId',
+    loadAdminSession,
+    requireAdminSession,
+    zValidator('param', transferApprovalParamsSchema),
+    async (context) => {
+      const result = await inspectCharacterTransferApproval(context.req.valid('param').approvalId)
+      return result
+        ? context.json(result, 200)
+        : context.json(
+            { code: 'TRANSFER_APPROVAL_NOT_FOUND', message: 'Transfer approval not found.' },
+            404,
+          )
+    },
+  )
+  .post(
+    '/character-transfer-approvals/:approvalId/revoke',
+    loadAdminSession,
+    requireAdminSession,
+    zValidator('param', transferApprovalParamsSchema),
+    zValidator('json', transferApprovalRevokeSchema),
+    async (context) => {
+      try {
+        const approval = await revokeCharacterTransferApproval({
+          administratorId: context.var.adminSession!.adminId,
+          approvalId: context.req.valid('param').approvalId,
+          reason: context.req.valid('json').reason,
+        })
+        return context.json({ approval }, 200)
+      } catch (error) {
+        return transferApprovalFailure(context, error)
+      }
+    },
+  )
 
 function sessionExpiry() {
   return new Date(Date.now() + adminSessionDurationSeconds * 1_000)
@@ -275,5 +356,19 @@ function organizationFailure(context: Parameters<typeof setCookie>[0], error: un
   return context.json(
     { code: 'ESI_UNAVAILABLE', message: 'Unable to verify the EVE organization.' },
     502,
+  )
+}
+
+function transferApprovalFailure(context: Parameters<typeof setCookie>[0], error: unknown) {
+  if (!(error instanceof CharacterTransferApprovalError)) throw error
+  const unavailable = error.code === 'preview-unavailable' || error.code === 'approval-unavailable'
+  return context.json(
+    {
+      code: unavailable ? 'TRANSFER_APPROVAL_NOT_FOUND' : 'TRANSFER_APPROVAL_UNUSABLE',
+      message: unavailable
+        ? 'Transfer approval not found.'
+        : 'Transfer approval is no longer usable.',
+    },
+    unavailable ? 404 : 409,
   )
 }

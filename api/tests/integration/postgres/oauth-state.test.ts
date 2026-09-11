@@ -61,7 +61,8 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await connection`
-    truncate oauth_states, sessions, eve_tokens, platform_subject_lifecycles, characters, users
+    truncate character_transfer_audit, character_transfer_approvals, character_transfer_previews,
+      oauth_states, sessions, eve_tokens, platform_subject_lifecycles, characters, users
     restart identity cascade
   `
 })
@@ -267,6 +268,116 @@ describe('OAuth state return path persistence', () => {
     expect(results.filter(Boolean)).toEqual([context])
     expect(results.filter((result) => result === null)).toHaveLength(1)
   })
+
+  test('round-trips an exact single-use transfer context without storing the raw state', async () => {
+    const sourceUserId = await insertOwnedCharacter()
+    const [sourceLifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+      insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+      values ('character', ${String(characterId)}, ${characterId})
+      returning subject_lifecycle_id
+    `
+    const destinationUserId = randomUUID()
+    const destinationCharacterId = 2_112_625_428
+    await connection`insert into users (id) values (${destinationUserId})`
+    await connection`
+      insert into characters (character_id, user_id, name, corporation_id, is_main)
+      values (${destinationCharacterId}, ${destinationUserId}, 'Destination Pilot', 1000166, true)
+    `
+    const approvalId = await insertTransferApproval({
+      sourceUserId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
+      destinationUserId,
+      destinationMainCharacterId: destinationCharacterId,
+    })
+    const context = {
+      intent: 'transfer' as const,
+      approvalId,
+      sourceUserId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
+      userId: destinationUserId,
+      characterId,
+    }
+
+    await oauthStateStore.storeOAuthState('transfer-state', context)
+    const [stored] = await connection<
+      {
+        state_hash: string
+        transfer_approval_id: string
+        transfer_source_user_id: string
+        transfer_source_subject_lifecycle_id: string
+      }[]
+    >`
+      select state_hash, transfer_approval_id, transfer_source_user_id,
+        transfer_source_subject_lifecycle_id
+      from oauth_states
+      where intent = 'transfer'
+    `
+
+    expect(stored).toEqual({
+      state_hash: hashState('transfer-state'),
+      transfer_approval_id: approvalId,
+      transfer_source_user_id: sourceUserId,
+      transfer_source_subject_lifecycle_id: sourceLifecycle!.subject_lifecycle_id,
+    })
+    await expect(oauthStateStore.consumeOAuthState('transfer-state')).resolves.toEqual(context)
+    await expect(oauthStateStore.consumeOAuthState('transfer-state')).resolves.toBeNull()
+  })
+
+  test('enforces immutable terminal approvals and append-only independent audit', async () => {
+    const sourceUserId = await insertOwnedCharacter()
+    const [sourceLifecycle] = await connection<{ subject_lifecycle_id: string }[]>`
+      insert into platform_subject_lifecycles (subject_kind, subject_id, character_id)
+      values ('character', ${String(characterId)}, ${characterId})
+      returning subject_lifecycle_id
+    `
+    const destinationUserId = randomUUID()
+    const destinationCharacterId = 2_112_625_428
+    await connection`insert into users (id) values (${destinationUserId})`
+    await connection`
+      insert into characters (character_id, user_id, name, corporation_id, is_main)
+      values (${destinationCharacterId}, ${destinationUserId}, 'Destination Pilot', 1000166, true)
+    `
+    const approvalId = await insertTransferApproval({
+      sourceUserId,
+      sourceSubjectLifecycleId: sourceLifecycle!.subject_lifecycle_id,
+      destinationUserId,
+      destinationMainCharacterId: destinationCharacterId,
+    })
+    const administratorId = randomUUID()
+    const auditId = randomUUID()
+    await connection`
+      insert into character_transfer_audit (
+        audit_id, approval_id, action, approved_by_administrator_id,
+        action_administrator_id, character_id, source_user_id,
+        source_subject_lifecycle_id, destination_user_id, reason, outcome
+      ) values (
+        ${auditId}, ${approvalId}, 'created', ${administratorId}, ${administratorId},
+        ${characterId}, ${sourceUserId}, ${sourceLifecycle!.subject_lifecycle_id},
+        ${destinationUserId}, 'Repair split account', 'created'
+      )
+    `
+
+    await expect(
+      connection`
+        update character_transfer_approvals
+        set reason = 'Changed reason'
+        where approval_id = ${approvalId}
+      `,
+    ).rejects.toThrow('character transfer approval bindings are immutable')
+    await expect(
+      connection`update character_transfer_audit set reason = 'Changed' where audit_id = ${auditId}`,
+    ).rejects.toThrow('character transfer audit is append-only')
+
+    await connection`delete from users where id = ${sourceUserId}`
+    const [retainedApproval] = await connection<{ source_user_id: string }[]>`
+      select source_user_id from character_transfer_approvals where approval_id = ${approvalId}
+    `
+    const [retainedAudit] = await connection<{ source_user_id: string }[]>`
+      select source_user_id from character_transfer_audit where audit_id = ${auditId}
+    `
+    expect(retainedApproval?.source_user_id).toBe(sourceUserId)
+    expect(retainedAudit?.source_user_id).toBe(sourceUserId)
+  })
 })
 
 async function insertOwnedCharacter() {
@@ -293,4 +404,27 @@ async function waitForDatabase() {
 
 function hashState(state: string) {
   return createHash('sha256').update(state).digest('hex')
+}
+
+async function insertTransferApproval(input: {
+  sourceUserId: string
+  sourceSubjectLifecycleId: string
+  destinationUserId: string
+  destinationMainCharacterId: number
+}) {
+  const approvalId = randomUUID()
+  await connection`
+    insert into character_transfer_approvals (
+      approval_id, link_secret_hash, character_id, character_name, source_user_id,
+      source_subject_lifecycle_id, source_character_count, destination_user_id,
+      destination_main_character_id, destination_main_character_name,
+      approved_by_administrator_id, reason, created_at, expires_at
+    ) values (
+      ${approvalId}, ${'d'.repeat(64)}, ${characterId}, 'OAuth Pilot', ${input.sourceUserId},
+      ${input.sourceSubjectLifecycleId}, 1, ${input.destinationUserId},
+      ${input.destinationMainCharacterId}, 'Destination Pilot', ${randomUUID()},
+      'Repair split account', now(), now() + interval '15 minutes'
+    )
+  `
+  return approvalId
 }

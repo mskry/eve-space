@@ -15,6 +15,7 @@ const modulesByTier = {
   adapter: [
     'activity-context',
     'authority',
+    'character-detachment-guards',
     'compliance-access',
     'context',
     'corporation-membership',

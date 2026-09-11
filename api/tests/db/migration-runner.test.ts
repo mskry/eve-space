@@ -30,8 +30,8 @@ describe('core migration manifest', () => {
       'missing file 001_initial.sql',
     )
     expect(() =>
-      assertCoreMigrationInventory(activeCoreMigrationManifest, [...names, '043_extra.sql']),
-    ).toThrow('absent from manifest: 043_extra.sql')
+      assertCoreMigrationInventory(activeCoreMigrationManifest, [...names, '044_extra.sql']),
+    ).toThrow('absent from manifest: 044_extra.sql')
     expect(() =>
       assertCoreMigrationContent(activeCoreMigrationManifest[0]!, 'changed sql'),
     ).toThrow('content identity mismatch: 001_initial.sql')
@@ -44,7 +44,7 @@ describe('core migration manifest', () => {
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '042_next.sql', sha256: migrationSha256('select 1;') },
+        { name: '044_next.sql', sha256: migrationSha256('select 1;') },
       ]),
     ).toThrow('match the accepted frozen inventory')
     expect(() =>
@@ -52,7 +52,7 @@ describe('core migration manifest', () => {
         ...activeCoreMigrationManifest,
         { name: '041_reused.sql', sha256: migrationSha256('select 1;') },
       ]),
-    ).toThrow('append a unique sequence after 41')
+    ).toThrow('append a unique sequence after 43')
   })
 })
 

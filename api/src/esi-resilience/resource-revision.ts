@@ -41,13 +41,15 @@ export class EsiResourceRevisionRegistry {
     policy: EsiOperationContract,
     authorization: EsiCacheAuthorization | undefined,
     signal?: AbortSignal,
+    principal = authorization?.principal,
   ): Promise<EsiResourceRevision | undefined | null> {
     signal?.throwIfAborted()
     if (!policy.resourceRevision) return undefined
     if (authorization?.kind !== 'character')
       throw new Error('Revision-sensitive ESI operation is missing character authorization')
     const namespace = policy.resourceRevision.namespace
-    const keys = this.#keys(namespace, authorization.principal)
+    if (!principal) throw new Error('Revision-sensitive ESI operation is missing a principal')
+    const keys = this.#keys(namespace, principal)
 
     const needsRepair = await this.#needsRepair(keys)
     signal?.throwIfAborted()
@@ -55,8 +57,8 @@ export class EsiResourceRevisionRegistry {
 
     try {
       const value = needsRepair
-        ? await incrementEsiResourceRevision(this.coordination, namespace, authorization.principal)
-        : await getEsiResourceRevision(this.coordination, namespace, authorization.principal)
+        ? await incrementEsiResourceRevision(this.coordination, namespace, principal)
+        : await getEsiResourceRevision(this.coordination, namespace, principal)
       if (needsRepair) await this.#clearRepair(keys)
       signal?.throwIfAborted()
       return { namespace, value }

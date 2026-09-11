@@ -202,7 +202,7 @@ describe('transactional domain event producers', () => {
     await clearEvents()
     await expect(
       characterLifecycle.attachCharacter({ ...alt, userId: otherUserId }),
-    ).rejects.toBeInstanceOf(characterLifecycle.CharacterOwnershipConflictError)
+    ).rejects.toBeInstanceOf(characterLifecycle.CharacterTransferApprovalRequiredError)
     await expect(readEvents()).resolves.toEqual([])
     await expect(findCharacterUserId(altCharacterId)).resolves.toBe(userId)
   })
@@ -362,6 +362,7 @@ describe('transactional domain event producers', () => {
       'main-session',
     )
     const userId = await findCharacterUserId(mainCharacterId)
+    const subjectLifecycleId = await findSubjectLifecycleId(mainCharacterId)
     await clearEvents()
     await expireToken(mainCharacterId)
     ssoMocks.refreshAccessToken.mockResolvedValue({
@@ -377,7 +378,7 @@ describe('transactional domain event producers', () => {
     })
 
     await expect(
-      tokenService.getCharacterAccessToken(mainCharacterId, requiredScope),
+      tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope),
     ).resolves.toBe('rotated-access')
     expect(await readEvents()).toEqual([
       expect.objectContaining({
@@ -410,14 +411,14 @@ describe('transactional domain event producers', () => {
       characterName: `Character ${mainCharacterId}`,
       scopes: ['z.scope', 'a.scope', requiredScope],
     })
-    await tokenService.getCharacterAccessToken(mainCharacterId, requiredScope)
+    await tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope)
     await expect(readEvents()).resolves.toEqual([])
 
     await expireToken(mainCharacterId)
     const beforeFailure = await readTokenState(mainCharacterId)
     ssoMocks.refreshAccessToken.mockRejectedValue(new Error('temporary ESI SSO failure'))
     await expect(
-      tokenService.getCharacterAccessToken(mainCharacterId, requiredScope),
+      tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope),
     ).rejects.toThrow('temporary ESI SSO failure')
     await expect(readTokenState(mainCharacterId)).resolves.toEqual(beforeFailure)
     await expect(readEvents()).resolves.toEqual([])
@@ -426,6 +427,7 @@ describe('transactional domain event producers', () => {
   test('scope-event persistence failure rolls back the winning token refresh', async () => {
     const requiredScope = 'esi-wallet.read_character_wallet.v1'
     await saveLogin(authorizationInput(mainCharacterId, [requiredScope]), 'main-session')
+    const subjectLifecycleId = await findSubjectLifecycleId(mainCharacterId)
     await clearEvents()
     await expireToken(mainCharacterId)
     const beforeRefresh = await readTokenState(mainCharacterId)
@@ -446,7 +448,7 @@ describe('transactional domain event producers', () => {
 
     try {
       await expect(
-        tokenService.getCharacterAccessToken(mainCharacterId, requiredScope),
+        tokenService.getCharacterAccessToken(mainCharacterId, subjectLifecycleId, requiredScope),
       ).rejects.toMatchObject({
         cause: { constraint_name: 'reject_scope_change_event' },
       })
@@ -503,6 +505,16 @@ async function findCharacterUserId(characterId: number) {
   `
   if (!record) throw new Error('Expected character')
   return record.user_id
+}
+
+async function findSubjectLifecycleId(characterId: number) {
+  const [lifecycle] = await dbClient.sql<{ subject_lifecycle_id: string }[]>`
+    select subject_lifecycle_id
+    from platform_subject_lifecycles
+    where character_id = ${characterId}
+  `
+  if (!lifecycle) throw new Error('Character lifecycle is missing')
+  return lifecycle.subject_lifecycle_id
 }
 
 function readEvents() {

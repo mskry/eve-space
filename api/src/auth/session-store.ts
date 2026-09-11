@@ -60,3 +60,26 @@ export async function saveSession(
     expiresAt: input.expiresAt,
   })
 }
+
+export async function hasActiveSession(
+  transaction: DatabaseTransaction,
+  sessionToken: string,
+  userId: string,
+) {
+  const [record] = await transaction
+    .select({ sessionHash: sessions.sessionHash })
+    .from(sessions)
+    .where(
+      and(
+        eq(sessions.sessionHash, hashToken(sessionToken)),
+        eq(sessions.userId, userId),
+        gt(sessions.expiresAt, new Date()),
+      ),
+    )
+    .for('key share')
+  return Boolean(record)
+}
+
+export async function deleteUserSessions(transaction: DatabaseTransaction, userId: string) {
+  await transaction.delete(sessions).where(eq(sessions.userId, userId))
+}

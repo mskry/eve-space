@@ -85,8 +85,15 @@ interface CharacterSkillsSummaryData {
 
 export type CharacterSkillsSummary = CharacterSkillsSummaryData & EsiResultMetadata
 
-export async function getCharacterLocation(characterId: number): Promise<CharacterLocation> {
-  const positionResult = await execute(characterLocationRepresentation, { characterId })
+export async function getCharacterLocation(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterLocation> {
+  const positionResult = await execute(
+    characterLocationRepresentation,
+    { characterId },
+    { subjectLifecycleId },
+  )
   const position = positionResult.data
 
   const [system, station] = await Promise.all([
@@ -109,8 +116,15 @@ export async function getCharacterLocation(characterId: number): Promise<Charact
   }
 }
 
-export async function getCharacterShip(characterId: number): Promise<CharacterShip> {
-  const shipResult = await execute(characterShipRepresentation, { characterId })
+export async function getCharacterShip(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterShip> {
+  const shipResult = await execute(
+    characterShipRepresentation,
+    { characterId },
+    { subjectLifecycleId },
+  )
   const ship = shipResult.data
   const typeResult = await execute(universeTypeRepresentation, { typeId: ship.typeId })
 
@@ -124,8 +138,9 @@ export async function getCharacterShip(characterId: number): Promise<CharacterSh
 
 export async function getCharacterSkillsSummary(
   characterId: number,
+  subjectLifecycleId: string,
 ): Promise<CharacterSkillsSummary> {
-  const skills = await getCharacterSkillsData(characterId)
+  const skills = await getCharacterSkillsData(characterId, subjectLifecycleId)
   return {
     totalSp: skills.data.totalSp,
     unallocatedSp: skills.data.unallocatedSp,

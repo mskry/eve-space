@@ -25,15 +25,15 @@ const representation = defineCharacterEsiRepresentation({
   map: ({ data }): SkillsFixtureResult => ({ totalSp: data.total_sp }),
 })
 
-expectTypeOf(execute(representation, { characterId: 1 })).toEqualTypeOf<
-  Promise<EsiCachedResult<SkillsFixtureResult>>
->()
+expectTypeOf(
+  execute(representation, { characterId: 1 }, { subjectLifecycleId: 'lifecycle' }),
+).toEqualTypeOf<Promise<EsiCachedResult<SkillsFixtureResult>>>()
 
 // @ts-expect-error the representation's input type rejects an unrelated field name
-execute(representation, { character_id: 1 })
+execute(representation, { character_id: 1 }, { subjectLifecycleId: 'lifecycle' })
 
 // @ts-expect-error the representation's input type rejects a missing required field
-execute(representation, {})
+execute(representation, {}, { subjectLifecycleId: 'lifecycle' })
 
 defineCharacterEsiRepresentation({
   operation: 'skills',
@@ -59,7 +59,11 @@ defineCharacterEsiRepresentation({
 })
 
 async function assertResultTypeFlowsThroughExecute() {
-  const result = await execute(representation, { characterId: 1 })
+  const result = await execute(
+    representation,
+    { characterId: 1 },
+    { subjectLifecycleId: 'lifecycle' },
+  )
   // @ts-expect-error the mapped result type cannot be assigned to an incompatible shape
   const wrongShape: { unallocatedSp: number } = result.data
   return wrongShape
@@ -77,15 +81,19 @@ const mutation = defineCharacterEsiMutation({
   map: ({ data }, input) => ({ characterId: input.characterId, mailId: data }),
 })
 
-expectTypeOf(executeMutation(mutation, { characterId: 1, subject: 'Subject' })).toEqualTypeOf<
-  Promise<{ characterId: number; mailId: number }>
->()
+expectTypeOf(
+  executeMutation(
+    mutation,
+    { characterId: 1, subject: 'Subject' },
+    { subjectLifecycleId: 'lifecycle' },
+  ),
+).toEqualTypeOf<Promise<{ characterId: number; mailId: number }>>()
 
 // @ts-expect-error read representations cannot obtain mutation confirmation
-executeMutation(representation, { characterId: 1 })
+executeMutation(representation, { characterId: 1 }, { subjectLifecycleId: 'lifecycle' })
 
 // @ts-expect-error mutation representations cannot execute through the read path
-execute(mutation, { characterId: 1, subject: 'Subject' })
+execute(mutation, { characterId: 1, subject: 'Subject' }, { subjectLifecycleId: 'lifecycle' })
 
 defineCharacterEsiMutation({
   // @ts-expect-error catalog read operations cannot be declared as mutations

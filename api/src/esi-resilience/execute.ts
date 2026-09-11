@@ -2,7 +2,7 @@ import type { OperationRequestArguments } from '@evespace/esi-client/operations'
 import type { CharacterMutationEsiOperation, EsiOperation } from './catalog.js'
 import { esiExecutionLayer } from './layer.js'
 import type { EsiCharacterMutation, EsiRepresentation } from './representations.js'
-import type { EsiCachedResult } from './types.js'
+import type { CharacterEsiExecutionOptions, EsiCachedResult, EsiExecutionOptions } from './types.js'
 
 export async function execute<
   Authorization extends 'public' | 'character',
@@ -14,11 +14,11 @@ export async function execute<
 >(
   representation: EsiRepresentation<Authorization, Operation, Input, Arguments, WireResult, Result>,
   input: Input,
-  signal?: AbortSignal,
+  ...[options]: Authorization extends 'character'
+    ? [options: CharacterEsiExecutionOptions]
+    : [options?: EsiExecutionOptions]
 ): Promise<EsiCachedResult<Result>> {
-  return signal
-    ? esiExecutionLayer.executeRepresentation(representation, input, signal)
-    : esiExecutionLayer.executeRepresentation(representation, input)
+  return esiExecutionLayer.executeRepresentation(representation, input, options)
 }
 
 export async function executeMutation<
@@ -30,6 +30,7 @@ export async function executeMutation<
 >(
   representation: EsiCharacterMutation<Operation, Input, Arguments, WireResult, Result>,
   input: Input,
+  options: CharacterEsiExecutionOptions,
 ): Promise<Result> {
-  return esiExecutionLayer.executeMutationRepresentation(representation, input)
+  return esiExecutionLayer.executeMutationRepresentation(representation, input, options)
 }

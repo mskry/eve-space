@@ -7,6 +7,7 @@ import {
   organizationAuthorityEvidence,
   organizationMemberBlocks,
   organizationRoleGrants,
+  platformSubjectLifecycles,
 } from '../db/schema.js'
 import { appendOrganizationAuditEvent } from './audit.js'
 import { recomputeOrganizationAccountCompliance } from './compliance.js'
@@ -29,6 +30,7 @@ export class OrganizationOwnerClaimError extends Error {
 interface OrganizationOwnerClaimInput {
   userId: string
   characterId: number
+  subjectLifecycleId: string
   organizationId: number
   organizationVersion: number
   authorityCorporationId: number
@@ -77,13 +79,21 @@ export async function claimOrganizationOwnership(input: OrganizationOwnerClaimIn
         allianceId: characters.allianceId,
         affiliationCheckedAt: characters.affiliationCheckedAt,
         affiliationResolutionState: characters.affiliationResolutionState,
+        subjectLifecycleId: platformSubjectLifecycles.subjectLifecycleId,
         scopes: eveTokens.scopes,
       })
       .from(characters)
       .innerJoin(eveTokens, eq(eveTokens.characterId, characters.characterId))
+      .innerJoin(
+        platformSubjectLifecycles,
+        eq(platformSubjectLifecycles.characterId, characters.characterId),
+      )
       .where(eq(characters.characterId, input.characterId))
       .for('update')
-    if (character?.userId !== input.userId)
+    if (
+      character?.userId !== input.userId ||
+      character.subjectLifecycleId !== input.subjectLifecycleId
+    )
       throw new OrganizationOwnerClaimError('character-not-owned')
     if (
       character.affiliationResolutionState !== 'resolved' ||

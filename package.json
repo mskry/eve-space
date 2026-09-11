@@ -63,6 +63,7 @@
     "postinstall": "pnpm build:nuxt:dependencies && nuxt prepare && lefthook install"
   },
   "dependencies": {
+    "@eve-space/organization-activity-nuxt": "workspace:*",
     "@eve-space/platform-module-contract": "workspace:*",
     "@eve-space/platform-module-nuxt": "workspace:*",
     "@pinia/colada": "catalog:",
@@ -74,10 +75,10 @@
     "nuxt": "catalog:",
     "pinia": "catalog:",
     "reka-ui": "catalog:",
-    "vue": "catalog:",
-    "@eve-space/organization-activity-nuxt": "workspace:*"
+    "vue": "catalog:"
   },
   "devDependencies": {
+    "@hono/node-server": "catalog:",
     "@nuxt/kit": "catalog:",
     "@nuxt/test-utils": "catalog:",
     "@pinia/colada-devtools": "catalog:",
@@ -93,6 +94,8 @@
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "postgres": "catalog:",
+    "testcontainers": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:tsapi",
     "vitest": "catalog:vitest4",

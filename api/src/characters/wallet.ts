@@ -182,9 +182,16 @@ export class WalletQuotaError extends Error {
   }
 }
 
-export async function getWalletBalance(characterId: number): Promise<WalletBalanceResult> {
+export async function getWalletBalance(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<WalletBalanceResult> {
   try {
-    const result = await execute(walletBalanceRepresentation, { characterId })
+    const result = await execute(
+      walletBalanceRepresentation,
+      { characterId },
+      { subjectLifecycleId },
+    )
     return { balance: result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)
@@ -194,10 +201,15 @@ export async function getWalletBalance(characterId: number): Promise<WalletBalan
 export async function getWalletJournal(
   characterId: number,
   page: number,
+  subjectLifecycleId: string,
 ): Promise<WalletJournalResult> {
   assertPositiveSafeInteger(page, 'Wallet journal page')
   try {
-    const result = await execute(walletJournalRepresentation, { characterId, page })
+    const result = await execute(
+      walletJournalRepresentation,
+      { characterId, page },
+      { subjectLifecycleId },
+    )
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)
@@ -207,10 +219,15 @@ export async function getWalletJournal(
 export async function getWalletTransactions(
   characterId: number,
   fromId: number | null = null,
+  subjectLifecycleId: string,
 ): Promise<WalletTransactionsResult> {
   if (fromId !== null) assertPositiveSafeInteger(fromId, 'Wallet transaction continuation')
   try {
-    const result = await execute(walletTransactionsRepresentation, { characterId, fromId })
+    const result = await execute(
+      walletTransactionsRepresentation,
+      { characterId, fromId },
+      { subjectLifecycleId },
+    )
     return { ...result.data, ...toEsiResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)

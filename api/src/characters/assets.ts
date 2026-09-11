@@ -121,11 +121,14 @@ export class CharacterAssetsPaginationError extends Error {
   }
 }
 
-export async function getCharacterAssets(characterId: number): Promise<CharacterAssetsResult> {
-  const firstPage = await loadCharacterAssetPage(characterId, 1)
+export async function getCharacterAssets(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterAssetsResult> {
+  const firstPage = await loadCharacterAssetPage(characterId, subjectLifecycleId, 1)
   const pageNumbers = Array.from({ length: firstPage.data.totalPages - 1 }, (_, index) => index + 2)
   const remainingPages = await mapBounded(pageNumbers, (page) =>
-    loadCharacterAssetPage(characterId, page),
+    loadCharacterAssetPage(characterId, subjectLifecycleId, page),
   )
   const pages = [firstPage, ...remainingPages]
   if (pages.some((page) => page.data.totalPages !== firstPage.data.totalPages))
@@ -134,7 +137,7 @@ export async function getCharacterAssets(characterId: number): Promise<Character
   const assets = deduplicateAssets(pages)
   const [types, names, locations] = await Promise.all([
     loadAssetTypes(assets),
-    loadAssetNames(characterId, assets),
+    loadAssetNames(characterId, subjectLifecycleId, assets),
     loadAssetLocations(assets),
   ])
   const metadata = combineEsiResultMetadata(pages.map(toEsiResultMetadata))
@@ -175,8 +178,12 @@ export async function getCharacterAssets(characterId: number): Promise<Character
   }
 }
 
-async function loadCharacterAssetPage(characterId: number, page: number) {
-  return execute(characterAssetsPageRepresentation, { characterId, page })
+async function loadCharacterAssetPage(
+  characterId: number,
+  subjectLifecycleId: string,
+  page: number,
+) {
+  return execute(characterAssetsPageRepresentation, { characterId, page }, { subjectLifecycleId })
 }
 
 function validatePageCount(value: unknown) {
@@ -258,7 +265,11 @@ async function loadAssetTypes(assets: readonly CharacterAssetSnapshot[]) {
   }
 }
 
-async function loadAssetNames(characterId: number, assets: readonly CharacterAssetSnapshot[]) {
+async function loadAssetNames(
+  characterId: number,
+  subjectLifecycleId: string,
+  assets: readonly CharacterAssetSnapshot[],
+) {
   const candidates = [
     ...new Set(assets.filter((asset) => asset.isSingleton).map((asset) => asset.itemId)),
   ].toSorted((left, right) => left - right)
@@ -276,7 +287,7 @@ async function loadAssetNames(characterId: number, assets: readonly CharacterAss
       ),
   )
   const results = await mapBoundedSettled(batches, (itemIds) =>
-    loadCharacterAssetNameBatch(characterId, itemIds),
+    loadCharacterAssetNameBatch(characterId, subjectLifecycleId, itemIds),
   )
   const values = new Map<number, string>()
   const candidateSet = new Set(candidates)
@@ -297,12 +308,20 @@ async function loadAssetNames(characterId: number, assets: readonly CharacterAss
   }
 }
 
-function loadCharacterAssetNameBatch(characterId: number, itemIds: readonly number[]) {
+function loadCharacterAssetNameBatch(
+  characterId: number,
+  subjectLifecycleId: string,
+  itemIds: readonly number[],
+) {
   const normalizedItemIds = normalizeCharacterAssetNameBatch(itemIds)
-  return execute(characterAssetNamesRepresentation, {
-    path: { character_id: characterId },
-    body: normalizedItemIds,
-  }).then((result) => result.data)
+  return execute(
+    characterAssetNamesRepresentation,
+    {
+      path: { character_id: characterId },
+      body: normalizedItemIds,
+    },
+    { subjectLifecycleId },
+  ).then((result) => result.data)
 }
 
 export function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {

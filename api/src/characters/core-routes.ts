@@ -45,7 +45,7 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
       Promise.all(
         characters.map((character) =>
           resolveSection<CharacterLocation>(
-            () => getCharacterLocation(character.characterId),
+            () => getCharacterLocation(character.characterId, character.subjectLifecycleId),
             locationScope,
             character.characterId,
           ),
@@ -54,7 +54,7 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
       Promise.all(
         characters.map((character) =>
           resolveSection<CharacterShip>(
-            () => getCharacterShip(character.characterId),
+            () => getCharacterShip(character.characterId, character.subjectLifecycleId),
             shipScope,
             character.characterId,
           ),
@@ -63,7 +63,7 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
       Promise.all(
         characters.map((character) =>
           resolveSection(
-            () => getWalletBalance(character.characterId),
+            () => getWalletBalance(character.characterId, character.subjectLifecycleId),
             walletScope,
             character.characterId,
           ),
@@ -72,7 +72,7 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
       Promise.all(
         characters.map((character) =>
           resolveSection<CharacterSkillsSummary>(
-            () => getCharacterSkillsSummary(character.characterId),
+            () => getCharacterSkillsSummary(character.characterId, character.subjectLifecycleId),
             skillsScope,
             character.characterId,
           ),
@@ -113,17 +113,21 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
     loadSession,
     loadOwnedCharacter,
     async (context) => {
-      const characterId = context.var.ownedCharacter.characterId
+      const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       const [profile, location, ship, skills] = await Promise.all([
         getCharacterProfile(characterId).catch(() => undefined),
         resolveSection<CharacterLocation>(
-          () => getCharacterLocation(characterId),
+          () => getCharacterLocation(characterId, subjectLifecycleId),
           locationScope,
           characterId,
         ),
-        resolveSection<CharacterShip>(() => getCharacterShip(characterId), shipScope, characterId),
+        resolveSection<CharacterShip>(
+          () => getCharacterShip(characterId, subjectLifecycleId),
+          shipScope,
+          characterId,
+        ),
         resolveSection<CharacterSkillsSummary>(
-          () => getCharacterSkillsSummary(characterId),
+          () => getCharacterSkillsSummary(characterId, subjectLifecycleId),
           skillsScope,
           characterId,
         ),

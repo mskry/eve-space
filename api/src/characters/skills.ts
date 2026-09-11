@@ -55,8 +55,9 @@ let skillCataloguePromise: Promise<SkillCatalogue> | undefined
 
 export async function getCharacterSkillsData(
   characterId: number,
+  subjectLifecycleId: string,
 ): Promise<EsiCachedResult<CharacterSkillsSnapshot>> {
-  return execute(characterSkillsRepresentation, { characterId })
+  return execute(characterSkillsRepresentation, { characterId }, { subjectLifecycleId })
 }
 
 interface CharacterSkillsData {
@@ -80,9 +81,12 @@ interface CharacterSkillsData {
 
 export type CharacterSkills = CharacterSkillsData & EsiResultMetadata
 
-export async function getCharacterSkills(characterId: number): Promise<CharacterSkills> {
+export async function getCharacterSkills(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterSkills> {
   const [snapshot, catalogue] = await Promise.all([
-    getCharacterSkillsData(characterId),
+    getCharacterSkillsData(characterId, subjectLifecycleId),
     getSkillCatalogue(),
   ])
   return {

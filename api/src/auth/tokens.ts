@@ -1,14 +1,11 @@
 import {
   CharacterTokenNotFoundError,
   deleteCharacterTokenAuthorization,
-  findCharacterCacheAuthorization,
   findCharacterCacheAuthorizationForLifecycle,
-  findCharacterToken,
   findCharacterTokenForLifecycle,
   TokenRefreshLockUnavailableError,
   updateCharacterToken,
   withCharacterTokenLifecycleLock,
-  withCharacterTokenRefreshLock,
 } from './character-token-store.js'
 import type { StoredCharacterToken } from './character-token-store.js'
 import { appendDomainEvent } from '../domain-events/store.js'
@@ -43,8 +40,6 @@ interface RevokedCharacterAuthorization {
 
 type CharacterRefreshResult = RefreshedCharacterAuthorization | RevokedCharacterAuthorization
 
-const refreshes = new Map<number, Promise<RefreshedCharacterAuthorization>>()
-
 /** Treat a token as spent this far ahead of its expiry so a request cannot race the clock. */
 const tokenFreshnessSkewMs = 60_000
 
@@ -63,19 +58,28 @@ export class TokenRefreshUnavailableError extends Error {
   }
 }
 
-export async function getCharacterAccessToken(characterId: number, requiredScope: string) {
-  return (await getCharacterAuthorization(characterId, requiredScope)).accessToken
+export async function getCharacterAccessToken(
+  characterId: number,
+  subjectLifecycleId: string,
+  requiredScope: string,
+) {
+  return (
+    await getCharacterAuthorizationForLifecycle(characterId, subjectLifecycleId, requiredScope)
+  ).accessToken
 }
 
 export async function getCharacterCacheAuthorization(
   characterId: number,
+  subjectLifecycleId: string,
   requiredScope: string,
   signal?: AbortSignal,
 ): Promise<CharacterCacheAuthorization> {
-  signal?.throwIfAborted()
-  const stored = await findCharacterCacheAuthorization(characterId)
-  signal?.throwIfAborted()
-  return readCacheAuthorization(stored, requiredScope)
+  return getCharacterCacheAuthorizationForLifecycle(
+    characterId,
+    subjectLifecycleId,
+    requiredScope,
+    signal,
+  )
 }
 
 export async function getCharacterCacheAuthorizationForLifecycle(
@@ -92,40 +96,16 @@ export async function getCharacterCacheAuthorizationForLifecycle(
 
 export async function getCharacterAuthorization(
   characterId: number,
+  subjectLifecycleId: string,
   requiredScope: string,
   signal?: AbortSignal,
 ) {
-  signal?.throwIfAborted()
-  const stored = await findCharacterToken(characterId)
-  signal?.throwIfAborted()
-  if (!stored) throw new CharacterTokenNotFoundError()
-  requireScope(stored.scopes, requiredScope)
-
-  if (stored.accessTokenExpiresAt.getTime() > Date.now() + tokenFreshnessSkewMs)
-    return readStoredAuthorization(stored, requiredScope)
-
-  if (signal)
-    return finishCharacterRefresh(
-      await withRefreshCapacity(
-        () => refreshCharacterToken(characterId, requiredScope, stored, signal),
-        signal,
-      ),
-      requiredScope,
-    )
-
-  let refresh = refreshes.get(characterId)
-  if (!refresh) {
-    refresh = withRefreshCapacity(() =>
-      refreshCharacterToken(characterId, requiredScope, stored),
-    ).finally(() => refreshes.delete(characterId))
-    refreshes.set(characterId, refresh)
-  }
-  return finishCharacterRefresh(await refresh, requiredScope)
-}
-
-function finishCharacterRefresh(refreshed: RefreshedCharacterAuthorization, requiredScope: string) {
-  requireScope(refreshed.scopes, requiredScope)
-  return refreshed.authorization
+  return getCharacterAuthorizationForLifecycle(
+    characterId,
+    subjectLifecycleId,
+    requiredScope,
+    signal,
+  )
 }
 
 export async function getCharacterAuthorizationForLifecycle(
@@ -175,6 +155,47 @@ export async function getCharacterAuthorizationForLifecycle(
     requireScope(refreshed.scopes, requiredScope)
     return refreshed.authorization
   }, signal)
+}
+
+export async function withCharacterAuthorizationForLifecycle<T>(
+  characterId: number,
+  subjectLifecycleId: string,
+  requiredScope: string,
+  operation: (authorization: CharacterAuthorization) => Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
+  signal?.throwIfAborted()
+  const authorization = await getCharacterAuthorizationForLifecycle(
+    characterId,
+    subjectLifecycleId,
+    requiredScope,
+    signal,
+  )
+  const locked = await withLifecycleRefreshLock(
+    characterId,
+    subjectLifecycleId,
+    async (stored) => {
+      signal?.throwIfAborted()
+      requireScope(stored.scopes, requiredScope)
+      if (stored.tokenVersion !== authorization.tokenVersion) return { changed: true } as const
+      try {
+        return { changed: false, data: await operation(authorization) } as const
+      } catch (error) {
+        return { changed: false, error } as const
+      }
+    },
+    signal,
+  )
+  if (locked.changed)
+    return withCharacterAuthorizationForLifecycle(
+      characterId,
+      subjectLifecycleId,
+      requiredScope,
+      operation,
+      signal,
+    )
+  if ('error' in locked) throw locked.error
+  return locked.data
 }
 
 /**
@@ -237,38 +258,12 @@ function waitForRefreshSlot(deadline: number, signal?: AbortSignal) {
   })
 }
 
-async function refreshCharacterToken(
-  characterId: number,
-  requiredScope: string,
-  original: StoredCharacterToken,
-  signal?: AbortSignal,
-) {
-  const result = await withRefreshLock(
-    characterId,
-    (stored, transaction) => {
-      signal?.throwIfAborted()
-      return refreshLockedCharacterToken(
-        characterId,
-        requiredScope,
-        original,
-        stored,
-        transaction,
-        () => findCharacterToken(characterId, transaction),
-      )
-    },
-    signal,
-  )
-  signal?.throwIfAborted()
-  if ('authorizationRevoked' in result) throw result.authorizationRevoked
-  return result
-}
-
 async function refreshLockedCharacterToken(
   characterId: number,
   requiredScope: string,
   original: StoredCharacterToken,
   stored: StoredCharacterToken,
-  transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
+  transaction: Parameters<Parameters<typeof withCharacterTokenLifecycleLock>[2]>[1],
   findWinner: () => Promise<StoredCharacterToken | null>,
 ): Promise<CharacterRefreshResult> {
   if (stored.tokenVersion !== original.tokenVersion)
@@ -356,7 +351,7 @@ async function recordRefreshedScopeChange(
   addedScopes: string[],
   removedScopes: string[],
   organizationVersion: number | null,
-  transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
+  transaction: Parameters<Parameters<typeof withCharacterTokenLifecycleLock>[2]>[1],
 ) {
   await appendDomainEvent(transaction, {
     type: 'character.scopes-changed',
@@ -374,7 +369,7 @@ async function recordRefreshedScopeChange(
 async function deleteRevokedCharacterAuthorization(
   characterId: number,
   stored: StoredCharacterToken,
-  transaction: Parameters<Parameters<typeof withCharacterTokenRefreshLock>[1]>[1],
+  transaction: Parameters<Parameters<typeof withCharacterTokenLifecycleLock>[2]>[1],
 ) {
   const deleted = await deleteCharacterTokenAuthorization(
     characterId,
@@ -411,16 +406,6 @@ async function mapRefreshLockError<T>(locked: Promise<T>) {
     if (error instanceof TokenRefreshLockUnavailableError) throw new TokenRefreshUnavailableError()
     throw error
   }
-}
-
-async function withRefreshLock<T>(
-  characterId: number,
-  operation: Parameters<typeof withCharacterTokenRefreshLock<T>>[1],
-  signal?: AbortSignal,
-) {
-  const result = await mapRefreshLockError(withCharacterTokenRefreshLock(characterId, operation))
-  signal?.throwIfAborted()
-  return result
 }
 
 async function withLifecycleRefreshLock<T>(
