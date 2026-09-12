@@ -1,10 +1,8 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
 import { EveSsoTokenRefreshError } from '../auth/sso.js'
 import { TokenRefreshUnavailableError } from '../auth/tokens.js'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { EsiTransportError } from '../esi-resilience/transport.js'
-import type { EsiCachedResult } from '../esi-resilience/types.js'
-import { getNumericProperty, getStringProperty } from '../type-guards.js'
+import { classifyEsiRefreshFailure, EsiQuotaError } from '../esi-gateway/failures.js'
+import type { PlatformEsiExecution } from '../esi-gateway/platform-execution.js'
 import type {
   PlatformCollectionFailureClass,
   PlatformCollectionStateIdentity,
@@ -44,7 +42,14 @@ class PlatformResourceResponseInvalidError extends Error {
   }
 }
 
-export function assertPlatformResourceRefreshSucceeded(result: EsiCachedResult<unknown>) {
+class PlatformResourceEsiUnavailableError extends Error {
+  constructor() {
+    super('Platform resource ESI refresh was unavailable')
+    this.name = 'PlatformResourceEsiUnavailableError'
+  }
+}
+
+export function assertPlatformResourceRefreshSucceeded(result: PlatformEsiExecution<unknown>) {
   if (result.refreshFailureClass === 'esi-cooldown') {
     const retryAt = result.retryAt ? new Date(result.retryAt) : new Date(Date.now() + 1_000)
     throw new EsiQuotaError(
@@ -54,7 +59,7 @@ export function assertPlatformResourceRefreshSucceeded(result: EsiCachedResult<u
     )
   }
   if (result.refreshFailureClass === 'esi-unavailable')
-    throw new EsiTransportError(new Error('ESI refresh returned a stale fallback'))
+    throw new PlatformResourceEsiUnavailableError()
   if (result.refreshFailureClass === 'response-invalid')
     throw new PlatformResourceResponseInvalidError()
   if (result.refreshFailureClass === 'unknown') throw new Error('ESI refresh failed permanently')
@@ -105,21 +110,17 @@ export function classifyPlatformResourceFailure(error: unknown, now = new Date()
     return { failureClass: 'authorization-required', nextEligibleAt: null } as const
   if (error instanceof EsiQuotaError)
     return { failureClass: 'esi-cooldown', nextEligibleAt: error.retryAt } as const
+  const esiFailure = classifyEsiRefreshFailure(error)
   if (
-    error instanceof EsiTransportError ||
+    error instanceof PlatformResourceEsiUnavailableError ||
     error instanceof TokenRefreshUnavailableError ||
-    (getStringProperty(error, 'code') === 'ESI_HTTP_ERROR' &&
-      getNumericProperty(error, 'status') >= 500)
+    esiFailure === 'esi-unavailable'
   )
     return {
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date(now.getTime() + transientFailureBackoffMilliseconds),
     } as const
-  if (
-    getStringProperty(error, 'code') === 'ESI_RESPONSE_PARSE_ERROR' ||
-    getStringProperty(error, 'code') === 'ESI_RESPONSE_VALIDATION_ERROR' ||
-    error instanceof PlatformResourceResponseInvalidError
-  )
+  if (esiFailure === 'response-invalid' || error instanceof PlatformResourceResponseInvalidError)
     return permanentFailure('response-invalid')
   if (error instanceof PlatformResourceMappingError) return permanentFailure('mapping-failed')
   if (error instanceof PlatformResourcePersistenceError)

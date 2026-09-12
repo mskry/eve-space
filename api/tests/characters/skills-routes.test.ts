@@ -44,7 +44,7 @@ vi.mock('../../src/characters/overview.js', () => ({
 }))
 
 import { characterRoutes } from '../../src/characters/routes.js'
-import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
 
 const character = {

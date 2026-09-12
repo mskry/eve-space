@@ -3,12 +3,11 @@ import type { GetCharactersCharacterIdSkillqueueResponse } from '@evespace/esi-c
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
-import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiResultMetadata } from '../esi-resilience/types.js'
+import {
+  createCharacterEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 import {
   skillAttributeFromDogmaValue,
   skillPrimaryAttributeId,
@@ -18,23 +17,20 @@ import type { SkillAttribute } from '../skills/training.js'
 
 interface CharacterSkillQueueRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
 }
 
-const characterSkillQueueRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'skill-queue',
-    name: 'character-skill-queue-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdSkillqueue.transport,
-    encodeRequest: (input: CharacterSkillQueueRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterSkillQueue(response.data),
+const characterSkillQueueRead = createCharacterEsiRead({
+  operation: 'skill-queue',
+  name: 'character-skill-queue-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdSkillqueue.transport,
+  encodeRequest: (input: CharacterSkillQueueRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterSkillQueue(response.data),
+})
 
-export const characterSkillQueueScope = getCharacterEsiScope(
-  characterSkillQueueRepresentation.operation,
-)
+export const characterSkillQueueScope = characterSkillQueueRead.requiredScope
 
 type SkillQueueState = 'training' | 'paused' | 'empty' | 'lapsed'
 
@@ -63,7 +59,7 @@ interface CharacterSkillQueueData extends CharacterSkillQueueEntries {
   activeQueuePosition: number | null
 }
 
-export type CharacterSkillQueue = CharacterSkillQueueData & EsiResultMetadata
+export type CharacterSkillQueue = CharacterSkillQueueData & EsiReadResultMetadata
 
 /**
  * Classification depends on the current time, so it is resolved per response rather than stored in
@@ -89,16 +85,12 @@ export async function getCharacterSkillQueue(
   characterId: number,
   subjectLifecycleId: string,
 ): Promise<CharacterSkillQueue> {
-  const result = await execute(
-    characterSkillQueueRepresentation,
-    { characterId },
-    { subjectLifecycleId },
-  )
+  const result = await characterSkillQueueRead.execute({ characterId, subjectLifecycleId })
 
   return {
     ...resolveSkillQueueState(result.data.entries, Date.now()),
     entries: result.data.entries,
-    ...toEsiResultMetadata(result),
+    ...toEsiReadResultMetadata(result),
   }
 }
 

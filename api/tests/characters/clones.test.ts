@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 interface StaticRow {
   typeId: number
@@ -39,48 +40,27 @@ const mocks = vi.hoisted(() => ({
   where: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@evespace/esi-client')>()
-  return {
-    ...original,
-    EsiClient: class {
-      constructor(options: unknown) {
-        mocks.createEsiClient(options)
-      }
-
-      callOperation(...arguments_: unknown[]) {
-        return mocks.callOperation(...arguments_)
-      }
-    },
-  }
-})
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
 vi.mock('../../src/auth/tokens.js', () => ({
   getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorization,
   getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorization,
 }))
-vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
+vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
     get: mocks.cacheGet,
     set: mocks.cacheSet,
     del: mocks.cacheDel,
     ping: vi.fn().mockResolvedValue('PONG'),
   }),
+  observeCacheRedisConnectionErrors: vi.fn(),
 }))
-vi.mock('../../src/esi-resilience/coordination-connection.js', () => ({
-  getCoordinationConnection: () => ({}),
-}))
-vi.mock('../../src/esi-resilience/coordination.js', () => ({
-  acquireEsiRequestLease: mocks.acquire,
-  commitEsiFence: mocks.commit,
-  getCommittedEsiFence: mocks.getCommitted,
-  getEsiRequestLeaseTtl: mocks.getLeaseTtl,
-  getEsiResourceRevision: mocks.getRevision,
-  incrementEsiResourceRevision: mocks.incrementRevision,
-  initializeCacheNamespace: mocks.initialize,
-  releaseEsiRequestLease: mocks.release,
-  renewEsiRequestLease: mocks.renew,
-}))
+vi.mock('../../src/esi-gateway/feature-execution.js', () =>
+  createFeatureExecutionMock((definition, input) =>
+    definition.operation === 'character-clones'
+      ? mocks.getState(input)
+      : mocks.listActiveImplants(input),
+  ),
+)
 vi.mock('../../src/universe/names.js', () => ({
   resolveUniverseNames: mocks.resolveUniverseNames,
 }))
@@ -104,11 +84,6 @@ beforeEach(() => {
   for (const mock of Object.values(mocks)) if (typeof mock === 'function') mock.mockReset()
   mocks.staticRows.splice(0)
 
-  mocks.callOperation.mockImplementation((operationId: string, ...rest: unknown[]) =>
-    operationId === 'GetCharactersCharacterIdClones'
-      ? mocks.getState(operationId, ...rest)
-      : mocks.listActiveImplants(operationId, ...rest),
-  )
   mocks.getCharacterAuthorization.mockResolvedValue({
     accessToken: 'access-token',
     tokenVersion: 1,
@@ -218,19 +193,7 @@ describe('character clone state', () => {
       ...publicMetadata,
     })
     expect(characterClonesScope).toBe(clonesScope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      clonesScope,
-    )
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      clonesScope,
-    )
-    expect(mocks.getState).toHaveBeenCalledWith('GetCharactersCharacterIdClones', {
-      path: { character_id: characterId },
-    })
+    expect(mocks.getState).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
     expect(mocks.resolveUniverseNames).toHaveBeenCalledWith([60_000_001])
     expect(mocks.select).toHaveBeenCalledOnce()
     expect(mocks.limit).toHaveBeenCalledWith(3000)
@@ -318,19 +281,36 @@ describe('character clone state', () => {
   })
 
   test('serves a repeated request from the L1 cache without another ESI call', async () => {
-    mocks.getState.mockResolvedValue(
-      response({
-        home_location: null,
-        jump_clones: [
+    mocks.getState
+      .mockResolvedValueOnce(
+        response({
+          home_location: null,
+          jump_clones: [
+            {
+              jump_clone_id: 15,
+              location_id: 1_035_466_617_946,
+              location_type: 'structure',
+              implants: [4],
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        response(
           {
-            jump_clone_id: 15,
-            location_id: 1_035_466_617_946,
-            location_type: 'structure',
-            implants: [4],
+            home_location: null,
+            jump_clones: [
+              {
+                jump_clone_id: 15,
+                location_id: 1_035_466_617_946,
+                location_type: 'structure',
+                implants: [4],
+              },
+            ],
           },
-        ],
-      }),
-    )
+          'cache',
+        ),
+      )
     mocks.staticRows.push({
       typeId: 4,
       name: 'Recovered Name',
@@ -343,7 +323,7 @@ describe('character clone state', () => {
     const second = await getCharacterClones(characterId, subjectLifecycleId)
 
     expect(second).toEqual(first)
-    expect(mocks.getState).toHaveBeenCalledOnce()
+    expect(mocks.getState).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -372,14 +352,7 @@ describe('active character implants', () => {
       ...publicMetadata,
     })
     expect(characterImplantsScope).toBe(implantsScope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      implantsScope,
-    )
-    expect(mocks.listActiveImplants).toHaveBeenCalledWith('GetCharactersCharacterIdImplants', {
-      path: { character_id: characterId },
-    })
+    expect(mocks.listActiveImplants).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
     expect(mocks.resolveUniverseNames).not.toHaveBeenCalled()
   })
 
@@ -422,6 +395,43 @@ describe('active character implants', () => {
   })
 })
 
-function response<Data>(data: Data) {
-  return { data, meta: { headers: {} } }
+function response<Data>(data: Data, source: 'cache' | 'esi' = 'esi') {
+  return {
+    data: Array.isArray(data)
+      ? { implantTypeIds: [...new Set(data)] }
+      : cloneSnapshot(data as Record<string, unknown>),
+    cachedUntil: publicMetadata.cachedUntil,
+    validatedAt: publicMetadata.validatedAt,
+    quota: {},
+    source,
+    stale: false,
+  }
+}
+
+function cloneSnapshot(data: Record<string, unknown>) {
+  const home = data.home_location as
+    | { location_id?: number; location_type?: 'station' | 'structure' }
+    | null
+    | undefined
+  const clones =
+    (data.jump_clones as Array<{
+      jump_clone_id: number
+      location_id: number
+      location_type: 'station' | 'structure'
+      name?: string
+      implants?: number[]
+    }>) ?? []
+  return {
+    homeLocation: home
+      ? { locationId: home.location_id ?? null, locationType: home.location_type ?? null }
+      : null,
+    jumpClones: clones.map((clone) => ({
+      jumpCloneId: clone.jump_clone_id,
+      name: clone.name ?? null,
+      location: { locationId: clone.location_id, locationType: clone.location_type },
+      implantTypeIds: [...new Set(clone.implants ?? [])],
+    })),
+    lastCloneJumpAt: (data.last_clone_jump_date as string | undefined) ?? null,
+    lastStationChangeAt: (data.last_station_change_date as string | undefined) ?? null,
+  }
 }

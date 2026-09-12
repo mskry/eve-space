@@ -1,8 +1,8 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
+import { EsiHttpError, EsiResponseParseError, EsiTransportError } from '@evespace/esi-client'
 import { describe, expect, test, vi } from 'vitest'
 import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
-import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
-import { EsiTransportError } from '../../src/esi-resilience/transport.js'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
 import {
   classifyPlatformResourceFailure,
@@ -45,12 +45,25 @@ describe('platform resource failure transitions', () => {
 
   test('backs off exhausted transport and 5xx failures', () => {
     expect(
-      classifyPlatformResourceFailure(new EsiTransportError(new Error('network')), now),
+      classifyPlatformResourceFailure(
+        new EsiTransportError({
+          operationId: 'GetStatus',
+          reason: 'network',
+          phase: 'request',
+          cause: new Error('network'),
+        }),
+        now,
+      ),
     ).toEqual({
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
     })
-    expect(classifyPlatformResourceFailure({ code: 'ESI_HTTP_ERROR', status: 503 }, now)).toEqual({
+    expect(
+      classifyPlatformResourceFailure(
+        new EsiHttpError({ operationId: 'GetStatus', status: 503 }),
+        now,
+      ),
+    ).toEqual({
       failureClass: 'esi-unavailable',
       nextEligibleAt: new Date('2026-08-26T12:05:00.000Z'),
     })
@@ -63,7 +76,9 @@ describe('platform resource failure transitions', () => {
   test('stops the current authorization generation after an upstream refusal', () => {
     expect(
       classifyPlatformResourceFailure(
-        new PlatformResourceAuthorizationError({ code: 'ESI_HTTP_ERROR', status: 403 }),
+        new PlatformResourceAuthorizationError(
+          new EsiHttpError({ operationId: 'GetStatus', status: 403 }),
+        ),
         now,
       ),
     ).toEqual({ failureClass: 'authorization-required', nextEligibleAt: null })
@@ -74,7 +89,7 @@ describe('platform resource failure transitions', () => {
   })
 
   test.each([
-    [{ code: 'ESI_RESPONSE_PARSE_ERROR' }, 'response-invalid'],
+    [new EsiResponseParseError({ operationId: 'GetStatus', status: 200 }), 'response-invalid'],
     [new PlatformResourceMappingError(new Error('mapper')), 'mapping-failed'],
     [new PlatformResourcePersistenceError(new Error('database')), 'persistence-failed'],
     [new Error('other'), 'unknown'],

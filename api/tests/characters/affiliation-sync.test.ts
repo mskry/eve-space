@@ -7,7 +7,7 @@ import {
   partitionAffiliationCharacterIds,
   processAffiliationBatch,
 } from '../../src/characters/affiliation-sync.js'
-import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { runAffiliationPlanner } from '../../src/queue/affiliation-planner.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 

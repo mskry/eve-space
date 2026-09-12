@@ -3,19 +3,18 @@ import type {
   PlatformResourceOperationImplementation,
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract'
-import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
-import type { EsiOperation } from '../esi-resilience/catalog.js'
+import type { EsiOperation } from '../esi-gateway/catalog-interface.js'
+import { isEsiAuthorizationFailure } from '../esi-gateway/failures.js'
 import {
   executePlatformEsiOperation,
+  type PlatformEsiExecution,
   PlatformEsiRequestError,
-} from '../esi-resilience/platform-execute.js'
+} from '../esi-gateway/platform-execution.js'
 import { isRecord } from '../type-guards.js'
-import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { createPlatformResourceReadCapabilities } from './module-route-capabilities.js'
 import { loadResourceCollectionContext } from './resource-collection-context.js'
 import { platformResources } from './resources.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
-import { getInstalledResourceEsiOperationDefinition } from './resource-declarations.js'
 import {
   guardInstalledResourceExecution,
   type PlatformResourceExecutionGuard,
@@ -36,7 +35,7 @@ type PlatformResourceOperationExecution =
       readonly authorizationGeneration: number | null
       readonly organizationVersion?: number
       readonly complete?: boolean
-      readonly result: EsiCachedResult<unknown>
+      readonly result: PlatformEsiExecution<unknown>
     }
 
 interface ResourceOperationExecutorOptions {
@@ -49,7 +48,6 @@ interface ResourceOperationExecutorOptions {
   readonly createCapabilities?: typeof createPlatformResourceReadCapabilities
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly guardExecution?: typeof guardInstalledResourceExecution
-  readonly definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
   readonly executeEsiOperation?: typeof executePlatformEsiOperation
 }
 
@@ -85,7 +83,7 @@ export async function executeInstalledResourceOperation(
     )
     options.signal?.throwIfAborted()
     let requests = 0
-    let latest: EsiCachedResult<unknown> | undefined
+    let latest: PlatformEsiExecution<unknown> | undefined
     const collected = await implementation.collect({
       ...context,
       subject,
@@ -142,7 +140,6 @@ export async function executeInstalledResourceOperation(
     }
   }
   const operation = (options.request?.operationId ?? guarded.resource.operationId) as EsiOperation
-  const definition = getInstalledResourceEsiOperationDefinition(operation, options.definitions)
   let inputs: Readonly<Record<string, unknown>>
   try {
     inputs = options.request?.inputs ?? implementation.request(subject)
@@ -163,7 +160,6 @@ export async function executeInstalledResourceOperation(
     )
   const execution = await executeResourceEsiOperation(options, {
     operation,
-    definition,
     inputs,
     authorization: authorization
       ? {
@@ -194,13 +190,13 @@ async function executeResourceEsiOperation(
   } catch (error) {
     options.signal?.throwIfAborted()
     if (error instanceof PlatformEsiRequestError) throw new PlatformResourceMappingError(error)
-    if (isAuthorizationResponse(error)) throw new PlatformResourceAuthorizationError(error)
+    if (isEsiAuthorizationFailure(error)) throw new PlatformResourceAuthorizationError(error)
     throw error
   }
 }
 
 function mapResourceResult(
-  result: EsiCachedResult<unknown>,
+  result: PlatformEsiExecution<unknown>,
   implementation: PlatformResourceOperationImplementation<
     string,
     unknown,
@@ -211,7 +207,7 @@ function mapResourceResult(
   >,
   subject: PlatformResourceSubject,
   raw = false,
-): EsiCachedResult<unknown> {
+): PlatformEsiExecution<unknown> {
   assertPlatformResourceRefreshSucceeded(result)
   if (raw) return result
   try {
@@ -219,9 +215,4 @@ function mapResourceResult(
   } catch (error) {
     throw new PlatformResourceMappingError(error)
   }
-}
-
-function isAuthorizationResponse(error: unknown) {
-  if (typeof error !== 'object' || !error || !('status' in error)) return false
-  return error.status === 401 || error.status === 403
 }

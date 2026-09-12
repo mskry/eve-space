@@ -2,8 +2,8 @@ import type {
   PlatformCollectionStatus,
   PlatformInstalledResourceDescriptor,
 } from '@eve-space/platform-module-contract'
+import type { PlatformEsiExecution } from '../esi-gateway/platform-execution.js'
 import { platformResources } from './resources.js'
-import type { EsiCachedResult } from '../esi-resilience/types.js'
 import { findInstalledResource } from './resource-identity.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import { upsertPlatformCollectionState } from './collection-state-store.js'
@@ -36,7 +36,7 @@ export async function getInstalledResourceCollectionStatus(
 
 export async function recordInstalledResourceCollectionSuccess(
   identity: PlatformCollectionStateIdentity,
-  result: Pick<EsiCachedResult<unknown>, 'validatedAt'>,
+  result: Pick<PlatformEsiExecution<unknown>, 'validatedAt'>,
   authorizationGeneration: number | null,
   options: CollectionSuccessOptions = {},
 ) {

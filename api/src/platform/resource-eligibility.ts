@@ -4,8 +4,8 @@ import { sql } from '../db/client.js'
 import {
   assertRegisteredEsiOperation,
   getOptionalCharacterEsiScope,
-} from '../esi-resilience/catalog-access.js'
-import type { EsiOperation } from '../esi-resilience/catalog.js'
+  type EsiOperation,
+} from '../esi-gateway/catalog-interface.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import {
   platformCollectionFailureClasses,

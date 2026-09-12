@@ -110,8 +110,8 @@ function violationsForImport(
   specifier: string,
 ) {
   const importedPath = relativeImportPath(path, specifier)
-  if (importedPath?.startsWith('api/src/esi-resilience/'))
-    return [`${path}: Queue module ${module} cannot import ESI resilience module ${specifier}`]
+  if (importedPath?.startsWith('api/src/esi-gateway/'))
+    return [`${path}: Queue module ${module} cannot import ESI gateway module ${specifier}`]
   if (module === 'job-contracts' && !allowedJobContractImports.has(specifier))
     return [`${path}: Job contract module cannot import non-contract dependency ${specifier}`]
 

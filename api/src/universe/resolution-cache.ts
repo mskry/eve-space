@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { env } from '../env.js'
-import { getSharedCacheRedisConnection } from '../esi-resilience/cache-redis.js'
+import { getSharedCacheRedisConnection } from '../cache-redis.js'
 import type { UniverseId, UniverseName } from './names.js'
 
 const freshMilliseconds = 3_600_000

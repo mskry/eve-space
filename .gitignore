@@ -11,6 +11,10 @@ coverage-redis
 coverage-registry
 .scannerwork
 
+# Transient platform-module conformance registries
+/tests/fixtures/platform-module-conformance/generated/
+/tests/fixtures/platform-module-conformance/api/src/generated/
+
 # Node dependencies
 node_modules
 .pnpm-store

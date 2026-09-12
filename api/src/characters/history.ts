@@ -1,8 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdCorporationhistoryResponse } from '@evespace/esi-client/types'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
+import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
 export interface CharacterEmploymentHistoryEntry {
@@ -19,22 +17,20 @@ export interface CharacterEmploymentHistoryEntry {
 /** CCP allocates NPC corporations below this ID; player-created corporations sit above it. */
 const FIRST_PLAYER_CORPORATION_ID = 2_000_000
 
-const employmentHistoryRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'employment-history',
-    name: 'employment-history-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdCorporationhistory.transport,
-    encodeRequest: (input: { characterId: number }) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapEmploymentHistory(response.data),
+const employmentHistoryRead = createPublicEsiRead({
+  operation: 'employment-history',
+  name: 'employment-history-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdCorporationhistory.transport,
+  encodeRequest: (input: { characterId: number }) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapEmploymentHistory(response.data),
+})
 
 export async function getCharacterEmploymentHistory(
   characterId: number,
 ): Promise<CharacterEmploymentHistoryEntry[]> {
-  return (await execute(employmentHistoryRepresentation, { characterId })).data
+  return (await employmentHistoryRead.execute({ characterId })).data
 }
 
 async function mapEmploymentHistory(

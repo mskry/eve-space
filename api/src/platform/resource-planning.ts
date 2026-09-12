@@ -1,19 +1,16 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
 import {
   assertRegisteredEsiOperation,
-  getEsiOperationContract,
-} from '../esi-resilience/catalog-access.js'
-import { getEsiRequestCooldowns } from '../esi-resilience/cooldowns.js'
-import { characterEsiPrincipal } from '../esi-resilience/identity.js'
-import { getCoordinationConnection } from '../esi-resilience/coordination-connection.js'
+  getEsiOperationAuthorization,
+  getEsiSetOperationConfiguration,
+} from '../esi-gateway/catalog-interface.js'
+import { getEsiQuotaStatuses, type EsiQuotaRequest } from '../esi-gateway/failures.js'
 import type { DueInstalledResource } from './resource-eligibility.js'
 
-export type ResourcePlanningCooldownRequest = Parameters<
-  typeof getEsiRequestCooldowns
->[0]['requests'][number]
+export type ResourcePlanningCooldownRequest = EsiQuotaRequest
 
 export function getResourcePlanningCooldowns(requests: readonly ResourcePlanningCooldownRequest[]) {
-  return getEsiRequestCooldowns({ connection: getCoordinationConnection(), requests })
+  return getEsiQuotaStatuses(requests)
 }
 
 export function createResourcePlanningCooldownRequest(
@@ -22,7 +19,7 @@ export function createResourcePlanningCooldownRequest(
 ) {
   const operationId = descriptor.batch?.operationId ?? candidate.operationId
   assertRegisteredEsiOperation(operationId)
-  const authorization = getEsiOperationContract(operationId).authorization
+  const authorization = getEsiOperationAuthorization(operationId)
   const authorizationCharacterId =
     candidate.authorizationCharacterId ??
     (descriptor.subjectKind === 'character' ? Number(candidate.identity.subjectId) : null)
@@ -35,9 +32,7 @@ export function createResourcePlanningCooldownRequest(
     )
   return {
     operation: operationId,
-    ...(authorization.kind === 'character'
-      ? { principal: characterEsiPrincipal(authorizationCharacterId!) }
-      : {}),
+    ...(authorization.kind === 'character' ? { characterId: authorizationCharacterId! } : {}),
   }
 }
 
@@ -52,8 +47,7 @@ export function getMaximumSubjectsPerResourceJob(
 
 export function getResourceBatchMaximumItems(operationId: string) {
   assertRegisteredEsiOperation(operationId)
-  const contract = getEsiOperationContract(operationId)
-  if (contract.authorization.kind !== 'public' || contract.identity.kind !== 'set')
+  if (getEsiOperationAuthorization(operationId).kind !== 'public')
     throw new Error('Resource batch operation must use a public set identity')
-  return contract.identity.maximumItems
+  return getEsiSetOperationConfiguration(operationId).maximumItems
 }

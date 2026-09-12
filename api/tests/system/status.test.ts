@@ -1,34 +1,21 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 const mocks = vi.hoisted(() => ({
   get: vi.fn(),
-  getStatus: vi.fn(),
   probeDomainEventStatus: vi.fn(),
-  probeEsiResilienceTelemetry: vi.fn(),
+  probeEsiStatus: vi.fn(),
   probeQueueStatus: vi.fn(),
   sql: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@evespace/esi-client')>()
-  return {
-    ...original,
-    EsiClient: class {
-      callOperation(...arguments_: unknown[]) {
-        return mocks.getStatus(...arguments_)
-      }
-    },
-  }
-})
-
 vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
 
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  esiExecutionLayer: { executeRepresentation: mocks.get },
-}))
+vi.mock('../../src/esi-gateway/feature-execution.js', () => createFeatureExecutionMock(mocks.get))
 
-vi.mock('../../src/esi-resilience/telemetry.js', () => ({
-  probeEsiResilienceTelemetry: mocks.probeEsiResilienceTelemetry,
+vi.mock('../../src/esi-gateway/status-interface.js', () => ({
+  isEsiErrorBudgetAtFloor: (remaining: number | null) => remaining !== null && remaining <= 10,
+  probeEsiStatus: mocks.probeEsiStatus,
 }))
 
 vi.mock('../../src/domain-events/status.js', () => ({
@@ -37,22 +24,22 @@ vi.mock('../../src/domain-events/status.js', () => ({
 
 vi.mock('../../src/queue/status.js', () => ({ probeQueueStatus: mocks.probeQueueStatus }))
 
-import { executeRepresentationFixture } from '../support/execute-representation.js'
-
 beforeEach(() => {
   vi.resetModules()
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-08-20T12:00:00.000Z'))
-  mocks.get.mockImplementation(async (representation, input) => ({
-    ...(await executeRepresentationFixture(representation, input)),
+  mocks.get.mockImplementation(() => ({
+    data: mappedStatus(),
     cachedUntil: '2026-08-20T12:01:00.000Z',
+    validatedAt: '2026-08-20T12:00:00.000Z',
     quota: { errorRemaining: 99, errorResetSeconds: 10 },
+    source: 'esi',
+    stale: false,
   }))
   mocks.sql.mockResolvedValue([{ '?column?': 1 }])
-  mocks.getStatus.mockResolvedValue(statusResponse())
   mocks.probeQueueStatus.mockResolvedValue(queueStatus())
   mocks.probeDomainEventStatus.mockResolvedValue(eventRelayStatus())
-  mocks.probeEsiResilienceTelemetry.mockResolvedValue(resilienceTelemetry())
+  mocks.probeEsiStatus.mockResolvedValue(resilienceTelemetry())
 })
 
 describe('system status service', () => {
@@ -75,12 +62,9 @@ describe('system status service', () => {
         },
       },
     })
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({
-      operation: 'status',
-      name: 'esi-status-core',
-    })
+    expect(mocks.get.mock.calls[0]?.[1]).toEqual({})
     expect(mocks.get).toHaveBeenCalledOnce()
-    const observationPending = mocks.probeEsiResilienceTelemetry.mock.calls[0]?.[0]
+    const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
     await expect(observationPending).resolves.toEqual({ status: 'operational' })
   })
 
@@ -99,8 +83,8 @@ describe('system status service', () => {
     const status = await getSystemStatus()
 
     expect(mocks.get).toHaveBeenCalledOnce()
-    expect(mocks.probeEsiResilienceTelemetry).toHaveBeenCalledOnce()
-    const observationPending = mocks.probeEsiResilienceTelemetry.mock.calls[0]?.[0]
+    expect(mocks.probeEsiStatus).toHaveBeenCalledOnce()
+    const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
     await expect(observationPending).resolves.toEqual({
       status: 'stale',
       refreshFailureClass: 'esi-unavailable',
@@ -108,17 +92,46 @@ describe('system status service', () => {
     expect(status.services.esi).not.toHaveProperty('refreshFailureClass')
   })
 
-  test('uses the least-fresh ESI deadline for the composed status response', async () => {
-    mocks.get.mockImplementation(async (representation, input) => {
-      const response = await executeRepresentationFixture(representation, input)
-      return {
-        data: response.data,
-        cachedUntil: '2026-08-20T12:00:10.000Z',
-        quota: {},
-        source: 'cache',
-        stale: false,
-      }
+  test('degrades only at the gateway error-budget floor', async () => {
+    mocks.get.mockResolvedValue({
+      data: mappedStatus(),
+      cachedUntil: '2026-08-20T12:01:00.000Z',
+      validatedAt: '2026-08-20T12:00:00.000Z',
+      quota: { errorRemaining: 11, errorResetSeconds: 10 },
+      source: 'esi',
+      stale: false,
     })
+    const { getSystemStatus } = await import('../../src/system/status.js')
+
+    await expect(getSystemStatus()).resolves.toMatchObject({
+      services: { esi: { status: 'operational', errorBudgetRemaining: 11 } },
+    })
+
+    vi.resetModules()
+    mocks.get.mockResolvedValue({
+      data: mappedStatus(),
+      cachedUntil: '2026-08-20T12:01:00.000Z',
+      validatedAt: '2026-08-20T12:00:00.000Z',
+      quota: { errorRemaining: 10, errorResetSeconds: 10 },
+      source: 'esi',
+      stale: false,
+    })
+    const { getSystemStatus: getLimitedSystemStatus } = await import('../../src/system/status.js')
+
+    await expect(getLimitedSystemStatus()).resolves.toMatchObject({
+      services: { esi: { status: 'degraded', errorBudgetRemaining: 10 } },
+    })
+  })
+
+  test('uses the least-fresh ESI deadline for the composed status response', async () => {
+    mocks.get.mockImplementation(() => ({
+      data: mappedStatus(),
+      cachedUntil: '2026-08-20T12:00:10.000Z',
+      validatedAt: '2026-08-20T12:00:00.000Z',
+      quota: {},
+      source: 'cache',
+      stale: false,
+    }))
     const { getSystemStatus } = await import('../../src/system/status.js')
 
     await expect(getSystemStatus()).resolves.toMatchObject({
@@ -140,8 +153,15 @@ describe('system status service', () => {
 
   test('degrades safely when local database or shared ESI data is unavailable', async () => {
     mocks.sql.mockRejectedValue(new Error('Database unavailable'))
-    const { EsiTransportError } = await import('../../src/esi-resilience/transport.js')
-    mocks.get.mockRejectedValue(new EsiTransportError(new Error('ESI unavailable')))
+    const { EsiTransportError } = await import('@evespace/esi-client')
+    mocks.get.mockRejectedValue(
+      new EsiTransportError({
+        operationId: 'GetStatus',
+        reason: 'network',
+        phase: 'request',
+        cause: new Error('ESI unavailable'),
+      }),
+    )
     const { getSystemStatus } = await import('../../src/system/status.js')
 
     await expect(getSystemStatus()).resolves.toMatchObject({
@@ -161,15 +181,17 @@ describe('system status service', () => {
     async (label, refreshFailureClass) => {
       const error =
         label === 'cooldown'
-          ? new (await import('../../src/esi-resilience/cooldowns.js')).EsiQuotaError(12)
-          : Object.assign(new Error('Invalid ESI response'), {
-              code: 'ESI_RESPONSE_VALIDATION_ERROR',
+          ? new (await import('../../src/esi-gateway/failures.js')).EsiQuotaError(12)
+          : new (await import('@evespace/esi-client')).EsiResponseValidationError({
+              operationId: 'GetStatus',
+              status: 200,
+              issues: [],
             })
       mocks.get.mockRejectedValue(error)
       const { getSystemStatus } = await import('../../src/system/status.js')
 
       const status = await getSystemStatus()
-      const observationPending = mocks.probeEsiResilienceTelemetry.mock.calls[0]?.[0]
+      const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
 
       expect(status).toMatchObject({
         status: 'degraded',
@@ -189,7 +211,7 @@ describe('system status service', () => {
     const { getSystemStatus } = await import('../../src/system/status.js')
 
     const status = await getSystemStatus()
-    const observationPending = mocks.probeEsiResilienceTelemetry.mock.calls[0]?.[0]
+    const observationPending = mocks.probeEsiStatus.mock.calls[0]?.[0]
 
     expect(status).toMatchObject({
       status: 'unavailable',
@@ -205,7 +227,7 @@ describe('system status service', () => {
   })
 
   test('degrades cache and coordination telemetry before marking repeated outages unavailable', async () => {
-    mocks.probeEsiResilienceTelemetry.mockResolvedValue({
+    mocks.probeEsiStatus.mockResolvedValue({
       ...resilienceTelemetry(),
       cache: { status: 'degraded', checkedAt: '2026-08-20T12:00:00.000Z' },
       coordination: { status: 'unavailable', checkedAt: '2026-08-20T12:00:00.000Z' },
@@ -230,18 +252,6 @@ describe('system status service', () => {
     })
   })
 })
-
-function statusResponse() {
-  return {
-    data: {
-      players: 31_337,
-      server_version: '2.5.7',
-      start_time: '2026-08-20T11:00:00Z',
-      vip: false,
-    },
-    meta: { headers: {} },
-  }
-}
 
 function queueStatus() {
   return {
@@ -293,11 +303,10 @@ function resilienceTelemetry() {
 }
 
 function mappedStatus() {
-  const {
-    players,
-    server_version: serverVersion,
-    start_time: startedAt,
-    vip,
-  } = statusResponse().data
-  return { players, serverVersion, startedAt, vip }
+  return {
+    players: 31_337,
+    serverVersion: '2.5.7',
+    startedAt: '2026-08-20T11:00:00Z',
+    vip: false,
+  }
 }

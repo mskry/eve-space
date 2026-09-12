@@ -25,6 +25,7 @@ import {
   characterReauthorizationUrl,
   errorStatus,
   tokenRefreshUnavailable,
+  toCharacterEsiResponse,
 } from './route-responses.js'
 import {
   getWalletBalance,
@@ -69,7 +70,10 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
       const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
         return context.json(
-          { characterId, ...(await getWalletBalance(characterId, subjectLifecycleId)) },
+          {
+            characterId,
+            ...toCharacterEsiResponse(await getWalletBalance(characterId, subjectLifecycleId)),
+          },
           200,
         )
       } catch (error) {
@@ -95,11 +99,13 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         return context.json(
           {
             characterId,
-            ...(await getWalletJournal(
-              characterId,
-              context.req.valid('query').page,
-              subjectLifecycleId,
-            )),
+            ...toCharacterEsiResponse(
+              await getWalletJournal(
+                characterId,
+                context.req.valid('query').page,
+                subjectLifecycleId,
+              ),
+            ),
           },
           200,
         )
@@ -126,11 +132,13 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         return context.json(
           {
             characterId,
-            ...(await getWalletTransactions(
-              characterId,
-              context.req.valid('query').fromId ?? null,
-              subjectLifecycleId,
-            )),
+            ...toCharacterEsiResponse(
+              await getWalletTransactions(
+                characterId,
+                context.req.valid('query').fromId ?? null,
+                subjectLifecycleId,
+              ),
+            ),
           },
           200,
         )
@@ -156,7 +164,9 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         return context.json(
           {
             characterId,
-            ...(await getCharacterMarketOrders(characterId, subjectLifecycleId)),
+            ...toCharacterEsiResponse(
+              await getCharacterMarketOrders(characterId, subjectLifecycleId),
+            ),
           },
           200,
         )
@@ -183,11 +193,13 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         return context.json(
           {
             characterId,
-            ...(await getCharacterMarketOrderHistory(
-              characterId,
-              context.req.valid('query').page,
-              subjectLifecycleId,
-            )),
+            ...toCharacterEsiResponse(
+              await getCharacterMarketOrderHistory(
+                characterId,
+                context.req.valid('query').page,
+                subjectLifecycleId,
+              ),
+            ),
           },
           200,
         )
@@ -214,11 +226,13 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
         return context.json(
           {
             characterId,
-            ...(await getCharacterContracts(
-              characterId,
-              context.req.valid('query').page,
-              subjectLifecycleId,
-            )),
+            ...toCharacterEsiResponse(
+              await getCharacterContracts(
+                characterId,
+                context.req.valid('query').page,
+                subjectLifecycleId,
+              ),
+            ),
           },
           200,
         )
@@ -247,12 +261,14 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
           {
             characterId,
             contractId,
-            ...(await getCharacterContractItems(
-              characterId,
-              contractId,
-              context.req.valid('query').contractPage,
-              subjectLifecycleId,
-            )),
+            ...toCharacterEsiResponse(
+              await getCharacterContractItems(
+                characterId,
+                contractId,
+                context.req.valid('query').contractPage,
+                subjectLifecycleId,
+              ),
+            ),
           },
           200,
         )
@@ -282,12 +298,14 @@ export const characterFinanceRoutes = new Hono<OwnedCharacterEnv>()
           {
             characterId,
             contractId,
-            ...(await getCharacterContractBids(
-              characterId,
-              contractId,
-              context.req.valid('query').contractPage,
-              subjectLifecycleId,
-            )),
+            ...toCharacterEsiResponse(
+              await getCharacterContractBids(
+                characterId,
+                contractId,
+                context.req.valid('query').contractPage,
+                subjectLifecycleId,
+              ),
+            ),
           },
           200,
         )

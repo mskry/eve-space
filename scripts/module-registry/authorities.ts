@@ -3,7 +3,7 @@ import {
   platformReservedModuleIds,
   type PlatformModuleValidationAuthorities,
 } from '../../packages/platform-module-contract/src/index.js'
-import { esiOperationMetadata } from '../../api/src/esi-resilience/operation-metadata.js'
+import { coreEsiOperationIds } from '../../api/src/esi-gateway/catalog-interface.js'
 
 export const coreNavigationDefaults = platformCoreNavigation.map(
   ({ ownerId, navigationId, placement, order }) => ({
@@ -17,5 +17,5 @@ export const coreNavigationDefaults = platformCoreNavigation.map(
 export const coreModuleValidationAuthorities = {
   reservedModuleIds: platformReservedModuleIds,
   navigationIds: coreNavigationDefaults.map(({ navigationId }) => navigationId),
-  esiOperationIds: Object.keys(esiOperationMetadata),
+  esiOperationIds: coreEsiOperationIds,
 } as const satisfies PlatformModuleValidationAuthorities

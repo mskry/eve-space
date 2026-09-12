@@ -6,17 +6,16 @@ import type {
   PlatformResourceBatchOperationImplementation,
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
-import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import {
   assertRegisteredEsiOperation,
-  getEsiOperationContract,
-  getExecutableEsiOperationDefinition,
-} from '../esi-resilience/catalog-access.js'
-import type { EsiOperation } from '../esi-resilience/catalog.js'
+  getEsiOperationAuthorization,
+  getEsiSetOperationConfiguration,
+  type EsiOperation,
+} from '../esi-gateway/catalog-interface.js'
 import {
   executePlatformEsiOperation,
   PlatformEsiRequestError,
-} from '../esi-resilience/platform-execute.js'
+} from '../esi-gateway/platform-execution.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 import { isPositiveSafeInteger, isRecord } from '../type-guards.js'
 import {
@@ -71,7 +70,6 @@ export interface BatchExecutionOptions {
   readonly signal?: AbortSignal
   readonly resources?: readonly PlatformInstalledResourceDescriptor[]
   readonly resolveEligibility?: typeof resolveInstalledResourceEligibility
-  readonly definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
   readonly executeEsiOperation?: typeof executePlatformEsiOperation
 }
 
@@ -95,15 +93,15 @@ export async function executeInstalledResourceBatchOperation(
 
   assertRegisteredEsiOperation(resource.batch.operationId)
   const operation = resource.batch.operationId as EsiOperation
-  const definition = getExecutableEsiOperationDefinition(operation, options.definitions)
-  const contract = getEsiOperationContract(operation)
-  if (contract.authorization.kind !== 'public' || contract.identity.kind !== 'set')
+  const authorization = getEsiOperationAuthorization(operation)
+  if (authorization.kind !== 'public')
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} has invalid batch operation policy`,
     )
-  if (parsed.subjects.length > contract.identity.maximumItems)
+  const setConfiguration = getEsiSetOperationConfiguration(operation)
+  if (parsed.subjects.length > setConfiguration.maximumItems)
     throw new Error(
-      `Installed resource ${resource.moduleId}/${resource.resourceId} batch exceeds ${contract.identity.maximumItems} subjects`,
+      `Installed resource ${resource.moduleId}/${resource.resourceId} batch exceeds ${setConfiguration.maximumItems} subjects`,
     )
 
   const candidates = parsed.subjects.map((identity) => toEligibleBatchSubject(parsed, identity))
@@ -129,7 +127,7 @@ export async function executeInstalledResourceBatchOperation(
   let inputs: Readonly<Record<string, unknown>>
   try {
     inputs = batch.request(subjects)
-    assertBatchInputs(inputs, contract.identity.field, subjects, contract.identity.maximumItems)
+    assertBatchInputs(inputs, setConfiguration.field, subjects, setConfiguration.maximumItems)
   } catch (error) {
     options.signal?.throwIfAborted()
     throw new PlatformResourceBatchExecutionError(new PlatformResourceMappingError(error), eligible)
@@ -138,7 +136,6 @@ export async function executeInstalledResourceBatchOperation(
   try {
     result = await (options.executeEsiOperation ?? executePlatformEsiOperation)({
       operation,
-      definition,
       inputs,
       authorization: { kind: 'public' },
       ...(options.signal ? { signal: options.signal } : {}),

@@ -28,6 +28,9 @@ describe('worker shutdown coordinator', () => {
       closeCacheRedis: vi.fn(async () => {
         order.push('cache')
       }),
+      closeEsiRuntime: vi.fn(async () => {
+        order.push('runtime')
+      }),
       closeCoordinationRedis: vi.fn(async () => {
         order.push('coordination')
       }),
@@ -44,9 +47,16 @@ describe('worker shutdown coordinator', () => {
     expect(order).toEqual(['platform'])
     finishPlatform()
     await first
+    const third = shutdown()
+    await third
 
-    expect(order).toEqual(['platform', 'cache', 'coordination', 'postgres'])
+    expect(third).toBe(first)
+    expect(order).toEqual(['platform', 'runtime', 'cache', 'coordination', 'postgres'])
     expect(platform.close).toHaveBeenCalledOnce()
+    expect(dependencies.closeEsiRuntime).toHaveBeenCalledOnce()
+    expect(dependencies.closeCacheRedis).toHaveBeenCalledOnce()
+    expect(dependencies.closeCoordinationRedis).toHaveBeenCalledOnce()
+    expect(dependencies.closePostgres).toHaveBeenCalledOnce()
   })
 
   test('waits for bounded platform cancellation before forced resource cleanup', async () => {
@@ -167,6 +177,7 @@ describe('worker shutdown coordinator', () => {
   test('continues failure cleanup without a platform and across unavailable resources', async () => {
     const dependencies = createDependencies({
       getPlatform: () => undefined,
+      closeEsiRuntime: vi.fn().mockRejectedValue(new Error('runtime unavailable')),
       closeCacheRedis: vi.fn().mockRejectedValue(new Error('cache unavailable')),
       closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
       closePostgres: vi.fn().mockRejectedValue(new Error('postgres unavailable')),
@@ -177,8 +188,12 @@ describe('worker shutdown coordinator', () => {
     expect(dependencies.closeCacheRedis).toHaveBeenCalledOnce()
     expect(dependencies.closeCoordinationRedis).toHaveBeenCalledOnce()
     expect(dependencies.closePostgres).toHaveBeenCalledOnce()
-    expect(dependencies.recordFailure).toHaveBeenCalledTimes(2)
-    expect(dependencies.markFailed).toHaveBeenCalledTimes(2)
+    expect(dependencies.recordFailure).toHaveBeenCalledTimes(3)
+    expect(dependencies.recordFailure).toHaveBeenCalledWith(
+      'Worker ESI runtime shutdown failed',
+      expect.any(Error),
+    )
+    expect(dependencies.markFailed).toHaveBeenCalledTimes(3)
   })
 })
 
@@ -189,6 +204,7 @@ function createDependencies(
     timeoutMs: 30_000,
     getStartupOperation: () => undefined,
     getPlatform: () => undefined,
+    closeEsiRuntime: vi.fn().mockResolvedValue(undefined),
     closeCacheRedis: vi.fn().mockResolvedValue(undefined),
     closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
     closePostgres: vi.fn().mockResolvedValue(undefined),

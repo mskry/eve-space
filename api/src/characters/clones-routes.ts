@@ -10,7 +10,7 @@ import {
   getCharacterClones,
   getCharacterImplants,
 } from './clones.js'
-import { ownedCharacterResourceError } from './route-responses.js'
+import { ownedCharacterResourceError, toCharacterEsiResponse } from './route-responses.js'
 
 export const characterClonesRoutes = new Hono<OwnedCharacterEnv>()
   .get(
@@ -22,7 +22,10 @@ export const characterClonesRoutes = new Hono<OwnedCharacterEnv>()
     async (context) => {
       const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterClones(characterId, subjectLifecycleId), 200)
+        return context.json(
+          toCharacterEsiResponse(await getCharacterClones(characterId, subjectLifecycleId)),
+          200,
+        )
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterClonesScope,
@@ -43,7 +46,10 @@ export const characterClonesRoutes = new Hono<OwnedCharacterEnv>()
     async (context) => {
       const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterImplants(characterId, subjectLifecycleId), 200)
+        return context.json(
+          toCharacterEsiResponse(await getCharacterImplants(characterId, subjectLifecycleId)),
+          200,
+        )
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterImplantsScope,

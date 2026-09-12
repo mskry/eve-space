@@ -27,7 +27,7 @@ const mocks = vi.hoisted(() => {
 })
 
 vi.mock('../../src/env.js', () => ({ env: { ESI_COMPATIBILITY_DATE: '2026-08-23' } }))
-vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
+vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({ mget: mocks.mget, multi: mocks.multi }),
 }))
 

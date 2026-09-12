@@ -1,8 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { PostUniverseIdsResponse } from '@evespace/esi-client/types'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
+import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 import {
   readUniverseIds,
   readUniverseNames,
@@ -54,26 +52,21 @@ class UniverseNameResolutionLimitError extends Error {
   }
 }
 
-const universeNamesRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'universe-resolve-names',
-    name: 'universe-names-core',
-    descriptor: operationRegistry.PostUniverseNames.transport,
-    encodeRequest: (input: { body: number[] }) => input,
-    map: ({ data }): UniverseName[] =>
-      data.map(({ id, name, category }) => ({ id, name, category })),
-  }),
-)
+const universeNamesRead = createPublicEsiRead({
+  operation: 'universe-resolve-names',
+  name: 'universe-names-core',
+  descriptor: operationRegistry.PostUniverseNames.transport,
+  encodeRequest: (input: { body: number[] }) => input,
+  map: ({ data }): UniverseName[] => data.map(({ id, name, category }) => ({ id, name, category })),
+})
 
-const universeIdsRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'universe-resolve-ids',
-    name: 'universe-ids-core',
-    descriptor: operationRegistry.PostUniverseIds.transport,
-    encodeRequest: (input: { body: string[] }) => input,
-    map: ({ data }) => mapUniverseIds(data),
-  }),
-)
+const universeIdsRead = createPublicEsiRead({
+  operation: 'universe-resolve-ids',
+  name: 'universe-ids-core',
+  descriptor: operationRegistry.PostUniverseIds.transport,
+  encodeRequest: (input: { body: string[] }) => input,
+  map: ({ data }) => mapUniverseIds(data),
+})
 
 export async function resolveUniverseNames(ids: readonly number[]) {
   const result = await resolveUniverseNameResults(ids)
@@ -147,7 +140,7 @@ async function loadUniverseNameChunk(
   names: Map<number, UniverseName>,
   missingIds: number[],
 ) {
-  const response = await execute(universeNamesRepresentation, { body: chunk })
+  const response = await universeNamesRead.execute({ body: chunk })
   for (const entry of response.data) names.set(entry.id, entry)
   if (response.stale) return
   const returnedIds = new Set(response.data.map((entry) => entry.id))
@@ -160,7 +153,7 @@ async function loadUniverseIdChunk(
   resolved: Map<string, UniverseId>,
   missingNames: string[],
 ) {
-  const response = await execute(universeIdsRepresentation, { body: chunk })
+  const response = await universeIdsRead.execute({ body: chunk })
   const chunkEntries = collectUniverseIds(response.data, resolved)
   const byName = groupUniverseIdsByInputName(chunk, chunkEntries)
   if (response.stale) return

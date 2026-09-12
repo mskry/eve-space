@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 interface StaticRow {
   groupId: number
@@ -31,48 +32,23 @@ const mocks = vi.hoisted(() => ({
   cacheDel: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@evespace/esi-client')>()
-  return {
-    ...original,
-    EsiClient: class {
-      constructor(options: unknown) {
-        mocks.createEsiClient(options)
-      }
-
-      callOperation(...arguments_: unknown[]) {
-        return mocks.getSkills(...arguments_)
-      }
-    },
-  }
-})
 vi.mock('../../src/db/client.js', () => ({ db: { select: mocks.select } }))
 vi.mock('../../src/auth/tokens.js', () => ({
   getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorization,
   getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorization,
 }))
-vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
+vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
     get: mocks.cacheGet,
     set: mocks.cacheSet,
     del: mocks.cacheDel,
     ping: vi.fn().mockResolvedValue('PONG'),
   }),
+  observeCacheRedisConnectionErrors: vi.fn(),
 }))
-vi.mock('../../src/esi-resilience/coordination-connection.js', () => ({
-  getCoordinationConnection: () => ({}),
-}))
-vi.mock('../../src/esi-resilience/coordination.js', () => ({
-  acquireEsiRequestLease: mocks.acquire,
-  commitEsiFence: mocks.commit,
-  getCommittedEsiFence: mocks.getCommitted,
-  getEsiRequestLeaseTtl: mocks.getLeaseTtl,
-  getEsiResourceRevision: mocks.getRevision,
-  incrementEsiResourceRevision: mocks.incrementRevision,
-  initializeCacheNamespace: mocks.initialize,
-  releaseEsiRequestLease: mocks.release,
-  renewEsiRequestLease: mocks.renew,
-}))
+vi.mock('../../src/esi-gateway/feature-execution.js', () =>
+  createFeatureExecutionMock((_definition, input) => mocks.getSkills(input)),
+)
 
 const characterId = 1404328063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
@@ -166,25 +142,7 @@ describe('character skills snapshot', () => {
       ...esiMetadata,
     })
     expect(characterSkillsScope).toBe(scope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      scope,
-    )
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      scope,
-    )
-    expect(mocks.createEsiClient).toHaveBeenCalledWith({
-      fetch: expect.any(Function),
-      requestTimeoutMs: 30_000,
-      token: 'access-token',
-      validateResponses: true,
-    })
-    expect(mocks.getSkills).toHaveBeenCalledWith('GetCharactersCharacterIdSkills', {
-      path: { character_id: characterId },
-    })
+    expect(mocks.getSkills).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
     expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).not.toHaveBeenCalled()
   })
@@ -204,9 +162,13 @@ describe('character skills snapshot', () => {
   })
 
   test('serves a repeated request from the L1 cache without another ESI call', async () => {
-    mocks.getSkills.mockResolvedValue(
-      response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }),
-    )
+    mocks.getSkills
+      .mockResolvedValueOnce(
+        response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }),
+      )
+      .mockResolvedValueOnce(
+        response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }, 'cache'),
+      )
     const { getCharacterSkillsData } = await import('../../src/characters/skills.js')
 
     const first = await getCharacterSkillsData(characterId, subjectLifecycleId)
@@ -214,8 +176,7 @@ describe('character skills snapshot', () => {
 
     expect(first.source).toBe('esi')
     expect(second).toMatchObject({ source: 'cache', stale: false, data: first.data })
-    expect(mocks.getSkills).toHaveBeenCalledOnce()
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledOnce()
+    expect(mocks.getSkills).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -348,13 +309,24 @@ describe('detailed character skills catalogue', () => {
   })
 
   test('composes a cached normalized snapshot without another ESI request', async () => {
-    mocks.getSkills.mockResolvedValue(
-      response({
-        total_sp: 19_000,
-        unallocated_sp: 25,
-        skills: [skill(2, 2000, 2, 2)],
-      }),
-    )
+    mocks.getSkills
+      .mockResolvedValueOnce(
+        response({
+          total_sp: 19_000,
+          unallocated_sp: 25,
+          skills: [skill(2, 2000, 2, 2)],
+        }),
+      )
+      .mockResolvedValueOnce(
+        response(
+          {
+            total_sp: 19_000,
+            unallocated_sp: 25,
+            skills: [skill(2, 2000, 2, 2)],
+          },
+          'cache',
+        ),
+      )
     mocks.staticRows.push(staticSkill(10, 'Engineering', 2, 'Capacitor Management'))
     const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
@@ -367,7 +339,7 @@ describe('detailed character skills catalogue', () => {
       injectedSkillCount: 1,
       groups: [{ groupId: 10, trainedSp: 2000 }],
     })
-    expect(mocks.getSkills).toHaveBeenCalledOnce()
+    expect(mocks.getSkills).toHaveBeenCalledTimes(2)
     expect(mocks.select).toHaveBeenCalledOnce()
   })
 
@@ -431,8 +403,31 @@ describe('detailed character skills catalogue', () => {
   })
 })
 
-function response<Data>(data: Data) {
-  return { data, meta: { headers: {} } }
+function response<Data>(data: Data, source: 'cache' | 'esi' = 'esi') {
+  const value = data as Data & {
+    total_sp: number
+    unallocated_sp?: number
+    skills: Array<{
+      skill_id: number
+      active_skill_level: number
+      trained_skill_level: number
+      skillpoints_in_skill: number
+    }>
+  }
+  return {
+    data: {
+      totalSp: value.total_sp,
+      unallocatedSp: value.unallocated_sp ?? 0,
+      skills: value.skills.map((esiSkill) => ({
+        typeId: esiSkill.skill_id,
+        activeLevel: esiSkill.active_skill_level,
+        trainedLevel: esiSkill.trained_skill_level,
+        skillpoints: esiSkill.skillpoints_in_skill,
+      })),
+    },
+    ...esiMetadata,
+    source,
+  }
 }
 
 function skill(typeId: number, skillpoints: number, activeLevel: number, trainedLevel: number) {

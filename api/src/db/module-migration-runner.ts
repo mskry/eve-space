@@ -15,7 +15,7 @@ import {
 } from './locks.js'
 import type { MigrationRunOptions } from './migration-runner.js'
 import { assertModuleMigrationSql } from './module-migration-validation.js'
-import { assertTransactionalMigration, type Migration } from './migration-validation.js'
+import type { Migration } from './migration-validation.js'
 import {
   modulePersistenceNames,
   provisionModulePersistence,
@@ -81,8 +81,8 @@ export async function runModuleMigrationSets(
   for (const { moduleId, migrations } of migrationSets) {
     const { schemaName } = modulePersistenceNames(moduleId)
     for (const migration of migrations) {
-      assertTransactionalMigration(migration, { rejectUnterminated: true })
-      assertModuleMigrationSql(moduleId, schemaName, migration)
+      // oxlint-disable-next-line no-await-in-loop
+      await assertModuleMigrationSql(moduleId, schemaName, migration)
     }
   }
 

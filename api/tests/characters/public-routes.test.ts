@@ -17,7 +17,7 @@ vi.mock('../../src/characters/profile.js', () => ({
   getCharacterProfile: mocks.getCharacterProfile,
 }))
 
-vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
+vi.mock('../../src/esi-gateway/failures.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 
 import { publicCharacterRoutes } from '../../src/characters/public-routes.js'
 

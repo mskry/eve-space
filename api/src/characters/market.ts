@@ -3,13 +3,12 @@ import type {
   GetCharactersCharacterIdOrdersHistoryResponse,
   GetCharactersCharacterIdOrdersResponse,
 } from '@evespace/esi-client/types'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
-import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiResultMetadata } from '../esi-resilience/types.js'
+import { EsiQuotaError } from '../esi-gateway/failures.js'
+import {
+  createCharacterEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { financeLocationName, loadFinanceLocationNames } from './finance-location-names.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
@@ -39,40 +38,40 @@ interface CharacterMarketOrder {
 
 interface CharacterMarketOrdersRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
 }
 
 interface CharacterMarketOrdersData {
   orders: CharacterMarketOrder[]
 }
 
-export type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiResultMetadata
+export type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiReadResultMetadata
 
-const characterMarketOrdersRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'market-orders',
-    name: 'market-orders-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdOrders.transport,
-    encodeRequest: (input: CharacterMarketOrdersRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: async (response): Promise<CharacterMarketOrdersData> => {
-      const personalOrders = response.data.filter((order) => !order.is_corporation)
-      const [namesByType, namesByLocation] = await Promise.all([
-        loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
-        loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
-      ])
-      return {
-        orders: personalOrders.map((order) => mapMarketOrder(order, namesByType, namesByLocation)),
-      }
-    },
+const characterMarketOrdersRead = createCharacterEsiRead({
+  operation: 'market-orders',
+  name: 'market-orders-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdOrders.transport,
+  encodeRequest: (input: CharacterMarketOrdersRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: async (response): Promise<CharacterMarketOrdersData> => {
+    const personalOrders = response.data.filter((order) => !order.is_corporation)
+    const [namesByType, namesByLocation] = await Promise.all([
+      loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
+      loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
+    ])
+    return {
+      orders: personalOrders.map((order) => mapMarketOrder(order, namesByType, namesByLocation)),
+    }
+  },
+})
 
-export const marketOrdersScope = getCharacterEsiScope(characterMarketOrdersRepresentation.operation)
+export const marketOrdersScope = characterMarketOrdersRead.requiredScope
 
 interface CharacterMarketOrderHistoryRepresentationInput {
   characterId: number
   page: number
+  subjectLifecycleId: string
 }
 
 interface CharacterMarketOrderHistoryData {
@@ -81,35 +80,32 @@ interface CharacterMarketOrderHistoryData {
   totalPages: number
 }
 
-export type CharacterMarketOrderHistoryResult = CharacterMarketOrderHistoryData & EsiResultMetadata
+export type CharacterMarketOrderHistoryResult = CharacterMarketOrderHistoryData &
+  EsiReadResultMetadata
 
-const characterMarketOrderHistoryRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'market-order-history',
-    name: 'market-order-history-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdOrdersHistory.transport,
-    encodeRequest: (input: CharacterMarketOrderHistoryRepresentationInput) => ({
-      path: { character_id: input.characterId },
-      query: { page: input.page },
-    }),
-    map: async (response, input): Promise<CharacterMarketOrderHistoryData> => {
-      const personalOrders = response.data.filter((order) => !order.is_corporation)
-      const [namesByType, namesByLocation] = await Promise.all([
-        loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
-        loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
-      ])
-      return {
-        orders: personalOrders.map((order) =>
-          Object.assign(mapMarketOrder(order, namesByType, namesByLocation), {
-            state: order.state,
-          }),
-        ),
-        page: input.page,
-        totalPages: paginationPages(response.meta.pagination?.pages, input.page),
-      }
-    },
+const characterMarketOrderHistoryRead = createCharacterEsiRead({
+  operation: 'market-order-history',
+  name: 'market-order-history-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdOrdersHistory.transport,
+  encodeRequest: (input: CharacterMarketOrderHistoryRepresentationInput) => ({
+    path: { character_id: input.characterId },
+    query: { page: input.page },
   }),
-)
+  map: async (response, input): Promise<CharacterMarketOrderHistoryData> => {
+    const personalOrders = response.data.filter((order) => !order.is_corporation)
+    const [namesByType, namesByLocation] = await Promise.all([
+      loadFinanceTypeNames(personalOrders.map((order) => order.type_id)),
+      loadFinanceLocationNames(personalOrders.map((order) => order.location_id)),
+    ])
+    return {
+      orders: personalOrders.map((order) =>
+        Object.assign(mapMarketOrder(order, namesByType, namesByLocation), { state: order.state }),
+      ),
+      page: input.page,
+      totalPages: paginationPages(response.meta.pagination?.pages, input.page),
+    }
+  },
+})
 
 export class MarketQuotaError extends Error {
   constructor(readonly retryAfterSeconds: number) {
@@ -122,12 +118,8 @@ export async function getCharacterMarketOrders(
   subjectLifecycleId: string,
 ): Promise<CharacterMarketOrdersResult> {
   try {
-    const result = await execute(
-      characterMarketOrdersRepresentation,
-      { characterId },
-      { subjectLifecycleId },
-    )
-    return { ...result.data, ...toEsiResultMetadata(result) }
+    const result = await characterMarketOrdersRead.execute({ characterId, subjectLifecycleId })
+    return { ...result.data, ...toEsiReadResultMetadata(result) }
   } catch (error) {
     throwMarketError(error)
   }
@@ -140,12 +132,12 @@ export async function getCharacterMarketOrderHistory(
 ): Promise<CharacterMarketOrderHistoryResult> {
   assertPositiveSafeInteger(page, 'Market order history page')
   try {
-    const result = await execute(
-      characterMarketOrderHistoryRepresentation,
-      { characterId, page },
-      { subjectLifecycleId },
-    )
-    return { ...result.data, ...toEsiResultMetadata(result) }
+    const result = await characterMarketOrderHistoryRead.execute({
+      characterId,
+      page,
+      subjectLifecycleId,
+    })
+    return { ...result.data, ...toEsiReadResultMetadata(result) }
   } catch (error) {
     throwMarketError(error)
   }

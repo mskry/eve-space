@@ -1,3 +1,4 @@
+import { operationRegistry } from '@evespace/esi-client/operations'
 import type {
   PlatformCharacterResourceSubject,
   PlatformInstalledResourceDescriptor,
@@ -6,7 +7,7 @@ import type {
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import type { StableOperationId } from '@evespace/esi-client/operations'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { PlatformEsiRequestError } from '../../src/esi-resilience/platform-execute.js'
+import { PlatformEsiRequestError } from '../../src/esi-gateway/platform-execution.js'
 
 const mocks = vi.hoisted(() => ({
   getCharacterAuthorizationForLifecycle: vi.fn(),
@@ -19,7 +20,6 @@ vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
   getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorizationForLifecycle,
 }))
 import { assertInstalledResourceDeclarations } from '../../src/platform/resource-declarations.js'
-import { getEsiOperationContract } from '../../src/esi-resilience/catalog-access.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
 import { executeInstalledResourceOperation } from '../../src/platform/resource-operation-executor.js'
 
@@ -74,9 +74,8 @@ describe('installed resource operation policy', () => {
     })
   })
 
-  test('maps platform executor wire data before returning a resource observation', async () => {
-    const definition = executableDefinition('GetCharactersCharacterIdWallet')
-    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution('123.45', 5))
+  test('maps cached platform wire data before returning a resource observation', async () => {
+    const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution('123.45', 5, 'cache'))
     const guardExecution = vi.fn().mockResolvedValue({
       outcome: 'ready',
       resource,
@@ -88,17 +87,15 @@ describe('installed resource operation policy', () => {
       executeInstalledResourceOperation(identity, {
         resources: [resource],
         guardExecution,
-        definitions: { 'wallet-balance': definition },
         executeEsiOperation,
       }),
     ).resolves.toMatchObject({
       outcome: 'loaded',
       authorizationGeneration: 5,
-      result: { data: 123.45 },
+      result: { data: 123.45, source: 'cache' },
     })
     expect(executeEsiOperation).toHaveBeenCalledWith({
       operation: 'wallet-balance',
-      definition,
       inputs: { characterId: 1404328063 },
       authorization: {
         kind: 'character-lifecycle',
@@ -130,7 +127,6 @@ describe('installed resource operation policy', () => {
       executeInstalledResourceOperation(identity, {
         resources: [resource],
         guardExecution,
-        definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
         executeEsiOperation,
       }),
     ).resolves.toMatchObject({ outcome: 'loaded', authorizationGeneration: 4 })
@@ -152,7 +148,6 @@ describe('installed resource operation policy', () => {
       executeInstalledResourceOperation(identity, {
         resources: [resource],
         guardExecution,
-        definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
         executeEsiOperation,
       }),
     ).rejects.toThrow('Platform resource mapping failed')
@@ -231,7 +226,6 @@ describe('installed resource operation policy', () => {
     const options = {
       resources: [collectingResource],
       guardExecution,
-      definitions: { 'wallet-balance': executableDefinition('GetCharactersCharacterIdWallet') },
       executeEsiOperation: vi.fn().mockResolvedValue(platformExecution(123, 4)),
       loadCollectionContext: vi
         .fn()
@@ -344,17 +338,28 @@ describe('installed resource operation policy', () => {
 
 function executableDefinition<SdkOperation extends StableOperationId>(
   sdkOperationId: SdkOperation,
+  authorization: 'character' | 'public' = sdkOperationId === 'GetCharactersCharacterIdWallet'
+    ? 'character'
+    : 'public',
 ) {
   return {
     sdkOperationId,
-    descriptor: {} as never,
-    contract: getEsiOperationContract(
-      sdkOperationId === 'GetCharactersCharacterIdWallet'
-        ? 'wallet-balance'
-        : sdkOperationId === 'PostUniverseNames'
-          ? 'universe-resolve-names'
-          : 'public-character',
-    ),
+    descriptor: operationRegistry[sdkOperationId] as never,
+    contract: {
+      audit: { esiOperationId: sdkOperationId, reviewedDate: '2026-09-03' },
+      representationVersion: '1',
+      authorization:
+        authorization === 'character'
+          ? { kind: 'character', scope: 'esi-wallet.read_character_wallet.v1' }
+          : { kind: 'public' },
+      identity: { kind: 'set', field: 'ids', maximumItems: 1000 },
+      freshness: { kind: 'none' },
+      cache: { kind: 'none' },
+      rateGroup: { kind: 'legacy-only' },
+      retry: { kind: 'none' },
+      compatibility: { minimumDate: '2020-01-01' },
+      responseValidation: { kind: 'enabled' },
+    } as never,
   } satisfies PlatformExecutableEsiOperationDefinition
 }
 

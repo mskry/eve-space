@@ -3,31 +3,30 @@ import type { GetCharactersCharacterIdSkillsResponse } from '@evespace/esi-clien
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
-import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
+import {
+  createCharacterEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResult,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 import { skillCategoryId } from '../skills/training.js'
 
 interface CharacterSkillsRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
 }
 
-const characterSkillsRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'skills',
-    name: 'character-skills-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
-    encodeRequest: (input: CharacterSkillsRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterSkillsSnapshot(response.data),
+const characterSkillsRead = createCharacterEsiRead({
+  operation: 'skills',
+  name: 'character-skills-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+  encodeRequest: (input: CharacterSkillsRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterSkillsSnapshot(response.data),
+})
 
-export const characterSkillsScope = getCharacterEsiScope(characterSkillsRepresentation.operation)
+export const characterSkillsScope = characterSkillsRead.requiredScope
 export { skillCategoryId } from '../skills/training.js'
 
 interface CharacterSkillSnapshot {
@@ -56,8 +55,8 @@ let skillCataloguePromise: Promise<SkillCatalogue> | undefined
 export async function getCharacterSkillsData(
   characterId: number,
   subjectLifecycleId: string,
-): Promise<EsiCachedResult<CharacterSkillsSnapshot>> {
-  return execute(characterSkillsRepresentation, { characterId }, { subjectLifecycleId })
+): Promise<EsiReadResult<CharacterSkillsSnapshot>> {
+  return characterSkillsRead.execute({ characterId, subjectLifecycleId })
 }
 
 interface CharacterSkillsData {
@@ -79,7 +78,7 @@ interface CharacterSkillsData {
   }>
 }
 
-export type CharacterSkills = CharacterSkillsData & EsiResultMetadata
+export type CharacterSkills = CharacterSkillsData & EsiReadResultMetadata
 
 export async function getCharacterSkills(
   characterId: number,
@@ -91,7 +90,7 @@ export async function getCharacterSkills(
   ])
   return {
     ...composeCharacterSkills(snapshot.data, catalogue),
-    ...toEsiResultMetadata(snapshot),
+    ...toEsiReadResultMetadata(snapshot),
   }
 }
 

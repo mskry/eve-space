@@ -68,6 +68,9 @@ describe('API shutdown coordinator', () => {
       closeCacheRedis: vi.fn(async () => {
         order.push('cache')
       }),
+      closeEsiRuntime: vi.fn(async () => {
+        order.push('runtime')
+      }),
       closeCoordinationRedis: vi.fn(async () => {
         order.push('coordination')
       }),
@@ -84,10 +87,17 @@ describe('API shutdown coordinator', () => {
     expect(order).toEqual(['http'])
     finishHttp()
     await first
+    const third = shutdown()
+    await third
 
-    expect(order).toEqual(['http', 'cache', 'coordination', 'postgres'])
+    expect(third).toBe(first)
+    expect(order).toEqual(['http', 'runtime', 'cache', 'coordination', 'postgres'])
     expect(server.close).toHaveBeenCalledOnce()
     expect(server.closeAllConnections).not.toHaveBeenCalled()
+    expect(dependencies.closeEsiRuntime).toHaveBeenCalledOnce()
+    expect(dependencies.closeCacheRedis).toHaveBeenCalledOnce()
+    expect(dependencies.closeCoordinationRedis).toHaveBeenCalledOnce()
+    expect(dependencies.closePostgres).toHaveBeenCalledOnce()
   })
 
   test('forces HTTP cleanup and starts remaining resource cleanup at the deadline', async () => {
@@ -102,6 +112,7 @@ describe('API shutdown coordinator', () => {
 
     expect(server.close).toHaveBeenCalledOnce()
     expect(server.closeAllConnections).toHaveBeenCalledOnce()
+    expect(dependencies.closeEsiRuntime).toHaveBeenCalledOnce()
     expect(dependencies.closeCacheRedis).toHaveBeenCalledWith(0)
     expect(dependencies.closeCoordinationRedis).toHaveBeenCalledWith(0)
     expect(dependencies.closePostgres).toHaveBeenCalledWith(0)
@@ -113,6 +124,7 @@ describe('API shutdown coordinator', () => {
   test('continues startup cleanup when resources are absent or unavailable', async () => {
     const dependencies = createDependencies({
       getServer: () => undefined,
+      closeEsiRuntime: vi.fn().mockRejectedValue(new Error('runtime unavailable')),
       closeCacheRedis: vi.fn().mockRejectedValue(new Error('cache unavailable')),
       closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
       closePostgres: vi.fn().mockRejectedValue(new Error('postgres unavailable')),
@@ -123,8 +135,12 @@ describe('API shutdown coordinator', () => {
     expect(dependencies.closeCacheRedis).toHaveBeenCalledOnce()
     expect(dependencies.closeCoordinationRedis).toHaveBeenCalledOnce()
     expect(dependencies.closePostgres).toHaveBeenCalledOnce()
-    expect(dependencies.recordFailure).toHaveBeenCalledTimes(2)
-    expect(dependencies.markFailed).toHaveBeenCalledTimes(2)
+    expect(dependencies.recordFailure).toHaveBeenCalledTimes(3)
+    expect(dependencies.recordFailure).toHaveBeenCalledWith(
+      'API ESI runtime shutdown failed',
+      expect.any(Error),
+    )
+    expect(dependencies.markFailed).toHaveBeenCalledTimes(3)
     expect(dependencies.recordTimeout).not.toHaveBeenCalled()
   })
 })
@@ -135,6 +151,7 @@ function createDependencies(
   return {
     timeoutMs: 30_000,
     getServer: () => undefined,
+    closeEsiRuntime: vi.fn().mockResolvedValue(undefined),
     closeCacheRedis: vi.fn().mockResolvedValue(undefined),
     closeCoordinationRedis: vi.fn().mockResolvedValue(undefined),
     closePostgres: vi.fn().mockResolvedValue(undefined),

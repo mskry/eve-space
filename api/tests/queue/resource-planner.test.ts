@@ -118,7 +118,7 @@ describe('generic resource planner', () => {
     })
 
     expect(plannerMocks.getCooldowns).toHaveBeenCalledWith([
-      { operation: 'skills', principal: 'character-1404328063' },
+      { operation: 'skills', characterId: 1_404_328_063 },
     ])
     expect(subject.producer.commands).toEqual([
       {

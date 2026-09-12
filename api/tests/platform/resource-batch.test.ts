@@ -4,9 +4,8 @@ import {
   type PlatformInstalledResourceDescriptor,
   type PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
-import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { PlatformEsiRequestError } from '../../src/esi-resilience/platform-execute.js'
+import { PlatformEsiRequestError } from '../../src/esi-gateway/platform-execution.js'
 import {
   executeInstalledResourceBatchOperation,
   validatePlatformResourceBatchClassifications,
@@ -114,21 +113,18 @@ describe('platform resource batch processing', () => {
   test('materializes complete observations locally without scalar ESI loads', async () => {
     const resource = completeResource()
     const payload = batchPayload(2)
-    const definition = batchDefinition()
     const executeEsiOperation = vi.fn().mockResolvedValue(platformExecution({ observed: true }))
     const queue = batchQueue()
 
     await processInstalledResourceBatch(payload, queue, undefined, {
       resources: [resource],
       resolveEligibility: eligible as never,
-      definitions: { 'universe-resolve-names': definition },
       executeEsiOperation,
     })
 
     expect(executeEsiOperation).toHaveBeenCalledOnce()
     expect(executeEsiOperation).toHaveBeenCalledWith({
       operation: 'universe-resolve-names',
-      definition,
       inputs: { ids: [1_404_328_063, 1_404_328_064] },
       authorization: { kind: 'public' },
     })
@@ -156,7 +152,6 @@ describe('platform resource batch processing', () => {
       processInstalledResourceBatch(payload, batchQueue(), undefined, {
         resources: [resource],
         resolveEligibility: eligible as never,
-        definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation,
       }),
     ).rejects.toThrow('Platform resource mapping failed')
@@ -172,7 +167,6 @@ describe('platform resource batch processing', () => {
       executeInstalledResourceBatchOperation(oversizedBatchPayload(), {
         resources: [completeResource()],
         resolveEligibility,
-        definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation,
       }),
     ).rejects.toThrow('batch exceeds 1000 subjects')
@@ -191,7 +185,6 @@ describe('platform resource batch processing', () => {
       processInstalledResourceBatch(payload, batchQueue(), undefined, {
         resources: [resource],
         resolveEligibility: eligible as never,
-        definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation,
       }),
     ).rejects.toThrow('Platform resource mapping failed')
@@ -214,7 +207,6 @@ describe('platform resource batch processing', () => {
             nextEligibleAt: null,
           })
           .mockResolvedValueOnce({ status: 'eligible', due: false }),
-        definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation: vi.fn().mockRejectedValue(failure),
       }),
     ).rejects.toBe(failure)
@@ -239,7 +231,6 @@ describe('platform resource batch processing', () => {
       {
         resources: [completeResource()],
         resolveEligibility: eligible as never,
-        definitions: { 'universe-resolve-names': batchDefinition() },
         executeEsiOperation,
       },
     )
@@ -258,7 +249,6 @@ describe('platform resource batch processing', () => {
     await processInstalledResourceBatch(payload, queue, undefined, {
       resources: [resource],
       resolveEligibility: eligible as never,
-      definitions: { 'universe-resolve-names': batchDefinition() },
       executeEsiOperation: vi.fn().mockResolvedValue(platformExecution({ observed: true })),
     })
 
@@ -388,14 +378,6 @@ function eligible() {
     authorizationGeneration: 4,
     nextEligibleAt: null,
   })
-}
-
-function batchDefinition() {
-  return {
-    sdkOperationId: 'PostUniverseNames',
-    descriptor: {} as never,
-    contract: {} as never,
-  } satisfies PlatformExecutableEsiOperationDefinition
 }
 
 function platformExecution(data: unknown) {

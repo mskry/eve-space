@@ -1,3 +1,4 @@
+import { EsiHttpError } from '@evespace/esi-client'
 import { describe, expect, test } from 'vitest'
 import { CharacterTokenNotFoundError } from '../../src/auth/character-token-store.js'
 import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
@@ -12,7 +13,11 @@ describe('organization owner evidence failures', () => {
     [new ScopeRequiredError('scope'), 'strict', 'missing-scope'],
     [new CharacterTokenNotFoundError(), 'strict', 'authorization-missing'],
     [new EveSsoTokenRefreshError(400, true), 'strict', 'authorization-revoked'],
-    [{ code: 'ESI_HTTP_ERROR', status: 403 }, 'strict', 'authorization-rejected'],
+    [
+      new EsiHttpError({ operationId: 'GetCharactersCharacterId', status: 403 }),
+      'strict',
+      'authorization-rejected',
+    ],
   ])('classifies conclusive authority loss', (error, kind, failureClass) => {
     expect(classifyOrganizationAuthorityFailure(error)).toEqual({ kind, failureClass })
   })
@@ -21,7 +26,7 @@ describe('organization owner evidence failures', () => {
     [new OrganizationAuthorityError('stale-affiliation'), 'affiliation-unavailable'],
     [new OrganizationAuthorityError('executor-unavailable'), 'affiliation-unavailable'],
     [new EveSsoTokenRefreshError(503, false), 'sso-unavailable'],
-    [{ code: 'ESI_HTTP_ERROR', status: 503 }, 'esi-unavailable'],
+    [new EsiHttpError({ operationId: 'GetCharactersCharacterId', status: 503 }), 'esi-unavailable'],
   ])('classifies temporary verification failures', (error, failureClass) => {
     expect(classifyOrganizationAuthorityFailure(error)).toEqual({
       kind: 'transient',

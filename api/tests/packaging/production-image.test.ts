@@ -52,9 +52,19 @@ const required = [
   '/app/dist/generated/platform/installed-module-migrations.js',
   '/app/dist/generated/platform/installed-module-esi.js',
   '/app/dist/generated/platform/installed-module-runtime.js',
+  '/app/node_modules/@pgsql/parser/wasm/v17/libpg-query.wasm',
   ...expected.coreMigrations.map((name) => '/app/migrations/' + name),
 ]
 for (const path of required) if (!existsSync(path)) throw new Error('Missing production file ' + path)
+const { parsePostgres17Migration } = await import('/app/dist/db/postgres17-parser.js')
+const parsed = await parsePostgres17Migration('create table records (id bigint primary key)')
+if (
+  parsed.grammarMajorVersion !== 17 ||
+  parsed.parserVersion < 170000 ||
+  parsed.parserVersion >= 180000 ||
+  parsed.statements.length !== 1 ||
+  parsed.statements[0]?.kind !== 'CreateStmt'
+) throw new Error('Unexpected PostgreSQL 17 parser result')
 for (const moduleId of expected.installedModuleIds)
   await import('@eve-space/' + moduleId + '-server')
 for (const migration of expected.installedModuleMigrations) {

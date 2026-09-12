@@ -5,7 +5,8 @@ import {
   setMainCharacter,
 } from '../auth/character-lifecycle.js'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
-import { combineEsiResultMetadata } from '../esi-resilience/result-metadata.js'
+import { combineEsiResultMetadata } from '../esi-gateway/feature-execution.js'
+import type { EsiReadResultMetadata } from '../esi-gateway/feature-execution.js'
 import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { loadSession } from '../middleware/auth-session.js'
@@ -21,7 +22,11 @@ import {
 } from './overview.js'
 import type { CharacterLocation, CharacterShip, CharacterSkillsSummary } from './overview.js'
 import { getCharacterProfile } from './profile.js'
-import { characterReauthorizationUrl, errorStatus } from './route-responses.js'
+import {
+  characterReauthorizationUrl,
+  errorStatus,
+  toCharacterEsiResponse,
+} from './route-responses.js'
 import { getWalletBalance, walletScope } from './wallet.js'
 
 type Section<Data> =
@@ -89,8 +94,9 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
         birthday: profiles[index]?.birthday ?? null,
         securityStatus: profiles[index]?.securityStatus ?? null,
         raceFactionId: profiles[index]?.raceFactionId ?? null,
-        location: locations[index]?.status === 'ok' ? locations[index].data : null,
-        ship: ships[index]?.status === 'ok' ? ships[index].data : null,
+        location:
+          locations[index]?.status === 'ok' ? toCharacterEsiResponse(locations[index].data) : null,
+        ship: ships[index]?.status === 'ok' ? toCharacterEsiResponse(ships[index].data) : null,
         walletBalance: wallets[index]?.status === 'ok' ? wallets[index].data.balance : null,
         totalSp: skillSummaries[index]?.status === 'ok' ? skillSummaries[index].data.totalSp : null,
         corporation: {
@@ -145,7 +151,13 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
         ...(ship.status === 'ok' ? [ship.data] : []),
         ...(skills.status === 'ok' ? [skills.data] : []),
       ])
-      return context.json({ profile, location, ship, skills, ...metadata })
+      return context.json({
+        profile,
+        location: toPublicEsiSection(location),
+        ship: toPublicEsiSection(ship),
+        skills: toPublicEsiSection(skills),
+        ...metadata,
+      })
     },
   )
   .patch(
@@ -222,4 +234,12 @@ async function resolveSection<Data>(
     }
     return { status: 'unavailable', message: 'EVE Online ESI is temporarily unavailable.' }
   }
+}
+
+function toPublicEsiSection<Data extends EsiReadResultMetadata>(
+  section: Section<Data>,
+): Section<Omit<Data, 'source' | 'quota'>> {
+  return section.status === 'ok'
+    ? { status: 'ok', data: toCharacterEsiResponse(section.data) }
+    : section
 }
