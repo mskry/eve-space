@@ -22,6 +22,7 @@ afterEach(async () => {
   await Promise.all(platforms.map((platform) => platform.close()))
   platforms = []
   vi.doUnmock('../../../src/queue/job-handlers.js')
+  vi.doUnmock('../../../src/characters/affiliation-sync.js')
   vi.doUnmock('../../../src/queue/worker-lifecycle.js')
   vi.doUnmock('../../../src/auth/tokens.js')
   vi.doUnmock('../../../src/esi-gateway/platform-execution.js')

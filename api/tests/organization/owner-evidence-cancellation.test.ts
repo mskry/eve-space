@@ -1,9 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  getAffiliation: vi.fn(),
+  observeAndPersistAffiliation: vi.fn(),
   getRoles: vi.fn(),
-  persistAffiliations: vi.fn(),
   transaction: vi.fn(),
 }))
 
@@ -26,8 +25,7 @@ vi.mock('../../src/db/client.js', () => {
   }
 })
 vi.mock('../../src/characters/affiliation-sync.js', () => ({
-  getCharacterAffiliationObservation: mocks.getAffiliation,
-  persistAffiliationObservations: mocks.persistAffiliations,
+  observeAndPersistCharacterAffiliation: mocks.observeAndPersistAffiliation,
 }))
 vi.mock('../../src/characters/corporation-roles.js', () => ({
   getCharacterCorporationRoles: mocks.getRoles,
@@ -38,7 +36,7 @@ import { refreshOrganizationOwnerEvidence } from '../../src/organization/owner-e
 describe('organization owner evidence cancellation', () => {
   test('does not persist degradation or revoke authority after ESI cancellation', async () => {
     const controller = new AbortController()
-    mocks.getAffiliation.mockImplementation(
+    mocks.observeAndPersistAffiliation.mockImplementation(
       (_characterId: number, signal: AbortSignal) =>
         new Promise((_, reject) => {
           signal.addEventListener('abort', () => reject(signal.reason), { once: true })
@@ -46,11 +44,10 @@ describe('organization owner evidence cancellation', () => {
     )
 
     const pending = refreshOrganizationOwnerEvidence('grant-id', { signal: controller.signal })
-    await vi.waitFor(() => expect(mocks.getAffiliation).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(mocks.observeAndPersistAffiliation).toHaveBeenCalledOnce())
     controller.abort()
 
     await expect(pending).rejects.toBe(controller.signal.reason)
-    expect(mocks.persistAffiliations).not.toHaveBeenCalled()
     expect(mocks.getRoles).not.toHaveBeenCalled()
     expect(mocks.transaction).not.toHaveBeenCalled()
   })

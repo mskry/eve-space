@@ -66,11 +66,10 @@ import {
   getCharacterAuthorizationForLifecycle,
   getCharacterCacheAuthorization as getCharacterCacheAuthorizationForLifecycleAlias,
   getCharacterCacheAuthorizationForLifecycle,
-  ScopeRequiredError,
-  TokenRefreshUnavailableError,
   withCharacterAuthorizationForLifecycle,
 } from '../../src/auth/tokens.js'
 import { SsoTokenRejectedError, SsoTransportError } from '../../src/auth/sso-errors.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 
 const characterId = 1404328063
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'

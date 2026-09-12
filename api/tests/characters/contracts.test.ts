@@ -1,16 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
-const mocks = vi.hoisted(() => {
-  class EsiQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('ESI quota is temporarily exhausted')
-    }
-  }
-  return { EsiQuotaError, executeRepresentation: vi.fn() }
-})
+const mocks = vi.hoisted(() => ({ executeRepresentation: vi.fn() }))
 
-vi.mock('../../src/esi-gateway/failures.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 vi.mock('../../src/esi-gateway/feature-execution.js', () =>
   createFeatureExecutionMock(mocks.executeRepresentation),
 )
@@ -123,19 +116,19 @@ describe('character contracts service', () => {
     expect(mocks.executeRepresentation).toHaveBeenCalledOnce()
   })
 
-  test('preserves parent failures and maps quota failures', async () => {
+  test('preserves parent failures and quota identity', async () => {
     const unavailable = new Error('parent unavailable')
     mocks.executeRepresentation.mockRejectedValueOnce(unavailable)
-    const { ContractQuotaError, getCharacterContractItems } =
-      await import('../../src/characters/contracts.js')
+    const { getCharacterContractItems } = await import('../../src/characters/contracts.js')
     await expect(getCharacterContractItems(characterId, 600, 1, subjectLifecycleId)).rejects.toBe(
       unavailable,
     )
 
-    mocks.executeRepresentation.mockRejectedValueOnce(new mocks.EsiQuotaError(30))
-    await expect(
-      getCharacterContractItems(characterId, 600, 1, subjectLifecycleId),
-    ).rejects.toEqual(new ContractQuotaError(30))
+    const quotaError = new EsiQuotaError(30)
+    mocks.executeRepresentation.mockRejectedValueOnce(quotaError)
+    await expect(getCharacterContractItems(characterId, 600, 1, subjectLifecycleId)).rejects.toBe(
+      quotaError,
+    )
   })
 })
 

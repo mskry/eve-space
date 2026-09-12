@@ -1,6 +1,6 @@
 import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'
 import { EveSsoTokenRefreshError } from '../auth/sso.js'
-import { TokenRefreshUnavailableError } from '../auth/tokens.js'
+import { TokenRefreshUnavailableError } from '../auth/token-errors.js'
 import { classifyEsiRefreshFailure, EsiQuotaError } from '../esi-gateway/failures.js'
 import type { PlatformEsiExecution } from '../esi-gateway/platform-execution.js'
 import type {

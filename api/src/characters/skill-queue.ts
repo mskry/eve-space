@@ -34,7 +34,7 @@ export const characterSkillQueueScope = characterSkillQueueRead.requiredScope
 
 type SkillQueueState = 'training' | 'paused' | 'empty' | 'lapsed'
 
-export interface CharacterSkillQueueEntry {
+interface CharacterSkillQueueEntry {
   queuePosition: number
   typeId: number
   name: string
@@ -59,13 +59,13 @@ interface CharacterSkillQueueData extends CharacterSkillQueueEntries {
   activeQueuePosition: number | null
 }
 
-export type CharacterSkillQueue = CharacterSkillQueueData & EsiReadResultMetadata
+type CharacterSkillQueue = CharacterSkillQueueData & EsiReadResultMetadata
 
 /**
  * Classification depends on the current time, so it is resolved per response rather than stored in
  * the cached representation, which must stay time-independent for conditional revalidation.
  */
-export function resolveSkillQueueState(
+function resolveSkillQueueState(
   entries: readonly CharacterSkillQueueEntry[],
   now: number,
 ): Pick<CharacterSkillQueue, 'activeQueuePosition' | 'state'> {

@@ -111,6 +111,7 @@ describe('ESI gateway boundaries', () => {
         source('internal/envelope', "import 'zod'"),
         source('internal/catalog', "import '../../generated/platform/installed-module-esi.js'"),
         source('catalog-interface', "import '../generated/platform/installed-module-esi.js'"),
+        source('internal/failure-policy', "import '../../auth/token-errors.js'"),
         source('internal/coordination', "import type { Redis } from 'ioredis'"),
         source('internal/request-lifecycle', "import { Effect } from 'effect'"),
         source(

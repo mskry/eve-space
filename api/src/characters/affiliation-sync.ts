@@ -4,17 +4,13 @@ import { db } from '../db/client.js'
 import { characters } from '../db/schema.js'
 import { env } from '../env.js'
 import { appendDomainEvent } from '../domain-events/store.js'
-import { EsiQuotaError } from '../esi-gateway/failures.js'
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
-import { affiliationJobPayload, type JobPayloadByName } from '../queue/job-contracts.js'
-import { affiliationBatchLimit } from './affiliation-contract.js'
 
-if (
-  operationRegistry.PostCharactersAffiliation.transport.protocol.maximumBatchSize !==
-  affiliationBatchLimit
-)
-  throw new Error('Bulk affiliation identity does not match the queue payload contract')
-export { affiliationBatchLimit }
+const generatedAffiliationBatchLimit =
+  operationRegistry.PostCharactersAffiliation.transport.protocol.maximumBatchSize
+if (generatedAffiliationBatchLimit === null)
+  throw new Error('Bulk affiliation operation must declare a maximum batch size')
+const affiliationBatchLimit = generatedAffiliationBatchLimit
 
 const bulkAffiliationRead = createPublicEsiRead({
   operation: 'bulk-affiliation',
@@ -29,19 +25,13 @@ const bulkAffiliationRead = createPublicEsiRead({
     })),
 })
 
-export { affiliationJobPayload }
-export type AffiliationJobPayload = JobPayloadByName['affiliation']
-
-export interface AffiliationObservation {
+interface AffiliationObservation {
   characterId: number
   corporationId: number
   allianceId: number | null
 }
 
-export async function getCharacterAffiliationObservation(
-  characterId: number,
-  signal?: AbortSignal,
-) {
+export async function observeCharacterAffiliation(characterId: number, signal?: AbortSignal) {
   const result = await lookupAffiliationResult([characterId], signal)
   const observation = result.data.find((entry) => entry.characterId === characterId)
   if (!observation) return null
@@ -52,75 +42,46 @@ export async function getCharacterAffiliationObservation(
   }
 }
 
-export class AffiliationCooldownError extends Error {
-  readonly retryAt: Date
-
-  constructor(readonly retryAfterSeconds: number) {
-    super('Character affiliation refresh is deferred by ESI cooldown')
-    this.retryAt = new Date(Date.now() + retryAfterSeconds * 1_000)
-  }
+export async function observeAndPersistCharacterAffiliation(
+  characterId: number,
+  signal?: AbortSignal,
+) {
+  const observation = await observeCharacterAffiliation(characterId, signal)
+  signal?.throwIfAborted()
+  if (observation && !observation.stale)
+    await persistAffiliationObservations(
+      [characterId],
+      [observation],
+      observation.affiliationCheckedAt,
+      signal,
+    )
+  return observation
 }
 
-export async function selectDueAffiliationCharacterIds(
-  now = new Date(),
-  limit = affiliationBatchLimit,
-) {
-  const boundedLimit = Math.min(affiliationBatchLimit, Math.max(1, Math.floor(limit)))
-  return db
+export async function selectDueAffiliationBatches(now = new Date()) {
+  const due = await db
     .select({ characterId: characters.characterId })
     .from(characters)
     .where(and(lte(characters.nextAffiliationCheck, now)))
     .orderBy(asc(characters.nextAffiliationCheck), asc(characters.characterId))
-    .limit(boundedLimit)
-}
-
-export function partitionAffiliationCharacterIds(characterIds: readonly number[]) {
-  const batches: number[][] = []
-  for (let index = 0; index < characterIds.length; index += affiliationBatchLimit)
-    batches.push(characterIds.slice(index, index + affiliationBatchLimit))
-  return batches
-}
-
-export function affiliationOperationIdentity(characterIds: readonly number[], refreshId?: string) {
-  const ordered = characterIds.toSorted((left, right) => left - right)
-  const refreshSuffix = refreshId ? `--${refreshId}` : ''
-  return `affiliation-${ordered.join('-')}${refreshSuffix}`
+    .limit(affiliationBatchLimit)
+  if (due.length === 0) return []
+  return [due.map(({ characterId }) => characterId).toSorted((left, right) => left - right)]
 }
 
 export async function processAffiliationBatch(
   characterIds: readonly number[],
-  options: {
-    observedAt?: Date
-    lookup?: (
-      ids: readonly number[],
-      signal?: AbortSignal,
-    ) => Promise<readonly AffiliationObservation[]>
-    signal?: AbortSignal
-  } = {},
+  signal?: AbortSignal,
 ) {
-  const parsed = affiliationJobPayload.parse({
-    operationId: affiliationOperationIdentity(characterIds),
-    characterIds,
-  })
-  const observedAt = options.observedAt ?? new Date()
-  const lookup = options.lookup ?? lookupAffiliations
-  let observations: readonly AffiliationObservation[]
-  try {
-    observations = await lookup(parsed.characterIds, options.signal)
-  } catch (error) {
-    if (error instanceof EsiQuotaError) throw new AffiliationCooldownError(error.retryAfterSeconds)
-    throw error
-  }
-  options.signal?.throwIfAborted()
-  await persistAffiliationObservations(
-    parsed.characterIds,
-    observations,
-    observedAt,
-    options.signal,
-  )
+  const batch = validateAffiliationBatch(characterIds)
+  signal?.throwIfAborted()
+  const observedAt = new Date()
+  const result = await lookupAffiliationResult(batch, signal)
+  signal?.throwIfAborted()
+  await persistAffiliationObservations(batch, result.data, observedAt, signal)
 }
 
-export async function persistAffiliationObservations(
+async function persistAffiliationObservations(
   requestedCharacterIds: readonly number[],
   observations: readonly AffiliationObservation[],
   observedAt: Date,
@@ -208,12 +169,18 @@ export async function persistAffiliationObservations(
   })
 }
 
-async function lookupAffiliations(characterIds: readonly number[], signal?: AbortSignal) {
-  return (await lookupAffiliationResult(characterIds, signal)).data
-}
-
 async function lookupAffiliationResult(characterIds: readonly number[], signal?: AbortSignal) {
   return bulkAffiliationRead.execute({ body: [...characterIds], ...(signal ? { signal } : {}) })
+}
+
+function validateAffiliationBatch(characterIds: readonly number[]) {
+  if (
+    characterIds.length === 0 ||
+    characterIds.length > affiliationBatchLimit ||
+    characterIds.some((characterId) => !Number.isSafeInteger(characterId) || characterId <= 0)
+  )
+    throw new Error('Invalid affiliation batch')
+  return [...characterIds]
 }
 
 function nextAffiliationCheckSql(observedAt: string) {

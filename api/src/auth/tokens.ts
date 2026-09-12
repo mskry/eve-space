@@ -17,6 +17,7 @@ import { normalizeScopeSet } from '../scopes.js'
 import { env } from '../env.js'
 import { EveSsoTokenRefreshError, refreshAccessToken, verifyAccessToken } from './sso.js'
 import { isTransientSsoError, SsoTokenRejectedError } from './sso-errors.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from './token-errors.js'
 import { decryptTokens, encryptTokens } from './security.js'
 
 export interface CharacterAuthorization {
@@ -45,18 +46,6 @@ const tokenFreshnessSkewMs = 60_000
 
 let activeRefreshes = 0
 const refreshWaiters: Array<() => void> = []
-
-export class ScopeRequiredError extends Error {
-  constructor(readonly scope: string) {
-    super(`EVE authorization is missing the ${scope} scope`)
-  }
-}
-
-export class TokenRefreshUnavailableError extends Error {
-  constructor() {
-    super('EVE token refresh is temporarily unavailable')
-  }
-}
 
 export async function getCharacterAccessToken(
   characterId: number,

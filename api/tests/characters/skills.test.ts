@@ -119,27 +119,27 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+test('retains the canonical skill category in its training module', async () => {
+  const { skillCategoryId } = await import('../../src/skills/training.js')
+
+  expect(skillCategoryId).toBe(16)
+})
+
 describe('character skills snapshot', () => {
-  test('normalizes every ESI record without loading static data', async () => {
+  test('exposes the canonical scope and summary without loading static data', async () => {
     mocks.getSkills.mockResolvedValue(
       response({
         total_sp: 19_000,
         skills: [skill(4, 4000, 4, 5), skill(2, 2000, 2, 2)],
       }),
     )
-    const { characterSkillsScope, getCharacterSkillsData } =
+    const { characterSkillsScope, getCharacterSkillsSummary } =
       await import('../../src/characters/skills.js')
 
-    await expect(getCharacterSkillsData(characterId, subjectLifecycleId)).resolves.toEqual({
-      data: {
-        totalSp: 19_000,
-        unallocatedSp: 0,
-        skills: [
-          { typeId: 4, skillpoints: 4000, activeLevel: 4, trainedLevel: 5 },
-          { typeId: 2, skillpoints: 2000, activeLevel: 2, trainedLevel: 2 },
-        ],
-      },
-      ...esiMetadata,
+    await expect(getCharacterSkillsSummary(characterId, subjectLifecycleId)).resolves.toEqual({
+      totalSp: 19_000,
+      unallocatedSp: 0,
+      ...publicMetadata,
     })
     expect(characterSkillsScope).toBe(scope)
     expect(mocks.getSkills).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
@@ -147,21 +147,29 @@ describe('character skills snapshot', () => {
     expect(mocks.select).not.toHaveBeenCalled()
   })
 
-  test('summary reads only the normalized snapshot', async () => {
+  test('preserves stale snapshot freshness metadata in the summary', async () => {
     mocks.getSkills.mockResolvedValue(
-      response({ total_sp: 2500, unallocated_sp: 125, skills: [skill(2, 2000, 2, 2)] }),
+      response({ total_sp: 2500, unallocated_sp: 125, skills: [skill(2, 2000, 2, 2)] }, 'cache', {
+        cachedUntil: '2026-09-01T10:59:00.000Z',
+        validatedAt: '2026-09-01T10:58:00.000Z',
+        stale: true,
+        refreshFailureClass: 'esi-unavailable',
+      }),
     )
-    const { getCharacterSkillsSummary } = await import('../../src/characters/overview.js')
+    const { getCharacterSkillsSummary } = await import('../../src/characters/skills.js')
 
     await expect(getCharacterSkillsSummary(characterId, subjectLifecycleId)).resolves.toEqual({
       totalSp: 2500,
       unallocatedSp: 125,
-      ...publicMetadata,
+      cachedUntil: '2026-09-01T10:59:00.000Z',
+      validatedAt: '2026-09-01T10:58:00.000Z',
+      stale: true,
+      refreshFailureClass: 'esi-unavailable',
     })
     expect(mocks.select).not.toHaveBeenCalled()
   })
 
-  test('serves a repeated request from the L1 cache without another ESI call', async () => {
+  test('reads a repeated summary from the cached private snapshot', async () => {
     mocks.getSkills
       .mockResolvedValueOnce(
         response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }),
@@ -169,14 +177,15 @@ describe('character skills snapshot', () => {
       .mockResolvedValueOnce(
         response({ total_sp: 19_000, unallocated_sp: 25, skills: [skill(2, 2000, 2, 2)] }, 'cache'),
       )
-    const { getCharacterSkillsData } = await import('../../src/characters/skills.js')
+    const { getCharacterSkillsSummary } = await import('../../src/characters/skills.js')
 
-    const first = await getCharacterSkillsData(characterId, subjectLifecycleId)
-    const second = await getCharacterSkillsData(characterId, subjectLifecycleId)
+    const first = await getCharacterSkillsSummary(characterId, subjectLifecycleId)
+    const second = await getCharacterSkillsSummary(characterId, subjectLifecycleId)
 
-    expect(first.source).toBe('esi')
-    expect(second).toMatchObject({ source: 'cache', stale: false, data: first.data })
+    expect(first).toEqual({ totalSp: 19_000, unallocatedSp: 25, ...publicMetadata })
+    expect(second).toEqual(first)
     expect(mocks.getSkills).toHaveBeenCalledTimes(2)
+    expect(mocks.select).not.toHaveBeenCalled()
   })
 })
 
@@ -196,7 +205,7 @@ describe('detailed character skills catalogue', () => {
       staticSkill(10, 'Alpha Group', 4, 'Same'),
       { groupId: 30, groupName: 'Empty Group', typeId: null, typeName: null },
     )
-    const { getCharacterSkills, skillCategoryId } = await import('../../src/characters/skills.js')
+    const { getCharacterSkills } = await import('../../src/characters/skills.js')
 
     const result = await getCharacterSkills(characterId, subjectLifecycleId)
     expect(result).toEqual({
@@ -261,7 +270,6 @@ describe('detailed character skills catalogue', () => {
       ],
       ...publicMetadata,
     })
-    expect(skillCategoryId).toBe(16)
     expect(mocks.getSkills).toHaveBeenCalledOnce()
     expect(mocks.select).toHaveBeenCalledOnce()
     expect(Object.keys(mocks.select.mock.calls[0]![0])).toEqual([
@@ -403,7 +411,17 @@ describe('detailed character skills catalogue', () => {
   })
 })
 
-function response<Data>(data: Data, source: 'cache' | 'esi' = 'esi') {
+function response<Data>(
+  data: Data,
+  source: 'cache' | 'esi' = 'esi',
+  metadata: {
+    cachedUntil?: string
+    validatedAt?: string
+    stale?: boolean
+    retryAt?: string
+    refreshFailureClass?: 'esi-unavailable'
+  } = {},
+) {
   const value = data as Data & {
     total_sp: number
     unallocated_sp?: number
@@ -426,6 +444,7 @@ function response<Data>(data: Data, source: 'cache' | 'esi' = 'esi') {
       })),
     },
     ...esiMetadata,
+    ...metadata,
     source,
   }
 }

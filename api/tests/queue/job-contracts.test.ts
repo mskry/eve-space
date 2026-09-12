@@ -1,6 +1,8 @@
+import { operationRegistry } from '@evespace/esi-client/operations'
 import { describe, expect, test } from 'vitest'
 import { env } from '../../src/env.js'
 import {
+  affiliationJobId,
   assertSafeJobPayload,
   domainEventJobId,
   getJobContract,
@@ -28,6 +30,10 @@ const resourceBatch = {
   subjectKind: 'character' as const,
   subjects: [{ subjectLifecycleId: grantId, subjectId: '1404328063' }],
 }
+const affiliationMaximumBatchSize =
+  operationRegistry.PostCharactersAffiliation.transport.protocol.maximumBatchSize
+if (affiliationMaximumBatchSize === null)
+  throw new Error('Bulk affiliation operation must declare a maximum batch size')
 
 const fixtures = {
   diagnostic: { operationId: 'queue-diagnostic' },
@@ -86,6 +92,8 @@ describe('job contracts', () => {
   })
 
   test('preserves deterministic identities and resource active-work scopes', () => {
+    expect(affiliationJobId([3, 1, 2])).toBe('affiliation-1-2-3')
+    expect(affiliationJobId([3, 1, 2], eventId)).toBe(`affiliation-1-2-3--${eventId}`)
     expect(domainEventJobId(eventId)).toBe(`domain-event-${eventId}`)
     expect(resourceRefreshJobId(resourceIdentity)).toMatch(/^resource-refresh-[0-9a-f]{64}$/)
     expect(resourceBatchJobId(resourceBatch)).toMatch(/^resource-batch-[0-9a-f]{64}$/)
@@ -100,12 +108,27 @@ describe('job contracts', () => {
     ).toBe(resourceBatchJobId(resourceBatch))
   })
 
+  test('matches affiliation payload capacity to the generated ESI operation limit', () => {
+    expect(() =>
+      parseJobPayload('affiliation', affiliationPayload(affiliationMaximumBatchSize)),
+    ).not.toThrow()
+    expect(() =>
+      parseJobPayload('affiliation', affiliationPayload(affiliationMaximumBatchSize + 1)),
+    ).toThrow('Invalid affiliation')
+  })
+
   test('strictly rejects malformed and sensitive payloads', () => {
     for (const name of Object.keys(fixtures) as JobName[])
       expect(() => parseJobPayload(name, { ...fixtures[name], unexpected: true })).toThrow(
         `Invalid ${name}`,
       )
     expect(() => assertSafeJobPayload({ refreshToken: 'not-allowed' })).toThrow('sensitive')
+    expect(() =>
+      parseJobPayload('affiliation', {
+        operationId: 'affiliation-1',
+        characterIds: Array.from({ length: 1_001 }, (_, index) => index + 1),
+      }),
+    ).toThrow('Invalid affiliation')
   })
 
   test('rejects duplicate and unbacked authoritative contracts', () => {
@@ -121,3 +144,10 @@ describe('job contracts', () => {
     ).toThrow('outbox recovery')
   })
 })
+
+function affiliationPayload(size: number) {
+  return {
+    operationId: 'affiliation-1',
+    characterIds: Array.from({ length: size }, (_, index) => index + 1),
+  }
+}

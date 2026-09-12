@@ -10,10 +10,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../src/esi-gateway/feature-execution.js', () =>
   createFeatureExecutionMock(mocks.executeRepresentation),
 )
-vi.mock('../../src/characters/skills.js', () => ({
-  characterSkillsScope: 'esi-skills.read_skills.v1',
-  getCharacterSkillsData: vi.fn(),
-}))
 vi.mock('../../src/universe/locations.js', () => ({
   getUniverseSolarSystem: mocks.getUniverseSolarSystem,
   getUniverseStation: mocks.getUniverseStation,

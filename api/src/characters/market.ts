@@ -3,14 +3,13 @@ import type {
   GetCharactersCharacterIdOrdersHistoryResponse,
   GetCharactersCharacterIdOrdersResponse,
 } from '@evespace/esi-client/types'
-import { EsiQuotaError } from '../esi-gateway/failures.js'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import { isPositiveSafeInteger } from '../type-guards.js'
 import { financeLocationName, loadFinanceLocationNames } from './finance-location-names.js'
+import { assertFinancePositiveSafeInteger, resolveFinanceTotalPages } from './finance-pagination.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 
 type EsiCharacterMarketOrder =
@@ -45,7 +44,7 @@ interface CharacterMarketOrdersData {
   orders: CharacterMarketOrder[]
 }
 
-export type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiReadResultMetadata
+type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiReadResultMetadata
 
 const characterMarketOrdersRead = createCharacterEsiRead({
   operation: 'market-orders',
@@ -80,8 +79,7 @@ interface CharacterMarketOrderHistoryData {
   totalPages: number
 }
 
-export type CharacterMarketOrderHistoryResult = CharacterMarketOrderHistoryData &
-  EsiReadResultMetadata
+type CharacterMarketOrderHistoryResult = CharacterMarketOrderHistoryData & EsiReadResultMetadata
 
 const characterMarketOrderHistoryRead = createCharacterEsiRead({
   operation: 'market-order-history',
@@ -102,27 +100,17 @@ const characterMarketOrderHistoryRead = createCharacterEsiRead({
         Object.assign(mapMarketOrder(order, namesByType, namesByLocation), { state: order.state }),
       ),
       page: input.page,
-      totalPages: paginationPages(response.meta.pagination?.pages, input.page),
+      totalPages: resolveFinanceTotalPages(response.meta.pagination?.pages, input.page),
     }
   },
 })
-
-export class MarketQuotaError extends Error {
-  constructor(readonly retryAfterSeconds: number) {
-    super('ESI market quota is temporarily exhausted')
-  }
-}
 
 export async function getCharacterMarketOrders(
   characterId: number,
   subjectLifecycleId: string,
 ): Promise<CharacterMarketOrdersResult> {
-  try {
-    const result = await characterMarketOrdersRead.execute({ characterId, subjectLifecycleId })
-    return { ...result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwMarketError(error)
-  }
+  const result = await characterMarketOrdersRead.execute({ characterId, subjectLifecycleId })
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 export async function getCharacterMarketOrderHistory(
@@ -130,17 +118,13 @@ export async function getCharacterMarketOrderHistory(
   page: number,
   subjectLifecycleId: string,
 ): Promise<CharacterMarketOrderHistoryResult> {
-  assertPositiveSafeInteger(page, 'Market order history page')
-  try {
-    const result = await characterMarketOrderHistoryRead.execute({
-      characterId,
-      page,
-      subjectLifecycleId,
-    })
-    return { ...result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwMarketError(error)
-  }
+  assertFinancePositiveSafeInteger(page, 'Market order history page')
+  const result = await characterMarketOrderHistoryRead.execute({
+    characterId,
+    page,
+    subjectLifecycleId,
+  })
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 function mapMarketOrder(
@@ -166,19 +150,4 @@ function mapMarketOrder(
     durationDays: order.duration,
     expiresAt: new Date(Date.parse(order.issued) + order.duration * 86_400_000).toISOString(),
   }
-}
-
-function paginationPages(value: number | undefined, page: number) {
-  if (value === undefined || value === 0) return page
-  assertPositiveSafeInteger(value, 'ESI pagination total')
-  return value
-}
-
-function assertPositiveSafeInteger(value: unknown, name: string): asserts value is number {
-  if (!isPositiveSafeInteger(value)) throw new Error(`${name} must be a positive safe integer`)
-}
-
-function throwMarketError(error: unknown): never {
-  if (error instanceof EsiQuotaError) throw new MarketQuotaError(error.retryAfterSeconds)
-  throw error
 }

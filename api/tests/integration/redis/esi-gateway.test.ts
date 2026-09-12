@@ -54,8 +54,10 @@ vi.mock('../../../src/cache-redis.js', () => ({
 vi.mock('../../../src/esi-gateway/internal/coordination-connection.js', () => ({
   getCoordinationConnection: () => coordination,
 }))
-vi.mock('../../../src/auth/tokens.js', () => ({
+vi.mock('../../../src/auth/token-errors.js', () => ({
   TokenRefreshUnavailableError: class TokenRefreshUnavailableError extends Error {},
+}))
+vi.mock('../../../src/auth/tokens.js', () => ({
   getCharacterAuthorization: async () => ({
     accessToken: 'token',
     tokenVersion: authorizationVersion,

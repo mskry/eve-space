@@ -45,7 +45,6 @@ const allowedImportTiersBySourceTier: Record<QueueTier, readonly QueueTier[]> = 
 const allowedJobContractImports = new Set([
   'node:crypto',
   'zod',
-  '../characters/affiliation-contract.js',
   '../env.js',
   '../platform/collection-state.js',
   '../platform/resource-batch-contract.js',

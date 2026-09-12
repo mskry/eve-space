@@ -1,12 +1,9 @@
 import { and, eq, isNull, lte, or } from 'drizzle-orm'
 import { CharacterTokenNotFoundError } from '../auth/character-token-store.js'
 import { EveSsoTokenRefreshError } from '../auth/sso.js'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/token-errors.js'
 import { getCharacterCorporationRoles } from '../characters/corporation-roles.js'
-import {
-  getCharacterAffiliationObservation,
-  persistAffiliationObservations,
-} from '../characters/affiliation-sync.js'
+import { observeAndPersistCharacterAffiliation } from '../characters/affiliation-sync.js'
 import { db } from '../db/client.js'
 import {
   characters,
@@ -106,24 +103,11 @@ export async function refreshOrganizationOwnerEvidence(
 
   const checkedAt = new Date()
   try {
-    const affiliation = await getCharacterAffiliationObservation(
+    const affiliation = await observeAndPersistCharacterAffiliation(
       snapshot.characterId,
       options.signal,
     )
     if (!affiliation || affiliation.stale) throw new OrganizationAuthorityError('stale-affiliation')
-    options.signal?.throwIfAborted()
-    await persistAffiliationObservations(
-      [snapshot.characterId],
-      [
-        {
-          characterId: snapshot.characterId,
-          corporationId: affiliation.corporationId,
-          allianceId: affiliation.allianceId,
-        },
-      ],
-      affiliation.affiliationCheckedAt,
-      options.signal,
-    )
     options.signal?.throwIfAborted()
     const authorityCorporationId = await resolveOrganizationAuthorityCorporation(
       {

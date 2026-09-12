@@ -34,7 +34,7 @@ interface CharacterAttributesData {
   lastRemapDate: string | null
 }
 
-export type CharacterAttributes = CharacterAttributesData & EsiReadResultMetadata
+type CharacterAttributes = CharacterAttributesData & EsiReadResultMetadata
 
 export async function getCharacterAttributes(
   characterId: number,

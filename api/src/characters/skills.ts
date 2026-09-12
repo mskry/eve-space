@@ -1,15 +1,12 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdSkillsResponse } from '@evespace/esi-client/types'
-import { and, eq } from 'drizzle-orm'
-import { db } from '../db/client.js'
-import { sdeGroups, sdeTypes } from '../db/schema.js'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
   type EsiReadResult,
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import { skillCategoryId } from '../skills/training.js'
+import { getSkillCatalogue, type SkillCatalogue } from './skill-catalogue.js'
 
 interface CharacterSkillsRepresentationInput {
   characterId: number
@@ -27,7 +24,6 @@ const characterSkillsRead = createCharacterEsiRead({
 })
 
 export const characterSkillsScope = characterSkillsRead.requiredScope
-export { skillCategoryId } from '../skills/training.js'
 
 interface CharacterSkillSnapshot {
   typeId: number
@@ -36,27 +32,10 @@ interface CharacterSkillSnapshot {
   skillpoints: number
 }
 
-export interface CharacterSkillsSnapshot {
+interface CharacterSkillsSnapshot {
   totalSp: number
   unallocatedSp: number
   skills: CharacterSkillSnapshot[]
-}
-
-interface SkillCatalogue {
-  groups: Array<{
-    groupId: number
-    name: string
-    skills: Array<{ typeId: number; name: string }>
-  }>
-}
-
-let skillCataloguePromise: Promise<SkillCatalogue> | undefined
-
-export async function getCharacterSkillsData(
-  characterId: number,
-  subjectLifecycleId: string,
-): Promise<EsiReadResult<CharacterSkillsSnapshot>> {
-  return characterSkillsRead.execute({ characterId, subjectLifecycleId })
 }
 
 interface CharacterSkillsData {
@@ -78,20 +57,46 @@ interface CharacterSkillsData {
   }>
 }
 
-export type CharacterSkills = CharacterSkillsData & EsiReadResultMetadata
+type CharacterSkills = CharacterSkillsData & EsiReadResultMetadata
+
+interface CharacterSkillsSummaryData {
+  totalSp: number
+  unallocatedSp: number
+}
+
+export type CharacterSkillsSummary = CharacterSkillsSummaryData & EsiReadResultMetadata
 
 export async function getCharacterSkills(
   characterId: number,
   subjectLifecycleId: string,
 ): Promise<CharacterSkills> {
   const [snapshot, catalogue] = await Promise.all([
-    getCharacterSkillsData(characterId, subjectLifecycleId),
+    getCharacterSkillsSnapshot(characterId, subjectLifecycleId),
     getSkillCatalogue(),
   ])
   return {
     ...composeCharacterSkills(snapshot.data, catalogue),
     ...toEsiReadResultMetadata(snapshot),
   }
+}
+
+export async function getCharacterSkillsSummary(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<CharacterSkillsSummary> {
+  const skills = await getCharacterSkillsSnapshot(characterId, subjectLifecycleId)
+  return {
+    totalSp: skills.data.totalSp,
+    unallocatedSp: skills.data.unallocatedSp,
+    ...toEsiReadResultMetadata(skills),
+  }
+}
+
+async function getCharacterSkillsSnapshot(
+  characterId: number,
+  subjectLifecycleId: string,
+): Promise<EsiReadResult<CharacterSkillsSnapshot>> {
+  return characterSkillsRead.execute({ characterId, subjectLifecycleId })
 }
 
 function mapCharacterSkillsSnapshot(
@@ -109,55 +114,6 @@ function mapCharacterSkillsSnapshot(
   }
 }
 
-function getSkillCatalogue() {
-  skillCataloguePromise ??= loadSkillCatalogue()
-    .then((catalogue) => {
-      if (catalogue.groups.length === 0) skillCataloguePromise = undefined
-      return catalogue
-    })
-    .catch((error: unknown) => {
-      skillCataloguePromise = undefined
-      throw error
-    })
-  return skillCataloguePromise
-}
-
-async function loadSkillCatalogue(): Promise<SkillCatalogue> {
-  const rows = await db
-    .select({
-      groupId: sdeGroups.groupId,
-      groupName: sdeGroups.name,
-      typeId: sdeTypes.typeId,
-      typeName: sdeTypes.name,
-    })
-    .from(sdeGroups)
-    .leftJoin(sdeTypes, and(eq(sdeTypes.groupId, sdeGroups.groupId), eq(sdeTypes.published, true)))
-    .where(and(eq(sdeGroups.categoryId, skillCategoryId), eq(sdeGroups.published, true)))
-
-  const groupsById = new Map<number, SkillCatalogue['groups'][number]>()
-  const seenTypeIds = new Set<number>()
-  for (const row of rows) {
-    let group = groupsById.get(row.groupId)
-    if (!group) {
-      group = { groupId: row.groupId, name: row.groupName, skills: [] }
-      groupsById.set(row.groupId, group)
-    }
-    if (row.typeId !== null && row.typeName !== null && !seenTypeIds.has(row.typeId)) {
-      seenTypeIds.add(row.typeId)
-      group.skills.push({ typeId: row.typeId, name: row.typeName })
-    }
-  }
-
-  const groups = [...groupsById.values()]
-  for (const group of groups) {
-    group.skills.sort((left, right) =>
-      compareNameAndId(left.name, left.typeId, right.name, right.typeId),
-    )
-  }
-  groups.sort((left, right) => compareNameAndId(left.name, left.groupId, right.name, right.groupId))
-  return { groups }
-}
-
 function composeCharacterSkills(
   snapshot: CharacterSkillsSnapshot,
   catalogue: SkillCatalogue,
@@ -166,19 +122,21 @@ function composeCharacterSkills(
   const catalogueTypeIds = new Set<number>()
   const groups: CharacterSkillsData['groups'] = catalogue.groups.map((catalogueGroup) => {
     let trainedSp = 0
-    const skills = catalogueGroup.skills.map((catalogueSkill) => {
-      catalogueTypeIds.add(catalogueSkill.typeId)
-      const progress = progressByType.get(catalogueSkill.typeId)
-      trainedSp += progress?.skillpoints ?? 0
-      return {
-        typeId: catalogueSkill.typeId,
-        name: catalogueSkill.name,
-        injected: progress !== undefined,
-        activeLevel: progress?.activeLevel ?? 0,
-        trainedLevel: progress?.trainedLevel ?? 0,
-        skillpoints: progress?.skillpoints ?? 0,
-      }
-    })
+    const skills = catalogueGroup.skills
+      .map((catalogueSkill) => {
+        catalogueTypeIds.add(catalogueSkill.typeId)
+        const progress = progressByType.get(catalogueSkill.typeId)
+        trainedSp += progress?.skillpoints ?? 0
+        return {
+          typeId: catalogueSkill.typeId,
+          name: catalogueSkill.name,
+          injected: progress !== undefined,
+          activeLevel: progress?.activeLevel ?? 0,
+          trainedLevel: progress?.trainedLevel ?? 0,
+          skillpoints: progress?.skillpoints ?? 0,
+        }
+      })
+      .toSorted((left, right) => compareNameAndId(left.name, left.typeId, right.name, right.typeId))
     return {
       groupId: catalogueGroup.groupId,
       name: catalogueGroup.name,

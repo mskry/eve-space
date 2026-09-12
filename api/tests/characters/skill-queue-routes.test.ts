@@ -16,7 +16,7 @@ vi.mock('../../src/auth/session-store.js', () => ({ findSession: mocks.findSessi
 vi.mock('../../src/env.js', () => ({
   env: { EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback' },
 }))
-vi.mock('../../src/auth/tokens.js', () => ({
+vi.mock('../../src/auth/token-errors.js', () => ({
   ScopeRequiredError: class ScopeRequiredError extends Error {
     constructor(readonly scope: string) {
       super(`Missing ${scope}`)
@@ -32,15 +32,18 @@ vi.mock('../../src/characters/profile.js', () => ({ getCharacterProfile: vi.fn()
 vi.mock('../../src/characters/overview.js', () => ({
   getCharacterLocation: vi.fn(),
   getCharacterShip: vi.fn(),
-  getCharacterSkillsSummary: vi.fn(),
   locationScope: 'esi-location.read_location.v1',
   shipScope: 'esi-location.read_ship_type.v1',
-  skillsScope: 'esi-skills.read_skills.v1',
+}))
+vi.mock('../../src/characters/skills.js', () => ({
+  characterSkillsScope: 'esi-skills.read_skills.v1',
+  getCharacterSkills: vi.fn(),
+  getCharacterSkillsSummary: vi.fn(),
 }))
 
 import { characterRoutes } from '../../src/characters/routes.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 
 const character = {
   characterId: 1404328063,

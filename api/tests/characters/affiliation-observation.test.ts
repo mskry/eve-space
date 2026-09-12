@@ -26,27 +26,24 @@ beforeEach(() => {
 })
 
 describe('character affiliation observation', () => {
-  test('retains the bulk-affiliation validation time when reading from cache', async () => {
+  test('retains bulk-affiliation validation time and stale metadata before local persistence', async () => {
     mocks.lookupAffiliations.mockResolvedValue({
       data: [{ characterId, corporationId: 98_000_001, allianceId: 99_000_001 }],
       cachedUntil: '2026-08-31T13:00:00.000Z',
       validatedAt,
       source: 'cache',
-      stale: false,
+      stale: true,
       quota: {},
     })
-    const { getCharacterAffiliationObservation } =
-      await import('../../src/characters/affiliation-sync.js')
+    const { observeCharacterAffiliation } = await import('../../src/characters/affiliation-sync.js')
     const controller = new AbortController()
 
-    await expect(
-      getCharacterAffiliationObservation(characterId, controller.signal),
-    ).resolves.toEqual({
+    await expect(observeCharacterAffiliation(characterId, controller.signal)).resolves.toEqual({
       characterId,
       corporationId: 98_000_001,
       allianceId: 99_000_001,
       affiliationCheckedAt: new Date(validatedAt),
-      stale: false,
+      stale: true,
     })
     expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({
       body: [characterId],

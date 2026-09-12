@@ -126,8 +126,8 @@ interface CharacterImplantsData {
   implants: ImplantSummary[]
 }
 
-export type CharacterClones = CharacterClonesData & EsiReadResultMetadata
-export type CharacterImplants = CharacterImplantsData & EsiReadResultMetadata
+type CharacterClones = CharacterClonesData & EsiReadResultMetadata
+type CharacterImplants = CharacterImplantsData & EsiReadResultMetadata
 
 function getCharacterClonesData(
   characterId: number,

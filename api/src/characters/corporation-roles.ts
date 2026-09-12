@@ -20,7 +20,7 @@ const characterCorporationRolesRead = createCharacterEsiRead({
 
 export const characterCorporationRolesScope = characterCorporationRolesRead.requiredScope
 
-export interface CharacterCorporationRoles {
+interface CharacterCorporationRoles {
   roles: string[]
   rolesAtBase: string[]
   rolesAtHeadquarters: string[]

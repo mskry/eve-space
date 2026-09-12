@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { listJobContracts } from '../../src/queue/job-contracts.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 
@@ -83,7 +84,7 @@ describe('job handlers', () => {
     ).resolves.toEqual({ type: 'permanent' })
 
     const retryAt = new Date('2026-09-10T12:00:30.000Z')
-    mocks.affiliation.mockRejectedValueOnce(Object.assign(new Error('cooldown'), { retryAt }))
+    mocks.affiliation.mockRejectedValueOnce(new EsiQuotaError(30, Date.now(), retryAt))
     await expect(
       executeJobHandler(
         'affiliation',

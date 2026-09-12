@@ -21,6 +21,7 @@ describe('authentication module boundaries', () => {
       'session-store',
       'sso',
       'sso-errors',
+      'token-errors',
       'tokens',
     ])
   })

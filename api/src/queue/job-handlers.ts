@@ -85,7 +85,7 @@ const jobHandlers = {
     name: 'affiliation',
     classifyError: delayedOr(retryable),
     async process({ characterIds }, context) {
-      await processAffiliationBatch(characterIds, { signal: context.signal })
+      await processAffiliationBatch(characterIds, context.signal)
     },
   }),
   'organization-owner-evidence': handler({

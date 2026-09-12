@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
-import { affiliationBatchLimit } from '../characters/affiliation-contract.js'
 import { env } from '../env.js'
 import {
   collectionStateIdentityJson,
@@ -19,12 +18,13 @@ const outboxRelayJobPayload = z.object({ operationId: z.literal('outbox-relay') 
 const domainEventRetentionJobPayload = z
   .object({ operationId: z.literal('domain-event-retention') })
   .strict()
-export const affiliationJobPayload = z
+const affiliationJobBatchLimit = 1_000
+const affiliationJobPayload = z
   .object({
     operationId: z
       .string()
       .regex(/^affiliation-\d+(?:-\d+)*(?:--[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12})?$/i),
-    characterIds: z.array(z.number().int().positive()).min(1).max(affiliationBatchLimit),
+    characterIds: z.array(z.number().int().positive()).min(1).max(affiliationJobBatchLimit),
   })
   .strict()
 const organizationOwnerEvidenceJobPayload = z
@@ -223,6 +223,12 @@ export function verifyJobContracts(contracts = listJobContracts()) {
 
 export function domainEventJobId(eventId: string) {
   return `domain-event-${z.uuid().parse(eventId)}`
+}
+
+export function affiliationJobId(characterIds: readonly number[], refreshId?: string) {
+  const ordered = characterIds.toSorted((left, right) => left - right)
+  const refreshSuffix = refreshId ? `--${z.uuid().parse(refreshId)}` : ''
+  return `affiliation-${ordered.join('-')}${refreshSuffix}`
 }
 
 export function resourceRefreshJobId(identity: PlatformCollectionStateIdentity) {

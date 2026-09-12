@@ -4,7 +4,6 @@ import {
   listUserCharacters,
   setMainCharacter,
 } from '../auth/character-lifecycle.js'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { combineEsiResultMetadata } from '../esi-gateway/feature-execution.js'
 import type { EsiReadResultMetadata } from '../esi-gateway/feature-execution.js'
 import { privateNoStore } from '../http/private-response.js'
@@ -12,21 +11,16 @@ import { zValidator } from '../http/validation.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
-import {
-  getCharacterLocation,
-  getCharacterShip,
-  getCharacterSkillsSummary,
-  locationScope,
-  shipScope,
-  skillsScope,
-} from './overview.js'
-import type { CharacterLocation, CharacterShip, CharacterSkillsSummary } from './overview.js'
+import { getCharacterLocation, getCharacterShip, locationScope, shipScope } from './overview.js'
+import type { CharacterLocation, CharacterShip } from './overview.js'
 import { getCharacterProfile } from './profile.js'
+import { classifyCharacterResourceFailure } from './resource-failure.js'
+import { characterReauthorizationUrl, toCharacterEsiResponse } from './route-responses.js'
 import {
-  characterReauthorizationUrl,
-  errorStatus,
-  toCharacterEsiResponse,
-} from './route-responses.js'
+  characterSkillsScope,
+  getCharacterSkillsSummary,
+  type CharacterSkillsSummary,
+} from './skills.js'
 import { getWalletBalance, walletScope } from './wallet.js'
 
 type Section<Data> =
@@ -78,7 +72,7 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
         characters.map((character) =>
           resolveSection<CharacterSkillsSummary>(
             () => getCharacterSkillsSummary(character.characterId, character.subjectLifecycleId),
-            skillsScope,
+            characterSkillsScope,
             character.characterId,
           ),
         ),
@@ -134,7 +128,7 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
         ),
         resolveSection<CharacterSkillsSummary>(
           () => getCharacterSkillsSummary(characterId, subjectLifecycleId),
-          skillsScope,
+          characterSkillsScope,
           characterId,
         ),
       ])
@@ -198,6 +192,25 @@ export const characterCoreRoutes = new Hono<OwnedCharacterEnv>()
           409,
         )
       }
+      if (result === 'authority-evidence') {
+        return context.json(
+          {
+            code: 'CHARACTER_AUTHORITY_EVIDENCE_RETAINED',
+            message:
+              'This character supplies retained organization-owner authority evidence and cannot be deleted.',
+          },
+          409,
+        )
+      }
+      if (result === 'corporation-source') {
+        return context.json(
+          {
+            code: 'CHARACTER_CORPORATION_SOURCE_ACTIVE',
+            message: 'Replace this character as the corporation data source before deleting it.',
+          },
+          409,
+        )
+      }
       if (result === 'not-found')
         return context.json({ code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' }, 404)
       return context.body(null, 204)
@@ -212,27 +225,28 @@ async function resolveSection<Data>(
   try {
     return { status: 'ok', data: await load() }
   } catch (error) {
-    if (error instanceof TokenRefreshUnavailableError) {
-      return { status: 'unavailable', message: 'EVE token refresh is temporarily unavailable.' }
+    const failure = classifyCharacterResourceFailure(error, { configuredScope: requiredScope })
+    switch (failure.kind) {
+      case 'token-refresh-unavailable':
+        return { status: 'unavailable', message: 'EVE token refresh is temporarily unavailable.' }
+      case 'scope-required':
+        return {
+          status: 'scope-required',
+          message: `Authorize this scope to view this data: ${failure.requiredScope}`,
+          requiredScope: failure.requiredScope,
+          authorizeUrl: characterReauthorizationUrl(characterId),
+        }
+      case 'authorization-rejected':
+        return {
+          status: 'scope-required',
+          message: 'EVE authorization is no longer valid.',
+          requiredScope: failure.requiredScope,
+          authorizeUrl: characterReauthorizationUrl(characterId),
+        }
+      case 'cooldown':
+      case 'unavailable':
+        return { status: 'unavailable', message: 'EVE Online ESI is temporarily unavailable.' }
     }
-    if (error instanceof ScopeRequiredError) {
-      return {
-        status: 'scope-required',
-        message: `Authorize this scope to view this data: ${error.scope}`,
-        requiredScope: error.scope,
-        authorizeUrl: characterReauthorizationUrl(characterId),
-      }
-    }
-    const status = errorStatus(error)
-    if (status === 401 || status === 403) {
-      return {
-        status: 'scope-required',
-        message: 'EVE authorization is no longer valid.',
-        requiredScope,
-        authorizeUrl: characterReauthorizationUrl(characterId),
-      }
-    }
-    return { status: 'unavailable', message: 'EVE Online ESI is temporarily unavailable.' }
   }
 }
 

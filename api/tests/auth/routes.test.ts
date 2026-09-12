@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => {
     findOwnedCharacter: vi.fn(),
     findSession: vi.fn(),
     getCharacterAffiliation: vi.fn(),
-    getCharacterAffiliationObservation: vi.fn(),
+    observeCharacterAffiliation: vi.fn(),
     getCharacterCorporationRoles: vi.fn(),
     loadCurrentOrganizationIdentity: vi.fn(),
     loadTransferApprovalForStart: vi.fn(),
@@ -98,7 +98,7 @@ vi.mock('../../src/characters/profile.js', () => ({
 }))
 
 vi.mock('../../src/characters/affiliation-sync.js', () => ({
-  getCharacterAffiliationObservation: mocks.getCharacterAffiliationObservation,
+  observeCharacterAffiliation: mocks.observeCharacterAffiliation,
 }))
 
 vi.mock('../../src/characters/corporation-roles.js', () => ({
@@ -168,7 +168,7 @@ beforeEach(() => {
     corporationId: mainCharacter.corporationId,
     allianceId: mainCharacter.allianceId,
   })
-  mocks.getCharacterAffiliationObservation.mockResolvedValue({
+  mocks.observeCharacterAffiliation.mockResolvedValue({
     characterId: mainCharacter.characterId,
     corporationId: mainCharacter.corporationId,
     allianceId: mainCharacter.allianceId,
@@ -1004,6 +1004,7 @@ describe('EVE SSO callback intents', () => {
         characterId: mainCharacter.characterId,
       }),
     )
+    expect(mocks.observeCharacterAffiliation).toHaveBeenCalledWith(mainCharacter.characterId)
     expect(mocks.getCharacterCorporationRoles).toHaveBeenCalledWith(
       mainCharacter.characterId,
       ownerClaimSubjectLifecycleId,
@@ -1029,7 +1030,7 @@ describe('EVE SSO callback intents', () => {
       organizationId: mainCharacter.corporationId,
       organizationVersion: 1,
     })
-    mocks.getCharacterAffiliationObservation.mockResolvedValue({
+    mocks.observeCharacterAffiliation.mockResolvedValue({
       characterId: mainCharacter.characterId,
       corporationId: mainCharacter.corporationId,
       allianceId: null,

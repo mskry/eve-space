@@ -1,44 +1,44 @@
 import type { Context } from 'hono'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { env } from '../env.js'
-import { EsiQuotaError } from '../esi-gateway/failures.js'
 import type { EsiReadResultMetadata } from '../esi-gateway/feature-execution.js'
+import type { CharacterResourceFailure } from './resource-failure.js'
 
 interface OwnedCharacterResourceErrorOptions {
-  requiredScope: string
   scopeMessage: string
   unavailableMessage: string
   returnTo?: string
-  preferConfiguredScope?: boolean
+  cooldownMessage?: string
 }
 
 export function ownedCharacterResourceError(
   context: Context,
-  error: unknown,
+  failure: CharacterResourceFailure,
   characterId: number,
   options: OwnedCharacterResourceErrorOptions,
 ) {
-  if (error instanceof EsiQuotaError) return esiCooldown(context, error)
-  if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
-  if (error instanceof ScopeRequiredError) {
-    return scopeRequired(context, characterId, options.scopeMessage, {
-      requiredScope: options.preferConfiguredScope ? options.requiredScope : error.scope,
-      returnTo: options.returnTo,
-    })
+  switch (failure.kind) {
+    case 'cooldown':
+      return options.cooldownMessage
+        ? financeCooldown(context, failure.retryAfterSeconds, options.cooldownMessage)
+        : esiCooldown(context, failure)
+    case 'token-refresh-unavailable':
+      return tokenRefreshUnavailable(context)
+    case 'scope-required':
+      return scopeRequired(context, characterId, options.scopeMessage, {
+        requiredScope: failure.requiredScope,
+        returnTo: options.returnTo,
+      })
+    case 'authorization-rejected':
+      return reauthorizationRequired(context, characterId, {
+        requiredScope: failure.requiredScope,
+        returnTo: options.returnTo,
+      })
+    case 'unavailable':
+      return context.json({ code: 'ESI_UNAVAILABLE', message: options.unavailableMessage }, 502)
   }
-
-  const status = errorStatus(error)
-  if (status === 401 || status === 403) {
-    return reauthorizationRequired(context, characterId, {
-      requiredScope: options.requiredScope,
-      returnTo: options.returnTo,
-    })
-  }
-
-  return context.json({ code: 'ESI_UNAVAILABLE', message: options.unavailableMessage }, 502)
 }
 
-export function tokenRefreshUnavailable(context: Context) {
+function tokenRefreshUnavailable(context: Context) {
   return context.json(
     {
       code: 'EVE_TOKEN_REFRESH_UNAVAILABLE',
@@ -48,7 +48,7 @@ export function tokenRefreshUnavailable(context: Context) {
   )
 }
 
-export function esiCooldown(context: Context, error: EsiQuotaError) {
+export function esiCooldown(context: Context, error: { readonly retryAfterSeconds: number }) {
   context.header('Retry-After', String(error.retryAfterSeconds))
   return context.json(
     {
@@ -70,10 +70,6 @@ export function characterReauthorizationUrl(characterId: number, returnTo?: stri
   return url.toString()
 }
 
-export function errorStatus(error: unknown) {
-  return typeof error === 'object' && error && 'status' in error ? Number(error.status) : undefined
-}
-
 function scopeRequired(
   context: Context,
   characterId: number,
@@ -88,6 +84,18 @@ function scopeRequired(
       authorizeUrl: characterReauthorizationUrl(characterId, options.returnTo),
     },
     403,
+  )
+}
+
+function financeCooldown(context: Context, retryAfterSeconds: number, message: string) {
+  context.header('Retry-After', String(retryAfterSeconds))
+  return context.json(
+    {
+      code: 'ESI_QUOTA_EXHAUSTED',
+      message,
+      retryAfterSeconds,
+    },
+    429,
   )
 }
 

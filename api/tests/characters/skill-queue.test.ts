@@ -221,6 +221,67 @@ describe('character skill queue', () => {
     expect(mocks.select).not.toHaveBeenCalled()
   })
 
+  test.each([
+    {
+      name: 'paused when no entry has started',
+      entries: [queueEntry(0, 3300, 5), queueEntry(1, 3301, 5)],
+      expected: { state: 'paused', activeQueuePosition: null },
+    },
+    {
+      name: 'lapsed when every entry finished at or before the current time',
+      entries: [
+        queueEntry(0, 3300, 5, {
+          startDate: '2026-08-30T10:00:00.000Z',
+          finishDate: '2026-08-31T10:00:00.000Z',
+        }),
+        queueEntry(1, 3301, 5, {
+          startDate: '2026-08-31T10:00:00.000Z',
+          finishDate: '2026-09-01T11:00:00.000Z',
+        }),
+      ],
+      expected: { state: 'lapsed', activeQueuePosition: null },
+    },
+    {
+      name: 'training on the first entry finishing after the current time',
+      entries: [
+        queueEntry(0, 3300, 5, {
+          startDate: '2026-08-31T10:00:00.000Z',
+          finishDate: '2026-09-01T11:00:00.000Z',
+        }),
+        queueEntry(1, 3301, 5, {
+          startDate: '2026-09-01T10:00:00.000Z',
+          finishDate: '2026-09-01T12:00:00.000Z',
+        }),
+        queueEntry(2, 3302, 5, {
+          startDate: '2026-09-01T12:00:00.000Z',
+          finishDate: '2026-09-02T12:00:00.000Z',
+        }),
+      ],
+      expected: { state: 'training', activeQueuePosition: 1 },
+    },
+    {
+      name: 'paused when the first unfinished entry has no finish date',
+      entries: [
+        queueEntry(0, 3300, 5, {
+          startDate: '2026-08-31T10:00:00.000Z',
+          finishDate: '2026-09-01T10:00:00.000Z',
+        }),
+        queueEntry(1, 3301, 5, {
+          startDate: '2026-09-01T10:00:00.000Z',
+          finishDate: null,
+        }),
+      ],
+      expected: { state: 'paused', activeQueuePosition: null },
+    },
+  ])('reports $name through the character skill-queue interface', async ({ entries, expected }) => {
+    mocks.getSkillQueue.mockResolvedValue(response(entries))
+    const { getCharacterSkillQueue } = await import('../../src/characters/skill-queue.js')
+
+    await expect(getCharacterSkillQueue(characterId, subjectLifecycleId)).resolves.toMatchObject(
+      expected,
+    )
+  })
+
   test('serves a repeated request from the L1 cache without another ESI call', async () => {
     mocks.getSkillQueue
       .mockResolvedValueOnce(response([queueEntry(0, 3300, 5)]))
@@ -271,73 +332,6 @@ describe('character skill queue', () => {
   })
 })
 
-describe('resolveSkillQueueState', () => {
-  const referenceNow = Date.parse('2026-08-29T12:00:00Z')
-
-  test('reports an empty queue', async () => {
-    const { resolveSkillQueueState } = await import('../../src/characters/skill-queue.js')
-
-    expect(resolveSkillQueueState([], referenceNow)).toEqual({
-      state: 'empty',
-      activeQueuePosition: null,
-    })
-  })
-
-  test('reports a paused queue when no entry carries a start date', async () => {
-    const { resolveSkillQueueState } = await import('../../src/characters/skill-queue.js')
-
-    expect(
-      resolveSkillQueueState([entryAt(0, null, null), entryAt(1, null, null)], referenceNow),
-    ).toEqual({
-      state: 'paused',
-      activeQueuePosition: null,
-    })
-  })
-
-  test('reports a lapsed queue when every entry finished in the past', async () => {
-    const { resolveSkillQueueState } = await import('../../src/characters/skill-queue.js')
-
-    expect(
-      resolveSkillQueueState(
-        [
-          entryAt(0, '2026-08-27T10:00:00Z', '2026-08-28T10:00:00Z'),
-          entryAt(1, '2026-08-28T10:00:00Z', '2026-08-29T10:00:00Z'),
-        ],
-        referenceNow,
-      ),
-    ).toEqual({ state: 'lapsed', activeQueuePosition: null })
-  })
-
-  test('identifies the first unfinished entry as the one training', async () => {
-    const { resolveSkillQueueState } = await import('../../src/characters/skill-queue.js')
-
-    expect(
-      resolveSkillQueueState(
-        [
-          entryAt(0, '2026-08-28T10:00:00Z', '2026-08-29T10:00:00Z'),
-          entryAt(1, '2026-08-29T10:00:00Z', '2026-08-29T18:00:00Z'),
-          entryAt(2, '2026-08-29T18:00:00Z', '2026-08-30T18:00:00Z'),
-        ],
-        referenceNow,
-      ),
-    ).toEqual({ state: 'training', activeQueuePosition: 1 })
-  })
-
-  test('reports a paused queue when the first unfinished entry has no finish date', async () => {
-    const { resolveSkillQueueState } = await import('../../src/characters/skill-queue.js')
-
-    expect(
-      resolveSkillQueueState(
-        [
-          entryAt(0, '2026-08-28T10:00:00Z', '2026-08-29T10:00:00Z'),
-          entryAt(1, '2026-08-29T10:00:00Z', null),
-        ],
-        referenceNow,
-      ),
-    ).toEqual({ state: 'paused', activeQueuePosition: null })
-  })
-})
-
 function response(data: QueueEntry[], source: 'cache' | 'esi' = 'esi') {
   return {
     data: { entries: data },
@@ -370,23 +364,5 @@ function queueEntry(
     primaryAttribute: null,
     secondaryAttribute: null,
     ...overrides,
-  }
-}
-
-function entryAt(queuePosition: number, startDate: string | null, finishDate: string | null) {
-  return {
-    queuePosition,
-    typeId: 3300 + queuePosition,
-    name: `Skill ${queuePosition}`,
-    groupId: 255,
-    groupName: 'Gunnery',
-    finishedLevel: 5,
-    levelStartSp: 256000,
-    levelEndSp: 512000,
-    trainingStartSp: 256000,
-    startDate,
-    finishDate,
-    primaryAttribute: 'perception' as const,
-    secondaryAttribute: 'willpower' as const,
   }
 }

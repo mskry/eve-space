@@ -3,7 +3,7 @@ import { EsiHttpError, EsiResponseParseError, EsiTransportError } from '@evespac
 import { describe, expect, test, vi } from 'vitest'
 import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
-import { TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
+import { TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 import {
   classifyPlatformResourceFailure,
   PlatformResourceAuthorizationError,

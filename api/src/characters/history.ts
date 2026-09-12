@@ -3,7 +3,7 @@ import type { GetCharactersCharacterIdCorporationhistoryResponse } from '@evespa
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
-export interface CharacterEmploymentHistoryEntry {
+interface CharacterEmploymentHistoryEntry {
   recordId: number
   startDate: string
   isDeleted: boolean

@@ -112,7 +112,7 @@ const externalDependenciesByModule: Readonly<Record<string, readonly string[]>> 
   'internal/coordination': ['ioredis'],
   'internal/coordination-connection': ['api/src/coordination-redis'],
   'internal/cooldowns': ['ioredis'],
-  'internal/failure-policy': ['api/src/auth/tokens'],
+  'internal/failure-policy': ['api/src/auth/token-errors'],
   'internal/permits': ['ioredis'],
   'internal/production-runtime': ['api/src/auth/tokens', 'api/src/env', 'api/src/cache-redis'],
   'internal/request-lifecycle': ['effect'],

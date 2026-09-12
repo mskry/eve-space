@@ -16,9 +16,9 @@ import { getStaticLocations } from '../universe/static-locations.js'
 
 // A sanity bound on the advertised page count, not a product limit: the fan-out allocates an array
 // of page numbers, so a corrupt X-Pages must not reach it. 1,000 pages is ~1,000,000 assets.
-export const maximumCharacterAssetPages = 1_000
-export const characterAssetNameBatchSize = 1_000
-export const characterAssetWorkerConcurrency = 4
+const maximumCharacterAssetPages = 1_000
+const characterAssetNameBatchSize = 1_000
+const characterAssetWorkerConcurrency = 4
 
 type AssetLocationType = 'station' | 'solar_system' | 'item' | 'other'
 type EnrichmentStatus = 'complete' | 'partial' | 'unavailable'
@@ -98,7 +98,7 @@ const characterAssetNamesRead = createCharacterEsiRead({
 
 export const characterAssetsScope = characterAssetsPageRead.requiredScope
 
-export interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAssetTypeData {
+interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAssetTypeData {
   totalVolume: number | null
   customName: string | null
   locationName: string | null
@@ -106,7 +106,7 @@ export interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAsse
   solarSystemSecurityStatus: number | null
 }
 
-export interface CharacterAssetsResult extends EsiReadResultMetadata {
+interface CharacterAssetsResult extends EsiReadResultMetadata {
   characterId: number
   assets: CharacterAssetDto[]
   enrichment: {
@@ -326,7 +326,7 @@ function loadCharacterAssetNameBatch(
     .then((result) => result.data)
 }
 
-export function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {
+function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {
   if (itemIds.length === 0 || itemIds.length > characterAssetNameBatchSize)
     throw new Error(
       `Character asset name batch must contain between 1 and ${characterAssetNameBatchSize} item IDs`,

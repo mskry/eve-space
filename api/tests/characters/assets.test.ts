@@ -25,12 +25,7 @@ vi.mock('../../src/universe/static-locations.js', () => ({
   getStaticLocations: mocks.getStaticLocations,
 }))
 
-import {
-  characterAssetNameBatchSize,
-  characterAssetWorkerConcurrency,
-  getCharacterAssets,
-  normalizeCharacterAssetNameBatch,
-} from '../../src/characters/assets.js'
+import { CharacterAssetsPaginationError, getCharacterAssets } from '../../src/characters/assets.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 
 const characterId = 1_404_328_063
@@ -176,7 +171,7 @@ describe('complete character asset collection', () => {
     expect(resultValue.assets.map((entry) => entry.itemId)).toEqual(
       Array.from({ length: 10 }, (_, index) => index + 1),
     )
-    expect(maximumActive).toBe(characterAssetWorkerConcurrency)
+    expect(maximumActive).toBe(4)
   })
 
   test('keeps selected stale metadata and retry semantics from mapped page results', async () => {
@@ -214,12 +209,114 @@ describe('complete character asset collection', () => {
 })
 
 describe('bounded character asset enrichment', () => {
-  test('normalizes name batches before callable execution', () => {
-    expect(normalizeCharacterAssetNameBatch([30, 10, 20])).toEqual([10, 20, 30])
-    expect(() => normalizeCharacterAssetNameBatch([])).toThrow('between 1 and 1000')
-    expect(() => normalizeCharacterAssetNameBatch([1, 1])).toThrow('must be unique')
-    expect(() => normalizeCharacterAssetNameBatch([0])).toThrow('positive safe integers')
-    expect(characterAssetNameBatchSize).toBe(1_000)
+  test('sorts and deduplicates name candidates before callable execution', async () => {
+    mocks.executeRepresentation.mockImplementation((definition, input) => {
+      if (definition.operation === 'character-asset-names')
+        return Promise.resolve(
+          result(
+            (input as { body: number[] }).body.map((itemId) => ({
+              itemId,
+              name: `Asset ${itemId}`,
+            })),
+          ),
+        )
+      return Promise.resolve(
+        result({
+          page: 1,
+          totalPages: 1,
+          assets: [30, 10, 20, 10].map((itemId) => asset({ itemId, isSingleton: true })),
+        }),
+      )
+    })
+
+    const resultValue = await getCharacterAssets(characterId, subjectLifecycleId)
+    const nameCall = mocks.executeRepresentation.mock.calls.find(
+      ([definition]) => definition.operation === 'character-asset-names',
+    )
+
+    expect(nameCall?.[1]).toEqual({
+      path: { character_id: characterId },
+      body: [10, 20, 30],
+      subjectLifecycleId,
+    })
+    expect(resultValue.assets.map(({ itemId, customName }) => ({ itemId, customName }))).toEqual([
+      { itemId: 30, customName: 'Asset 30' },
+      { itemId: 10, customName: 'Asset 10' },
+      { itemId: 20, customName: 'Asset 20' },
+    ])
+  })
+
+  test('splits oversized name sets at the reviewed ESI batch limit', async () => {
+    const itemIds = Array.from({ length: 1_001 }, (_, index) => 1_001 - index)
+    mocks.executeRepresentation.mockImplementation((definition, input) => {
+      if (definition.operation === 'character-asset-names')
+        return Promise.resolve(
+          result(
+            (input as { body: number[] }).body.map((itemId) => ({
+              itemId,
+              name: `Asset ${itemId}`,
+            })),
+          ),
+        )
+      return Promise.resolve(
+        result({
+          page: 1,
+          totalPages: 1,
+          assets: itemIds.map((itemId) => asset({ itemId, isSingleton: true })),
+        }),
+      )
+    })
+
+    const resultValue = await getCharacterAssets(characterId, subjectLifecycleId)
+    const nameBodies = mocks.executeRepresentation.mock.calls
+      .filter(([definition]) => definition.operation === 'character-asset-names')
+      .map(([, input]) => (input as { body: number[] }).body)
+
+    expect(nameBodies).toEqual([Array.from({ length: 1_000 }, (_, index) => index + 1), [1_001]])
+    expect(resultValue.enrichment.names).toBe('complete')
+    expect(resultValue.assets).toHaveLength(1_001)
+  })
+
+  test('does not issue an empty name batch when no asset is nameable', async () => {
+    await getCharacterAssets(characterId, subjectLifecycleId)
+
+    expect(
+      mocks.executeRepresentation.mock.calls.some(
+        ([definition]) => definition.operation === 'character-asset-names',
+      ),
+    ).toBe(false)
+  })
+
+  test('rejects invalid name candidates through the character-assets interface', async () => {
+    mocks.executeRepresentation.mockResolvedValueOnce(
+      result({
+        page: 1,
+        totalPages: 1,
+        assets: [asset({ itemId: 0, isSingleton: true })],
+      }),
+    )
+
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toThrow(
+      'positive safe integers',
+    )
+  })
+
+  test.each([
+    ['zero', 0],
+    ['negative', -1],
+    ['fractional', 1.5],
+    ['unsafe', Number.MAX_SAFE_INTEGER + 1],
+    ['non-finite', Number.POSITIVE_INFINITY],
+    ['above the fan-out bound', 1_001],
+  ])('rejects %s page totals through the character-assets interface', async (_case, totalPages) => {
+    mocks.executeRepresentation.mockImplementation((definition, input) => {
+      if (definition.operation !== 'character-assets-page') return Promise.resolve(result([]))
+      return Promise.resolve(result(mapAssetPage(definition, input, totalPages)))
+    })
+
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).rejects.toBeInstanceOf(
+      CharacterAssetsPaginationError,
+    )
   })
 })
 
@@ -244,4 +341,16 @@ function page(pageNumber: number, totalPages: unknown) {
 
 function result<Data>(data: Data) {
   return { data, ...freshness }
+}
+
+function mapAssetPage(definition: unknown, input: unknown, totalPages: number) {
+  const map = (
+    definition as {
+      map: (
+        response: { data: unknown[]; meta: { pagination: { pages: number } } },
+        input: unknown,
+      ) => unknown
+    }
+  ).map
+  return map({ data: [], meta: { pagination: { pages: totalPages } } }, input)
 }
