@@ -12,6 +12,7 @@ export interface ApiHttpServer {
 export interface ApiShutdownDependencies {
   readonly timeoutMs: number
   getServer(): ApiHttpServer | undefined
+  closeEsiRuntime(): Promise<void>
   closeCacheRedis(timeoutMs: number): Promise<void>
   closeCoordinationRedis(timeoutMs: number): Promise<void>
   closePostgres(timeoutMs: number): Promise<void>
@@ -37,6 +38,12 @@ async function runApiShutdown(dependencies: ApiShutdownDependencies): Promise<vo
       deadline,
       'API HTTP server shutdown failed',
       () => closeHttpServer(dependencies.getServer(), deadline.signal),
+      dependencies,
+    )
+    await runStep(
+      deadline,
+      'API ESI runtime shutdown failed',
+      dependencies.closeEsiRuntime,
       dependencies,
     )
     await runStep(

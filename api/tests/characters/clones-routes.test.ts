@@ -53,7 +53,7 @@ vi.mock('../../src/characters/overview.js', () => ({
 
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
 import { characterRoutes } from '../../src/characters/routes.js'
-import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 
 const client = testClient(characterRoutes)
 const characterId = 1404328063

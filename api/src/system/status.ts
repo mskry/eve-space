@@ -1,32 +1,28 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { sql } from '../db/client.js'
 import { probeDomainEventStatus, type DomainEventStatus } from '../domain-events/status.js'
-import { classifyStaleRefreshFailure } from '../esi-resilience/errors.js'
-import { execute } from '../esi-resilience/execute.js'
-import { esiErrorBudgetFloor } from '../esi-resilience/policy.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
+import { classifyEsiRefreshFailure } from '../esi-gateway/failures.js'
+import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 import {
-  probeEsiResilienceTelemetry,
-  type EsiResilienceTelemetry,
+  isEsiErrorBudgetAtFloor,
+  probeEsiStatus,
+  type EsiStatusTelemetry,
   type EsiUpstreamObservation,
-} from '../esi-resilience/telemetry.js'
+} from '../esi-gateway/status-interface.js'
 import { probeQueueStatus, type QueueStatus } from '../queue/status.js'
 
-const esiStatusRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'status',
-    name: 'esi-status-core',
-    descriptor: operationRegistry.GetStatus.transport,
-    encodeRequest: (input: Record<string, never>) => input,
-    map: ({ data }) => ({
-      players: data.players,
-      serverVersion: data.server_version,
-      startedAt: data.start_time,
-      vip: data.vip,
-    }),
+const esiStatusRead = createPublicEsiRead({
+  operation: 'status',
+  name: 'esi-status-core',
+  descriptor: operationRegistry.GetStatus.transport,
+  encodeRequest: (input: Record<string, never>) => input,
+  map: ({ data }) => ({
+    players: data.players,
+    serverVersion: data.server_version,
+    startedAt: data.start_time,
+    vip: data.vip,
   }),
-)
+})
 
 const cacheTtlMs = 30_000
 
@@ -73,7 +69,7 @@ export interface SystemStatus {
     esi: EsiStatus
     queue: QueueStatus & { checkedAt: string }
     eventRelay: DomainEventStatus & { checkedAt: string }
-    esiResilience: EsiResilienceTelemetry
+    esiResilience: EsiStatusTelemetry
   }
 }
 
@@ -93,9 +89,7 @@ export function getSystemStatus() {
 
 async function probeSystemStatus(now: number): Promise<SystemStatus> {
   const esiPending = probeEsi()
-  const esiResiliencePending = probeEsiResilienceTelemetry(
-    esiPending.then(({ observation }) => observation),
-  )
+  const esiResiliencePending = probeEsiStatus(esiPending.then(({ observation }) => observation))
   const [database, esiProbe, queue, esiResilience] = await Promise.all([
     probeDatabase(),
     esiPending,
@@ -156,14 +150,14 @@ async function probeEsi(): Promise<EsiStatusProbe> {
   const checkedAt = new Date(startedAt).toISOString()
 
   try {
-    const response = await execute(esiStatusRepresentation, {})
+    const response = await esiStatusRead.execute({})
     const errorBudgetRemaining = response.quota.errorRemaining ?? null
     let status: EsiStatus['status'] = 'operational'
     if (response.stale) status = 'stale'
     else if (
       response.data.vip ||
       response.data.players === 0 ||
-      (errorBudgetRemaining !== null && errorBudgetRemaining <= esiErrorBudgetFloor)
+      isEsiErrorBudgetAtFloor(errorBudgetRemaining)
     )
       status = 'degraded'
     return {
@@ -187,7 +181,7 @@ async function probeEsi(): Promise<EsiStatusProbe> {
       },
     }
   } catch (error) {
-    const refreshFailureClass = classifyStaleRefreshFailure(error)
+    const refreshFailureClass = classifyEsiRefreshFailure(error)
     const status: EsiStatus['status'] =
       refreshFailureClass === 'esi-cooldown' || refreshFailureClass === 'response-invalid'
         ? 'degraded'

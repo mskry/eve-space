@@ -1,6 +1,6 @@
 # EVE Space Adoption Contract
 
-The root OpenSpec change `deepen-esi-module-interface` owns application adoption of these package primitives and the source-module rename from `api/src/esi-resilience` to `api/src/esi-gateway`. This package does not own or perform that rename.
+The root OpenSpec change `deepen-esi-module-interface` owns application adoption of these package primitives and the completed source-module rename to `api/src/esi-gateway`. This package does not own that application source tree.
 
 ## Transport Composition
 
@@ -28,4 +28,4 @@ The package's pinned OpenAPI document declares conditional request headers but d
 
 The `esi-gateway` remains responsible for retry orchestration and jitter, idempotency decisions, cache identities and storage, stale fallback, authorization-generation binding, OAuth token lifecycle, distributed cooldowns and concurrency permits, request collapsing, telemetry, health reporting, and circuit or degraded-mode state. SDK failure classifications and protocol metadata are facts only; inspecting them performs no network, storage, timer, credential, or coordination side effect.
 
-The later source rename must preserve the `esi-resilience` capability name and existing Redis key prefixes because they are persisted compatibility contracts rather than source-module identifiers.
+The source rename preserves the `esi-resilience` capability name and existing Redis key prefixes because they are persisted compatibility contracts rather than source-module identifiers.

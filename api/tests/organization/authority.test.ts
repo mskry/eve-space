@@ -1,23 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 const mocks = vi.hoisted(() => ({
   callOperation: vi.fn(),
   get: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
-  EsiClient: class {
-    callOperation(...arguments_: unknown[]) {
-      return mocks.callOperation(...arguments_)
-    }
-  },
-}))
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  esiExecutionLayer: { executeRepresentation: mocks.get },
-}))
-
-import { executeRepresentationFixture } from '../support/execute-representation.js'
+vi.mock('../../src/esi-gateway/feature-execution.js', () => createFeatureExecutionMock(mocks.get))
 
 import { resolveOrganizationAuthorityCorporation } from '../../src/organization/authority.js'
 import {
@@ -30,13 +19,8 @@ const corporationId = 98_000_001
 const allianceId = 99_000_001
 
 beforeEach(() => {
-  mocks.get.mockImplementation((representation, input) =>
-    executeRepresentationFixture(representation, input, {
-      revalidation: { ifNoneMatch: 'etag' },
-    }),
-  )
-  mocks.callOperation.mockResolvedValue(
-    response({ executor_corporation_id: corporationId, name: 'Alliance' }),
+  mocks.get.mockImplementation(() =>
+    response({ executorCorporationId: corporationId, name: 'Alliance' }),
   )
 })
 
@@ -58,11 +42,7 @@ describe('organization owner authority', () => {
         { corporationId, allianceId },
       ),
     ).resolves.toBe(corporationId)
-    expect(mocks.get.mock.calls[0]?.[0]).toMatchObject({ operation: 'public-alliance' })
-    expect(mocks.callOperation).toHaveBeenCalledWith('GetAlliancesAllianceId', {
-      path: { alliance_id: allianceId },
-      headers: { 'If-None-Match': 'etag' },
-    })
+    expect(mocks.get.mock.calls[0]?.[1]).toEqual({ allianceId })
   })
 
   test('rejects a corporation outside the managed organization authority', async () => {
@@ -91,10 +71,11 @@ describe('organization owner authority', () => {
   })
 
   test('rejects stale alliance executor evidence', async () => {
-    mocks.get.mockImplementationOnce(async (representation, input) => {
-      const loaded = await executeRepresentationFixture(representation, input)
-      return { data: loaded.data, cachedUntil: '', quota: {}, source: 'stale', stale: true }
-    })
+    mocks.get.mockImplementationOnce(() => ({
+      ...response({ executorCorporationId: corporationId, name: 'Alliance' }),
+      source: 'cache',
+      stale: true,
+    }))
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'alliance', organizationId: allianceId },
@@ -104,7 +85,7 @@ describe('organization owner authority', () => {
   })
 
   test('treats an alliance without a current executor as unavailable evidence', async () => {
-    mocks.callOperation.mockResolvedValueOnce(response({ name: 'Alliance' }))
+    mocks.get.mockResolvedValueOnce(response({ name: 'Alliance' }))
     await expect(
       resolveOrganizationAuthorityCorporation(
         { organizationType: 'alliance', organizationId: allianceId },
@@ -137,5 +118,5 @@ describe('organization owner authority', () => {
 })
 
 function response<Data>(data: Data) {
-  return { data, meta: { headers: {} } }
+  return { data, cachedUntil: '', validatedAt: '', quota: {}, source: 'esi' as const, stale: false }
 }

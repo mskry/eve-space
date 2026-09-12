@@ -58,14 +58,26 @@ sequence; review must confirm the platform-first ordering when a new capability 
 ## Migration Failure
 
 The API applies migrations for every installed module before opening its HTTP socket, including
-disabled modules. Each migration and its ledger record commit in one transaction under the module's
-advisory lock. A failure rolls back that migration and prevents API startup; migrations committed
-before it remain applied.
+disabled modules. Before acquiring any module advisory lock or provisioning any module schema, it
+parses the exact SQL for the complete startup set with the pinned PostgreSQL 17 grammar and applies
+the structural module-containment policy. A parse, grammar-version, unsupported-statement,
+prohibited-operation, or cross-schema failure prevents every module migration in that preflighted
+set from executing. Each accepted migration and its ledger record then commit in one transaction
+under the module's advisory lock. A database failure rolls back that migration and prevents API
+startup; migrations committed before it remain applied.
 
 Workers never run migrations. A worker whose required core or installed-module migration is absent
 remains unhealthy, consumes no work, and reports the missing module and migration without exposing
 database credentials. Correct the migration with a reviewed forward change, rebuild, and restart the
 API. Never fabricate migration-ledger rows or enable a module around a migration failure.
+
+`@pgsql/parser` is an API production dependency because startup loads its PostgreSQL 17 WASM asset.
+To update it, keep the workspace catalog version exact, verify that the versioned `/v17` entry point
+still reports a PostgreSQL 17 parser version, and review AST-shape changes against every allowlisted
+statement and reference fixture before changing the policy. Run the parser adapter tests,
+`pnpm --filter @eve-space/api test:packaging`, the PostgreSQL integration suite, and the API
+production-container smoke check. Do not change the parser grammar independently of the deployed
+PostgreSQL major version or accept a generic parser fallback when the versioned asset cannot load.
 
 ## Safe Disablement And Retained Data
 

@@ -1,5 +1,5 @@
 import type { Context } from 'hono'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../esi-gateway/failures.js'
 
 export function npcCorporationsError(context: Context, error: unknown) {
   if (error instanceof EsiQuotaError) return esiCooldown(context, error)

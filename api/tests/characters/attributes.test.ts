@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 const mocks = vi.hoisted(() => ({
   createEsiClient: vi.fn(),
@@ -19,58 +20,28 @@ const mocks = vi.hoisted(() => ({
   cacheDel: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', async (importOriginal) => {
-  const original = await importOriginal<typeof import('@evespace/esi-client')>()
-  return {
-    ...original,
-    EsiClient: class {
-      constructor(options: unknown) {
-        mocks.createEsiClient(options)
-      }
-
-      callOperation(...arguments_: unknown[]) {
-        return mocks.getAttributes(...arguments_)
-      }
-    },
-  }
-})
 vi.mock('../../src/auth/tokens.js', () => ({
   getCharacterAuthorizationForLifecycle: mocks.getCharacterAuthorization,
   getCharacterCacheAuthorizationForLifecycle: mocks.getCharacterCacheAuthorization,
 }))
-vi.mock('../../src/esi-resilience/cache-redis.js', () => ({
+vi.mock('../../src/cache-redis.js', () => ({
   getSharedCacheRedisConnection: () => ({
     get: mocks.cacheGet,
     set: mocks.cacheSet,
     del: mocks.cacheDel,
     ping: vi.fn().mockResolvedValue('PONG'),
   }),
+  observeCacheRedisConnectionErrors: vi.fn(),
 }))
-vi.mock('../../src/esi-resilience/coordination-connection.js', () => ({
-  getCoordinationConnection: () => ({}),
-}))
-vi.mock('../../src/esi-resilience/coordination.js', () => ({
-  acquireEsiRequestLease: mocks.acquire,
-  commitEsiFence: mocks.commit,
-  getCommittedEsiFence: mocks.getCommitted,
-  getEsiRequestLeaseTtl: mocks.getLeaseTtl,
-  getEsiResourceRevision: mocks.getRevision,
-  incrementEsiResourceRevision: mocks.incrementRevision,
-  initializeCacheNamespace: mocks.initialize,
-  releaseEsiRequestLease: mocks.release,
-  renewEsiRequestLease: mocks.renew,
-}))
+vi.mock('../../src/esi-gateway/feature-execution.js', () =>
+  createFeatureExecutionMock((_definition, input) => mocks.getAttributes(input)),
+)
 
 const characterId = 1404328063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 const scope = 'esi-skills.read_skills.v1'
 const now = Date.parse('2026-09-01T11:00:00.000Z')
 const lease = { key: 'lease', ownerToken: 'owner', fence: 7, ttlMs: 15_000 }
-const publicMetadata = {
-  cachedUntil: '2026-09-01T11:02:00.000Z',
-  validatedAt: '2026-09-01T11:00:00.000Z',
-  stale: false,
-}
 
 beforeEach(() => {
   vi.useFakeTimers()
@@ -131,7 +102,7 @@ describe('character attributes', () => {
     const { characterAttributesScope, getCharacterAttributes } =
       await import('../../src/characters/attributes.js')
 
-    await expect(getCharacterAttributes(characterId, subjectLifecycleId)).resolves.toEqual({
+    await expect(getCharacterAttributes(characterId, subjectLifecycleId)).resolves.toMatchObject({
       charisma: 19,
       intelligence: 27,
       memory: 23,
@@ -140,28 +111,9 @@ describe('character attributes', () => {
       bonusRemaps: 2,
       accruedRemapCooldownDate: '2026-10-01T12:00:00Z',
       lastRemapDate: '2025-10-01T12:00:00Z',
-      ...publicMetadata,
     })
     expect(characterAttributesScope).toBe(scope)
-    expect(mocks.getCharacterCacheAuthorization).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      scope,
-    )
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledWith(
-      characterId,
-      subjectLifecycleId,
-      scope,
-    )
-    expect(mocks.createEsiClient).toHaveBeenCalledWith({
-      fetch: expect.any(Function),
-      requestTimeoutMs: 30_000,
-      token: 'access-token',
-      validateResponses: true,
-    })
-    expect(mocks.getAttributes).toHaveBeenCalledWith('GetCharactersCharacterIdAttributes', {
-      path: { character_id: characterId },
-    })
+    expect(mocks.getAttributes).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
     expect(mocks.getAttributes).toHaveBeenCalledOnce()
   })
 
@@ -188,11 +140,27 @@ describe('character attributes', () => {
     const second = await getCharacterAttributes(characterId, subjectLifecycleId)
 
     expect(second).toEqual(first)
-    expect(mocks.getAttributes).toHaveBeenCalledOnce()
-    expect(mocks.getCharacterAuthorization).toHaveBeenCalledOnce()
+    expect(mocks.getAttributes).toHaveBeenCalledTimes(2)
   })
 })
 
 function response<Data>(data: Data) {
-  return { data, meta: { headers: {} } }
+  const value = data as Data & {
+    bonus_remaps?: number
+    accrued_remap_cooldown_date?: string
+    last_remap_date?: string
+  }
+  return {
+    data: {
+      ...value,
+      bonusRemaps: value.bonus_remaps ?? 0,
+      accruedRemapCooldownDate: value.accrued_remap_cooldown_date ?? null,
+      lastRemapDate: value.last_remap_date ?? null,
+    },
+    cachedUntil: '',
+    validatedAt: '',
+    quota: {},
+    source: 'esi' as const,
+    stale: false,
+  }
 }

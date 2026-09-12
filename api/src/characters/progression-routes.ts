@@ -5,7 +5,7 @@ import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { characterAttributesScope, getCharacterAttributes } from './attributes.js'
-import { ownedCharacterResourceError } from './route-responses.js'
+import { ownedCharacterResourceError, toCharacterEsiResponse } from './route-responses.js'
 import { characterSkillQueueScope, getCharacterSkillQueue } from './skill-queue.js'
 import { characterSkillsScope, getCharacterSkills } from './skills.js'
 
@@ -19,7 +19,9 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
     async (context) => {
       const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterAttributes(characterId, subjectLifecycleId))
+        return context.json(
+          toCharacterEsiResponse(await getCharacterAttributes(characterId, subjectLifecycleId)),
+        )
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterAttributesScope,
@@ -38,7 +40,9 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
     async (context) => {
       const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterSkillQueue(characterId, subjectLifecycleId))
+        return context.json(
+          toCharacterEsiResponse(await getCharacterSkillQueue(characterId, subjectLifecycleId)),
+        )
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterSkillQueueScope,
@@ -57,7 +61,9 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
     async (context) => {
       const { characterId, subjectLifecycleId } = context.var.ownedCharacter
       try {
-        return context.json(await getCharacterSkills(characterId, subjectLifecycleId))
+        return context.json(
+          toCharacterEsiResponse(await getCharacterSkills(characterId, subjectLifecycleId)),
+        )
       } catch (error) {
         return ownedCharacterResourceError(context, error, characterId, {
           requiredScope: characterSkillsScope,

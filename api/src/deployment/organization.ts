@@ -1,7 +1,6 @@
-import { publicAllianceRepresentation } from '../alliances/public-data.js'
+import { getAlliancePublicResult } from '../alliances/public-data.js'
 import { getCorporationPublic } from '../corporations/public-data.js'
 import type { DeploymentOrganizationType } from '../db/schema.js'
-import { execute } from '../esi-resilience/execute.js'
 
 export interface DeploymentOrganization {
   type: DeploymentOrganizationType
@@ -15,7 +14,7 @@ export async function resolveDeploymentOrganization(
   id: number,
 ): Promise<DeploymentOrganization> {
   if (type === 'alliance') {
-    const alliance = (await execute(publicAllianceRepresentation, { allianceId: id })).data
+    const alliance = (await getAlliancePublicResult(id)).data
     return { type, id, name: alliance.name, ticker: alliance.ticker }
   }
 

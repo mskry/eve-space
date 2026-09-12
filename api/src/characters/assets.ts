@@ -3,17 +3,17 @@ import type { GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-clien
 import { eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeCategories, sdeGroups, sdeTypes } from '../db/schema.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
-import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
+import {
+  combineEsiReadResultMetadata,
+  createCharacterEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResult,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { resolveUniverseNamesBestEffort } from '../universe/names.js'
 import { getStaticLocations } from '../universe/static-locations.js'
 
-export const characterAssetsScope = getCharacterEsiScope('character-assets-page')
 // A sanity bound on the advertised page count, not a product limit: the fan-out allocates an array
 // of page numbers, so a corrupt X-Pages must not reach it. 1,000 pages is ~1,000,000 assets.
 export const maximumCharacterAssetPages = 1_000
@@ -65,35 +65,38 @@ interface CharacterAssetNameSnapshot {
 interface CharacterAssetsPageRepresentationInput {
   characterId: number
   page: number
+  subjectLifecycleId: string
 }
 
-const characterAssetsPageRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'character-assets-page',
-    name: 'character-assets-page-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
-    encodeRequest: (input: CharacterAssetsPageRepresentationInput) => ({
-      path: { character_id: input.characterId },
-      query: { page: input.page },
-    }),
-    map: (response, input): CharacterAssetPageSnapshot => ({
-      page: input.page,
-      totalPages: validatePageCount(response.meta.pagination?.pages),
-      assets: response.data.map(mapAssetSnapshot),
-    }),
+const characterAssetsPageRead = createCharacterEsiRead({
+  operation: 'character-assets-page',
+  name: 'character-assets-page-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
+  encodeRequest: (input: CharacterAssetsPageRepresentationInput) => ({
+    path: { character_id: input.characterId },
+    query: { page: input.page },
   }),
-)
+  map: (response, input): CharacterAssetPageSnapshot => ({
+    page: input.page,
+    totalPages: validatePageCount(response.meta.pagination?.pages),
+    assets: response.data.map(mapAssetSnapshot),
+  }),
+})
 
-const characterAssetNamesRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'character-asset-names',
-    name: 'character-asset-names-core',
-    descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames.transport,
-    encodeRequest: (input: { path: { character_id: number }; body: number[] }) => input,
-    map: ({ data }): CharacterAssetNameSnapshot[] =>
-      data.map(({ item_id: itemId, name }) => ({ itemId, name })),
-  }),
-)
+const characterAssetNamesRead = createCharacterEsiRead({
+  operation: 'character-asset-names',
+  name: 'character-asset-names-core',
+  descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames.transport,
+  encodeRequest: (input: {
+    path: { character_id: number }
+    body: number[]
+    subjectLifecycleId: string
+  }) => ({ path: input.path, body: input.body }),
+  map: ({ data }): CharacterAssetNameSnapshot[] =>
+    data.map(({ item_id: itemId, name }) => ({ itemId, name })),
+})
+
+export const characterAssetsScope = characterAssetsPageRead.requiredScope
 
 export interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAssetTypeData {
   totalVolume: number | null
@@ -103,7 +106,7 @@ export interface CharacterAssetDto extends CharacterAssetSnapshot, CharacterAsse
   solarSystemSecurityStatus: number | null
 }
 
-export interface CharacterAssetsResult extends EsiResultMetadata {
+export interface CharacterAssetsResult extends EsiReadResultMetadata {
   characterId: number
   assets: CharacterAssetDto[]
   enrichment: {
@@ -140,7 +143,7 @@ export async function getCharacterAssets(
     loadAssetNames(characterId, subjectLifecycleId, assets),
     loadAssetLocations(assets),
   ])
-  const metadata = combineEsiResultMetadata(pages.map(toEsiResultMetadata))
+  const metadata = combineEsiReadResultMetadata(pages.map(toEsiReadResultMetadata))
   const retryAt =
     metadata.refreshFailureClass === 'esi-cooldown'
       ? pages
@@ -183,7 +186,7 @@ async function loadCharacterAssetPage(
   subjectLifecycleId: string,
   page: number,
 ) {
-  return execute(characterAssetsPageRepresentation, { characterId, page }, { subjectLifecycleId })
+  return characterAssetsPageRead.execute({ characterId, page, subjectLifecycleId })
 }
 
 function validatePageCount(value: unknown) {
@@ -206,7 +209,7 @@ function mapAssetSnapshot(asset: EsiAsset): CharacterAssetSnapshot {
   }
 }
 
-function deduplicateAssets(pages: readonly EsiCachedResult<CharacterAssetPageSnapshot>[]) {
+function deduplicateAssets(pages: readonly EsiReadResult<CharacterAssetPageSnapshot>[]) {
   const assets = new Map<number, CharacterAssetSnapshot>()
   for (const page of pages)
     for (const asset of page.data.assets)
@@ -314,14 +317,13 @@ function loadCharacterAssetNameBatch(
   itemIds: readonly number[],
 ) {
   const normalizedItemIds = normalizeCharacterAssetNameBatch(itemIds)
-  return execute(
-    characterAssetNamesRepresentation,
-    {
+  return characterAssetNamesRead
+    .execute({
       path: { character_id: characterId },
       body: normalizedItemIds,
-    },
-    { subjectLifecycleId },
-  ).then((result) => result.data)
+      subjectLifecycleId,
+    })
+    .then((result) => result.data)
 }
 
 export function normalizeCharacterAssetNameBatch(itemIds: readonly number[]) {

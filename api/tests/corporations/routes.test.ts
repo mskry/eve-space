@@ -21,7 +21,7 @@ vi.mock('../../src/corporations/public-data.js', () => ({
   getNpcCorporations: mocks.getNpcCorporations,
 }))
 
-vi.mock('../../src/esi-resilience/cooldowns.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
+vi.mock('../../src/esi-gateway/failures.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 
 import { corporationRoutes } from '../../src/corporations/routes.js'
 

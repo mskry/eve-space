@@ -3,8 +3,8 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 afterEach(() => {
   process.exitCode = 0
   vi.doUnmock('../../src/db/client.js')
-  vi.doUnmock('../../src/esi-resilience/cache-redis.js')
-  vi.doUnmock('../../src/esi-resilience/coordination-connection.js')
+  vi.doUnmock('../../src/cache-redis.js')
+  vi.doUnmock('../../src/coordination-redis.js')
   vi.doUnmock('../../src/logging.js')
   vi.doUnmock('../../src/queue/platform.js')
   vi.doUnmock('../../src/worker/readiness.js')
@@ -112,10 +112,11 @@ describe('worker entrypoint', () => {
     const closeSharedCoordinationRedisConnection = vi.fn().mockResolvedValue(undefined)
     const logSafeError = vi.fn()
     vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
-    vi.doMock('../../src/esi-resilience/cache-redis.js', () => ({
+    vi.doMock('../../src/cache-redis.js', () => ({
       closeSharedCacheRedisConnection,
+      observeCacheRedisConnectionErrors: vi.fn(),
     }))
-    vi.doMock('../../src/esi-resilience/coordination-connection.js', () => ({
+    vi.doMock('../../src/coordination-redis.js', () => ({
       closeSharedCoordinationRedisConnection,
     }))
     vi.doMock('../../src/logging.js', () => ({
@@ -146,10 +147,11 @@ describe('worker entrypoint', () => {
     const closeSharedCoordinationRedisConnection = vi.fn().mockResolvedValue(undefined)
     const startWorkerPlatform = vi.fn()
     vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
-    vi.doMock('../../src/esi-resilience/cache-redis.js', () => ({
+    vi.doMock('../../src/cache-redis.js', () => ({
       closeSharedCacheRedisConnection,
+      observeCacheRedisConnectionErrors: vi.fn(),
     }))
-    vi.doMock('../../src/esi-resilience/coordination-connection.js', () => ({
+    vi.doMock('../../src/coordination-redis.js', () => ({
       closeSharedCoordinationRedisConnection,
     }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))

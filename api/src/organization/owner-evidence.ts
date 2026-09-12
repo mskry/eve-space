@@ -15,10 +15,12 @@ import {
   organizationRoleGrants,
   platformSubjectLifecycles,
 } from '../db/schema.js'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { EsiTransportError } from '../esi-resilience/transport.js'
+import {
+  classifyEsiRefreshFailure,
+  EsiQuotaError,
+  getEsiFailureStatus,
+} from '../esi-gateway/failures.js'
 import { env } from '../env.js'
-import { getNumericProperty, getStringProperty } from '../type-guards.js'
 import { resolveOrganizationAuthorityCorporation } from './authority.js'
 import { appendOrganizationAuditEvent } from './audit.js'
 import {
@@ -187,16 +189,13 @@ export function classifyOrganizationAuthorityFailure(error: unknown): AuthorityF
       : { kind: 'transient', failureClass: 'sso-unavailable' }
   if (
     error instanceof EsiQuotaError ||
-    error instanceof EsiTransportError ||
-    error instanceof TokenRefreshUnavailableError
+    error instanceof TokenRefreshUnavailableError ||
+    classifyEsiRefreshFailure(error) === 'esi-unavailable'
   )
     return { kind: 'transient', failureClass: 'esi-unavailable' }
-  const code = getStringProperty(error, 'code')
-  const status = getNumericProperty(error, 'status')
-  if (code === 'ESI_HTTP_ERROR' && (status === 401 || status === 403))
+  const status = getEsiFailureStatus(error)
+  if (status === 401 || status === 403)
     return { kind: 'strict', failureClass: 'authorization-rejected' }
-  if (code === 'ESI_HTTP_ERROR' && status >= 500)
-    return { kind: 'transient', failureClass: 'esi-unavailable' }
   return null
 }
 

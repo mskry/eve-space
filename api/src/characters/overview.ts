@@ -3,15 +3,13 @@ import type {
   GetCharactersCharacterIdLocationResponse,
   GetCharactersCharacterIdShipResponse,
 } from '@evespace/esi-client/types'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
 import {
-  defineCharacterEsiRepresentation,
-  definePublicEsiRepresentation,
-} from '../esi-resilience/representations.js'
-import { combineEsiResultMetadata, toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiResultMetadata } from '../esi-resilience/types.js'
+  combineEsiReadResultMetadata,
+  createCharacterEsiRead,
+  createPublicEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 import { getUniverseSolarSystem, getUniverseStation } from '../universe/locations.js'
 import { getCharacterSkillsData } from './skills.js'
 
@@ -21,50 +19,44 @@ interface CharacterLocationSnapshot {
   structureId?: number
 }
 
-const characterLocationRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'location',
-    name: 'character-location-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdLocation.transport,
-    encodeRequest: (input: { characterId: number }) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterLocationSnapshot(response.data),
+const characterLocationRead = createCharacterEsiRead({
+  operation: 'location',
+  name: 'character-location-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdLocation.transport,
+  encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterLocationSnapshot(response.data),
+})
 
 interface CharacterShipSnapshot {
   typeId: number
   name: string
 }
 
-const characterShipRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'ship',
-    name: 'character-ship-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdShip.transport,
-    encodeRequest: (input: { characterId: number }) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterShipSnapshot(response.data),
+const characterShipRead = createCharacterEsiRead({
+  operation: 'ship',
+  name: 'character-ship-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdShip.transport,
+  encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterShipSnapshot(response.data),
+})
 
-const universeTypeRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'universe-type',
-    name: 'universe-type-core',
-    descriptor: operationRegistry.GetUniverseTypesTypeId.transport,
-    encodeRequest: (input: { typeId: number }) => ({ path: { type_id: input.typeId } }),
-    map: (response) => ({ name: response.data.name }),
-  }),
-)
+const universeTypeRead = createPublicEsiRead({
+  operation: 'universe-type',
+  name: 'universe-type-core',
+  descriptor: operationRegistry.GetUniverseTypesTypeId.transport,
+  encodeRequest: (input: { typeId: number }) => ({ path: { type_id: input.typeId } }),
+  map: (response) => ({ name: response.data.name }),
+})
 
-export const locationScope = getCharacterEsiScope(characterLocationRepresentation.operation)
-export const shipScope = getCharacterEsiScope(characterShipRepresentation.operation)
+export const locationScope = characterLocationRead.requiredScope
+export const shipScope = characterShipRead.requiredScope
 export { characterSkillsScope as skillsScope } from './skills.js'
 
-export interface CharacterLocation extends EsiResultMetadata {
+export interface CharacterLocation extends EsiReadResultMetadata {
   solarSystemId: number
   solarSystemName: string
   stationId?: number
@@ -72,7 +64,7 @@ export interface CharacterLocation extends EsiResultMetadata {
   structureId?: number
 }
 
-export interface CharacterShip extends EsiResultMetadata {
+export interface CharacterShip extends EsiReadResultMetadata {
   typeId: number
   typeName: string
   name: string
@@ -83,17 +75,13 @@ interface CharacterSkillsSummaryData {
   unallocatedSp: number
 }
 
-export type CharacterSkillsSummary = CharacterSkillsSummaryData & EsiResultMetadata
+export type CharacterSkillsSummary = CharacterSkillsSummaryData & EsiReadResultMetadata
 
 export async function getCharacterLocation(
   characterId: number,
   subjectLifecycleId: string,
 ): Promise<CharacterLocation> {
-  const positionResult = await execute(
-    characterLocationRepresentation,
-    { characterId },
-    { subjectLifecycleId },
-  )
+  const positionResult = await characterLocationRead.execute({ characterId, subjectLifecycleId })
   const position = positionResult.data
 
   const [system, station] = await Promise.all([
@@ -108,10 +96,10 @@ export async function getCharacterLocation(
       ? { stationId: position.stationId, stationName: station?.data.name }
       : {}),
     ...(position.structureId ? { structureId: position.structureId } : {}),
-    ...combineEsiResultMetadata([
-      toEsiResultMetadata(positionResult),
-      toEsiResultMetadata(system),
-      ...(station ? [toEsiResultMetadata(station)] : []),
+    ...combineEsiReadResultMetadata([
+      toEsiReadResultMetadata(positionResult),
+      toEsiReadResultMetadata(system),
+      ...(station ? [toEsiReadResultMetadata(station)] : []),
     ]),
   }
 }
@@ -120,19 +108,18 @@ export async function getCharacterShip(
   characterId: number,
   subjectLifecycleId: string,
 ): Promise<CharacterShip> {
-  const shipResult = await execute(
-    characterShipRepresentation,
-    { characterId },
-    { subjectLifecycleId },
-  )
+  const shipResult = await characterShipRead.execute({ characterId, subjectLifecycleId })
   const ship = shipResult.data
-  const typeResult = await execute(universeTypeRepresentation, { typeId: ship.typeId })
+  const typeResult = await universeTypeRead.execute({ typeId: ship.typeId })
 
   return {
     typeId: ship.typeId,
     typeName: typeResult.data.name,
     name: ship.name,
-    ...combineEsiResultMetadata([toEsiResultMetadata(shipResult), toEsiResultMetadata(typeResult)]),
+    ...combineEsiReadResultMetadata([
+      toEsiReadResultMetadata(shipResult),
+      toEsiReadResultMetadata(typeResult),
+    ]),
   }
 }
 
@@ -144,7 +131,7 @@ export async function getCharacterSkillsSummary(
   return {
     totalSp: skills.data.totalSp,
     unallocatedSp: skills.data.unallocatedSp,
-    ...toEsiResultMetadata(skills),
+    ...toEsiReadResultMetadata(skills),
   }
 }
 

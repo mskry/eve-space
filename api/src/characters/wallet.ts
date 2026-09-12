@@ -1,43 +1,42 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdWalletJournalResponse } from '@evespace/esi-client/types'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
-import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiResultMetadata } from '../esi-resilience/types.js'
+import { EsiQuotaError } from '../esi-gateway/failures.js'
+import {
+  createCharacterEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { financeLocationName, loadFinanceLocationNames } from './finance-location-names.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 
 interface WalletBalanceRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
 }
 
-const walletBalanceRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'wallet-balance',
-    name: 'wallet-balance-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
-    encodeRequest: (input: WalletBalanceRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response): number => response.data,
+const walletBalanceRead = createCharacterEsiRead({
+  operation: 'wallet-balance',
+  name: 'wallet-balance-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
+  encodeRequest: (input: WalletBalanceRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response): number => response.data,
+})
 
-export const walletScope = getCharacterEsiScope(walletBalanceRepresentation.operation)
+export const walletScope = walletBalanceRead.requiredScope
 
 interface WalletBalanceData {
   balance: number
 }
 
-export type WalletBalanceResult = WalletBalanceData & EsiResultMetadata
+export type WalletBalanceResult = WalletBalanceData & EsiReadResultMetadata
 
 interface WalletJournalRepresentationInput {
   characterId: number
   page: number
+  subjectLifecycleId: string
 }
 
 const safeJournalContextTypes = [
@@ -72,38 +71,37 @@ interface WalletJournalData {
   totalPages: number
 }
 
-export type WalletJournalResult = WalletJournalData & EsiResultMetadata
+export type WalletJournalResult = WalletJournalData & EsiReadResultMetadata
 
-const walletJournalRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'wallet-journal',
-    name: 'wallet-journal-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal.transport,
-    encodeRequest: (input: WalletJournalRepresentationInput) => ({
-      path: { character_id: input.characterId },
-      query: { page: input.page },
-    }),
-    map: (response, input): WalletJournalData => ({
-      entries: response.data.map((entry) => ({
-        journalId: entry.id,
-        date: entry.date,
-        amount: entry.amount ?? null,
-        balance: entry.balance ?? null,
-        referenceType: entry.ref_type,
-        description: entry.description,
-        reason: entry.reason ?? null,
-        taxAmount: entry.tax ?? null,
-        context: walletJournalContext(entry),
-      })),
-      page: input.page,
-      totalPages: paginationPages(response.meta.pagination?.pages, input.page),
-    }),
+const walletJournalRead = createCharacterEsiRead({
+  operation: 'wallet-journal',
+  name: 'wallet-journal-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal.transport,
+  encodeRequest: (input: WalletJournalRepresentationInput) => ({
+    path: { character_id: input.characterId },
+    query: { page: input.page },
   }),
-)
+  map: (response, input): WalletJournalData => ({
+    entries: response.data.map((entry) => ({
+      journalId: entry.id,
+      date: entry.date,
+      amount: entry.amount ?? null,
+      balance: entry.balance ?? null,
+      referenceType: entry.ref_type,
+      description: entry.description,
+      reason: entry.reason ?? null,
+      taxAmount: entry.tax ?? null,
+      context: walletJournalContext(entry),
+    })),
+    page: input.page,
+    totalPages: paginationPages(response.meta.pagination?.pages, input.page),
+  }),
+})
 
 interface WalletTransactionsRepresentationInput {
   characterId: number
   fromId: number | null
+  subjectLifecycleId: string
 }
 
 interface WalletTransactionsData {
@@ -124,57 +122,53 @@ interface WalletTransactionsData {
   nextFromId: number | null
 }
 
-export type WalletTransactionsResult = WalletTransactionsData & EsiResultMetadata
+export type WalletTransactionsResult = WalletTransactionsData & EsiReadResultMetadata
 
 const walletTransactionPageSize = 2_500
 
-const walletTransactionsRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'wallet-transactions',
-    name: 'wallet-transactions-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions.transport,
-    encodeRequest: (input: WalletTransactionsRepresentationInput) => ({
-      path: { character_id: input.characterId },
-      ...(input.fromId === null ? {} : { query: { from_id: input.fromId } }),
-    }),
-    map: async (response, input): Promise<WalletTransactionsData> => {
-      const personalTransactions = response.data.filter((transaction) => transaction.is_personal)
-      const [namesByType, namesByLocation] = await Promise.all([
-        loadFinanceTypeNames(personalTransactions.map((transaction) => transaction.type_id)),
-        loadFinanceLocationNames(
-          personalTransactions.map((transaction) => transaction.location_id),
-        ),
-      ])
-
-      return {
-        transactions: personalTransactions
-          .map((transaction) => ({
-            transactionId: transaction.transaction_id,
-            journalRefId: transaction.journal_ref_id,
-            date: transaction.date,
-            typeId: transaction.type_id,
-            typeName: financeTypeName(transaction.type_id, namesByType),
-            quantity: transaction.quantity,
-            unitPrice: transaction.unit_price,
-            totalPrice: transaction.quantity * transaction.unit_price,
-            isBuy: transaction.is_buy,
-            locationId: transaction.location_id,
-            locationName: financeLocationName(transaction.location_id, namesByLocation),
-          }))
-          .toSorted(
-            (left, right) =>
-              Date.parse(right.date) - Date.parse(left.date) ||
-              right.transactionId - left.transactionId,
-          ),
-        fromId: input.fromId,
-        nextFromId:
-          response.data.length < walletTransactionPageSize
-            ? null
-            : Math.min(...response.data.map((transaction) => transaction.transaction_id)),
-      }
-    },
+const walletTransactionsRead = createCharacterEsiRead({
+  operation: 'wallet-transactions',
+  name: 'wallet-transactions-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions.transport,
+  encodeRequest: (input: WalletTransactionsRepresentationInput) => ({
+    path: { character_id: input.characterId },
+    ...(input.fromId === null ? {} : { query: { from_id: input.fromId } }),
   }),
-)
+  map: async (response, input): Promise<WalletTransactionsData> => {
+    const personalTransactions = response.data.filter((transaction) => transaction.is_personal)
+    const [namesByType, namesByLocation] = await Promise.all([
+      loadFinanceTypeNames(personalTransactions.map((transaction) => transaction.type_id)),
+      loadFinanceLocationNames(personalTransactions.map((transaction) => transaction.location_id)),
+    ])
+
+    return {
+      transactions: personalTransactions
+        .map((transaction) => ({
+          transactionId: transaction.transaction_id,
+          journalRefId: transaction.journal_ref_id,
+          date: transaction.date,
+          typeId: transaction.type_id,
+          typeName: financeTypeName(transaction.type_id, namesByType),
+          quantity: transaction.quantity,
+          unitPrice: transaction.unit_price,
+          totalPrice: transaction.quantity * transaction.unit_price,
+          isBuy: transaction.is_buy,
+          locationId: transaction.location_id,
+          locationName: financeLocationName(transaction.location_id, namesByLocation),
+        }))
+        .toSorted(
+          (left, right) =>
+            Date.parse(right.date) - Date.parse(left.date) ||
+            right.transactionId - left.transactionId,
+        ),
+      fromId: input.fromId,
+      nextFromId:
+        response.data.length < walletTransactionPageSize
+          ? null
+          : Math.min(...response.data.map((transaction) => transaction.transaction_id)),
+    }
+  },
+})
 
 export class WalletQuotaError extends Error {
   constructor(readonly retryAfterSeconds: number) {
@@ -187,12 +181,8 @@ export async function getWalletBalance(
   subjectLifecycleId: string,
 ): Promise<WalletBalanceResult> {
   try {
-    const result = await execute(
-      walletBalanceRepresentation,
-      { characterId },
-      { subjectLifecycleId },
-    )
-    return { balance: result.data, ...toEsiResultMetadata(result) }
+    const result = await walletBalanceRead.execute({ characterId, subjectLifecycleId })
+    return { balance: result.data, ...toEsiReadResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)
   }
@@ -205,12 +195,8 @@ export async function getWalletJournal(
 ): Promise<WalletJournalResult> {
   assertPositiveSafeInteger(page, 'Wallet journal page')
   try {
-    const result = await execute(
-      walletJournalRepresentation,
-      { characterId, page },
-      { subjectLifecycleId },
-    )
-    return { ...result.data, ...toEsiResultMetadata(result) }
+    const result = await walletJournalRead.execute({ characterId, page, subjectLifecycleId })
+    return { ...result.data, ...toEsiReadResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)
   }
@@ -223,12 +209,8 @@ export async function getWalletTransactions(
 ): Promise<WalletTransactionsResult> {
   if (fromId !== null) assertPositiveSafeInteger(fromId, 'Wallet transaction continuation')
   try {
-    const result = await execute(
-      walletTransactionsRepresentation,
-      { characterId, fromId },
-      { subjectLifecycleId },
-    )
-    return { ...result.data, ...toEsiResultMetadata(result) }
+    const result = await walletTransactionsRead.execute({ characterId, fromId, subjectLifecycleId })
+    return { ...result.data, ...toEsiReadResultMetadata(result) }
   } catch (error) {
     throwWalletError(error)
   }

@@ -1,29 +1,24 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdRolesResponse } from '@evespace/esi-client/types'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
+import { createCharacterEsiRead } from '../esi-gateway/feature-execution.js'
 
 interface CharacterCorporationRolesRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
+  signal?: AbortSignal
 }
 
-const characterCorporationRolesRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'character-corporation-roles',
-    name: 'character-corporation-roles-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdRoles.transport,
-    encodeRequest: (input: CharacterCorporationRolesRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterCorporationRoles(response.data),
+const characterCorporationRolesRead = createCharacterEsiRead({
+  operation: 'character-corporation-roles',
+  name: 'character-corporation-roles-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdRoles.transport,
+  encodeRequest: (input: CharacterCorporationRolesRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterCorporationRoles(response.data),
+})
 
-export const characterCorporationRolesScope = getCharacterEsiScope(
-  characterCorporationRolesRepresentation.operation,
-)
+export const characterCorporationRolesScope = characterCorporationRolesRead.requiredScope
 
 export interface CharacterCorporationRoles {
   roles: string[]
@@ -38,11 +33,11 @@ export async function getCharacterCorporationRoles(
   signal?: AbortSignal,
 ): Promise<CharacterCorporationRoles> {
   return (
-    await execute(
-      characterCorporationRolesRepresentation,
-      { characterId },
-      { subjectLifecycleId, signal },
-    )
+    await characterCorporationRolesRead.execute({
+      characterId,
+      subjectLifecycleId,
+      ...(signal ? { signal } : {}),
+    })
   ).data
 }
 

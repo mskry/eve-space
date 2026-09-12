@@ -24,8 +24,7 @@ afterEach(async () => {
   vi.doUnmock('../../../src/queue/job-handlers.js')
   vi.doUnmock('../../../src/queue/worker-lifecycle.js')
   vi.doUnmock('../../../src/auth/tokens.js')
-  vi.doUnmock('../../../src/esi-resilience/catalog-access.js')
-  vi.doUnmock('../../../src/esi-resilience/platform-execute.js')
+  vi.doUnmock('../../../src/esi-gateway/platform-execution.js')
   vi.doUnmock('../../../src/generated/platform/installed-module-worker.js')
   vi.doUnmock('../../../src/platform/resource-eligibility.js')
   vi.doUnmock('../../../src/platform/resources.js')
@@ -439,12 +438,8 @@ describe('durable worker platform', () => {
       getCharacterAuthorizationForLifecycle: loadAuthorization,
       getCharacterCacheAuthorizationForLifecycle: loadAuthorization,
     }))
-    vi.doMock('../../../src/esi-resilience/catalog-access.js', async (importOriginal) => ({
-      ...(await importOriginal<typeof import('../../../src/esi-resilience/catalog-access.js')>()),
-      getExecutableEsiOperationDefinition: vi.fn(() => ({})),
-    }))
-    vi.doMock('../../../src/esi-resilience/platform-execute.js', async (importOriginal) => ({
-      ...(await importOriginal<typeof import('../../../src/esi-resilience/platform-execute.js')>()),
+    vi.doMock('../../../src/esi-gateway/platform-execution.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../../src/esi-gateway/platform-execution.js')>()),
       executePlatformEsiOperation: executeEsiOperation,
     }))
     vi.doMock('../../../src/generated/platform/installed-module-worker.js', () => ({

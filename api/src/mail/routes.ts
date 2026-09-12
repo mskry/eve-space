@@ -2,8 +2,8 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { z } from 'zod'
 import { env } from '../env.js'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
-import { esiOperationMetadata } from '../esi-resilience/operation-metadata.js'
+import { getEsiMaximumBatchSize } from '../esi-gateway/catalog-interface.js'
+import { EsiQuotaError } from '../esi-gateway/failures.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
@@ -19,7 +19,12 @@ import {
   getMailingLists,
   getMailLabels,
   listMailHeaders,
+  mailCspaScope,
   mailLabelColors,
+  mailOrganizeScope,
+  mailReadScope,
+  mailSearchScope,
+  mailSendScope,
   MailAuthorizationError,
   MailCspaRejectedError,
   MailDeliveryUnknownError,
@@ -31,12 +36,6 @@ import {
   sendMail,
   updateMail,
 } from './mailbox.js'
-
-const readMailScope = 'esi-mail.read_mail.v1'
-const sendMailScope = 'esi-mail.send_mail.v1'
-const organizeMailScope = 'esi-mail.organize_mail.v1'
-const searchCharactersScope = 'esi-search.search_structures.v1'
-const readContactsScope = 'esi-characters.read_contacts.v1'
 
 const positiveIntegerString = (name: string) =>
   z
@@ -110,12 +109,13 @@ const resolveRecipientsBody = z
   .object({ names: z.array(z.string().trim().min(1).max(100)).min(1).max(500) })
   .strict()
 const searchRecipientsQuery = z.object({ search: z.string().trim().min(3).max(256) }).strict()
+const maximumCspaRecipients = getEsiMaximumBatchSize('character-cspa-charge')
 const cspaChargeBody = z
   .object({
     characterIds: z
       .array(positiveSafeInteger)
       .min(1)
-      .max(esiOperationMetadata['character-cspa-charge'].maximumBatchSize)
+      .max(maximumCspaRecipients)
       .superRefine((characterIds, context) => {
         if (new Set(characterIds).size !== characterIds.length)
           context.addIssue({ code: 'custom', message: 'Character IDs must be unique.' })
@@ -147,7 +147,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
           200,
         )
       } catch (error) {
-        return mailError(context, error, characterId, readMailScope)
+        return mailError(context, error, characterId, mailReadScope)
       }
     },
   )
@@ -166,7 +166,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
           201,
         )
       } catch (error) {
-        return mailError(context, error, characterId, sendMailScope)
+        return mailError(context, error, characterId, mailSendScope)
       }
     },
   )
@@ -204,7 +204,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
           200,
         )
       } catch (error) {
-        return mailError(context, error, characterId, searchCharactersScope)
+        return mailError(context, error, characterId, mailSearchScope)
       }
     },
   )
@@ -227,7 +227,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
           200,
         )
       } catch (error) {
-        return mailError(context, error, characterId, readContactsScope)
+        return mailError(context, error, characterId, mailCspaScope)
       }
     },
   )
@@ -242,7 +242,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
       try {
         return context.json(await getMailLabels(characterId, subjectLifecycleId), 200)
       } catch (error) {
-        return mailError(context, error, characterId, readMailScope)
+        return mailError(context, error, characterId, mailReadScope)
       }
     },
   )
@@ -261,7 +261,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
           201,
         )
       } catch (error) {
-        return mailError(context, error, characterId, organizeMailScope)
+        return mailError(context, error, characterId, mailOrganizeScope)
       }
     },
   )
@@ -277,7 +277,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
         await deleteMailLabel(characterId, context.req.valid('param').labelId, subjectLifecycleId)
         return context.body(null, 204)
       } catch (error) {
-        return mailError(context, error, characterId, organizeMailScope)
+        return mailError(context, error, characterId, mailOrganizeScope)
       }
     },
   )
@@ -292,7 +292,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
       try {
         return context.json(await getMailingLists(characterId, subjectLifecycleId), 200)
       } catch (error) {
-        return mailError(context, error, characterId, readMailScope)
+        return mailError(context, error, characterId, mailReadScope)
       }
     },
   )
@@ -310,7 +310,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
           200,
         )
       } catch (error) {
-        return mailError(context, error, characterId, readMailScope, true)
+        return mailError(context, error, characterId, mailReadScope, true)
       }
     },
   )
@@ -332,7 +332,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
         )
         return context.body(null, 204)
       } catch (error) {
-        return mailError(context, error, characterId, organizeMailScope)
+        return mailError(context, error, characterId, mailOrganizeScope)
       }
     },
   )
@@ -348,7 +348,7 @@ export const mailRoutes = new Hono<OwnedCharacterEnv>()
         await deleteMail(characterId, context.req.valid('param').mailId, subjectLifecycleId)
         return context.body(null, 204)
       } catch (error) {
-        return mailError(context, error, characterId, organizeMailScope)
+        return mailError(context, error, characterId, mailOrganizeScope)
       }
     },
   )
@@ -436,10 +436,10 @@ function mailError(
 }
 
 function scopeMessage(scope: string) {
-  if (scope === sendMailScope) return 'Authorize sending mail for this character.'
-  if (scope === organizeMailScope) return 'Authorize mail organization for this character.'
-  if (scope === searchCharactersScope) return 'Authorize recipient search for this character.'
-  if (scope === readContactsScope) return 'Authorize mail charge checks for this character.'
+  if (scope === mailSendScope) return 'Authorize sending mail for this character.'
+  if (scope === mailOrganizeScope) return 'Authorize mail organization for this character.'
+  if (scope === mailSearchScope) return 'Authorize recipient search for this character.'
+  if (scope === mailCspaScope) return 'Authorize mail charge checks for this character.'
   return 'Authorize mail access for this character.'
 }
 

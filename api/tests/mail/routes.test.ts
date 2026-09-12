@@ -116,6 +116,11 @@ vi.mock('../../src/mail/mailbox.js', () => ({
     '#ffffcd',
     '#ffffff',
   ],
+  mailCspaScope: 'esi-characters.read_contacts.v1',
+  mailOrganizeScope: 'esi-mail.organize_mail.v1',
+  mailReadScope: 'esi-mail.read_mail.v1',
+  mailSearchScope: 'esi-search.search_structures.v1',
+  mailSendScope: 'esi-mail.send_mail.v1',
   MailAuthorizationError: mocks.MailAuthorizationError,
   MailCspaRejectedError: mocks.MailCspaRejectedError,
   MailDeliveryUnknownError: mocks.MailDeliveryUnknownError,
@@ -136,7 +141,7 @@ vi.mock('../../src/mail/mailbox.js', () => ({
   updateMail: mocks.updateMail,
 }))
 
-import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { app } from '../../src/index.js'
 import { mailRoutes } from '../../src/mail/routes.js'
 import {

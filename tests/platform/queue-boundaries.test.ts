@@ -59,9 +59,9 @@ describe('queue module boundaries', () => {
     expect(sourcesWithImport('job-contracts', specifier)).toEqual([])
   })
 
-  it('rejects direct queue dependencies on ESI resilience', () => {
-    expect(sourcesWithImport('planner', '../esi-resilience/layer.js')).toEqual([
-      'api/src/queue/planner.ts: Queue module planner cannot import ESI resilience module ../esi-resilience/layer.js',
+  it('rejects direct queue dependencies on the ESI gateway', () => {
+    expect(sourcesWithImport('planner', '../esi-gateway/internal/execution-runtime.js')).toEqual([
+      'api/src/queue/planner.ts: Queue module planner cannot import ESI gateway module ../esi-gateway/internal/execution-runtime.js',
     ])
   })
 

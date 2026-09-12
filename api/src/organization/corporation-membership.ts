@@ -1,3 +1,3 @@
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
+import { getCharacterEsiScope } from '../esi-gateway/catalog-interface.js'
 
 export const corporationMembershipScope = getCharacterEsiScope('corporation-members')

@@ -1,7 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetAlliancesAllianceIdResponse } from '@evespace/esi-client/types'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
+import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 
 export interface PublicAllianceResult {
   name: string
@@ -9,17 +8,19 @@ export interface PublicAllianceResult {
   executorCorporationId: number | null
 }
 
-export const publicAllianceRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'public-alliance',
-    name: 'public-alliance-core',
-    descriptor: operationRegistry.GetAlliancesAllianceId.transport,
-    encodeRequest: (input: { allianceId: number }) => ({
-      path: { alliance_id: input.allianceId },
-    }),
-    map: (response): PublicAllianceResult => mapPublicAlliance(response.data),
+const publicAllianceRead = createPublicEsiRead({
+  operation: 'public-alliance',
+  name: 'public-alliance-core',
+  descriptor: operationRegistry.GetAlliancesAllianceId.transport,
+  encodeRequest: (input: { allianceId: number }) => ({
+    path: { alliance_id: input.allianceId },
   }),
-)
+  map: (response): PublicAllianceResult => mapPublicAlliance(response.data),
+})
+
+export function getAlliancePublicResult(allianceId: number) {
+  return publicAllianceRead.execute({ allianceId })
+}
 
 function mapPublicAlliance(alliance: GetAlliancesAllianceIdResponse): PublicAllianceResult {
   return {

@@ -8,8 +8,10 @@ import {
   getCharacterCacheAuthorizationForLifecycle,
   ScopeRequiredError,
 } from '../auth/tokens.js'
-import { getEsiOperationContract } from '../esi-resilience/catalog-access.js'
-import type { EsiOperation } from '../esi-resilience/catalog.js'
+import {
+  getEsiOperationAuthorization,
+  type EsiOperation,
+} from '../esi-gateway/catalog-interface.js'
 import type { PlatformCollectionStateIdentity } from './collection-state.js'
 import {
   resolveInstalledResourceEligibility,
@@ -72,9 +74,8 @@ export async function guardInstalledResourceExecution(
   )
   if (!subject) return { outcome: 'noop', reason: 'obsolete' }
 
-  const operation = getEsiOperationContract(resource.operationId as EsiOperation)
-  if (operation.authorization.kind === 'public')
-    return createReadyResourceExecution(resource, subject, null)
+  const operation = getEsiOperationAuthorization(resource.operationId as EsiOperation)
+  if (operation.kind === 'public') return createReadyResourceExecution(resource, subject, null)
 
   const { authorizationCharacterId, authorizationCharacterLifecycleId } =
     resolveAuthorizationIdentity(eligibility, subject)
@@ -91,13 +92,13 @@ export async function guardInstalledResourceExecution(
       ? await loadAuthorization(
           authorizationCharacterId,
           authorizationCharacterLifecycleId,
-          operation.authorization.scope,
+          operation.requiredScope,
           options.signal,
         )
       : await loadAuthorization(
           authorizationCharacterId,
           authorizationCharacterLifecycleId,
-          operation.authorization.scope,
+          operation.requiredScope,
         )
     options.signal?.throwIfAborted()
   } catch (error) {

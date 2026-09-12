@@ -4,64 +4,36 @@ import type {
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
-import { operationRegistry } from '@evespace/esi-client/operations'
 import {
-  assertExecutableEsiOperationDefinitions,
+  assertEsiPlatformExecutionConfiguration,
+  assertEsiExecutableDefinition,
   assertRegisteredEsiOperation,
-  getEsiOperationContract,
-  getExecutableEsiOperationDefinition,
-} from '../esi-resilience/catalog-access.js'
-import { coreEsiOperationCatalog } from '../esi-resilience/catalog.js'
-import { installedModuleEsiOperationDefinitions } from '../generated/platform/installed-module-esi.js'
+  getEsiOperationAuthorization,
+  getEsiSetOperationConfiguration,
+  getPlatformEsiOperationDefinition,
+} from '../esi-gateway/catalog-interface.js'
 import { platformResources } from './resources.js'
-
-const coreResourceEsiOperationCatalog = {
-  'alliance-corporations': coreEsiOperationCatalog['alliance-corporations'],
-  'corporation-members': coreEsiOperationCatalog['corporation-members'],
-} as const
-
-const coreResourceEsiOperationDefinitions = {
-  'alliance-corporations': {
-    sdkOperationId: 'GetAlliancesAllianceIdCorporations',
-    descriptor: operationRegistry.GetAlliancesAllianceIdCorporations!,
-    contract: coreResourceEsiOperationCatalog['alliance-corporations'],
-  },
-  'corporation-members': {
-    sdkOperationId: 'GetCorporationsCorporationIdMembers',
-    descriptor: operationRegistry.GetCorporationsCorporationIdMembers!,
-    contract: coreResourceEsiOperationCatalog['corporation-members'],
-  },
-} as const satisfies Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>
-
-const resourceEsiOperationDefinitions = {
-  ...coreResourceEsiOperationDefinitions,
-  ...installedModuleEsiOperationDefinitions,
-}
 
 export function assertInstalledResourceDeclarations(
   resources: readonly PlatformInstalledResourceDescriptor[] = platformResources,
   definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
-  if (!definitions)
-    assertExecutableEsiOperationDefinitions(
-      coreResourceEsiOperationCatalog,
-      coreResourceEsiOperationDefinitions,
-    )
+  if (!definitions) assertEsiPlatformExecutionConfiguration()
   for (const resource of resources) {
     assertRegisteredEsiOperation(resource.operationId)
     assertResourceDefinition(resource, resource.operationId, definitions)
-    const primary = getEsiOperationContract(resource.operationId)
-    if (resource.subjectKind === 'deployment' && primary.authorization.kind !== 'public')
+    const primary = getEsiOperationAuthorization(resource.operationId)
+    if (resource.subjectKind === 'deployment' && primary.kind !== 'public')
       throw new Error('Deployment resources require public operations')
     for (const operationId of resource.dependentOperationIds ?? []) {
       assertResourceDefinition(resource, operationId, definitions)
       assertRegisteredEsiOperation(operationId)
-      const dependent = getEsiOperationContract(operationId)
+      const dependent = getEsiOperationAuthorization(operationId)
       if (
-        dependent.authorization.kind !== primary.authorization.kind ||
-        (dependent.authorization.kind === 'character' &&
-          primary.authorization.kind === 'character' &&
-          dependent.authorization.scope !== primary.authorization.scope)
+        dependent.kind !== primary.kind ||
+        (dependent.kind === 'character' &&
+          primary.kind === 'character' &&
+          dependent.requiredScope !== primary.requiredScope)
       )
         throw new Error('Dependent operations must retain the resource authorization contract')
     }
@@ -70,13 +42,14 @@ export function assertInstalledResourceDeclarations(
   }
 }
 
-export function getInstalledResourceEsiOperationDefinition(
+function getInstalledResourceEsiOperationDefinition(
   operationId: string,
-  definitions: Readonly<
-    Record<string, PlatformExecutableEsiOperationDefinition>
-  > = resourceEsiOperationDefinitions,
+  definitions?: Readonly<Record<string, PlatformExecutableEsiOperationDefinition>>,
 ) {
-  return getExecutableEsiOperationDefinition(operationId, definitions)
+  if (!definitions) return getPlatformEsiOperationDefinition(operationId)
+  const definition = definitions[operationId]
+  if (!definition) throw new Error(`ESI operation ${operationId} has no executable definition`)
+  return definition
 }
 
 function assertResourceImplementation(
@@ -119,15 +92,17 @@ function assertResourceBatchImplementation(
 
   assertRegisteredEsiOperation(descriptor.operationId)
   assertResourceDefinition(resource, descriptor.operationId, definitions)
-  const contract = getEsiOperationContract(descriptor.operationId)
-  if (contract.authorization.kind !== 'public')
+  if (getEsiOperationAuthorization(descriptor.operationId).kind !== 'public')
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} batch operation ${descriptor.operationId} must use public authorization`,
     )
-  if (contract.identity.kind !== 'set')
+  try {
+    getEsiSetOperationConfiguration(descriptor.operationId)
+  } catch {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} batch operation ${descriptor.operationId} must use set identity`,
     )
+  }
   assertBatchFunctions(resource, batch)
   if (batch.mode !== descriptor.mode)
     throw new Error(
@@ -146,14 +121,13 @@ function assertResourceDefinition(
 ) {
   assertRegisteredEsiOperation(operationId)
   const definition = getInstalledResourceEsiOperationDefinition(operationId, definitions)
-  const contract = getEsiOperationContract(operationId)
-  if (
-    definition.contract.audit.esiOperationId !== contract.audit.esiOperationId ||
-    definition.contract.authorization.kind !== contract.authorization.kind
-  )
+  try {
+    assertEsiExecutableDefinition(operationId, definition)
+  } catch {
     throw new Error(
       `Installed resource ${resource.moduleId}/${resource.resourceId} operation ${operationId} does not match its executable definition`,
     )
+  }
 }
 
 function assertBatchFunctions(

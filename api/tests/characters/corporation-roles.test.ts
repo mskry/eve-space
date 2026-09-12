@@ -1,30 +1,21 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
 const mocks = vi.hoisted(() => ({
   executeRepresentation: vi.fn(),
   getCorporationRoles: vi.fn(),
 }))
 
-vi.mock('@evespace/esi-client', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@evespace/esi-client')>()),
-  EsiClient: class {
-    callOperation(...arguments_: unknown[]) {
-      return mocks.getCorporationRoles(...arguments_)
-    }
-  },
-}))
-vi.mock('../../src/esi-resilience/layer.js', () => ({
-  esiExecutionLayer: { executeRepresentation: mocks.executeRepresentation },
-}))
-
-import { executeRepresentationFixture } from '../support/execute-representation.js'
+vi.mock('../../src/esi-gateway/feature-execution.js', () =>
+  createFeatureExecutionMock(mocks.executeRepresentation),
+)
 
 const characterId = 1_404_328_063
 const subjectLifecycleId = '11111111-1111-4111-8111-111111111111'
 
 beforeEach(() => {
-  mocks.executeRepresentation.mockImplementation((representation, input) =>
-    executeRepresentationFixture(representation, input, { accessToken: 'access-token' }),
+  mocks.executeRepresentation.mockImplementation((_definition, input) =>
+    mocks.getCorporationRoles(input),
   )
 })
 
@@ -48,10 +39,11 @@ describe('character corporation roles', () => {
       rolesAtOther: ['Starbase_Defense_Operator'],
     })
     expect(characterCorporationRolesScope).toBe('esi-characters.read_corporation_roles.v1')
-    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({ characterId })
-    expect(mocks.getCorporationRoles).toHaveBeenCalledWith('GetCharactersCharacterIdRoles', {
-      path: { character_id: characterId },
+    expect(mocks.executeRepresentation.mock.calls[0]?.[1]).toEqual({
+      characterId,
+      subjectLifecycleId,
     })
+    expect(mocks.getCorporationRoles).toHaveBeenCalledWith({ characterId, subjectLifecycleId })
   })
 
   test('normalizes absent role categories', async () => {
@@ -69,5 +61,23 @@ describe('character corporation roles', () => {
 })
 
 function response<Data>(data: Data) {
-  return { data, meta: { headers: {} } }
+  const value = data as Data & {
+    roles?: string[]
+    roles_at_base?: string[]
+    roles_at_hq?: string[]
+    roles_at_other?: string[]
+  }
+  return {
+    data: {
+      roles: value.roles ?? [],
+      rolesAtBase: value.roles_at_base ?? [],
+      rolesAtHeadquarters: value.roles_at_hq ?? [],
+      rolesAtOther: value.roles_at_other ?? [],
+    },
+    cachedUntil: '',
+    validatedAt: '',
+    quota: {},
+    source: 'esi' as const,
+    stale: false,
+  }
 }

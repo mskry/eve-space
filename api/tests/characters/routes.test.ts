@@ -106,7 +106,7 @@ vi.mock('../../src/characters/skills.js', () => ({
 }))
 
 import { characterRoutes } from '../../src/characters/routes.js'
-import { EsiQuotaError } from '../../src/esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { app } from '../../src/index.js'
 import { ScopeRequiredError } from '../../src/auth/tokens.js'
 import { WalletQuotaError } from '../../src/characters/wallet.js'

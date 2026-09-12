@@ -1,7 +1,8 @@
 import type { Context } from 'hono'
 import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { env } from '../env.js'
-import { EsiQuotaError } from '../esi-resilience/cooldowns.js'
+import { EsiQuotaError } from '../esi-gateway/failures.js'
+import type { EsiReadResultMetadata } from '../esi-gateway/feature-execution.js'
 
 interface OwnedCharacterResourceErrorOptions {
   requiredScope: string
@@ -57,6 +58,10 @@ export function esiCooldown(context: Context, error: EsiQuotaError) {
     },
     429,
   )
+}
+
+export function toCharacterEsiResponse<Data extends EsiReadResultMetadata>(result: Data): Data {
+  return result
 }
 
 export function characterReauthorizationUrl(characterId: number, returnTo?: string) {

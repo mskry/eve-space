@@ -7,12 +7,12 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
-import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiCachedResult, EsiResultMetadata } from '../esi-resilience/types.js'
+import {
+  createCharacterEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResult,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 import type { ImplantBonus } from '../universe/implant-attributes.js'
 import {
   implantBonusAttributeFor,
@@ -25,36 +25,31 @@ import { resolveUniverseNames } from '../universe/names.js'
 
 interface CharacterCloneStateRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
 }
 
-const characterClonesRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'character-clones',
-    name: 'character-clones-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdClones.transport,
-    encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterClonesSnapshot(response.data),
+const characterClonesRead = createCharacterEsiRead({
+  operation: 'character-clones',
+  name: 'character-clones-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdClones.transport,
+  encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterClonesSnapshot(response.data),
+})
 
-const characterImplantsRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'character-implants',
-    name: 'character-implants-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdImplants.transport,
-    encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterImplantsSnapshot(response.data),
+const characterImplantsRead = createCharacterEsiRead({
+  operation: 'character-implants',
+  name: 'character-implants-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdImplants.transport,
+  encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterImplantsSnapshot(response.data),
+})
 
-export const characterClonesScope = getCharacterEsiScope(characterClonesRepresentation.operation)
-export const characterImplantsScope = getCharacterEsiScope(
-  characterImplantsRepresentation.operation,
-)
+export const characterClonesScope = characterClonesRead.requiredScope
+export const characterImplantsScope = characterImplantsRead.requiredScope
 
 const maximumImplantTypeLookupIds = 500
 const stationNameEnrichmentTimeoutMs = 250
@@ -131,21 +126,21 @@ interface CharacterImplantsData {
   implants: ImplantSummary[]
 }
 
-export type CharacterClones = CharacterClonesData & EsiResultMetadata
-export type CharacterImplants = CharacterImplantsData & EsiResultMetadata
+export type CharacterClones = CharacterClonesData & EsiReadResultMetadata
+export type CharacterImplants = CharacterImplantsData & EsiReadResultMetadata
 
 function getCharacterClonesData(
   characterId: number,
   subjectLifecycleId: string,
-): Promise<EsiCachedResult<CharacterClonesSnapshot>> {
-  return execute(characterClonesRepresentation, { characterId }, { subjectLifecycleId })
+): Promise<EsiReadResult<CharacterClonesSnapshot>> {
+  return characterClonesRead.execute({ characterId, subjectLifecycleId })
 }
 
 function getCharacterImplantsData(
   characterId: number,
   subjectLifecycleId: string,
-): Promise<EsiCachedResult<CharacterImplantsSnapshot>> {
-  return execute(characterImplantsRepresentation, { characterId }, { subjectLifecycleId })
+): Promise<EsiReadResult<CharacterImplantsSnapshot>> {
+  return characterImplantsRead.execute({ characterId, subjectLifecycleId })
 }
 
 export async function getCharacterClones(
@@ -173,7 +168,7 @@ export async function getCharacterClones(
     })),
     lastCloneJumpAt: snapshot.data.lastCloneJumpAt,
     lastStationChangeAt: snapshot.data.lastStationChangeAt,
-    ...toEsiResultMetadata(snapshot),
+    ...toEsiReadResultMetadata(snapshot),
   }
 }
 
@@ -185,7 +180,7 @@ export async function getCharacterImplants(
   const implantStaticData = await loadImplantStaticData(snapshot.data.implantTypeIds)
   return {
     implants: enrichImplants(snapshot.data.implantTypeIds, implantStaticData),
-    ...toEsiResultMetadata(snapshot),
+    ...toEsiReadResultMetadata(snapshot),
   }
 }
 

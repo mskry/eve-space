@@ -9,7 +9,7 @@ import {
   CharacterAssetsPaginationError,
   getCharacterAssets,
 } from './assets.js'
-import { ownedCharacterResourceError } from './route-responses.js'
+import { ownedCharacterResourceError, toCharacterEsiResponse } from './route-responses.js'
 
 export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
   '/:characterId/assets',
@@ -20,7 +20,10 @@ export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
   async (context) => {
     const { characterId, subjectLifecycleId } = context.var.ownedCharacter
     try {
-      return context.json(await getCharacterAssets(characterId, subjectLifecycleId), 200)
+      return context.json(
+        toCharacterEsiResponse(await getCharacterAssets(characterId, subjectLifecycleId)),
+        200,
+      )
     } catch (error) {
       if (error instanceof CharacterAssetsPaginationError)
         return context.json(

@@ -9,6 +9,7 @@ import {
 } from '../../../src/db/locks.js'
 import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.js'
 import { runModuleMigrationSets } from '../../../src/db/module-migration-runner.js'
+import { ModuleMigrationValidationError } from '../../../src/db/module-migration-validation.js'
 import {
   createModulePersistenceCapability,
   createTransactionScopedModulePersistenceCapability,
@@ -488,33 +489,57 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('rejects a non-transactional module migration before applying any of the set', async () => {
+  test('preflights every module before applying any migration in the startup set', async () => {
     const connection = postgres(databaseUrl)
     const installed = [
       { moduleId: 'alpha', name: 'alpha-001-initial.sql' },
-      { moduleId: 'alpha', name: 'alpha-002-concurrent.sql' },
+      { moduleId: 'beta', name: 'beta-001-concurrent.sql' },
     ] as const
     const sqlByName = new Map([
       ['alpha-001-initial.sql', 'create table alpha_first (id integer);'],
-      ['alpha-002-concurrent.sql', 'create index concurrently alpha_idx on alpha_first (id);'],
+      ['beta-001-concurrent.sql', 'create index concurrently beta_idx on beta_first (id);'],
     ])
 
     try {
-      await expect(
-        runStartupMigrations(connection, {
-          installed,
-          loadModuleSql: async ({ name }) => sqlByName.get(name)!,
-        }),
-      ).rejects.toThrow('cannot run in a transaction')
+      const failure = await runStartupMigrations(connection, {
+        installed,
+        loadModuleSql: async ({ name }) => sqlByName.get(name)!,
+      }).catch((error: unknown) => error)
 
-      const [state] = await connection<{ first_exists: boolean; applied: number }[]>`
+      expect(failure).toBeInstanceOf(ModuleMigrationValidationError)
+      expect(failure).toMatchObject({
+        moduleId: 'beta',
+        migrationName: 'beta-001-concurrent.sql',
+        category: 'prohibited-operation',
+      })
+      expect(String(failure)).not.toContain(sqlByName.get('beta-001-concurrent.sql'))
+
+      const [state] = await connection<
+        {
+          alpha_schema_exists: boolean
+          beta_schema_exists: boolean
+          applied: number
+          provisioned: number
+        }[]
+      >`
         select
-          to_regclass('eve_module_alpha.alpha_first') is not null as first_exists,
+          to_regnamespace('eve_module_alpha') is not null as alpha_schema_exists,
+          to_regnamespace('eve_module_beta') is not null as beta_schema_exists,
           (
-            select count(*)::integer from schema_migrations where module = 'alpha'
-          ) as applied
+            select count(*)::integer from schema_migrations where module in ('alpha', 'beta')
+          ) as applied,
+          (
+            select count(*)::integer
+            from module_schema_provisioning
+            where module_id in ('alpha', 'beta')
+          ) as provisioned
       `
-      expect(state).toEqual({ first_exists: false, applied: 0 })
+      expect(state).toEqual({
+        alpha_schema_exists: false,
+        beta_schema_exists: false,
+        applied: 0,
+        provisioned: 0,
+      })
     } finally {
       await connection.end()
     }
@@ -524,14 +549,19 @@ describe('multi-process safety', () => {
     const connection = postgres(databaseUrl)
     const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
     const prohibited = [
-      ['core schema write', `delete from public.users where id = '${userId}'`],
-      ['cross-module DDL', 'drop table eve_module_beta.beta_records'],
-      ['privilege change', 'grant select on alpha_policy_probe to public'],
-      ['role change', 'alter role eve_module_beta_runtime login'],
-      ['role reset', 'reset role'],
-      ['session authorization', 'set session authorization eve_space'],
-      ['extension operation', 'create extension hstore'],
-      ['deployment schema', 'create schema escaped_module_schema'],
+      ['core schema write', `delete from public.users where id = '${userId}'`, 'cross-schema'],
+      ['cross-module DDL', 'drop table eve_module_beta.beta_records', 'cross-schema'],
+      ['privilege change', 'grant select on alpha_policy_probe to public', 'prohibited-operation'],
+      ['role change', 'alter role eve_module_beta_runtime login', 'prohibited-operation'],
+      ['role reset', 'reset role', 'prohibited-operation'],
+      ['session authorization', 'set session authorization eve_space', 'prohibited-operation'],
+      ['extension operation', 'create extension hstore', 'prohibited-operation'],
+      ['deployment schema', 'create schema escaped_module_schema', 'prohibited-operation'],
+      [
+        'large object creation',
+        "select lo_from_bytea(0, decode('00', 'hex'))",
+        'prohibited-operation',
+      ],
     ] as const
 
     try {
@@ -541,7 +571,7 @@ describe('multi-process safety', () => {
       })
       await connection`insert into users (id) values (${userId})`
 
-      for (const [name, operation] of prohibited) {
+      for (const [name, operation, category] of prohibited) {
         await expect(
           runModuleMigrationSets(connection, [
             {
@@ -554,7 +584,7 @@ describe('multi-process safety', () => {
               ],
             },
           ]),
-        ).rejects.toThrow('is not schema-contained')
+        ).rejects.toMatchObject({ category })
       }
 
       const [state] = await connection<
@@ -588,6 +618,110 @@ describe('multi-process safety', () => {
         extension_exists: false,
         user_exists: true,
       })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('executes exact migration bytes in declared order under the restricted role', async () => {
+    const connection = postgres(databaseUrl)
+    const firstSql = `
+      create table execution_trace (
+        ordinal integer primary key,
+        executing_role text not null,
+        search_path text not null,
+        query_text text not null
+      );
+      insert into execution_trace values (
+        1,
+        current_user,
+        current_setting('search_path'),
+        current_query()
+      );
+    `
+    const secondSql = `
+      insert into execution_trace values (
+        2,
+        current_user,
+        current_setting('search_path'),
+        current_query()
+      );
+    `
+    const installed = [
+      { moduleId: 'alpha', name: 'alpha-900-first.sql' },
+      { moduleId: 'alpha', name: 'alpha-100-second.sql' },
+    ] as const
+    const sqlByName = new Map([
+      ['alpha-900-first.sql', firstSql],
+      ['alpha-100-second.sql', secondSql],
+    ])
+
+    try {
+      await runStartupMigrations(connection, {
+        installed,
+        loadModuleSql: async ({ name }) => sqlByName.get(name)!,
+      })
+
+      const trace = await connection<
+        { ordinal: number; executing_role: string; search_path: string; query_text: string }[]
+      >`
+        select ordinal, executing_role, search_path, query_text
+        from eve_module_alpha.execution_trace
+        order by ordinal
+      `
+      expect(trace).toEqual([
+        {
+          ordinal: 1,
+          executing_role: 'eve_module_alpha_migrate',
+          search_path: 'eve_module_alpha',
+          query_text: firstSql,
+        },
+        {
+          ordinal: 2,
+          executing_role: 'eve_module_alpha_migrate',
+          search_path: 'eve_module_alpha',
+          query_text: secondSql,
+        },
+      ])
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rolls back structurally accepted SQL that exceeds the migration role authority', async () => {
+    const connection = postgres(databaseUrl)
+    const migrationName = 'alpha-authority-probe.sql'
+
+    try {
+      await runStartupMigrations(connection, { installed: [] })
+
+      const failure = await runModuleMigrationSets(connection, [
+        {
+          moduleId: 'alpha',
+          migrations: [
+            {
+              name: migrationName,
+              sql: `
+                create table authority_rollback_probe (id integer);
+                select setval('public.domain_events_event_sequence_seq', 1, false);
+              `,
+            },
+          ],
+        },
+      ]).catch((error: unknown) => error)
+
+      expect(failure).toMatchObject({ code: '42501' })
+      const [state] = await connection<
+        { applied: boolean; probe_exists: boolean; schema_exists: boolean }[]
+      >`
+        select
+          exists (
+            select 1 from schema_migrations where module = 'alpha' and name = ${migrationName}
+          ) as applied,
+          to_regclass('eve_module_alpha.authority_rollback_probe') is not null as probe_exists,
+          to_regnamespace('eve_module_alpha') is not null as schema_exists
+      `
+      expect(state).toEqual({ applied: false, probe_exists: false, schema_exists: false })
     } finally {
       await connection.end()
     }

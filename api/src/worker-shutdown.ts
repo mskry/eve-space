@@ -10,6 +10,7 @@ export interface WorkerShutdownDependencies {
   readonly timeoutMs: number
   getStartupOperation(): Promise<void> | undefined
   getPlatform(): WorkerPlatform | undefined
+  closeEsiRuntime(): Promise<void>
   closeCacheRedis(timeoutMs: number): Promise<void>
   closeCoordinationRedis(timeoutMs: number): Promise<void>
   closePostgres(timeoutMs: number): Promise<void>
@@ -42,6 +43,12 @@ async function runWorkerShutdown(dependencies: WorkerShutdownDependencies): Prom
       if (result.status === 'aborted') forceClosePlatform(platform, dependencies)
       handlePlatformResult(result, deadline, dependencies)
     }
+    await runStep(
+      deadline,
+      'Worker ESI runtime shutdown failed',
+      dependencies.closeEsiRuntime,
+      dependencies,
+    )
     await runStep(
       deadline,
       'Worker cache Redis shutdown failed',

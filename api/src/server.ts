@@ -2,11 +2,12 @@ import { createServer, type Server } from 'node:http'
 import { serve } from '@hono/node-server'
 import { createApiShutdownCoordinator } from './api-shutdown.js'
 import { app } from './index.js'
+import { closeSharedCacheRedisConnection } from './cache-redis.js'
+import { closeSharedCoordinationRedisConnection } from './coordination-redis.js'
 import { sql } from './db/client.js'
 import { env, isSsoConfigured } from './env.js'
-import { closeSharedCacheRedisConnection } from './esi-resilience/cache-redis.js'
-import { assertEsiOperationCatalogConfiguration } from './esi-resilience/catalog-access.js'
-import { closeSharedCoordinationRedisConnection } from './esi-resilience/coordination-connection.js'
+import { assertEsiCatalogConfiguration } from './esi-gateway/catalog-interface.js'
+import { closeProductionEsiExecutionRuntime } from './esi-gateway/runtime-lifecycle.js'
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
 import { apiLogger, logSafeError } from './logging.js'
 import { markProcessShutdownFailed } from './shutdown-deadline.js'
@@ -18,6 +19,7 @@ export async function startApi() {
   const shutdown = createApiShutdownCoordinator({
     timeoutMs: env.API_SHUTDOWN_TIMEOUT_MS,
     getServer: () => server,
+    closeEsiRuntime: closeProductionEsiExecutionRuntime,
     closeCacheRedis: closeSharedCacheRedisConnection,
     closeCoordinationRedis: closeSharedCoordinationRedisConnection,
     closePostgres: (timeoutMs) => sql.end({ timeout: timeoutMs / 1_000 }),
@@ -36,7 +38,7 @@ export async function startApi() {
   }
 
   try {
-    assertEsiOperationCatalogConfiguration({
+    assertEsiCatalogConfiguration({
       compatibilityDate: env.ESI_COMPATIBILITY_DATE,
       ssoEnabled: isSsoConfigured(),
       requestableScopes: env.EVE_SCOPES.split(/\s+/).filter(Boolean),

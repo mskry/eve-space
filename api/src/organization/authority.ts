@@ -1,5 +1,4 @@
-import { publicAllianceRepresentation } from '../alliances/public-data.js'
-import { execute } from '../esi-resilience/execute.js'
+import { getAlliancePublicResult } from '../alliances/public-data.js'
 import {
   OrganizationAuthorityError,
   type CharacterAffiliation,
@@ -25,7 +24,7 @@ export async function resolveOrganizationAuthorityCorporation(
 }
 
 async function getAllianceExecutorCorporationId(allianceId: number) {
-  const result = await execute(publicAllianceRepresentation, { allianceId })
+  const result = await getAlliancePublicResult(allianceId)
   if (result.stale) throw new OrganizationAuthorityError('stale-affiliation')
   const executorCorporationId = result.data.executorCorporationId
   if (!executorCorporationId) throw new OrganizationAuthorityError('executor-unavailable')

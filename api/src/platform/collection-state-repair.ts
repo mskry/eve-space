@@ -2,8 +2,10 @@ import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-mo
 import type postgres from 'postgres'
 import { z } from 'zod'
 import { sql } from '../db/client.js'
-import { getOptionalCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import type { EsiOperation } from '../esi-resilience/catalog.js'
+import {
+  getOptionalCharacterEsiScope,
+  type EsiOperation,
+} from '../esi-gateway/catalog-interface.js'
 import { installedModuleResources } from '../generated/platform/installed-module-worker.js'
 
 interface CollectionStateRepairOptions {

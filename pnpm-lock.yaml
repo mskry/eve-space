@@ -37,6 +37,9 @@ catalogs:
     '@nuxt/test-utils':
       specifier: ^4.1.0
       version: 4.1.0
+    '@pgsql/parser':
+      specifier: 1.5.0
+      version: 1.5.0
     '@pinia/colada':
       specifier: ^1.4.2
       version: 1.4.2
@@ -82,6 +85,9 @@ catalogs:
     drizzle-orm:
       specifier: ^0.45.2
       version: 0.45.2
+    effect:
+      specifier: 4.0.0-rc.115
+      version: 4.0.0-rc.115
     es-module-lexer:
       specifier: 2.3.2
       version: 2.3.2
@@ -320,12 +326,18 @@ importers:
       '@loglayer/hono':
         specifier: 'catalog:'
         version: 2.4.0(hono@4.13.3)(loglayer@9.4.0)
+      '@pgsql/parser':
+        specifier: 'catalog:'
+        version: 1.5.0
       bullmq:
         specifier: 'catalog:'
         version: 6.2.0(ioredis@6.0.0(supports-color@10.2.2))
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(postgres@3.4.9)
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-rc.115
       hono:
         specifier: 'catalog:'
         version: 4.13.3
@@ -2160,6 +2172,9 @@ packages:
     bundledDependencies:
       - napi-wasm
 
+  '@pgsql/parser@1.5.0':
+    resolution: {integrity: sha512-a5Bn0eVj69g8ae9d0jGxfXpq9bhN6hx2DnU7uiQjoSZtpWLgq1aSA1y3qKkilb+Tm1EV9i56PbZBp5rclyeBAw==}
+
   '@pinia/colada-devtools@1.1.2':
     resolution: {integrity: sha512-cD5y9N0hfveyuP8xB6Yh3W3UYVIf98Kq30bBHDnzxFSK/SFRLPJLWxRxLJdFTquWepInta/XYqcj3t+QQT3rLA==}
 
@@ -3918,6 +3933,9 @@ packages:
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
+
+  effect@4.0.0-rc.115:
+    resolution: {integrity: sha512-ogYulZ5ffeOzrJqQrG0XOkDO5lKn2s9KNHhoxJy/6wKUkF0i12dlVXWA9TgsgQ+zV/JzizyG0+XMPepZEQX6vw==}
 
   electron-to-chromium@1.5.411:
     resolution: {integrity: sha512-gglkxzokjHfawpGxq75XdBV2/l3BAPzrsMs70qgaZdTW5rpV1tC4MdgJVP9fN126bODA4ZJQkn1wryEzJyQXIg==}
@@ -7987,6 +8005,8 @@ snapshots:
       is-glob: 4.0.3
       picomatch: 4.0.7
 
+  '@pgsql/parser@1.5.0': {}
+
   '@pinia/colada-devtools@1.1.2': {}
 
   '@pinia/colada-nuxt@1.0.2(@pinia/colada@1.4.2(pinia@4.0.3(@typescript/typescript6@6.0.2)(@vue/devtools-api@8.2.1)(vue@3.5.41(@typescript/typescript6@6.0.2)))(vue@3.5.41(@typescript/typescript6@6.0.2)))(magic-string@1.2.3)(magicast@0.5.4)(oxc-parser@0.143.0)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.62.4)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0)))':
@@ -8550,7 +8570,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(@typescript/typescript6@6.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
+      vitest: 4.1.11(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.11.2)(msw@2.15.0(@types/node@24.13.3)(typescript@7.0.2))(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.50.0)(tsx@4.23.12)(yaml@2.9.0))
 
   '@vitest/coverage-v8@5.0.0(vitest@5.0.0)':
     dependencies:
@@ -9509,6 +9529,8 @@ snapshots:
       semver: 7.8.5
 
   ee-first@1.1.1: {}
+
+  effect@4.0.0-rc.115: {}
 
   electron-to-chromium@1.5.411: {}
 

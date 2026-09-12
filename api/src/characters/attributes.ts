@@ -1,31 +1,27 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdAttributesResponse } from '@evespace/esi-client/types'
-import { getCharacterEsiScope } from '../esi-resilience/catalog-access.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { defineCharacterEsiRepresentation } from '../esi-resilience/representations.js'
-import { toEsiResultMetadata } from '../esi-resilience/result-metadata.js'
-import type { EsiResultMetadata } from '../esi-resilience/types.js'
+import {
+  createCharacterEsiRead,
+  toEsiReadResultMetadata,
+  type EsiReadResultMetadata,
+} from '../esi-gateway/feature-execution.js'
 
 interface CharacterAttributesRepresentationInput {
   characterId: number
+  subjectLifecycleId: string
 }
 
-const characterAttributesRepresentation = registerEsiRepresentation(
-  defineCharacterEsiRepresentation({
-    operation: 'attributes',
-    name: 'character-attributes-core',
-    descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
-    encodeRequest: (input: CharacterAttributesRepresentationInput) => ({
-      path: { character_id: input.characterId },
-    }),
-    map: (response) => mapCharacterAttributes(response.data),
+const characterAttributesRead = createCharacterEsiRead({
+  operation: 'attributes',
+  name: 'character-attributes-core',
+  descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
+  encodeRequest: (input: CharacterAttributesRepresentationInput) => ({
+    path: { character_id: input.characterId },
   }),
-)
+  map: (response) => mapCharacterAttributes(response.data),
+})
 
-export const characterAttributesScope = getCharacterEsiScope(
-  characterAttributesRepresentation.operation,
-)
+export const characterAttributesScope = characterAttributesRead.requiredScope
 
 interface CharacterAttributesData {
   charisma: number
@@ -38,18 +34,14 @@ interface CharacterAttributesData {
   lastRemapDate: string | null
 }
 
-export type CharacterAttributes = CharacterAttributesData & EsiResultMetadata
+export type CharacterAttributes = CharacterAttributesData & EsiReadResultMetadata
 
 export async function getCharacterAttributes(
   characterId: number,
   subjectLifecycleId: string,
 ): Promise<CharacterAttributes> {
-  const result = await execute(
-    characterAttributesRepresentation,
-    { characterId },
-    { subjectLifecycleId },
-  )
-  return { ...result.data, ...toEsiResultMetadata(result) }
+  const result = await characterAttributesRead.execute({ characterId, subjectLifecycleId })
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 function mapCharacterAttributes(

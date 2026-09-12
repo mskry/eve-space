@@ -5,10 +5,7 @@ import type {
   GetCorporationsCorporationIdResponse,
 } from '@evespace/esi-client/types'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
-import { execute } from '../esi-resilience/execute.js'
-import { registerEsiRepresentation } from '../esi-resilience/representation-registry.js'
-import { definePublicEsiRepresentation } from '../esi-resilience/representations.js'
-import type { EsiCachedResult } from '../esi-resilience/types.js'
+import { createPublicEsiRead, type EsiReadResult } from '../esi-gateway/feature-execution.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
 interface CorporationPublic {
@@ -52,46 +49,40 @@ interface AllianceHistoryEntry {
   startDate: string
 }
 
-const publicCorporationRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'public-corporation',
-    name: 'public-corporation-core',
-    descriptor: operationRegistry.GetCorporationsCorporationId.transport,
-    encodeRequest: (input: { corporationId: number }) => ({
-      path: { corporation_id: input.corporationId },
-    }),
-    map: async (response): Promise<CorporationLookup> => ({
-      found: true,
-      corporation: await mapPublicCorporation(response.data),
-    }),
-    recover: (error) =>
-      errorStatus(error) === 404
-        ? { data: { found: false as const }, meta: errorMetadata(error) }
-        : undefined,
+const publicCorporationRead = createPublicEsiRead({
+  operation: 'public-corporation',
+  name: 'public-corporation-core',
+  descriptor: operationRegistry.GetCorporationsCorporationId.transport,
+  encodeRequest: (input: { corporationId: number }) => ({
+    path: { corporation_id: input.corporationId },
   }),
-)
+  map: async (response): Promise<CorporationLookup> => ({
+    found: true,
+    corporation: await mapPublicCorporation(response.data),
+  }),
+  recover: (error) =>
+    errorStatus(error) === 404
+      ? { data: { found: false as const }, meta: errorMetadata(error) }
+      : undefined,
+})
 
-const corporationAllianceHistoryRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'corporation-alliance-history',
-    name: 'corporation-alliance-history-core',
-    descriptor: operationRegistry.GetCorporationsCorporationIdAlliancehistory.transport,
-    encodeRequest: (input: { corporationId: number }) => ({
-      path: { corporation_id: input.corporationId },
-    }),
-    map: (response) => mapCorporationAllianceHistory(response.data),
+const corporationAllianceHistoryRead = createPublicEsiRead({
+  operation: 'corporation-alliance-history',
+  name: 'corporation-alliance-history-core',
+  descriptor: operationRegistry.GetCorporationsCorporationIdAlliancehistory.transport,
+  encodeRequest: (input: { corporationId: number }) => ({
+    path: { corporation_id: input.corporationId },
   }),
-)
+  map: (response) => mapCorporationAllianceHistory(response.data),
+})
 
-const corporationNpcListRepresentation = registerEsiRepresentation(
-  definePublicEsiRepresentation({
-    operation: 'corporation-npc-list',
-    name: 'corporation-npc-list-core',
-    descriptor: operationRegistry.GetCorporationsNpccorps.transport,
-    encodeRequest: () => ({}),
-    map: (response): number[] => response.data,
-  }),
-)
+const corporationNpcListRead = createPublicEsiRead({
+  operation: 'corporation-npc-list',
+  name: 'corporation-npc-list-core',
+  descriptor: operationRegistry.GetCorporationsNpccorps.transport,
+  encodeRequest: () => ({}),
+  map: (response): number[] => response.data,
+})
 
 export async function getCorporationPublic(corporationId: number): Promise<CorporationPublic> {
   return (await getCorporationPublicResult(corporationId)).data
@@ -99,8 +90,8 @@ export async function getCorporationPublic(corporationId: number): Promise<Corpo
 
 export async function getCorporationPublicResult(
   corporationId: number,
-): Promise<EsiCachedResult<CorporationPublic>> {
-  const result = await execute(publicCorporationRepresentation, { corporationId })
+): Promise<EsiReadResult<CorporationPublic>> {
+  const result = await publicCorporationRead.execute({ corporationId })
   if (!result.data.found) throw Object.assign(new Error('Corporation not found'), { status: 404 })
   return { ...result, data: { corporationId, warHistory: [], ...result.data.corporation } }
 }
@@ -108,11 +99,11 @@ export async function getCorporationPublicResult(
 export async function getCorporationAllianceHistory(
   corporationId: number,
 ): Promise<AllianceHistoryEntry[]> {
-  return (await execute(corporationAllianceHistoryRepresentation, { corporationId })).data
+  return (await corporationAllianceHistoryRead.execute({ corporationId })).data
 }
 
 export async function getNpcCorporations(): Promise<number[]> {
-  return (await execute(corporationNpcListRepresentation, {})).data
+  return (await corporationNpcListRead.execute({})).data
 }
 
 async function mapPublicCorporation(
