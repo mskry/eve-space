@@ -5,6 +5,7 @@ import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
 import { characterAttributesScope, getCharacterAttributes } from './attributes.js'
+import { classifyCharacterResourceFailure } from './resource-failure.js'
 import { ownedCharacterResourceError, toCharacterEsiResponse } from './route-responses.js'
 import { characterSkillQueueScope, getCharacterSkillQueue } from './skill-queue.js'
 import { characterSkillsScope, getCharacterSkills } from './skills.js'
@@ -23,11 +24,15 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
           toCharacterEsiResponse(await getCharacterAttributes(characterId, subjectLifecycleId)),
         )
       } catch (error) {
-        return ownedCharacterResourceError(context, error, characterId, {
-          requiredScope: characterAttributesScope,
-          scopeMessage: 'Authorize attributes access for this character.',
-          unavailableMessage: 'EVE Online ESI is temporarily unavailable.',
-        })
+        return ownedCharacterResourceError(
+          context,
+          classifyCharacterResourceFailure(error, { configuredScope: characterAttributesScope }),
+          characterId,
+          {
+            scopeMessage: 'Authorize attributes access for this character.',
+            unavailableMessage: 'EVE Online ESI is temporarily unavailable.',
+          },
+        )
       }
     },
   )
@@ -44,11 +49,15 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
           toCharacterEsiResponse(await getCharacterSkillQueue(characterId, subjectLifecycleId)),
         )
       } catch (error) {
-        return ownedCharacterResourceError(context, error, characterId, {
-          requiredScope: characterSkillQueueScope,
-          scopeMessage: 'Authorize skill queue access for this character.',
-          unavailableMessage: 'EVE Online ESI is temporarily unavailable.',
-        })
+        return ownedCharacterResourceError(
+          context,
+          classifyCharacterResourceFailure(error, { configuredScope: characterSkillQueueScope }),
+          characterId,
+          {
+            scopeMessage: 'Authorize skill queue access for this character.',
+            unavailableMessage: 'EVE Online ESI is temporarily unavailable.',
+          },
+        )
       }
     },
   )
@@ -65,11 +74,15 @@ export const characterProgressionRoutes = new Hono<OwnedCharacterEnv>()
           toCharacterEsiResponse(await getCharacterSkills(characterId, subjectLifecycleId)),
         )
       } catch (error) {
-        return ownedCharacterResourceError(context, error, characterId, {
-          requiredScope: characterSkillsScope,
-          scopeMessage: 'Authorize skills access for this character.',
-          unavailableMessage: 'EVE Online ESI is temporarily unavailable.',
-        })
+        return ownedCharacterResourceError(
+          context,
+          classifyCharacterResourceFailure(error, { configuredScope: characterSkillsScope }),
+          characterId,
+          {
+            scopeMessage: 'Authorize skills access for this character.',
+            unavailableMessage: 'EVE Online ESI is temporarily unavailable.',
+          },
+        )
       }
     },
   )

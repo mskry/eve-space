@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { hc, type InferRequestType } from 'hono/client'
+import { beforeEach, describe, expect, expectTypeOf, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   deleteCharacter: vi.fn(),
@@ -38,7 +39,7 @@ vi.mock('../../src/env.js', () => ({
   },
 }))
 
-vi.mock('../../src/auth/tokens.js', () => ({
+vi.mock('../../src/auth/token-errors.js', () => ({
   ScopeRequiredError: class ScopeRequiredError extends Error {
     constructor(readonly scope: string) {
       super(`Missing ${scope}`)
@@ -58,10 +59,8 @@ vi.mock('../../src/characters/history.js', () => ({
 vi.mock('../../src/characters/overview.js', () => ({
   getCharacterLocation: mocks.getCharacterLocation,
   getCharacterShip: mocks.getCharacterShip,
-  getCharacterSkillsSummary: mocks.getCharacterSkillsSummary,
   locationScope: 'esi-location.read_location.v1',
   shipScope: 'esi-location.read_ship_type.v1',
-  skillsScope: 'esi-skills.read_skills.v1',
 }))
 
 vi.mock('../../src/characters/wallet.js', () => ({
@@ -69,32 +68,17 @@ vi.mock('../../src/characters/wallet.js', () => ({
   getWalletJournal: mocks.getWalletJournal,
   getWalletTransactions: mocks.getWalletTransactions,
   walletScope: 'esi-wallet.read_character_wallet.v1',
-  WalletQuotaError: class WalletQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('Quota exhausted')
-    }
-  },
 }))
 
 vi.mock('../../src/characters/market.js', () => ({
   getCharacterMarketOrderHistory: mocks.getCharacterMarketOrderHistory,
   getCharacterMarketOrders: mocks.getCharacterMarketOrders,
   marketOrdersScope: 'esi-markets.read_character_orders.v1',
-  MarketQuotaError: class MarketQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('Quota exhausted')
-    }
-  },
 }))
 
 vi.mock('../../src/characters/contracts.js', () => ({
   characterContractsScope: 'esi-contracts.read_character_contracts.v1',
   ContractNotFoundError: class ContractNotFoundError extends Error {},
-  ContractQuotaError: class ContractQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('Quota exhausted')
-    }
-  },
   getCharacterContractBids: mocks.getCharacterContractBids,
   getCharacterContractItems: mocks.getCharacterContractItems,
   getCharacterContracts: mocks.getCharacterContracts,
@@ -103,13 +87,18 @@ vi.mock('../../src/characters/contracts.js', () => ({
 vi.mock('../../src/characters/skills.js', () => ({
   characterSkillsScope: 'esi-skills.read_skills.v1',
   getCharacterSkills: mocks.getCharacterSkills,
+  getCharacterSkillsSummary: mocks.getCharacterSkillsSummary,
 }))
 
 import { characterRoutes } from '../../src/characters/routes.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
-import { app } from '../../src/index.js'
-import { ScopeRequiredError } from '../../src/auth/tokens.js'
-import { WalletQuotaError } from '../../src/characters/wallet.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
+import { app, type AppType } from '../../src/index.js'
+
+const mountedClient = hc<AppType>('http://localhost:8788')
+const mountedCharacter = mountedClient.api.me.characters[':characterId']
+
+type DeleteCharacterRequest = InferRequestType<(typeof mountedCharacter)['$delete']>
 
 const userId = '2c4b9cad-46ab-4a47-ac0c-d20c7d507b9c'
 const mainCharacter = {
@@ -434,6 +423,25 @@ describe('owned character overview', () => {
     expect(body.skills.status).toBe('unavailable')
   })
 
+  test('maps token-refresh and cooldown failures to their existing unavailable sections', async () => {
+    mocks.getCharacterLocation.mockRejectedValue(new TokenRefreshUnavailableError())
+    mocks.getCharacterShip.mockRejectedValue(new EsiQuotaError(19))
+
+    const response = await authorizedRequest(`/${altCharacter.characterId}`)
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      location: {
+        status: 'unavailable',
+        message: 'EVE token refresh is temporarily unavailable.',
+      },
+      ship: {
+        status: 'unavailable',
+        message: 'EVE Online ESI is temporarily unavailable.',
+      },
+    })
+  })
+
   test('returns an explicit safe 502 when the public profile is unavailable', async () => {
     mocks.getCharacterProfile.mockRejectedValue(new Error('ESI unavailable'))
 
@@ -489,7 +497,7 @@ describe('owned character wallet', () => {
   })
 
   test('maps wallet quota, rejected tokens, and unavailable ESI responses', async () => {
-    mocks.getWalletBalance.mockRejectedValueOnce(new WalletQuotaError(30))
+    mocks.getWalletBalance.mockRejectedValueOnce(new EsiQuotaError(30))
     const quota = await authorizedRequest(`/${altCharacter.characterId}/wallet`)
     expect(quota.status).toBe(429)
     expect(quota.headers.get('retry-after')).toBe('30')
@@ -545,7 +553,7 @@ describe('owned character wallet', () => {
       authorizeUrl: financeAuthorizeUrl(altCharacter.characterId),
     })
 
-    mocks.getWalletTransactions.mockRejectedValueOnce(new WalletQuotaError(45))
+    mocks.getWalletTransactions.mockRejectedValueOnce(new EsiQuotaError(45))
     const quota = await authorizedRequest(`/${altCharacter.characterId}/wallet/transactions`)
     expect(quota.status).toBe(429)
     expect(quota.headers.get('retry-after')).toBe('45')
@@ -639,8 +647,23 @@ describe('main character selection', () => {
 })
 
 describe('character deletion', () => {
+  test('preserves the mounted AppType deletion contract', () => {
+    expectTypeOf<DeleteCharacterRequest['param']>().toEqualTypeOf<{ characterId: string }>()
+  })
+
+  test('registers every composed method and path once', () => {
+    const routeCounts = new Map<string, number>()
+    for (const routeEntry of characterRoutes.routes.filter((entry) => entry.handler.length < 2)) {
+      const key = `${routeEntry.method} ${routeEntry.path}`
+      routeCounts.set(key, (routeCounts.get(key) ?? 0) + 1)
+    }
+
+    expect([...routeCounts.entries()].filter(([, count]) => count > 1)).toEqual([])
+    expect(routeCounts.get('DELETE /:characterId')).toBe(1)
+  })
+
   test('deletes an owned non-main character', async () => {
-    const response = await authorizedRequest(`/${altCharacter.characterId}`, 'DELETE')
+    const response = await mountedAuthorizedRequest(`/${altCharacter.characterId}`, 'DELETE')
 
     expect(response.status).toBe(204)
     expect(await response.text()).toBe('')
@@ -651,64 +674,70 @@ describe('character deletion', () => {
     )
   })
 
-  test('rejects deletion of the current main character', async () => {
-    mocks.findOwnedCharacter.mockResolvedValue(mainCharacter)
-    mocks.deleteCharacter.mockResolvedValue('main-character')
+  test.each([
+    {
+      name: 'rejects deletion of the current main character',
+      character: mainCharacter,
+      result: 'main-character',
+      body: {
+        code: 'MAIN_CHARACTER_DELETE_FORBIDDEN',
+        message: 'Choose another main character before deleting this one.',
+      },
+    },
+    {
+      name: 'retains organization authority evidence',
+      character: altCharacter,
+      result: 'authority-evidence',
+      body: {
+        code: 'CHARACTER_AUTHORITY_EVIDENCE_RETAINED',
+        message:
+          'This character supplies retained organization-owner authority evidence and cannot be deleted.',
+      },
+    },
+    {
+      name: 'retains an active corporation data source',
+      character: altCharacter,
+      result: 'corporation-source',
+      body: {
+        code: 'CHARACTER_CORPORATION_SOURCE_ACTIVE',
+        message: 'Replace this character as the corporation data source before deleting it.',
+      },
+    },
+    {
+      name: 'returns not found when the character disappears during deletion',
+      character: altCharacter,
+      result: 'not-found',
+      body: { code: 'CHARACTER_NOT_FOUND', message: 'Character not found.' },
+    },
+  ])('$name', async ({ character, result, body }) => {
+    mocks.findOwnedCharacter.mockResolvedValue(character)
+    mocks.deleteCharacter.mockResolvedValue(result)
 
-    const response = await authorizedRequest(`/${mainCharacter.characterId}`, 'DELETE')
+    const response = await mountedAuthorizedRequest(`/${character.characterId}`, 'DELETE')
 
-    expect(response.status).toBe(409)
-    expect(await response.json()).toEqual({
-      code: 'MAIN_CHARACTER_DELETE_FORBIDDEN',
-      message: 'Choose another main character before deleting this one.',
-    })
-  })
-
-  test('returns a typed conflict when organization authority evidence retains the character', async () => {
-    mocks.deleteCharacter.mockResolvedValue('authority-evidence')
-
-    const response = await authorizedRequest(`/${altCharacter.characterId}`, 'DELETE')
-
-    expect(response.status).toBe(409)
-    expect(await response.json()).toEqual({
-      code: 'CHARACTER_AUTHORITY_EVIDENCE_RETAINED',
-      message:
-        'This character supplies retained organization-owner authority evidence and cannot be deleted.',
-    })
-  })
-
-  test('returns a typed conflict when the character is an active corporation source', async () => {
-    mocks.deleteCharacter.mockResolvedValue('corporation-source')
-
-    const response = await authorizedRequest(`/${altCharacter.characterId}`, 'DELETE')
-
-    expect(response.status).toBe(409)
-    expect(await response.json()).toEqual({
-      code: 'CHARACTER_CORPORATION_SOURCE_ACTIVE',
-      message: 'Replace this character as the corporation data source before deleting it.',
-    })
+    expect(response.status).toBe(result === 'not-found' ? 404 : 409)
+    expect(await response.json()).toEqual(body)
   })
 
   test('returns the same 404 and never deletes a non-owned target', async () => {
     mocks.findOwnedCharacter.mockResolvedValue(null)
 
-    const response = await authorizedRequest('/90000001', 'DELETE')
+    const response = await mountedAuthorizedRequest('/90000001', 'DELETE')
 
     expect(response.status).toBe(404)
     expect(mocks.deleteCharacter).not.toHaveBeenCalled()
-  })
-
-  test('returns a 404 if the character disappears during deletion', async () => {
-    mocks.deleteCharacter.mockResolvedValue('not-found')
-
-    const response = await authorizedRequest(`/${altCharacter.characterId}`, 'DELETE')
-
-    expect(response.status).toBe(404)
   })
 })
 
 function authorizedRequest(path: string, method = 'GET') {
   return characterRoutes.request(path, {
+    method,
+    headers: { Cookie: 'eve_space_session=active-session' },
+  })
+}
+
+function mountedAuthorizedRequest(path: string, method = 'GET') {
+  return app.request(`/api/me/characters${path}`, {
     method,
     headers: { Cookie: 'eve_space_session=active-session' },
   })

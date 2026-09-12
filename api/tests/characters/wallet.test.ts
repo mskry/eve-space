@@ -1,16 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
-const mocks = vi.hoisted(() => {
-  class EsiQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('ESI quota is temporarily exhausted')
-    }
-  }
-  return { EsiQuotaError, executeRepresentation: vi.fn() }
-})
+const mocks = vi.hoisted(() => ({ executeRepresentation: vi.fn() }))
 
-vi.mock('../../src/esi-gateway/failures.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 vi.mock('../../src/esi-gateway/feature-execution.js', () =>
   createFeatureExecutionMock(mocks.executeRepresentation),
 )
@@ -122,14 +115,13 @@ describe('wallet service', () => {
     })
   })
 
-  test('maps callable quota failures and rejects invalid local input before execution', async () => {
-    mocks.executeRepresentation.mockRejectedValueOnce(new mocks.EsiQuotaError(30))
-    const { getWalletBalance, getWalletTransactions, WalletQuotaError } =
+  test('propagates callable quota identity and rejects invalid local input before execution', async () => {
+    const quotaError = new EsiQuotaError(30)
+    mocks.executeRepresentation.mockRejectedValueOnce(quotaError)
+    const { getWalletBalance, getWalletTransactions } =
       await import('../../src/characters/wallet.js')
 
-    await expect(getWalletBalance(characterId, subjectLifecycleId)).rejects.toEqual(
-      new WalletQuotaError(30),
-    )
+    await expect(getWalletBalance(characterId, subjectLifecycleId)).rejects.toBe(quotaError)
     await expect(getWalletTransactions(characterId, 0, subjectLifecycleId)).rejects.toThrow(
       'Wallet transaction continuation must be a positive safe integer',
     )

@@ -5,14 +5,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vit
 import { runMigrations } from '../../../src/db/migration-runner.js'
 
 const ownerEvidenceMocks = vi.hoisted(() => ({
-  getCharacterAffiliationObservation: vi.fn(),
   getCharacterCorporationRoles: vi.fn(),
-  persistAffiliationObservations: vi.fn(),
+  observeAndPersistCharacterAffiliation: vi.fn(),
 }))
 
 vi.mock('../../../src/characters/affiliation-sync.js', () => ({
-  getCharacterAffiliationObservation: ownerEvidenceMocks.getCharacterAffiliationObservation,
-  persistAffiliationObservations: ownerEvidenceMocks.persistAffiliationObservations,
+  observeAndPersistCharacterAffiliation: ownerEvidenceMocks.observeAndPersistCharacterAffiliation,
 }))
 vi.mock('../../../src/characters/corporation-roles.js', () => ({
   characterCorporationRolesScope: 'esi-characters.read_corporation_roles.v1',
@@ -145,7 +143,7 @@ beforeEach(async () => {
   `
   if (!lifecycle) throw new Error('Seeded character lifecycle is missing')
   subjectLifecycleId = lifecycle.subject_lifecycle_id
-  ownerEvidenceMocks.getCharacterAffiliationObservation.mockResolvedValue({
+  ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
     characterId,
     corporationId: 98_000_001,
     allianceId: null,
@@ -1065,6 +1063,10 @@ describe('organization storage invariants', () => {
       { grantId: grant.grantId },
     ])
     await expect(refreshOrganizationOwnerEvidence(grant.grantId)).resolves.toBe('fresh')
+    expect(ownerEvidenceMocks.observeAndPersistCharacterAffiliation).toHaveBeenCalledWith(
+      characterId,
+      undefined,
+    )
     await expect(selectDueOrganizationOwnerEvidence()).resolves.toEqual([])
   })
 
@@ -1111,7 +1113,7 @@ describe('organization storage invariants', () => {
         last_checked_at = now() - interval '2 hours'
       where grant_id = ${grant.grantId}
     `
-    ownerEvidenceMocks.getCharacterAffiliationObservation.mockResolvedValue({
+    ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
       characterId,
       corporationId: 98_000_001,
       allianceId: null,
@@ -1156,7 +1158,7 @@ describe('organization storage invariants', () => {
       select review_deadline from organization_authority_evidence where grant_id = ${grant.grantId}
     `
 
-    ownerEvidenceMocks.getCharacterAffiliationObservation.mockResolvedValue({
+    ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
       characterId,
       corporationId: 98_000_001,
       allianceId: null,
@@ -1168,7 +1170,7 @@ describe('organization storage invariants', () => {
       select review_deadline from organization_authority_evidence where grant_id = ${grant.grantId}
     `
 
-    ownerEvidenceMocks.getCharacterAffiliationObservation.mockResolvedValue({
+    ownerEvidenceMocks.observeAndPersistCharacterAffiliation.mockResolvedValue({
       characterId,
       corporationId: 98_000_001,
       allianceId: null,

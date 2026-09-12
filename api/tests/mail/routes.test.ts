@@ -152,7 +152,7 @@ import {
   MailNotFoundError,
   MailRejectedError,
 } from '../../src/mail/mailbox.js'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
 
 const routerClient = testClient(mailRoutes)
 const mountedClient = testClient(app)

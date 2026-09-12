@@ -1,16 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { createFeatureExecutionMock } from '../support/mock-feature-execution.js'
 
-const mocks = vi.hoisted(() => {
-  class EsiQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('ESI quota is temporarily exhausted')
-    }
-  }
-  return { EsiQuotaError, executeRepresentation: vi.fn() }
-})
+const mocks = vi.hoisted(() => ({ executeRepresentation: vi.fn() }))
 
-vi.mock('../../src/esi-gateway/failures.js', () => ({ EsiQuotaError: mocks.EsiQuotaError }))
 vi.mock('../../src/esi-gateway/feature-execution.js', () =>
   createFeatureExecutionMock(mocks.executeRepresentation),
 )
@@ -119,14 +112,12 @@ describe('character market service', () => {
     })
   })
 
-  test('maps callable quota failures', async () => {
-    mocks.executeRepresentation.mockRejectedValueOnce(new mocks.EsiQuotaError(45))
-    const { getCharacterMarketOrders, MarketQuotaError } =
-      await import('../../src/characters/market.js')
+  test('propagates callable quota identity', async () => {
+    const quotaError = new EsiQuotaError(45)
+    mocks.executeRepresentation.mockRejectedValueOnce(quotaError)
+    const { getCharacterMarketOrders } = await import('../../src/characters/market.js')
 
-    await expect(getCharacterMarketOrders(characterId, subjectLifecycleId)).rejects.toEqual(
-      new MarketQuotaError(45),
-    )
+    await expect(getCharacterMarketOrders(characterId, subjectLifecycleId)).rejects.toBe(quotaError)
   })
 
   test('rejects invalid history pages before invoking the callable', async () => {

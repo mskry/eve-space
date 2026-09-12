@@ -51,7 +51,6 @@ describe('queue module boundaries', () => {
   it.each([
     'node:crypto',
     'zod',
-    '../characters/affiliation-contract.js',
     '../env.js',
     '../platform/collection-state.js',
     '../platform/resource-batch-contract.js',

@@ -7,7 +7,7 @@ import { EsiQuotaError } from '../esi-gateway/failures.js'
 import { loadSession } from '../middleware/auth-session.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
 import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-character.js'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/token-errors.js'
 import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import {

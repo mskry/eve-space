@@ -10,6 +10,7 @@ export default defineConfig({
       'tests/**/*.e2e.test.ts',
       'tests/**/*.nuxt.test.ts',
       'tests/platform/auth-boundaries.test.ts',
+      'tests/platform/character-boundaries.test.ts',
       'tests/platform/esi-gateway-boundaries.test.ts',
       'tests/platform/module-composition-side-effects.test.ts',
       'tests/platform/module-package-boundaries.test.ts',

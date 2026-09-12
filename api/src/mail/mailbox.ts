@@ -15,7 +15,7 @@ import {
   createCharacterEsiRead,
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/token-errors.js'
 import { resolveUniverseIds, resolveUniverseNames, type UniverseName } from '../universe/names.js'
 
 type MailRecipientType = 'alliance' | 'character' | 'corporation' | 'mailing_list'

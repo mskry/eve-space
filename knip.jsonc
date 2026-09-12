@@ -31,8 +31,6 @@
         "@nuxt/schema",
         "zod",
       ],
-      // Generated transiently by test:module-conformance and removed after verification.
-      "ignoreUnresolved": ["./generated/platform/installed-nuxt-contributions.js"],
     },
     "api": {
       // Process roots. `AppType` in src/index.ts is consumed by the Nuxt workspace rather than by

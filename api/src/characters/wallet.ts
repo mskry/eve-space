@@ -1,6 +1,5 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdWalletJournalResponse } from '@evespace/esi-client/types'
-import { EsiQuotaError } from '../esi-gateway/failures.js'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
@@ -8,6 +7,7 @@ import {
 } from '../esi-gateway/feature-execution.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
 import { financeLocationName, loadFinanceLocationNames } from './finance-location-names.js'
+import { assertFinancePositiveSafeInteger, resolveFinanceTotalPages } from './finance-pagination.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 
 interface WalletBalanceRepresentationInput {
@@ -31,7 +31,7 @@ interface WalletBalanceData {
   balance: number
 }
 
-export type WalletBalanceResult = WalletBalanceData & EsiReadResultMetadata
+type WalletBalanceResult = WalletBalanceData & EsiReadResultMetadata
 
 interface WalletJournalRepresentationInput {
   characterId: number
@@ -71,7 +71,7 @@ interface WalletJournalData {
   totalPages: number
 }
 
-export type WalletJournalResult = WalletJournalData & EsiReadResultMetadata
+type WalletJournalResult = WalletJournalData & EsiReadResultMetadata
 
 const walletJournalRead = createCharacterEsiRead({
   operation: 'wallet-journal',
@@ -94,7 +94,7 @@ const walletJournalRead = createCharacterEsiRead({
       context: walletJournalContext(entry),
     })),
     page: input.page,
-    totalPages: paginationPages(response.meta.pagination?.pages, input.page),
+    totalPages: resolveFinanceTotalPages(response.meta.pagination?.pages, input.page),
   }),
 })
 
@@ -122,7 +122,7 @@ interface WalletTransactionsData {
   nextFromId: number | null
 }
 
-export type WalletTransactionsResult = WalletTransactionsData & EsiReadResultMetadata
+type WalletTransactionsResult = WalletTransactionsData & EsiReadResultMetadata
 
 const walletTransactionPageSize = 2_500
 
@@ -170,22 +170,12 @@ const walletTransactionsRead = createCharacterEsiRead({
   },
 })
 
-export class WalletQuotaError extends Error {
-  constructor(readonly retryAfterSeconds: number) {
-    super('ESI wallet quota is temporarily exhausted')
-  }
-}
-
 export async function getWalletBalance(
   characterId: number,
   subjectLifecycleId: string,
 ): Promise<WalletBalanceResult> {
-  try {
-    const result = await walletBalanceRead.execute({ characterId, subjectLifecycleId })
-    return { balance: result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwWalletError(error)
-  }
+  const result = await walletBalanceRead.execute({ characterId, subjectLifecycleId })
+  return { balance: result.data, ...toEsiReadResultMetadata(result) }
 }
 
 export async function getWalletJournal(
@@ -193,13 +183,9 @@ export async function getWalletJournal(
   page: number,
   subjectLifecycleId: string,
 ): Promise<WalletJournalResult> {
-  assertPositiveSafeInteger(page, 'Wallet journal page')
-  try {
-    const result = await walletJournalRead.execute({ characterId, page, subjectLifecycleId })
-    return { ...result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwWalletError(error)
-  }
+  assertFinancePositiveSafeInteger(page, 'Wallet journal page')
+  const result = await walletJournalRead.execute({ characterId, page, subjectLifecycleId })
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 export async function getWalletTransactions(
@@ -207,13 +193,9 @@ export async function getWalletTransactions(
   fromId: number | null = null,
   subjectLifecycleId: string,
 ): Promise<WalletTransactionsResult> {
-  if (fromId !== null) assertPositiveSafeInteger(fromId, 'Wallet transaction continuation')
-  try {
-    const result = await walletTransactionsRead.execute({ characterId, fromId, subjectLifecycleId })
-    return { ...result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwWalletError(error)
-  }
+  if (fromId !== null) assertFinancePositiveSafeInteger(fromId, 'Wallet transaction continuation')
+  const result = await walletTransactionsRead.execute({ characterId, fromId, subjectLifecycleId })
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 function walletJournalContext(entry: EsiWalletJournalEntry) {
@@ -229,19 +211,4 @@ function walletJournalContext(entry: EsiWalletJournalEntry) {
 
 function isSafeJournalContextType(value: string): value is WalletJournalContextType {
   return safeJournalContextTypeSet.has(value)
-}
-
-function paginationPages(value: number | undefined, page: number) {
-  if (value === undefined || value === 0) return page
-  assertPositiveSafeInteger(value, 'ESI pagination total')
-  return value
-}
-
-function assertPositiveSafeInteger(value: unknown, name: string): asserts value is number {
-  if (!isPositiveSafeInteger(value)) throw new Error(`${name} must be a positive safe integer`)
-}
-
-function throwWalletError(error: unknown): never {
-  if (error instanceof EsiQuotaError) throw new WalletQuotaError(error.retryAfterSeconds)
-  throw error
 }

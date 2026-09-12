@@ -1,75 +1,74 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import {
-  affiliationBatchLimit,
-  affiliationJobPayload,
-  affiliationOperationIdentity,
-  AffiliationCooldownError,
-  partitionAffiliationCharacterIds,
-  processAffiliationBatch,
-} from '../../src/characters/affiliation-sync.js'
+import { processAffiliationBatch } from '../../src/characters/affiliation-sync.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { runAffiliationPlanner } from '../../src/queue/affiliation-planner.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
 
 const plannerMocks = vi.hoisted(() => ({
   cooldownActive: vi.fn(),
+  executeRepresentation: vi.fn(),
   selectDue: vi.fn(),
 }))
 
+vi.mock('../../src/esi-gateway/feature-execution.js', async () => {
+  const { createFeatureExecutionMock } = await import('../support/mock-feature-execution.js')
+  return createFeatureExecutionMock(plannerMocks.executeRepresentation)
+})
 vi.mock('../../src/characters/affiliation-planning.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/characters/affiliation-planning.js')>()),
   affiliationCooldownActive: plannerMocks.cooldownActive,
 }))
 vi.mock('../../src/characters/affiliation-sync.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/characters/affiliation-sync.js')>()),
-  selectDueAffiliationCharacterIds: plannerMocks.selectDue,
+  selectDueAffiliationBatches: plannerMocks.selectDue,
 }))
 
 beforeEach(() => {
   plannerMocks.cooldownActive.mockReset().mockResolvedValue(false)
+  plannerMocks.executeRepresentation.mockReset().mockResolvedValue({
+    data: [],
+    cachedUntil: '2026-09-12T13:00:00.000Z',
+    validatedAt: '2026-09-12T12:00:00.000Z',
+    source: 'esi',
+    stale: false,
+    quota: {},
+  })
   plannerMocks.selectDue.mockReset().mockResolvedValue([])
 })
 
 describe('character affiliation synchronization', () => {
-  test('partitions deterministic batches at the SDK operation limit', () => {
-    const ids = Array.from({ length: affiliationBatchLimit + 1 }, (_, index) => index + 1)
-
-    expect(partitionAffiliationCharacterIds(ids)).toEqual([
-      ids.slice(0, affiliationBatchLimit),
-      [affiliationBatchLimit + 1],
-    ])
-    expect(affiliationOperationIdentity([3, 1, 2])).toBe('affiliation-1-2-3')
+  test('validates one operation-bounded batch before registered ESI execution', async () => {
+    await expect(processAffiliationBatch([])).rejects.toThrow('Invalid affiliation batch')
+    await expect(
+      processAffiliationBatch(Array.from({ length: 1_001 }, (_, index) => index + 1)),
+    ).rejects.toThrow('Invalid affiliation batch')
+    await expect(processAffiliationBatch([0])).rejects.toThrow('Invalid affiliation batch')
+    expect(plannerMocks.executeRepresentation).not.toHaveBeenCalled()
   })
 
-  test('rejects oversized and credential-bearing job payloads', () => {
-    expect(() =>
-      affiliationJobPayload.parse({
-        operationId: 'affiliation-1',
-        characterIds: Array.from({ length: affiliationBatchLimit + 1 }, (_, index) => index + 1),
-      }),
-    ).toThrow('Too big')
-    expect(() =>
-      affiliationJobPayload.parse({
-        operationId: 'affiliation-1',
-        characterIds: [1],
-        accessToken: 'not-allowed',
-      }),
-    ).toThrow('Unrecognized key')
+  test('propagates shared ESI cooldowns unchanged before persistence', async () => {
+    const cooldown = new EsiQuotaError(45)
+    plannerMocks.executeRepresentation.mockRejectedValue(cooldown)
+
+    await expect(processAffiliationBatch([1])).rejects.toBe(cooldown)
   })
 
-  test('converts shared ESI cooldowns into worker deferrals before persistence', async () => {
-    const lookup = vi.fn().mockRejectedValue(new EsiQuotaError(45))
-
-    const error = await processAffiliationBatch([1], { lookup }).catch(
-      (caughtError: unknown) => caughtError,
-    )
-
-    expect(error).toBeInstanceOf(AffiliationCooldownError)
-    expect(error).toMatchObject({
-      message: 'Character affiliation refresh is deferred by ESI cooldown',
-      retryAfterSeconds: 45,
-      retryAt: expect.any(Date),
+  test('honors cancellation after bulk observation and before persistence', async () => {
+    const controller = new AbortController()
+    const cancellation = new Error('shutdown')
+    plannerMocks.executeRepresentation.mockImplementationOnce(async () => {
+      controller.abort(cancellation)
+      return {
+        data: [{ characterId: 1, corporationId: 101, allianceId: null }],
+        cachedUntil: '2026-09-12T13:00:00.000Z',
+        validatedAt: '2026-09-12T12:00:00.000Z',
+        source: 'esi',
+        stale: false,
+        quota: {},
+      }
     })
+
+    await expect(processAffiliationBatch([1], controller.signal)).rejects.toBe(cancellation)
   })
 
   test('pauses planner admission during cooldown and reconstructs deterministic batches after it', async () => {
@@ -86,11 +85,7 @@ describe('character affiliation synchronization', () => {
       expect.objectContaining({ outcome: 'cooldown' }),
     )
 
-    plannerMocks.selectDue.mockResolvedValueOnce([
-      { characterId: 3 },
-      { characterId: 1 },
-      { characterId: 2 },
-    ])
+    plannerMocks.selectDue.mockResolvedValueOnce([[1, 2, 3]])
     await expect(runAffiliationPlanner({ producer, outcomes })).resolves.toEqual({
       planned: 1,
       reason: 'scheduled',
@@ -110,7 +105,7 @@ describe('character affiliation synchronization', () => {
   test('gives recurring batches distinct job identities', async () => {
     const producer = createInMemoryQueueProducer()
     const outcomes = outcomeRecorder()
-    plannerMocks.selectDue.mockResolvedValue([{ characterId: 1 }])
+    plannerMocks.selectDue.mockResolvedValue([[1]])
 
     await runAffiliationPlanner({ producer, outcomes })
     await runAffiliationPlanner({ producer, outcomes })
@@ -122,6 +117,21 @@ describe('character affiliation synchronization', () => {
     const first = firstCommand.payload.operationId
     const second = secondCommand.payload.operationId
     expect(first).not.toBe(second)
+  })
+
+  test('leaves planner capacity admission and paused outcomes under producer ownership', async () => {
+    const producer = createInMemoryQueueProducer({ highWaterMark: 0 })
+    const outcomes = outcomeRecorder()
+    plannerMocks.selectDue.mockResolvedValue([[1]])
+
+    await expect(runAffiliationPlanner({ producer, outcomes })).resolves.toEqual({
+      planned: 0,
+      reason: 'planner-paused',
+    })
+    expect(producer.commands).toEqual([])
+    expect(outcomes.recordAffiliation).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'paused', planned: 0 }),
+    )
   })
 
   test('keeps planning outcomes authoritative when observability recording fails', async () => {

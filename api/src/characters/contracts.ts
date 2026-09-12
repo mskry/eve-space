@@ -1,12 +1,11 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdContractsResponse } from '@evespace/esi-client/types'
-import { EsiQuotaError } from '../esi-gateway/failures.js'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
-import { isPositiveSafeInteger } from '../type-guards.js'
+import { assertFinancePositiveSafeInteger, resolveFinanceTotalPages } from './finance-pagination.js'
 import { financeTypeName, loadFinanceTypeNames } from './finance-type-names.js'
 
 type EsiCharacterContract = GetCharactersCharacterIdContractsResponse[number]
@@ -44,7 +43,7 @@ interface CharacterContractsData {
   totalPages: number
 }
 
-export type CharacterContractsResult = CharacterContractsData & EsiReadResultMetadata
+type CharacterContractsResult = CharacterContractsData & EsiReadResultMetadata
 
 const characterContractsRead = createCharacterEsiRead({
   operation: 'character-contracts',
@@ -82,7 +81,7 @@ const characterContractsRead = createCharacterEsiRead({
         volume: contract.volume ?? null,
       })),
     page: input.page,
-    totalPages: paginationPages(response.meta.pagination?.pages, input.page),
+    totalPages: resolveFinanceTotalPages(response.meta.pagination?.pages, input.page),
   }),
 })
 
@@ -106,7 +105,7 @@ interface CharacterContractItemsData {
   }>
 }
 
-export type CharacterContractItemsResult = CharacterContractItemsData & EsiReadResultMetadata
+type CharacterContractItemsResult = CharacterContractItemsData & EsiReadResultMetadata
 
 const characterContractItemsRead = createCharacterEsiRead({
   operation: 'character-contract-items',
@@ -145,7 +144,7 @@ interface CharacterContractBidsData {
   }>
 }
 
-export type CharacterContractBidsResult = CharacterContractBidsData & EsiReadResultMetadata
+type CharacterContractBidsResult = CharacterContractBidsData & EsiReadResultMetadata
 
 const characterContractBidsRead = createCharacterEsiRead({
   operation: 'character-contract-bids',
@@ -169,24 +168,14 @@ export class ContractNotFoundError extends Error {
   }
 }
 
-export class ContractQuotaError extends Error {
-  constructor(readonly retryAfterSeconds: number) {
-    super('ESI contract quota is temporarily exhausted')
-  }
-}
-
 export async function getCharacterContracts(
   characterId: number,
   page: number,
   subjectLifecycleId: string,
 ): Promise<CharacterContractsResult> {
-  assertPositiveSafeInteger(page, 'Character contract page')
-  try {
-    const result = await loadCharacterContracts(characterId, subjectLifecycleId, page)
-    return { ...result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwContractError(error)
-  }
+  assertFinancePositiveSafeInteger(page, 'Character contract page')
+  const result = await loadCharacterContracts(characterId, subjectLifecycleId, page)
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 export async function getCharacterContractItems(
@@ -196,17 +185,13 @@ export async function getCharacterContractItems(
   subjectLifecycleId: string,
 ): Promise<CharacterContractItemsResult> {
   assertContractDetailInputs(contractId, contractPage)
-  try {
-    await requirePersonalContract(characterId, subjectLifecycleId, contractId, contractPage)
-    const result = await characterContractItemsRead.execute({
-      characterId,
-      contractId,
-      subjectLifecycleId,
-    })
-    return { ...result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwContractError(error)
-  }
+  await requirePersonalContract(characterId, subjectLifecycleId, contractId, contractPage)
+  const result = await characterContractItemsRead.execute({
+    characterId,
+    contractId,
+    subjectLifecycleId,
+  })
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 export async function getCharacterContractBids(
@@ -216,17 +201,13 @@ export async function getCharacterContractBids(
   subjectLifecycleId: string,
 ): Promise<CharacterContractBidsResult> {
   assertContractDetailInputs(contractId, contractPage)
-  try {
-    await requirePersonalContract(characterId, subjectLifecycleId, contractId, contractPage)
-    const result = await characterContractBidsRead.execute({
-      characterId,
-      contractId,
-      subjectLifecycleId,
-    })
-    return { ...result.data, ...toEsiReadResultMetadata(result) }
-  } catch (error) {
-    throwContractError(error)
-  }
+  await requirePersonalContract(characterId, subjectLifecycleId, contractId, contractPage)
+  const result = await characterContractBidsRead.execute({
+    characterId,
+    contractId,
+    subjectLifecycleId,
+  })
+  return { ...result.data, ...toEsiReadResultMetadata(result) }
 }
 
 function loadCharacterContracts(characterId: number, subjectLifecycleId: string, page: number) {
@@ -245,28 +226,12 @@ async function requirePersonalContract(
 }
 
 function assertContractDetailInputs(contractId: number, contractPage: number) {
-  assertPositiveSafeInteger(contractId, 'Character contract ID')
-  assertPositiveSafeInteger(contractPage, 'Character contract page')
+  assertFinancePositiveSafeInteger(contractId, 'Character contract ID')
+  assertFinancePositiveSafeInteger(contractPage, 'Character contract page')
 }
 
 function contractItemBlueprint(rawQuantity: number | undefined): 'original' | 'copy' | null {
   if (rawQuantity === -1) return 'original'
   if (rawQuantity === -2) return 'copy'
   return null
-}
-
-function paginationPages(value: number | undefined, page: number) {
-  if (value === undefined || value === 0) return page
-  assertPositiveSafeInteger(value, 'ESI pagination total')
-  return value
-}
-
-function assertPositiveSafeInteger(value: unknown, name: string): asserts value is number {
-  if (!isPositiveSafeInteger(value)) throw new Error(`${name} must be a positive safe integer`)
-}
-
-function throwContractError(error: unknown): never {
-  if (error instanceof ContractNotFoundError) throw error
-  if (error instanceof EsiQuotaError) throw new ContractQuotaError(error.retryAfterSeconds)
-  throw error
 }

@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { z } from 'zod'
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../auth/tokens.js'
 import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
 import { loadSession } from '../middleware/auth-session.js'
@@ -10,7 +9,6 @@ import { characterIdParams, loadOwnedCharacter } from '../middleware/owned-chara
 import {
   characterContractsScope,
   ContractNotFoundError,
-  ContractQuotaError,
   getCharacterContractBids,
   getCharacterContractItems,
   getCharacterContracts,
@@ -18,22 +16,11 @@ import {
 import {
   getCharacterMarketOrderHistory,
   getCharacterMarketOrders,
-  MarketQuotaError,
   marketOrdersScope,
 } from './market.js'
-import {
-  characterReauthorizationUrl,
-  errorStatus,
-  tokenRefreshUnavailable,
-  toCharacterEsiResponse,
-} from './route-responses.js'
-import {
-  getWalletBalance,
-  getWalletJournal,
-  getWalletTransactions,
-  walletScope,
-  WalletQuotaError,
-} from './wallet.js'
+import { classifyCharacterResourceFailure } from './resource-failure.js'
+import { ownedCharacterResourceError, toCharacterEsiResponse } from './route-responses.js'
+import { getWalletBalance, getWalletJournal, getWalletTransactions, walletScope } from './wallet.js'
 
 const positiveIntegerString = (name: string) =>
   z
@@ -341,53 +328,18 @@ function financeError(
       404,
     )
   }
-  if (error instanceof TokenRefreshUnavailableError) return tokenRefreshUnavailable(context)
-  if (error instanceof ScopeRequiredError) {
-    return context.json(
-      {
-        code: 'EVE_SCOPE_REQUIRED',
-        message: options.scopeMessage,
-        requiredScope: options.requiredScope,
-        authorizeUrl: financeReauthorizationUrl(characterId),
-      },
-      403,
-    )
-  }
-
-  const quotaError =
-    (options.requiredScope === walletScope && error instanceof WalletQuotaError) ||
-    (options.requiredScope === marketOrdersScope && error instanceof MarketQuotaError) ||
-    (options.requiredScope === characterContractsScope && error instanceof ContractQuotaError)
-      ? error
-      : undefined
-  if (quotaError) {
-    context.header('Retry-After', String(quotaError.retryAfterSeconds))
-    return context.json(
-      {
-        code: 'ESI_QUOTA_EXHAUSTED',
-        message: options.quotaMessage,
-        retryAfterSeconds: quotaError.retryAfterSeconds,
-      },
-      429,
-    )
-  }
-
-  const status = errorStatus(error)
-  if (status === 401 || status === 403) {
-    return context.json(
-      {
-        code: 'EVE_REAUTH_REQUIRED',
-        message: 'EVE authorization is no longer valid.',
-        requiredScope: options.requiredScope,
-        authorizeUrl: financeReauthorizationUrl(characterId),
-      },
-      403,
-    )
-  }
-
-  return context.json({ code: 'ESI_UNAVAILABLE', message: options.unavailableMessage }, 502)
-}
-
-function financeReauthorizationUrl(characterId: number) {
-  return characterReauthorizationUrl(characterId, `/characters/${characterId}/finance`)
+  return ownedCharacterResourceError(
+    context,
+    classifyCharacterResourceFailure(error, {
+      configuredScope: options.requiredScope,
+      preferConfiguredScope: true,
+    }),
+    characterId,
+    {
+      scopeMessage: options.scopeMessage,
+      unavailableMessage: options.unavailableMessage,
+      cooldownMessage: options.quotaMessage,
+      returnTo: `/characters/${characterId}/finance`,
+    },
+  )
 }

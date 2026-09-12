@@ -2,35 +2,17 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => {
   class ContractNotFoundError extends Error {}
-  class ContractQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('Contract quota exhausted')
-    }
-  }
-  class MarketQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('Market quota exhausted')
-    }
-  }
   class ScopeRequiredError extends Error {
     constructor(readonly scope: string) {
       super(`Missing ${scope}`)
     }
   }
   class TokenRefreshUnavailableError extends Error {}
-  class WalletQuotaError extends Error {
-    constructor(readonly retryAfterSeconds: number) {
-      super('Wallet quota exhausted')
-    }
-  }
 
   return {
     ContractNotFoundError,
-    ContractQuotaError,
-    MarketQuotaError,
     ScopeRequiredError,
     TokenRefreshUnavailableError,
-    WalletQuotaError,
     deleteCharacter: vi.fn(),
     findOwnedCharacter: vi.fn(),
     findSession: vi.fn(),
@@ -69,7 +51,7 @@ vi.mock('../../src/env.js', () => ({
   },
 }))
 
-vi.mock('../../src/auth/tokens.js', () => ({
+vi.mock('../../src/auth/token-errors.js', () => ({
   ScopeRequiredError: mocks.ScopeRequiredError,
   TokenRefreshUnavailableError: mocks.TokenRefreshUnavailableError,
 }))
@@ -82,7 +64,6 @@ vi.mock('../../src/characters/attributes.js', () => ({
 vi.mock('../../src/characters/contracts.js', () => ({
   characterContractsScope: 'esi-contracts.read_character_contracts.v1',
   ContractNotFoundError: mocks.ContractNotFoundError,
-  ContractQuotaError: mocks.ContractQuotaError,
   getCharacterContractBids: mocks.getCharacterContractBids,
   getCharacterContractItems: mocks.getCharacterContractItems,
   getCharacterContracts: mocks.getCharacterContracts,
@@ -95,17 +76,14 @@ vi.mock('../../src/characters/history.js', () => ({
 vi.mock('../../src/characters/market.js', () => ({
   getCharacterMarketOrderHistory: mocks.getCharacterMarketOrderHistory,
   getCharacterMarketOrders: mocks.getCharacterMarketOrders,
-  MarketQuotaError: mocks.MarketQuotaError,
   marketOrdersScope: 'esi-markets.read_character_orders.v1',
 }))
 
 vi.mock('../../src/characters/overview.js', () => ({
   getCharacterLocation: mocks.getCharacterLocation,
   getCharacterShip: mocks.getCharacterShip,
-  getCharacterSkillsSummary: mocks.getCharacterSkillsSummary,
   locationScope: 'esi-location.read_location.v1',
   shipScope: 'esi-location.read_ship_type.v1',
-  skillsScope: 'esi-skills.read_skills.v1',
 }))
 
 vi.mock('../../src/characters/profile.js', () => ({
@@ -120,6 +98,7 @@ vi.mock('../../src/characters/skill-queue.js', () => ({
 vi.mock('../../src/characters/skills.js', () => ({
   characterSkillsScope: 'esi-skills.read_skills.v1',
   getCharacterSkills: mocks.getCharacterSkills,
+  getCharacterSkillsSummary: mocks.getCharacterSkillsSummary,
 }))
 
 vi.mock('../../src/characters/wallet.js', () => ({
@@ -127,14 +106,12 @@ vi.mock('../../src/characters/wallet.js', () => ({
   getWalletJournal: mocks.getWalletJournal,
   getWalletTransactions: mocks.getWalletTransactions,
   walletScope: 'esi-wallet.read_character_wallet.v1',
-  WalletQuotaError: mocks.WalletQuotaError,
 }))
 
-import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/tokens.js'
-import { ContractNotFoundError, ContractQuotaError } from '../../src/characters/contracts.js'
-import { MarketQuotaError } from '../../src/characters/market.js'
+import { ScopeRequiredError, TokenRefreshUnavailableError } from '../../src/auth/token-errors.js'
+import { ContractNotFoundError } from '../../src/characters/contracts.js'
 import { characterRoutes } from '../../src/characters/routes.js'
-import { WalletQuotaError } from '../../src/characters/wallet.js'
+import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { app } from '../../src/index.js'
 
 const characterId = 90_000_001
@@ -456,21 +433,21 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
       name: 'wallet journal',
       service: mocks.getWalletJournal,
       path: `/${characterId}/wallet/journal?page=2`,
-      error: new WalletQuotaError(11),
+      error: new EsiQuotaError(11),
       message: 'ESI wallet quota is temporarily exhausted.',
     },
     {
       name: 'market orders',
       service: mocks.getCharacterMarketOrders,
       path: `/${characterId}/market/orders`,
-      error: new MarketQuotaError(12),
+      error: new EsiQuotaError(12),
       message: 'ESI market quota is temporarily exhausted.',
     },
     {
       name: 'contract items',
       service: mocks.getCharacterContractItems,
       path: `/${characterId}/contracts/${contractId}/items?contractPage=4`,
-      error: new ContractQuotaError(13),
+      error: new EsiQuotaError(13),
       message: 'ESI contract quota is temporarily exhausted.',
     },
   ])('$name exposes bounded retry timing', async (subject) => {
@@ -487,28 +464,6 @@ describe('Finance quota, not-found, and unavailable outcomes', () => {
     })
     expectPrivateNoStore(response)
   })
-
-  test.each([
-    [mocks.getWalletJournal, `/${characterId}/wallet/journal?page=2`, new MarketQuotaError(11)],
-    [mocks.getCharacterMarketOrders, `/${characterId}/market/orders`, new ContractQuotaError(12)],
-    [
-      mocks.getCharacterContractItems,
-      `/${characterId}/contracts/${contractId}/items?contractPage=4`,
-      new WalletQuotaError(13),
-    ],
-  ])(
-    'sanitizes a quota error from another Finance resource family',
-    async (service, path, error) => {
-      service.mockRejectedValueOnce(error)
-
-      const response = await authorizedRequest(path)
-
-      expect(response.status).toBe(502)
-      expect(response.headers.get('retry-after')).toBeNull()
-      await expect(response.json()).resolves.toMatchObject({ code: 'ESI_UNAVAILABLE' })
-      expectPrivateNoStore(response)
-    },
-  )
 
   test.each([
     [

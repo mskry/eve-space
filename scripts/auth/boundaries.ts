@@ -3,7 +3,7 @@ import { findDependencyCycles } from '../dependency-cycles.js'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
 
 const modulesByTier = {
-  policy: ['sso-errors'],
+  policy: ['sso-errors', 'token-errors'],
   primitive: ['security'],
   persistence: [
     'character-lock',

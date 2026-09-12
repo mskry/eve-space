@@ -11,7 +11,6 @@ import {
   type EsiReadResultMetadata,
 } from '../esi-gateway/feature-execution.js'
 import { getUniverseSolarSystem, getUniverseStation } from '../universe/locations.js'
-import { getCharacterSkillsData } from './skills.js'
 
 interface CharacterLocationSnapshot {
   solarSystemId: number
@@ -54,7 +53,6 @@ const universeTypeRead = createPublicEsiRead({
 
 export const locationScope = characterLocationRead.requiredScope
 export const shipScope = characterShipRead.requiredScope
-export { characterSkillsScope as skillsScope } from './skills.js'
 
 export interface CharacterLocation extends EsiReadResultMetadata {
   solarSystemId: number
@@ -69,13 +67,6 @@ export interface CharacterShip extends EsiReadResultMetadata {
   typeName: string
   name: string
 }
-
-interface CharacterSkillsSummaryData {
-  totalSp: number
-  unallocatedSp: number
-}
-
-export type CharacterSkillsSummary = CharacterSkillsSummaryData & EsiReadResultMetadata
 
 export async function getCharacterLocation(
   characterId: number,
@@ -120,18 +111,6 @@ export async function getCharacterShip(
       toEsiReadResultMetadata(shipResult),
       toEsiReadResultMetadata(typeResult),
     ]),
-  }
-}
-
-export async function getCharacterSkillsSummary(
-  characterId: number,
-  subjectLifecycleId: string,
-): Promise<CharacterSkillsSummary> {
-  const skills = await getCharacterSkillsData(characterId, subjectLifecycleId)
-  return {
-    totalSp: skills.data.totalSp,
-    unallocatedSp: skills.data.unallocatedSp,
-    ...toEsiReadResultMetadata(skills),
   }
 }
 

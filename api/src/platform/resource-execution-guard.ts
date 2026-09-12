@@ -3,10 +3,10 @@ import type {
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract'
 import { CharacterTokenNotFoundError } from '../auth/character-token-store.js'
+import { ScopeRequiredError } from '../auth/token-errors.js'
 import {
   getCharacterAuthorizationForLifecycle,
   getCharacterCacheAuthorizationForLifecycle,
-  ScopeRequiredError,
 } from '../auth/tokens.js'
 import {
   getEsiOperationAuthorization,

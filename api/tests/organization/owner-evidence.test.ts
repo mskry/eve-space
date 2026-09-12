@@ -2,7 +2,7 @@ import { EsiHttpError } from '@evespace/esi-client'
 import { describe, expect, test } from 'vitest'
 import { CharacterTokenNotFoundError } from '../../src/auth/character-token-store.js'
 import { EveSsoTokenRefreshError } from '../../src/auth/sso.js'
-import { ScopeRequiredError } from '../../src/auth/tokens.js'
+import { ScopeRequiredError } from '../../src/auth/token-errors.js'
 import { OrganizationAuthorityError } from '../../src/organization/authority-policy.js'
 import { classifyOrganizationAuthorityFailure } from '../../src/organization/owner-evidence.js'
 

@@ -12,7 +12,7 @@ import {
 import { consumeOAuthState, storeOAuthState, type OAuthStateContext } from './oauth-state-store.js'
 import { deleteSession, findSession } from './session-store.js'
 import { getCharacterAffiliation } from '../characters/profile.js'
-import { getCharacterAffiliationObservation } from '../characters/affiliation-sync.js'
+import { observeCharacterAffiliation } from '../characters/affiliation-sync.js'
 import { env, isSsoConfigured } from '../env.js'
 import { createAuthorizationUrl, exchangeAuthorizationCode, verifyAccessToken } from './sso.js'
 import type { OwnedCharacterEnv } from '../middleware/owned-character.js'
@@ -226,7 +226,7 @@ export const ssoRoutes = new Hono<OwnedCharacterEnv>()
       }
       const affiliation =
         stateContext.intent === 'claim-organization-owner'
-          ? await getCharacterAffiliationObservation(identity.characterId)
+          ? await observeCharacterAffiliation(identity.characterId)
           : await getCharacterAffiliation(identity.characterId)
       if (!affiliation) throw new OrganizationAuthorityError('stale-affiliation')
       if (stateContext.intent === 'claim-organization-owner' && affiliation.stale)

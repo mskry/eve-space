@@ -9,6 +9,7 @@ import {
   CharacterAssetsPaginationError,
   getCharacterAssets,
 } from './assets.js'
+import { classifyCharacterResourceFailure } from './resource-failure.js'
 import { ownedCharacterResourceError, toCharacterEsiResponse } from './route-responses.js'
 
 export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
@@ -33,13 +34,19 @@ export const characterAssetsRoutes = new Hono<OwnedCharacterEnv>().get(
           },
           502,
         )
-      return ownedCharacterResourceError(context, error, characterId, {
-        requiredScope: characterAssetsScope,
-        preferConfiguredScope: true,
-        scopeMessage: 'Authorize asset access for this character.',
-        unavailableMessage: 'Unable to retrieve the complete character asset collection.',
-        returnTo: `/characters/${characterId}/assets`,
-      })
+      return ownedCharacterResourceError(
+        context,
+        classifyCharacterResourceFailure(error, {
+          configuredScope: characterAssetsScope,
+          preferConfiguredScope: true,
+        }),
+        characterId,
+        {
+          scopeMessage: 'Authorize asset access for this character.',
+          unavailableMessage: 'Unable to retrieve the complete character asset collection.',
+          returnTo: `/characters/${characterId}/assets`,
+        },
+      )
     }
   },
 )

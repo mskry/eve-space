@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { affiliationCooldownActive } from '../characters/affiliation-planning.js'
-import {
-  affiliationOperationIdentity,
-  partitionAffiliationCharacterIds,
-  selectDueAffiliationCharacterIds,
-} from '../characters/affiliation-sync.js'
+import { selectDueAffiliationBatches } from '../characters/affiliation-sync.js'
+import { affiliationJobId } from './job-contracts.js'
 import type { AffiliationPlannerOutcome } from './outcomes.js'
 import type { QueuePlanningContext } from './planning-context.js'
 
@@ -22,16 +19,13 @@ export async function runAffiliationPlanner(context: QueuePlanningContext) {
       return { planned, reason: 'cooldown' as const }
     }
 
-    const due = await selectDueAffiliationCharacterIds()
+    const batches = await selectDueAffiliationBatches()
     signal?.throwIfAborted()
-    const characterIds = due
-      .map((character) => character.characterId)
-      .toSorted((left, right) => left - right)
     const refreshId = randomUUID()
-    for (const batch of partitionAffiliationCharacterIds(characterIds)) {
+    for (const batch of batches) {
       signal?.throwIfAborted()
       const payload = {
-        operationId: affiliationOperationIdentity(batch, refreshId),
+        operationId: affiliationJobId(batch, refreshId),
         characterIds: batch,
       }
       // oxlint-disable-next-line no-await-in-loop

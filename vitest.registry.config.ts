@@ -14,6 +14,7 @@ export default defineConfig({
     environment: 'node',
     include: [
       'tests/platform/auth-boundaries.test.ts',
+      'tests/platform/character-boundaries.test.ts',
       'tests/platform/esi-gateway-boundaries.test.ts',
       'tests/platform/organization-boundaries.test.ts',
       'tests/platform/platform-boundaries.test.ts',

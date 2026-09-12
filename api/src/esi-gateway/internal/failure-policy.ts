@@ -6,7 +6,7 @@ import {
   EsiResponseValidationError,
   EsiTransportError,
 } from '@evespace/esi-client'
-import { TokenRefreshUnavailableError } from '../../auth/tokens.js'
+import { TokenRefreshUnavailableError } from '../../auth/token-errors.js'
 import type { EsiOperationContract } from './contract-types.js'
 import { esiCooldownFallbackSeconds } from './policy.js'
 import { EsiQuotaError } from './quota-error.js'

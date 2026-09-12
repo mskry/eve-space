@@ -11,7 +11,7 @@ vi.mock('../../src/auth/tokens.js', async (importOriginal) => ({
 
 import { CharacterTokenNotFoundError } from '../../src/auth/character-token-store.js'
 import { guardInstalledResourceExecution } from '../../src/platform/resource-execution-guard.js'
-import { ScopeRequiredError } from '../../src/auth/tokens.js'
+import { ScopeRequiredError } from '../../src/auth/token-errors.js'
 import { coreResources } from '../../src/platform/core-resources.js'
 
 const identity = {
