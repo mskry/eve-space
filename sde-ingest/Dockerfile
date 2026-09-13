@@ -1,4 +1,4 @@
-FROM rust:1.89-bookworm AS build
+FROM rust:1.89.0-bookworm AS build
 
 WORKDIR /workspace
 COPY sde-ingest ./sde-ingest

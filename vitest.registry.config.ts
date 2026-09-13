@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
+import { coverageThresholdScopes } from './scripts/coverage-thresholds.js'
 
 export default defineConfig({
   resolve: {
@@ -29,6 +30,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage-registry',
+      thresholds: coverageThresholdScopes.registry.thresholds,
     },
   },
 })

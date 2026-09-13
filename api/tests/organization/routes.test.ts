@@ -626,6 +626,65 @@ describe('organization compliance management routes', () => {
     expect(stale.status).toBe(409)
     expect(await stale.json()).toMatchObject({ code: 'MANAGED_CORPORATION_EVIDENCE_STALE' })
   })
+
+  test.each([
+    ['HR authority', 'hr-authority-required', 403, 'ORGANIZATION_HR_REQUIRED'],
+    ['missing character', 'character-not-found', 404, 'CHARACTER_NOT_FOUND'],
+    [
+      'stale character affiliation',
+      'character-affiliation-stale',
+      409,
+      'CHARACTER_AFFILIATION_STALE',
+    ],
+    ['managed character', 'character-not-external', 409, 'CHARACTER_NOT_EXTERNAL'],
+    ['active exception', 'exception-already-active', 409, 'CHARACTER_EXCEPTION_EXISTS'],
+    ['invalid expiry', 'invalid-expiry', 400, 'INVALID_EXCEPTION_EXPIRY'],
+  ])('maps %s exception approval failures', async (_name, errorCode, status, responseCode) => {
+    mocks.approveOrganizationCharacterException.mockRejectedValueOnce(
+      new mocks.CharacterExceptionMutationError(errorCode),
+    )
+
+    const response = await request(`/members/${targetUserId}/characters/90000001/exception`, {
+      reason: 'Reviewed external character.',
+      expiresAt: null,
+    })
+
+    expect(response.status).toBe(status)
+    expect(await response.json()).toMatchObject({ code: responseCode })
+  })
+
+  test.each([
+    ['expire', mocks.expireOrganizationCharacterException, '/expire'],
+    ['revoke', mocks.revokeOrganizationCharacterException, '/revoke'],
+  ])('maps a missing exception during %s', async (_name, mock, suffix) => {
+    mock.mockRejectedValueOnce(new mocks.CharacterExceptionMutationError('exception-not-found'))
+
+    const response = await request(`/exceptions/22c7e94c-9cd3-4dc0-a3af-43117426ebec${suffix}`, {
+      reason: 'Reviewed exception.',
+    })
+
+    expect(response.status).toBe(404)
+    expect(await response.json()).toMatchObject({ code: 'CHARACTER_EXCEPTION_NOT_FOUND' })
+  })
+
+  test.each([
+    ['owner authority', 'owner-authority-required', 403, 'ORGANIZATION_OWNER_REQUIRED'],
+    ['invalid policy', 'invalid-policy', 400, 'INVALID_REGISTRATION_POLICY'],
+  ])('maps %s policy-store failures', async (_name, errorCode, status, responseCode) => {
+    mocks.updateOrganizationRegistrationPolicy.mockRejectedValueOnce(
+      new mocks.RegistrationPolicyMutationError(errorCode),
+    )
+
+    const response = await mutate('PUT', '/registration-policy', {
+      requiredScopes: [],
+      strictRemediationDurationSeconds: 0,
+      staleEvidenceGraceDurationSeconds: 3600,
+      reason: 'Reviewed policy update.',
+    })
+
+    expect(response.status).toBe(status)
+    expect(await response.json()).toMatchObject({ code: responseCode })
+  })
 })
 
 describe('organization role routes', () => {
@@ -736,6 +795,33 @@ describe('organization role routes', () => {
       code: 'ORGANIZATION_ROLE_EXISTS',
       message: 'This role is already active.',
     })
+  })
+
+  test.each([
+    ['owner authority', 'owner-authority-required', 403, 'ORGANIZATION_OWNER_REQUIRED'],
+    ['missing target', 'target-not-found', 404, 'USER_NOT_FOUND'],
+  ])('maps %s grant failures', async (_name, errorCode, status, responseCode) => {
+    mocks.grantOrganizationRole.mockRejectedValueOnce(new mocks.RoleMutationError(errorCode))
+
+    const response = await request('/roles', {
+      userId: targetUserId,
+      role: 'director',
+      reason: 'Leadership duty.',
+    })
+
+    expect(response.status).toBe(status)
+    expect(await response.json()).toMatchObject({ code: responseCode })
+  })
+
+  test('maps a missing role grant during revocation', async () => {
+    mocks.revokeOrganizationRole.mockRejectedValueOnce(
+      new mocks.RoleMutationError('grant-not-found'),
+    )
+
+    const response = await request(`/roles/${grantId}/revoke`, { reason: 'Duty ended.' })
+
+    expect(response.status).toBe(404)
+    expect(await response.json()).toMatchObject({ code: 'ROLE_GRANT_NOT_FOUND' })
   })
 })
 
@@ -864,6 +950,142 @@ describe('organization group routes', () => {
       expect(response.status).toBe(400)
     },
   )
+
+  test.each([
+    {
+      name: 'manager authority',
+      mock: mocks.assignOrganizationGroup,
+      errorCode: 'manager-authority-required',
+      path: `/groups/${groupId}/assignments`,
+      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
+      status: 403,
+      responseCode: 'ORGANIZATION_MANAGER_REQUIRED',
+    },
+    {
+      name: 'owner authority',
+      mock: mocks.createOrganizationPermissionBundle,
+      errorCode: 'owner-authority-required',
+      path: '/permission-bundles',
+      body: {
+        name: 'Operations',
+        permissions: [{ type: 'module', key: 'organization-activity.manage' }],
+      },
+      status: 403,
+      responseCode: 'ORGANIZATION_OWNER_REQUIRED',
+    },
+    {
+      name: 'bundle name conflict',
+      mock: mocks.createOrganizationPermissionBundle,
+      errorCode: 'bundle-name-conflict',
+      path: '/permission-bundles',
+      body: {
+        name: 'Operations',
+        permissions: [{ type: 'module', key: 'organization-activity.manage' }],
+      },
+      status: 409,
+      responseCode: 'PERMISSION_BUNDLE_EXISTS',
+    },
+    {
+      name: 'missing bundle',
+      mock: mocks.createOrganizationGroup,
+      errorCode: 'bundle-not-found',
+      path: '/groups',
+      body: {
+        name: 'Operations',
+        restricted: false,
+        managementMode: 'manual',
+        complianceSource: null,
+        bundleIds: [bundleId],
+      },
+      status: 404,
+      responseCode: 'PERMISSION_BUNDLE_NOT_FOUND',
+    },
+    {
+      name: 'group name conflict',
+      mock: mocks.createOrganizationGroup,
+      errorCode: 'group-name-conflict',
+      path: '/groups',
+      body: {
+        name: 'Operations',
+        restricted: false,
+        managementMode: 'manual',
+        complianceSource: null,
+        bundleIds: [bundleId],
+      },
+      status: 409,
+      responseCode: 'ORGANIZATION_GROUP_EXISTS',
+    },
+    {
+      name: 'missing group',
+      mock: mocks.assignOrganizationGroup,
+      errorCode: 'group-not-found',
+      path: `/groups/${groupId}/assignments`,
+      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
+      status: 404,
+      responseCode: 'ORGANIZATION_GROUP_NOT_FOUND',
+    },
+    {
+      name: 'missing target',
+      mock: mocks.assignOrganizationGroup,
+      errorCode: 'target-not-found',
+      path: `/groups/${groupId}/assignments`,
+      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
+      status: 404,
+      responseCode: 'USER_NOT_FOUND',
+    },
+    {
+      name: 'compliance source mismatch',
+      mock: mocks.createOrganizationGroup,
+      errorCode: 'compliance-source-mismatch',
+      path: '/groups',
+      body: {
+        name: 'Compliance',
+        restricted: false,
+        managementMode: 'compliance',
+        complianceSource: 'core.registration',
+        bundleIds: [bundleId],
+      },
+      status: 409,
+      responseCode: 'COMPLIANCE_SOURCE_MISMATCH',
+    },
+    {
+      name: 'active assignment',
+      mock: mocks.assignOrganizationGroup,
+      errorCode: 'assignment-already-active',
+      path: `/groups/${groupId}/assignments`,
+      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
+      status: 409,
+      responseCode: 'GROUP_ASSIGNMENT_EXISTS',
+    },
+    {
+      name: 'missing assignment',
+      mock: mocks.revokeOrganizationGroupAssignment,
+      errorCode: 'assignment-not-found',
+      path: `/groups/${groupId}/assignments/${assignmentId}/revoke`,
+      body: { reason: 'Duty ended.' },
+      status: 404,
+      responseCode: 'GROUP_ASSIGNMENT_NOT_FOUND',
+    },
+    {
+      name: 'invalid assignment expiry',
+      mock: mocks.assignOrganizationGroup,
+      errorCode: 'invalid-expiry',
+      path: `/groups/${groupId}/assignments`,
+      body: { userId: targetUserId, reason: 'Operations duty.', expiresAt: null },
+      status: 400,
+      responseCode: 'INVALID_GROUP_EXPIRY',
+    },
+  ])(
+    'maps $name group-store failures',
+    async ({ mock, errorCode, path, body, status, responseCode }) => {
+      mock.mockRejectedValueOnce(new mocks.GroupMutationError(errorCode))
+
+      const response = await request(path, body)
+
+      expect(response.status).toBe(status)
+      expect(await response.json()).toMatchObject({ code: responseCode })
+    },
+  )
 })
 
 describe('organization member block routes', () => {
@@ -942,6 +1164,20 @@ describe('organization member block routes', () => {
     expect(missing.status).toBe(404)
     expect(await missing.json()).toMatchObject({ code: 'MEMBER_BLOCK_NOT_FOUND' })
   })
+
+  test.each([
+    ['manager authority', 'manager-authority-required', 403, 'ORGANIZATION_MANAGER_REQUIRED'],
+    ['missing target', 'target-not-found', 404, 'USER_NOT_FOUND'],
+  ])('maps %s block-store failures', async (_name, errorCode, status, responseCode) => {
+    mocks.blockOrganizationMember.mockRejectedValueOnce(
+      new mocks.MemberBlockMutationError(errorCode),
+    )
+
+    const response = await request(`/members/${targetUserId}/block`, { reason: 'Reviewed.' })
+
+    expect(response.status).toBe(status)
+    expect(await response.json()).toMatchObject({ code: responseCode })
+  })
 })
 
 describe('organization corporation roster routes', () => {
@@ -994,6 +1230,23 @@ describe('organization corporation roster routes', () => {
     await expect(response.json()).resolves.toMatchObject({
       code: 'CORPORATION_SOURCE_AFFILIATION_STALE',
     })
+  })
+
+  test.each([
+    ['manager authority', 'manager-authority-required', 403, 'ORGANIZATION_MANAGER_REQUIRED'],
+    ['missing corporation', 'corporation-not-managed', 404, 'MANAGED_CORPORATION_NOT_FOUND'],
+    ['ineligible character', 'source-character-ineligible', 409, 'CORPORATION_SOURCE_INELIGIBLE'],
+  ])('maps %s corporation-source failures', async (_name, errorCode, status, responseCode) => {
+    mocks.registerOrganizationCorporationSource.mockRejectedValueOnce(
+      new mocks.CorporationSourceMutationError(errorCode),
+    )
+
+    const response = await mutate('PUT', '/corporations/98000001/source', {
+      characterId: 1_404_328_063,
+    })
+
+    expect(response.status).toBe(status)
+    expect(await response.json()).toMatchObject({ code: responseCode })
   })
 
   test('refuses roster reads before touching private coverage data without HR authority', async () => {

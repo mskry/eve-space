@@ -4,14 +4,25 @@ Run database migrations first, then run `pnpm sde:ingest` from the repository ro
 
 The command delegates the complete workflow to `SdeIngestor::run()`. A matching build and projection returns an unchanged outcome without acquiring the archive. A completed reload returns row counts and any optional raw datasets that were skipped. Required projections, raw-retention policy, table replacement, and the build marker are owned by one projection plan and publish in one PostgreSQL transaction.
 
-Projection version 3 adds `sde_solar_systems` (English system names and full-precision security status) and `sde_npc_stations` (NPC station IDs and their solar system IDs). It requires migration `041_sde_locations.sql`. A previously ingested SDE build is reloaded when its projection version differs, even if the upstream build has not changed.
+Projection version 4 retains version 3's `sde_solar_systems` and `sde_npc_stations` typed location projections. Version 3 requires migration `041_sde_locations.sql`. Version 4 requires the raw `mapSolarSystems.jsonl` and `mapStargates.jsonl` datasets in `sde_dataset_rows` for universe routing and requires no additional schema migration. A run is unchanged only when both the upstream build number and projection version match; changing either value reloads the complete projection, including a same-build projection upgrade.
 
-These projections are mandatory parts of the existing atomic reload: invalid or missing location data rolls back the transaction and preserves the previous build. The full raw `mapSolarSystems` and `npcStations` datasets remain in `sde_dataset_rows` as well.
+All typed projections and both routing datasets are required. Missing, empty, invalid, or unpersistable required data aborts the transaction and preserves the previous committed projection and `sde_builds` marker. Other raw JSONL members use independent savepoints and may be reported as skipped without aborting publication. Raw `npcStations.jsonl` is therefore attempted as optional generic retention, while `sde_npc_stations` remains mandatory.
+
+If a required import fails after acquiring the archive, fix the database, migration, or projection error and rerun the same command. The completed archive remains as `eve-sde-<build>.zip` in the operating system's temporary directory and is reused. Downloads first write a `.zip.part` sibling, so an interrupted download is never reused as a complete archive. If the retained ZIP itself is unreadable or corrupt, delete it before rerunning to force a fresh download. Successful publication performs best-effort cleanup of current and stale ZIP and partial files.
 
 Asset security enrichment reads the local station and system projections through the process-local snapshot. It does not issue individual ESI station or system requests. Missing static locations retain null security; player-owned structures are outside this static projection. Station names continue through the existing batched universe-name lookup because the official SDE generally stores the components of a station name rather than a ready-to-display name.
 
-The API lazily loads the complete public location projection into each process. Its revision is the full `(build_number, ingest_version, ingested_at)` tuple, including the database timestamp's full precision. Active processes check that committed marker on the first location request after each one-minute interval; unchanged revisions do not reload the projection, and idle processes do not poll.
+The API lazily loads the complete public location and universe-topology projections into each process. Their revision is the full `(build_number, ingest_version, ingested_at)` tuple, including the database timestamp's full precision. Active processes check the committed marker on the first applicable request after each one-minute interval; unchanged revisions do not reload a snapshot, and idle processes do not poll.
 
-Supported projection updates must replace the typed tables and update `sde_builds` in the same ingestion transaction. A changed revision is loaded from one read-only consistent database snapshot and atomically replaces the process-local cache. During a database or ingestion outage, a process retains its last valid public snapshot and retries no more than once per minute. A cold process leaves static enrichment unavailable until a complete projection can be loaded. Manual projection repairs require a corresponding committed marker update or an API process restart.
+Supported projection updates must replace their tables and update `sde_builds` in the same ingestion transaction. Static locations retain their last valid snapshot through revision-read and replacement failures. Routing retains a warm topology when its revision cannot be checked, but fails closed if a newer revision is known and its replacement cannot be loaded. Cold consumers remain unavailable until a complete projection can be loaded. Manual projection repairs require a corresponding committed marker update or an API process restart. The skill catalogue remains process-lifetime state, so restart all API processes after an ingest that changes published skills.
 
-Run `cargo test --manifest-path sde-ingest/Cargo.toml` for importer tests and `pnpm --filter @eve-space/api test:postgres` for the projection migration and database lookup tests.
+## Local verification
+
+Run from the repository root:
+
+```bash
+cargo fmt --manifest-path sde-ingest/Cargo.toml --all --check
+cargo clippy --manifest-path sde-ingest/Cargo.toml --all-targets --all-features --locked -- -D warnings
+cargo test --manifest-path sde-ingest/Cargo.toml --all-features --locked
+pnpm --filter @eve-space/api test:postgres
+```

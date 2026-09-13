@@ -9,8 +9,8 @@
   --ui-control: #080e12;
   --ui-text: #e8edf0;
   --ui-text-muted: #83919b;
-  --ui-text-subtle: #63717b;
-  --ui-text-faint: #4f5a62;
+  --ui-text-subtle: #83919b;
+  --ui-text-faint: #798690;
   --ui-border: rgba(170, 194, 206, 0.17);
   --ui-border-strong: rgba(170, 194, 206, 0.28);
   --ui-primary: #51e0c1;
@@ -71,11 +71,11 @@
   --ui-text-faint: #495e65;
   --ui-border: rgba(42, 64, 72, 0.28);
   --ui-border-strong: rgba(42, 64, 72, 0.48);
-  --ui-primary: #2c6882;
+  --ui-primary: #2b657e;
   --ui-primary-hover: #204e62;
   --ui-loader: #71898f;
   --ui-on-primary: #fff;
-  --ui-warning: #a76118;
+  --ui-warning: #8e4f0b;
   --ui-danger: #a53c42;
   --ui-system-security-10: #006f73;
   --ui-system-security-09: #007457;
@@ -104,8 +104,8 @@
   --ui-control: #1d180f;
   --ui-text: #f4eddf;
   --ui-text-muted: #b8aa92;
-  --ui-text-subtle: #958873;
-  --ui-text-faint: #756b5c;
+  --ui-text-subtle: #afa18b;
+  --ui-text-faint: #a49782;
   --ui-border: rgba(216, 184, 120, 0.2);
   --ui-border-strong: rgba(216, 184, 120, 0.34);
   --ui-primary: #d8b878;
@@ -113,7 +113,7 @@
   --ui-loader: #b89a61;
   --ui-on-primary: #20170b;
   --ui-warning: #e59a4f;
-  --ui-danger: #f06e65;
+  --ui-danger: #f27269;
   --ui-shadow: rgba(5, 3, 1, 0.56);
   --ui-image-text: rgba(255, 249, 236, 0.82);
   --ui-image-scrim: rgba(20, 15, 8, 0.82);
@@ -130,8 +130,8 @@
   --ui-control: #151313;
   --ui-text: #eee9e7;
   --ui-text-muted: #b0a6a2;
-  --ui-text-subtle: #8b817d;
-  --ui-text-faint: #68615e;
+  --ui-text-subtle: #a69c98;
+  --ui-text-faint: #9a918e;
   --ui-border: rgba(152, 91, 85, 0.22);
   --ui-border-strong: rgba(152, 91, 85, 0.38);
   --ui-primary: #c77d76;
@@ -156,8 +156,8 @@
   --ui-control: #0e1519;
   --ui-text: #e8eef1;
   --ui-text-muted: #a7b4bb;
-  --ui-text-subtle: #7f919b;
-  --ui-text-faint: #5f7079;
+  --ui-text-subtle: #96a5ad;
+  --ui-text-faint: #83929a;
   --ui-border: rgba(110, 153, 176, 0.22);
   --ui-border-strong: rgba(110, 153, 176, 0.38);
   --ui-primary: #7fb7d2;

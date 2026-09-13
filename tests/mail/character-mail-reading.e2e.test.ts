@@ -389,6 +389,33 @@ describe('character mail reading', async () => {
     openPages.clear()
   })
 
+  it('stops mounted mailbox skeleton animation when reduced motion is requested', async () => {
+    const page = await openPage('/')
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    let releaseHeaders!: () => void
+    const headersReleased = new Promise<void>((resolve) => (releaseHeaders = resolve))
+    let pendingHeaders: Promise<void> | undefined
+    const isHeadersRequest = (url: URL) => url.pathname === `/api/me/characters/${characterId}/mail`
+    await page.route(isHeadersRequest, (route) => {
+      pendingHeaders = headersReleased.then(() => route.continue())
+      return pendingHeaders
+    })
+
+    try {
+      await page.goto(new URL(`/characters/${characterId}/mail`, useTestContext().url).toString())
+      const skeleton = page.locator('.mail-skeleton-block').first()
+      await skeleton.waitFor()
+
+      expect(
+        await skeleton.evaluate((element) => getComputedStyle(element, '::after').animationName),
+      ).toBe('none')
+    } finally {
+      releaseHeaders()
+      await pendingHeaders
+      await page.unroute(isHeadersRequest)
+    }
+  })
+
   it('gates anonymous and unowned access without requesting mail during SSR', async () => {
     const html = await $fetch(`/characters/${characterId}/mail`)
 

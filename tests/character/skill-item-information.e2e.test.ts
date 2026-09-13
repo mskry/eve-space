@@ -138,6 +138,46 @@ describe('Skills item-information geometry', async () => {
     openPages.clear()
   })
 
+  it('adapts catalogue columns without hiding or splitting skill entries', async () => {
+    const page = await openPage()
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.locator('.skills-layout').waitFor()
+
+    expect(await measureSkillsLayout(page)).toMatchObject({
+      groupBreakInside: 'avoid',
+      groupColumns: '3',
+      groupVisible: true,
+      layoutColumns: 2,
+      queueVisible: true,
+      skillBreakInside: 'avoid',
+      skillColumns: '2',
+      skillVisible: true,
+      summaryUsesRepeatingGradient: false,
+    })
+
+    await page.setViewportSize({ width: 760, height: 844 })
+    expect(await measureSkillsLayout(page)).toMatchObject({
+      groupColumns: '2',
+      groupVisible: true,
+      layoutColumns: 1,
+      queueBelowCatalogue: true,
+      queueVisible: true,
+      skillColumns: '1',
+      skillVisible: true,
+    })
+
+    await page.setViewportSize({ width: 520, height: 844 })
+    expect(await measureSkillsLayout(page)).toMatchObject({
+      groupColumns: '1',
+      groupVisible: true,
+      layoutColumns: 1,
+      queueBelowCatalogue: true,
+      queueVisible: true,
+      skillColumns: '1',
+      skillVisible: true,
+    })
+  })
+
   it('flips a desktop popover into view and keeps close reachable over internal scrolling', async () => {
     const page = await openPage()
     await page.setViewportSize({ width: 1024, height: 720 })
@@ -285,4 +325,57 @@ async function hasHorizontalOverflow(page: Page) {
   return page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   )
+}
+
+async function measureSkillsLayout(page: Page) {
+  return page.evaluate(() => {
+    const layout = document.querySelector<HTMLElement>('.skills-layout')
+    const catalogue = document.querySelector<HTMLElement>('.skills-catalogue')
+    const queue = document.querySelector<HTMLElement>('.skill-queue-rail')
+    const groupList = document.querySelector<HTMLElement>('.skill-group-chips')
+    const groups = Array.from(document.querySelectorAll<HTMLElement>('.skill-group-chip'))
+    const skillList = document.querySelector<HTMLElement>('.skill-list')
+    const skillRows = Array.from(document.querySelectorAll<HTMLElement>('.skill-row'))
+    const summary = document.querySelector<HTMLElement>('.character-summary-card')
+    if (
+      !layout ||
+      !catalogue ||
+      !queue ||
+      !groupList ||
+      groups.length === 0 ||
+      !skillList ||
+      skillRows.length === 0 ||
+      !summary
+    )
+      throw new Error('Skills layout did not render.')
+
+    const catalogueBox = catalogue.getBoundingClientRect()
+    const queueBox = queue.getBoundingClientRect()
+    const group = groups[0]!
+    const skillRow = skillRows[0]!
+    const visibleEntrySets = [groups, skillRows].map((entries) =>
+      entries.every((element) => {
+        const box = element.getBoundingClientRect()
+        return (
+          element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) &&
+          box.width > 0 &&
+          box.height > 0
+        )
+      }),
+    )
+    return {
+      groupBreakInside: getComputedStyle(group).breakInside,
+      groupColumns: getComputedStyle(groupList).columnCount,
+      groupVisible: visibleEntrySets[0],
+      layoutColumns: getComputedStyle(layout).gridTemplateColumns.split(' ').length,
+      queueBelowCatalogue: queueBox.top >= catalogueBox.bottom,
+      queueVisible: getComputedStyle(queue).display !== 'none' && queueBox.height > 0,
+      skillBreakInside: getComputedStyle(skillRow).breakInside,
+      skillColumns: getComputedStyle(skillList).columnCount,
+      skillVisible: visibleEntrySets[1],
+      summaryUsesRepeatingGradient: getComputedStyle(summary).backgroundImage.includes(
+        'repeating-linear-gradient',
+      ),
+    }
+  })
 }

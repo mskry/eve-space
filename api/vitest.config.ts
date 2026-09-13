@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { apiCoverageThresholdScopes } from './vitest.coverage-thresholds.js'
 
 export default defineConfig({
   test: {
@@ -33,6 +34,7 @@ export default defineConfig({
         functions: 80,
         lines: 80,
         statements: 80,
+        ...apiCoverageThresholdScopes.api.thresholds,
       },
     },
   },
