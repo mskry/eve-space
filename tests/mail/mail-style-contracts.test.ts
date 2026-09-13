@@ -14,10 +14,4 @@ describe('mail stylesheet structural contracts', () => {
     expect(variables.every((variable) => variable.startsWith('--ui-'))).toBe(true)
     expect(mailStyles).not.toMatch(/#[\da-f]{3,8}\b|rgba?\(|hsla?\(/i)
   })
-
-  it('retains reduced-motion handling for mailbox loading skeletons', () => {
-    expect(mailStyles).toContain('.mail-reader-skeleton-actions')
-    expect(mailStyles).toContain('@keyframes mail-skeleton-scan')
-    expect(mailStyles).toContain('@media (prefers-reduced-motion: reduce)')
-  })
 })

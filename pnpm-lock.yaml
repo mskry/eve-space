@@ -163,6 +163,9 @@ catalogs:
     vue-tsc:
       specifier: ^3.3.10
       version: 3.3.11
+    yaml:
+      specifier: 2.9.0
+      version: 2.9.0
     zod:
       specifier: ^4.5.4
       version: 4.5.4
@@ -302,6 +305,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(@typescript/typescript6@6.0.2)
+      yaml:
+        specifier: 'catalog:'
+        version: 2.9.0
 
   api:
     dependencies:

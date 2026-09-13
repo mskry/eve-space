@@ -1,4 +1,5 @@
 import { configDefaults, defineConfig } from 'vitest/config'
+import { coverageThresholdScopes } from './scripts/coverage-thresholds.js'
 
 export default defineConfig({
   test: {
@@ -29,6 +30,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: 'coverage/frontend',
       thresholds: {
+        ...coverageThresholdScopes.frontend.thresholds,
         'app/{queries,utils}/**/*.ts': {
           branches: 60,
           functions: 70,

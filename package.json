@@ -102,6 +102,7 @@
     "typescript": "catalog:tsapi",
     "vitest": "catalog:vitest4",
     "vitest-environment-nuxt": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "yaml": "catalog:"
   }
 }

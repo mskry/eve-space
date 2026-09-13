@@ -189,7 +189,7 @@ pnpm stack:down
 
 Every pull request and push to `main` runs application quality workflows, with an additional path-scoped workflow for the independently published ESI client:
 
-- [`CI`](.github/workflows/ci.yml) checks linting, formatting, types, unit tests, module tests, packaging, and the production build.
+- [`CI`](.github/workflows/ci.yml) checks linting, formatting, dead code, types, unit tests, module tests, packaging, production builds, and the pinned Rust formatter, Clippy, and test suite.
 - [`Coverage`](.github/workflows/coverage.yml) runs application-owned frontend, API, module, PostgreSQL, Redis, and registry coverage suites, retains their LCOV reports, and sends them to the root SonarQube Cloud project.
 - [`ESI Client`](.github/workflows/esi-client.yml) validates package changes on Ubuntu and Windows, retains package LCOV from an Ubuntu analysis job, and reports to the package's separate SonarQube Cloud project and quality gate.
 
@@ -198,13 +198,14 @@ branches. The badges at the top of this README show the live application quality
 the default branch rather than a manually entered score. See
 [`docs/local-sonarqube.md`](docs/local-sonarqube.md) to run the same analysis locally.
 
-Secret-backed Sonar analysis is skipped for fork pull requests while validation and coverage continue. Trusted ESI events fail explicitly if the package-specific analysis token is not configured.
+Secret-backed Sonar analysis is skipped for fork and Dependabot pull requests while validation and coverage continue. Trusted root and ESI events fail explicitly if their respective analysis token is not configured.
 
 Run the same core checks locally:
 
 ```bash
 pnpm lint
 pnpm format:check
+pnpm knip
 pnpm typecheck
 pnpm test:frontend
 pnpm test:api
@@ -212,6 +213,9 @@ pnpm test:modules
 pnpm test:redis
 pnpm test:postgres
 pnpm test:packaging
+cargo fmt --manifest-path sde-ingest/Cargo.toml --all --check
+cargo clippy --manifest-path sde-ingest/Cargo.toml --all-targets --all-features --locked -- -D warnings
+cargo test --manifest-path sde-ingest/Cargo.toml --all-features --locked
 ```
 
 Run `pnpm test:e2e` for the production-server browser suite, `pnpm lint:fix` for safe lint fixes, and `pnpm format` to format supported files. `pnpm build` builds installed module dependencies and the Nuxt application.

@@ -88,8 +88,9 @@ jobs:
 
       - name: Require ESI client Sonar token
         if: >-
-          github.event_name == 'push' ||
-          github.event.pull_request.head.repo.fork == false
+          (github.event_name == 'push' ||
+          github.event.pull_request.head.repo.fork == false) &&
+          github.actor != 'dependabot[bot]'
         env:
           ESI_CLIENT_SONAR_TOKEN: ${{ secrets.ESI_CLIENT_SONAR_TOKEN }}
         run: |
@@ -100,8 +101,9 @@ jobs:
 
       - name: Analyze ESI client with SonarQube Cloud
         if: >-
-          github.event_name == 'push' ||
-          github.event.pull_request.head.repo.fork == false
+          (github.event_name == 'push' ||
+          github.event.pull_request.head.repo.fork == false) &&
+          github.actor != 'dependabot[bot]'
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.ESI_CLIENT_SONAR_TOKEN }}

@@ -138,6 +138,24 @@ trusted target authorization. Product promotion and rollback requirements are do
 - Expired wallet entries revalidate with ETag or Last-Modified and reuse data on `304`.
 - Concurrent wallet requests are collapsed, and `429` plus low error-budget responses trigger cooldowns.
 
+## Diagnostics And Process Lifecycle
+
+Unexpected API, worker, command, readiness, and processing failures pass through the runtime diagnostic recorder. Each record has a fixed event name, a UUID correlation identifier, a bounded failure category, and only the context fields explicitly allowlisted for that event. Raw error messages, stacks, causes, arbitrary properties, headers, bodies, SQL, tokens, session bearers, encryption material, and private ESI values are never serialized. Known client outcomes retain their established response bodies and statuses; unexpected client responses remain generic.
+
+API and worker shutdown are each coordinated by one memoized promise shared by signals, startup failures, and run-loop termination. The API stops HTTP admission and drains accepted requests, closes the ESI runtime, then closes Cache Redis, coordination Redis, and PostgreSQL. The worker waits for startup settlement, stops BullMQ admission, drains or cancels active work through the worker platform, closes the ESI runtime, then closes both Redis roles and PostgreSQL. Every connection owner clears its retained shared reference after closure so repeated shutdown requests cannot close a resource twice.
+
+`API_SHUTDOWN_TIMEOUT_MS` and `WORKER_SHUTDOWN_TIMEOUT_MS` bound the complete cleanup sequence and default to 30 seconds. A deadline records only the corresponding secret-safe timeout event, force-closes remaining HTTP or worker work, continues dependency cleanup, and sets an unsuccessful process exit status. Deployment termination grace must remain longer than these application deadlines.
+
+## Frontend Accessibility
+
+The application root owns the first-tab-stop skip link. Every layout exposes exactly one `main#main-content[tabindex='-1']`, and client navigation focuses it only when the represented route path changes; query-only and fragment-only changes preserve the initiating focus. `NuxtRouteAnnouncer` remains mounted at the root, and parent record pages combine loaded character or corporation identity with distinct child-route titles.
+
+Shared focus styles use semantic theme tokens and respect reduced motion. Theme text and focus-ring token pairs are browser-tested against their rendered canvas, control, solid-surface, and raised-surface backgrounds. Informative images require contextual alternatives, decorative images use empty alternatives, and EVE images continue through `UiEveImage` with explicit intrinsic dimensions and caller-selected loading priority.
+
+## Repository Quality Gates
+
+Trusted CI runs formatting, lint and architecture verifiers, Knip, workspace typechecks, JavaScript and TypeScript suites, package validation, production builds, and integration coverage. Rust is pinned by `rust-toolchain.toml`; CI caches the `sde-ingest` workspace and requires `cargo fmt --check`, Clippy with warnings denied, and all ingester tests. Fork pull requests run non-secret quality checks but skip Sonar analysis. Trusted root and ESI analysis events fail explicitly when their separate Sonar token is absent.
+
 ## Database
 
 The migrations create users, one-to-many attached characters, encrypted per-character EVE tokens, intent-bound OAuth states, application and administrator sessions, deployment and module settings, transactional domain events, SDE reference tables, and migration history. Organization-owned tables add immutable organization epochs, managed corporations, corporation data sources and roster observations, account compliance and issues, character exceptions, role grants and authority evidence, custom groups, explicit member blocks, and a separately retained audit ledger. A partial unique index prevents more than one main character per user. Migrations run automatically when the API container starts.

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config'
+import { apiCoverageThresholdScopes } from './vitest.coverage-thresholds.js'
 
 export default defineConfig({
   test: {
@@ -14,6 +15,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage-postgres',
+      thresholds: apiCoverageThresholdScopes.postgres.thresholds,
     },
   },
 })

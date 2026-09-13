@@ -54,25 +54,19 @@ Two rules cause the most review churn, so they are worth repeating here:
   requests, cooldowns, and error-budget handling. Bypassing ESI caching can get the application's
   access revoked.
 
-## Specs
-
-Larger changes are developed spec-first under [`openspec/`](openspec). `openspec/specs/` holds the
-current capability specs and `openspec/changes/` holds in-flight proposals with their tasks. If your
-change adds or alters a capability rather than fixing a bug, propose it there first so the spec and
-the implementation land together.
-
 ## Checks
 
-[Lefthook](lefthook.yml) runs lint, formatting, knip, and the test suites on commit, and adds
-typecheck plus the coverage, Redis, and PostgreSQL suites on push. The checks are repository-wide
-rather than staged-file-scoped on purpose. Run `pnpm install` at least once so the hooks are
-installed.
+[Lefthook](lefthook.yml) runs lint and formatting on commit. Pushes add Knip, typechecking, frontend,
+API, module, registry, Redis, and PostgreSQL suites. Coverage and production browser/Rust checks run
+in CI. The checks are repository-wide rather than staged-file-scoped on purpose. Run `pnpm install`
+at least once so the hooks are installed.
 
 To run the core checks yourself:
 
 ```bash
 pnpm lint
 pnpm format:check
+pnpm knip
 pnpm typecheck
 pnpm test:frontend
 pnpm test:api
@@ -80,6 +74,9 @@ pnpm test:modules
 pnpm test:redis
 pnpm test:postgres
 pnpm test:packaging
+cargo fmt --manifest-path sde-ingest/Cargo.toml --all --check
+cargo clippy --manifest-path sde-ingest/Cargo.toml --all-targets --all-features --locked -- -D warnings
+cargo test --manifest-path sde-ingest/Cargo.toml --all-features --locked
 ```
 
 Use `pnpm lint:fix` and `pnpm format` for the mechanical fixes, and `pnpm knip` to find unreachable

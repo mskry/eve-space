@@ -34,7 +34,7 @@ On Railway, set `NUXT_PUBLIC_API_BASE=https://${{api.RAILWAY_PUBLIC_DOMAIN}}` so
 
 Build every repository service from the repository root. Set `RAILWAY_DOCKERFILE_PATH=/api/Dockerfile` on `api` and `worker`, and `/sde-ingest/Dockerfile` on the one-shot ingestion service. Keep the image default command for `api`; override `worker` with `node dist/worker.js`.
 
-Use `/health` as the Railway healthcheck for `web` and `api`. The worker intentionally has no HTTP socket. Set `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=40` on the worker and monitor its heartbeat through the API's `/api/status` response.
+Use `/health` as the Railway healthcheck for `web` and `api`. The worker intentionally has no HTTP socket. Set `RAILWAY_DEPLOYMENT_DRAINING_SECONDS=40` on the API and worker, keep their application shutdown deadlines below that grace period, and monitor the worker heartbeat through the API's `/api/status` response.
 
 The queue Redis command must preserve durable BullMQ state:
 
@@ -67,6 +67,8 @@ EVE_SCOPES=...
 ESI_USER_AGENT=...
 ESI_COMPATIBILITY_DATE=...
 TOKEN_ENCRYPTION_KEY=...
+API_SHUTDOWN_TIMEOUT_MS=30000
+WORKER_SHUTDOWN_TIMEOUT_MS=30000
 ```
 
 The API additionally needs `WEB_ORIGIN`, `EVE_CALLBACK_URL`, `SESSION_COOKIE_SECURE=true`, and an initial `ADMIN_SETUP_SECRET`. Generate secrets with `openssl rand -base64 32`. Remove `ADMIN_SETUP_SECRET` after the first administrator is created if bootstrap should be disabled.
@@ -113,6 +115,8 @@ Do not roll production back to a disclosed secret. If PostgreSQL authentication 
 6. Verify `GET /health` on web and API, then inspect `GET /api/status` for PostgreSQL, both Redis roles, outbox, queue lag, and worker heartbeat.
 7. Complete EVE login, callback, character attachment, and one protected character request on the custom domains.
 
+Before rollout, exercise termination in a non-production environment while an API request and a worker job are active. Send repeated `SIGTERM` requests to each process and verify one drain sequence, no duplicate resource-close diagnostics, completion within the configured deadline, and an unsuccessful exit with a `shutdown-timeout` diagnostic when work is deliberately held beyond the deadline. Never include request bodies, cookies, EVE values, database URLs, or Redis URLs in captured evidence.
+
 ## Continuous deployment
 
 Connect the `web`, `api`, and `worker` services to the GitHub repository's `main` branch and enable **Wait for CI** on every deployment trigger. The repository CI workflow runs on pushes to `main`, so Railway deploys a commit only after all GitHub Actions checks succeed and skips it when any check fails.
@@ -143,10 +147,13 @@ Set these root-relative watch paths on `web`:
 /generated/platform/**
 /api/package.json
 /api/src/**
+/packages/core-data-contract/**
+/packages/esi-client/**
 /packages/platform-module-contract/**
 /packages/platform-module-server/**
 /packages/platform-module-nuxt/**
 /features/**
+/scripts/copy-platform-nuxt-runtime-assets.mjs
 /scripts/run-installed-module-package-script.ts
 !/**/*.md
 !/**/README*
@@ -171,6 +178,8 @@ Set this identical list on `api` and `worker` because they build the same image:
 /api/tsconfig.json
 /api/src/**
 /api/migrations/**
+/packages/core-data-contract/**
+/packages/esi-client/**
 /packages/platform-module-contract/**
 /packages/platform-module-server/**
 /features/installed-modules.json

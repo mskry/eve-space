@@ -149,6 +149,62 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(await page.getByRole('button', { name: 'Open navigation' }).isHidden()).toBe(true)
   })
 
+  it('keeps theme text and focus indicators at accessible contrast', async () => {
+    apiAvailable = true
+    apiServer.setAllowedOrigin(useTestContext().url)
+    const page = await createPage('/')
+    const themes = ['gallente', 'high-sec', 'amarr', 'minmatar', 'caldari']
+    const textTokens = [
+      '--ui-text',
+      '--ui-text-muted',
+      '--ui-text-subtle',
+      '--ui-text-faint',
+      '--ui-primary',
+      '--ui-warning',
+      '--ui-danger',
+    ]
+    const backgroundTokens = [
+      '--ui-canvas',
+      '--ui-surface',
+      '--ui-surface-solid',
+      '--ui-surface-raised',
+      '--ui-control',
+    ]
+
+    for (const theme of themes) {
+      const tokens = await page.evaluate(
+        ({ selectedTheme, tokenNames }) => {
+          document.documentElement.dataset.theme = selectedTheme
+          const style = getComputedStyle(document.documentElement)
+          return Object.fromEntries(
+            tokenNames.map((name) => [name, style.getPropertyValue(name).trim()]),
+          )
+        },
+        {
+          selectedTheme: theme,
+          tokenNames: [...textTokens, ...backgroundTokens, '--ui-focus-ring', '--ui-on-primary'],
+        },
+      )
+
+      for (const textToken of textTokens) {
+        for (const backgroundToken of backgroundTokens) {
+          expect(
+            contrastRatio(tokens[textToken]!, tokens[backgroundToken]!, tokens['--ui-canvas']!),
+            `${theme} ${textToken} on ${backgroundToken}`,
+          ).toBeGreaterThanOrEqual(4.5)
+        }
+      }
+      expect(
+        contrastRatio(tokens['--ui-focus-ring']!, tokens['--ui-canvas']!),
+        `${theme} focus ring on canvas`,
+      ).toBeGreaterThanOrEqual(3)
+      expect(
+        contrastRatio(tokens['--ui-on-primary']!, tokens['--ui-primary']!),
+        `${theme} primary control text`,
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
   it('skips to one main target and moves focus only for represented page changes', async () => {
     apiAvailable = true
     apiServer.setAllowedOrigin(useTestContext().url)
@@ -224,3 +280,71 @@ describe('Nuxt anonymous SSR boundary', async () => {
     expect(await page.locator('#main-content').getAttribute('tabindex')).toBe('-1')
   })
 })
+
+function contrastRatio(foreground: string, background: string, backdrop = '#fff') {
+  const backdropColor = parseColor(backdrop)
+  const foregroundLuminance = relativeLuminance(
+    compositeColor(parseColor(foreground), backdropColor),
+  )
+  const backgroundLuminance = relativeLuminance(
+    compositeColor(parseColor(background), backdropColor),
+  )
+  return (
+    (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+    (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+  )
+}
+
+type Color = [number, number, number, number]
+
+function parseColor(value: string): Color {
+  if (/^#[\da-f]{3}$/i.test(value)) {
+    return [
+      ...[value[1]!, value[2]!, value[3]!].map((channel) => Number.parseInt(channel.repeat(2), 16)),
+      1,
+    ] as Color
+  }
+  if (/^#[\da-f]{4}$/i.test(value)) {
+    return [
+      ...[value[1]!, value[2]!, value[3]!].map((channel) => Number.parseInt(channel.repeat(2), 16)),
+      Number.parseInt(value[4]!.repeat(2), 16) / 255,
+    ] as Color
+  }
+  if (/^#[\da-f]{6}$/i.test(value)) {
+    return [
+      Number.parseInt(value.slice(1, 3), 16),
+      Number.parseInt(value.slice(3, 5), 16),
+      Number.parseInt(value.slice(5, 7), 16),
+      1,
+    ]
+  }
+  if (/^#[\da-f]{8}$/i.test(value)) {
+    return [
+      Number.parseInt(value.slice(1, 3), 16),
+      Number.parseInt(value.slice(3, 5), 16),
+      Number.parseInt(value.slice(5, 7), 16),
+      Number.parseInt(value.slice(7, 9), 16) / 255,
+    ]
+  }
+  const channels = value.match(/[\d.]+/g)?.map(Number)
+  if (channels?.length === 3) return [...channels, 1] as Color
+  if (channels?.length === 4) return channels as Color
+  throw new Error(`Unsupported color: ${value}`)
+}
+
+function compositeColor(color: Color, backdrop: Color): [number, number, number] {
+  const alpha = color[3]
+  return [
+    color[0] * alpha + backdrop[0] * (1 - alpha),
+    color[1] * alpha + backdrop[1] * (1 - alpha),
+    color[2] * alpha + backdrop[2] * (1 - alpha),
+  ]
+}
+
+function relativeLuminance(color: [number, number, number]) {
+  const [red, green, blue] = color.map((channel) => {
+    const value = channel / 255
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  })
+  return red! * 0.2126 + green! * 0.7152 + blue! * 0.0722
+}
