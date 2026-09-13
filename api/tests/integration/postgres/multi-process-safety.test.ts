@@ -370,9 +370,15 @@ describe('multi-process safety', () => {
           (36, 19, 'Type In Hidden Group', true),
           (37, 18, 'Isogen', true)
       `
+      await connection`
+        insert into sde_builds (build_number, release_date, ingested_at, ingest_version)
+        values (1234, '2026-08-25T11:00:00Z', '2026-08-25T12:00:00Z', 2)
+      `
 
-      const { createOwnedCharacterCoreReads, sdeCoreReads } =
+      const { createOwnedCharacterCoreReads } =
         await import('../../../src/platform/core-read-capabilities.js')
+      const { loadPublishedTypeGroupsProduct } =
+        await import('../../../src/core-data/published-type-groups-adapter.js')
       const ownedReads = createOwnedCharacterCoreReads({
         userId: ownerId,
         characterId,
@@ -391,10 +397,15 @@ describe('multi-process safety', () => {
         resolutionState: 'resolved',
       })
       await expect(nonOwnerReads.loadAffiliation()).resolves.toBeNull()
-      await expect(sdeCoreReads.loadPublishedTypeGroups([37, 36, 35, 34])).resolves.toEqual([
-        { typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' },
-        { typeId: 37, typeName: 'Isogen', groupId: 18, groupName: 'Mineral' },
-      ])
+      await expect(
+        loadPublishedTypeGroupsProduct({ typeIds: [37, 36, 35, 34] }, connection),
+      ).resolves.toMatchObject({
+        rows: [
+          { typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' },
+          { typeId: 37, typeName: 'Isogen', groupId: 18, groupName: 'Mineral' },
+        ],
+        complete: true,
+      })
 
       await connection`delete from characters where character_id = ${characterId}`
       await expect(ownedReads.loadAffiliation()).resolves.toBeNull()

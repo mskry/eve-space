@@ -57,7 +57,7 @@ export function useAuthSession(apiClient: ApiClient) {
       const session = sessionQuery.data.value
       if (session) clearAuthenticatedQueriesAfterSessionTransition(queryCache, session)
     },
-    { flush: 'post' },
+    { flush: 'sync' },
   )
 
   async function initializeAuth(force = false) {

@@ -1,14 +1,10 @@
 import type {
   OwnedCharacterCoreReads,
   PlatformOwnedCharacterRouteContext,
-  SdeCoreReads,
 } from '@eve-space/platform-module-contract'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '../db/client.js'
-import { characters, platformSubjectLifecycles, sdeGroups, sdeTypes } from '../db/schema.js'
-import { isPositiveSafeInteger } from '../type-guards.js'
-
-const maxCoreSdeTypeIds = 500
+import { characters, platformSubjectLifecycles } from '../db/schema.js'
 
 type OwnedCharacterBinding = Pick<
   PlatformOwnedCharacterRouteContext['authorization'],
@@ -50,34 +46,3 @@ export function createOwnedCharacterCoreReads(
     },
   }
 }
-
-export const sdeCoreReads = {
-  async loadPublishedTypeGroups(typeIds: readonly number[]) {
-    if (typeIds.length > maxCoreSdeTypeIds)
-      throw new Error(`SDE type lookup cannot exceed ${maxCoreSdeTypeIds} IDs`)
-    if (typeIds.some((typeId) => !isPositiveSafeInteger(typeId)))
-      throw new Error('SDE type lookup IDs must be positive safe integers')
-
-    const uniqueTypeIds = [...new Set(typeIds)]
-    if (uniqueTypeIds.length === 0) return []
-
-    return db
-      .select({
-        typeId: sdeTypes.typeId,
-        typeName: sdeTypes.name,
-        groupId: sdeGroups.groupId,
-        groupName: sdeGroups.name,
-      })
-      .from(sdeTypes)
-      .innerJoin(sdeGroups, eq(sdeGroups.groupId, sdeTypes.groupId))
-      .where(
-        and(
-          inArray(sdeTypes.typeId, uniqueTypeIds),
-          eq(sdeTypes.published, true),
-          eq(sdeGroups.published, true),
-        ),
-      )
-      .orderBy(asc(sdeTypes.typeId))
-      .limit(maxCoreSdeTypeIds)
-  },
-} satisfies SdeCoreReads

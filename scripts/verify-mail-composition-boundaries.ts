@@ -6,6 +6,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const sources = await loadTypescriptSourceDirectory(
   root,
   fileURLToPath(new URL('../app', import.meta.url)),
+  ['.ts', '.vue'],
 )
 const violations = mailCompositionImportViolations(sources)
 

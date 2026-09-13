@@ -156,6 +156,7 @@ describe('installed resource operation policy', () => {
 
   test('does not reach the executor, transport, or module implementation when disabled', async () => {
     const loadCharacterAuthorization = vi.fn()
+    const createCapabilities = vi.fn()
     const guardExecution = vi.fn((executionIdentity, options) =>
       guardInstalledResourceExecution(executionIdentity, {
         ...options,
@@ -165,11 +166,16 @@ describe('installed resource operation policy', () => {
     )
 
     await expect(
-      executeInstalledResourceOperation(identity, { resources: [resource], guardExecution }),
+      executeInstalledResourceOperation(identity, {
+        resources: [resource],
+        guardExecution,
+        createCapabilities,
+      }),
     ).resolves.toEqual({ outcome: 'noop', reason: 'disabled' })
     expect(loadCharacterAuthorization).not.toHaveBeenCalled()
     expect(implementation.request).not.toHaveBeenCalled()
     expect(implementation.map).not.toHaveBeenCalled()
+    expect(createCapabilities).not.toHaveBeenCalled()
   })
 
   test('validates every installed descriptor without consulting runtime enablement', () => {
@@ -240,6 +246,7 @@ describe('installed resource operation policy', () => {
     })
     expect(guardExecution).toHaveBeenCalledTimes(2)
     expect(implementation.map).not.toHaveBeenCalled()
+    expect(options.createCapabilities).toHaveBeenCalledWith(collectingResource)
     collect.mockImplementation(async (context) => {
       await context.execute('undeclared', {})
       return { complete: false, data: null }

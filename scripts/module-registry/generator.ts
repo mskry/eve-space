@@ -193,8 +193,8 @@ function renderApiRoutes(manifests: readonly PlatformModuleManifest[]) {
         .join('\n') + '\n'
     : ''
   const factories = routes.map(
-    ({ manifest, binding }) =>
-      `const ${binding} = ${binding}Factory(createPlatformModuleRouteCapabilities(${quote(manifest.id)}))\n`,
+    ({ manifest, route, binding }) =>
+      `const ${binding} = ${binding}Factory(createPlatformModuleRouteCapabilities(${quote(manifest.id)}, ${JSON.stringify(route.coreDataProducts ?? [])} as const))\n`,
   )
   const chain = routes.map(
     ({ manifest, route, binding }) =>
@@ -226,6 +226,7 @@ function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
     ({ manifest, provider }) => ({
       moduleId: manifest.id,
       providerId: provider.id,
+      coreDataProducts: provider.coreDataProducts ?? [],
       audience: provider.audience,
       requiredPermission: provider.requiredPermission,
       freshness: provider.freshness,
@@ -237,7 +238,7 @@ function renderActivityProviders(manifests: readonly PlatformModuleManifest[]) {
     ? `[${descriptors
         .map((descriptor, index) => {
           const binding = providers[index]!.binding
-          return `\n  { moduleId: ${quote(descriptor.moduleId)}, providerId: ${quote(descriptor.providerId)}, audience: ${quote(descriptor.audience)}, requiredPermission: ${quote(descriptor.requiredPermission)}, freshness: { staleAfterSeconds: ${descriptor.freshness.staleAfterSeconds} }, pageIds: [${descriptor.pageIds.map(quote).join(', ')}], invoke: (context) => ${binding}Factory(createPlatformModuleActivityProviderCapabilities(${quote(descriptor.moduleId)}, context))(context) },`
+          return `\n  { moduleId: ${quote(descriptor.moduleId)}, providerId: ${quote(descriptor.providerId)}, coreDataProducts: ${JSON.stringify(descriptor.coreDataProducts)} as const, audience: ${quote(descriptor.audience)}, requiredPermission: ${quote(descriptor.requiredPermission)}, freshness: { staleAfterSeconds: ${descriptor.freshness.staleAfterSeconds} }, pageIds: [${descriptor.pageIds.map(quote).join(', ')}], invoke: (context) => ${binding}Factory(createPlatformModuleActivityProviderCapabilities(${quote(descriptor.moduleId)}, context, ${JSON.stringify(descriptor.coreDataProducts)} as const))(context) },`
         })
         .join('')}\n]`
     : '[]'
@@ -260,16 +261,20 @@ function renderWorkerResources(manifests: readonly PlatformModuleManifest[]) {
     })),
   )
   const descriptors = resources.map(({ manifest, resource, binding }) => {
+    const coreDataProducts = JSON.stringify(resource.coreDataProducts ?? [])
     const batch = resource.batch
       ? ` batch: { mode: ${quote(resource.batch.mode)}, operationId: ${quote(resource.batch.operationId)} },`
       : ''
     const dependent = resource.dependentOperationIds?.length
       ? ` dependentOperationIds: ${JSON.stringify(resource.dependentOperationIds)},`
       : ''
-    return `{ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)},${dependent}${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, implementation: ${binding} }`
+    return `({ moduleId: ${quote(manifest.id)}, resourceId: ${quote(resource.id)}, operationId: ${quote(resource.operationId)}, coreDataProducts: ${coreDataProducts} as const,${dependent}${batch} subjectKind: ${quote(resource.subjectKind)}, materializationIntervalSeconds: ${resource.materializationIntervalSeconds}, eligibility: { kind: ${quote(resource.eligibility.kind)} }, implementation: ${binding} satisfies PlatformResourceImplementationForProducts<typeof ${binding}, readonly ${coreDataProducts}> } as const)`
   })
   const rendered = descriptors.length ? `[${descriptors.join(', ')}]` : '[]'
-  return `${generatedHeader}import type { PlatformInstalledResourceDescriptor } from '@eve-space/platform-module-contract'\n${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
+  const importedTypes = resources.length
+    ? 'PlatformInstalledResourceDescriptor, PlatformResourceImplementationForProducts'
+    : 'PlatformInstalledResourceDescriptor'
+  return `${generatedHeader}import type { ${importedTypes} } from '@eve-space/platform-module-contract'\n${imports}export const installedModuleResources =\n  ${rendered} as const satisfies readonly PlatformInstalledResourceDescriptor[]\n`
 }
 
 function renderMigrations(manifests: readonly PlatformModuleManifest[]) {

@@ -1,5 +1,6 @@
 import { posix } from 'node:path'
 import { typescriptModuleSpecifiers } from '../typescript-module-specifiers.js'
+import { typescriptSourceScripts } from '../typescript-source-scripts.js'
 
 const compositionModules = {
   draft: 'app/composables/mail-composition-draft.ts',
@@ -32,11 +33,16 @@ export function mailCompositionImportViolations(sources: readonly MailCompositio
 
   for (const source of sources) {
     const sourcePath = normalizePath(source.path)
-    for (const specifier of typescriptModuleSpecifiers(sourcePath, source.source)) {
+    const specifiers = typescriptSourceScripts(sourcePath, source.source).flatMap((script) =>
+      typescriptModuleSpecifiers(sourcePath, script),
+    )
+    for (const specifier of specifiers) {
       const importedPath = resolveImport(sourcePath, specifier)
       if (!importedPath || !Object.values(compositionModules).includes(importedPath as never))
         continue
       if (allowedCompositionImports[sourcePath]?.has(importedPath)) continue
+      if (!(sourcePath in allowedCompositionImports) && importedPath === compositionModules.facade)
+        continue
       violations.push(`${sourcePath}: cannot import mail composition module ${importedPath}`)
     }
   }

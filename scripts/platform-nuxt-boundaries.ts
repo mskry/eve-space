@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join, posix } from 'node:path'
-import { parse } from 'vue/compiler-sfc'
 import { typescriptModuleSpecifiers } from './typescript-module-specifiers.js'
+import { typescriptSourceScripts } from './typescript-source-scripts.js'
 
 const buildModules = new Map([
   ['module.ts', 'entry'],
@@ -50,7 +50,7 @@ function platformNuxtSourceBoundaryViolations({ path, source }: PlatformNuxtSour
   const violations: string[] = []
   if (!runtime && !tier) violations.push(`${path}: build module has no declared tier`)
 
-  const specifiers = sourceScripts(path, source).flatMap((script) =>
+  const specifiers = typescriptSourceScripts(path, source).flatMap((script) =>
     typescriptModuleSpecifiers(path, script),
   )
   for (const specifier of specifiers)
@@ -88,12 +88,4 @@ function platformNuxtImportBoundaryViolations(
   if (tier && tier !== 'entry' && buildModules.get(target) === 'entry')
     violations.push(`${path}: module must not import the orchestration entry ${specifier}`)
   return violations
-}
-
-function sourceScripts(path: string, source: string) {
-  if (!path.endsWith('.vue')) return [source]
-  const { descriptor } = parse(source)
-  return [descriptor.script, descriptor.scriptSetup].flatMap((script) =>
-    script ? [script.content] : [],
-  )
 }

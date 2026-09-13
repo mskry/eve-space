@@ -9,10 +9,10 @@ import {
 } from '@eve-space/organization-activity-server'
 
 const module0Route0 = module0Route0Factory(
-  createPlatformModuleRouteCapabilities('organization-activity'),
+  createPlatformModuleRouteCapabilities('organization-activity', [] as const),
 )
 const module0Route1 = module0Route1Factory(
-  createPlatformModuleRouteCapabilities('organization-activity'),
+  createPlatformModuleRouteCapabilities('organization-activity', [] as const),
 )
 
 export const installedModuleRoutes = new Hono()

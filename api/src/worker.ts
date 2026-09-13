@@ -1,8 +1,13 @@
 import { sql } from './db/client.js'
 import { closeSharedCacheRedisConnection } from './cache-redis.js'
 import { closeSharedCoordinationRedisConnection } from './coordination-redis.js'
+import { assertCoreDataProductCatalogConfiguration } from './core-data/product-catalog.js'
+import { assertCoreDataCoverageManifest } from './core-data/coverage-validation.js'
 import { env, isSsoConfigured } from './env.js'
-import { assertEsiCatalogConfiguration } from './esi-gateway/catalog-interface.js'
+import {
+  assertEsiCatalogConfiguration,
+  coreEsiOperationIds,
+} from './esi-gateway/catalog-interface.js'
 import { closeProductionEsiExecutionRuntime } from './esi-gateway/runtime-lifecycle.js'
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
 import { startWorkerPlatform } from './queue/platform.js'
@@ -41,6 +46,8 @@ export async function startWorker() {
   })
 
   try {
+    assertCoreDataProductCatalogConfiguration()
+    assertCoreDataCoverageManifest({ esiOperationIds: coreEsiOperationIds })
     assertEsiCatalogConfiguration({
       compatibilityDate: env.ESI_COMPATIBILITY_DATE,
       ssoEnabled: isSsoConfigured(),

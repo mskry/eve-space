@@ -21,6 +21,9 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@eve-space/core-data-contract": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "catalog:tsgo"
   }

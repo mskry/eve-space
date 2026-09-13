@@ -7,6 +7,7 @@ import {
 } from '../queries/mail'
 import { canRunProtectedCharacterQuery } from '../queries/protected-character-query-access'
 import type { ApiClient } from '../utils/api-client'
+import type { MailCompositionMode } from '../types/mail-composition'
 import {
   addressableMailParty,
   mailRecipientKey,
@@ -14,7 +15,6 @@ import {
   MAIL_RECIPIENT_RESOLUTION_MIN_LENGTH,
   MAIL_RECIPIENT_SEARCH_MIN_LENGTH,
   seedMailComposition,
-  type MailCompositionMode,
 } from '../utils/mail-composition'
 import { ApiQueryError } from '../utils/query-error'
 import type { useCharacterMailbox } from './useCharacterMailbox'

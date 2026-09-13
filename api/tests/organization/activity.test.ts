@@ -301,6 +301,7 @@ function provider(
   return {
     moduleId,
     providerId: 'activity',
+    coreDataProducts: [],
     audience: 'member',
     requiredPermission: `${moduleId}.view`,
     freshness: { staleAfterSeconds: 300 },

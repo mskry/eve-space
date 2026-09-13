@@ -1,3 +1,4 @@
+import { useQueryCache } from '@pinia/colada'
 import { http, HttpResponse } from 'msw'
 import { flushPromises } from '@vue/test-utils'
 import { computed, defineComponent, h, nextTick, ref, watch } from 'vue'
@@ -62,10 +63,19 @@ describe('private query lifecycle', () => {
   })
 
   it('clears prior private data while preserving a newly authenticated user session', async () => {
+    const renderedStates: Array<{ hasPriorPrivateData: boolean; userId: string | null }> = []
     const Host = defineComponent({
       setup() {
-        useAuthSession(createApiClient('http://localhost'))
-        return () => h('span')
+        const { authSession } = useAuthSession(createApiClient('http://localhost'))
+        const queryCache = useQueryCache()
+        return () => {
+          renderedStates.push({
+            hasPriorPrivateData:
+              queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7)) !== undefined,
+            userId: authSession.value.authenticated ? authSession.value.account.userId : null,
+          })
+          return h('span')
+        }
       },
     })
     const { queryCache, wrapper } = mountWithQueryPlugins(Host)
@@ -88,6 +98,7 @@ describe('private query lifecycle', () => {
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.session())).toEqual(nextSession)
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.characterAssets(7))).toBeUndefined()
     expect(queryCache.getQueryData(PRIVATE_QUERY_KEYS.organizationRoles())).toBeUndefined()
+    expect(renderedStates).not.toContainEqual({ hasPriorPrivateData: true, userId: 'user-2' })
     wrapper.unmount()
   })
 

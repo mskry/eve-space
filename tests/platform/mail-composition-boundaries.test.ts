@@ -6,7 +6,14 @@ import {
 
 describe('mail composition boundaries', () => {
   it('allows the facade to compose draft and submission modules', () => {
-    expect(mailCompositionImportViolations(declaredSources())).toEqual([])
+    expect(
+      mailCompositionImportViolations(
+        declaredSources({
+          'app/components/mail/MailComposeDialog.vue':
+            '<script setup lang="ts">\nimport { useMailComposition } from "../../composables/useMailComposition"\n</script>',
+        }),
+      ),
+    ).toEqual([])
   })
 
   it('rejects reverse imports and callers that bypass the facade', () => {
@@ -20,6 +27,19 @@ describe('mail composition boundaries', () => {
     ).toEqual([
       'app/composables/mail-composition-draft.ts: cannot import mail composition module app/composables/mail-composition-submission.ts',
       'app/pages/mail-helper.ts: cannot import mail composition module app/composables/mail-composition-submission.ts',
+    ])
+  })
+
+  it('rejects Vue callers that bypass the facade', () => {
+    expect(
+      mailCompositionImportViolations(
+        declaredSources({
+          'app/pages/mail.vue':
+            '<script setup lang="ts">\nimport "../composables/mail-composition-submission"\n</script>\n<template><main></main></template>',
+        }),
+      ),
+    ).toEqual([
+      'app/pages/mail.vue: cannot import mail composition module app/composables/mail-composition-submission.ts',
     ])
   })
 

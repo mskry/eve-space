@@ -260,7 +260,89 @@ describe('platform module declarations', () => {
         'api/src/generated/platform/installed-module-worker.ts',
       ),
     ).toContain(
-      "operationId: 'alpha-operation', batch: { mode: 'complete-observation', operationId: 'alpha-batch' }, subjectKind: 'character'",
+      "operationId: 'alpha-operation', coreDataProducts: [] as const, batch: { mode: 'complete-observation', operationId: 'alpha-batch' }, subjectKind: 'character'",
+    )
+  })
+
+  it('rejects core-data products on batched resources', () => {
+    const declaration = manifest('alpha', {
+      resource: {
+        batch: { mode: 'complete-observation', operationId: 'alpha-operation' },
+        coreDataProducts: ['published-type-groups'],
+      },
+    })
+
+    expect(validationErrorMessage(declaration)).toContain(
+      'resource alpha/alpha-resource cannot declare core-data products with batch execution',
+    )
+  })
+
+  it('validates contribution-scoped core-data product declarations', () => {
+    const valid = manifest('alpha', {
+      route: { coreDataProducts: ['published-type-groups'] },
+      resource: { coreDataProducts: ['published-type-groups'] },
+    })
+    expect(() =>
+      validatePlatformModuleManifests([valid], coreModuleValidationAuthorities),
+    ).not.toThrow()
+
+    const unknown = manifest('alpha', {
+      route: { coreDataProducts: ['unknown-product' as never] },
+    })
+    expect(validationErrorMessage(unknown)).toContain('references unknown core-data product')
+
+    const duplicate = manifest('alpha', {
+      resource: {
+        coreDataProducts: ['published-type-groups', 'published-type-groups'],
+      },
+    })
+    expect(validationErrorMessage(duplicate)).toContain('declares duplicate core-data product')
+
+    const provider = manifest('alpha', {
+      activityProvider: { coreDataProducts: ['published-type-groups'] },
+    })
+    expect(validationErrorMessage(provider)).toContain(
+      'cannot use core-data product published-type-groups in activity-provider',
+    )
+
+    const malformed = manifest('alpha')
+    ;(malformed.server.routes[0] as { coreDataProducts: unknown }).coreDataProducts = 'invalid'
+    expect(validationErrorMessage(malformed)).toContain('core-data products must be an array')
+  })
+
+  it('rejects protected and audience-incompatible product policies', () => {
+    const declaration = manifest('alpha', {
+      route: { coreDataProducts: ['future-product' as never] },
+    })
+    const basePolicy = {
+      permittedContexts: ['route'] as const,
+    }
+    const protectedAuthorities = {
+      ...coreModuleValidationAuthorities,
+      coreDataProductContracts: {
+        'future-product': {
+          ...basePolicy,
+          audience: 'installed-module' as const,
+          sensitivity: 'protected' as const,
+        },
+      },
+    }
+    expect(() => validatePlatformModuleManifests([declaration], protectedAuthorities)).toThrow(
+      'cannot declare protected core-data product future-product',
+    )
+
+    const coreOnlyAuthorities = {
+      ...coreModuleValidationAuthorities,
+      coreDataProductContracts: {
+        'future-product': {
+          ...basePolicy,
+          audience: 'core' as const,
+          sensitivity: 'public' as const,
+        },
+      },
+    }
+    expect(() => validatePlatformModuleManifests([declaration], coreOnlyAuthorities)).toThrow(
+      'has incompatible audience for core-data product future-product',
     )
   })
 
@@ -445,7 +527,9 @@ describe('platform module registry generation', () => {
     expect(api?.indexOf("from '@eve-space/alpha-server'")).toBeLessThan(
       api?.indexOf("from '@eve-space/beta-server'") ?? -1,
     )
-    expect(api).toContain("module0Route0Factory(createPlatformModuleRouteCapabilities('alpha'))")
+    expect(api).toContain(
+      "module0Route0Factory(createPlatformModuleRouteCapabilities('alpha', [] as const))",
+    )
     expect(api).toContain("{ audience: 'member', requiredPermission: 'alpha.view' }")
     expectInOrder(api, [
       "platformModuleRouteComposers['owned-character'](",
@@ -502,6 +586,27 @@ describe('platform module registry generation', () => {
     ])
   })
 
+  it('emits each contribution exact core-data product declaration', () => {
+    const declaration = manifest('alpha', {
+      route: { coreDataProducts: ['published-type-groups'] },
+      resource: { coreDataProducts: ['published-type-groups'] },
+    })
+    const files = generateRegistryFiles([declaration])
+
+    expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
+      'createPlatformModuleRouteCapabilities(\'alpha\', ["published-type-groups"] as const)',
+    )
+    expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
+      'coreDataProducts: ["published-type-groups"] as const',
+    )
+    expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
+      'implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<typeof module0Resource0, readonly ["published-type-groups"]>',
+    )
+    expect(
+      files.get('api/src/generated/platform/installed-module-activity-providers.ts'),
+    ).toContain('coreDataProducts: [] as const')
+  })
+
   it('generates lazy activity providers with authorization and same-module pages', () => {
     const providers = generateRegistryFiles([manifest('alpha')]).get(
       'api/src/generated/platform/installed-module-activity-providers.ts',
@@ -514,7 +619,7 @@ describe('platform module registry generation', () => {
     expect(providers).toContain("audience: 'member', requiredPermission: 'alpha.view'")
     expect(providers).toContain("pageIds: ['alpha-page']")
     expect(providers).toContain(
-      "invoke: (context) => module0ActivityProvider0Factory(createPlatformModuleActivityProviderCapabilities('alpha', context))(context)",
+      "invoke: (context) => module0ActivityProvider0Factory(createPlatformModuleActivityProviderCapabilities('alpha', context, [] as const))(context)",
     )
   })
 
@@ -594,10 +699,10 @@ describe('platform module registry generation', () => {
       "import { routes as module1Route0Factory } from '@eve-space/beta-server'",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "{ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, implementation: module0Resource0 }",
+      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<typeof module0Resource0, readonly []> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "{ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, implementation: module1Resource0 }",
+      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, implementation: module1Resource0 satisfies PlatformResourceImplementationForProducts<typeof module1Resource0, readonly []> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       "'alpha-operation': module0EsiOperation0.contract,\n  'beta-operation': module1EsiOperation0.contract,",

@@ -1,4 +1,5 @@
 import type { MailDetail, MailRecipient } from '../queries/mail'
+import type { MailCompositionMode } from '../types/mail-composition'
 import { mailPartyName } from './mail-view'
 
 export const MAIL_RECIPIENT_LIMIT = 50
@@ -6,8 +7,6 @@ export const MAIL_SUBJECT_LIMIT = 1_000
 export const MAIL_BODY_LIMIT = 10_000
 export const MAIL_RECIPIENT_RESOLUTION_MIN_LENGTH = 1
 export const MAIL_RECIPIENT_SEARCH_MIN_LENGTH = 3
-
-export type MailCompositionMode = 'forward' | 'new' | 'reply' | 'reply-all'
 
 interface MailCompositionSeed {
   body: string

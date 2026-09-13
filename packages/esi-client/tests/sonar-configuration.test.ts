@@ -60,6 +60,7 @@ describe('Sonar project boundaries', () => {
       'api/tsconfig.test.json',
       'features/organization-activity/nuxt/tsconfig.json',
       'features/organization-activity/server/tsconfig.json',
+      'packages/core-data-contract/tsconfig.json',
       'packages/platform-module-contract/tsconfig.json',
       'packages/platform-module-nuxt/tsconfig.json',
       'packages/platform-module-server/tsconfig.json',

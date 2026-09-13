@@ -2,6 +2,7 @@ import { readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import ts from 'typescript'
 import { parse as parseVue } from 'vue/compiler-sfc'
+import { CORE_DATA_PRODUCT_CONTRACTS } from '../../packages/core-data-contract/src/index.js'
 import type { PlatformModuleManifest } from '../../packages/platform-module-contract/src/index.js'
 import { forbiddenGlobalReferences } from './forbidden-global-references.js'
 import { unwrapExpression } from './typescript-expressions.js'
@@ -135,6 +136,22 @@ const forbiddenCompositionCalls = new Set([
   'setTimeout',
 ])
 
+const forbiddenSdeIdentifiers = new Set([
+  'sdebuilds',
+  'sdedataset',
+  'sdedatasetrows',
+  'sdegroups',
+  'sdetypes',
+])
+
+const coreDataProductReferences = new Set<string>([
+  'coreData',
+  ...Object.entries(CORE_DATA_PRODUCT_CONTRACTS).flatMap(([productId, contract]) => [
+    productId,
+    contract.method,
+  ]),
+])
+
 export type FeaturePackageEnvironment = 'server' | 'nuxt'
 
 export interface FeatureBoundarySource {
@@ -234,6 +251,7 @@ export function serverSourceBoundaryViolations(source: FeatureBoundarySource) {
   for (const sourceFile of sourceFiles) {
     validateImports(source, sourceFile, packageRoot, 'server', violations)
     validateServerRuntimeBoundaries(source.path, sourceFile, violations)
+    validateCoreDataBypasses(source.path, sourceFile, violations)
     validateCompositionTopLevel(source.path, sourceFile, 'server', violations)
   }
   return violations
@@ -738,6 +756,139 @@ function validateServerRuntimeBoundaries(
   })
 }
 
+function validateCoreDataBypasses(path: string, sourceFile: ts.SourceFile, violations: string[]) {
+  let referencesSdeSource = false
+  visit(sourceFile, (node) => {
+    if (
+      (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
+      /\bsde_[a-z0-9_]+\b/i.test(node.text)
+    )
+      referencesSdeSource = true
+
+    if (ts.isIdentifier(node) && forbiddenSdeIdentifiers.has(normalizeIdentifier(node.text)))
+      referencesSdeSource = true
+  })
+  if (referencesSdeSource)
+    violations.push(`${path}: feature server code must not reference unrestricted SDE datasets`)
+  if (referencesSdeSource || hasCompetingCoreDataCache(sourceFile))
+    violations.push(
+      `${path}: feature server code must use declared core-data products instead of alternate adapters or caches`,
+    )
+}
+
+function hasCompetingCoreDataCache(sourceFile: ts.SourceFile) {
+  const stateNames = moduleLevelMutableStateNames(sourceFile)
+  if (stateNames.size === 0) return false
+  let found = false
+  visit(sourceFile, (node) => {
+    if (
+      !found &&
+      ts.isFunctionLike(node) &&
+      containsCoreDataProductReference(node) &&
+      containsIdentifier(node, stateNames)
+    )
+      found = true
+  })
+  return found
+}
+
+function moduleLevelMutableStateNames(sourceFile: ts.SourceFile) {
+  const stateNames = new Set<string>()
+  for (const statement of sourceFile.statements) {
+    if (ts.isVariableStatement(statement)) {
+      const isConst = (statement.declarationList.flags & ts.NodeFlags.Const) !== 0
+      for (const declaration of statement.declarationList.declarations)
+        if (
+          ts.isIdentifier(declaration.name) &&
+          (!isConst ||
+            (!!declaration.initializer && isMutableModuleStateInitializer(declaration.initializer)))
+        )
+          stateNames.add(declaration.name.text)
+      continue
+    }
+    if (
+      ts.isClassDeclaration(statement) &&
+      statement.name &&
+      statement.members.some(
+        (member) =>
+          ts.isPropertyDeclaration(member) &&
+          hasModifier(member, ts.SyntaxKind.StaticKeyword) &&
+          (!hasModifier(member, ts.SyntaxKind.ReadonlyKeyword) ||
+            (!!member.initializer && isMutableModuleStateInitializer(member.initializer))),
+      )
+    )
+      stateNames.add(statement.name.text)
+  }
+  return stateNames
+}
+
+function isMutableModuleStateInitializer(expression: ts.Expression): boolean {
+  if (containsEagerConstruction(expression)) return true
+  const value = unwrapExpression(expression)
+  if (!ts.isObjectLiteralExpression(value) && !ts.isArrayLiteralExpression(value)) return false
+  return !hasConstAssertion(expression) && !isResourceDefinition(expression, value)
+}
+
+function containsEagerConstruction(node: ts.Node): boolean {
+  if (ts.isFunctionLike(node)) return false
+  if (ts.isNewExpression(node)) return true
+  let found = false
+  ts.forEachChild(node, (child) => {
+    if (!found && containsEagerConstruction(child)) found = true
+  })
+  return found
+}
+
+function hasConstAssertion(expression: ts.Expression): boolean {
+  if (ts.isAsExpression(expression))
+    return isConstAssertionType(expression.type) || hasConstAssertion(expression.expression)
+  if (ts.isSatisfiesExpression(expression) || ts.isParenthesizedExpression(expression))
+    return hasConstAssertion(expression.expression)
+  return false
+}
+
+function isConstAssertionType(type: ts.TypeNode) {
+  return (
+    ts.isTypeReferenceNode(type) && ts.isIdentifier(type.typeName) && type.typeName.text === 'const'
+  )
+}
+
+function containsCoreDataProductReference(node: ts.Node) {
+  let found = false
+  visit(node, (child) => {
+    if (found) return
+    if (
+      (ts.isIdentifier(child) ||
+        ts.isStringLiteral(child) ||
+        ts.isNoSubstitutionTemplateLiteral(child)) &&
+      coreDataProductReferences.has(child.text)
+    )
+      found = true
+  })
+  return found
+}
+
+function containsIdentifier(node: ts.Node, names: ReadonlySet<string>) {
+  let found = false
+  visit(node, (child) => {
+    if (!found && ts.isIdentifier(child) && names.has(child.text)) found = true
+  })
+  return found
+}
+
+function isResourceDefinition(expression: ts.Expression, value: ts.ObjectLiteralExpression) {
+  if (!containsSatisfiesExpression(expression)) return false
+  const properties = new Set(value.properties.map((property) => propertyName(property.name)))
+  return ['operation', 'request', 'map'].every((property) => properties.has(property))
+}
+
+function containsSatisfiesExpression(expression: ts.Expression): boolean {
+  if (ts.isSatisfiesExpression(expression)) return true
+  if (ts.isAsExpression(expression) || ts.isParenthesizedExpression(expression))
+    return containsSatisfiesExpression(expression.expression)
+  return false
+}
+
 function validateNuxtRuntimeBoundaries(
   path: string,
   sourceFile: ts.SourceFile,
@@ -1166,6 +1317,10 @@ function calledName(expression: ts.Expression) {
 function identifierText(expression: ts.Expression) {
   const value = unwrapExpression(expression)
   return ts.isIdentifier(value) ? value.text : undefined
+}
+
+function normalizeIdentifier(value: string) {
+  return value.replaceAll(/[^a-z0-9]/gi, '').toLowerCase()
 }
 
 function importedNames(importClause: ts.ImportClause | undefined) {

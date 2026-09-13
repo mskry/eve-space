@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MailRecipient } from '../../queries/mail'
-import type { MailCompositionMode } from '../../utils/mail-composition'
+import type { MailCompositionMode } from '../../types/mail-composition'
 import { mailPartyName } from '../../utils/mail-view'
 
 const props = defineProps<{

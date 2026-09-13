@@ -1,3 +1,4 @@
+import type { CoreDataProductId } from '@eve-space/core-data-contract'
 import type {
   PlatformActivityProviderContext,
   PlatformActivityProviderCapabilities,
@@ -7,13 +8,17 @@ import { platformActivityProviderTimeoutMilliseconds } from '@eve-space/platform
 import { withModuleQueryTransaction } from '../db/module-query-transaction.js'
 import { sql } from '../db/client.js'
 import { createModulePersistenceCapability } from '../db/module-persistence.js'
+import { createCoreDataCapability } from '../core-data/capabilities.js'
 import { createPlatformModuleCollectionStatusReads } from './module-collection-status-capabilities.js'
 import { createPlatformModuleLogger } from './module-logging.js'
 
-export function createPlatformModuleActivityProviderCapabilities(
+export function createPlatformModuleActivityProviderCapabilities<
+  const ProductIds extends readonly CoreDataProductId[] = readonly [],
+>(
   moduleId: string,
   context: PlatformActivityProviderContext,
-): PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction> {
+  productIds: ProductIds = [] as unknown as ProductIds,
+): PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction, ProductIds> {
   const persistence = createModulePersistenceCapability(sql, moduleId, {
     readOnly: true,
     statementTimeoutMilliseconds: platformActivityProviderTimeoutMilliseconds,
@@ -25,6 +30,7 @@ export function createPlatformModuleActivityProviderCapabilities(
       characters: context.characters,
       signal: context.signal,
     }),
+    coreData: createCoreDataCapability(productIds, 'activity-provider'),
     logger: createPlatformModuleLogger(moduleId),
     persistence: {
       transaction: (operation) =>

@@ -10,10 +10,13 @@ export interface SyntheticModuleTransaction {
 }
 
 export function createSyntheticSessionRoutes(
-  capabilities: PlatformModuleRouteCapabilities<SyntheticModuleTransaction>,
+  capabilities: PlatformModuleRouteCapabilities<
+    SyntheticModuleTransaction,
+    readonly ['published-type-groups']
+  >,
 ) {
   return new Hono<PlatformAuthenticatedSessionRouteEnv>().get('/', async (context) => {
-    const records = await capabilities.sde.loadPublishedTypeGroups([])
+    const records = await capabilities.coreData.publishedTypeGroups({ typeIds: [] })
     return context.json({ authorization: context.var.platform.authorization, records }, 200)
   })
 }

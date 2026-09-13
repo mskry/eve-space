@@ -55,6 +55,44 @@ Feature-local infrastructure, authentication, network, or query-lifecycle substi
 accepted bridge. `pnpm lint` and `pnpm test:module-conformance` enforce the no-bypass side of this
 sequence; review must confirm the platform-first ordering when a new capability is introduced.
 
+## Core EVE Data Products
+
+The core-data coverage manifest records ownership and implementation state; it is not an access
+registry. Implemented internal entries continue to use their owning domain's focused interface.
+They are not routed through a generic product dispatcher. Generated ESI SDK availability, a planned
+coverage entry, or an implemented internal entry grants no module product, ESI scope, collection
+schedule, or storage authority.
+
+An installed contribution receives only the product methods declared on that route, resource, or
+activity provider. `published-type-groups` is the initial public product. It provides bounded local
+SDE enrichment with committed revision metadata and is available only in its declared route and
+resource-projection contexts. Feature code may persist an intentional feature-owned materialization
+through its restricted persistence capability, but it must not import product implementations, read
+SDE datasets or core databases, execute ESI directly, or establish another source adapter or cache
+for the canonical product.
+
+Promote shared data to a module product only through an accepted change that supplies all of the
+following:
+
+1. Identify a concrete production consumer and the exact contribution contexts that need the data.
+2. Name one core owner and authoritative source, and define an intentional versioned request and DTO rather than exposing source rows or ESI wire data.
+3. Define atomic request bounds, selector validation, complete-omission or pagination behavior, and whether the product may execute network work in each permitted context.
+4. Define authorization and trusted subject binding when applicable; an untrusted feature selector is never authority.
+5. Define revision or observation metadata, freshness and availability behavior, and retention limits for both the canonical result and allowed feature materializations.
+6. Add one host-owned adapter, catalog and coverage bindings, startup validation, contribution-scoped type/runtime tests, and source-specific integration coverage.
+7. Document consumer migration, rollback, and removal of any superseded interface, adapter, cache, schedule, or persisted representation.
+
+Protected products require a separate accepted change backed by a concrete consumer. That change
+must define trusted target authorization, credential ownership, lifecycle and generation binding,
+organization-version handling where relevant, permission and reviewer scope, pre- and post-load
+checks, cancellation, and capability lifetime before the product can enter the contract or catalog.
+Coverage status alone never satisfies these requirements.
+
+Rollback is a code deployment: restore the prior platform capability contract and generated
+registries, then remove the product catalog and pure contract package after callers have migrated
+back. Core-data products add no SDE ingest, ESI compatibility or cache, OAuth scope, module schema,
+or persisted application-data migration, so rollback must not change or erase any of those states.
+
 ## Migration Failure
 
 The API applies migrations for every installed module before opening its HTTP socket, including

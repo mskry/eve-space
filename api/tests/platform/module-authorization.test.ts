@@ -101,7 +101,6 @@ vi.mock('../../src/platform/module-navigation.js', async (importOriginal) => ({
 
 vi.mock('../../src/platform/core-read-capabilities.js', () => ({
   createOwnedCharacterCoreReads: mocks.createOwnedCharacterCoreReads,
-  sdeCoreReads: { loadPublishedTypeGroups: vi.fn() },
 }))
 vi.mock('../../src/platform/module-collection-status-capabilities.js', () => ({
   createPlatformModuleCollectionStatusReads: mocks.createPlatformModuleCollectionStatusReads,

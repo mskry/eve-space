@@ -12,7 +12,6 @@ import {
   resourceRefreshLockNamespace,
 } from '../db/locks.js'
 import { createTransactionScopedModulePersistenceCapability } from '../db/module-persistence.js'
-import { sdeCoreReads } from './core-read-capabilities.js'
 import { createPlatformModuleLogger } from './module-logging.js'
 import { materializeCoreResourceObservation } from './core-resource-materialization.js'
 import {
@@ -161,7 +160,6 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
         capabilities: {
           logger: createPlatformModuleLogger(observation.resource.moduleId),
           persistence: persistence.capability,
-          sde: sdeCoreReads,
         },
       })
       observation.signal?.throwIfAborted()

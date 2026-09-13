@@ -1,0 +1,33 @@
+{
+  "name": "@eve-space/core-data-contract",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:package": "pnpm build && vitest run test/package.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:vitest4",
+    "typescript": "catalog:tsgo",
+    "vitest": "catalog:vitest4"
+  }
+}
