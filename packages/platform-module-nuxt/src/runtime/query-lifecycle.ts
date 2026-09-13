@@ -39,14 +39,40 @@ export function clearAuthenticatedQueries<TSession>(
   unauthenticatedSession: TSession,
   sessionKey: EntryKey = [...PLATFORM_PRIVATE_QUERY_ROOT, 'session'],
 ) {
+  clearAuthenticatedQueryEntries(queryCache, unauthenticatedSession, sessionKey, true)
+}
+
+export function clearAuthenticatedQueriesAfterSessionTransition<TSession>(
+  queryCache: QueryCache,
+  settledSession: TSession,
+  sessionKey: EntryKey = [...PLATFORM_PRIVATE_QUERY_ROOT, 'session'],
+) {
+  clearAuthenticatedQueryEntries(queryCache, settledSession, sessionKey, false)
+}
+
+function clearAuthenticatedQueryEntries<TSession>(
+  queryCache: QueryCache,
+  sessionValue: TSession,
+  sessionKey: EntryKey,
+  cancelSession: boolean,
+) {
   const filter = { key: PLATFORM_PRIVATE_QUERY_ROOT }
   const sessionEntry = queryCache.get(sessionKey)
-  queryCache.cancelQueries(filter, new Error('Authenticated query state cleared.'))
+  if (cancelSession) {
+    queryCache.cancelQueries(filter, new Error('Authenticated query state cleared.'))
+  }
 
   for (const entry of queryCache.getEntries(filter)) {
-    if (entry !== sessionEntry) queryCache.remove(entry)
+    if (entry === sessionEntry) continue
+    if (!cancelSession) {
+      queryCache.cancelQueries(
+        { exact: true, key: entry.key },
+        new Error('Authenticated query state cleared.'),
+      )
+    }
+    queryCache.remove(entry)
   }
-  queryCache.setQueryData(sessionKey, unauthenticatedSession)
+  queryCache.setQueryData(sessionKey, sessionValue)
 }
 
 export function removePlatformModuleQueries(queryCache: QueryCache, moduleId: string) {

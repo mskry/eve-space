@@ -21,12 +21,26 @@ const typeVariations = {
   'type-render': 'render',
 } as const
 
-const props = defineProps<{
-  alt: string
-  dimension: EveImageDimension
-  id: number | string
-  kind: EveImageKind
-}>()
+const props = withDefaults(
+  defineProps<{
+    alt: string
+    decoding?: 'async' | 'auto' | 'sync'
+    dimension: EveImageDimension
+    fetchPriority?: 'auto' | 'high' | 'low'
+    height?: number
+    id: number | string
+    kind: EveImageKind
+    loading?: 'eager' | 'lazy'
+    width?: number
+  }>(),
+  {
+    decoding: 'auto',
+    fetchPriority: 'auto',
+    height: undefined,
+    loading: 'eager',
+    width: undefined,
+  },
+)
 
 const { allianceLogo, characterPortrait, corporationLogo, factionLogo, typeImage } = useEveImages()
 const source = computed(() => imageUrl(sourceSize(props.dimension)))
@@ -66,8 +80,11 @@ function sourceSize(minimum: number): EveImageSize {
     :src="source"
     :srcset="sourceSet"
     :alt="alt"
-    :width="dimension"
-    :height="dimension"
+    :width="width ?? dimension"
+    :height="height ?? dimension"
+    :loading="loading"
+    :decoding="decoding"
+    :fetchpriority="fetchPriority"
   />
 </template>
 

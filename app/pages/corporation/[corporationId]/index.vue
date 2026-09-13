@@ -62,6 +62,10 @@ const formattedFounded = computed(() =>
                       kind="character"
                       :id="corporation.ceoId"
                       :dimension="32"
+                      :width="32"
+                      :height="32"
+                      loading="lazy"
+                      decoding="async"
                       :alt="`${corporation.ceoName ?? `CEO ${corporation.ceoId}`} portrait`"
                     />
                     <span>{{ corporation.ceoName ?? `ID ${corporation.ceoId}` }}</span>
@@ -80,6 +84,10 @@ const formattedFounded = computed(() =>
                       kind="character"
                       :id="corporation.creatorId"
                       :dimension="32"
+                      :width="32"
+                      :height="32"
+                      loading="lazy"
+                      decoding="async"
                       :alt="`${corporation.creatorName ?? `Creator ${corporation.creatorId}`} portrait`"
                     />
                     <span>{{ corporation.creatorName ?? `ID ${corporation.creatorId}` }}</span>
@@ -93,6 +101,10 @@ const formattedFounded = computed(() =>
                     kind="alliance"
                     :id="corporation.allianceId"
                     :dimension="32"
+                    :width="32"
+                    :height="32"
+                    loading="lazy"
+                    decoding="async"
                     :alt="`${corporation.allianceName ?? `Alliance ${corporation.allianceId}`} logo`"
                   />
                   <span>{{ corporation.allianceName ?? `ID ${corporation.allianceId}` }}</span>

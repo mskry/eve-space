@@ -1,7 +1,8 @@
 import { useQuery } from '@pinia/colada'
 import { computed, shallowRef, watch, type ComputedRef, type Ref } from 'vue'
 import { characterAssetRoutesQuery } from '../queries/character-asset-routes'
-import { characterAssetsQuery, type CharacterAssetsAccess } from '../queries/character-assets'
+import { characterAssetsQuery } from '../queries/character-assets'
+import type { ProtectedCharacterQueryAccess } from '../queries/protected-character-query-access'
 import type { ApiClient } from '../utils/api-client'
 import { buildAssetHierarchy } from '../utils/assets-hierarchy'
 import {
@@ -13,6 +14,7 @@ import { useCharacterReauthorization } from './useCharacterReauthorization'
 interface CharacterAssetsOptions {
   apiClient: ApiClient
   authenticated: Readonly<Ref<boolean>>
+  authenticationReady: Readonly<Ref<boolean>>
   characterId: ComputedRef<number | undefined>
   characters: Readonly<
     Ref<
@@ -28,9 +30,10 @@ interface CharacterAssetsOptions {
 
 export function useCharacterAssets(options: CharacterAssetsOptions) {
   const isClient = options.isClient ?? import.meta.client
-  const access = computed<CharacterAssetsAccess>(() => ({
+  const access = computed<ProtectedCharacterQueryAccess>(() => ({
     isClient,
     authenticated: options.authenticated.value,
+    authenticationReady: options.authenticationReady.value,
     ownsCharacter: options.characters.value.some(
       (entry) => entry.characterId === options.characterId.value,
     ),

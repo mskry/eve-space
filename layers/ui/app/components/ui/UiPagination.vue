@@ -8,6 +8,11 @@ import {
   PaginationRoot,
 } from 'reka-ui'
 
+interface PaginationItem {
+  type: 'ellipsis' | 'page'
+  value?: number
+}
+
 const props = withDefaults(
   defineProps<{
     buttonClass?: string
@@ -49,6 +54,21 @@ function changePage(page: number) {
 
   emit('change-page', page)
 }
+
+function paginationItemIndex(item: PaginationItem, items: readonly PaginationItem[]) {
+  return items.indexOf(item)
+}
+
+function paginationItemKey(item: PaginationItem, items: readonly PaginationItem[]) {
+  if (item.type === 'page') return `page-${item.value}`
+
+  const position = paginationItemIndex(item, items)
+  const previousPage = items
+    .slice(0, position)
+    .findLast((candidate) => candidate.type === 'page')?.value
+  const nextPage = items.slice(position + 1).find((candidate) => candidate.type === 'page')?.value
+  return `ellipsis-${previousPage ?? 'start'}-${nextPage ?? 'end'}`
+}
 </script>
 
 <template>
@@ -58,6 +78,8 @@ function changePage(page: number) {
     :disabled="disabled"
     :items-per-page="1"
     :page="currentPage"
+    :show-edges="showPages"
+    :sibling-count="1"
     :total="totalPages"
     @update:page="changePage"
   >
@@ -69,10 +91,7 @@ function changePage(page: number) {
       >
         <slot name="previous">Previous</slot>
       </PaginationPrev>
-      <template
-        v-for="(item, index) in items"
-        :key="item.type === 'page' ? `page-${item.value}` : `ellipsis-${index}`"
-      >
+      <template v-for="item in items" :key="paginationItemKey(item, items)">
         <PaginationListItem
           v-if="item.type === 'page'"
           :class="['ui-pagination-button', 'ui-pagination-page', buttonClass]"
@@ -80,7 +99,11 @@ function changePage(page: number) {
         >
           {{ item.value }}
         </PaginationListItem>
-        <PaginationEllipsis v-else class="ui-pagination-ellipsis" :index="index">
+        <PaginationEllipsis
+          v-else
+          class="ui-pagination-ellipsis"
+          :index="paginationItemIndex(item, items)"
+        >
           ...
         </PaginationEllipsis>
       </template>

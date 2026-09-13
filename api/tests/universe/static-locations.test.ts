@@ -201,6 +201,35 @@ describe('static location cache', () => {
     ).resolves.toMatchObject([{ solarSystemSecurityStatus: 0.945913 }])
   })
 
+  test('rejects an invalid replacement without publishing it and recovers after retry', async () => {
+    const oldSnapshot = staticSnapshot(revision(), [system(30_000_001, -0.06)], [])
+    const newRevision = revision(3, '2026-08-26 12:01:00.000001+00')
+    const newSnapshot = staticSnapshot(newRevision, [system(30_000_001, 0.945913)], [])
+    mocks.loadStaticLocationSnapshot
+      .mockResolvedValueOnce(oldSnapshot)
+      .mockRejectedValueOnce(new Error('Static location projection is incomplete'))
+      .mockResolvedValueOnce(newSnapshot)
+    mocks.readStaticLocationRevision.mockResolvedValue(newRevision)
+    await getStaticLocations([{ id: 30_000_001, type: 'solar_system' }])
+
+    monotonicNow = staticLocationRevisionCheckIntervalMilliseconds
+    await expect(
+      getStaticLocations([{ id: 30_000_001, type: 'solar_system' }]),
+    ).resolves.toMatchObject([{ solarSystemSecurityStatus: -0.06 }])
+    await expect(
+      getStaticLocations([{ id: 30_000_001, type: 'solar_system' }]),
+    ).resolves.toMatchObject([{ solarSystemSecurityStatus: -0.06 }])
+    expect(mocks.readStaticLocationRevision).toHaveBeenCalledTimes(1)
+    expect(mocks.loadStaticLocationSnapshot).toHaveBeenCalledTimes(2)
+
+    monotonicNow += staticLocationRevisionCheckIntervalMilliseconds
+    await expect(
+      getStaticLocations([{ id: 30_000_001, type: 'solar_system' }]),
+    ).resolves.toMatchObject([{ solarSystemSecurityStatus: 0.945913 }])
+    expect(mocks.readStaticLocationRevision).toHaveBeenCalledTimes(2)
+    expect(mocks.loadStaticLocationSnapshot).toHaveBeenCalledTimes(3)
+  })
+
   test('throttles cold failures and initializes after the retry interval', async () => {
     const failure = new Error('Database unavailable')
     mocks.loadStaticLocationSnapshot.mockRejectedValueOnce(failure)

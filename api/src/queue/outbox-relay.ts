@@ -5,6 +5,7 @@ import {
 } from '../domain-events/store.js'
 import { categorizeRelayFailure, RelayPublicationError } from '../domain-events/definitions.js'
 import { env } from '../env.js'
+import { recordDiagnostic } from '../logging.js'
 import type { QueueOutcomeRecorder } from './outcome-recorder.js'
 import type { OutboxRelayOutcome } from './outcomes.js'
 import type { QueueProducer } from './producer.js'
@@ -65,7 +66,10 @@ export async function runOutboxRelayBatch(
       if (!claim.valid) {
         options.signal?.throwIfAborted()
         const category = 'invalid-event' as const
-        console.error('Outbox relay event failed', { eventId, category })
+        recordDiagnostic('outbox.relay.event-failed', {
+          context: { eventId },
+          failureCategory: category,
+        })
         await store.recordFailure({
           eventId,
           claimToken: claim.claimToken,
@@ -88,20 +92,25 @@ export async function runOutboxRelayBatch(
         const acknowledged = await store.acknowledge(eventId, claim.claimToken)
         options.signal?.throwIfAborted()
         if (!acknowledged) throw new RelayPublicationError('unknown')
-        console.info('Outbox relay event published', {
-          eventId,
-          eventType: claim.event.eventType,
-          payloadVersion: claim.event.payloadVersion,
+        recordDiagnostic('outbox.relay.event-published', {
+          context: {
+            eventId,
+            eventType: claim.event.eventType,
+            payloadVersion: claim.event.payloadVersion,
+          },
         })
         return { outcome: 'published' as const, category: null }
       } catch (error) {
         options.signal?.throwIfAborted()
         const category = categorizeRelayFailure(error)
-        console.error('Outbox relay event failed', {
-          eventId,
-          eventType: claim.event.eventType,
-          payloadVersion: claim.event.payloadVersion,
-          category,
+        recordDiagnostic('outbox.relay.event-failed', {
+          context: {
+            eventId,
+            eventType: claim.event.eventType,
+            payloadVersion: claim.event.payloadVersion,
+          },
+          error,
+          failureCategory: category,
         })
         await store.recordFailure({
           eventId,

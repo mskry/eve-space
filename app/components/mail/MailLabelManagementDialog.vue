@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CreateMailLabelMutationParameters, MailLabel } from '../../queries/mail'
+import { createKeyedMailLabels } from '../../utils/mail-view'
 
 type MailLabelColor = NonNullable<CreateMailLabelMutationParameters['color']>
 
@@ -19,6 +20,8 @@ const emit = defineEmits<{
 const open = defineModel<boolean>('open', { default: false })
 const name = defineModel<string>('name', { required: true })
 const color = defineModel<MailLabelColor | undefined>('color', { default: undefined })
+const keyedMailLabels = createKeyedMailLabels()
+const labelEntries = computed(() => keyedMailLabels(props.labels))
 const trimmedName = computed(() => name.value.trim())
 const nameError = computed(() => {
   if (trimmedName.value.length === 0) return 'Enter a label name between 1 and 40 characters.'
@@ -68,8 +71,8 @@ function labelName(label: MailLabel) {
       <h3 id="existing-mail-labels">Existing labels</h3>
       <p v-if="labels.length === 0">No labels are available.</p>
       <div
-        v-for="(label, index) in labels"
-        :key="label.labelId ?? `unknown-${index}`"
+        v-for="{ item: label, key } in labelEntries"
+        :key="key"
         class="mail-label-management-row"
       >
         <span class="mail-label-name-with-swatch">

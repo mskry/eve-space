@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MailHeader, MailLabel } from '../../queries/mail'
 import { formatRelativeTime } from '../../utils/format'
-import { isMailUnread, mailPartyName } from '../../utils/mail-view'
+import { createKeyedMailLabelIds, isMailUnread, mailPartyName } from '../../utils/mail-view'
 
 const props = defineProps<{
   header: MailHeader
@@ -12,6 +12,7 @@ const props = defineProps<{
 
 defineEmits<{ select: [mailId: number] }>()
 
+const keyedMailLabelIds = createKeyedMailLabelIds()
 const senderName = computed(() => mailPartyName(props.header.sender, 'sender'))
 const senderInitial = computed(() => senderName.value.charAt(0).toLocaleUpperCase() || '?')
 const visibleLabels = computed(() => {
@@ -20,8 +21,9 @@ const visibleLabels = computed(() => {
       label.labelId === null ? [] : [[label.labelId, label] as const],
     ),
   )
-  return props.header.labelIds.map((labelId) => ({
+  return keyedMailLabelIds(props.header.labelIds).map(({ item: labelId, key }) => ({
     color: byId.get(labelId)?.color,
+    key,
     labelId,
     name: byId.get(labelId)?.name?.trim() || `Label #${labelId}`,
   }))
@@ -41,6 +43,10 @@ const relativeTime = computed(() => formatRelativeTime(props.header.sentAt, prop
       kind="character"
       :id="header.sender.id"
       :dimension="44"
+      :width="44"
+      :height="44"
+      loading="lazy"
+      decoding="async"
       :alt="`${senderName} portrait`"
     />
     <span v-else class="mail-party-fallback" aria-hidden="true">{{ senderInitial }}</span>
@@ -55,7 +61,7 @@ const relativeTime = computed(() => formatRelativeTime(props.header.sentAt, prop
         {{ header.subject?.trim() || '(No subject)' }}
       </span>
       <span v-if="visibleLabels.length > 0" class="mail-label-chips">
-        <span v-for="label in visibleLabels" :key="label.labelId">
+        <span v-for="label in visibleLabels" :key="label.key">
           <span
             v-if="label.color"
             class="mail-label-color"

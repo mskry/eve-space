@@ -1,8 +1,10 @@
 import { getLocalAuthRedirect } from '../utils/auth-redirect'
+import { resolveRouteAudience } from '../utils/route-audience'
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const isAuthorizationRoute = to.path === '/auth'
-  if (to.path.startsWith('/admin') || to.meta.platformAudience === 'public') return
+  const audience = resolveRouteAudience(to.path, to.meta.platformAudience)
+  if (audience === 'admin' || audience === 'public') return
   // The API session cookie is host-only; protected data stays client-gated while auth resolves.
   if (import.meta.server) return
   const runtimeConfig = useRuntimeConfig()
@@ -26,7 +28,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (isAuthorizationRoute) return
-  const authRoute = { path: '/auth', query: { redirect: to.fullPath } }
+  const redirect = getLocalAuthRedirect(to.fullPath)
+  const authRoute = redirect ? { path: '/auth', query: { redirect } } : { path: '/auth' }
   const nuxtApp = useNuxtApp()
   if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
     onNuxtReady(() => navigateTo(authRoute))

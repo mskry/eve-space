@@ -3,6 +3,7 @@ import { closeCoordinationRedisConnection } from '../coordination-redis.js'
 import { loadPlannerScheduleOffset } from '../deployment/installation-settings.js'
 import { verifyDomainEventHandlers } from '../domain-events/handlers.js'
 import { env } from '../env.js'
+import { attachDiagnosticErrorListener, recordDiagnostic } from '../logging.js'
 import { waitForAbort } from '../shutdown-deadline.js'
 import type { WorkerPlatform, WorkerPlatformCloseResult } from '../worker-platform.js'
 import { createBullMqQueueProducer } from './bullmq-producer.js'
@@ -72,6 +73,7 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
       autorun: false,
     },
   )
+  attachDiagnosticErrorListener(worker, 'worker.runtime.failed')
   let blockingConnection: { disconnect(): void } | undefined
   let stopHeartbeat: (() => void) | undefined
   let forcedCleanup: Promise<void> | undefined
@@ -97,18 +99,16 @@ export async function startWorkerPlatform(signal?: AbortSignal): Promise<WorkerP
     throw error
   }
   worker.on('failed', (job, error) => {
-    console.error('Worker job failed', {
-      jobName: job?.name ?? 'unknown',
-      ...domainEventJobLogContext(job),
-      category: sanitizeJobFailure(error),
-      reason: sanitizeJobFailure(error),
+    recordDiagnostic('worker.job.failed', {
+      context: { jobName: job?.name ?? 'unknown', ...domainEventJobLogContext(job) },
+      error,
+      failureCategory: sanitizeJobFailure(error),
     })
   })
   let closing: Promise<WorkerPlatformCloseResult> | undefined
   // BullMQ does not restart the processing loop after `run()` settles.
-  const stopped = worker.run().catch((error: unknown) => {
-    if (!closing) console.error('Worker run loop stopped', sanitizeJobFailure(error))
-  })
+  const stopped = worker.run()
+  stopped.catch(() => {})
 
   return {
     stopped,
@@ -248,7 +248,7 @@ async function processJob(
   if (disposition.type === 'permanent') throw new UnrecoverableError('Permanent job failure')
   if (disposition.type === 'retryable') throw new Error(sanitizeJobFailure(disposition.error))
   if (job.name === 'domain-event')
-    console.info('Domain event job processed', domainEventJobLogContext(job))
+    recordDiagnostic('worker.domain-event.processed', { context: domainEventJobLogContext(job) })
 }
 
 function domainEventJobLogContext(job: Job | undefined) {

@@ -51,14 +51,13 @@ describe('worker entrypoint', () => {
 
   test('closes and exits nonzero when the processing loop ends outside shutdown', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => {})
-    const error = vi.fn()
+    const recordDiagnostic = vi.fn()
     const end = vi.fn().mockResolvedValue(undefined)
     const { close, forceClose, stopped, stopRunLoop } = pendingPlatform()
     const startWorkerPlatform = vi.fn().mockResolvedValue({ close, forceClose, stopped })
     vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
     vi.doMock('../../src/logging.js', () => ({
-      apiLogger: { error, info: vi.fn() },
-      logSafeError: vi.fn(),
+      recordDiagnostic,
     }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
     vi.doMock('../../src/worker/readiness.js', () => ({
@@ -74,7 +73,58 @@ describe('worker entrypoint', () => {
     await vi.waitFor(() => expect(process.exitCode).toBe(1))
     expect(close).toHaveBeenCalledOnce()
     expect(end).toHaveBeenCalled()
-    expect(error).toHaveBeenCalledWith(expect.stringContaining('processing loop ended'))
+    expect(recordDiagnostic).toHaveBeenCalledWith('worker.processing-loop.stopped')
+  })
+
+  test('records a processing-loop rejection once without exposing arbitrary errors', async () => {
+    const sentinels = {
+      cause: 'processing-cause-private-sentinel',
+      message: 'processing-message-private-sentinel',
+      property: 'processing-property-private-sentinel',
+      stack: 'processing-stack-private-sentinel',
+    }
+    const cause = new Error(sentinels.cause)
+    cause.stack = `Error: ${sentinels.cause}\n    at cause (file:///${sentinels.cause}.ts:2:1)`
+    const processingError = Object.assign(new Error(sentinels.message, { cause }), {
+      authorization: sentinels.property,
+    })
+    processingError.stack = `Error: ${sentinels.message}\n    at worker (file:///${sentinels.stack}.ts:4:2)`
+    const end = vi.fn().mockResolvedValue(undefined)
+    const close = vi.fn().mockResolvedValue({ drained: true, timedOut: false })
+    const startWorkerPlatform = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        close,
+        forceClose: vi.fn(),
+        stopped: Promise.reject(processingError),
+      }),
+    )
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
+    vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform }))
+    vi.doMock('../../src/worker/readiness.js', () => ({
+      assertWorkerStartupDependencies: vi.fn().mockResolvedValue(undefined),
+    }))
+    const { apiLogger } = await import('../../src/logging.js')
+    apiLogger.enableLogging()
+
+    try {
+      await import('../../src/worker.js')
+
+      expect(consoleError).toHaveBeenCalledOnce()
+      const serialized = String(consoleError.mock.calls[0]?.[0])
+      for (const sentinel of Object.values(sentinels)) expect(serialized).not.toContain(sentinel)
+      expect(JSON.parse(serialized)).toEqual(
+        expect.objectContaining({
+          event: 'worker.run-loop.failed',
+          failureCategory: 'processing-failure',
+          thrownType: 'object',
+        }),
+      )
+      expect(close).toHaveBeenCalledOnce()
+      expect(process.exitCode).toBe(1)
+    } finally {
+      apiLogger.disableLogging()
+    }
   })
 
   test('exits zero when a signal stops the processing loop', async () => {
@@ -106,11 +156,23 @@ describe('worker entrypoint', () => {
   })
 
   test('logs safely and closes dependencies when startup fails', async () => {
-    const startupError = new Error('password=private-value')
+    const sentinels = {
+      cause: 'worker-cause-private-sentinel',
+      message: 'worker-message-private-sentinel',
+      property: 'worker-property-private-sentinel',
+      stack: 'worker-stack-private-sentinel',
+    }
+    const cause = new Error(sentinels.cause)
+    cause.stack = `Error: ${sentinels.cause}\n    at cause (file:///worker/${sentinels.cause}.ts:2:1)`
+    const startupError = Object.assign(new Error(sentinels.message, { cause }), {
+      credentials: sentinels.property,
+      request: { body: sentinels.property, headers: { authorization: sentinels.property } },
+    })
+    startupError.stack = `Error: ${sentinels.message}\n    at startup (file:///worker/${sentinels.stack}.ts?secret=${sentinels.stack}:4:2)`
     const end = vi.fn().mockResolvedValue(undefined)
     const closeSharedCacheRedisConnection = vi.fn().mockResolvedValue(undefined)
     const closeSharedCoordinationRedisConnection = vi.fn().mockResolvedValue(undefined)
-    const logSafeError = vi.fn()
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     vi.doMock('../../src/db/client.js', () => ({ sql: { end } }))
     vi.doMock('../../src/cache-redis.js', () => ({
       closeSharedCacheRedisConnection,
@@ -119,22 +181,35 @@ describe('worker entrypoint', () => {
     vi.doMock('../../src/coordination-redis.js', () => ({
       closeSharedCoordinationRedisConnection,
     }))
-    vi.doMock('../../src/logging.js', () => ({
-      apiLogger: { error: vi.fn(), info: vi.fn() },
-      logSafeError,
-    }))
     vi.doMock('../../src/queue/platform.js', () => ({ startWorkerPlatform: vi.fn() }))
     vi.doMock('../../src/worker/readiness.js', () => ({
       assertWorkerStartupDependencies: vi.fn().mockRejectedValue(startupError),
     }))
 
-    await import('../../src/worker.js')
+    const { apiLogger } = await import('../../src/logging.js')
+    apiLogger.enableLogging()
+    try {
+      await import('../../src/worker.js')
 
-    expect(logSafeError).toHaveBeenCalledWith('Worker startup failed', startupError)
-    expect(closeSharedCacheRedisConnection).toHaveBeenCalledOnce()
-    expect(closeSharedCoordinationRedisConnection).toHaveBeenCalledOnce()
-    expect(end).toHaveBeenCalledWith({ timeout: expect.any(Number) })
-    expect(process.exitCode).toBe(1)
+      expect(consoleError).toHaveBeenCalledOnce()
+      const serialized = String(consoleError.mock.calls[0]?.[0])
+      for (const sentinel of Object.values(sentinels)) expect(serialized).not.toContain(sentinel)
+      expect(JSON.parse(serialized)).toEqual(
+        expect.objectContaining({
+          correlationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+          event: 'worker.startup.failed',
+          failureCategory: 'startup-failure',
+          msg: 'Runtime diagnostic',
+          thrownType: 'object',
+        }),
+      )
+      expect(closeSharedCacheRedisConnection).toHaveBeenCalledOnce()
+      expect(closeSharedCoordinationRedisConnection).toHaveBeenCalledOnce()
+      expect(end).toHaveBeenCalledWith({ timeout: expect.any(Number) })
+      expect(process.exitCode).toBe(1)
+    } finally {
+      apiLogger.disableLogging()
+    }
   })
 
   test('cancels readiness on an early signal without starting or claiming worker jobs', async () => {

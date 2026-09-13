@@ -8,23 +8,15 @@ definePageMeta({ title: 'Character Assets', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { authSession } = useAuthSession(apiClient)
+const { authLoading, authSession } = useAuthSession(apiClient)
 const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
-const selectedCharacter = computed(() =>
-  characters.value.find((character) => character.characterId === characterId.value),
-)
-useHead({
-  title: computed(() =>
-    selectedCharacter.value
-      ? `${selectedCharacter.value.name} Assets // EVE Space`
-      : 'Character Assets // EVE Space',
-  ),
-})
+const authenticationReady = computed(() => !authLoading.value)
 const assetsService = useCharacterAssets({
   apiClient,
   authenticated,
+  authenticationReady,
   characterId,
   characters,
 })

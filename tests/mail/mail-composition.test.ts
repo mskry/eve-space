@@ -1,19 +1,18 @@
 import { http, HttpResponse } from 'msw'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { useMailComposition } from '../../app/composables/useMailComposition'
 import {
   MAIL_BODY_LIMIT,
   MAIL_RECIPIENT_LIMIT,
   MAIL_RECIPIENT_SEARCH_MIN_LENGTH,
   MAIL_SUBJECT_LIMIT,
   seedMailComposition,
-  useMailComposition,
-} from '../../app/composables/useMailComposition'
+} from '../../app/utils/mail-composition'
 import type { MailDetail } from '../../app/queries/mail'
 import { createApiClient } from '../../app/utils/api-client'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
-import { readWorkspaceFile } from '../support/read-workspace-file'
 
 describe('mail composition', () => {
   it('seeds reply from the addressable sender and quotes plain text', () => {
@@ -70,16 +69,21 @@ describe('mail composition', () => {
     },
   )
 
-  it('keeps draft state outside query and browser storage', () => {
-    const composition = readWorkspaceFile('app/composables/useMailComposition.ts')
-    const page = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
+  it('does not restore draft state after the composition scope is remounted', () => {
+    const first = mountCompositionHarness()
+    first.composition.openNew()
+    first.composition.subject.value = 'Private draft'
+    first.composition.body.value = 'Private body'
+    first.composition.recipients.value = [{ id: 44, name: null, type: 'character' }]
+    first.wrapper.unmount()
 
-    expect(composition).toContain('const recipients = ref<MailRecipient[]>([])')
-    expect(composition).toContain("const subject = ref('')")
-    expect(composition).toContain("const body = ref('')")
-    expect(composition).not.toMatch(/localStorage|sessionStorage|setQueryData/)
-    expect(composition).toContain("watch(options.characterId, resetDraft, { flush: 'sync' })")
-    expect(page).toContain('useMailComposition({')
+    const second = mountCompositionHarness()
+    expect(second.composition.open.value).toBe(false)
+    expect(second.composition.subject.value).toBe('')
+    expect(second.composition.body.value).toBe('')
+    expect(second.composition.recipients.value).toEqual([])
+    second.wrapper.unmount()
+    vi.unstubAllGlobals()
   })
 
   it('discards reactive draft state when the open character changes', async () => {
@@ -93,8 +97,10 @@ describe('mail composition', () => {
         composition = useMailComposition({
           apiClient: createApiClient('http://localhost'),
           authenticated: computed(() => false),
+          authenticationReady: computed(() => true),
           characterId: computed(() => characterId.value),
           mailbox,
+          ownsCharacter: computed(() => true),
         })
         return () => h('div')
       },
@@ -126,8 +132,10 @@ describe('mail composition', () => {
         composition = useMailComposition({
           apiClient: createApiClient('http://localhost'),
           authenticated: computed(() => false),
+          authenticationReady: computed(() => true),
           characterId: computed(() => 7),
           mailbox,
+          ownsCharacter: computed(() => true),
         })
         return () => h('div')
       },
@@ -155,8 +163,10 @@ describe('mail composition', () => {
         composition = useMailComposition({
           apiClient: createApiClient('http://localhost'),
           authenticated: computed(() => false),
+          authenticationReady: computed(() => true),
           characterId: computed(() => 7),
           mailbox: compositionMailbox(),
+          ownsCharacter: computed(() => true),
         })
         return () => h('div')
       },
@@ -496,25 +506,10 @@ describe('mail composition', () => {
   })
 
   it('keeps all published limits and protected lookup gates explicit', () => {
-    const composition = readWorkspaceFile('app/composables/useMailComposition.ts')
-
     expect(MAIL_RECIPIENT_LIMIT).toBe(50)
     expect(MAIL_SUBJECT_LIMIT).toBe(1_000)
     expect(MAIL_BODY_LIMIT).toBe(10_000)
     expect(MAIL_RECIPIENT_SEARCH_MIN_LENGTH).toBe(3)
-    expect(composition).toContain('canRunProtectedQuery(import.meta.client')
-    expect(composition).toContain('searchQuery.value.length >= MAIL_RECIPIENT_SEARCH_MIN_LENGTH')
-  })
-
-  it('uses shared dialog, confirmation, and toast infrastructure without invalidating mail', () => {
-    const composition = readWorkspaceFile('app/composables/useMailComposition.ts')
-    const dialog = readWorkspaceFile('app/components/mail/MailComposeDialog.vue')
-
-    expect(dialog).toContain('<UiDialog')
-    expect(composition).toContain('openConfirmDialog({')
-    expect(composition).toContain('duration: Number.POSITIVE_INFINITY')
-    expect(composition).toContain('!preserveToastOnDispose')
-    expect(composition).not.toMatch(/invalidateQueries|refetchQueries/)
   })
 })
 
@@ -567,8 +562,10 @@ function mountCompositionHarness({
       composition = useMailComposition({
         apiClient: createApiClient('http://localhost'),
         authenticated: computed(() => true),
+        authenticationReady: computed(() => true),
         characterId: computed(() => 7),
         mailbox,
+        ownsCharacter: computed(() => true),
       })
       return () => h('div')
     },

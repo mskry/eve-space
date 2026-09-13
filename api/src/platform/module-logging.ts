@@ -5,6 +5,7 @@ import {
   type PlatformModuleLogFields,
   type PlatformModuleLogger,
 } from '@eve-space/platform-module-contract'
+import { recordDiagnostic } from '../logging.js'
 import { containsSensitiveText } from '../sensitive-data.js'
 
 const eventPattern = /^[a-z][a-z0-9]*(?:[.:-][a-z0-9]+)*$/
@@ -21,7 +22,7 @@ interface PlatformModuleLogSink {
 
 export function createPlatformModuleLogger(
   moduleId: string,
-  sink: PlatformModuleLogSink = console,
+  sink?: PlatformModuleLogSink,
 ): PlatformModuleLogger {
   if (
     !platformModuleIdPattern.test(moduleId) ||
@@ -31,14 +32,15 @@ export function createPlatformModuleLogger(
     throw new Error('Platform module logger requires an installed module identity')
 
   return {
-    info: (event, fields) => writeModuleLog(sink.info.bind(sink), moduleId, event, fields),
-    warn: (event, fields) => writeModuleLog(sink.warn.bind(sink), moduleId, event, fields),
-    error: (event, fields) => writeModuleLog(sink.error.bind(sink), moduleId, event, fields),
+    info: (event, fields) => writeModuleLog('info', sink, moduleId, event, fields),
+    warn: (event, fields) => writeModuleLog('warn', sink, moduleId, event, fields),
+    error: (event, fields) => writeModuleLog('error', sink, moduleId, event, fields),
   }
 }
 
 function writeModuleLog(
-  write: PlatformModuleLogSink['info'],
+  level: keyof PlatformModuleLogSink,
+  sink: PlatformModuleLogSink | undefined,
   moduleId: string,
   event: string,
   fields: PlatformModuleLogFields | undefined,
@@ -46,7 +48,13 @@ function writeModuleLog(
   if (!eventPattern.test(event) || event.length > 100)
     throw new Error('Platform module log event must be a bounded stable identifier')
   const safeFields = sanitizeLogFields(fields)
-  write('Platform module event', { ...safeFields, moduleId, event })
+  if (sink) {
+    sink[level]('Platform module event', { ...safeFields, moduleId, event })
+    return
+  }
+  recordDiagnostic(`platform.module.${level}`, {
+    context: { moduleId, moduleEvent: event },
+  })
 }
 
 function sanitizeLogFields(fields: PlatformModuleLogFields | undefined) {

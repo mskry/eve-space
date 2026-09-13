@@ -579,6 +579,15 @@ describe('character Skills components', () => {
     expect(wrapper.text()).not.toContain('AT LEVEL V')
     expect(wrapper.get('.character-summary-stats dd').text()).toBe('1')
     expect(wrapper.findAll('.skill-attribute-cells > div')).toHaveLength(5)
+    expect(
+      wrapper.findAll('.skill-attribute-cells img').map((image) => image.attributes('src')),
+    ).toEqual([
+      '/images/eve-attributes/intelligence.png',
+      '/images/eve-attributes/perception.png',
+      '/images/eve-attributes/charisma.png',
+      '/images/eve-attributes/willpower.png',
+      '/images/eve-attributes/memory.png',
+    ])
 
     await wrapper.setProps({
       attributes: undefined,
@@ -587,5 +596,45 @@ describe('character Skills components', () => {
     })
     await wrapper.get('.skill-attribute-notice button').trigger('click')
     expect(wrapper.emitted('retryAttributes')).toHaveLength(1)
+  })
+
+  it('shows bonus remaps before future cooldowns and expired availability', async () => {
+    vi.setSystemTime('2026-09-13T12:00:00.000Z')
+    const wrapper = await mountSuspended(CharacterSkillsSummaryCard, {
+      props: {
+        attributes,
+        attributesAuthorizeUrl: '',
+        attributesMessage: '',
+        attributesStatus: 'idle',
+        skills,
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+
+    expect(wrapper.get('.character-summary-stats').text()).toContain('REMAPS AVAILABLE')
+    expect(wrapper.get('.character-summary-stats dd').text()).toBe('1')
+
+    await wrapper.setProps({
+      attributes: {
+        ...attributes,
+        accruedRemapCooldownDate: '2026-10-15T12:00:00.000Z',
+        bonusRemaps: 0,
+      },
+    })
+    expect(wrapper.get('.character-summary-stats').text()).toContain('NEXT REMAP')
+    expect(wrapper.get('.character-summary-stats time').attributes('datetime')).toBe(
+      '2026-10-15T12:00:00.000Z',
+    )
+
+    await wrapper.setProps({
+      attributes: {
+        ...attributes,
+        accruedRemapCooldownDate: '2026-08-15T12:00:00.000Z',
+        bonusRemaps: 0,
+      },
+    })
+    expect(wrapper.get('.character-summary-stats dt').text()).toBe('REMAP')
+    expect(wrapper.get('.character-summary-stats dd').text()).toBe('AVAILABLE')
   })
 })

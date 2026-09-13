@@ -132,7 +132,15 @@ function formatDate(value: string) {
           </template>
           <dl v-if="attributes" class="skill-attribute-cells">
             <div v-for="attribute in attributeCells" :key="attribute.key">
-              <img :src="attribute.icon" alt="" aria-hidden="true" width="18" height="18" />
+              <img
+                :src="attribute.icon"
+                alt=""
+                width="18"
+                height="18"
+                loading="lazy"
+                decoding="async"
+                aria-hidden="true"
+              />
               <dt>{{ attribute.label }}</dt>
               <dd>{{ attribute.value }}</dd>
             </div>

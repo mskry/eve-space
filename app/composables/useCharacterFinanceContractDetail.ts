@@ -1,11 +1,13 @@
 import { useQuery, useQueryCache } from '@pinia/colada'
 import { computed, nextTick, readonly, ref, watch, type Ref } from 'vue'
 import {
-  canRunCharacterFinanceQuery,
   characterFinanceContractBidsQuery,
   characterFinanceContractItemsQuery,
-  type CharacterFinanceAccess,
 } from '../queries/finance'
+import {
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from '../queries/protected-character-query-access'
 import type { FinanceContracts } from '../types/finance'
 import type { ApiClient } from '../utils/api-client'
 import {
@@ -22,7 +24,7 @@ interface CharacterFinanceContractDetailOptions {
   characterId: Readonly<Ref<number | undefined>>
   contractPage: Readonly<Ref<number>>
   contracts: Readonly<Ref<FinanceContracts | undefined>>
-  financeAccess: Readonly<Ref<CharacterFinanceAccess>>
+  financeAccess: Readonly<Ref<ProtectedCharacterQueryAccess>>
   changePage: (resource: CharacterFinancePageResource, nextPage: number) => boolean
   refreshRequestedServices: () => Promise<unknown>
 }
@@ -160,7 +162,7 @@ export function useCharacterFinanceContractDetail(options: CharacterFinanceContr
 
   function refreshOpenedDetails() {
     const characterId = options.characterId.value ?? 0
-    if (!canRunCharacterFinanceQuery(options.financeAccess.value, characterId)) {
+    if (!canRunProtectedCharacterQuery(options.financeAccess.value, characterId)) {
       return Promise.resolve([])
     }
     const refreshes: Promise<unknown>[] = []

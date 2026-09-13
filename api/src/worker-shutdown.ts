@@ -14,10 +14,18 @@ export interface WorkerShutdownDependencies {
   closeCacheRedis(timeoutMs: number): Promise<void>
   closeCoordinationRedis(timeoutMs: number): Promise<void>
   closePostgres(timeoutMs: number): Promise<void>
-  recordFailure(message: string, error: unknown): void
+  recordFailure(component: WorkerShutdownComponent, error: unknown): void
   recordTimeout(): void
   markFailed(): void
 }
+
+type WorkerShutdownComponent =
+  | 'platform'
+  | 'platform-force'
+  | 'esi-runtime'
+  | 'cache-redis'
+  | 'coordination-redis'
+  | 'postgres'
 
 export function createWorkerShutdownCoordinator(
   dependencies: WorkerShutdownDependencies,
@@ -43,27 +51,22 @@ async function runWorkerShutdown(dependencies: WorkerShutdownDependencies): Prom
       if (result.status === 'aborted') forceClosePlatform(platform, dependencies)
       handlePlatformResult(result, deadline, dependencies)
     }
+    await runStep(deadline, 'esi-runtime', dependencies.closeEsiRuntime, dependencies)
     await runStep(
       deadline,
-      'Worker ESI runtime shutdown failed',
-      dependencies.closeEsiRuntime,
-      dependencies,
-    )
-    await runStep(
-      deadline,
-      'Worker cache Redis shutdown failed',
+      'cache-redis',
       () => dependencies.closeCacheRedis(deadline.remaining()),
       dependencies,
     )
     await runStep(
       deadline,
-      'Worker coordination Redis shutdown failed',
+      'coordination-redis',
       () => dependencies.closeCoordinationRedis(deadline.remaining()),
       dependencies,
     )
     await runStep(
       deadline,
-      'Worker PostgreSQL shutdown failed',
+      'postgres',
       () => dependencies.closePostgres(deadline.remaining()),
       dependencies,
     )
@@ -79,7 +82,7 @@ function forceClosePlatform(
   try {
     platform.forceClose()
   } catch (error) {
-    dependencies.recordFailure('Worker platform force shutdown failed', error)
+    dependencies.recordFailure('platform-force', error)
     dependencies.markFailed()
   }
 }
@@ -91,18 +94,18 @@ function handlePlatformResult(
 ) {
   if (result.status === 'fulfilled' && result.value.timedOut) deadline.expire()
   if (result.status !== 'rejected') return
-  dependencies.recordFailure('Worker platform shutdown failed', result.reason)
+  dependencies.recordFailure('platform', result.reason)
   dependencies.markFailed()
 }
 
 async function runStep(
   deadline: ShutdownDeadline,
-  failureMessage: string,
+  component: WorkerShutdownComponent,
   operation: () => Promise<void>,
   dependencies: WorkerShutdownDependencies,
 ) {
   const result = await waitForShutdownOperation(operation(), deadline.signal)
   if (result.status !== 'rejected') return
-  dependencies.recordFailure(failureMessage, result.reason)
+  dependencies.recordFailure(component, result.reason)
   dependencies.markFailed()
 }

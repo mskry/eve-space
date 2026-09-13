@@ -7,8 +7,8 @@ import {
   characterFinanceOpenOrdersQuery,
   characterFinanceOrderHistoryQuery,
   characterFinanceTransactionsQuery,
-  type CharacterFinanceAccess,
 } from '../queries/finance'
+import type { ProtectedCharacterQueryAccess } from '../queries/protected-character-query-access'
 import type { FinanceOrderMode } from '../types/finance'
 import type { ApiClient } from '../utils/api-client'
 import { isPositiveSafeInteger } from '../utils/number-guards'
@@ -19,6 +19,7 @@ export type CharacterFinancePageResource = 'journal' | 'order-history' | 'contra
 interface CharacterFinanceServicesOptions {
   apiClient: ApiClient
   authenticated: Readonly<Ref<boolean>>
+  authenticationReady: Readonly<Ref<boolean>>
   characterId: Readonly<Ref<number | undefined>>
   characters: Readonly<Ref<readonly { characterId: number }[]>>
   isClient?: boolean
@@ -37,9 +38,10 @@ export function useCharacterFinanceServices(options: CharacterFinanceServicesOpt
   const transactionContinuations = ref<Array<number | null>>([null])
   const transactionRangeIndex = ref(0)
 
-  const financeAccess = computed<CharacterFinanceAccess>(() => ({
+  const financeAccess = computed<ProtectedCharacterQueryAccess>(() => ({
     isClient,
     authenticated: options.authenticated.value,
+    authenticationReady: options.authenticationReady.value,
     ownsCharacter: options.characters.value.some(
       (character) => character.characterId === options.characterId.value,
     ),

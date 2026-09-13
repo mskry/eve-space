@@ -6,7 +6,7 @@ import {
   verifyRollbackJobContracts,
   type DomainEventRecoverySnapshot,
 } from '../worker/rollback-verifier.js'
-import { logSafeError } from '../logging.js'
+import { recordDiagnostic } from '../logging.js'
 
 try {
   const expectedSnapshot = parseExpectedRecoverySnapshot(process.argv.slice(2))
@@ -42,8 +42,11 @@ try {
     ),
   )
 } catch (error) {
-  logSafeError('Worker rollback verification failed', error)
+  recordDiagnostic('command.worker-rollback-verification.failed', { error })
   process.exitCode = 1
 } finally {
-  await sql.end()
+  await sql.end().catch((error) => {
+    recordDiagnostic('command.worker-rollback-verification.failed', { error })
+    process.exitCode = 1
+  })
 }

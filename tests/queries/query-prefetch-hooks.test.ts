@@ -56,9 +56,17 @@ describe('query prefetching and hooks', () => {
     const Root = defineComponent({ setup: () => () => h('span') })
     const { queryCache, wrapper } = mountWithQueryPlugins(Root)
 
-    await prefetchProtectedQuery(queryCache, options, false, true, 7)
-    await prefetchProtectedQuery(queryCache, options, true, false, 7)
-    await prefetchProtectedQuery(queryCache, options, true, true)
+    const allowed = {
+      authenticated: true,
+      authenticationReady: true,
+      isClient: true,
+      ownsCharacter: true,
+    }
+    await prefetchProtectedQuery(queryCache, options, { ...allowed, isClient: false }, 7)
+    await prefetchProtectedQuery(queryCache, options, { ...allowed, authenticationReady: false }, 7)
+    await prefetchProtectedQuery(queryCache, options, { ...allowed, authenticated: false }, 7)
+    await prefetchProtectedQuery(queryCache, options, { ...allowed, ownsCharacter: false }, 7)
+    await prefetchProtectedQuery(queryCache, options, allowed)
 
     expect(query).not.toHaveBeenCalled()
     wrapper.unmount()

@@ -1,16 +1,11 @@
 <script setup lang="ts">
+import { formatSettingsTimestamp } from '../../utils/settings-timestamp'
+
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const { coverage, errorMessage, initialize, loading } = useOrganizationRosterCoverage(apiClient)
 
 onMounted(initialize)
-
-function formatTimestamp(timestamp: string | null) {
-  if (!timestamp) return 'Not collected'
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(timestamp),
-  )
-}
 
 function statusLabel(status: string) {
   return status.replaceAll('-', ' ').toUpperCase()
@@ -41,7 +36,9 @@ function statusLabel(status: string) {
       <div class="roster-coverage__summary">
         <span>Managed corporation set</span>
         <strong>{{ statusLabel(coverage.managedCorporations.status) }}</strong>
-        <span>{{ formatTimestamp(coverage.managedCorporations.validatedAt) }}</span>
+        <span>{{
+          formatSettingsTimestamp(coverage.managedCorporations.validatedAt, 'Not collected')
+        }}</span>
       </div>
       <div class="roster-coverage__grid">
         <article
@@ -63,7 +60,7 @@ function statusLabel(status: string) {
             </div>
             <div>
               <dt>Last successful collection</dt>
-              <dd>{{ formatTimestamp(corporation.validatedAt) }}</dd>
+              <dd>{{ formatSettingsTimestamp(corporation.validatedAt, 'Not collected') }}</dd>
             </div>
             <div>
               <dt>Unregistered observations</dt>
@@ -76,7 +73,9 @@ function statusLabel(status: string) {
               :key="character.characterId"
             >
               <strong>{{ character.characterId }}</strong>
-              <span>Observed {{ formatTimestamp(character.observedAt) }}</span>
+              <span
+                >Observed {{ formatSettingsTimestamp(character.observedAt, 'Not collected') }}</span
+              >
             </li>
           </ul>
           <p v-else class="roster-coverage__complete">

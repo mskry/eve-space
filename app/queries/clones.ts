@@ -1,8 +1,11 @@
 import { defineQueryOptions } from '@pinia/colada'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
-import { isPositiveSafeInteger } from '../utils/number-guards'
 import { toApiQueryError } from '../utils/query-error'
+import {
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from './protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
@@ -11,25 +14,10 @@ type CharacterClient = ApiClient['api']['me']['characters'][':characterId']
 export type CharacterClones = InferResponseType<CharacterClient['clones']['$get'], 200>
 export type CharacterImplants = InferResponseType<CharacterClient['implants']['$get'], 200>
 
-export interface CharacterClonesAccess {
-  isClient: boolean
-  authenticated: boolean
-  ownsCharacter: boolean
-}
-
 interface CharacterClonesQueryParameters {
   apiClient: ApiClient
   characterId: number
-  access: CharacterClonesAccess
-}
-
-export function canRunCharacterClonesQuery(access: CharacterClonesAccess, characterId: number) {
-  return (
-    access.isClient &&
-    access.authenticated &&
-    access.ownsCharacter &&
-    isPositiveSafeInteger(characterId)
-  )
+  access: ProtectedCharacterQueryAccess
 }
 
 export const characterClonesQuery = defineQueryOptions(
@@ -46,7 +34,7 @@ export const characterClonesQuery = defineQueryOptions(
       return response.json() as Promise<CharacterClones>
     },
     ...QUERY_POLICY.characterClones,
-    enabled: canRunCharacterClonesQuery(access, characterId),
+    enabled: canRunProtectedCharacterQuery(access, characterId),
   }),
 )
 
@@ -64,6 +52,6 @@ export const characterImplantsQuery = defineQueryOptions(
       return response.json() as Promise<CharacterImplants>
     },
     ...QUERY_POLICY.characterImplants,
-    enabled: canRunCharacterClonesQuery(access, characterId),
+    enabled: canRunProtectedCharacterQuery(access, characterId),
   }),
 )

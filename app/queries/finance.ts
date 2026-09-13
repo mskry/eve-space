@@ -3,6 +3,10 @@ import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { isPositiveSafeInteger } from '../utils/number-guards'
 import { ApiQueryError, toApiQueryError } from '../utils/query-error'
+import {
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from './protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
@@ -27,16 +31,10 @@ type CharacterFinanceContracts = InferResponseType<CharacterClient['contracts'][
 type CharacterFinanceContractItems = InferResponseType<ContractClient['items']['$get'], 200>
 type CharacterFinanceContractBids = InferResponseType<ContractClient['bids']['$get'], 200>
 
-export interface CharacterFinanceAccess {
-  isClient: boolean
-  authenticated: boolean
-  ownsCharacter: boolean
-}
-
 interface FinanceQueryParameters {
   apiClient: ApiClient
   characterId: number
-  access: CharacterFinanceAccess
+  access: ProtectedCharacterQueryAccess
 }
 
 interface RequestedFinanceQueryParameters extends FinanceQueryParameters {
@@ -62,20 +60,6 @@ const financeIdentityMismatch = () =>
     code: 'FINANCE_IDENTITY_MISMATCH',
   })
 
-export function canRunCharacterFinanceQuery(
-  access: CharacterFinanceAccess,
-  characterId: number,
-  requested = true,
-) {
-  return (
-    access.isClient &&
-    access.authenticated &&
-    access.ownsCharacter &&
-    requested &&
-    isPositiveSafeInteger(characterId)
-  )
-}
-
 export const characterFinanceBalanceQuery = defineQueryOptions(
   ({ apiClient, characterId, access }: FinanceQueryParameters) => ({
     key: PRIVATE_QUERY_KEYS.characterFinanceBalance(characterId),
@@ -92,7 +76,7 @@ export const characterFinanceBalanceQuery = defineQueryOptions(
       return balance
     },
     ...QUERY_POLICY.characterFinanceBalance,
-    enabled: canRunCharacterFinanceQuery(access, characterId),
+    enabled: canRunProtectedCharacterQuery(access, characterId),
   }),
 )
 
@@ -114,7 +98,9 @@ export const characterFinanceJournalQuery = defineQueryOptions(
     },
     ...QUERY_POLICY.characterFinanceJournal,
     enabled:
-      canRunCharacterFinanceQuery(access, characterId, requested) && isPositiveSafeInteger(page),
+      canRunProtectedCharacterQuery(access, characterId) &&
+      requested &&
+      isPositiveSafeInteger(page),
   }),
 )
 
@@ -139,7 +125,8 @@ export const characterFinanceTransactionsQuery = defineQueryOptions(
     },
     ...QUERY_POLICY.characterFinanceTransactions,
     enabled:
-      canRunCharacterFinanceQuery(access, characterId, requested) &&
+      canRunProtectedCharacterQuery(access, characterId) &&
+      requested &&
       (fromId === null || isPositiveSafeInteger(fromId)),
   }),
 )
@@ -160,7 +147,7 @@ export const characterFinanceOpenOrdersQuery = defineQueryOptions(
       return orders
     },
     ...QUERY_POLICY.characterFinanceOpenOrders,
-    enabled: canRunCharacterFinanceQuery(access, characterId, requested),
+    enabled: canRunProtectedCharacterQuery(access, characterId) && requested,
   }),
 )
 
@@ -182,7 +169,9 @@ export const characterFinanceOrderHistoryQuery = defineQueryOptions(
     },
     ...QUERY_POLICY.characterFinanceOrderHistory,
     enabled:
-      canRunCharacterFinanceQuery(access, characterId, requested) && isPositiveSafeInteger(page),
+      canRunProtectedCharacterQuery(access, characterId) &&
+      requested &&
+      isPositiveSafeInteger(page),
   }),
 )
 
@@ -204,7 +193,9 @@ export const characterFinanceContractsQuery = defineQueryOptions(
     },
     ...QUERY_POLICY.characterFinanceContracts,
     enabled:
-      canRunCharacterFinanceQuery(access, characterId, requested) && isPositiveSafeInteger(page),
+      canRunProtectedCharacterQuery(access, characterId) &&
+      requested &&
+      isPositiveSafeInteger(page),
   }),
 )
 
@@ -273,14 +264,15 @@ export const characterFinanceContractBidsQuery = defineQueryOptions(
 )
 
 function canRunContractDetailQuery(
-  access: CharacterFinanceAccess,
+  access: ProtectedCharacterQueryAccess,
   characterId: number,
   requested: boolean,
   contractId: number,
   contractPage: number,
 ) {
   return (
-    canRunCharacterFinanceQuery(access, characterId, requested) &&
+    canRunProtectedCharacterQuery(access, characterId) &&
+    requested &&
     isPositiveSafeInteger(contractId) &&
     isPositiveSafeInteger(contractPage)
   )

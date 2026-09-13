@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     getJobCounts: vi.fn(),
     getJobSchedulersCount: vi.fn(),
     getJobs: vi.fn(),
+    on: vi.fn(),
   },
 }))
 
@@ -50,7 +51,10 @@ beforeEach(() => {
   mocks.queue.close.mockReset()
   mocks.queue.getJobCounts.mockReset()
   mocks.queue.getJobs.mockReset()
+  mocks.queue.on.mockReset()
   mocks.close.mockReset()
+  mocks.queue.close.mockResolvedValue(undefined)
+  mocks.close.mockResolvedValue(undefined)
   mocks.createProbe.mockReturnValue(mocks.connection)
   mocks.connection.ping.mockResolvedValue('PONG')
   mocks.connection.info.mockResolvedValue('# Memory\r\nused_memory:53687091\r\n')

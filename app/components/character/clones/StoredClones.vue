@@ -65,7 +65,14 @@ function cloneDisplayName(clone: JumpClone, group: JumpClone[]) {
               :class="{ 'character-clones-card--empty': clone.implants.length === 0 }"
               :aria-label="cloneDisplayName(clone, group.clones)"
             >
-              <img src="/images/eve-clone.png" alt="" width="32" height="32" />
+              <img
+                src="/images/eve-clone.png"
+                alt=""
+                width="32"
+                height="32"
+                loading="lazy"
+                decoding="async"
+              />
               <span class="character-clones-card-name">
                 {{ cloneDisplayName(clone, group.clones) }}
               </span>

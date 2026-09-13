@@ -16,10 +16,17 @@ export interface ApiShutdownDependencies {
   closeCacheRedis(timeoutMs: number): Promise<void>
   closeCoordinationRedis(timeoutMs: number): Promise<void>
   closePostgres(timeoutMs: number): Promise<void>
-  recordFailure(message: string, error: unknown): void
+  recordFailure(component: ApiShutdownComponent, error: unknown): void
   recordTimeout(): void
   markFailed(): void
 }
+
+type ApiShutdownComponent =
+  | 'http-server'
+  | 'esi-runtime'
+  | 'cache-redis'
+  | 'coordination-redis'
+  | 'postgres'
 
 export function createApiShutdownCoordinator(
   dependencies: ApiShutdownDependencies,
@@ -36,31 +43,26 @@ async function runApiShutdown(dependencies: ApiShutdownDependencies): Promise<vo
   try {
     await runStep(
       deadline,
-      'API HTTP server shutdown failed',
+      'http-server',
       () => closeHttpServer(dependencies.getServer(), deadline.signal),
       dependencies,
     )
+    await runStep(deadline, 'esi-runtime', dependencies.closeEsiRuntime, dependencies)
     await runStep(
       deadline,
-      'API ESI runtime shutdown failed',
-      dependencies.closeEsiRuntime,
-      dependencies,
-    )
-    await runStep(
-      deadline,
-      'API cache Redis shutdown failed',
+      'cache-redis',
       () => dependencies.closeCacheRedis(deadline.remaining()),
       dependencies,
     )
     await runStep(
       deadline,
-      'API coordination Redis shutdown failed',
+      'coordination-redis',
       () => dependencies.closeCoordinationRedis(deadline.remaining()),
       dependencies,
     )
     await runStep(
       deadline,
-      'API PostgreSQL shutdown failed',
+      'postgres',
       () => dependencies.closePostgres(deadline.remaining()),
       dependencies,
     )
@@ -71,13 +73,13 @@ async function runApiShutdown(dependencies: ApiShutdownDependencies): Promise<vo
 
 async function runStep(
   deadline: ShutdownDeadline,
-  failureMessage: string,
+  component: ApiShutdownComponent,
   operation: () => Promise<void>,
   dependencies: ApiShutdownDependencies,
 ) {
   const result = await waitForShutdownOperation(operation(), deadline.signal)
   if (result.status !== 'rejected') return
-  dependencies.recordFailure(failureMessage, result.reason)
+  dependencies.recordFailure(component, result.reason)
   dependencies.markFailed()
 }
 

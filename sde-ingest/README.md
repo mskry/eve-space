@@ -8,7 +8,7 @@ Projection version 3 adds `sde_solar_systems` (English system names and full-pre
 
 These projections are mandatory parts of the existing atomic reload: invalid or missing location data rolls back the transaction and preserves the previous build. The full raw `mapSolarSystems` and `npcStations` datasets remain in `sde_dataset_rows` as well.
 
-Asset security enrichment joins the local station and system projections in one query. It does not issue individual ESI station or system requests. Missing static locations retain null security; player-owned structures are outside this static projection. Station names continue through the existing batched universe-name lookup because the official SDE generally stores the components of a station name rather than a ready-to-display name.
+Asset security enrichment reads the local station and system projections through the process-local snapshot. It does not issue individual ESI station or system requests. Missing static locations retain null security; player-owned structures are outside this static projection. Station names continue through the existing batched universe-name lookup because the official SDE generally stores the components of a station name rather than a ready-to-display name.
 
 The API lazily loads the complete public location projection into each process. Its revision is the full `(build_number, ingest_version, ingested_at)` tuple, including the database timestamp's full precision. Active processes check that committed marker on the first location request after each one-minute interval; unchanged revisions do not reload the projection, and idle processes do not poll.
 

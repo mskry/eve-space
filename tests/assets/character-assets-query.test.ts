@@ -6,11 +6,11 @@ import { createSSRApp, defineComponent, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { unauthenticatedSession } from '../../app/queries/auth'
+import { characterAssetsQuery } from '../../app/queries/character-assets'
 import {
-  canRunCharacterAssetsQuery,
-  characterAssetsQuery,
-  type CharacterAssetsAccess,
-} from '../../app/queries/character-assets'
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from '../../app/queries/protected-character-query-access'
 import { clearAuthenticatedQueries, removeCharacterQueries } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { QUERY_POLICY } from '../../app/queries/query-policy'
@@ -21,9 +21,10 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
-const allowed: CharacterAssetsAccess = {
+const allowed: ProtectedCharacterQueryAccess = {
   isClient: true,
   authenticated: true,
+  authenticationReady: true,
   ownsCharacter: true,
 }
 
@@ -38,12 +39,13 @@ describe('character Assets private query', () => {
   })
 
   it('requires browser execution, authentication, exact ownership, and a positive safe ID', () => {
-    expect(canRunCharacterAssetsQuery(allowed, 7)).toBe(true)
-    expect(canRunCharacterAssetsQuery({ ...allowed, isClient: false }, 7)).toBe(false)
-    expect(canRunCharacterAssetsQuery({ ...allowed, authenticated: false }, 7)).toBe(false)
-    expect(canRunCharacterAssetsQuery({ ...allowed, ownsCharacter: false }, 7)).toBe(false)
+    expect(canRunProtectedCharacterQuery(allowed, 7)).toBe(true)
+    expect(canRunProtectedCharacterQuery({ ...allowed, isClient: false }, 7)).toBe(false)
+    expect(canRunProtectedCharacterQuery({ ...allowed, authenticationReady: false }, 7)).toBe(false)
+    expect(canRunProtectedCharacterQuery({ ...allowed, authenticated: false }, 7)).toBe(false)
+    expect(canRunProtectedCharacterQuery({ ...allowed, ownsCharacter: false }, 7)).toBe(false)
     for (const id of [0, -1, Number.NaN, Number.MAX_SAFE_INTEGER + 1]) {
-      expect(canRunCharacterAssetsQuery(allowed, id)).toBe(false)
+      expect(canRunProtectedCharacterQuery(allowed, id)).toBe(false)
     }
   })
 

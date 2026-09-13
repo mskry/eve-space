@@ -44,6 +44,10 @@ useHead({ title: 'Authorize Character // EVE Space' })
         kind="character"
         :id="authSession.account.mainCharacter.characterId"
         :dimension="72"
+        :width="72"
+        :height="72"
+        loading="eager"
+        decoding="async"
         alt=""
       />
       <div>
@@ -62,6 +66,10 @@ useHead({ title: 'Authorize Character // EVE Space' })
         <img
           src="https://web.ccpgamescdn.com/eveonlineassets/developers/eve-sso-login-white-large.png"
           alt="Log in with EVE Online"
+          width="270"
+          height="45"
+          loading="eager"
+          decoding="async"
         />
       </a>
       <div class="scope-list">
