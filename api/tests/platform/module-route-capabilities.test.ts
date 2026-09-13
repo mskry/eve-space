@@ -40,8 +40,8 @@ beforeEach(() => {
 
 describe('platform module route capabilities', () => {
   test('provides only declared product methods and module-scoped persistence', async () => {
-    const unsafe = vi.fn().mockResolvedValue([{ type_id: 34 }])
-    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
+    const query = vi.fn().mockResolvedValue([{ type_id: 34 }])
+    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ query }))
     const capabilities = createPlatformModuleRouteCapabilities('alpha', [
       'published-type-groups',
     ] as const)
@@ -59,12 +59,12 @@ describe('platform module route capabilities', () => {
         transaction.query('select type_id from types', [34]),
       ),
     ).resolves.toEqual([{ type_id: 34 }])
-    expect(unsafe).toHaveBeenCalledWith('select type_id from types', [34])
+    expect(query).toHaveBeenCalledWith('select type_id from types', [34])
   })
 
   test('provides resource collectors read-only bounded persistence', async () => {
-    const unsafe = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
-    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
+    const query = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
+    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ query }))
 
     const capabilities = createPlatformResourceReadCapabilities({
       moduleId: 'alpha',
@@ -95,12 +95,12 @@ describe('platform module route capabilities', () => {
       readOnly: true,
       statementTimeoutMilliseconds: 2_000,
     })
-    expect(unsafe).toHaveBeenCalledWith('select activity_id from activities', [])
+    expect(query).toHaveBeenCalledWith('select activity_id from activities')
   })
 
   test('provides activity providers bounded status, logging, and persistence', async () => {
-    const unsafe = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
-    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
+    const query = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
+    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ query }))
     const controller = new AbortController()
     const context = {
       userId: 'user-1',
@@ -127,17 +127,15 @@ describe('platform module route capabilities', () => {
     ])
     expect(capabilities.coreData).toEqual({})
     expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha', {
+      assertActive: expect.any(Function),
       readOnly: true,
       statementTimeoutMilliseconds: 2000,
     })
-    expect(unsafe).toHaveBeenCalledWith('select activity_id from activities', ['one'])
-    await expect(retainedTransaction!.query('select 1')).rejects.toThrow(
-      'Module query transaction is no longer active',
-    )
+    expect(query).toHaveBeenCalledWith('select activity_id from activities', ['one'])
 
     controller.abort()
-    await expect(capabilities.persistence.transaction(async () => undefined)).rejects.toThrow(
-      'Module activity provider was aborted',
-    )
+    const options = mocks.createModulePersistenceCapability.mock.calls[0]![2]
+    expect(() => options.assertActive()).toThrow('Module activity provider was aborted')
+    expect(retainedTransaction).toBeDefined()
   })
 })

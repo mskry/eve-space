@@ -945,14 +945,13 @@ describe('multi-process safety', () => {
       const alphaPersistence = createModulePersistenceCapability(connection, 'alpha')
       await expect(
         alphaPersistence.transaction(async (restricted) => {
-          const [identity] = await restricted<{ current_user: string; session_user: string }[]>`
-            select current_user, session_user
-          `
-          const [inserted] = await restricted<{ id: number; value: string }[]>`
-            insert into alpha_records (value)
-            values ('allowed')
-            returning id, value
-          `
+          const [identity] = await restricted.query<{
+            current_user: string
+            session_user: string
+          }>('select current_user, session_user')
+          const [inserted] = await restricted.query<{ id: number; value: string }>(
+            "insert into alpha_records (value) values ('allowed') returning id, value",
+          )
           return { identity, inserted }
         }),
       ).resolves.toEqual({
@@ -968,52 +967,78 @@ describe('multi-process safety', () => {
       })
       await expect(
         readOnlyPersistence.transaction(async (restricted) => {
-          const [record] = await restricted<{ value: string }[]>`
-            select value from alpha_records where id = 1
-          `
+          const [record] = await restricted.query<{ value: string }>(
+            'select value from alpha_records where id = 1',
+          )
           return record
         }),
       ).resolves.toEqual({ value: 'allowed' })
       await expect(
-        readOnlyPersistence.transaction(
-          async (restricted) => restricted`insert into alpha_records (value) values ('forbidden')`,
+        readOnlyPersistence.transaction((restricted) =>
+          restricted.query("insert into alpha_records (value) values ('forbidden')"),
         ),
       ).rejects.toMatchObject({ code: '25006' })
+      const writableEscapeAttempts: unknown[] = []
       await expect(
-        alphaPersistence.transaction(
-          async (restricted) => restricted`select count(*) from public.users`,
-        ),
-      ).rejects.toMatchObject({ code: '42501' })
+        alphaPersistence.transaction(async (restricted) => {
+          for (const statement of [
+            'reset role',
+            'select count(*) from public.users',
+            'insert into public.users default values',
+            'select count(*) from eve_module_beta.beta_records',
+            "insert into eve_module_beta.beta_records (value) values ('escaped')",
+          ]) {
+            writableEscapeAttempts.push(await restricted.query(statement).catch((error) => error))
+          }
+          await restricted.query(
+            "insert into alpha_records (value) values ('escape transaction rolled back')",
+          )
+        }),
+      ).rejects.toMatchObject({ category: 'prohibited-operation' })
+      expect(writableEscapeAttempts).toEqual([
+        expect.objectContaining({ category: 'prohibited-operation' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+      ])
+
+      const readOnlyEscapeAttempts: unknown[] = []
       await expect(
-        alphaPersistence.transaction(
-          async (restricted) => restricted`insert into public.users default values`,
-        ),
-      ).rejects.toMatchObject({ code: '42501' })
+        readOnlyPersistence.transaction(async (restricted) => {
+          for (const statement of [
+            'reset role',
+            'select count(*) from public.users',
+            'select count(*) from eve_module_beta.beta_records',
+          ]) {
+            readOnlyEscapeAttempts.push(await restricted.query(statement).catch((error) => error))
+          }
+        }),
+      ).rejects.toMatchObject({ category: 'prohibited-operation' })
+      expect(readOnlyEscapeAttempts).toEqual([
+        expect.objectContaining({ category: 'prohibited-operation' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+      ])
       await expect(
-        alphaPersistence.transaction(
-          async (restricted) => restricted`select count(*) from eve_module_beta.beta_records`,
-        ),
-      ).rejects.toMatchObject({ code: '42501' })
-      await expect(
-        alphaPersistence.transaction(
-          async (restricted) =>
-            restricted`insert into eve_module_beta.beta_records (value) values ('forbidden')`,
-        ),
-      ).rejects.toMatchObject({ code: '42501' })
-      await expect(
-        alphaPersistence.transaction(
-          async (restricted) => restricted`create table eve_module_alpha.forbidden (id integer)`,
+        alphaPersistence.transaction((restricted) =>
+          restricted.query('create table eve_module_alpha.forbidden (id integer)'),
         ),
       ).rejects.toMatchObject({ code: '42501' })
       await expect(
         alphaPersistence.transaction(async (restricted) => {
-          await restricted`insert into alpha_records (value) values ('rolled back')`
+          await restricted.query("insert into alpha_records (value) values ('rolled back')")
           throw new Error('rollback module transaction')
         }),
       ).rejects.toThrow('rollback module transaction')
 
       const [outside] = await connection<
-        { current_user: string; rolled_back_rows: number; session_user: string }[]
+        {
+          current_user: string
+          escaped_rows: number
+          rolled_back_rows: number
+          session_user: string
+        }[]
       >`
         select
           current_user,
@@ -1022,10 +1047,16 @@ describe('multi-process safety', () => {
             select count(*)::integer
             from eve_module_alpha.alpha_records
             where value = 'rolled back'
-          ) as rolled_back_rows
+          ) as rolled_back_rows,
+          (
+            select count(*)::integer
+            from eve_module_alpha.alpha_records
+            where value = 'escape transaction rolled back'
+          ) as escaped_rows
       `
       expect(outside).toEqual({
         current_user: 'eve_space',
+        escaped_rows: 0,
         rolled_back_rows: 0,
         session_user: 'eve_space',
       })
@@ -1137,7 +1168,7 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('restores the platform role and keeps writing when a module operation throws', async () => {
+  test('restores the platform role after a transaction-scoped module attempts a role escape', async () => {
     const connection = postgres(databaseUrl)
 
     try {
@@ -1150,16 +1181,22 @@ describe('multi-process safety', () => {
         const [before] = await transaction<{ role: string; search_path: string }[]>`
           select current_user as role, current_setting('search_path') as search_path
         `
-        const { capability } = createTransactionScopedModulePersistenceCapability(
-          transaction,
-          'alpha',
-        )
-        const failure = await capability
+        const persistence = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
+        const escapeAttempts: unknown[] = []
+        const failure = await persistence.capability
           .transaction(async (scoped) => {
             await scoped.query("insert into alpha_records (value) values ('rolled back')")
-            throw new Error('module materialize failed')
+            escapeAttempts.push(await scoped.query('reset role').catch((error) => error))
+            escapeAttempts.push(
+              await scoped.query('select count(*) from public.users').catch((error) => error),
+            )
+            escapeAttempts.push(
+              await scoped
+                .query("insert into eve_module_beta.beta_records (value) values ('escaped')")
+                .catch((error) => error),
+            )
           })
-          .catch((error: Error) => error.message)
+          .catch((error: unknown) => error)
 
         const [after] = await transaction<{ role: string; search_path: string }[]>`
           select current_user as role, current_setting('search_path') as search_path
@@ -1171,10 +1208,23 @@ describe('multi-process safety', () => {
           from eve_module_alpha.alpha_records
           where value = 'rolled back'
         `
-        return { before, failure, after, rolledBack }
+        return {
+          after,
+          before,
+          escapeAttempts,
+          failure,
+          rolledBack,
+          suppressed: persistence.suppressedFailure()?.error,
+        }
       })
 
-      expect(observed.failure).toBe('module materialize failed')
+      expect(observed.escapeAttempts).toEqual([
+        expect.objectContaining({ category: 'prohibited-operation' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+        expect.objectContaining({ category: 'cross-schema' }),
+      ])
+      expect(observed.failure).toMatchObject({ category: 'prohibited-operation' })
+      expect(observed.suppressed).toBe(observed.failure)
       expect(observed.after).toEqual(observed.before)
       expect(observed.rolledBack?.count).toBe(0)
 
@@ -1182,6 +1232,85 @@ describe('multi-process safety', () => {
         select count(*)::integer as count from deployment_modules where module_id = 'alpha'
       `
       expect(modules?.count).toBe(1)
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rolls back module materialization and platform collection state atomically', async () => {
+    const connection = postgres(databaseUrl)
+    const userId = randomUUID()
+    const lifecycleId = randomUUID()
+    const rollback = new Error('rollback materialization and collection state')
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
+        loadModuleSql: loadIsolationMigrationSql,
+      })
+      await connection`insert into users (id) values (${userId})`
+      await connection`
+        insert into characters (character_id, user_id, name, corporation_id)
+        values (9001, ${userId}, 'Atomic Pilot', 9801)
+      `
+      await connection`
+        insert into platform_subject_lifecycles (
+          subject_lifecycle_id,
+          subject_kind,
+          subject_id,
+          character_id
+        ) values (${lifecycleId}, 'character', '9001', 9001)
+      `
+      await connection`insert into deployment_modules (module_id) values ('alpha')`
+
+      await expect(
+        connection.begin(async (transaction) => {
+          const { capability } = createTransactionScopedModulePersistenceCapability(
+            transaction,
+            'alpha',
+          )
+          await capability.transaction((scoped) =>
+            scoped.query("insert into alpha_records (value) values ('atomic rollback')"),
+          )
+          await transaction`
+            insert into platform_collection_state (
+              module_id,
+              resource_id,
+              subject_kind,
+              subject_lifecycle_id,
+              subject_id,
+              next_eligible_at,
+              authorization_generation,
+              validated_at
+            ) values (
+              'alpha',
+              'records',
+              'character',
+              ${lifecycleId},
+              '9001',
+              '2026-09-13T12:00:00.000Z',
+              1,
+              '2026-09-13T11:00:00.000Z'
+            )
+          `
+          throw rollback
+        }),
+      ).rejects.toBe(rollback)
+
+      const [counts] = await connection<{ collection_states: number; module_records: number }[]>`
+        select
+          (
+            select count(*)::integer
+            from eve_module_alpha.alpha_records
+            where value = 'atomic rollback'
+          ) as module_records,
+          (
+            select count(*)::integer
+            from platform_collection_state
+            where module_id = 'alpha' and resource_id = 'records'
+          ) as collection_states
+      `
+      expect(counts).toEqual({ collection_states: 0, module_records: 0 })
     } finally {
       await connection.end()
     }

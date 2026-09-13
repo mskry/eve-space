@@ -5,7 +5,6 @@ import type {
   PlatformModuleResourceTransaction,
 } from '@eve-space/platform-module-contract'
 import { platformActivityProviderTimeoutMilliseconds } from '@eve-space/platform-module-contract'
-import { withModuleQueryTransaction } from '../db/module-query-transaction.js'
 import { sql } from '../db/client.js'
 import { createModulePersistenceCapability } from '../db/module-persistence.js'
 import { createCoreDataCapability } from '../core-data/capabilities.js'
@@ -20,6 +19,9 @@ export function createPlatformModuleActivityProviderCapabilities<
   productIds: ProductIds = [] as unknown as ProductIds,
 ): PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction, ProductIds> {
   const persistence = createModulePersistenceCapability(sql, moduleId, {
+    assertActive: () => {
+      if (context.signal.aborted) throw new Error('Module activity provider was aborted')
+    },
     readOnly: true,
     statementTimeoutMilliseconds: platformActivityProviderTimeoutMilliseconds,
   })
@@ -32,13 +34,6 @@ export function createPlatformModuleActivityProviderCapabilities<
     }),
     coreData: createCoreDataCapability(productIds, 'activity-provider'),
     logger: createPlatformModuleLogger(moduleId),
-    persistence: {
-      transaction: (operation) =>
-        persistence.transaction((transaction) =>
-          withModuleQueryTransaction(transaction, operation, () => {
-            if (context.signal.aborted) throw new Error('Module activity provider was aborted')
-          }),
-        ),
-    },
+    persistence,
   }
 }

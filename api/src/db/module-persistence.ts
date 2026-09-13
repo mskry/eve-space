@@ -7,9 +7,10 @@ import type postgres from 'postgres'
 import { withModuleQueryTransaction } from './module-query-transaction.js'
 import { modulePersistenceNames } from './module-persistence-provisioner.js'
 
-export type ModulePersistenceTransaction = postgres.TransactionSql
+type ModulePersistenceTransaction = postgres.TransactionSql
 
 interface ModulePersistenceOptions {
+  readonly assertActive?: () => void
   readonly readOnly?: boolean
   readonly statementTimeoutMilliseconds?: number
 }
@@ -18,12 +19,12 @@ export function createModulePersistenceCapability(
   connection: postgres.Sql,
   moduleId: string,
   options: ModulePersistenceOptions = {},
-): PlatformModulePersistence<ModulePersistenceTransaction> {
+): PlatformModulePersistence<PlatformModuleResourceTransaction> {
   const { runtimeRoleName, schemaName } = modulePersistenceNames(moduleId)
 
   return {
     transaction: async <T>(
-      operation: (transaction: ModulePersistenceTransaction) => Promise<T>,
+      operation: (transaction: PlatformModuleResourceTransaction) => Promise<T>,
     ) => {
       const result = await connection.begin(async (transaction) => {
         if (options.readOnly) await transaction`set transaction read only`
@@ -39,7 +40,11 @@ export function createModulePersistenceCapability(
               true
             )
           `
-        return operation(transaction)
+        return withModuleQueryTransaction(transaction, operation, {
+          assertActive: options.assertActive,
+          moduleId,
+          schemaName,
+        })
       })
       return result as T
     },
@@ -84,7 +89,7 @@ export function createTransactionScopedModulePersistenceCapability(
       transaction.savepoint(async (scope) => {
         await scope`set local role ${scope(runtimeRoleName)}`
         await scope`select set_config('search_path', ${searchPath}, true)`
-        return withModuleQueryTransaction(scope, operation)
+        return withModuleQueryTransaction(scope, operation, { moduleId, schemaName })
       }),
     )
 
