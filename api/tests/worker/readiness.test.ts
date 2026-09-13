@@ -14,7 +14,6 @@ import {
   installedModuleIds,
   installedModuleMigrations,
 } from '../../src/generated/platform/installed-module-migrations.js'
-import { apiLogger } from '../../src/logging.js'
 
 const appliedMigrations = [
   { module: 'core', name: expectedWorkerMigration },
@@ -70,29 +69,15 @@ describe('worker readiness', () => {
     })
   })
 
-  test('reports and logs database failures', async () => {
-    const error = new Error('password=private-value')
-    const connection = vi.fn().mockRejectedValue(error)
+  test('reports database failures without emitting a duplicate process diagnostic', async () => {
+    const connection = vi.fn().mockRejectedValue(new Error('password=private-value'))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    apiLogger.enableLogging()
 
-    try {
-      await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
-        healthy: false,
-        reason: 'Database unavailable',
-      })
-      expect(consoleError).toHaveBeenCalledOnce()
-      const logged = String(consoleError.mock.calls[0]?.[0])
-      expect(JSON.parse(logged)).toMatchObject({
-        level: 'error',
-        msg: 'Worker database readiness check failed',
-        errorName: 'Error',
-      })
-      expect(logged).not.toContain('private-value')
-    } finally {
-      apiLogger.disableLogging()
-      consoleError.mockRestore()
-    }
+    await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
+      healthy: false,
+      reason: 'Database unavailable',
+    })
+    expect(consoleError).not.toHaveBeenCalled()
   })
 
   test('accepts an applied migration and operational queue', async () => {

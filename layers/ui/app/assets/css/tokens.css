@@ -42,6 +42,10 @@
   --ui-font-h3-size: 1.17em;
   --ui-radius-control: 0;
   --ui-radius-panel: 0;
+  --ui-focus-ring: var(--ui-primary);
+  --ui-focus-ring-offset: var(--ui-canvas);
+  --ui-focus-ring-width: 0.125rem;
+  --ui-focus-ring-gap: 0.1875rem;
 
   /* Compatibility aliases while feature styles move into the UI layer. */
   --ink: var(--ui-text);

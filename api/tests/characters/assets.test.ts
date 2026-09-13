@@ -209,6 +209,94 @@ describe('complete character asset collection', () => {
 })
 
 describe('bounded character asset enrichment', () => {
+  test('preserves missing locations and exact zero and negative security values', async () => {
+    mocks.executeRepresentation.mockImplementation((definition) => {
+      if (definition.operation === 'character-asset-names') return Promise.resolve(result([]))
+      return Promise.resolve(
+        result({
+          page: 1,
+          totalPages: 1,
+          assets: [
+            asset({ itemId: 1, locationId: 60_000_001, locationType: 'station' }),
+            asset({ itemId: 2, locationId: 30_000_002, locationType: 'solar_system' }),
+            asset({ itemId: 3, locationId: 30_000_003, locationType: 'solar_system' }),
+          ],
+        }),
+      )
+    })
+    mocks.getStaticLocations.mockResolvedValue([
+      {
+        id: 30_000_002,
+        type: 'solar_system',
+        name: 'Zero',
+        solarSystemId: 30_000_002,
+        solarSystemSecurityStatus: 0,
+      },
+      {
+        id: 30_000_003,
+        type: 'solar_system',
+        name: 'Negative',
+        solarSystemId: 30_000_003,
+        solarSystemSecurityStatus: -0.06,
+      },
+    ])
+
+    const resultValue = await getCharacterAssets(characterId, subjectLifecycleId)
+
+    expect(resultValue.assets).toMatchObject([
+      {
+        itemId: 1,
+        locationName: null,
+        solarSystemId: null,
+        solarSystemSecurityStatus: null,
+      },
+      {
+        itemId: 2,
+        locationName: 'Zero',
+        solarSystemId: 30_000_002,
+        solarSystemSecurityStatus: 0,
+      },
+      {
+        itemId: 3,
+        locationName: 'Negative',
+        solarSystemId: 30_000_003,
+        solarSystemSecurityStatus: -0.06,
+      },
+    ])
+    expect(resultValue.enrichment.locations).toBe('partial')
+  })
+
+  test('retains resolved location names when cold static enrichment fails', async () => {
+    mocks.executeRepresentation.mockImplementation((definition) => {
+      if (definition.operation === 'character-asset-names') return Promise.resolve(result([]))
+      return Promise.resolve(
+        result({
+          page: 1,
+          totalPages: 1,
+          assets: [asset({ locationId: 60_000_001, locationType: 'station' })],
+        }),
+      )
+    })
+    mocks.resolveUniverseNamesBestEffort.mockResolvedValue({
+      names: new Map([
+        [60_000_001, { id: 60_000_001, name: 'Jita IV - Moon 4', category: 'station' }],
+      ]),
+      complete: true,
+    })
+    mocks.getStaticLocations.mockRejectedValue(new Error('Static location projection unavailable'))
+
+    await expect(getCharacterAssets(characterId, subjectLifecycleId)).resolves.toMatchObject({
+      assets: [
+        {
+          locationName: 'Jita IV - Moon 4',
+          solarSystemId: null,
+          solarSystemSecurityStatus: null,
+        },
+      ],
+      enrichment: { locations: 'partial' },
+    })
+  })
+
   test('sorts and deduplicates name candidates before callable execution', async () => {
     mocks.executeRepresentation.mockImplementation((definition, input) => {
       if (definition.operation === 'character-asset-names')

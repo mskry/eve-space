@@ -15,7 +15,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { unauthenticatedSession } from '../../app/queries/auth'
 import { characterOverviewQuery } from '../../app/queries/characters'
 import { corporationQuery } from '../../app/queries/corporations'
-import { canRunProtectedQuery, clearAuthenticatedQueries } from '../../app/queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../../app/queries/protected-character-query-access'
+import { clearAuthenticatedQueries } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { systemStatusQuery } from '../../app/queries/system-status'
 import { createApiClient } from '../../app/utils/api-client'
@@ -143,7 +144,16 @@ describe('SSR and authentication query boundaries', () => {
       setup() {
         const { data } = useQuery({
           ...characterOverviewQuery({ apiClient, characterId: 7 }),
-          enabled: () => canRunProtectedQuery(true, authenticated.value, 7),
+          enabled: () =>
+            canRunProtectedCharacterQuery(
+              {
+                authenticated: authenticated.value,
+                authenticationReady: true,
+                isClient: true,
+                ownsCharacter: true,
+              },
+              7,
+            ),
         })
         return () => h('span', data.value?.profile.name ?? 'locked')
       },
@@ -153,7 +163,15 @@ describe('SSR and authentication query boundaries', () => {
       setup() {
         useQuery({
           ...characterOverviewQuery({ apiClient, characterId: 7 }),
-          enabled: canRunProtectedQuery(false, true, 7),
+          enabled: canRunProtectedCharacterQuery(
+            {
+              authenticated: true,
+              authenticationReady: true,
+              isClient: false,
+              ownsCharacter: true,
+            },
+            7,
+          ),
         })
         return () => h('span', 'locked')
       },

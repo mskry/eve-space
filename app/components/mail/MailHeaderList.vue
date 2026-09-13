@@ -27,6 +27,10 @@ defineEmits<{
 }>()
 
 const currentTime = ref(Date.now())
+const skeletonKeys = Array.from(
+  { length: 6 },
+  (_, position) => `mail-header-skeleton-${position + 1}`,
+)
 let clock: ReturnType<typeof globalThis.setInterval> | undefined
 
 onMounted(() => {
@@ -84,7 +88,7 @@ onBeforeUnmount(() => {
     </div>
     <UiScrollArea class="mail-pane-scroll mail-header-scroll">
       <div v-if="loading" class="mail-header-skeletons" aria-hidden="true">
-        <div v-for="index in 6" :key="index" class="mail-header-skeleton">
+        <div v-for="key in skeletonKeys" :key="key" class="mail-header-skeleton">
           <span class="mail-skeleton-block mail-skeleton-avatar" />
           <span class="mail-header-skeleton-copy">
             <span class="mail-header-skeleton-meta">

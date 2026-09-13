@@ -144,6 +144,9 @@ describe('corporation record routes', async () => {
     const page = await openPage(`/corporation/${corporationId}`)
     await page.getByRole('heading', { name: 'Navigation Industries' }).waitFor()
     await page.getByText('A corporation used to verify routed records.').waitFor()
+    await expect
+      .poll(() => page.title())
+      .toBe('Navigation Industries [NAV] // Corporation Overview // EVE Space')
 
     expect(historyRequests()).toHaveLength(0)
     const shellHeader = await page.locator('.character-shell-header').elementHandle()
@@ -154,6 +157,12 @@ describe('corporation record routes', async () => {
       (url) => url.pathname === `/corporation/${corporationId}/alliance-history`,
     )
     await page.getByText('Route Alliance', { exact: true }).waitFor()
+    await expect
+      .poll(() => page.title())
+      .toBe('Navigation Industries [NAV] // Corporation Alliance History // EVE Space')
+    await expect
+      .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
+      .toBe('Navigation Industries [NAV] // Corporation Alliance History // EVE Space')
 
     expect(await shellHeader.evaluate((element) => element.isConnected)).toBe(true)
     expect(historyRequests()).toHaveLength(1)
@@ -163,6 +172,12 @@ describe('corporation record routes', async () => {
 
     await page.goBack()
     await page.waitForURL((url) => url.pathname === `/corporation/${corporationId}`)
+    await expect
+      .poll(() => page.title())
+      .toBe('Navigation Industries [NAV] // Corporation Overview // EVE Space')
+    await expect
+      .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
+      .toBe('Navigation Industries [NAV] // Corporation Overview // EVE Space')
     await expect
       .poll(() =>
         page.getByRole('link', { name: 'OVERVIEW', exact: true }).getAttribute('aria-current'),

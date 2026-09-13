@@ -9,7 +9,7 @@ import {
 } from '../queries/organization'
 import { formatOrganizationTimestamp } from '../utils/organization-presentation'
 
-definePageMeta({ title: 'Overview' })
+definePageMeta({ title: 'Overview', platformAudience: 'public' })
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)

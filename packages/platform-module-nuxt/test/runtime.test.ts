@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createEveImages } from '../src/runtime/eve-images.js'
 import {
   canRunPlatformProtectedQuery,
+  clearAuthenticatedQueriesAfterSessionTransition,
   removePlatformModuleQueries,
   removePlatformQuery,
   removePlatformQueryScope,
@@ -104,6 +105,56 @@ describe('platform module runtime surface', () => {
     expect(queryCache.cancel).toHaveBeenCalledOnce()
     expect(queryCache.remove).toHaveBeenCalledWith(activityEntry)
     expect(queryCache.remove).not.toHaveBeenCalledWith(otherEntry)
+  })
+
+  it('retains a settled anonymous session while clearing private descendants', () => {
+    const sessionEntry = queryEntry(['private', 'session'])
+    const childEntry = queryEntry(['private', 'characters', 7, 'assets'])
+    const queryCache = {
+      cancelQueries: vi.fn(),
+      get: vi.fn(() => sessionEntry),
+      getEntries: vi.fn(() => [sessionEntry, childEntry]),
+      remove: vi.fn(),
+      setQueryData: vi.fn(),
+    } as unknown as QueryCache
+
+    clearAuthenticatedQueriesAfterSessionTransition(queryCache, { authenticated: false })
+
+    expect(queryCache.cancelQueries).toHaveBeenCalledWith(
+      { exact: true, key: childEntry.key },
+      expect.any(Error),
+    )
+    expect(queryCache.cancelQueries).not.toHaveBeenCalledWith(
+      { exact: true, key: sessionEntry.key },
+      expect.anything(),
+    )
+    expect(queryCache.remove).toHaveBeenCalledWith(childEntry)
+    expect(queryCache.remove).not.toHaveBeenCalledWith(sessionEntry)
+    expect(queryCache.setQueryData).toHaveBeenCalledWith(['private', 'session'], {
+      authenticated: false,
+    })
+  })
+
+  it('retains a newly authenticated session while clearing prior private descendants', () => {
+    const sessionEntry = queryEntry(['private', 'session'])
+    const childEntry = queryEntry(['private', 'organization', 'roles'])
+    const queryCache = {
+      cancelQueries: vi.fn(),
+      get: vi.fn(() => sessionEntry),
+      getEntries: vi.fn(() => [sessionEntry, childEntry]),
+      remove: vi.fn(),
+      setQueryData: vi.fn(),
+    } as unknown as QueryCache
+    const nextSession = { authenticated: true, account: { userId: 'user-2' } }
+
+    clearAuthenticatedQueriesAfterSessionTransition(queryCache, nextSession)
+
+    expect(queryCache.cancelQueries).toHaveBeenCalledWith(
+      { exact: true, key: childEntry.key },
+      expect.any(Error),
+    )
+    expect(queryCache.remove).toHaveBeenCalledWith(childEntry)
+    expect(queryCache.setQueryData).toHaveBeenCalledWith(['private', 'session'], nextSession)
   })
 
   it('retains canonical authorization and organization refusal metadata', async () => {

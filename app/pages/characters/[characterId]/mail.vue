@@ -19,6 +19,7 @@ const mutations = useMailOrganizationMutations(apiClient)
 const mailbox = useCharacterMailbox({
   apiClient,
   authenticated,
+  authenticationReady,
   characterId,
   ownsCharacter,
   createdLabels: mutations.createdLabels,

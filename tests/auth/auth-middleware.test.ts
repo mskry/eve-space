@@ -80,6 +80,39 @@ describe('authentication route middleware', () => {
     })
   })
 
+  it.each(['/', '/settings/integrations'])(
+    'allows anonymous navigation to canonical public route %s',
+    async (path) => {
+      nuxtApp.isHydrating = true
+
+      await authMiddleware(route(path, path, {}, { platformAudience: 'public' }))
+
+      expect(fetchSession).not.toHaveBeenCalled()
+      expect(navigateTo).not.toHaveBeenCalled()
+      expect(onNuxtReady).not.toHaveBeenCalled()
+    },
+  )
+
+  it('allows authenticated navigation to a protected route', async () => {
+    fetchSession.mockResolvedValue({ authenticated: true })
+
+    await authMiddleware(route('/characters', '/characters'))
+
+    expect(fetchSession).toHaveBeenCalledOnce()
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it.each(['https://example.com/characters/7', '//example.com/characters/7'])(
+    'does not retain unsafe return path %s',
+    async (fullPath) => {
+      fetchSession.mockResolvedValue({ authenticated: false })
+
+      await authMiddleware(route(fullPath, '/characters/7'))
+
+      expect(navigateTo).toHaveBeenCalledWith({ path: '/auth' })
+    },
+  )
+
   it('defers an unauthenticated redirect until server-rendered hydration finishes', async () => {
     fetchSession.mockResolvedValue({ authenticated: false })
     nuxtApp.isHydrating = true
@@ -117,6 +150,11 @@ describe('authentication route middleware', () => {
   })
 })
 
-function route(fullPath: string, path: string, query: Record<string, unknown> = {}) {
-  return { path, fullPath, query, meta: {} }
+function route(
+  fullPath: string,
+  path: string,
+  query: Record<string, unknown> = {},
+  meta: Record<string, unknown> = {},
+) {
+  return { path, fullPath, query, meta }
 }

@@ -2,7 +2,10 @@ import { defineQueryOptions } from '@pinia/colada'
 import type { ApiClient } from '../utils/api-client'
 import { isNonnegativeSafeInteger, isPositiveSafeInteger } from '../utils/number-guards'
 import { ApiQueryError, toApiQueryError } from '../utils/query-error'
-import type { CharacterAssetsAccess } from './character-assets'
+import {
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from './protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 import { QUERY_POLICY } from './query-policy'
 
@@ -11,7 +14,7 @@ interface CharacterAssetRoutesQueryParameters {
   characterId: number
   originSystemId: number
   destinationSystemIds: readonly number[]
-  access: CharacterAssetsAccess
+  access: ProtectedCharacterQueryAccess
 }
 
 function canonicalAssetRouteDestinationSystemIds(ids: readonly number[]) {
@@ -19,17 +22,14 @@ function canonicalAssetRouteDestinationSystemIds(ids: readonly number[]) {
 }
 
 export function canRunCharacterAssetRoutesQuery(
-  access: CharacterAssetsAccess,
+  access: ProtectedCharacterQueryAccess,
   characterId: number,
   originSystemId: number,
   destinationSystemIds: readonly number[],
 ) {
   const destinations = canonicalAssetRouteDestinationSystemIds(destinationSystemIds)
   return (
-    access.isClient &&
-    access.authenticated &&
-    access.ownsCharacter &&
-    isPositiveSafeInteger(characterId) &&
+    canRunProtectedCharacterQuery(access, characterId) &&
     isPositiveSafeInteger(originSystemId) &&
     destinations.length > 0 &&
     destinations.length <= 10_000

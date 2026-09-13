@@ -81,10 +81,22 @@ function issueLabel(issue: (typeof props.visibleRow.row.issues)[number]) {
           class="assets-hierarchy-image"
           :src="imageSource"
           alt=""
-          width="32"
-          height="32"
+          :width="32"
+          :height="32"
+          loading="lazy"
+          decoding="async"
         />
-        <UiEveImage v-else :kind="imageKind" :id="asset.typeId" :dimension="32" alt="" />
+        <UiEveImage
+          v-else
+          :kind="imageKind"
+          :id="asset.typeId"
+          :dimension="32"
+          :width="32"
+          :height="32"
+          loading="lazy"
+          decoding="async"
+          alt=""
+        />
         <span class="assets-hierarchy-identity">
           <AssetsItemInformation
             :asset="asset"

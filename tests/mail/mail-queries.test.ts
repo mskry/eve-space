@@ -20,7 +20,7 @@ import {
   searchMailRecipientsQuery,
   sendMailMutation,
 } from '../../app/queries/mail'
-import { canRunProtectedQuery } from '../../app/queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../../app/queries/protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { QUERY_POLICY } from '../../app/queries/query-policy'
 import { createApiClient } from '../../app/utils/api-client'
@@ -585,7 +585,15 @@ describe('mail queries', () => {
         for (const option of options) {
           useQuery({
             ...option,
-            enabled: canRunProtectedQuery(false, true, characterId),
+            enabled: canRunProtectedCharacterQuery(
+              {
+                authenticated: true,
+                authenticationReady: true,
+                isClient: false,
+                ownsCharacter: true,
+              },
+              characterId,
+            ),
           })
         }
         return () => h('span', 'mail locked')
@@ -601,9 +609,22 @@ describe('mail queries', () => {
   })
 
   it('keeps mail disabled without authentication or a resolved owned character gate', () => {
-    expect(canRunProtectedQuery(true, false, characterId)).toBe(false)
-    expect(canRunProtectedQuery(true, true)).toBe(false)
-    expect(canRunProtectedQuery(true, true, characterId)).toBe(true)
+    const allowed = {
+      authenticated: true,
+      authenticationReady: true,
+      isClient: true,
+      ownsCharacter: true,
+    }
+    expect(canRunProtectedCharacterQuery({ ...allowed, authenticated: false }, characterId)).toBe(
+      false,
+    )
+    expect(
+      canRunProtectedCharacterQuery({ ...allowed, authenticationReady: false }, characterId),
+    ).toBe(false)
+    expect(canRunProtectedCharacterQuery({ ...allowed, ownsCharacter: false }, characterId)).toBe(
+      false,
+    )
+    expect(canRunProtectedCharacterQuery(allowed, characterId)).toBe(true)
   })
 })
 

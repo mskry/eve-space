@@ -22,7 +22,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   logout: []
-  navigate: []
+  navigate: [path: string]
   toggle: []
 }>()
 
@@ -67,7 +67,7 @@ function sectionIsActive(ownerId: string, navigationId: string) {
 }
 
 function handleLogout() {
-  emit('navigate')
+  emit('navigate', '/auth')
   emit('logout')
 }
 
@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
       warpDirection && `dashboard-sidebar--warp-${warpDirection}`,
     ]"
   >
-    <NuxtLink class="sidebar-brand" to="/" @click="$emit('navigate')">
+    <NuxtLink class="sidebar-brand" to="/" @click="$emit('navigate', '/')">
       <span class="brand-mark" aria-hidden="true">E</span>
       <span class="sidebar-brand-copy">
         <strong>NEOCOM</strong>
@@ -136,7 +136,7 @@ onBeforeUnmount(() => {
           :class="{
             'sidebar-link--active': sectionIsActive(section.ownerId, section.navigationId),
           }"
-          @click="$emit('navigate')"
+          @click="$emit('navigate', section.to)"
         >
           <span class="sidebar-icon">
             <AppIcon :name="section.icon" />
@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
         :disabled="variant === 'drawer' || labelsVisible"
         side="right"
       >
-        <NuxtLink class="sidebar-auth-link" to="/auth" @click="$emit('navigate')">
+        <NuxtLink class="sidebar-auth-link" to="/auth" @click="$emit('navigate', '/auth')">
           <AppIcon name="auth" />
           <span>AUTHORIZE EVE</span>
         </NuxtLink>

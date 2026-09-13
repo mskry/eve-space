@@ -369,6 +369,21 @@ beforeEach(() => {
 })
 
 describe('organization compliance routes', () => {
+  test('applies the canonical private response policy to every outcome class', async () => {
+    const anonymous = await organizationRoutes.request('/context')
+    const success = await get('/context')
+    const invalid = await get('/audit?beforeAuditSequence=invalid')
+    mocks.hasCurrentOrganizationOwnerAuthority.mockResolvedValueOnce(false)
+    const unauthorized = await get('/roles')
+
+    expect([anonymous.status, success.status, invalid.status, unauthorized.status]).toEqual([
+      401, 200, 400, 403,
+    ])
+    for (const response of [anonymous, success, invalid, unauthorized]) {
+      expectPrivateResponsePolicy(response)
+    }
+  })
+
   test.each(['pending', 'review_required', 'suspended'] as const)(
     'keeps self compliance details available while the account is %s',
     async (state) => {
@@ -1052,4 +1067,9 @@ function get(path: string) {
   return organizationRoutes.request(path, {
     headers: { Cookie: 'eve_space_session=session-token' },
   })
+}
+
+function expectPrivateResponsePolicy(response: Response) {
+  expect(response.headers.get('cache-control')).toBe('private, no-store')
+  expect(response.headers.get('vary')).toBe('Cookie')
 }

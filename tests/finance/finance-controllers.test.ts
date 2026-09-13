@@ -20,6 +20,7 @@ type Detail = ReturnType<typeof useCharacterFinanceContractDetail>
 
 interface MountedControllers {
   authenticated: ReturnType<typeof ref<boolean>>
+  authenticationReady: ReturnType<typeof ref<boolean>>
   characterId: ReturnType<typeof ref<number | undefined>>
   characters: ReturnType<typeof ref<Array<{ characterId: number }>>>
   services: Services
@@ -38,6 +39,16 @@ afterEach(() => {
 })
 
 describe('character Finance controllers', () => {
+  it('waits for authentication loading to complete before issuing protected requests', async () => {
+    const controllers = mountControllers({ authenticationReady: false })
+    await settle()
+    expect(financeRequests()).toEqual([])
+
+    controllers.authenticationReady.value = true
+    await waitForRequest('/api/me/characters/7/wallet')
+    await waitForRequest('/api/me/characters/7/wallet/journal')
+  })
+
   it('requires client authentication and exact ownership before loading balance and journal', async () => {
     const controllers = mountControllers({ authenticated: false, owned: false })
     await settle()
@@ -192,16 +203,22 @@ describe('character Finance controllers', () => {
   })
 })
 
-function mountControllers({ authenticated = true, owned = true } = {}): MountedControllers {
+function mountControllers({
+  authenticated = true,
+  authenticationReady = true,
+  owned = true,
+} = {}): MountedControllers {
   const state = {} as MountedControllers
   const Host = defineComponent({
     setup() {
       state.authenticated = ref(authenticated)
+      state.authenticationReady = ref(authenticationReady)
       state.characterId = ref(characterIdValue)
       state.characters = ref(owned ? [{ characterId: characterIdValue }] : [])
       state.services = useCharacterFinanceServices({
         apiClient: createApiClient(apiBase),
         authenticated: state.authenticated,
+        authenticationReady: state.authenticationReady,
         characterId: state.characterId,
         characters: state.characters,
         isClient: true,

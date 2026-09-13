@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   queue: {
     close: vi.fn(),
     disconnect: vi.fn(),
+    on: vi.fn(),
   },
   queueConstructor: vi.fn(),
 }))
@@ -47,6 +48,7 @@ describe('operations queue ownership', () => {
       settings: { repeatStrategy },
       skipWaitingForReady: true,
     })
+    expect(mocks.queue.on).toHaveBeenCalledWith('error', expect.any(Function))
   })
 
   test('takes ownership of an injected connection and closes both resources once', async () => {

@@ -307,6 +307,8 @@ function validateResourceBatch(
   issues: string[],
 ) {
   if (resource.batch === undefined) return
+  if (Array.isArray(resource.coreDataProducts) && resource.coreDataProducts.length > 0)
+    issues.push(`resource ${identity} cannot declare core-data products with batch execution`)
   if (resource.subjectKind !== 'character')
     issues.push(`resource ${identity} may only declare a batch for character subjects`)
   validateMember(

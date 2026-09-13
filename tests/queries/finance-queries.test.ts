@@ -7,7 +7,6 @@ import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { unauthenticatedSession } from '../../app/queries/auth'
 import {
-  canRunCharacterFinanceQuery,
   characterFinanceBalanceQuery,
   characterFinanceContractBidsQuery,
   characterFinanceContractItemsQuery,
@@ -16,8 +15,11 @@ import {
   characterFinanceOpenOrdersQuery,
   characterFinanceOrderHistoryQuery,
   characterFinanceTransactionsQuery,
-  type CharacterFinanceAccess,
 } from '../../app/queries/finance'
+import {
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from '../../app/queries/protected-character-query-access'
 import { clearAuthenticatedQueries, removeCharacterQueries } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { QUERY_POLICY } from '../../app/queries/query-policy'
@@ -28,9 +30,10 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
-const allowed: CharacterFinanceAccess = {
+const allowed: ProtectedCharacterQueryAccess = {
   isClient: true,
   authenticated: true,
+  authenticationReady: true,
   ownsCharacter: true,
 }
 const characterId = 7
@@ -209,16 +212,21 @@ describe('character Finance query identities and policies', () => {
 
 describe('character Finance query gates', () => {
   it('requires client execution, authentication, ownership, and a valid character', () => {
-    expect(canRunCharacterFinanceQuery(allowed, characterId)).toBe(true)
-    expect(canRunCharacterFinanceQuery({ ...allowed, isClient: false }, characterId)).toBe(false)
-    expect(canRunCharacterFinanceQuery({ ...allowed, authenticated: false }, characterId)).toBe(
+    expect(canRunProtectedCharacterQuery(allowed, characterId)).toBe(true)
+    expect(canRunProtectedCharacterQuery({ ...allowed, isClient: false }, characterId)).toBe(false)
+    expect(
+      canRunProtectedCharacterQuery({ ...allowed, authenticationReady: false }, characterId),
+    ).toBe(false)
+    expect(canRunProtectedCharacterQuery({ ...allowed, authenticated: false }, characterId)).toBe(
       false,
     )
-    expect(canRunCharacterFinanceQuery({ ...allowed, ownsCharacter: false }, characterId)).toBe(
+    expect(canRunProtectedCharacterQuery({ ...allowed, ownsCharacter: false }, characterId)).toBe(
       false,
     )
-    expect(canRunCharacterFinanceQuery(allowed, 0)).toBe(false)
-    expect(canRunCharacterFinanceQuery(allowed, characterId, false)).toBe(false)
+    expect(canRunProtectedCharacterQuery(allowed, 0)).toBe(false)
+    expect(characterFinanceJournalQuery({ ...pagedParameters(), requested: false }).enabled).toBe(
+      false,
+    )
   })
 
   it('leaves every secondary and detail query unopened until requested', () => {

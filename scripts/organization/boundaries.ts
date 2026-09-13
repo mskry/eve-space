@@ -47,7 +47,14 @@ const modulesByTier = {
     'role-store',
   ],
   entry: ['compliance-repair'],
-  transport: ['routes'],
+  transport: [
+    'route-middleware',
+    'routes',
+    'routes-governance',
+    'routes-management',
+    'routes-member',
+    'routes-review',
+  ],
 } as const
 
 type OrganizationTier = keyof typeof modulesByTier

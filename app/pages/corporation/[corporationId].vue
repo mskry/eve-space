@@ -2,6 +2,7 @@
 import { useQuery } from '@pinia/colada'
 import type { RecordSectionNavigationEntry } from '../../types/record-navigation'
 import { corporationQuery } from '../../queries/corporations'
+import { composeRecordPageTitle } from '../../utils/page-title'
 import { ApiQueryError } from '../../utils/query-error'
 import { parseRouteId } from '../../utils/route-id'
 
@@ -49,9 +50,11 @@ provideCorporationRecord({ corporationId, corporation })
 
 useHead({
   title: computed(() =>
-    corporation.value
-      ? `${corporation.value.name} [${corporation.value.ticker}] // Corporations // EVE Space`
-      : 'Corporation // EVE Space',
+    composeRecordPageTitle(
+      corporation.value ? `${corporation.value.name} [${corporation.value.ticker}]` : undefined,
+      route.meta.title,
+      'Corporation',
+    ),
   ),
 })
 </script>
@@ -97,6 +100,10 @@ useHead({
             kind="corporation"
             :id="corporation.corporationId"
             :dimension="72"
+            :width="72"
+            :height="72"
+            loading="eager"
+            decoding="async"
             :alt="`${corporation.name} corporation logo`"
           />
           <div>

@@ -393,16 +393,17 @@ describe('full-root platform module authorization', () => {
       await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
       expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/refresh-token|private-host/)
       expect(consoleError).toHaveBeenCalledOnce()
+      const completionEvent = JSON.parse(String(consoleInfo.mock.calls[0]?.[0]))
       expect(JSON.parse(String(consoleError.mock.calls[0]?.[0]))).toEqual(
         expect.objectContaining({
+          correlationId: completionEvent.requestId,
+          event: 'api.request.failed',
+          failureCategory: 'unexpected-failure',
           level: 'error',
-          msg: 'Unhandled API error',
-          requestId: expect.any(String),
-          category: 'unexpected application failure',
-          errorName: 'Error',
           method: 'GET',
+          msg: 'Runtime diagnostic',
           path: '/api/modules/alpha/profile/unexpected-error',
-          stack: expect.any(String),
+          thrownType: 'object',
         }),
       )
       expect(response.headers.get('cache-control')).toBe('private, no-store')
@@ -414,56 +415,53 @@ describe('full-root platform module authorization', () => {
     }
   })
 
-  test.each([
-    [true, expect.stringMatching(/^at /)],
-    [false, undefined],
-  ] as const)(
-    'omits multiline messages from logs with stack frames: %s',
-    async (withFrames, expectedStack) => {
-      const cause = new Error('connection failed\ndsn=postgres://user:pw@private-host')
-      mocks.unexpectedError = new Error('request failed\nrefresh-token=private-value', { cause })
-      if (withFrames) {
-        cause.stack = `Error: ${cause.message}\n    at cause (file:///workspace/private/cause.ts?token=private-value:10:2)`
-        mocks.unexpectedError.stack = `Error: ${mocks.unexpectedError.message}\n    at handler (file:///workspace/private/handler.ts?secret=private-value:20:4)`
-      } else {
-        cause.stack = `Error: ${cause.message}`
-        mocks.unexpectedError.stack = `Error: ${mocks.unexpectedError.message}`
-      }
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-      const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => undefined)
-      apiLogger.enableLogging()
-      try {
-        const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
-          headers: sessionCookie,
-        })
-        expect(response.status).toBe(500)
-        await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
-        expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(
-          /dsn=|postgres:|user:pw|private-host|refresh-token|private-value/,
-        )
-        expect(consoleError).toHaveBeenCalledOnce()
-        const loggedEvent = JSON.parse(String(consoleError.mock.calls[0]?.[0]))
-        expect(loggedEvent).toEqual(
-          expect.objectContaining({
-            level: 'error',
-            msg: 'Unhandled API error',
-            requestId: expect.any(String),
-            ...(withFrames ? { stack: expectedStack } : {}),
-            cause: expect.objectContaining({
-              errorName: 'Error',
-              ...(withFrames ? { stack: expectedStack } : {}),
-            }),
-          }),
-        )
-        expect(Object.hasOwn(loggedEvent, 'stack')).toBe(withFrames)
-        expect(Object.hasOwn(loggedEvent.cause, 'stack')).toBe(withFrames)
-      } finally {
-        apiLogger.disableLogging()
-        consoleError.mockRestore()
-        consoleInfo.mockRestore()
-      }
-    },
-  )
+  test('never serializes arbitrary API error content', async () => {
+    const sentinels = {
+      cause: 'cause-private-sentinel',
+      message: 'message-private-sentinel',
+      property: 'property-private-sentinel',
+      stack: 'stack-private-sentinel',
+    }
+    const cause = new Error(sentinels.cause)
+    cause.stack = `Error: ${sentinels.cause}\n    at cause (file:///workspace/${sentinels.cause}.ts:10:2)`
+    mocks.unexpectedError = Object.assign(new Error(sentinels.message, { cause }), {
+      authorization: sentinels.property,
+      response: { body: sentinels.property, headers: { cookie: sentinels.property } },
+    })
+    mocks.unexpectedError.stack = `Error: ${sentinels.message}\n    at handler (file:///workspace/${sentinels.stack}.ts?token=${sentinels.stack}:20:4)`
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    apiLogger.enableLogging()
+    try {
+      const response = await app.request('/api/modules/alpha/profile/unexpected-error', {
+        headers: sessionCookie,
+      })
+
+      expect(response.status).toBe(500)
+      await expect(response.json()).resolves.toEqual({ message: 'Internal server error' })
+      const serialized = JSON.stringify(consoleError.mock.calls)
+      for (const sentinel of Object.values(sentinels)) expect(serialized).not.toContain(sentinel)
+      expect(consoleError).toHaveBeenCalledOnce()
+      const loggedEvent = JSON.parse(String(consoleError.mock.calls[0]?.[0]))
+      const completionEvent = JSON.parse(String(consoleInfo.mock.calls[0]?.[0]))
+      expect(loggedEvent).toEqual(
+        expect.objectContaining({
+          correlationId: completionEvent.requestId,
+          event: 'api.request.failed',
+          failureCategory: 'unexpected-failure',
+          thrownType: 'object',
+        }),
+      )
+      expect(loggedEvent).not.toHaveProperty('cause')
+      expect(loggedEvent).not.toHaveProperty('stack')
+      expect(loggedEvent).not.toHaveProperty('authorization')
+      expect(loggedEvent).not.toHaveProperty('response')
+    } finally {
+      apiLogger.disableLogging()
+      consoleError.mockRestore()
+      consoleInfo.mockRestore()
+    }
+  })
 
   test.each([
     ['blocked', 'ORGANIZATION_MEMBER_BLOCKED'],

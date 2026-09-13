@@ -8,10 +8,10 @@ export type { CharacterRosterEntry }
 
 export function useCharacterRoster(apiClient: ApiClient) {
   const queryCache = useQueryCache()
-  const { authConfig, authSession, initializeAuth } = useAuthSession(apiClient)
+  const { authConfig, authLoading, authSession, initializeAuth } = useAuthSession(apiClient)
   const rosterQuery = useQuery({
     ...characterRosterQuery(apiClient),
-    enabled: () => import.meta.client && authSession.value.authenticated,
+    enabled: () => import.meta.client && !authLoading.value && authSession.value.authenticated,
   })
   const mainCharacterMutation = useMutation({
     mutation: async (characterId: number) => {

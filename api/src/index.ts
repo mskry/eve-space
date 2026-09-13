@@ -23,7 +23,7 @@ import { loadSession, requireSession } from './middleware/auth-session.js'
 import { TokenRefreshUnavailableError } from './auth/token-errors.js'
 import { organizationRoutes } from './organization/routes.js'
 import { universeRoutes } from './universe/routes.js'
-import { apiLogger, safeErrorMetadata, safeRequestMetadata } from './logging.js'
+import { apiLogger, recordDiagnostic, safeRequestMetadata } from './logging.js'
 
 type GlobalErrorBody = { message: string } | PlatformModuleErrorBody
 
@@ -82,9 +82,12 @@ app.onError((error, context) => {
   }
 
   const request = safeRequestMetadata(context.req.raw, context.req.path)
-  context.var.logger
-    .withMetadata(unexpectedErrorDetails(error, request.method, request.url))
-    .error('Unhandled API error')
+  const requestId = context.var.logger.getContext().requestId
+  recordDiagnostic('api.request.failed', {
+    correlationId: typeof requestId === 'string' ? requestId : undefined,
+    context: { method: request.method, path: request.url },
+    error,
+  })
   return context.json({ message: 'Internal server error' }, 500)
 })
 
@@ -102,8 +105,3 @@ export type AppType = ApplyGlobalResponse<
     503: { json: GlobalErrorBody }
   }
 >
-
-function unexpectedErrorDetails(error: unknown, method: string, path: string) {
-  const request = { category: 'unexpected application failure', method, path }
-  return { ...request, ...safeErrorMetadata(error) }
-}

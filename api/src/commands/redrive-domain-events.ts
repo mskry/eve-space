@@ -9,7 +9,7 @@ import {
 } from '../domain-events/store.js'
 import { sql } from '../db/client.js'
 import { assertSelectedDomainEventJobsAbsent } from '../queue/domain-event-inspection.js'
-import { logSafeError } from '../logging.js'
+import { recordDiagnostic } from '../logging.js'
 
 try {
   const options = parseDomainEventRedriveArgs(process.argv.slice(2))
@@ -21,8 +21,11 @@ try {
   })
   console.log(JSON.stringify(result))
 } catch (error) {
-  logSafeError('Domain-event re-drive failed', error)
+  recordDiagnostic('command.domain-event-redrive.failed', { error })
   process.exitCode = 1
 } finally {
-  await sql.end()
+  await sql.end().catch((error) => {
+    recordDiagnostic('command.domain-event-redrive.failed', { error })
+    process.exitCode = 1
+  })
 }

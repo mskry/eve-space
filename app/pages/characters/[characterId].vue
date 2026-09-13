@@ -8,6 +8,7 @@ import {
   characterNameViewTransitionName,
   characterPortraitViewTransitionName,
 } from '../../utils/view-transition'
+import { composeRecordPageTitle } from '../../utils/page-title'
 
 definePageMeta({ title: 'Characters', layout: 'headerless' })
 
@@ -24,6 +25,7 @@ const reauthorizationCycle = provideCharacterReauthorization()
 
 const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
+const authenticationReady = computed(() => !authLoading.value)
 const selectedCharacter = computed(() =>
   characters.value.find((character) => character.characterId === characterId.value),
 )
@@ -32,7 +34,13 @@ const {
   breadcrumbLabel: characterSectionLabel,
   entries: characterNavigation,
   prefetchNavigation: prefetchCharacterNavigation,
-} = useCharacterRecordNavigation({ apiClient, authenticated, characterId, ownsCharacter })
+} = useCharacterRecordNavigation({
+  apiClient,
+  authenticated,
+  authenticationReady,
+  characterId,
+  ownsCharacter,
+})
 const characterBreadcrumb = computed(() => {
   const name = selectedCharacter.value?.name
   if (!name) return 'CHARACTERS'
@@ -89,9 +97,7 @@ watch(
 
 useHead({
   title: computed(() =>
-    selectedCharacter.value
-      ? `${selectedCharacter.value.name} // Characters // EVE Space`
-      : 'Character // EVE Space',
+    composeRecordPageTitle(selectedCharacter.value?.name, route.meta.title, 'Character'),
   ),
 })
 </script>
@@ -152,6 +158,10 @@ useHead({
               kind="character"
               :id="selectedCharacter.characterId"
               :dimension="72"
+              :width="72"
+              :height="72"
+              loading="eager"
+              decoding="async"
               alt=""
             />
           </span>

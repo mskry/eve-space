@@ -145,6 +145,7 @@ describe('character Assets production route', async () => {
     const navigation = page.getByRole('navigation', { name: 'Character record sections' })
     const assetsLink = navigation.getByRole('link', { name: 'ASSETS', exact: true })
     await assetsLink.waitFor()
+    await expect.poll(() => page.title()).toBe('Manifest Pilot // Character Overview // EVE Space')
     expect(await navigation.getByRole('link').allTextContents()).toEqual([
       'OVERVIEW',
       'SKILLS',
@@ -176,6 +177,44 @@ describe('character Assets production route', async () => {
     expect(assetRequests()).toHaveLength(1)
     expect(routeRequests()).toHaveLength(1)
     expect(await assetsLink.getAttribute('aria-current')).toBe('page')
+    await expect.poll(() => page.title()).toBe('Manifest Pilot // Character Assets // EVE Space')
+    await expect
+      .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
+      .toBe('Manifest Pilot // Character Assets // EVE Space')
+    expect(
+      await page.locator('#main-content').evaluate((element) => document.activeElement === element),
+    ).toBe(true)
+  })
+
+  it('announces a distinct loaded title for every character child route', async () => {
+    const page = await openPage(`/characters/${characterId}`)
+    const navigation = page.getByRole('navigation', { name: 'Character record sections' })
+    await navigation.getByRole('link', { name: 'OVERVIEW', exact: true }).waitFor()
+    await expect.poll(() => page.title()).toBe('Manifest Pilot // Character Overview // EVE Space')
+
+    const routes = [
+      ['SKILLS', 'Character Skills'],
+      ['CLONES', 'Character Clones'],
+      ['FINANCE', 'Character Finance'],
+      ['ASSETS', 'Character Assets'],
+      ['HISTORY', 'Employment History'],
+      ['MAIL', 'Character Mail'],
+    ] as const
+    for (const [label, title] of routes) {
+      await navigation.getByRole('link', { name: label, exact: true }).click()
+      const expectedTitle = `Manifest Pilot // ${title} // EVE Space`
+      await expect.poll(() => page.title()).toBe(expectedTitle)
+      await expect
+        .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
+        .toBe(expectedTitle)
+    }
+
+    await navigation.getByRole('link', { name: 'OVERVIEW', exact: true }).click()
+    const overviewTitle = 'Manifest Pilot // Character Overview // EVE Space'
+    await expect.poll(() => page.title()).toBe(overviewTitle)
+    await expect
+      .poll(() => page.locator('.nuxt-route-announcer [role="status"]').textContent())
+      .toBe(overviewTitle)
   })
 
   it('renders the complete collection through bounded desktop rows and nested search context', async () => {

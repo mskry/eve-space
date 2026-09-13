@@ -1,13 +1,30 @@
 import { useQuery } from '@pinia/colada'
 import { computed, effectScope, ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MailHeader } from '../../app/queries/mail'
 import { useCharacterMailbox } from '../../app/composables/useCharacterMailbox'
+import { canRunProtectedCharacterQuery } from '../../app/queries/protected-character-query-access'
+import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 
 vi.mock('@pinia/colada', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@pinia/colada')>()),
   useQuery: vi.fn(),
 }))
+vi.mock('../../app/queries/protected-character-query-access', () => ({
+  canRunProtectedCharacterQuery: vi.fn(),
+}))
+
+beforeEach(() => {
+  vi.mocked(useQuery).mockReset()
+  vi.mocked(canRunProtectedCharacterQuery).mockImplementation(
+    (access, characterId) =>
+      access.authenticationReady &&
+      access.authenticated &&
+      access.ownsCharacter &&
+      Number.isSafeInteger(characterId) &&
+      characterId > 0,
+  )
+})
 
 describe('character mailbox', () => {
   it('keeps deleted labels out of stale headers, details, labels, and loaded pages', () => {
@@ -40,6 +57,7 @@ describe('character mailbox', () => {
       useCharacterMailbox({
         apiClient: {} as never,
         authenticated: computed(() => true),
+        authenticationReady: computed(() => true),
         characterId: computed(() => 7),
         ownsCharacter: computed(() => true),
         createdLabels: ref([]),
@@ -68,7 +86,116 @@ describe('character mailbox', () => {
     expect(mailbox.selectedHeader.value?.labelIds).toEqual([1])
     scope.stop()
   })
+
+  it('gates every query until client authentication and character ownership are ready', () => {
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(
+        queryState({ characterId: 7, messages: [], nextLastMailId: 99 }) as never,
+      )
+      .mockReturnValueOnce(queryState({ characterId: 7, labels: [], totalUnreadCount: 0 }) as never)
+      .mockReturnValueOnce(queryState({ characterId: 7, mailingLists: [] }) as never)
+      .mockReturnValueOnce(queryState(undefined) as never)
+      .mockReturnValueOnce(queryState(undefined) as never)
+
+    const authenticated = ref(false)
+    const authenticationReady = ref(false)
+    const characterId = ref<number>()
+    const ownsCharacter = ref(false)
+    const scope = effectScope()
+    const mailbox = scope.run(() =>
+      useCharacterMailbox({
+        apiClient: {} as never,
+        authenticated: computed(() => authenticated.value),
+        authenticationReady: computed(() => authenticationReady.value),
+        characterId: computed(() => characterId.value),
+        ownsCharacter: computed(() => ownsCharacter.value),
+        createdLabels: ref([]),
+        deletedLabelIds: ref(new Set()),
+        deletedMailIds: ref(new Set()),
+        deletePendingIds: ref(new Set()),
+        labelOverrides: ref(new Map()),
+        readStateOverrides: ref(new Map()),
+        reconcileCreatedLabels: vi.fn(),
+        reconcileLabelState: vi.fn(),
+        reconcileReadState: vi.fn(),
+      }),
+    )!
+    const options = capturedQueryOptions()
+    const enabled = () => options.map((queryOptions) => queryOptions().enabled)
+
+    expect(enabled()).toEqual([false, false, false, false, false])
+    authenticationReady.value = true
+    authenticated.value = true
+    characterId.value = 7
+    expect(enabled()).toEqual([false, false, false, false, false])
+
+    ownsCharacter.value = true
+    expect(enabled()).toEqual([true, true, true, false, false])
+
+    mailbox.selectMail(42)
+    expect(enabled()).toEqual([true, true, true, false, true])
+
+    mailbox.nextLastMailId.value = 99
+    mailbox.loadOlder()
+    expect(enabled()).toEqual([true, true, true, true, true])
+    scope.stop()
+  })
+
+  it('puts labels in request identity while keeping search and unread filters local', () => {
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(
+        queryState({ characterId: 7, messages: [], nextLastMailId: null }) as never,
+      )
+      .mockReturnValueOnce(queryState({ characterId: 7, labels: [], totalUnreadCount: 0 }) as never)
+      .mockReturnValueOnce(queryState({ characterId: 7, mailingLists: [] }) as never)
+      .mockReturnValueOnce(queryState(undefined) as never)
+      .mockReturnValueOnce(queryState(undefined) as never)
+
+    const scope = effectScope()
+    const mailbox = scope.run(() =>
+      useCharacterMailbox({
+        apiClient: {} as never,
+        authenticated: computed(() => true),
+        authenticationReady: computed(() => true),
+        characterId: computed(() => 7),
+        ownsCharacter: computed(() => true),
+        createdLabels: ref([]),
+        deletedLabelIds: ref(new Set()),
+        deletedMailIds: ref(new Set()),
+        deletePendingIds: ref(new Set()),
+        labelOverrides: ref(new Map()),
+        readStateOverrides: ref(new Map()),
+        reconcileCreatedLabels: vi.fn(),
+        reconcileLabelState: vi.fn(),
+        reconcileReadState: vi.fn(),
+      }),
+    )!
+    const [headersOptions] = capturedQueryOptions()
+
+    mailbox.selectLabel(2)
+    expect(headersOptions!().key).toEqual(PRIVATE_QUERY_KEYS.mailHeaders(7, [2], null))
+    expect(mailbox.headerEmptyMessage.value).toBe('There are no messages in this folder.')
+
+    mailbox.selectLabel(null)
+    mailbox.search.value = 'priority'
+    mailbox.unreadOnly.value = true
+    expect(headersOptions!().key).toEqual(PRIVATE_QUERY_KEYS.mailHeaders(7, [], null))
+    expect(mailbox.headerEmptyMessage.value).toBe(
+      'No matches in loaded messages. Load older messages to search further.',
+    )
+    scope.stop()
+  })
 })
+
+function capturedQueryOptions() {
+  return vi.mocked(useQuery).mock.calls.map(
+    ([options]) =>
+      options as unknown as () => {
+        enabled: boolean
+        key: readonly unknown[]
+      },
+  )
+}
 
 function queryState<T>(data: T) {
   return {

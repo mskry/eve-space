@@ -15,6 +15,7 @@ export default defineConfig({
       'tests/platform/module-composition-side-effects.test.ts',
       'tests/platform/module-package-boundaries.test.ts',
       'tests/platform/organization-boundaries.test.ts',
+      'tests/platform/mail-composition-boundaries.test.ts',
       'tests/platform/platform-boundaries.test.ts',
       'tests/platform/queue-boundaries.test.ts',
       'tests/platform/platform-module-conformance.test.ts',

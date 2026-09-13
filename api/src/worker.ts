@@ -14,7 +14,7 @@ import { startWorkerPlatform } from './queue/platform.js'
 import { markProcessShutdownFailed, waitForAbort } from './shutdown-deadline.js'
 import { installShutdownSignalHandlers } from './shutdown-signals.js'
 import { assertWorkerStartupDependencies } from './worker/readiness.js'
-import { apiLogger, logSafeError } from './logging.js'
+import { recordDiagnostic } from './logging.js'
 import type { WorkerPlatform } from './worker-platform.js'
 import { createWorkerShutdownCoordinator } from './worker-shutdown.js'
 
@@ -34,8 +34,9 @@ export async function startWorker() {
     closeCacheRedis: closeSharedCacheRedisConnection,
     closeCoordinationRedis: closeSharedCoordinationRedisConnection,
     closePostgres: (timeoutMs) => sql.end({ timeout: timeoutMs / 1_000 }),
-    recordFailure: logSafeError,
-    recordTimeout: () => apiLogger.error('Worker shutdown exceeded its timeout; forcing cleanup'),
+    recordFailure: (component, error) =>
+      recordDiagnostic('worker.shutdown.failed', { context: { component }, error }),
+    recordTimeout: () => recordDiagnostic('worker.shutdown.timed-out'),
     markFailed: markProcessShutdownFailed,
   })
   const disposeSignals = installShutdownSignalHandlers(() => {
@@ -67,20 +68,25 @@ export async function startWorker() {
       startupOperation = value
     })
     if (!platform) throw new Error('Worker platform startup did not complete')
-    apiLogger.info('Worker dependencies verified')
+    recordDiagnostic('worker.dependencies.verified')
 
     const reason = await Promise.race([
-      signal.then(() => 'signal' as const),
-      platform.stopped.then(() => 'run-loop-stopped' as const),
+      signal.then(() => ({ type: 'signal' as const })),
+      platform.stopped.then(
+        () => ({ type: 'run-loop-stopped' as const }),
+        (error: unknown) => ({ type: 'run-loop-failed' as const, error }),
+      ),
     ])
-    if (reason === 'run-loop-stopped') {
-      apiLogger.error('Worker processing loop ended; shutting down this replica')
+    if (reason.type !== 'signal') {
+      if (reason.type === 'run-loop-failed')
+        recordDiagnostic('worker.run-loop.failed', { error: reason.error })
+      else recordDiagnostic('worker.processing-loop.stopped')
       markProcessShutdownFailed()
     }
     await shutdown()
   } catch (error) {
     if (!startupController.signal.aborted) {
-      logSafeError('Worker startup failed', error)
+      recordDiagnostic('worker.startup.failed', { error })
       markProcessShutdownFailed()
     }
     await shutdown()

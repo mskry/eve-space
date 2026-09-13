@@ -264,6 +264,19 @@ describe('platform module declarations', () => {
     )
   })
 
+  it('rejects core-data products on batched resources', () => {
+    const declaration = manifest('alpha', {
+      resource: {
+        batch: { mode: 'complete-observation', operationId: 'alpha-operation' },
+        coreDataProducts: ['published-type-groups'],
+      },
+    })
+
+    expect(validationErrorMessage(declaration)).toContain(
+      'resource alpha/alpha-resource cannot declare core-data products with batch execution',
+    )
+  })
+
   it('validates contribution-scoped core-data product declarations', () => {
     const valid = manifest('alpha', {
       route: { coreDataProducts: ['published-type-groups'] },

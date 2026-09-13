@@ -380,6 +380,7 @@ function mountAdapter(
 ) {
   const state = {} as {
     authenticated: ReturnType<typeof ref<boolean>>
+    authenticationReady: ReturnType<typeof ref<boolean>>
     characterId: ReturnType<typeof ref<number | undefined>>
     characters: ReturnType<
       typeof ref<Array<{ characterId: number; location?: { solarSystemId: number } | null }>>
@@ -389,11 +390,13 @@ function mountAdapter(
   const Host = defineComponent({
     setup() {
       state.authenticated = ref(true)
+      state.authenticationReady = ref(true)
       state.characterId = ref<number | undefined>(7)
       state.characters = ref([{ characterId: 7 }])
       state.adapter = useCharacterAssets({
         apiClient: createApiClient('http://localhost'),
         authenticated: state.authenticated,
+        authenticationReady: state.authenticationReady,
         characterId: computed(() => state.characterId.value),
         characters: state.characters,
         isClient: true,

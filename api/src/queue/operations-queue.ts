@@ -4,6 +4,7 @@ import {
   createCoordinationRedisConnection,
   type CoordinationRedisConnection,
 } from '../coordination-redis.js'
+import { attachDiagnosticErrorListener } from '../logging.js'
 import { operationsQueueName, queuePrefix } from './namespaces.js'
 
 export interface OperationsQueueHandle {
@@ -26,6 +27,7 @@ export function createOperationsQueueHandle(
     ...(options.repeatStrategy ? { settings: { repeatStrategy: options.repeatStrategy } } : {}),
     skipWaitingForReady: true,
   })
+  attachDiagnosticErrorListener(queue, 'queue.runtime.failed')
   let closing: Promise<void> | undefined
   return {
     queue,

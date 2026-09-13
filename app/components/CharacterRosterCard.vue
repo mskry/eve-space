@@ -29,6 +29,10 @@ function locationLabel(location: CharacterRosterEntry['location']) {
       kind="faction"
       :id="character.raceFactionId"
       :dimension="64"
+      :width="64"
+      :height="64"
+      loading="lazy"
+      decoding="async"
       alt=""
       aria-hidden="true"
     />
@@ -52,6 +56,10 @@ function locationLabel(location: CharacterRosterEntry['location']) {
           kind="character"
           :id="character.characterId"
           :dimension="84"
+          :width="84"
+          :height="84"
+          loading="lazy"
+          decoding="async"
           :alt="`${character.name} character portrait`"
         />
       </span>
@@ -72,6 +80,10 @@ function locationLabel(location: CharacterRosterEntry['location']) {
               kind="corporation"
               :id="character.corporation.id"
               :dimension="50"
+              :width="50"
+              :height="50"
+              loading="lazy"
+              decoding="async"
               :alt="`${character.corporation.name} corporation logo`"
             />
           </UiTooltip>
@@ -80,6 +92,10 @@ function locationLabel(location: CharacterRosterEntry['location']) {
               kind="alliance"
               :id="character.alliance.id"
               :dimension="34"
+              :width="34"
+              :height="34"
+              loading="lazy"
+              decoding="async"
               :alt="`${character.alliance.name} alliance logo`"
             />
           </UiTooltip>

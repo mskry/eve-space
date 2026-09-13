@@ -45,6 +45,7 @@ const coladaDevtools = import.meta.dev
 
 <template>
   <UiProvider>
+    <a class="app-skip-link" href="#main-content">Skip to main content</a>
     <NuxtRouteAnnouncer />
     <NuxtAnnouncer />
     <NuxtLayout>

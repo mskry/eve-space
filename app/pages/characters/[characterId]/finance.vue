@@ -14,19 +14,20 @@ import type {
 import { parseRouteId } from '../../../utils/route-id'
 
 definePageMeta({ title: 'Character Finance', layout: 'headerless' })
-useHead({ title: 'Character Finance // EVE Space' })
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { authSession } = useAuthSession(apiClient)
+const { authLoading, authSession } = useAuthSession(apiClient)
 const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
+const authenticationReady = computed(() => !authLoading.value)
 
 const services = useCharacterFinanceServices({
   apiClient,
   authenticated,
+  authenticationReady,
   characterId,
   characters,
 })

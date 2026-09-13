@@ -18,6 +18,7 @@ export default defineConfig({
       'tests/platform/core-data-boundaries.test.ts',
       'tests/platform/esi-gateway-boundaries.test.ts',
       'tests/platform/organization-boundaries.test.ts',
+      'tests/platform/mail-composition-boundaries.test.ts',
       'tests/platform/platform-boundaries.test.ts',
       'tests/platform/queue-boundaries.test.ts',
       'tests/platform/module-composition-side-effects.test.ts',

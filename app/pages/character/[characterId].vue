@@ -99,6 +99,10 @@ useHead({
             kind="character"
             :id="profile.id"
             :dimension="72"
+            :width="72"
+            :height="72"
+            loading="eager"
+            decoding="async"
             :alt="`${profile.name} character portrait`"
           />
           <div>
@@ -134,6 +138,10 @@ useHead({
                   kind="corporation"
                   :id="profile.corporation.id"
                   :dimension="48"
+                  :width="48"
+                  :height="48"
+                  loading="lazy"
+                  decoding="async"
                   :alt="`${profile.corporation.name} corporation logo`"
                 />
                 <div class="affiliation-copy">
@@ -157,6 +165,10 @@ useHead({
                   kind="alliance"
                   :id="profile.alliance.id"
                   :dimension="48"
+                  :width="48"
+                  :height="48"
+                  loading="lazy"
+                  decoding="async"
                   :alt="`${profile.alliance.name} alliance logo`"
                 />
                 <div class="affiliation-copy">
@@ -222,6 +234,10 @@ useHead({
                       kind="faction"
                       :id="profile.factionId"
                       :dimension="32"
+                      :width="32"
+                      :height="32"
+                      loading="lazy"
+                      decoding="async"
                       alt="Faction militia emblem"
                     />
                   </dd>

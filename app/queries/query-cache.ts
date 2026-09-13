@@ -1,29 +1,14 @@
 import type { QueryCache, UseQueryOptions } from '@pinia/colada'
+import { prefetchQuery, removePlatformQueryScope } from '@eve-space/platform-module-nuxt/runtime'
 import {
-  canRunPlatformProtectedQuery,
-  prefetchQuery,
-  removePlatformQueryScope,
-} from '@eve-space/platform-module-nuxt/runtime'
+  canRunProtectedCharacterQuery,
+  type ProtectedCharacterQueryAccess,
+} from './protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 
 export { clearAuthenticatedQueries } from '@eve-space/platform-module-nuxt/runtime'
 export { clearAuthenticatedQueriesAfterSessionTransition } from '@eve-space/platform-module-nuxt/runtime'
 export { prefetchQuery }
-
-export function canRunProtectedQuery(
-  isClient: boolean,
-  authenticated: boolean,
-  characterId?: number,
-) {
-  if (characterId === undefined) return false
-  return canRunPlatformProtectedQuery({
-    authenticated,
-    isClient,
-    moduleEnabled: true,
-    ownsCharacter: true,
-    subject: { kind: 'character', characterId },
-  })
-}
 
 export function removeCharacterQueries(queryCache: QueryCache, characterId: number) {
   removePlatformQueryScope(queryCache, PRIVATE_QUERY_KEYS.character(characterId))
@@ -36,10 +21,11 @@ export function prefetchProtectedQuery<
 >(
   queryCache: QueryCache,
   options: UseQueryOptions<TData, TError, TDataInitial>,
-  isClient: boolean,
-  authenticated: boolean,
+  access: ProtectedCharacterQueryAccess,
   characterId?: number,
 ) {
-  if (!canRunProtectedQuery(isClient, authenticated, characterId)) return Promise.resolve()
+  if (characterId === undefined || !canRunProtectedCharacterQuery(access, characterId)) {
+    return Promise.resolve()
+  }
   return prefetchQuery(queryCache, options)
 }

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { runOutboxRelayBatch } from '../../src/queue/outbox-relay.js'
 import { createInMemoryQueueProducer } from '../../src/queue/producer.js'
+import { apiLogger } from '../../src/logging.js'
 
 const eventId = '98a782d2-e042-47d7-9659-03b218121a1a'
 const claimToken = 'b7e7be31-3547-48aa-baaa-9b86e89e4420'
@@ -8,9 +9,13 @@ const claimToken = 'b7e7be31-3547-48aa-baaa-9b86e89e4420'
 beforeEach(() => {
   vi.spyOn(console, 'info').mockImplementation(() => undefined)
   vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  apiLogger.enableLogging()
 })
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  apiLogger.disableLogging()
+  vi.restoreAllMocks()
+})
 
 describe('outbox relay batch', () => {
   test('caps claims to remaining capacity and acknowledges stable event commands', async () => {
@@ -26,11 +31,14 @@ describe('outbox relay batch', () => {
       { name: 'domain-event', payload: { eventId }, source: 'outbox' },
     ])
     expect(store.acknowledge).toHaveBeenCalledWith(eventId, claimToken)
-    expect(console.info).toHaveBeenCalledWith('Outbox relay event published', {
-      eventId,
-      eventType: 'character.attached',
-      payloadVersion: 1,
-    })
+    expect(JSON.parse(String(vi.mocked(console.info).mock.calls[0]?.[0]))).toEqual(
+      expect.objectContaining({
+        event: 'outbox.relay.event-published',
+        eventId,
+        eventType: 'character.attached',
+        payloadVersion: 1,
+      }),
+    )
     expect(JSON.stringify(vi.mocked(console.info).mock.calls)).not.toContain('Payload Pilot')
     expect(outcomes.recordOutbox).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: 'published', category: null }),
@@ -72,12 +80,15 @@ describe('outbox relay batch', () => {
       category: 'queue-unavailable',
       retryDelayMs: 12_000,
     })
-    expect(console.error).toHaveBeenCalledWith('Outbox relay event failed', {
-      eventId,
-      eventType: 'character.attached',
-      payloadVersion: 1,
-      category: 'queue-unavailable',
-    })
+    expect(JSON.parse(String(vi.mocked(console.error).mock.calls[0]?.[0]))).toEqual(
+      expect.objectContaining({
+        event: 'outbox.relay.event-failed',
+        eventId,
+        eventType: 'character.attached',
+        failureCategory: 'queue-unavailable',
+        payloadVersion: 1,
+      }),
+    )
     const serializedLogs = JSON.stringify(vi.mocked(console.error).mock.calls)
     expect(serializedLogs).not.toContain('private-host')
     expect(serializedLogs).not.toContain('Payload Pilot')

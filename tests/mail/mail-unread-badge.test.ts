@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { mailLabelsQuery } from '../../app/queries/mail'
-import { canRunProtectedQuery } from '../../app/queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../../app/queries/protected-character-query-access'
 import { createApiClient } from '../../app/utils/api-client'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
@@ -51,7 +51,15 @@ describe('mail unread badge retrieval', () => {
       setup() {
         const { data } = useQuery(() => ({
           ...mailLabelsQuery({ apiClient, characterId }),
-          enabled: canRunProtectedQuery(true, true, characterId),
+          enabled: canRunProtectedCharacterQuery(
+            {
+              authenticated: true,
+              authenticationReady: true,
+              isClient: true,
+              ownsCharacter: true,
+            },
+            characterId,
+          ),
         }))
         return () => h('span', String(resolveMailUnreadCount(characterId, data.value) ?? 'none'))
       },

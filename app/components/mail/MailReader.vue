@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MailDetail, MailHeader, MailLabel } from '../../queries/mail'
-import { isMailUnread, mailPartyName } from '../../utils/mail-view'
+import { createKeyedMailLabelIds, isMailUnread, mailPartyName } from '../../utils/mail-view'
 
 const props = defineProps<{
   detail?: MailDetail
@@ -25,6 +25,15 @@ const emit = defineEmits<{
   retry: []
 }>()
 
+const actionSkeletonKeys = [
+  'reply',
+  'reply-all',
+  'forward',
+  'labels',
+  'read-state',
+  'delete',
+] as const
+const keyedMailLabelIds = createKeyedMailLabelIds()
 const senderName = computed(() => mailPartyName(props.detail?.sender ?? null, 'sender'))
 const recipientsLabel = computed(() => {
   const names =
@@ -38,8 +47,9 @@ const labelChips = computed(() => {
       label.labelId === null ? [] : [[label.labelId, label] as const],
     ),
   )
-  return (props.detail?.labelIds ?? []).map((labelId) => ({
+  return keyedMailLabelIds(props.detail?.labelIds ?? []).map(({ item: labelId, key }) => ({
     color: byId.get(labelId)?.color,
+    key,
     labelId,
     name: byId.get(labelId)?.name?.trim() || `Label #${labelId}`,
   }))
@@ -92,7 +102,7 @@ function revealTruncatedRecipients(event: MouseEvent) {
               </span>
             </div>
             <div class="mail-reader-skeleton-actions">
-              <span v-for="index in 6" :key="index" class="mail-skeleton-block" />
+              <span v-for="key in actionSkeletonKeys" :key="key" class="mail-skeleton-block" />
             </div>
           </header>
           <section class="mail-reader-content mail-reader-skeleton-content">
@@ -223,7 +233,7 @@ function revealTruncatedRecipients(event: MouseEvent) {
           </p>
           <h2 id="mail-reader-message-title">{{ detail.subject?.trim() || '(No subject)' }}</h2>
           <div v-if="labelChips.length > 0" class="mail-label-chips">
-            <span v-for="label in labelChips" :key="label.labelId">
+            <span v-for="label in labelChips" :key="label.key">
               <span
                 v-if="label.color"
                 class="mail-label-color"

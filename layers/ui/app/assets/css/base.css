@@ -15,6 +15,33 @@ input {
   font: inherit;
 }
 
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: var(--ui-focus-ring-width) solid var(--ui-focus-ring);
+  outline-offset: var(--ui-focus-ring-gap);
+}
+
+#main-content:focus-visible {
+  outline: var(--ui-focus-ring-width) solid var(--ui-focus-ring);
+  outline-offset: calc(-1 * var(--ui-focus-ring-width));
+}
+
+.app-skip-link {
+  position: fixed;
+  z-index: 1000;
+  top: var(--ui-focus-ring-gap);
+  left: var(--ui-focus-ring-gap);
+  padding: 0.625rem 0.875rem;
+  translate: 0 calc(-100% - 1rem);
+  border: var(--ui-focus-ring-width) solid var(--ui-focus-ring);
+  background: var(--ui-canvas);
+  color: var(--ui-text);
+  font-weight: 700;
+}
+
+.app-skip-link:focus-visible {
+  translate: 0;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

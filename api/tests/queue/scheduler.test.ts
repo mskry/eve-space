@@ -1,5 +1,6 @@
-import { expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { defaultRepeatStrategy } from 'bullmq'
+import { apiLogger } from '../../src/logging.js'
 import {
   createPlannerRepeatStrategy,
   diagnosticOverlapPolicy,
@@ -12,6 +13,14 @@ import {
   runWithSchedulerOverlapPolicy,
   SchedulerLeaseLostError,
 } from '../../src/queue/scheduler.js'
+
+beforeEach(() => apiLogger.enableLogging())
+
+afterEach(() => {
+  apiLogger.disableLogging()
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
 
 test('maps scheduled contracts to stable skip-overlap identities', () => {
   expect(getJobScheduler('outbox-relay')).toEqual({
@@ -131,7 +140,12 @@ test('aborts the operation when Redis reports the scheduler lease was taken', as
 
   await expect(settled).resolves.toBeInstanceOf(SchedulerLeaseLostError)
   expect(aborted).toContain(diagnosticSchedulerId)
-  expect(error).toHaveBeenCalledWith('Scheduler overlap lock lost')
+  expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toEqual(
+    expect.objectContaining({
+      event: 'scheduler.overlap-lock.lost',
+      schedulerId: diagnosticSchedulerId,
+    }),
+  )
   // Releasing would be a pointless round trip: the key belongs to the new owner.
   expect(connection.eval).toHaveBeenCalledOnce()
   vi.useRealTimers()
@@ -156,7 +170,12 @@ test('survives a single renewal failure while the lease TTL still covers it', as
   )
 
   await vi.advanceTimersByTimeAsync(10_000)
-  expect(error).toHaveBeenCalledWith('Scheduler overlap lock renewal failed')
+  expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toEqual(
+    expect.objectContaining({
+      event: 'scheduler.overlap-lock.renewal-failed',
+      schedulerId: diagnosticSchedulerId,
+    }),
+  )
 
   release?.()
   await expect(run).resolves.toMatchObject({ executed: true })
@@ -207,7 +226,12 @@ test('gives up the lease when renewals hang instead of rejecting', async () => {
   await vi.advanceTimersByTimeAsync(30_000)
 
   await expect(settled).resolves.toBeInstanceOf(SchedulerLeaseLostError)
-  expect(error).toHaveBeenCalledWith('Scheduler overlap lock expired without a confirmed renewal')
+  expect(JSON.parse(String(error.mock.calls.at(-1)?.[0]))).toEqual(
+    expect.objectContaining({
+      event: 'scheduler.overlap-lock.expired',
+      schedulerId: diagnosticSchedulerId,
+    }),
+  )
   vi.useRealTimers()
   error.mockRestore()
 })
