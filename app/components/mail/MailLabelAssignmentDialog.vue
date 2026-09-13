@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick } from 'vue'
 import type { MailLabel } from '../../queries/mail'
+import { createKeyedMailLabels } from '../../utils/mail-view'
 
 const props = defineProps<{
   assignedLabelIds: ReadonlySet<number>
@@ -14,6 +15,8 @@ const emit = defineEmits<{
 }>()
 
 const open = defineModel<boolean>('open', { default: false })
+const keyedMailLabels = createKeyedMailLabels()
+const labelEntries = computed(() => keyedMailLabels(props.labels))
 
 function labelName(label: MailLabel) {
   return (
@@ -41,8 +44,8 @@ function changeLabel(labelId: number, event: Event) {
     <div class="mail-label-assignment-list" aria-label="Available mail labels">
       <p v-if="labels.length === 0">No labels are available. Create one from Manage labels.</p>
       <label
-        v-for="(label, index) in labels"
-        :key="label.labelId ?? `unknown-${index}`"
+        v-for="{ item: label, key } in labelEntries"
+        :key="key"
         class="mail-label-assignment-row"
       >
         <input

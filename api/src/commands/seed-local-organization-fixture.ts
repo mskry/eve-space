@@ -2,6 +2,7 @@ import { open, rm, type FileHandle } from 'node:fs/promises'
 import postgres from 'postgres'
 import { assertConnectedFixtureDatabase, parseLocalDatabaseGuard } from './local-database-guard.js'
 import { env } from '../env.js'
+import { recordDiagnostic } from '../logging.js'
 
 const guard = parseLocalDatabaseGuard(process.argv.slice(2), process.env)
 const migrationConnection = postgres(guard.databaseUrl, { max: 1, onnotice: () => {} })
@@ -25,15 +26,29 @@ try {
   retainSessionHandoff = true
   console.log(JSON.stringify({ ...result, sessionHandoffPath: guard.sessionHandoffPath }))
 } catch (error) {
-  const { logSafeError } = await import('../logging.js')
-  logSafeError('Local organization fixture failed', error)
+  recordDiagnostic('command.organization-fixture.failed', { error })
   process.exitCode = 1
 } finally {
-  await sessionHandoffFile?.close()
-  if (sessionHandoffFile && !retainSessionHandoff)
-    await rm(guard.sessionHandoffPath, { force: true })
-  const { sql } = await import('../db/client.js')
-  await Promise.allSettled([migrationConnection.end(), sql.end()])
+  await cleanUp(() => sessionHandoffFile?.close())
+  await cleanUp(() =>
+    sessionHandoffFile && !retainSessionHandoff
+      ? rm(guard.sessionHandoffPath, { force: true })
+      : undefined,
+  )
+  await cleanUp(() => migrationConnection.end())
+  await cleanUp(async () => {
+    const { sql } = await import('../db/client.js')
+    await sql.end()
+  })
+}
+
+async function cleanUp(operation: () => Promise<unknown> | undefined) {
+  try {
+    await operation()
+  } catch (error) {
+    recordDiagnostic('command.organization-fixture.failed', { error })
+    process.exitCode = 1
+  }
 }
 
 function createSessionHandoffDocument(sessionToken: string) {

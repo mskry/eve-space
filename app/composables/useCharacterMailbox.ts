@@ -8,7 +8,7 @@ import {
   type MailHeader,
   type MailLabel,
 } from '../queries/mail'
-import { canRunProtectedQuery } from '../queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../queries/protected-character-query-access'
 import type { ApiClient } from '../utils/api-client'
 import {
   applyMailOverlays,
@@ -25,6 +25,7 @@ import { ApiQueryError } from '../utils/query-error'
 interface CharacterMailboxOptions {
   apiClient: ApiClient
   authenticated: ComputedRef<boolean>
+  authenticationReady: ComputedRef<boolean>
   characterId: ComputedRef<number | undefined>
   ownsCharacter: ComputedRef<boolean>
   deletedLabelIds: Ref<ReadonlySet<number>>
@@ -51,8 +52,15 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
 
   const selectedLabels = computed(() => (activeLabelId.value === null ? [] : [activeLabelId.value]))
   const queryEnabled = () =>
-    options.ownsCharacter.value &&
-    canRunProtectedQuery(import.meta.client, options.authenticated.value, options.characterId.value)
+    canRunProtectedCharacterQuery(
+      {
+        authenticated: options.authenticated.value,
+        authenticationReady: options.authenticationReady.value,
+        isClient: import.meta.client,
+        ownsCharacter: options.ownsCharacter.value,
+      },
+      options.characterId.value ?? 0,
+    )
 
   const headersQuery = useQuery(() => ({
     ...mailHeadersQuery({

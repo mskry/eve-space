@@ -148,6 +148,7 @@ describe('platform module route composition', () => {
     const response = await app.request('/alpha')
 
     expect(response.status).toBe(404)
+    expectPrivateResponsePolicy(response)
     expect(mocks.findSession).not.toHaveBeenCalled()
   })
 

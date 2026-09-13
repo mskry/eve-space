@@ -9,6 +9,7 @@ vi.mock('../../src/esi-gateway/status-interface.js', () => ({
 }))
 
 afterEach(() => {
+  process.exitCode = 0
   vi.clearAllMocks()
   vi.resetModules()
   vi.restoreAllMocks()
@@ -21,5 +22,35 @@ describe('ESI call-rate report command', () => {
     await import('../../src/commands/report-esi-call-rates.js')
 
     expect(mocks.read).toHaveBeenCalledWith(1)
+  })
+
+  test('records failures without exposing arbitrary errors or writing command output', async () => {
+    const error = Object.assign(new Error('message-private-sentinel'), {
+      cause: new Error('cause-private-sentinel'),
+      authorization: 'property-private-sentinel',
+    })
+    error.stack = 'Error: stack-private-sentinel'
+    mocks.read.mockRejectedValueOnce(error)
+    const stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const { apiLogger } = await import('../../src/logging.js')
+    apiLogger.enableLogging()
+
+    try {
+      await import('../../src/commands/report-esi-call-rates.js')
+
+      expect(stdout).not.toHaveBeenCalled()
+      expect(process.exitCode).toBe(1)
+      const serialized = String(consoleError.mock.calls[0]?.[0])
+      expect(JSON.parse(serialized)).toEqual(
+        expect.objectContaining({
+          event: 'command.esi-call-rate-report.failed',
+          thrownType: 'object',
+        }),
+      )
+      expect(serialized).not.toContain('private-sentinel')
+    } finally {
+      apiLogger.disableLogging()
+    }
   })
 })

@@ -9,7 +9,7 @@ import {
   canRunCharacterAssetRoutesQuery,
   characterAssetRoutesQuery,
 } from '../../app/queries/character-asset-routes'
-import type { CharacterAssetsAccess } from '../../app/queries/character-assets'
+import type { ProtectedCharacterQueryAccess } from '../../app/queries/protected-character-query-access'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { QUERY_POLICY } from '../../app/queries/query-policy'
 import { createApiClient } from '../../app/utils/api-client'
@@ -19,9 +19,10 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
-const allowed: CharacterAssetsAccess = {
+const allowed: ProtectedCharacterQueryAccess = {
   isClient: true,
   authenticated: true,
+  authenticationReady: true,
   ownsCharacter: true,
 }
 
@@ -60,6 +61,9 @@ describe('character asset route query', () => {
   it('requires browser ownership, valid identities, and at least one bounded destination', () => {
     expect(canRunCharacterAssetRoutesQuery(allowed, 7, 1, [2])).toBe(true)
     expect(canRunCharacterAssetRoutesQuery({ ...allowed, isClient: false }, 7, 1, [2])).toBe(false)
+    expect(
+      canRunCharacterAssetRoutesQuery({ ...allowed, authenticationReady: false }, 7, 1, [2]),
+    ).toBe(false)
     expect(canRunCharacterAssetRoutesQuery({ ...allowed, authenticated: false }, 7, 1, [2])).toBe(
       false,
     )

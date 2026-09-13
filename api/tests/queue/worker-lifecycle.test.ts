@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createActiveJobTracker, startWorkerHeartbeat } from '../../src/queue/worker-lifecycle.js'
+import { apiLogger } from '../../src/logging.js'
 
 afterEach(() => {
+  apiLogger.disableLogging()
   vi.useRealTimers()
   vi.restoreAllMocks()
 })
@@ -36,6 +38,7 @@ describe('worker lifecycle', () => {
 
   test('refreshes heartbeat state and handles a later Redis rejection', async () => {
     vi.useFakeTimers()
+    apiLogger.enableLogging()
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const connection = heartbeatConnection()
     const stop = await startWorkerHeartbeat(connection as never, 'worker-a')
@@ -43,7 +46,12 @@ describe('worker lifecycle', () => {
 
     await vi.advanceTimersByTimeAsync(15_000)
 
-    expect(error).toHaveBeenCalledWith('Worker heartbeat update failed')
+    expect(JSON.parse(String(error.mock.calls[0]?.[0]))).toEqual(
+      expect.objectContaining({
+        event: 'worker.heartbeat.failed',
+        failureCategory: 'dependency-unavailable',
+      }),
+    )
     expect(connection.set).toHaveBeenCalledWith(
       'eve-space:v1:scheduler:outcome',
       'registered',

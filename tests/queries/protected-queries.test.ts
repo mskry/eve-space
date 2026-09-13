@@ -106,7 +106,12 @@ describe('protected character queries', () => {
       const transactionOptions = characterFinanceTransactionsQuery({
         apiClient: createApiClient('http://localhost'),
         characterId,
-        access: { isClient: true, authenticated: true, ownsCharacter: true },
+        access: {
+          isClient: true,
+          authenticated: true,
+          authenticationReady: true,
+          ownsCharacter: true,
+        },
         requested: true,
         fromId: null,
       })
@@ -175,7 +180,12 @@ describe('protected character queries', () => {
           characterFinanceBalanceQuery({
             apiClient,
             characterId: 7,
-            access: { isClient: true, authenticated: true, ownsCharacter: true },
+            access: {
+              isClient: true,
+              authenticated: true,
+              authenticationReady: true,
+              ownsCharacter: true,
+            },
           }),
         )
         return () => h('span', result.data.value?.stale ? result.data.value.validatedAt : 'loading')
@@ -209,7 +219,12 @@ describe('protected character queries', () => {
           ...characterFinanceBalanceQuery({
             apiClient,
             characterId: 7,
-            access: { isClient: true, authenticated: true, ownsCharacter: true },
+            access: {
+              isClient: true,
+              authenticated: true,
+              authenticationReady: true,
+              ownsCharacter: true,
+            },
           }),
           retry: 0,
         })
@@ -268,7 +283,12 @@ describe('protected character queries', () => {
           characterFinanceTransactionsQuery({
             apiClient,
             characterId: 7,
-            access: { isClient: true, authenticated: true, ownsCharacter: true },
+            access: {
+              isClient: true,
+              authenticated: true,
+              authenticationReady: true,
+              ownsCharacter: true,
+            },
             requested: enabled.value,
             fromId: null,
           }),

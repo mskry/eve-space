@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { MailLabel, MailingList } from '../../queries/mail'
+import { createKeyedMailLabels } from '../../utils/mail-view'
 
-defineProps<{
+const props = defineProps<{
   activeLabelId: number | null
   labels: readonly MailLabel[]
   mailingLists: readonly MailingList[]
@@ -16,8 +17,13 @@ defineEmits<{
   selectMailingList: [mailingListId: number | null]
 }>()
 
-function labelName(label: MailLabel, index: number) {
-  return label.name?.trim() || `Label ${index + 1}`
+const keyedMailLabels = createKeyedMailLabels()
+const labelEntries = computed(() => keyedMailLabels(props.labels))
+
+function labelName(label: MailLabel) {
+  return (
+    label.name?.trim() || (label.labelId === null ? 'Unnamed label' : `Label #${label.labelId}`)
+  )
 }
 </script>
 
@@ -41,8 +47,8 @@ function labelName(label: MailLabel, index: number) {
           <strong v-if="totalUnreadCount !== null">{{ totalUnreadCount }}</strong>
         </button>
         <button
-          v-for="(label, index) in labels"
-          :key="label.labelId ?? `unknown-${index}`"
+          v-for="{ item: label, key } in labelEntries"
+          :key="key"
           class="mail-nav-row"
           :class="{ 'is-active': label.labelId !== null && activeLabelId === label.labelId }"
           type="button"
@@ -56,7 +62,7 @@ function labelName(label: MailLabel, index: number) {
               :style="{ backgroundColor: label.color }"
               aria-hidden="true"
             />
-            <span>{{ labelName(label, index) }}</span>
+            <span>{{ labelName(label) }}</span>
           </span>
           <strong v-if="label.unreadCount !== null">{{ label.unreadCount }}</strong>
         </button>

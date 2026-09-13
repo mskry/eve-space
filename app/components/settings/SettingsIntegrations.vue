@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DelegatedOrganizationRole } from '../../queries/organization'
+import { formatSettingsTimestamp } from '../../utils/settings-timestamp'
 
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
@@ -120,13 +121,6 @@ function closeRevocation() {
   revokeReason.value = ''
 }
 
-function formatTimestamp(timestamp: string | null) {
-  if (!timestamp) return 'Not recorded'
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(timestamp),
-  )
-}
-
 function roleLabel(role: DelegatedOrganizationRole) {
   return role === 'hr_auditor' ? 'HR / Auditor' : 'Director'
 }
@@ -199,7 +193,14 @@ function roleLabel(role: DelegatedOrganizationRole) {
             </div>
             <div>
               <dt>Last checked</dt>
-              <dd>{{ formatTimestamp(authorityContext.authorityCharacter.lastCheckedAt) }}</dd>
+              <dd>
+                {{
+                  formatSettingsTimestamp(
+                    authorityContext.authorityCharacter.lastCheckedAt,
+                    'Not recorded',
+                  )
+                }}
+              </dd>
             </div>
           </dl>
         </article>

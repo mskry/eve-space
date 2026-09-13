@@ -23,7 +23,7 @@ import { authRequiredBody, routeNotFoundBody } from '../http/contracts.js'
 import { privateNoStore, setPrivateHeaders } from '../http/private-response.js'
 import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
 import { zValidator } from '../http/validation.js'
-import { logSafeError } from '../logging.js'
+import { recordDiagnostic } from '../logging.js'
 import { loadCurrentOrganizationIdentity } from '../organization/context.js'
 import { resolveOrganizationAuthorityCorporation } from '../organization/authority.js'
 import {
@@ -292,7 +292,7 @@ function redirectForCallbackError(
     return redirectForIntent(context, stateContext, 'approval-required')
   if (stateContext.intent === 'transfer' && error instanceof CharacterTransferError)
     return redirectForIntent(context, stateContext, error.code)
-  logSafeError('EVE SSO callback failed', error)
+  recordDiagnostic('auth.sso-callback.failed', { error })
   return redirectForIntent(context, stateContext, 'error')
 }
 

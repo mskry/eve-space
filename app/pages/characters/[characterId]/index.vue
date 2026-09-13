@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@pinia/colada'
 import { characterOverviewQuery } from '../../../queries/characters'
-import { canRunProtectedQuery } from '../../../queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../../../queries/protected-character-query-access'
 import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
@@ -11,15 +11,18 @@ definePageMeta({ title: 'Character Overview', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { authSession } = useAuthSession(apiClient)
+const { authLoading, authSession } = useAuthSession(apiClient)
+const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
+const access = computed(() => ({
+  authenticated: authSession.value.authenticated,
+  authenticationReady: !authLoading.value,
+  isClient: import.meta.client,
+  ownsCharacter: characters.value.some((character) => character.characterId === characterId.value),
+}))
 const overviewQuery = useQuery(() => ({
   ...characterOverviewQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled: canRunProtectedQuery(
-    import.meta.client,
-    authSession.value.authenticated,
-    characterId.value,
-  ),
+  enabled: canRunProtectedCharacterQuery(access.value, characterId.value ?? 0),
 }))
 const overview = overviewQuery.data
 const bioCard = ref<HTMLElement>()
@@ -176,6 +179,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                     kind="corporation"
                     :id="character.corporation.id"
                     :dimension="48"
+                    :width="48"
+                    :height="48"
+                    loading="lazy"
+                    decoding="async"
                     :alt="`${character.corporation.name} corporation logo`"
                   />
                   <div class="affiliation-copy">
@@ -229,6 +236,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                         kind="type-icon"
                         :id="ship.data.typeId"
                         :dimension="40"
+                        :width="40"
+                        :height="40"
+                        loading="lazy"
+                        decoding="async"
                         alt=""
                       />
                       <span>{{ shipLabel }}</span>
@@ -256,6 +267,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', measureBioExpansion))
                         kind="faction"
                         :id="character.factionId"
                         :dimension="32"
+                        :width="32"
+                        :height="32"
+                        loading="lazy"
+                        decoding="async"
                         alt="Faction militia emblem"
                       />
                     </dd>

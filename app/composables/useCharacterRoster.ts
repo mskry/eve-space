@@ -8,10 +8,10 @@ export type { CharacterRosterEntry }
 
 export function useCharacterRoster(apiClient: ApiClient) {
   const queryCache = useQueryCache()
-  const { authConfig, authSession, initializeAuth } = useAuthSession(apiClient)
+  const { authConfig, authLoading, authSession, initializeAuth } = useAuthSession(apiClient)
   const rosterQuery = useQuery({
     ...characterRosterQuery(apiClient),
-    enabled: () => import.meta.client && authSession.value.authenticated,
+    enabled: () => import.meta.client && !authLoading.value && authSession.value.authenticated,
   })
   const mainCharacterMutation = useMutation({
     mutation: async (characterId: number) => {
@@ -57,6 +57,22 @@ export function useCharacterRoster(apiClient: ApiClient) {
     deleteCharacterMutation.asyncStatus.value === 'loading'
       ? deleteCharacterMutation.variables.value
       : undefined,
+  )
+
+  watch(
+    () => rosterQuery.data.value?.characters,
+    (currentCharacters, previousCharacters) => {
+      if (!currentCharacters || !previousCharacters) return
+      const currentCharacterIds = new Set(
+        currentCharacters.map((character) => character.characterId),
+      )
+      for (const character of previousCharacters) {
+        if (!currentCharacterIds.has(character.characterId)) {
+          removeCharacterQueries(queryCache, character.characterId)
+        }
+      }
+    },
+    { flush: 'sync' },
   )
 
   function loadCharacterRoster() {

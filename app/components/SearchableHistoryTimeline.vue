@@ -109,6 +109,10 @@ function formatHistoryDate(value: string) {
               :kind="entityKind"
               :id="entry.entityId"
               :dimension="48"
+              :width="48"
+              :height="48"
+              loading="lazy"
+              decoding="async"
               :alt="`${entry.entityName} ${entityLabel} logo`"
             />
             <span v-else class="employment-deleted-mark" aria-hidden="true">X</span>

@@ -5,11 +5,8 @@ import { createPinia } from 'pinia'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
-import {
-  canRunCharacterClonesQuery,
-  characterClonesQuery,
-  characterImplantsQuery,
-} from '../../app/queries/clones'
+import { characterClonesQuery, characterImplantsQuery } from '../../app/queries/clones'
+import { canRunProtectedCharacterQuery } from '../../app/queries/protected-character-query-access'
 import { clearAuthenticatedQueries, removeCharacterQueries } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { QUERY_POLICY } from '../../app/queries/query-policy'
@@ -20,7 +17,12 @@ import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
 const apiClient = createApiClient('http://localhost')
-const allowed = { isClient: true, authenticated: true, ownsCharacter: true }
+const allowed = {
+  isClient: true,
+  authenticated: true,
+  authenticationReady: true,
+  ownsCharacter: true,
+}
 const freshness = {
   cachedUntil: '2026-09-03T11:02:00.000Z',
   validatedAt: '2026-09-03T11:00:00.000Z',
@@ -47,6 +49,7 @@ describe('character clone queries', () => {
 
   it.each([
     [{ ...allowed, isClient: false }, 7],
+    [{ ...allowed, authenticationReady: false }, 7],
     [{ ...allowed, authenticated: false }, 7],
     [{ ...allowed, ownsCharacter: false }, 7],
     [allowed, 0],
@@ -54,7 +57,7 @@ describe('character clone queries', () => {
     [allowed, 1.5],
     [allowed, Number.MAX_SAFE_INTEGER + 1],
   ])('keeps both resources disabled for access %j and character ID %s', (access, characterId) => {
-    expect(canRunCharacterClonesQuery(access, characterId)).toBe(false)
+    expect(canRunProtectedCharacterQuery(access, characterId)).toBe(false)
     expect(characterClonesQuery({ apiClient, characterId, access }).enabled).toBe(false)
     expect(characterImplantsQuery({ apiClient, characterId, access }).enabled).toBe(false)
   })

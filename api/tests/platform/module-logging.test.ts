@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
+import { apiLogger } from '../../src/logging.js'
 import { createPlatformModuleLogger } from '../../src/platform/module-logging.js'
 
 describe('platform module logging', () => {
@@ -49,5 +50,31 @@ describe('platform module logging', () => {
       error: vi.fn(),
     })
     expect(() => logger.info('Loaded activity')).toThrow('stable identifier')
+  })
+
+  test('routes the default sink through bounded runtime diagnostics', () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    apiLogger.enableLogging()
+    try {
+      createPlatformModuleLogger('organization-activity').info('activity.loaded', {
+        characterId: 9001,
+        detail: 'Bearer private-value',
+      })
+
+      const serialized = String(info.mock.calls[0]?.[0])
+      expect(JSON.parse(serialized)).toEqual(
+        expect.objectContaining({
+          correlationId: expect.stringMatching(/^[0-9a-f-]{36}$/),
+          event: 'platform.module.info',
+          moduleEvent: 'activity.loaded',
+          moduleId: 'organization-activity',
+        }),
+      )
+      expect(serialized).not.toContain('characterId')
+      expect(serialized).not.toContain('private-value')
+    } finally {
+      apiLogger.disableLogging()
+      info.mockRestore()
+    }
   })
 })

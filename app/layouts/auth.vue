@@ -14,7 +14,7 @@
       </div>
     </header>
 
-    <main class="auth-stage">
+    <main id="main-content" class="auth-stage" tabindex="-1">
       <slot />
     </main>
 

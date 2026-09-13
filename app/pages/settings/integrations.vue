@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ title: 'Settings' })
+definePageMeta({ title: 'Settings', platformAudience: 'public' })
 useHead({ title: 'Settings // EVE Space' })
 </script>
 

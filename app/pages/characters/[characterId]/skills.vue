@@ -5,7 +5,7 @@ import {
   characterSkillQueueQuery,
   characterSkillsQuery,
 } from '../../../queries/characters'
-import { canRunProtectedQuery } from '../../../queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../../../queries/protected-character-query-access'
 import type { EsiResourceState } from '../../../types/esi-resource'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
@@ -15,10 +15,17 @@ definePageMeta({ title: 'Character Skills', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { authSession } = useAuthSession(apiClient)
+const { authLoading, authSession } = useAuthSession(apiClient)
+const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
+const protectedQueryAccess = computed(() => ({
+  authenticated: authSession.value.authenticated,
+  authenticationReady: !authLoading.value,
+  isClient: import.meta.client,
+  ownsCharacter: characters.value.some((character) => character.characterId === characterId.value),
+}))
 const protectedQueryEnabled = computed(() =>
-  canRunProtectedQuery(import.meta.client, authSession.value.authenticated, characterId.value),
+  canRunProtectedCharacterQuery(protectedQueryAccess.value, characterId.value ?? 0),
 )
 
 const skillsQuery = useQuery(() => ({

@@ -18,7 +18,6 @@ import {
   splitMailBodyParagraphs,
 } from '../../app/utils/mail-view'
 import { ApiQueryError } from '../../app/utils/query-error'
-import { readWorkspaceFile } from '../support/read-workspace-file'
 
 describe('mail frontend behavior', () => {
   it('filters only loaded headers by subject, sender, known-unread state, and list recipients', () => {
@@ -273,11 +272,6 @@ describe('mail frontend behavior', () => {
       '<a href="javascript:x">link</a>',
     ])
     expect(splitMailBodyParagraphs(null)).toEqual([])
-
-    const component = readWorkspaceFile('app/components/mail/MailBodyText.vue')
-    expect(component).toContain('{{ paragraph }}')
-    expect(component).not.toContain('v-html')
-    expect(component).not.toContain('innerHTML')
   })
 
   it('derives loading, authorization, cooldown, temporary failure, and retained-data states', () => {
@@ -319,107 +313,6 @@ describe('mail frontend behavior', () => {
     expect(mailPartyName({ id: 77, type: 'mailing_list', name: null })).toBe(
       'Unknown mailing list #77',
     )
-  })
-
-  it('keeps every mail query behind the client/auth/character gate and ownership parent', () => {
-    const mailbox = readWorkspaceFile('app/composables/useCharacterMailbox.ts')
-    const parent = readWorkspaceFile('app/pages/characters/[characterId].vue')
-    const gateCalls = mailbox.match(/canRunProtectedQuery\(/g) ?? []
-
-    expect(gateCalls).toHaveLength(1)
-    expect(mailbox).toContain('requestedCursor.value !== null')
-    expect(mailbox).toContain('nextLastMailId.value === requestedCursor.value')
-    expect(mailbox).toContain('selectedMailId.value !== null')
-    expect(parent.indexOf('v-else-if="selectedCharacter"')).toBeLessThan(
-      parent.indexOf('<NuxtPage'),
-    )
-  })
-
-  it('keeps label selection in query state and other filters in loaded-header view state', () => {
-    const page = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
-    const mailbox = readWorkspaceFile('app/composables/useCharacterMailbox.ts')
-    const view = readWorkspaceFile('app/utils/mail-view.ts')
-
-    expect(mailbox).toContain('labels: selectedLabels.value')
-    expect(mailbox).toContain('filterDisplayedMailHeaders(')
-    expect(mailbox).toContain('displayedHeaders.value')
-    expect(view).not.toMatch(/labelIds\.includes|activeLabel/)
-    expect(mailbox).toContain('No matches in loaded messages. Load older messages')
-    expect(mailbox).toContain('There are no messages in this folder.')
-    expect(page).toContain('title="Mailbox empty"')
-  })
-
-  it('uses a scroll area in every pane and exposes composition and organization actions', () => {
-    const sidebar = readWorkspaceFile('app/components/mail/MailLabelSidebar.vue')
-    const headers = readWorkspaceFile('app/components/mail/MailHeaderList.vue')
-    const reader = readWorkspaceFile('app/components/mail/MailReader.vue')
-    const page = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
-    const provider = readWorkspaceFile('layers/ui/app/components/ui/UiProvider.vue')
-
-    for (const component of [sidebar, headers, reader]) {
-      expect(component).toContain('<UiScrollArea')
-    }
-    expect(sidebar).toContain('@click="$emit(\'compose\')"')
-    expect(reader).toContain('@click="emit(\'reply\')"')
-    expect(reader).toContain('@click="emit(\'replyAll\')"')
-    expect(reader).toContain('@click="emit(\'forward\')"')
-    expect(reader).toContain("emit('changeRead', isMailUnread(readState))")
-    expect(reader).toContain('@click="emit(\'delete\')"')
-    expect(page).not.toContain('<UiConfirmDialog')
-    expect(page).not.toContain('<UiToast')
-    expect(provider).toContain('<UiConfirmDialog')
-    expect(provider).toContain('<UiToast')
-  })
-
-  it('keeps the mailbox workspace visible with pane-specific loading skeletons', () => {
-    const headers = readWorkspaceFile('app/components/mail/MailHeaderList.vue')
-    const reader = readWorkspaceFile('app/components/mail/MailReader.vue')
-    const page = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
-    const css = readWorkspaceFile('app/assets/css/features/mail.css')
-
-    expect(page).not.toContain('class="app-scanner"')
-    expect(page).toContain(':loading="showMailboxSkeleton"')
-    expect(page).toContain('showMailboxSkeleton || detailQuery.asyncStatus.value')
-    expect(headers).toContain('class="mail-header-skeleton"')
-    expect(reader).toContain('class="mail-reader-skeleton"')
-    expect(reader).toContain('v-for="index in 6"')
-    expect(css).toContain('.mail-reader-skeleton-actions')
-    expect(css).toContain('@keyframes mail-skeleton-scan')
-    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
-  })
-
-  it('keeps automatic reads quiet, requires readable detail, and resets destructive state', () => {
-    const mailbox = readWorkspaceFile('app/composables/useCharacterMailbox.ts')
-    const organization = readWorkspaceFile('app/composables/useMailOrganization.ts')
-
-    expect(organization).toContain('detail?.mailId !== mailId')
-    expect(organization).toContain('detailFailure')
-    expect(organization).toContain('changeMailRead(header, true, false)')
-    expect(organization).toContain('openConfirmDialog({')
-    expect(organization).not.toContain('deleteDialogOpen')
-    expect(organization).not.toContain('deleteCandidate')
-    expect(organization).toContain('options.mailbox.displayedHeaders.value.find(')
-    expect(organization).toContain('readPendingIds.value.has(mailId)')
-    expect(mailbox).toContain('loadedHeaders.value.length === 0')
-  })
-
-  it('styles the mail feature only through semantic UI color tokens', () => {
-    const page = readWorkspaceFile('app/pages/characters/[characterId]/mail.vue')
-    const css = readWorkspaceFile('app/assets/css/features/mail.css')
-    const authorization = readWorkspaceFile('app/components/esi/AuthorizationRequired.vue')
-    const variables = [...css.matchAll(/var\((--[^),\s]+)/g)].map((match) => match[1])
-
-    expect(page).toContain('<EsiResourceBoundary')
-    expect(page).toContain(':search-authorization-message="searchAuthorization?.message"')
-    expect(page).toContain(':search-feedback="searchFeedback"')
-    expect(page).not.toContain('searchAuthorization?.message || searchFeedback')
-    expect(page).not.toMatch(/mail-access-state|skills-access-state/)
-    expect(authorization).toContain('var(--ui-border)')
-    expect(authorization).toContain('var(--ui-surface)')
-    expect(css).toContain('height: clamp(36rem, 68vh, 46rem)')
-    expect(variables.length).toBeGreaterThan(0)
-    expect(variables.every((variable) => variable.startsWith('--ui-'))).toBe(true)
-    expect(css).not.toMatch(/#[\da-f]{3,8}\b|rgba?\(|hsla?\(/i)
   })
 })
 

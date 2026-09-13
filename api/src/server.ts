@@ -9,7 +9,7 @@ import { env, isSsoConfigured } from './env.js'
 import { assertEsiCatalogConfiguration } from './esi-gateway/catalog-interface.js'
 import { closeProductionEsiExecutionRuntime } from './esi-gateway/runtime-lifecycle.js'
 import { assertInstalledResourceDeclarations } from './platform/resource-declarations.js'
-import { apiLogger, logSafeError } from './logging.js'
+import { recordDiagnostic } from './logging.js'
 import { markProcessShutdownFailed } from './shutdown-deadline.js'
 import { installShutdownSignalHandlers } from './shutdown-signals.js'
 
@@ -23,8 +23,9 @@ export async function startApi() {
     closeCacheRedis: closeSharedCacheRedisConnection,
     closeCoordinationRedis: closeSharedCoordinationRedisConnection,
     closePostgres: (timeoutMs) => sql.end({ timeout: timeoutMs / 1_000 }),
-    recordFailure: logSafeError,
-    recordTimeout: () => apiLogger.error('API shutdown exceeded its timeout; forcing cleanup'),
+    recordFailure: (component, error) =>
+      recordDiagnostic('api.shutdown.failed', { context: { component }, error }),
+    recordTimeout: () => recordDiagnostic('api.shutdown.timed-out'),
     markFailed: markProcessShutdownFailed,
   })
   const dispose = () => {
@@ -32,7 +33,7 @@ export async function startApi() {
     server?.removeListener('error', handleServerError)
   }
   const handleServerError = (error: Error) => {
-    logSafeError('API server failed', error)
+    recordDiagnostic('api.server.failed', { error })
     markProcessShutdownFailed()
     void shutdown().finally(dispose)
   }
@@ -45,7 +46,7 @@ export async function startApi() {
     })
     assertInstalledResourceDeclarations()
     const startedServer = serve({ createServer, fetch: app.fetch, port: env.PORT }, (info) => {
-      apiLogger.withMetadata({ port: info.port }).info('Hono API listening')
+      recordDiagnostic('api.runtime.started', { context: { port: info.port } })
     }) as Server
     server = startedServer
     startedServer.on('error', handleServerError)
@@ -53,7 +54,7 @@ export async function startApi() {
       void shutdown().finally(dispose)
     })
   } catch (error) {
-    logSafeError('API startup failed', error)
+    recordDiagnostic('api.startup.failed', { error })
     markProcessShutdownFailed()
     await shutdown()
     dispose()

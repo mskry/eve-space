@@ -1,5 +1,6 @@
 import type { MailHeader, MailLabel, MailParty } from '../queries/mail'
 import { ApiQueryError } from './query-error'
+import { createStableListEntries } from './stable-list'
 
 export interface MailFilters {
   mailingListId: number | null
@@ -21,6 +22,20 @@ export function mailPartyName(party: MailParty | null, role = 'party') {
   if (name) return name
   if (!party) return `Unknown ${role}`
   return `Unknown ${party.type.replace('_', ' ')} #${party.id}`
+}
+
+export function createKeyedMailLabels() {
+  return createStableListEntries(
+    (label: MailLabel) => `mail-label:${label.labelId ?? 'unknown'}`,
+    (previous, current) =>
+      previous.labelId === current.labelId &&
+      previous.name?.trim() === current.name?.trim() &&
+      previous.color === current.color,
+  )
+}
+
+export function createKeyedMailLabelIds() {
+  return createStableListEntries((labelId: number) => `mail-label:${labelId}`)
 }
 
 export function filterLoadedMailHeaders(headers: readonly MailHeader[], filters: MailFilters) {
@@ -216,6 +231,13 @@ export function splitMailBodyParagraphs(body: string | null) {
     .split(/\n[\t ]*\n+/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
+}
+
+export function createKeyedMailParagraphs() {
+  const createEntries = createStableListEntries((paragraph: string) =>
+    JSON.stringify(['mail-paragraph', paragraph]),
+  )
+  return (body: string | null) => createEntries(splitMailBodyParagraphs(body))
 }
 
 export function deriveMailboxStatus(options: {

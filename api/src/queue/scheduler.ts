@@ -2,6 +2,7 @@ import { randomInt, randomUUID } from 'node:crypto'
 import { defaultRepeatStrategy, type Queue, type RepeatOptions, type RepeatStrategy } from 'bullmq'
 import type { CoordinationRedisConnection } from '../coordination-redis.js'
 import { env } from '../env.js'
+import { recordDiagnostic } from '../logging.js'
 import {
   getJobContract,
   parseJobPayload,
@@ -99,7 +100,7 @@ export async function registerSchedulers(queue: Queue) {
     .client.then((connection) =>
       connection.set(schedulerOutcomeKey, 'registered', { EX: workerHeartbeatTtlSeconds }),
     )
-    .catch(() => console.error('Scheduler outcome marker update failed'))
+    .catch((error) => recordDiagnostic('scheduler.marker-update.failed', { error }))
 }
 
 async function registerScheduler<Name extends ScheduledJobName>(
@@ -174,7 +175,7 @@ export async function runWithSchedulerOverlapPolicy<T>(
   const armLeaseWatchdog = () => {
     clearTimeout(watchdog)
     watchdog = setTimeout(() => {
-      console.error('Scheduler overlap lock expired without a confirmed renewal')
+      recordDiagnostic('scheduler.overlap-lock.expired', { context: { schedulerId } })
       loseLease()
     }, schedulerLockTtlMs)
   }
@@ -185,12 +186,16 @@ export async function runWithSchedulerOverlapPolicy<T>(
       (renewed) => {
         // 0 means the key is gone or another replica owns it.
         if (renewed !== 1) {
-          console.error('Scheduler overlap lock lost')
+          recordDiagnostic('scheduler.overlap-lock.lost', { context: { schedulerId } })
           return loseLease()
         }
         armLeaseWatchdog()
       },
-      () => console.error('Scheduler overlap lock renewal failed'),
+      (error) =>
+        recordDiagnostic('scheduler.overlap-lock.renewal-failed', {
+          context: { schedulerId },
+          error,
+        }),
     )
   }, schedulerLockRenewalMs)
 
@@ -207,8 +212,11 @@ export async function runWithSchedulerOverlapPolicy<T>(
     clearInterval(renewal)
     clearTimeout(watchdog)
     if (held)
-      await releaseSchedulerLock(connection, key, token).catch(() =>
-        console.error('Scheduler overlap lock release failed'),
+      await releaseSchedulerLock(connection, key, token).catch((error) =>
+        recordDiagnostic('scheduler.overlap-lock.release-failed', {
+          context: { schedulerId },
+          error,
+        }),
       )
   }
 }

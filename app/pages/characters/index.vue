@@ -60,8 +60,12 @@ function prefetchCharacterOverview(characterId: number) {
   void prefetchProtectedQuery(
     queryCache,
     characterOverviewQuery({ apiClient, characterId }),
-    import.meta.client,
-    authSession.value.authenticated,
+    {
+      isClient: import.meta.client,
+      authenticated: authSession.value.authenticated,
+      authenticationReady: !authLoading.value,
+      ownsCharacter: characters.value.some((character) => character.characterId === characterId),
+    },
     characterId,
   )
 }

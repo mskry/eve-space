@@ -25,8 +25,8 @@ function composeAuthenticatedSessionModuleRoute<
   route: Hono<PlatformAuthenticatedSessionRouteEnv, RouteSchema, RouteBasePath>,
 ) {
   return new Hono()
-    .use('*', requireInstalledModuleEnabled(moduleId))
     .use('*', privateNoStore)
+    .use('*', requireInstalledModuleEnabled(moduleId))
     .use('*', loadSession)
     .use('*', requireSession)
     .use('*', loadOrganizationSession)
@@ -41,8 +41,8 @@ function composeOwnedCharacterModuleRoute<RouteSchema extends Schema, RouteBaseP
   route: Hono<PlatformOwnedCharacterRouteEnv, RouteSchema, RouteBasePath>,
 ) {
   return new Hono()
-    .use('*', requireInstalledModuleEnabled(moduleId))
     .use('*', privateNoStore)
+    .use('*', requireInstalledModuleEnabled(moduleId))
     .use('*', loadSession)
     .use('*', requireSession)
     .use('*', loadOrganizationSession)

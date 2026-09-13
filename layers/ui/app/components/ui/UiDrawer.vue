@@ -13,11 +13,12 @@ import {
 
 defineOptions({ inheritAttrs: false })
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     closeLabel?: string
     contentClass?: string
     description?: string
+    restoreFocus?: boolean
     side?: 'left' | 'right'
     title: string
   }>(),
@@ -25,11 +26,16 @@ withDefaults(
     closeLabel: 'Close navigation',
     contentClass: undefined,
     description: 'Application navigation',
+    restoreFocus: true,
     side: 'left',
   },
 )
 
 const open = defineModel<boolean>('open', { default: false })
+
+function handleCloseAutoFocus(event: Event) {
+  if (!props.restoreFocus) event.preventDefault()
+}
 </script>
 
 <template>
@@ -45,6 +51,7 @@ const open = defineModel<boolean>('open', { default: false })
           aria-modal="true"
           :class="['ui-drawer-content', contentClass]"
           :data-side="side"
+          @close-auto-focus="handleCloseAutoFocus"
         >
           <VisuallyHidden>
             <DrawerTitle>{{ title }}</DrawerTitle>

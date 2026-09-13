@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@pinia/colada'
 import { characterHistoryQuery } from '../../../queries/characters'
-import { canRunProtectedQuery } from '../../../queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../../../queries/protected-character-query-access'
 import { buildHistoryTimeline } from '../../../utils/history-timeline'
 import { ApiQueryError } from '../../../utils/query-error'
 import { parseRouteId } from '../../../utils/route-id'
@@ -18,15 +18,18 @@ definePageMeta({ title: 'Employment History', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { authSession } = useAuthSession(apiClient)
+const { authLoading, authSession } = useAuthSession(apiClient)
+const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
+const access = computed(() => ({
+  authenticated: authSession.value.authenticated,
+  authenticationReady: !authLoading.value,
+  isClient: import.meta.client,
+  ownsCharacter: characters.value.some((character) => character.characterId === characterId.value),
+}))
 const historyQuery = useQuery(() => ({
   ...characterHistoryQuery({ apiClient, characterId: characterId.value ?? 0 }),
-  enabled: canRunProtectedQuery(
-    import.meta.client,
-    authSession.value.authenticated,
-    characterId.value,
-  ),
+  enabled: canRunProtectedCharacterQuery(access.value, characterId.value ?? 0),
 }))
 const history = historyQuery.data
 const historyMessage = computed(() =>

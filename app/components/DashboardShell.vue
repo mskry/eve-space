@@ -3,7 +3,8 @@ import { useQuery, useQueryCache } from '@pinia/colada'
 import { adminSessionQuery } from '../queries/admin'
 import { characterRosterQuery } from '../queries/characters'
 import { mailLabelsQuery } from '../queries/mail'
-import { canRunProtectedQuery, prefetchQuery } from '../queries/query-cache'
+import { canRunProtectedCharacterQuery } from '../queries/protected-character-query-access'
+import { prefetchQuery } from '../queries/query-cache'
 import { PRIVATE_QUERY_KEYS, PUBLIC_QUERY_KEYS } from '../queries/query-keys'
 import { systemStatusQuery } from '../queries/system-status'
 import { getStaleEsiResult, hasUnavailableOverviewSection } from '../utils/esi-freshness'
@@ -23,6 +24,7 @@ const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
 
 const mobileNavigationOpen = ref(false)
+const mobileNavigationRestoreFocus = ref(true)
 const statusPopoverOpen = ref(false)
 const statusQuery = useQuery(systemStatusQuery(apiClient))
 const adminSessionQueryResult = useQuery(() => ({
@@ -84,7 +86,7 @@ const sidebarExpanded = useCookie<boolean>('eve-space-sidebar-expanded', {
 const { authLoading, authSession, initializeAuth, logout } = useAuthSession(apiClient)
 const characterRosterQueryResult = useQuery(() => ({
   ...characterRosterQuery(apiClient),
-  enabled: import.meta.client && authSession.value.authenticated,
+  enabled: import.meta.client && !authLoading.value && authSession.value.authenticated,
 }))
 
 const pageTitle = computed(() => String(route.meta.title ?? 'Overview'))
@@ -112,10 +114,14 @@ const adminAuthenticated = computed(
 )
 const mailUnreadQuery = useQuery(() => ({
   ...mailLabelsQuery({ apiClient, characterId: authorizedCharacter.value?.characterId ?? 0 }),
-  enabled: canRunProtectedQuery(
-    import.meta.client,
-    authSession.value.authenticated,
-    authorizedCharacter.value?.characterId,
+  enabled: canRunProtectedCharacterQuery(
+    {
+      authenticated: authSession.value.authenticated,
+      authenticationReady: !authLoading.value,
+      isClient: import.meta.client,
+      ownsCharacter: authorizedCharacter.value !== undefined,
+    },
+    authorizedCharacter.value?.characterId ?? 0,
   ),
 }))
 const mailUnreadCount = computed(() =>
@@ -125,11 +131,17 @@ const mailUnreadCount = computed(() =>
 onMounted(() => void initializeAuth())
 
 watch(
-  () => route.fullPath,
-  () => {
+  () => ({ fullPath: route.fullPath, path: route.path }),
+  (currentRoute, previousRoute) => {
+    if (!mobileNavigationOpen.value) return
+
+    mobileNavigationRestoreFocus.value = currentRoute.path === previousRoute.path
     mobileNavigationOpen.value = false
   },
 )
+watch(mobileNavigationOpen, (open) => {
+  if (open) mobileNavigationRestoreFocus.value = true
+})
 watch(statusPopoverOpen, (open) => {
   if (open) void statusQuery.refresh()
 })
@@ -139,9 +151,14 @@ function prefetchSystemStatus() {
 }
 
 async function handleLogout() {
-  mobileNavigationOpen.value = false
+  closeMobileNavigationForRoute('/auth')
   await logout()
   await navigateTo('/auth')
+}
+
+function closeMobileNavigationForRoute(destinationPath: string) {
+  mobileNavigationRestoreFocus.value = destinationPath === route.path
+  mobileNavigationOpen.value = false
 }
 </script>
 
@@ -166,6 +183,7 @@ async function handleLogout() {
         <div class="topbar-heading">
           <UiDrawer
             v-model:open="mobileNavigationOpen"
+            :restore-focus="mobileNavigationRestoreFocus"
             title="Dashboard navigation"
             description="Navigate between EVE Space dashboard sections"
           >
@@ -183,7 +201,7 @@ async function handleLogout() {
               :character-id="authorizedCharacter?.characterId"
               :character-name="authorizedCharacter?.name"
               :mail-unread-count="mailUnreadCount"
-              @navigate="mobileNavigationOpen = false"
+              @navigate="closeMobileNavigationForRoute"
               @logout="handleLogout"
             />
           </UiDrawer>
@@ -273,6 +291,7 @@ async function handleLogout() {
       <UiDrawer
         v-else
         v-model:open="mobileNavigationOpen"
+        :restore-focus="mobileNavigationRestoreFocus"
         title="Dashboard navigation"
         description="Navigate between EVE Space dashboard sections"
       >
@@ -290,12 +309,16 @@ async function handleLogout() {
           :character-id="authorizedCharacter?.characterId"
           :character-name="authorizedCharacter?.name"
           :mail-unread-count="mailUnreadCount"
-          @navigate="mobileNavigationOpen = false"
+          @navigate="closeMobileNavigationForRoute"
           @logout="handleLogout"
         />
       </UiDrawer>
 
-      <main :class="['dashboard-content', { 'character-content': props.hideTopbar }]">
+      <main
+        id="main-content"
+        :class="['dashboard-content', { 'character-content': props.hideTopbar }]"
+        tabindex="-1"
+      >
         <AppUpstreamNotice
           :status="upstreamStatus"
           :checked-at="upstreamCheckedAt"

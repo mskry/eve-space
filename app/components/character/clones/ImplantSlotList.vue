@@ -21,7 +21,16 @@ defineProps<{
         <span class="character-clones-slot-index" aria-hidden="true">
           {{ formatImplantSlot(entry.slot) }}
         </span>
-        <UiEveImage kind="type-icon" :id="entry.implant.typeId" :dimension="32" alt="" />
+        <UiEveImage
+          kind="type-icon"
+          :id="entry.implant.typeId"
+          :dimension="32"
+          :width="32"
+          :height="32"
+          loading="lazy"
+          decoding="async"
+          alt=""
+        />
         <span class="character-clones-implant-name">
           <span>{{ entry.implant.name }}</span>
           <AppInformationIcon />

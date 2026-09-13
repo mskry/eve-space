@@ -1,4 +1,5 @@
 import type { CoordinationRedisConnection } from '../coordination-redis.js'
+import { recordDiagnostic } from '../logging.js'
 import { schedulerOutcomeKey, workerHeartbeatKey, workerRegistryKey } from './namespaces.js'
 import { workerHeartbeatIntervalMs, workerHeartbeatTtlSeconds } from './policy.js'
 import { workerId as localWorkerId } from './worker-identity.js'
@@ -52,7 +53,7 @@ export async function startWorkerHeartbeat(
   }
   await write()
   const interval = setInterval(() => {
-    void write().catch(() => console.error('Worker heartbeat update failed'))
+    void write().catch((error) => recordDiagnostic('worker.heartbeat.failed', { error }))
   }, workerHeartbeatIntervalMs)
   return () => clearInterval(interval)
 }

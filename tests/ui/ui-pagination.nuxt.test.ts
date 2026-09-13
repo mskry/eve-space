@@ -67,4 +67,30 @@ describe('UiPagination', () => {
     await lastPage.get('button[aria-label="Previous page"]').trigger('click')
     expect(lastPage.emitted('change-page')).toEqual([[2]])
   })
+
+  it('retains page identity while semantic ellipsis gaps change', async () => {
+    const wrapper = await mountSuspended(UiPagination, {
+      props: {
+        currentPage: 50,
+        label: 'Long result pages',
+        showPages: true,
+        totalPages: 100,
+      },
+      route: false,
+    })
+    mountedWrappers.push(wrapper)
+    const pageFifty = wrapper
+      .findAll('.ui-pagination-page')
+      .find((page) => page.text() === '50')?.element
+
+    expect(pageFifty).toBeDefined()
+    expect(wrapper.findAll('.ui-pagination-ellipsis')).toHaveLength(2)
+
+    await wrapper.setProps({ currentPage: 51 })
+
+    const retainedPageFifty = wrapper
+      .findAll('.ui-pagination-page')
+      .find((page) => page.text() === '50')?.element
+    expect(retainedPageFifty).toBe(pageFifty)
+  })
 })

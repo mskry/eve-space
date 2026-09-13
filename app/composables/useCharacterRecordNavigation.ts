@@ -21,6 +21,7 @@ import {
 interface CharacterRecordNavigationParameters {
   readonly apiClient: ApiClient
   readonly authenticated: ComputedRef<boolean>
+  readonly authenticationReady: ComputedRef<boolean>
   readonly characterId: ComputedRef<number | undefined>
   readonly ownsCharacter: ComputedRef<boolean>
 }
@@ -28,6 +29,7 @@ interface CharacterRecordNavigationParameters {
 export function useCharacterRecordNavigation({
   apiClient,
   authenticated,
+  authenticationReady,
   characterId,
   ownsCharacter,
 }: CharacterRecordNavigationParameters) {
@@ -41,67 +43,54 @@ export function useCharacterRecordNavigation({
   const prefetchers: Readonly<Record<string, () => void>> = {
     'core-character-skills': () => {
       const id = characterId.value ?? 0
+      const access = protectedQueryAccess()
       void Promise.all([
         prefetchProtectedQuery(
           queryCache,
           characterSkillsQuery({ apiClient, characterId: id }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
         prefetchProtectedQuery(
           queryCache,
           characterAttributesQuery({ apiClient, characterId: id }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
         prefetchProtectedQuery(
           queryCache,
           characterSkillQueueQuery({ apiClient, characterId: id }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
       ])
     },
     'core-character-clones': () => {
       const id = characterId.value ?? 0
-      const access = {
-        isClient: import.meta.client,
-        authenticated: authenticated.value,
-        ownsCharacter: ownsCharacter.value,
-      }
+      const access = protectedQueryAccess()
       void Promise.all([
         prefetchProtectedQuery(
           queryCache,
           characterClonesQuery({ apiClient, characterId: id, access }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
         prefetchProtectedQuery(
           queryCache,
           characterImplantsQuery({ apiClient, characterId: id, access }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
       ])
     },
     'core-character-finance': () => {
       const id = characterId.value ?? 0
-      const access = {
-        isClient: import.meta.client,
-        authenticated: authenticated.value,
-        ownsCharacter: ownsCharacter.value,
-      }
+      const access = protectedQueryAccess()
       void Promise.all([
         prefetchProtectedQuery(
           queryCache,
           characterFinanceBalanceQuery({ apiClient, characterId: id, access }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
         prefetchProtectedQuery(
@@ -113,8 +102,7 @@ export function useCharacterRecordNavigation({
             requested: true,
             page: 1,
           }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
       ])
@@ -123,37 +111,43 @@ export function useCharacterRecordNavigation({
       void prefetchProtectedQuery(
         queryCache,
         characterHistoryQuery({ apiClient, characterId: characterId.value ?? 0 }),
-        import.meta.client,
-        authenticated.value,
+        protectedQueryAccess(),
         characterId.value,
       )
     },
     'core-character-mail': () => {
       const id = characterId.value ?? 0
+      const access = protectedQueryAccess()
       void Promise.all([
         prefetchProtectedQuery(
           queryCache,
           mailHeadersQuery({ apiClient, characterId: id }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
         prefetchProtectedQuery(
           queryCache,
           mailLabelsQuery({ apiClient, characterId: id }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
         prefetchProtectedQuery(
           queryCache,
           mailingListsQuery({ apiClient, characterId: id }),
-          import.meta.client,
-          authenticated.value,
+          access,
           characterId.value,
         ),
       ])
     },
+  }
+
+  function protectedQueryAccess() {
+    return {
+      isClient: import.meta.client,
+      authenticated: authenticated.value,
+      authenticationReady: authenticationReady.value,
+      ownsCharacter: ownsCharacter.value,
+    }
   }
 
   function prefetchNavigation(entry: RecordSectionNavigationEntry) {

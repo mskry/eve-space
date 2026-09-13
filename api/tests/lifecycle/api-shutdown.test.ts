@@ -136,10 +136,7 @@ describe('API shutdown coordinator', () => {
     expect(dependencies.closeCoordinationRedis).toHaveBeenCalledOnce()
     expect(dependencies.closePostgres).toHaveBeenCalledOnce()
     expect(dependencies.recordFailure).toHaveBeenCalledTimes(3)
-    expect(dependencies.recordFailure).toHaveBeenCalledWith(
-      'API ESI runtime shutdown failed',
-      expect.any(Error),
-    )
+    expect(dependencies.recordFailure).toHaveBeenCalledWith('esi-runtime', expect.any(Error))
     expect(dependencies.markFailed).toHaveBeenCalledTimes(3)
     expect(dependencies.recordTimeout).not.toHaveBeenCalled()
   })
