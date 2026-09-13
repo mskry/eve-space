@@ -7,6 +7,7 @@ import {
 import { PRIVATE_QUERY_KEYS } from './query-keys'
 
 export { clearAuthenticatedQueries } from '@eve-space/platform-module-nuxt/runtime'
+export { clearAuthenticatedQueriesAfterSessionTransition } from '@eve-space/platform-module-nuxt/runtime'
 export { prefetchQuery }
 
 export function canRunProtectedQuery(

@@ -22,14 +22,15 @@ describe.each(['enabled', 'disabled'] as const)('%s module composition probe', (
       )
     ).default
     const capabilities = {
+      coreData: {},
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
       persistence: { transaction: vi.fn() },
-      sde: { loadPublishedTypeGroups: vi.fn() },
     }
 
     server.conformanceRoutes(capabilities)
     server.conformanceActivityProvider({
       collectionStatus: { read: vi.fn() },
+      coreData: {},
       logger: capabilities.logger,
       persistence: { transaction: vi.fn() },
     })

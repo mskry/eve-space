@@ -147,6 +147,7 @@ describe('feature source import allowlists', () => {
 
   it.each([
     '@eve-space/api/auth/tokens',
+    '@eve-space/core-data-contract',
     'postgres',
     'ioredis',
     'bullmq',
@@ -239,6 +240,69 @@ describe('feature source import allowlists', () => {
         expect.stringContaining('must not call addServerHandler'),
       ]),
     )
+  })
+
+  it('rejects direct SDE datasets and alternate product sources or caches', () => {
+    const violations = serverSourceBoundaryViolations(
+      serverSource(`
+        export function lookup() {
+          return persistence.query('select * from sde_types')
+        }
+      `),
+    )
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('must not reference unrestricted SDE datasets'),
+        expect.stringContaining('instead of alternate adapters or caches'),
+      ]),
+    )
+  })
+
+  it('rejects renamed module-level caches wrapped around core-data products', () => {
+    expect(
+      serverSourceBoundaryViolations(
+        serverSource(`
+          const memo = new Map<number, unknown>()
+          const groupsByType: Record<number, unknown> = {}
+          export async function enrich(capabilities, typeId: number) {
+            const cached = memo.get(typeId) ?? groupsByType[typeId]
+            if (cached) return cached
+            const result = await capabilities.coreData.publishedTypeGroups({ typeIds: [typeId] })
+            memo.set(typeId, result)
+            groupsByType[typeId] = result
+            return result
+          }
+        `),
+      ),
+    ).toContainEqual(expect.stringContaining('instead of alternate adapters or caches'))
+  })
+
+  it('does not classify unrelated module state or const assertions as core-data caches', () => {
+    expect(
+      serverSourceBoundaryViolations(
+        serverSource(`
+          let requestCount = 0
+          const immutable = { kinds: ['project'] } as const
+          const deferred = { run() { requestCount += immutable.kinds.length } }
+          export function run() { return deferred.run() }
+        `),
+      ),
+    ).toEqual([])
+  })
+
+  it('allows transient function-local collections', () => {
+    expect(
+      serverSourceBoundaryViolations(
+        serverSource(`
+          export function groupRows(rows: readonly { id: number }[]) {
+            const groupsByType = new Map<number, { id: number }>()
+            for (const row of rows) groupsByType.set(row.id, row)
+            return [...groupsByType.values()]
+          }
+        `),
+      ),
+    ).toEqual([])
   })
 
   it('ignores commented-out Vue scripts', () => {

@@ -1,8 +1,6 @@
-export interface SdeProjectionRevision {
-  buildNumber: number
-  ingestVersion: number
-  ingestedAt: string
-}
+import type { SdeProjectionRevision } from '@eve-space/core-data-contract'
+
+export type { SdeProjectionRevision } from '@eve-space/core-data-contract'
 
 export function sdeProjectionRevisionsEqual(
   left: SdeProjectionRevision,

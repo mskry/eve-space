@@ -140,6 +140,10 @@ describe('local resource observations', () => {
         authorizationGeneration: 4,
       }),
     )
+    expect(Object.keys(materialize.mock.calls[0]![0].capabilities)).toEqual([
+      'logger',
+      'persistence',
+    ])
     expect(mocks.recordSuccess).toHaveBeenCalledOnce()
   })
 

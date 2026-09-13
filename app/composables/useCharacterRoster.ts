@@ -59,6 +59,22 @@ export function useCharacterRoster(apiClient: ApiClient) {
       : undefined,
   )
 
+  watch(
+    () => rosterQuery.data.value?.characters,
+    (currentCharacters, previousCharacters) => {
+      if (!currentCharacters || !previousCharacters) return
+      const currentCharacterIds = new Set(
+        currentCharacters.map((character) => character.characterId),
+      )
+      for (const character of previousCharacters) {
+        if (!currentCharacterIds.has(character.characterId)) {
+          removeCharacterQueries(queryCache, character.characterId)
+        }
+      }
+    },
+    { flush: 'sync' },
+  )
+
   function loadCharacterRoster() {
     return rosterQuery.refresh()
   }

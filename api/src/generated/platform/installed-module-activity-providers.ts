@@ -8,6 +8,7 @@ export const installedModuleActivityProviders = [
   {
     moduleId: 'organization-activity',
     providerId: 'organization-activity',
+    coreDataProducts: [] as const,
     audience: 'member',
     requiredPermission: 'organization-activity.view',
     freshness: { staleAfterSeconds: 3600 },
@@ -18,7 +19,11 @@ export const installedModuleActivityProviders = [
     ],
     invoke: (context) =>
       module0ActivityProvider0Factory(
-        createPlatformModuleActivityProviderCapabilities('organization-activity', context),
+        createPlatformModuleActivityProviderCapabilities(
+          'organization-activity',
+          context,
+          [] as const,
+        ),
       )(context),
   },
 ] as const satisfies readonly PlatformInstalledActivityProviderDescriptor[]

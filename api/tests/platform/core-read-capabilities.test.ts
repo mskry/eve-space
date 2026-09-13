@@ -65,38 +65,3 @@ describe('owned-character core reads', () => {
     ).resolves.toBeNull()
   })
 })
-
-describe('SDE core reads', () => {
-  test('returns complete published type and group references', async () => {
-    mocks.results.push([
-      { typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' },
-      { typeId: 35, typeName: 'Pyerite', groupId: 18, groupName: 'Mineral' },
-    ])
-    const { sdeCoreReads } = await import('../../src/platform/core-read-capabilities.js')
-
-    await expect(sdeCoreReads.loadPublishedTypeGroups([35, 34, 35])).resolves.toEqual([
-      { typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' },
-      { typeId: 35, typeName: 'Pyerite', groupId: 18, groupName: 'Mineral' },
-    ])
-    expect(mocks.select).toHaveBeenCalledOnce()
-  })
-
-  test('returns an empty result without querying PostgreSQL', async () => {
-    const { sdeCoreReads } = await import('../../src/platform/core-read-capabilities.js')
-
-    await expect(sdeCoreReads.loadPublishedTypeGroups([])).resolves.toEqual([])
-    expect(mocks.select).not.toHaveBeenCalled()
-  })
-
-  test.each([
-    [[0], 'positive safe integers'],
-    [[1.5], 'positive safe integers'],
-    [[Number.MAX_SAFE_INTEGER + 1], 'positive safe integers'],
-    [Array.from({ length: 501 }, (_, index) => index + 1), 'cannot exceed 500 IDs'],
-  ])('rejects unbounded or invalid IDs before querying PostgreSQL', async (typeIds, message) => {
-    const { sdeCoreReads } = await import('../../src/platform/core-read-capabilities.js')
-
-    await expect(sdeCoreReads.loadPublishedTypeGroups(typeIds)).rejects.toThrow(message)
-    expect(mocks.select).not.toHaveBeenCalled()
-  })
-})

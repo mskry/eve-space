@@ -1,3 +1,5 @@
+import type { CoreDataMethodsFor, CoreDataProductId } from '@eve-space/core-data-contract'
+
 export const platformModuleIdPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
 export const platformModuleIdMaxLength = 44
 export const platformContributionIdPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
@@ -215,6 +217,7 @@ export function resolvePlatformModuleRoutePath(namespace: string) {
 }
 
 export interface PlatformRouteContribution extends PlatformOrganizationContributionAuthorization {
+  readonly coreDataProducts?: readonly CoreDataProductId[]
   id: string
   namespace: string
   exportName: string
@@ -242,17 +245,6 @@ export interface OwnedCharacterAffiliation {
 
 export interface OwnedCharacterCoreReads {
   loadAffiliation(): Promise<OwnedCharacterAffiliation | null>
-}
-
-export interface PublishedSdeTypeGroup {
-  readonly typeId: number
-  readonly typeName: string
-  readonly groupId: number
-  readonly groupName: string
-}
-
-export interface SdeCoreReads {
-  loadPublishedTypeGroups(typeIds: readonly number[]): Promise<readonly PublishedSdeTypeGroup[]>
 }
 
 export const platformModuleLogLevels = ['info', 'warn', 'error'] as const
@@ -322,10 +314,13 @@ export interface PlatformModulePersistence<Transaction> {
   transaction<T>(operation: (transaction: Transaction) => Promise<T>): Promise<T>
 }
 
-export interface PlatformModuleRouteCapabilities<Transaction> {
+export interface PlatformModuleRouteCapabilities<
+  Transaction,
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+> {
+  readonly coreData: CoreDataMethodsFor<ProductIds>
   readonly logger: PlatformModuleLogger
   readonly persistence: PlatformModulePersistence<Transaction>
-  readonly sde: SdeCoreReads
 }
 
 export interface PlatformAuthorizedOrganizationContext {
@@ -342,10 +337,17 @@ export interface PlatformModuleResourceTransaction {
   ): Promise<readonly Row[]>
 }
 
-export interface PlatformModuleResourceCapabilities {
+export interface PlatformModuleResourceCapabilities<
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+> {
+  readonly coreData: CoreDataMethodsFor<ProductIds>
   readonly logger: PlatformModuleLogger
   readonly persistence: PlatformModulePersistence<PlatformModuleResourceTransaction>
-  readonly sde: SdeCoreReads
+}
+
+export interface PlatformModuleResourceMaterializationCapabilities {
+  readonly logger: PlatformModuleLogger
+  readonly persistence: PlatformModulePersistence<PlatformModuleResourceTransaction>
 }
 
 export interface PlatformAuthenticatedSessionRouteContext {
@@ -475,6 +477,7 @@ export interface PlatformResourceBatchContribution {
 }
 
 interface PlatformResourceContributionBase {
+  coreDataProducts?: readonly CoreDataProductId[]
   dependentOperationIds?: readonly string[]
   id: string
   operationId: string
@@ -574,7 +577,7 @@ export interface PlatformResourceMaterializationContext<
   readonly data: Data
   readonly validatedAt: string
   readonly authorizationGeneration: number | null
-  readonly capabilities: PlatformModuleResourceCapabilities
+  readonly capabilities: PlatformModuleResourceMaterializationCapabilities
 }
 
 export type PlatformCompleteObservationBatchOutcome<Data> =
@@ -618,12 +621,15 @@ export type PlatformResourceBatchOperationImplementation<
       }): readonly PlatformChangeHintBatchOutcome[]
     })
 
-export interface PlatformResourceCollectionContext<Subject extends PlatformResourceSubject> {
+export interface PlatformResourceCollectionContext<
+  Subject extends PlatformResourceSubject,
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+> {
   readonly subject: Subject
   readonly organizationVersion: number
   readonly corporationId: number | null
   readonly authorizationGeneration: number | null
-  readonly capabilities: PlatformModuleResourceCapabilities
+  readonly capabilities: PlatformModuleResourceCapabilities<ProductIds>
   readonly requestBudget: number
   execute(
     operationId: string,
@@ -646,10 +652,11 @@ export interface PlatformResourceOperationImplementation<
   BatchOperation extends string = string,
   BatchData = unknown,
   Subject extends PlatformResourceSubject = PlatformCharacterResourceSubject,
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
 > {
   readonly operation: Operation
   collect?(
-    context: PlatformResourceCollectionContext<Subject>,
+    context: PlatformResourceCollectionContext<Subject, ProductIds>,
   ): Promise<PlatformResourceCollectionResult<Data>>
   request(subject: Subject): Readonly<Record<string, unknown>>
   map(input: { readonly subject: Subject; readonly data: OperationData }): Data
@@ -660,31 +667,78 @@ export interface PlatformResourceOperationImplementation<
   readonly batch?: PlatformResourceBatchOperationImplementation<BatchOperation, Data, BatchData>
 }
 
+type PlatformResourceImplementationParts<Implementation> =
+  Implementation extends PlatformResourceOperationImplementation<
+    infer Operation,
+    infer OperationData,
+    infer Data,
+    infer BatchOperation,
+    infer BatchData,
+    infer Subject,
+    infer ProductIds
+  >
+    ? readonly [
+        operation: Operation,
+        operationData: OperationData,
+        data: Data,
+        batchOperation: BatchOperation,
+        batchData: BatchData,
+        subject: Subject,
+        productIds: ProductIds,
+      ]
+    : never
+
+type PlatformResourceImplementationProductIds<Implementation> =
+  PlatformResourceImplementationParts<Implementation>[6]
+
+type SameProductIds<Left, Right> = [Left] extends [Right]
+  ? [Right] extends [Left]
+    ? true
+    : false
+  : false
+
+export type PlatformResourceImplementationForProducts<
+  Implementation,
+  ProductIds extends readonly CoreDataProductId[],
+> =
+  SameProductIds<PlatformResourceImplementationProductIds<Implementation>, ProductIds> extends true
+    ? Implementation
+    : never
+
 export function definePlatformResourceOperation<
   const Operation extends string,
   OperationData,
   Data,
   const BatchOperation extends string = string,
   BatchData = unknown,
+  const ProductIds extends readonly CoreDataProductId[] = readonly [],
 >(
   implementation: PlatformResourceOperationImplementation<
     Operation,
     OperationData,
     Data,
     BatchOperation,
-    BatchData
+    BatchData,
+    PlatformCharacterResourceSubject,
+    ProductIds
   >,
 ): PlatformResourceOperationImplementation<
   Operation,
   OperationData,
   Data,
   BatchOperation,
-  BatchData
+  BatchData,
+  PlatformCharacterResourceSubject,
+  ProductIds
 > {
   return implementation
 }
 
-interface PlatformInstalledResourceDescriptorBase<Implementation> {
+interface PlatformInstalledResourceDescriptorBase<
+  Implementation,
+  ProductIds extends readonly CoreDataProductId[],
+> {
+  readonly coreDataProducts?: ProductIds
   readonly dependentOperationIds?: readonly string[]
   readonly moduleId: string
   readonly resourceId: string
@@ -693,23 +747,26 @@ interface PlatformInstalledResourceDescriptorBase<Implementation> {
   readonly implementation: Implementation
 }
 
-export type PlatformInstalledResourceDescriptor<Implementation = unknown> =
-  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+export type PlatformInstalledResourceDescriptor<
+  Implementation = unknown,
+  ProductIds extends readonly CoreDataProductId[] = readonly CoreDataProductId[],
+> =
+  | (PlatformInstalledResourceDescriptorBase<Implementation, ProductIds> & {
       readonly batch?: never
       readonly subjectKind: 'deployment'
       readonly eligibility: { readonly kind: 'current-deployment' }
     })
-  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+  | (PlatformInstalledResourceDescriptorBase<Implementation, ProductIds> & {
       readonly batch?: PlatformResourceBatchContribution
       readonly subjectKind: 'character'
       readonly eligibility: { readonly kind: 'current-owned-character' }
     })
-  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+  | (PlatformInstalledResourceDescriptorBase<Implementation, ProductIds> & {
       readonly batch?: never
       readonly subjectKind: 'corporation'
       readonly eligibility: { readonly kind: 'current-managed-corporation-source' }
     })
-  | (PlatformInstalledResourceDescriptorBase<Implementation> & {
+  | (PlatformInstalledResourceDescriptorBase<Implementation, ProductIds> & {
       readonly batch?: never
       readonly subjectKind: 'alliance'
       readonly eligibility: { readonly kind: 'current-managed-alliance' }
@@ -814,8 +871,12 @@ export interface PlatformActivityProviderContext {
   readonly characters: readonly PlatformActivityProviderCharacter[]
 }
 
-export interface PlatformActivityProviderCapabilities<Transaction> {
+export interface PlatformActivityProviderCapabilities<
+  Transaction,
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+> {
   readonly collectionStatus: PlatformModuleCollectionStatusReads
+  readonly coreData: CoreDataMethodsFor<ProductIds>
   readonly logger: PlatformModuleLogger
   readonly persistence: PlatformModulePersistence<Transaction>
 }
@@ -824,11 +885,15 @@ export type PlatformActivityProvider = (
   context: PlatformActivityProviderContext,
 ) => Promise<PlatformActivityProviderResult>
 
-export type PlatformActivityProviderFactory<Transaction = PlatformModuleResourceTransaction> = (
-  capabilities: PlatformActivityProviderCapabilities<Transaction>,
+export type PlatformActivityProviderFactory<
+  Transaction = PlatformModuleResourceTransaction,
+  ProductIds extends readonly CoreDataProductId[] = readonly [],
+> = (
+  capabilities: PlatformActivityProviderCapabilities<Transaction, ProductIds>,
 ) => PlatformActivityProvider
 
 export interface PlatformActivityProviderContribution extends PlatformOrganizationContributionAuthorization {
+  readonly coreDataProducts?: readonly CoreDataProductId[]
   readonly id: string
   readonly exportName: string
   readonly freshness: {
@@ -837,6 +902,7 @@ export interface PlatformActivityProviderContribution extends PlatformOrganizati
 }
 
 export interface PlatformInstalledActivityProviderDescriptor extends PlatformOrganizationContributionAuthorization {
+  readonly coreDataProducts: readonly CoreDataProductId[]
   readonly moduleId: string
   readonly providerId: string
   readonly freshness: {

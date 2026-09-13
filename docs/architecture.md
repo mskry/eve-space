@@ -98,6 +98,27 @@ boundaries, not one service per module. Installation, runtime enablement, safe d
 failure, retained data, telemetry, and explicit removal are documented in
 [`platform-module-foundation.md`](platform-module-foundation.md).
 
+## Core EVE Data Boundary
+
+The machine-readable core-data coverage manifest inventories shared EVE capabilities independently
+from executable module products. Existing core callers keep using focused character, universe, mail,
+and other owning-domain interfaces; there is no internal generic data-product dispatcher. A product
+exists only when the pure `@eve-space/core-data-contract` contract, one host-owned adapter, executable
+catalog entry, coverage binding, and contribution-context policy agree.
+
+Installed routes, resources, and activity providers declare products independently and receive only
+their generated product-specific methods. The core-data subsystem points toward the pure contract and
+canonical source interfaces, while platform capability construction points toward core data; core
+data never imports platform orchestration or features. Mechanical verification also restricts reverse
+imports to approved startup validation and platform capability construction.
+
+`published-type-groups` is the initial public product. It validates and bounds requests before source
+access, reads published rows and the committed SDE revision in one transaction, and performs no
+network work. Coverage state alone grants no product access, ESI scope, scheduling, or storage.
+Protected products are deferred until a separate accepted change defines a concrete consumer and
+trusted target authorization. Product promotion and rollback requirements are documented in
+[`platform-module-foundation.md`](platform-module-foundation.md).
+
 ## Security Decisions
 
 - OAuth state is bound to an HttpOnly SameSite cookie, stored as a SHA-256 hash, consumed once, and bound server-side to login, attachment, exact-character reauthorization, organization-owner claim, or approved-transfer intent.

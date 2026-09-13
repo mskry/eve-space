@@ -7,7 +7,10 @@ import {
   unauthenticatedSession,
   unavailableAuthConfig,
 } from '../queries/auth'
-import { clearAuthenticatedQueries } from '../queries/query-cache'
+import {
+  clearAuthenticatedQueries,
+  clearAuthenticatedQueriesAfterSessionTransition,
+} from '../queries/query-cache'
 
 export function useAuthSession(apiClient: ApiClient) {
   const route = useRoute()
@@ -36,6 +39,26 @@ export function useAuthSession(apiClient: ApiClient) {
     return ''
   })
   const authFeedbackIsError = computed(() => route.query.auth !== 'success')
+
+  watch(
+    () => {
+      const session = sessionQuery.data.value
+      if (!session) return undefined
+      return session.authenticated ? session.account.userId : null
+    },
+    (authenticatedUserId, previousAuthenticatedUserId) => {
+      if (
+        typeof previousAuthenticatedUserId !== 'string' ||
+        authenticatedUserId === undefined ||
+        authenticatedUserId === previousAuthenticatedUserId
+      ) {
+        return
+      }
+      const session = sessionQuery.data.value
+      if (session) clearAuthenticatedQueriesAfterSessionTransition(queryCache, session)
+    },
+    { flush: 'sync' },
+  )
 
   async function initializeAuth(force = false) {
     if (!import.meta.client) return false

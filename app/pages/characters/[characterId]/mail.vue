@@ -7,10 +7,11 @@ definePageMeta({ title: 'Character Mail', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { authSession } = useAuthSession(apiClient)
+const { authLoading, authSession } = useAuthSession(apiClient)
 const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
 const authenticated = computed(() => authSession.value.authenticated)
+const authenticationReady = computed(() => !authLoading.value)
 const ownsCharacter = computed(() =>
   characters.value.some((character) => character.characterId === characterId.value),
 )
@@ -34,8 +35,10 @@ const organization = useMailOrganization({ characterId, mailbox, mutations })
 const composition = useMailComposition({
   apiClient,
   authenticated,
+  authenticationReady,
   characterId,
   mailbox,
+  ownsCharacter,
 })
 const {
   activeLabelId,

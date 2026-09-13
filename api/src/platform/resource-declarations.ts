@@ -4,6 +4,7 @@ import type {
   PlatformResourceOperationImplementation,
 } from '@eve-space/platform-module-contract'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
+import { assertCoreDataProductDeclarations } from '../core-data/capabilities.js'
 import {
   assertEsiPlatformExecutionConfiguration,
   assertEsiExecutableDefinition,
@@ -20,6 +21,7 @@ export function assertInstalledResourceDeclarations(
 ) {
   if (!definitions) assertEsiPlatformExecutionConfiguration()
   for (const resource of resources) {
+    assertCoreDataProductDeclarations(resource.coreDataProducts ?? [], 'resource-projection')
     assertRegisteredEsiOperation(resource.operationId)
     assertResourceDefinition(resource, resource.operationId, definitions)
     const primary = getEsiOperationAuthorization(resource.operationId)

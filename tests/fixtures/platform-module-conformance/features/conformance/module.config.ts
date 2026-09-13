@@ -21,6 +21,7 @@ const manifest = {
       {
         id: 'conformance-status',
         operationId: 'conformance-status-operation',
+        coreDataProducts: ['published-type-groups'],
         subjectKind: 'character',
         materializationIntervalSeconds: 300,
         eligibility: { kind: 'current-owned-character' },

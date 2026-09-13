@@ -1,3 +1,4 @@
+import type { CoreDataContributionContext } from '@eve-space/core-data-contract'
 import {
   platformAuthorizationStrategies,
   platformContributionIdPattern,
@@ -22,6 +23,16 @@ export interface PlatformModuleValidationAuthorities {
   reservedModuleIds: readonly string[]
   navigationIds: readonly string[]
   esiOperationIds: readonly string[]
+  coreDataProductContracts: Readonly<
+    Record<
+      string,
+      {
+        readonly audience: 'installed-module' | 'core'
+        readonly sensitivity: 'public' | 'protected'
+        readonly permittedContexts: readonly CoreDataContributionContext[]
+      }
+    >
+  >
 }
 
 export function compareStable(left: string, right: string) {
@@ -76,11 +87,22 @@ export function validatePlatformModuleManifests(
       issues,
     )
     validateRouteNamespaceIntersections(manifest, issues)
-    validateRoutes(manifest, routeCoordinates, issues)
+    validateRoutes(manifest, routeCoordinates, authorities.coreDataProductContracts, issues)
     validateMigrations(manifest, migrationIds, issues)
     validateEsiOperations(manifest, issues)
-    validateResources(manifest, esiOperationIds, resourceIds, issues)
-    validateActivityProviders(manifest, activityProviderIds, issues)
+    validateResources(
+      manifest,
+      esiOperationIds,
+      resourceIds,
+      authorities.coreDataProductContracts,
+      issues,
+    )
+    validateActivityProviders(
+      manifest,
+      activityProviderIds,
+      authorities.coreDataProductContracts,
+      issues,
+    )
     validatePages(manifest, issues)
     validateNavigation(manifest, navigationIds, issues)
     validateExposedContributions(manifest, issues)
@@ -93,6 +115,7 @@ export function validatePlatformModuleManifests(
 function validateRoutes(
   manifest: PlatformModuleManifest,
   routeCoordinates: Map<string, string>,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
 ) {
   const moduleNamespace = `/${manifest.id}`
@@ -120,6 +143,7 @@ function validateRoutes(
       issues,
     )
     validateOrganizationAuthorization(route, `route ${identity}`, issues)
+    validateCoreDataProducts(route, `route ${identity}`, 'route', productContracts, issues)
     if (
       route.authorization === 'owned-character' &&
       !route.namespace.split('/').includes(':characterId')
@@ -131,6 +155,7 @@ function validateRoutes(
 function validateActivityProviders(
   manifest: PlatformModuleManifest,
   providerIds: Map<string, string>,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
 ) {
   for (const provider of manifest.server.activityProviders) {
@@ -138,6 +163,13 @@ function validateActivityProviders(
     validateContributionId(provider.id, manifest.id, 'activity provider', issues)
     validateExportName(provider.exportName, manifest.id, 'activity provider', issues)
     validateOrganizationAuthorization(provider, `activity provider ${identity}`, issues)
+    validateCoreDataProducts(
+      provider,
+      `activity provider ${identity}`,
+      'activity-provider',
+      productContracts,
+      issues,
+    )
     claimValue(providerIds, identity, manifest.id, 'activity provider identity', issues)
     if (
       !Number.isSafeInteger(provider.freshness?.staleAfterSeconds) ||
@@ -173,6 +205,7 @@ function validateResources(
   manifest: PlatformModuleManifest,
   esiOperationIds: ReadonlyMap<string, string>,
   resourceIds: Map<string, string>,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
   issues: string[],
 ) {
   const eligibilityBySubject = {
@@ -210,6 +243,47 @@ function validateResources(
       issues.push(`resource ${identity} references unknown ESI operation ${resource.operationId}`)
     validateDependentEsiOperations(manifest, resource, identity, issues)
     validateResourceBatch(resource, identity, esiOperationIds, issues)
+    validateCoreDataProducts(
+      resource,
+      `resource ${identity}`,
+      'resource-projection',
+      productContracts,
+      issues,
+    )
+  }
+}
+
+function validateCoreDataProducts(
+  contribution: { readonly coreDataProducts?: unknown },
+  identity: string,
+  context: CoreDataContributionContext,
+  productContracts: PlatformModuleValidationAuthorities['coreDataProductContracts'],
+  issues: string[],
+) {
+  const products = contribution.coreDataProducts
+  if (products === undefined) return
+  if (!Array.isArray(products)) {
+    issues.push(`${identity} core-data products must be an array`)
+    return
+  }
+  const seen = new Set<string>()
+  for (const product of products) {
+    if (typeof product !== 'string' || !Object.hasOwn(productContracts, product)) {
+      issues.push(`${identity} references unknown core-data product ${String(product)}`)
+      continue
+    }
+    if (seen.has(product)) {
+      issues.push(`${identity} declares duplicate core-data product ${product}`)
+      continue
+    }
+    seen.add(product)
+    const contract = productContracts[product]!
+    if (contract.sensitivity !== 'public')
+      issues.push(`${identity} cannot declare protected core-data product ${product}`)
+    if (contract.audience !== 'installed-module')
+      issues.push(`${identity} has incompatible audience for core-data product ${product}`)
+    if (!(contract.permittedContexts as readonly CoreDataContributionContext[]).includes(context))
+      issues.push(`${identity} cannot use core-data product ${product} in ${context}`)
   }
 }
 

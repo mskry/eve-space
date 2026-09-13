@@ -133,6 +133,12 @@ describe('production-shaped module conformance', () => {
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
       'conformanceStatusResource',
     )
+    expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
+      'coreDataProducts: ["published-type-groups"] as const',
+    )
+    expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
+      "operationId: 'conformance-status-operation'",
+    )
     expect(
       files.get('api/src/generated/platform/installed-module-activity-providers.ts'),
     ).toContain('conformanceActivityProvider')
@@ -146,9 +152,9 @@ describe('production-shaped module conformance', () => {
       await import('../fixtures/platform-module-conformance/features/conformance/server/src/index')
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
     const capabilities: PlatformModuleRouteCapabilities<unknown> = {
+      coreData: {},
       logger,
       persistence: { transaction: vi.fn() },
-      sde: { loadPublishedTypeGroups: vi.fn() },
     }
     const app = conformanceRouteApp(server.conformanceRoutes(capabilities))
     const request = (query: string) =>
@@ -210,13 +216,15 @@ describe('production-shaped module conformance', () => {
         },
       ])
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-    const capabilities: PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction> = {
-      collectionStatus: { read: vi.fn().mockResolvedValue(currentStatus()) },
-      logger,
-      persistence: {
-        transaction: (operation) => operation({ query }),
-      },
-    }
+    const providerCapabilities: PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction> =
+      {
+        collectionStatus: { read: vi.fn().mockResolvedValue(currentStatus()) },
+        coreData: {},
+        logger,
+        persistence: {
+          transaction: (operation) => operation({ query }),
+        },
+      }
     const subject = {
       kind: 'character' as const,
       characterId: 90_000_001,
@@ -224,18 +232,55 @@ describe('production-shaped module conformance', () => {
     }
     const request = server.conformanceStatusResource.request(subject)
     const data = server.conformanceStatusResource.map({ subject, data: { players: 23 } })
+    const publishedTypeGroups = vi.fn().mockResolvedValue({
+      rows: [{ typeId: 34, typeName: 'Tritanium', groupId: 18, groupName: 'Mineral' }],
+      revision: { buildNumber: 1234, ingestVersion: 2, ingestedAt: '2026-09-06T19:00:00Z' },
+      complete: true,
+    })
+    const execute = vi.fn().mockResolvedValue({
+      data: { players: 23 },
+      validatedAt: '2026-09-06T20:00:00Z',
+    })
+    const collected = await server.conformanceStatusResource.collect?.({
+      subject,
+      organizationVersion: 4,
+      corporationId: 98_000_001,
+      authorizationGeneration: 2,
+      capabilities: {
+        coreData: { publishedTypeGroups },
+        logger,
+        persistence: providerCapabilities.persistence,
+      },
+      requestBudget: 32,
+      execute,
+    })
     await server.conformanceStatusResource.materialize({
       subject,
       data,
       validatedAt: '2026-09-06T20:00:00Z',
       authorizationGeneration: 2,
-      capabilities,
+      capabilities: {
+        logger,
+        persistence: providerCapabilities.persistence,
+      },
     })
-    const provider = server.conformanceActivityProvider(capabilities)
+    const provider = server.conformanceActivityProvider(providerCapabilities)
     const result = await provider(providerContext)
 
     expect(server.conformanceStatusOperation.sdkOperationId).toBe('GetStatus')
     expect(request).toEqual({})
+    expect(execute).toHaveBeenCalledWith('conformance-status-operation', {})
+    expect(publishedTypeGroups).toHaveBeenCalledWith({ typeIds: [34] })
+    expect(execute.mock.invocationCallOrder[0]).toBeLessThan(
+      publishedTypeGroups.mock.invocationCallOrder[0]!,
+    )
+    expect(collected).toEqual({
+      complete: true,
+      data: { players: 23, publishedTypeCount: 1, sdeBuildNumber: 1234 },
+    })
+    expect(publishedTypeGroups.mock.invocationCallOrder[0]).toBeLessThan(
+      query.mock.invocationCallOrder[0]!,
+    )
     expect(query).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining('insert into conformance_snapshots'),

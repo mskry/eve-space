@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   collectionStatus: { read: vi.fn() },
   createModulePersistenceCapability: vi.fn(),
+  createCoreDataCapability: vi.fn(),
+  coreData: { publishedTypeGroups: vi.fn() },
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   persistence: { transaction: vi.fn() },
-  sdeCoreReads: { loadPublishedTypeGroups: vi.fn() },
   sql: vi.fn(),
 }))
 
@@ -13,8 +14,8 @@ vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
 vi.mock('../../src/db/module-persistence.js', () => ({
   createModulePersistenceCapability: mocks.createModulePersistenceCapability,
 }))
-vi.mock('../../src/platform/core-read-capabilities.js', () => ({
-  sdeCoreReads: mocks.sdeCoreReads,
+vi.mock('../../src/core-data/capabilities.js', () => ({
+  createCoreDataCapability: mocks.createCoreDataCapability,
 }))
 vi.mock('../../src/platform/module-collection-status-capabilities.js', () => ({
   createPlatformModuleCollectionStatusReads: vi.fn(() => mocks.collectionStatus),
@@ -32,20 +33,26 @@ import { createPlatformModuleActivityProviderCapabilities } from '../../src/plat
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.createModulePersistenceCapability.mockReturnValue(mocks.persistence)
+  mocks.createCoreDataCapability.mockImplementation((products: readonly string[]) =>
+    products.includes('published-type-groups') ? mocks.coreData : {},
+  )
 })
 
 describe('platform module route capabilities', () => {
-  test('provides only module-scoped persistence and bounded SDE reads', async () => {
+  test('provides only declared product methods and module-scoped persistence', async () => {
     const unsafe = vi.fn().mockResolvedValue([{ type_id: 34 }])
     mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
-    const capabilities = createPlatformModuleRouteCapabilities('alpha')
+    const capabilities = createPlatformModuleRouteCapabilities('alpha', [
+      'published-type-groups',
+    ] as const)
 
     expect(capabilities).toEqual({
+      coreData: mocks.coreData,
       logger: mocks.logger,
       persistence: { transaction: expect.any(Function) },
-      sde: mocks.sdeCoreReads,
     })
-    expect(Object.keys(capabilities)).toEqual(['logger', 'persistence', 'sde'])
+    expect(Object.keys(capabilities)).toEqual(['coreData', 'logger', 'persistence'])
+    expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(['published-type-groups'], 'route')
     expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha')
     await expect(
       capabilities.persistence.transaction((transaction) =>
@@ -59,7 +66,16 @@ describe('platform module route capabilities', () => {
     const unsafe = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
     mocks.persistence.transaction.mockImplementation(async (operation) => operation({ unsafe }))
 
-    const capabilities = createPlatformResourceReadCapabilities('alpha')
+    const capabilities = createPlatformResourceReadCapabilities({
+      moduleId: 'alpha',
+      resourceId: 'resource',
+      operationId: 'operation',
+      coreDataProducts: ['published-type-groups'],
+      subjectKind: 'deployment',
+      materializationIntervalSeconds: 60,
+      eligibility: { kind: 'current-deployment' },
+      implementation: {},
+    })
 
     await expect(
       capabilities.persistence.transaction((transaction) =>
@@ -67,10 +83,14 @@ describe('platform module route capabilities', () => {
       ),
     ).resolves.toEqual([{ activity_id: 'one' }])
     expect(capabilities).toEqual({
+      coreData: mocks.coreData,
       logger: mocks.logger,
       persistence: { transaction: expect.any(Function) },
-      sde: mocks.sdeCoreReads,
     })
+    expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(
+      ['published-type-groups'],
+      'resource-projection',
+    )
     expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha', {
       readOnly: true,
       statementTimeoutMilliseconds: 2_000,
@@ -99,7 +119,13 @@ describe('platform module route capabilities', () => {
       }),
     ).resolves.toEqual([{ activity_id: 'one' }])
 
-    expect(Object.keys(capabilities)).toEqual(['collectionStatus', 'logger', 'persistence'])
+    expect(Object.keys(capabilities)).toEqual([
+      'collectionStatus',
+      'coreData',
+      'logger',
+      'persistence',
+    ])
+    expect(capabilities.coreData).toEqual({})
     expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha', {
       readOnly: true,
       statementTimeoutMilliseconds: 2000,

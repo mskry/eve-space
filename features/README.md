@@ -22,7 +22,17 @@ depend only on `server`; the root Nuxt application depends only on `nuxt`.
 
 Feature server code receives platform capabilities and must not import API source directly. Repository
 verification rejects imports of the core database client, auth/session stores, token services, routes,
-or any other path under `api/src`.
+or any other path under `api/src`. It also rejects direct core-data contract or implementation
+imports, unrestricted SDE datasets, ESI clients, alternate canonical source adapters, and competing
+product caches.
+
+Routes, scheduled resources, and activity providers declare exact `coreDataProducts` dependencies
+in `module.config.ts`. Each contribution receives only those product-specific methods in its runtime
+capability. Use the returned canonical DTO and revision or observation metadata; do not create a
+module-owned SDE alias or generic product dispatcher. A coverage-manifest entry does not grant a
+product, ESI scope, schedule, or permission to persist data. See
+[`docs/platform-module-foundation.md`](../docs/platform-module-foundation.md) for product promotion
+and protected-product requirements.
 
 Every descriptor declares a default platform icon. Navigation entries inherit it unless they
 declare an explicit icon override.

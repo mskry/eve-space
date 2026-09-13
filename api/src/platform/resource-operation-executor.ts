@@ -89,7 +89,7 @@ export async function executeInstalledResourceOperation(
       subject,
       authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
       capabilities: (options.createCapabilities ?? createPlatformResourceReadCapabilities)(
-        guarded.resource.moduleId,
+        guarded.resource,
       ),
       requestBudget: 32,
       async execute(operationId, inputs) {
