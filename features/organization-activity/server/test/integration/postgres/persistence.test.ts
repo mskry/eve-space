@@ -6,7 +6,6 @@ import { afterAll, beforeAll, expect, test, vi } from 'vitest'
 import { runMigrations } from '../../../../../../api/src/db/migration-runner.js'
 import { runModuleMigrationSets } from '../../../../../../api/src/db/module-migration-runner.js'
 import { createModulePersistenceCapability } from '../../../../../../api/src/db/module-persistence.js'
-import { withModuleQueryTransaction } from '../../../../../../api/src/db/module-query-transaction.js'
 import {
   materializeActivityResource,
   readActivityCheckpoint,
@@ -62,11 +61,7 @@ afterAll(async () => {
 })
 
 function capability() {
-  const adapter = createModulePersistenceCapability(connection, moduleId)
-  return {
-    transaction: <T>(operation: Parameters<typeof withModuleQueryTransaction<T>>[1]) =>
-      adapter.transaction((transaction) => withModuleQueryTransaction(transaction, operation)),
-  }
+  return createModulePersistenceCapability(connection, moduleId)
 }
 function observation(resourceId: string, revision = 0): ActivityObservation {
   return {
@@ -105,13 +100,16 @@ function read(resourceId: string, version = 7, generation = 4, lifecycle = lifec
   )
 }
 
-test('migration is idempotent and module runtime cannot access core tables', async () => {
+test('migration is idempotent and module runtime cannot reset its role or access core tables', async () => {
   const rows =
     await connection`select name from public.schema_migrations where module = ${moduleId}`
   expect(rows).toEqual([{ name: migrationName }])
   await expect(
     persistence.transaction((tx) => tx.query('select * from public.users')),
-  ).rejects.toThrow(/permission denied/)
+  ).rejects.toThrow(/cross-schema/)
+  await expect(persistence.transaction((tx) => tx.query('reset role'))).rejects.toThrow(
+    /prohibited-operation/,
+  )
 })
 
 test.each([

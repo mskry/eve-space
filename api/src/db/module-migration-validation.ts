@@ -1,12 +1,11 @@
 import type { Migration } from './migration-validation.js'
 import {
-  assertModuleMigrationAstPolicy,
-  ModuleMigrationPolicyError,
-  type ModuleMigrationPolicyCategory,
-} from './module-migration-ast-policy.js'
-import { parsePostgres17Migration, PostgresMigrationParseError } from './postgres17-parser.js'
+  assertModuleSql,
+  ModuleSqlValidationError,
+  type ModuleSqlValidationCategory,
+} from './module-sql-validation.js'
 
-export type ModuleMigrationValidationCategory = 'parse' | ModuleMigrationPolicyCategory
+export type ModuleMigrationValidationCategory = ModuleSqlValidationCategory
 
 export async function assertModuleMigrationSql(
   moduleId: string,
@@ -14,13 +13,10 @@ export async function assertModuleMigrationSql(
   migration: Migration,
 ) {
   try {
-    const ast = await parsePostgres17Migration(migration.sql)
-    assertModuleMigrationAstPolicy(schemaName, ast)
+    await assertModuleSql(schemaName, migration.sql)
   } catch (error) {
     if (error instanceof ModuleMigrationValidationError) throw error
-    if (error instanceof PostgresMigrationParseError)
-      throw new ModuleMigrationValidationError(moduleId, migration.name, 'parse')
-    if (error instanceof ModuleMigrationPolicyError)
+    if (error instanceof ModuleSqlValidationError)
       throw new ModuleMigrationValidationError(moduleId, migration.name, error.category)
     throw new ModuleMigrationValidationError(moduleId, migration.name, 'parse')
   }

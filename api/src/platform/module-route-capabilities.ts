@@ -6,7 +6,6 @@ import type {
   PlatformModuleRouteCapabilities,
 } from '@eve-space/platform-module-contract'
 import { createCoreDataCapability } from '../core-data/capabilities.js'
-import { withModuleQueryTransaction } from '../db/module-query-transaction.js'
 import { sql } from '../db/client.js'
 import { createModulePersistenceCapability } from '../db/module-persistence.js'
 import { createPlatformModuleLogger } from './module-logging.js'
@@ -21,12 +20,7 @@ export function createPlatformModuleRouteCapabilities<
   return {
     coreData: createCoreDataCapability(productIds, 'route'),
     logger: createPlatformModuleLogger(moduleId),
-    persistence: {
-      transaction: (operation) =>
-        persistence.transaction((transaction) =>
-          withModuleQueryTransaction(transaction, operation),
-        ),
-    },
+    persistence,
   }
 }
 
@@ -46,11 +40,6 @@ export function createPlatformResourceReadCapabilities<
       'resource-projection',
     ),
     logger: createPlatformModuleLogger(moduleId),
-    persistence: {
-      transaction: (operation) =>
-        persistence.transaction((transaction) =>
-          withModuleQueryTransaction(transaction, operation),
-        ),
-    },
+    persistence,
   }
 }
