@@ -57,7 +57,12 @@ export function loadStaticLocationSnapshot(database: StaticLocationDatabase = sq
     async (transaction, signal) => {
       await executeUniverseQuery(
         transaction`
-          lock table sde_builds, sde_solar_systems, sde_npc_stations in access share mode
+          lock table
+            sde_projection_state,
+            sde_builds,
+            sde_solar_systems,
+            sde_npc_stations
+          in access share mode
         `,
         signal,
       )
@@ -91,12 +96,12 @@ async function selectLatestRevision(database: StaticLocationQuery, signal: Abort
   const [row] = await executeUniverseQuery(
     database<StaticLocationRevisionRow[]>`
       select
-        build_number::text as build_number,
-        ingest_version,
-        ingested_at::text as ingested_at
-      from sde_builds
-      order by ingested_at desc, build_number desc
-      limit 1
+        builds.build_number::text as build_number,
+        builds.ingest_version,
+        builds.ingested_at::text as ingested_at
+      from sde_projection_state as state
+      inner join sde_builds as builds on builds.build_number = state.active_build_number
+      where state.singleton = true
     `,
     signal,
   )

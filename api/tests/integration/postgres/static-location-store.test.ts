@@ -30,11 +30,16 @@ beforeAll(async () => {
 })
 
 beforeEach(async () => {
-  await connection`truncate sde_npc_stations, sde_solar_systems, sde_builds`
+  await connection`update sde_projection_state set active_build_number = null`
+  await connection`truncate sde_npc_stations, sde_solar_systems`
+  await connection`delete from sde_builds`
   await connection`
     insert into sde_builds (build_number, release_date, ingested_at, ingest_version)
-    values (1234, '2026-08-26 11:00:00+00', '2026-08-26 12:00:00.123456+00', 2)
+    values
+      (1234, '2026-08-26 11:00:00+00', '2026-08-26 12:00:00.123456+00', 2),
+      (1235, '2026-08-27 11:00:00+00', '2026-08-27 12:00:00.123456+00', 2)
   `
+  await connection`update sde_projection_state set active_build_number = 1234`
   await connection`
     insert into sde_solar_systems (solar_system_id, name, security_status)
     values
@@ -150,7 +155,7 @@ describe('static location snapshot store', () => {
       'solar system name is invalid',
     )
 
-    await connection`delete from sde_builds`
+    await connection`update sde_projection_state set active_build_number = null`
     await expect(loadStaticLocationSnapshot(connection)).rejects.toThrow(
       'Static location revision is missing',
     )

@@ -374,6 +374,7 @@ describe('multi-process safety', () => {
         insert into sde_builds (build_number, release_date, ingested_at, ingest_version)
         values (1234, '2026-08-25T11:00:00Z', '2026-08-25T12:00:00Z', 2)
       `
+      await connection`update sde_projection_state set active_build_number = 1234`
 
       const { createOwnedCharacterCoreReads } =
         await import('../../../src/platform/core-read-capabilities.js')

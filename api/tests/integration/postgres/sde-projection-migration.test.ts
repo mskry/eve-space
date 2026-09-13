@@ -39,7 +39,7 @@ beforeAll(async () => {
     insert into sde_builds (build_number, release_date, ingested_at)
     values (${buildNumber}, '2026-01-01T11:00:00Z', '2026-01-01T12:00:00Z')
   `
-  await runMigrations(connection, [migrations[migrationIndex]!])
+  await runMigrations(connection, migrations.slice(migrationIndex))
 })
 
 afterAll(async () => {
@@ -47,7 +47,7 @@ afterAll(async () => {
   await container?.stop()
 })
 
-describe('SDE description projection migration', () => {
+describe('SDE projection migrations', () => {
   test('preserves existing types and enables a versioned same-build reload', async () => {
     const [type] = await connection<{ description: string | null; name: string }[]>`
       select name, description from sde_types where type_id = 3300
@@ -59,9 +59,19 @@ describe('SDE description projection migration', () => {
       from sde_builds
       where build_number = ${buildNumber}
     `
+    const [projectionState] = await connection<
+      { singleton: boolean; active_build_number: string | null }[]
+    >`
+      select singleton, active_build_number::text as active_build_number
+      from sde_projection_state
+    `
 
     expect(type).toEqual({ name: 'Gunnery', description: null })
     expect(legacyBuild).toMatchObject({ build_number: String(buildNumber), ingest_version: 1 })
+    expect(projectionState).toEqual({
+      singleton: true,
+      active_build_number: String(buildNumber),
+    })
     expect(needsReload(legacyBuild)).toBe(true)
 
     await connection`

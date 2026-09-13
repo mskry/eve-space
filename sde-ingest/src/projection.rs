@@ -84,6 +84,12 @@ pub struct IngestReport {
     pub skipped: Vec<SkippedDataset>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum PublicationOutcome {
+    Published(IngestReport),
+    Unchanged(db::BuildProjection),
+}
+
 pub(crate) trait IngestProgress {
     fn checking_latest(&mut self);
     fn ingest_required(
@@ -102,13 +108,22 @@ pub(crate) fn import_archive(
     build_number: i64,
     release_date: OffsetDateTime,
     progress: &mut dyn IngestProgress,
-) -> Result<IngestReport> {
+) -> Result<PublicationOutcome> {
     let file = std::fs::File::open(archive_path)
         .with_context(|| format!("opening {}", archive_path.display()))?;
     let mut archive = ZipArchive::new(file).context("reading the SDE zip")?;
     let mut transaction = client
         .transaction()
         .context("starting the SDE ingest transaction")?;
+
+    let current = db::lock_active_projection(&mut transaction)?;
+    if !db::needs_ingest(current, build_number, INGEST_PROJECTION_VERSION) {
+        let current = current.context("active SDE projection disappeared while publishing")?;
+        transaction
+            .commit()
+            .context("finishing the unchanged SDE ingest transaction")?;
+        return Ok(PublicationOutcome::Unchanged(current));
+    }
 
     progress.replacing_projection();
     db::truncate_all(&mut transaction, REPLACED_TABLES)?;
@@ -158,7 +173,7 @@ pub(crate) fn import_archive(
         }
     }
 
-    db::record_build(
+    db::record_publication(
         &mut transaction,
         build_number,
         release_date,
@@ -167,7 +182,7 @@ pub(crate) fn import_archive(
     transaction
         .commit()
         .context("committing the SDE ingest transaction")?;
-    Ok(report)
+    Ok(PublicationOutcome::Published(report))
 }
 
 fn import_required_dataset(

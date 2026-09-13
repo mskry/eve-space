@@ -46,7 +46,7 @@ function database(rows: readonly Record<string, unknown>[]) {
     vi.fn((strings: TemplateStringsArray) => {
       const statement = strings.join(' ')
       let result: unknown[] = []
-      if (statement.includes('from sde_builds'))
+      if (statement.includes('from sde_projection_state'))
         result = [
           {
             build_number: '1234',

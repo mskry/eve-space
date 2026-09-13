@@ -26,8 +26,11 @@ beforeAll(async () => {
   await runMigrations(connection, await loadMigrations())
   await connection`
     insert into sde_builds (build_number, release_date, ingest_version, ingested_at)
-    values (1234, now(), 4, '2026-08-26 12:00:00.123456+00')
+    values
+      (1234, now(), 4, '2026-08-26 12:00:00.123456+00'),
+      (1235, now(), 4, '2026-08-27 12:00:00.123456+00')
   `
+  await connection`update sde_projection_state set active_build_number = 1234`
   await connection`
     insert into sde_dataset_rows (dataset, key, data)
     values

@@ -27,11 +27,16 @@ beforeAll(async () => {
 })
 
 beforeEach(async () => {
-  await connection`truncate sde_types, sde_groups, sde_builds`
+  await connection`update sde_projection_state set active_build_number = null`
+  await connection`truncate sde_types, sde_groups`
+  await connection`delete from sde_builds`
   await connection`
     insert into sde_builds (build_number, release_date, ingested_at, ingest_version)
-    values (1234, '2026-09-01 11:00:00+00', '2026-09-01 12:00:00.123456+00', 2)
+    values
+      (1234, '2026-09-01 11:00:00+00', '2026-09-01 12:00:00.123456+00', 2),
+      (1235, '2026-09-02 11:00:00+00', '2026-09-02 12:00:00.123456+00', 2)
   `
+  await connection`update sde_projection_state set active_build_number = 1234`
   await connection`
     insert into sde_groups (group_id, category_id, name, published)
     values (18, 4, 'Mineral', true), (19, 4, 'Unpublished group', false)
@@ -82,7 +87,7 @@ describe('published type-groups product', () => {
   })
 
   test('fails closed without a committed SDE revision', async () => {
-    await connection`delete from sde_builds`
+    await connection`update sde_projection_state set active_build_number = null`
 
     await expect(loadPublishedTypeGroupsProduct({ typeIds: [34] }, connection)).rejects.toThrow(
       'Committed SDE revision is missing',
