@@ -9,21 +9,18 @@ import type {
   ActivityMaterializationPersistence,
 } from './persistence.js'
 
-type ResourceCollectionContext = PlatformResourceCollectionContext<
+export type ResourceCollectionContext = PlatformResourceCollectionContext<
   PlatformResourceSubject,
   readonly [],
   ActivityCheckpointPersistence
 >
-type ResourceMaterializationContext = PlatformResourceMaterializationContext<
+export type ResourceMaterializationContext = PlatformResourceMaterializationContext<
   ActivityObservation,
   PlatformResourceSubject,
   ActivityMaterializationPersistence
 >
 
-export type ActivityCollectionContext = ResourceCollectionContext
-export type ActivityMaterializationContext = ResourceMaterializationContext
-
-export async function materializeActivityResource(context: ActivityMaterializationContext) {
+export async function materializeActivityResource(context: ResourceMaterializationContext) {
   const { data, subject } = context
   const result = await context.capabilities.persistence.materializeActivityObservation({
     materializationId: globalThis.crypto.randomUUID(),
@@ -48,7 +45,7 @@ export async function materializeActivityResource(context: ActivityMaterializati
 
 export async function readActivityCheckpoint(
   resourceId: string,
-  context: ActivityCollectionContext,
+  context: ResourceCollectionContext,
 ) {
   const stored = await context.capabilities.persistence.readActivityCheckpoint({
     resourceId,

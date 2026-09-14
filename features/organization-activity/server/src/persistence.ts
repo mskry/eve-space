@@ -33,7 +33,7 @@ const activitySnapshotSchema = z.strictObject({
   committed: z.boolean().nullable(),
 })
 const boundedPathSchema = z
-  .record(z.string().min(1).max(100), z.union([z.string().max(4_096), z.number().safe()]))
+  .record(z.string().min(1).max(100), z.union([z.string().max(4_096), z.number().int()]))
   .refine((value) => Object.keys(value).length <= 32)
 const collectionRequestSchema = z.strictObject({
   operation: z.string().min(1).max(100),

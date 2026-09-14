@@ -13,11 +13,11 @@ import type {
   ActivityObservation,
   CollectedSnapshot,
 } from './collection-types.js'
-import { readActivityCheckpoint, type ActivityCollectionContext } from './collection-store.js'
+import { readActivityCheckpoint, type ResourceCollectionContext } from './collection-store.js'
 
 export async function collectActivityResource(
   profile: ActivityResourceProfile,
-  context: ActivityCollectionContext,
+  context: ResourceCollectionContext,
 ) {
   const stored = await readActivityCheckpoint(profile.id, context)
   const checkpoint = stored?.checkpoint ?? { initialized: false, requests: [], cursors: {} }
@@ -69,7 +69,7 @@ export async function collectActivityResource(
 async function executeCollectionRequest(
   request: CollectionRequest,
   cursors: Readonly<Record<string, PlatformCursorCheckpoint>>,
-  context: ActivityCollectionContext,
+  context: ResourceCollectionContext,
 ) {
   const cursor =
     request.cursor ?? (request.cursorKey ? cursors[request.cursorKey] : undefined) ?? {}
@@ -120,7 +120,7 @@ function advanceRequestCursor(
 
 function initialRequest(
   profile: ActivityResourceProfile,
-  context: ActivityCollectionContext,
+  context: ResourceCollectionContext,
   initialized: boolean,
 ): CollectionRequest {
   const path: Record<string, number> = {}

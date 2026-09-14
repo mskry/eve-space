@@ -24,7 +24,7 @@ export function createModulePersistenceContractFingerprint(
   moduleIds: readonly string[] = [...new Set(operations.map(({ moduleId }) => moduleId))],
 ) {
   const contract = {
-    moduleIds: [...moduleIds].toSorted(),
+    moduleIds: [...moduleIds].toSorted((left, right) => left.localeCompare(right)),
     operations: operations
       .map(
         ({

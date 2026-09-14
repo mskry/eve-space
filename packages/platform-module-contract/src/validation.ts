@@ -43,6 +43,14 @@ export interface PlatformModuleValidationAuthorities {
   >
 }
 
+interface PersistenceReferenceValidationContext {
+  readonly moduleId: string
+  readonly operations: ReadonlyMap<string, PlatformPersistenceOperationContribution>
+  readonly owners: ReadonlyMap<string, ReadonlySet<string>>
+  readonly referenced: Set<string>
+  readonly issues: string[]
+}
+
 export function compareStable(left: string, right: string) {
   if (left < right) return -1
   if (left > right) return 1
@@ -147,18 +155,7 @@ function validatePersistenceOperations(
 
   for (const operation of manifest.server.persistenceOperations) {
     const identity = `${manifest.id}/${String(operation.id)}`
-    if (
-      typeof operation.id !== 'string' ||
-      !platformPersistenceOperationIdPattern.test(operation.id) ||
-      operation.id.length > platformPersistenceOperationIdMaxLength
-    )
-      issues.push(`persistence operation ${identity} must use a bounded lowercase kebab-case ID`)
-    else {
-      const key = normalizeIdentity(operation.id)
-      if (operations.has(key))
-        issues.push(`persistence operation ID ${operation.id} is duplicated in ${manifest.id}`)
-      else operations.set(key, operation)
-    }
+    validatePersistenceOperationId(operation, identity, manifest.id, operations, issues)
     if (typeof operation.method !== 'string')
       issues.push(`persistence operation ${identity} must declare a method name`)
     else {
@@ -187,6 +184,27 @@ function validatePersistenceOperations(
   return operations
 }
 
+function validatePersistenceOperationId(
+  operation: PlatformPersistenceOperationContribution,
+  identity: string,
+  moduleId: string,
+  operations: Map<string, PlatformPersistenceOperationContribution>,
+  issues: string[],
+) {
+  if (
+    typeof operation.id !== 'string' ||
+    !platformPersistenceOperationIdPattern.test(operation.id) ||
+    operation.id.length > platformPersistenceOperationIdMaxLength
+  ) {
+    issues.push(`persistence operation ${identity} must use a bounded lowercase kebab-case ID`)
+    return
+  }
+  const key = normalizeIdentity(operation.id)
+  if (operations.has(key))
+    issues.push(`persistence operation ID ${operation.id} is duplicated in ${moduleId}`)
+  else operations.set(key, operation)
+}
+
 function validatePersistenceGrants(
   manifest: PlatformModuleManifest,
   operations: ReadonlyMap<string, PlatformPersistenceOperationContribution>,
@@ -194,48 +212,39 @@ function validatePersistenceGrants(
   issues: string[],
 ) {
   const referenced = new Set<string>()
+  const validationContext: PersistenceReferenceValidationContext = {
+    moduleId: manifest.id,
+    operations,
+    owners,
+    referenced,
+    issues,
+  }
   for (const route of manifest.server.routes)
     validatePersistenceReferences(
       route.persistenceOperations,
       `route ${manifest.id}/${route.id}`,
       undefined,
-      manifest.id,
-      operations,
-      owners,
-      referenced,
-      issues,
+      validationContext,
     )
   for (const provider of manifest.server.activityProviders)
     validatePersistenceReferences(
       provider.persistenceOperations,
       `activity provider ${manifest.id}/${provider.id}`,
       'read',
-      manifest.id,
-      operations,
-      owners,
-      referenced,
-      issues,
+      validationContext,
     )
   for (const resource of manifest.server.resources) {
     validatePersistenceReferences(
       resource.persistence?.projection,
       `resource projection ${manifest.id}/${resource.id}`,
       'read',
-      manifest.id,
-      operations,
-      owners,
-      referenced,
-      issues,
+      validationContext,
     )
     validatePersistenceReferences(
       resource.persistence?.materialization,
       `resource materialization ${manifest.id}/${resource.id}`,
       'write',
-      manifest.id,
-      operations,
-      owners,
-      referenced,
-      issues,
+      validationContext,
     )
   }
   for (const [operationId, operation] of operations)
@@ -249,12 +258,9 @@ function validatePersistenceReferences(
   value: unknown,
   identity: string,
   expectedMode: PlatformPersistenceOperationMode | undefined,
-  moduleId: string,
-  operations: ReadonlyMap<string, PlatformPersistenceOperationContribution>,
-  owners: ReadonlyMap<string, ReadonlySet<string>>,
-  referenced: Set<string>,
-  issues: string[],
+  context: PersistenceReferenceValidationContext,
 ) {
+  const { moduleId, operations, owners, referenced, issues } = context
   if (!Array.isArray(value)) {
     issues.push(`${identity} persistence operations must be an array`)
     return

@@ -422,10 +422,10 @@ function renderPersistenceOperations(
   const list = operations.length ? `[\n  ${descriptors.join(',\n  ')},\n]` : '[]'
   const catalog = operations.length
     ? `{${operations
-        .map(
-          ({ manifest, operation }, index) =>
-            `\n  ${quote(`${manifest.id}/${operation.id}`)}: installedModulePersistenceOperations[${index}]!,`,
-        )
+        .map(({ manifest, operation }, index) => {
+          const identity = `${manifest.id}/${operation.id}`
+          return `\n  ${quote(identity)}: installedModulePersistenceOperations[${index}]!,`
+        })
         .join('')}\n}`
     : '{}'
   const factories = renderPersistenceCapabilityFactories(manifests, operations)
@@ -489,7 +489,8 @@ function renderPersistenceCapabilityFactories(
         return `${quote(operation.method)}: bindPlatformPersistenceOperation(installedModulePersistenceOperations[${index}]!, invoke),`
       })
       const parameter = methods.length > 0 ? 'invoke' : '_invoke'
-      return `\nexport function ${name}(${parameter}: PlatformPersistenceOperationInvoker) {\n  return {${methods.length ? `\n    ${methods.join('\n    ')}\n  ` : ''}}\n}\n`
+      const renderedMethods = methods.length ? `\n    ${methods.join('\n    ')}\n  ` : ''
+      return `\nexport function ${name}(${parameter}: PlatformPersistenceOperationInvoker) {\n  return {${renderedMethods}}\n}\n`
     })
     .join('')
   const groups = [

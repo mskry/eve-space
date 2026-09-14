@@ -5,8 +5,8 @@ import type {
 import { collectActivityResource } from './collection.js'
 import {
   materializeActivityResource,
-  type ActivityCollectionContext,
-  type ActivityMaterializationContext,
+  type ResourceCollectionContext,
+  type ResourceMaterializationContext,
 } from './collection-store.js'
 import type { ActivityObservation } from './collection-types.js'
 
@@ -21,11 +21,11 @@ export const campaignsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'campaigns', rootOperation: 'campaign-list', paginated: false },
-      context as unknown as ActivityCollectionContext,
+      context as unknown as ResourceCollectionContext,
     )
   },
   materialize: (context) =>
-    materializeActivityResource(context as unknown as ActivityMaterializationContext),
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -46,11 +46,11 @@ export const publicJobsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'public-jobs', rootOperation: 'job-list', paginated: true },
-      context as unknown as ActivityCollectionContext,
+      context as unknown as ResourceCollectionContext,
     )
   },
   materialize: (context) =>
-    materializeActivityResource(context as unknown as ActivityMaterializationContext),
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -71,11 +71,11 @@ export const corporationJobsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'corporation-jobs', rootOperation: 'corporation-jobs', paginated: true },
-      context as unknown as ActivityCollectionContext,
+      context as unknown as ResourceCollectionContext,
     )
   },
   materialize: (context) =>
-    materializeActivityResource(context as unknown as ActivityMaterializationContext),
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -96,11 +96,11 @@ export const corporationProjectsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'corporation-projects', rootOperation: 'project-list', paginated: true },
-      context as unknown as ActivityCollectionContext,
+      context as unknown as ResourceCollectionContext,
     )
   },
   materialize: (context) =>
-    materializeActivityResource(context as unknown as ActivityMaterializationContext),
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -121,11 +121,11 @@ export const characterJobsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'character-jobs', rootOperation: 'character-jobs', paginated: false },
-      context as unknown as ActivityCollectionContext,
+      context as unknown as ResourceCollectionContext,
     )
   },
   materialize: (context) =>
-    materializeActivityResource(context as unknown as ActivityMaterializationContext),
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -146,11 +146,11 @@ export const characterCampaignsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'character-campaigns', rootOperation: 'character-objectives', paginated: true },
-      context as unknown as ActivityCollectionContext,
+      context as unknown as ResourceCollectionContext,
     )
   },
   materialize: (context) =>
-    materializeActivityResource(context as unknown as ActivityMaterializationContext),
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -171,11 +171,11 @@ export const characterProjectsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'character-projects', rootOperation: 'project-list', paginated: true },
-      context as unknown as ActivityCollectionContext,
+      context as unknown as ResourceCollectionContext,
     )
   },
   materialize: (context) =>
-    materializeActivityResource(context as unknown as ActivityMaterializationContext),
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,

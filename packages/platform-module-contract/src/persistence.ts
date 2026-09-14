@@ -3,7 +3,6 @@ export const platformPersistenceOperationIdMaxLength = 54
 export const platformPersistenceOperationModes = ['read', 'write'] as const
 
 export type PlatformPersistenceOperationMode = (typeof platformPersistenceOperationModes)[number]
-export type PlatformPersistenceOperationRevision = number
 
 declare const platformPersistenceOperationTypes: unique symbol
 
