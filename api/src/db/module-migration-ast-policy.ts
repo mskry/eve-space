@@ -108,6 +108,7 @@ const allowedAstNodeKinds = new Set([
   'RangeTableFunc',
   'RangeTableFuncCol',
   'RangeTableSample',
+  'ReturnStmt',
   'RangeVar',
   'ReplicaIdentityStmt',
   'ResTarget',
@@ -250,6 +251,9 @@ const prohibitedFunctions = new Set([
   'pg_switch_wal',
   'pg_terminate_backend',
   'pg_write_file',
+  'query_to_xml',
+  'query_to_xml_and_xmlschema',
+  'query_to_xmlschema',
   'set_config',
 ])
 
@@ -258,12 +262,36 @@ export type ModuleMigrationPolicyCategory =
   | 'prohibited-operation'
   | 'unsupported-statement'
 
-export function assertModuleMigrationAstPolicy(schemaName: string, ast: PostgresMigrationAst) {
+export interface ModuleMigrationPersistenceRoutineDeclaration {
+  readonly operationId: string
+  readonly routineName: string
+  readonly mode: 'read' | 'write'
+}
+
+export function assertModuleMigrationAstPolicy(
+  schemaName: string,
+  ast: PostgresMigrationAst,
+  persistenceRoutines: readonly ModuleMigrationPersistenceRoutineDeclaration[] = [],
+) {
+  const unmatchedRoutines = declaredPersistenceRoutines(persistenceRoutines)
   for (const statement of ast.statements) {
+    if (statement.kind === 'CreateFunctionStmt') {
+      const routine = validatePersistenceRoutine(statement.node, schemaName, unmatchedRoutines)
+      unmatchedRoutines.delete(routine.routineName)
+      visitValue(
+        statement.node.sql_body,
+        schemaName,
+        collectLocalQualifiers(statement.node.sql_body),
+        false,
+        true,
+      )
+      continue
+    }
     assertRootStatement(statement.kind, statement.node)
     validateStatementNames(statement.kind, statement.node, schemaName)
     visitValue(statement.node, schemaName, collectLocalQualifiers(statement.node))
   }
+  if (unmatchedRoutines.size > 0) throw policyError('unsupported-statement')
 }
 
 export class ModuleMigrationPolicyError extends Error {
@@ -321,9 +349,11 @@ function visitValue(
   schemaName: string,
   localQualifiers: ReadonlySet<string>,
   allowExcluded = false,
+  allowRoutineReturn = false,
 ) {
   if (Array.isArray(value)) {
-    for (const item of value) visitValue(item, schemaName, localQualifiers, allowExcluded)
+    for (const item of value)
+      visitValue(item, schemaName, localQualifiers, allowExcluded, allowRoutineReturn)
     return
   }
   if (!isAstObject(value)) return
@@ -332,13 +362,14 @@ function visitValue(
   if (isTypeNamePayload(value)) validateQualifiedName(value.names, schemaName, true)
 
   for (const [kind, node] of Object.entries(value)) {
-    validateAstNode(kind, node, schemaName, localQualifiers, allowExcluded)
+    validateAstNode(kind, node, schemaName, localQualifiers, allowExcluded, allowRoutineReturn)
 
     visitValue(
       node,
       schemaName,
       localQualifiers,
       allowExcluded || kind === 'OnConflictClause' || kind === 'onConflictClause',
+      allowRoutineReturn,
     )
   }
 
@@ -360,20 +391,25 @@ function validateAstNode(
   schemaName: string,
   localQualifiers: ReadonlySet<string>,
   allowExcluded: boolean,
+  allowRoutineReturn: boolean,
 ) {
   if (node === undefined) return
-  assertSupportedAstNodeKind(kind, node)
+  assertSupportedAstNodeKind(kind, node, allowRoutineReturn)
   validateRangeVarField(kind, node, schemaName)
   validateAstNodePayload(kind, node, schemaName, localQualifiers, allowExcluded)
 }
 
-function assertSupportedAstNodeKind(kind: string, node: PostgresAstValue) {
+function assertSupportedAstNodeKind(
+  kind: string,
+  node: PostgresAstValue,
+  allowRoutineReturn: boolean,
+) {
   if (/^[A-Z]/.test(kind) && !allowedAstNodeKinds.has(kind)) {
-    if (isNestedStatementPayload(kind, node)) assertNestedStatement(kind, node)
+    if (isNestedStatementPayload(kind, node)) assertNestedStatement(kind, node, allowRoutineReturn)
     throw policyError('unsupported-statement')
   }
   if (isNestedStatementPayload(kind, node) && kind !== 'ReplicaIdentityStmt')
-    assertNestedStatement(kind, node)
+    assertNestedStatement(kind, node, allowRoutineReturn)
 }
 
 function isNestedStatementPayload(kind: string, node: PostgresAstValue): node is PostgresAstObject {
@@ -479,7 +515,7 @@ function validateDefinitionElement(node: PostgresAstObject, schemaName: string) 
   if (node.defname === 'owned_by') validateObjectName(node.arg, schemaName, 'OBJECT_COLUMN')
 }
 
-function collectLocalQualifiers(value: PostgresAstValue) {
+function collectLocalQualifiers(value: PostgresAstValue | undefined) {
   const qualifiers = new Set<string>()
   collect(value, qualifiers)
   return qualifiers
@@ -501,13 +537,113 @@ function collect(value: PostgresAstValue | undefined, qualifiers: Set<string>) {
   for (const child of Object.values(value)) collect(child, qualifiers)
 }
 
-function assertNestedStatement(kind: string, node: PostgresAstObject) {
+function assertNestedStatement(kind: string, node: PostgresAstObject, allowRoutineReturn: boolean) {
+  if (kind === 'ReturnStmt') {
+    if (!allowRoutineReturn) throw policyError('unsupported-statement')
+    return
+  }
   if (prohibitedStatements.has(kind)) throw policyError('prohibited-operation')
   if (!allowedNestedStatements.has(kind)) throw policyError('unsupported-statement')
   if (kind === 'SelectStmt' && isAstObject(node.intoClause)) {
     const relation = node.intoClause.rel
     if (!isWrappedNode(relation, 'RangeVar')) throw policyError('unsupported-statement')
   }
+}
+
+function declaredPersistenceRoutines(
+  declarations: readonly ModuleMigrationPersistenceRoutineDeclaration[],
+) {
+  const routines = new Map<string, ModuleMigrationPersistenceRoutineDeclaration>()
+  for (const declaration of declarations) {
+    if (routines.has(declaration.routineName)) throw policyError('unsupported-statement')
+    routines.set(declaration.routineName, declaration)
+  }
+  return routines
+}
+
+function validatePersistenceRoutine(
+  node: PostgresAstObject,
+  schemaName: string,
+  declarations: ReadonlyMap<string, ModuleMigrationPersistenceRoutineDeclaration>,
+) {
+  const allowedFields = new Set(['funcname', 'options', 'parameters', 'returnType', 'sql_body'])
+  if (Object.keys(node).some((field) => !allowedFields.has(field)))
+    throw policyError('unsupported-statement')
+
+  const names = stringList(node.funcname)
+  if (!names) throw policyError('unsupported-statement')
+  validateNameParts(names, schemaName)
+  if (names.length !== 2 || names[0] !== schemaName) throw policyError('unsupported-statement')
+  const routineName = names[1]!
+  const declaration = declarations.get(routineName)
+  if (!declaration) throw policyError('prohibited-operation')
+
+  validatePersistenceRoutineParameters(node.parameters)
+  validateJsonbType(node.returnType)
+  validatePersistenceRoutineOptions(node.options, declaration.mode)
+  if (!isAstObject(node.sql_body)) throw policyError('unsupported-statement')
+  if (!isWrappedNode(node.sql_body, 'List') && !isWrappedNode(node.sql_body, 'ReturnStmt'))
+    throw policyError('unsupported-statement')
+  return declaration
+}
+
+function validatePersistenceRoutineParameters(value: PostgresAstValue | undefined) {
+  if (!Array.isArray(value) || value.length !== 1) throw policyError('unsupported-statement')
+  const parameter = value[0]
+  if (!isWrappedNode(parameter, 'FunctionParameter')) throw policyError('unsupported-statement')
+  const fields = Object.keys(parameter.FunctionParameter)
+  if (fields.some((field) => !['argType', 'mode', 'name'].includes(field)))
+    throw policyError('unsupported-statement')
+  if (
+    typeof parameter.FunctionParameter.name !== 'string' ||
+    (parameter.FunctionParameter.mode !== 'FUNC_PARAM_DEFAULT' &&
+      parameter.FunctionParameter.mode !== 'FUNC_PARAM_IN')
+  )
+    throw policyError('unsupported-statement')
+  validateJsonbType(parameter.FunctionParameter.argType)
+}
+
+function validateJsonbType(value: PostgresAstValue | undefined) {
+  if (!isAstObject(value)) throw policyError('unsupported-statement')
+  const fields = Object.keys(value).filter((field) => field !== 'location')
+  if (
+    fields.some((field) => !['names', 'typemod'].includes(field)) ||
+    value.typemod !== -1 ||
+    stringList(value.names)?.join('.') !== 'jsonb'
+  )
+    throw policyError('unsupported-statement')
+}
+
+function validatePersistenceRoutineOptions(
+  value: PostgresAstValue | undefined,
+  mode: ModuleMigrationPersistenceRoutineDeclaration['mode'],
+) {
+  if (!Array.isArray(value)) throw policyError('unsupported-statement')
+  const options = new Map<string, string>()
+  for (const option of value) {
+    if (!isWrappedNode(option, 'DefElem')) throw policyError('unsupported-statement')
+    const definition = option.DefElem
+    if (
+      Object.keys(definition).some(
+        (field) => !['arg', 'defaction', 'defname', 'location'].includes(field),
+      ) ||
+      typeof definition.defname !== 'string' ||
+      definition.defaction !== 'DEFELEM_UNSPEC' ||
+      !isWrappedNode(definition.arg, 'String') ||
+      typeof definition.arg.String.sval !== 'string' ||
+      options.has(definition.defname)
+    )
+      throw policyError('unsupported-statement')
+    options.set(definition.defname, definition.arg.String.sval)
+  }
+  const expectedVolatility = mode === 'read' ? 'stable' : 'volatile'
+  if (
+    options.size !== 3 ||
+    options.get('language') !== 'sql' ||
+    options.get('volatility') !== expectedVolatility ||
+    options.get('parallel') !== 'unsafe'
+  )
+    throw policyError('unsupported-statement')
 }
 
 function validateRangeVar(node: PostgresAstObject, schemaName: string) {

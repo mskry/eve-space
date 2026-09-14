@@ -247,6 +247,14 @@ describe('installed resource operation policy', () => {
     expect(guardExecution).toHaveBeenCalledTimes(2)
     expect(implementation.map).not.toHaveBeenCalled()
     expect(options.createCapabilities).toHaveBeenCalledWith(collectingResource)
+
+    const controller = new AbortController()
+    await executeInstalledResourceOperation(identity, { ...options, signal: controller.signal })
+    expect(options.createCapabilities).toHaveBeenLastCalledWith(
+      collectingResource,
+      controller.signal,
+    )
+
     collect.mockImplementation(async (context) => {
       await context.execute('undeclared', {})
       return { complete: false, data: null }

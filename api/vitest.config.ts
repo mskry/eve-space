@@ -19,7 +19,7 @@ export default defineConfig({
         'src/commands/{local-organization-fixture,redrive-domain-events,seed-local-organization-fixture,verify-worker-rollback}.ts',
         'src/generated/**/*.ts',
         'src/admin/store.ts',
-        'src/db/{client,migrate,migration-runner,module-migration-runner,module-persistence,module-persistence-provisioner,schema,startup-migrations}.ts',
+        'src/db/{client,migrate,migration-runner,module-migration-runner,module-persistence-provisioner,schema,startup-migrations}.ts',
         'src/db/schema/**/*.ts',
         'src/domain-events/store.ts',
         'src/cache-redis.ts',

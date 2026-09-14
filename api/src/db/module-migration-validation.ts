@@ -1,23 +1,29 @@
 import type { Migration } from './migration-validation.js'
 import {
-  assertModuleSql,
-  ModuleSqlValidationError,
-  type ModuleSqlValidationCategory,
-} from './module-sql-validation.js'
+  assertModuleMigrationAstPolicy,
+  ModuleMigrationPolicyError,
+  type ModuleMigrationPersistenceRoutineDeclaration,
+  type ModuleMigrationPolicyCategory,
+} from './module-migration-ast-policy.js'
+import { parsePostgres17Migration, PostgresMigrationParseError } from './postgres17-parser.js'
 
-export type ModuleMigrationValidationCategory = ModuleSqlValidationCategory
+export type ModuleMigrationValidationCategory = 'parse' | ModuleMigrationPolicyCategory
 
 export async function assertModuleMigrationSql(
   moduleId: string,
   schemaName: string,
   migration: Migration,
+  persistenceRoutines: readonly ModuleMigrationPersistenceRoutineDeclaration[] = [],
 ) {
   try {
-    await assertModuleSql(schemaName, migration.sql)
+    const ast = await parsePostgres17Migration(migration.sql)
+    assertModuleMigrationAstPolicy(schemaName, ast, persistenceRoutines)
   } catch (error) {
     if (error instanceof ModuleMigrationValidationError) throw error
-    if (error instanceof ModuleSqlValidationError)
+    if (error instanceof ModuleMigrationPolicyError)
       throw new ModuleMigrationValidationError(moduleId, migration.name, error.category)
+    if (error instanceof PostgresMigrationParseError)
+      throw new ModuleMigrationValidationError(moduleId, migration.name, 'parse')
     throw new ModuleMigrationValidationError(moduleId, migration.name, 'parse')
   }
 }

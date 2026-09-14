@@ -230,7 +230,7 @@ test('provider caps concurrent reads while retaining every managed character', a
       },
     },
     persistence: {
-      transaction: () => {
+      readActivitySnapshots: () => {
         throw new Error('No lifecycle should read storage')
       },
     },

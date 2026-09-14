@@ -18,6 +18,7 @@ const tiers = {
   resources: 'entry',
   routes: 'entry',
   operations: 'entry',
+  persistence: 'representation',
   schema: 'entry',
   index: 'entry',
 } as const

@@ -1,10 +1,12 @@
 import type postgres from 'postgres'
+import { executeCancellableQuery } from '../query-cancellation.js'
 
 export const universeDatabaseTimeoutMilliseconds = 2_000
 export const universeDatabaseOperationTimeoutMilliseconds = 2_500
 
 export type UniverseDatabase = postgres.Sql
 export type UniverseQuery = postgres.Sql | postgres.TransactionSql
+export const executeUniverseQuery = executeCancellableQuery
 
 export function runBoundedReadTransaction<Result>(
   database: UniverseDatabase,
@@ -36,18 +38,4 @@ export function runBoundedReadTransaction<Result>(
     return load(transaction, controller.signal)
   })
   return Promise.race([operation, timeout]).finally(() => clearTimeout(timer))
-}
-
-export async function executeUniverseQuery<Result>(
-  query: Promise<Result> & { cancel(): void },
-  signal: AbortSignal,
-) {
-  signal.throwIfAborted()
-  const cancel = () => query.cancel()
-  signal.addEventListener('abort', cancel, { once: true })
-  try {
-    return await query
-  } finally {
-    signal.removeEventListener('abort', cancel)
-  }
 }

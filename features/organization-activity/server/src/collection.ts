@@ -1,7 +1,3 @@
-import type {
-  PlatformResourceCollectionContext,
-  PlatformResourceSubject,
-} from '@eve-space/platform-module-contract'
 import {
   isPlatformEsiUnavailableItem,
   advancePlatformCursor,
@@ -17,16 +13,16 @@ import type {
   ActivityObservation,
   CollectedSnapshot,
 } from './collection-types.js'
-import { readActivityCheckpoint } from './collection-store.js'
+import { readActivityCheckpoint, type ActivityCollectionContext } from './collection-store.js'
 
 export async function collectActivityResource(
   profile: ActivityResourceProfile,
-  context: PlatformResourceCollectionContext<PlatformResourceSubject>,
+  context: ActivityCollectionContext,
 ) {
   const stored = await readActivityCheckpoint(profile.id, context)
   const checkpoint = stored?.checkpoint ?? { initialized: false, requests: [], cursors: {} }
-  let retainedIds = checkpoint.retainedIds
-  let retainedCampaignIds = checkpoint.retainedCampaignIds
+  let retainedIds: readonly string[] | undefined = checkpoint.retainedIds
+  let retainedCampaignIds: readonly string[] | undefined = checkpoint.retainedCampaignIds
   const cursors = { ...checkpoint.cursors }
   const requests = [...checkpoint.requests]
   const snapshots: CollectedSnapshot[] = []
@@ -73,7 +69,7 @@ export async function collectActivityResource(
 async function executeCollectionRequest(
   request: CollectionRequest,
   cursors: Readonly<Record<string, PlatformCursorCheckpoint>>,
-  context: PlatformResourceCollectionContext<PlatformResourceSubject>,
+  context: ActivityCollectionContext,
 ) {
   const cursor =
     request.cursor ?? (request.cursorKey ? cursors[request.cursorKey] : undefined) ?? {}
@@ -124,7 +120,7 @@ function advanceRequestCursor(
 
 function initialRequest(
   profile: ActivityResourceProfile,
-  context: PlatformResourceCollectionContext<PlatformResourceSubject>,
+  context: ActivityCollectionContext,
   initialized: boolean,
 ): CollectionRequest {
   const path: Record<string, number> = {}

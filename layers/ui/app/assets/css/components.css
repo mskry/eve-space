@@ -1323,6 +1323,7 @@
 }
 
 .ui-stepper-title {
+  margin: 0;
   color: var(--ui-text-subtle);
   font: 700 12px/1.2 var(--ui-font-mono);
   letter-spacing: 0.16em;
@@ -1334,6 +1335,7 @@
 }
 
 .ui-stepper-description {
+  margin: 0;
   color: var(--ui-text-faint);
   font: 700 11px/1.4 var(--ui-font-mono);
   letter-spacing: 0.14em;

@@ -1,4 +1,5 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { ModulePersistenceAttestationError } from '../../src/db/module-persistence-attestation.js'
 import {
   assertWorkerDependencies,
   assertWorkerReadiness,
@@ -15,6 +16,15 @@ import {
   installedModuleMigrations,
 } from '../../src/generated/platform/installed-module-migrations.js'
 
+const mocks = vi.hoisted(() => ({
+  assertPersistenceContract: vi.fn(),
+}))
+
+vi.mock('../../src/db/module-persistence-attestation.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  assertInstalledModulePersistenceContract: mocks.assertPersistenceContract,
+}))
+
 const appliedMigrations = [
   { module: 'core', name: expectedWorkerMigration },
   ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),
@@ -22,6 +32,10 @@ const appliedMigrations = [
 const provisionedModules = installedModuleIds.map((module_id) => ({ module_id }))
 
 const expectedWorkerIdentity = `core/${expectedWorkerMigration}`
+
+beforeEach(() => {
+  mocks.assertPersistenceContract.mockResolvedValue(undefined)
+})
 
 function appliedMigrationConnection() {
   return vi
@@ -78,6 +92,18 @@ describe('worker readiness', () => {
       reason: 'Database unavailable',
     })
     expect(consoleError).not.toHaveBeenCalled()
+  })
+
+  test('reports bounded persistence attestation failures', async () => {
+    const connection = appliedMigrationConnection()
+    mocks.assertPersistenceContract.mockRejectedValue(
+      new ModulePersistenceAttestationError('organization-activity', 'catalog', 'authority'),
+    )
+
+    await expect(checkWorkerReadiness(connection as never)).resolves.toEqual({
+      healthy: false,
+      reason: 'Module persistence attestation organization-activity/catalog rejected: authority',
+    })
   })
 
   test('accepts an applied migration and operational queue', async () => {

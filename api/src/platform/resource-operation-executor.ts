@@ -82,15 +82,16 @@ export async function executeInstalledResourceOperation(
       options.signal,
     )
     options.signal?.throwIfAborted()
+    const createCapabilities = options.createCapabilities ?? createPlatformResourceReadCapabilities
     let requests = 0
     let latest: PlatformEsiExecution<unknown> | undefined
     const collected = await implementation.collect({
       ...context,
       subject,
       authorizationGeneration: guarded.authorization?.tokenVersion ?? null,
-      capabilities: (options.createCapabilities ?? createPlatformResourceReadCapabilities)(
-        guarded.resource,
-      ),
+      capabilities: options.signal
+        ? createCapabilities(guarded.resource, options.signal)
+        : createCapabilities(guarded.resource),
       requestBudget: 32,
       async execute(operationId, inputs) {
         options.signal?.throwIfAborted()

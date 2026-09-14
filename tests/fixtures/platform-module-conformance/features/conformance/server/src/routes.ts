@@ -8,9 +8,9 @@ import { z } from 'zod'
 
 const querySchema = z.object({ view: z.enum(['summary', 'conflict']) })
 
-export function conformanceRoutes<Transaction>(
-  capabilities: PlatformModuleRouteCapabilities<Transaction>,
-) {
+type ConformanceRouteCapabilities = PlatformModuleRouteCapabilities
+
+export function conformanceRoutes(capabilities: ConformanceRouteCapabilities) {
   return new Hono<PlatformOwnedCharacterRouteEnv>().get(
     '/',
     zValidator('query', querySchema),

@@ -1,9 +1,18 @@
 import { sql } from '../db/client.js'
 import { latestCoreMigrationName } from '../db/migration-manifest.js'
 import {
+  assertInstalledModulePersistenceContract,
+  ModulePersistenceAttestationError,
+} from '../db/module-persistence-attestation.js'
+import type { ModulePersistenceRoutineDescriptor } from '../db/module-persistence-routine-provisioner.js'
+import {
   installedModuleIds,
   installedModuleMigrations,
 } from '../generated/platform/installed-module-migrations.js'
+import {
+  installedModulePersistenceContractFingerprint,
+  installedModulePersistenceOperations,
+} from '../generated/platform/installed-module-persistence.js'
 import { probeQueueStatus } from '../queue/status.js'
 import type { ScopedWorkerLiveness } from '../queue/worker-liveness.js'
 
@@ -12,11 +21,20 @@ export interface WorkerMigrationRequirement {
   readonly name: string
 }
 
+export interface WorkerPersistenceRequirement {
+  readonly contractFingerprint: string
+  readonly operations: readonly ModulePersistenceRoutineDescriptor[]
+}
+
 export const expectedWorkerMigration = latestCoreMigrationName
 const workerMigrationRequirements: readonly WorkerMigrationRequirement[] = [
   { module: 'core', name: expectedWorkerMigration },
   ...installedModuleMigrations.map(({ moduleId, name }) => ({ module: moduleId, name })),
 ]
+const workerPersistenceRequirement: WorkerPersistenceRequirement = {
+  contractFingerprint: installedModulePersistenceContractFingerprint,
+  operations: installedModulePersistenceOperations,
+}
 
 export class WorkerSchemaNotReadyError extends Error {
   constructor(
@@ -35,6 +53,7 @@ export async function checkWorkerReadiness(
   connection = sql,
   requirements: readonly WorkerMigrationRequirement[] = workerMigrationRequirements,
   moduleIds: readonly string[] = installedModuleIds,
+  persistenceRequirement: WorkerPersistenceRequirement = workerPersistenceRequirement,
 ) {
   try {
     const [ledger] = await connection<{ exists: boolean; qualified: boolean }[]>`
@@ -90,8 +109,17 @@ export async function checkWorkerReadiness(
         }
     }
 
+    await assertInstalledModulePersistenceContract(
+      connection,
+      persistenceRequirement.contractFingerprint,
+      persistenceRequirement.operations,
+      moduleIds,
+    )
+
     return { healthy: true as const }
-  } catch {
+  } catch (error) {
+    if (error instanceof ModulePersistenceAttestationError)
+      return { healthy: false as const, reason: error.message }
     return { healthy: false as const, reason: 'Database unavailable' }
   }
 }

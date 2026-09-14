@@ -3,17 +3,14 @@ import type {
   PlatformActivityProvider,
   PlatformActivityProviderCapabilities,
   PlatformCollectionStatus,
-  PlatformModuleResourceTransaction,
 } from '@eve-space/platform-module-contract'
+import type { ConformanceSnapshotReadPersistence } from './persistence.js'
 
-interface SnapshotRow {
-  readonly character_id: number
-  readonly pilots_online: number
-  readonly validated_at: string
-}
+type ConformanceActivityProviderCapabilities =
+  PlatformActivityProviderCapabilities<ConformanceSnapshotReadPersistence>
 
 export function conformanceActivityProvider(
-  capabilities: PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction>,
+  capabilities: ConformanceActivityProviderCapabilities,
 ): PlatformActivityProvider {
   return async (context) => {
     const character = context.characters.find(({ membership }) => membership === 'managed')
@@ -24,15 +21,9 @@ export function conformanceActivityProvider(
       kind: 'character',
       characterId: character.characterId,
     })
-    const rows = await capabilities.persistence.transaction((transaction) =>
-      transaction.query<SnapshotRow>(
-        `select character_id, pilots_online, validated_at
-         from conformance_snapshots
-         where character_id = $1`,
-        [character.characterId],
-      ),
-    )
-    const snapshot = rows[0]
+    const snapshot = await capabilities.persistence.readConformanceSnapshot({
+      characterId: character.characterId,
+    })
     const freshness = activityFreshness(status)
     if (!snapshot) return { activities: [], freshness }
 
@@ -45,7 +36,7 @@ export function conformanceActivityProvider(
         {
           id: `status:${character.characterId}`,
           kind: 'conformance-status',
-          title: `${snapshot.pilots_online} pilots online`,
+          title: `${snapshot.pilotsOnline} pilots online`,
           summary: 'A bounded conformance activity from module-owned storage.',
           objective: null,
           state: 'Active',

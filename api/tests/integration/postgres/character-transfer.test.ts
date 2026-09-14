@@ -3116,11 +3116,11 @@ async function prepareCharacterResourceObservation(
   )
   await connection`
     insert into deployment_modules (module_id, enabled)
-    values ('transfer-race', true)
+    values ('organization-activity', true)
     on conflict (module_id) do update set enabled = true
   `
   const identity = {
-    moduleId: 'transfer-race',
+    moduleId: 'organization-activity',
     resourceId: 'character-jobs',
     subjectKind: 'character' as const,
     subjectLifecycleId: transfer.sourceSubjectLifecycleId,

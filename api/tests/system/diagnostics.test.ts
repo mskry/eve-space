@@ -58,6 +58,34 @@ describe('runtime diagnostics', () => {
       expect(serialized).not.toContain('private-sentinel')
     },
   )
+
+  test('records bounded persistence identity without private operation details', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    apiLogger.enableLogging()
+
+    recordDiagnostic('platform.persistence.failed', {
+      context: {
+        moduleId: 'organization-activity',
+        operationId: 'materialize-observation',
+        persistenceFailure: 'output',
+        privatePayload: 'context-private-sentinel',
+      } as never,
+      error: privateError('persistence'),
+    })
+
+    const serialized = String(consoleError.mock.calls[0]?.[0])
+    expect(JSON.parse(serialized)).toEqual(
+      expect.objectContaining({
+        event: 'platform.persistence.failed',
+        failureCategory: 'persistence-failure',
+        moduleId: 'organization-activity',
+        operationId: 'materialize-observation',
+        persistenceFailure: 'output',
+        thrownType: 'object',
+      }),
+    )
+    expect(serialized).not.toContain('private-sentinel')
+  })
 })
 
 function privateError(prefix: string) {

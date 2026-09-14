@@ -1,5 +1,6 @@
 import {
   bigint,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -21,6 +22,7 @@ export const activitySnapshots = pgTable(
     validatedAt: timestamp('validated_at', { withTimezone: true }).notNull(),
   },
   (table) => [
+    index('activity_snapshots_retention_idx').on(table.validatedAt),
     primaryKey({
       columns: [
         table.resourceId,
@@ -42,6 +44,7 @@ export const collectionCheckpoints = pgTable(
     authorizationGeneration: integer('authorization_generation').notNull(),
     checkpoint: jsonb('checkpoint').notNull(),
     revision: bigint('revision', { mode: 'number' }).notNull().default(0),
+    materializationId: uuid('materialization_id'),
   },
   (table) => [
     primaryKey({

@@ -105,4 +105,66 @@ describe('PostgreSQL 17 parser adapter', () => {
       }),
     ).toThrow('unsupported-statement')
   })
+
+  test('rejects an unreviewed structure inside a declared routine body', () => {
+    expect(() =>
+      assertModuleMigrationAstPolicy(
+        'eve_module_alpha',
+        {
+          grammarMajorVersion: 17,
+          parserVersion: 170004,
+          statements: [
+            {
+              kind: 'CreateFunctionStmt',
+              node: {
+                funcname: [
+                  { String: { sval: 'eve_module_alpha' } },
+                  { String: { sval: 'persist_read_snapshot' } },
+                ],
+                parameters: [
+                  {
+                    FunctionParameter: {
+                      name: 'input',
+                      argType: {
+                        names: [{ String: { sval: 'jsonb' } }],
+                        typemod: -1,
+                      },
+                      mode: 'FUNC_PARAM_DEFAULT',
+                    },
+                  },
+                ],
+                returnType: {
+                  names: [{ String: { sval: 'jsonb' } }],
+                  typemod: -1,
+                },
+                options: [
+                  option('language', 'sql'),
+                  option('volatility', 'stable'),
+                  option('parallel', 'unsafe'),
+                ],
+                sql_body: { ReturnStmt: { returnval: { FutureRoutineNode: {} } } },
+              },
+            },
+          ],
+        },
+        [
+          {
+            operationId: 'read-snapshot',
+            routineName: 'persist_read_snapshot',
+            mode: 'read',
+          },
+        ],
+      ),
+    ).toThrow('unsupported-statement')
+  })
 })
+
+function option(name: string, value: string) {
+  return {
+    DefElem: {
+      defname: name,
+      arg: { String: { sval: value } },
+      defaction: 'DEFELEM_UNSPEC',
+    },
+  }
+}

@@ -5,7 +5,14 @@ import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainer
 import { afterAll, beforeAll, expect, test, vi } from 'vitest'
 import { runMigrations } from '../../../../../../api/src/db/migration-runner.js'
 import { runModuleMigrationSets } from '../../../../../../api/src/db/module-migration-runner.js'
-import { createModulePersistenceCapability } from '../../../../../../api/src/db/module-persistence.js'
+import {
+  createStandaloneModulePersistenceOperationInvoker,
+  createTransactionScopedModulePersistenceOperationInvoker,
+} from '../../../../../../api/src/db/module-persistence-operation-transaction.js'
+import {
+  installedModulePersistenceCapabilityFactories,
+  installedModulePersistenceOperations,
+} from '../../../../../../api/src/generated/platform/installed-module-persistence.js'
 import {
   materializeActivityResource,
   readActivityCheckpoint,
@@ -17,9 +24,23 @@ import type { ActivitySnapshot } from '../../../src/snapshot.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
-let persistence: ReturnType<typeof capability>
+const checkpointFactory =
+  installedModulePersistenceCapabilityFactories.resourceProjections[
+    'organization-activity/character-jobs'
+  ]
+const snapshotFactory =
+  installedModulePersistenceCapabilityFactories.routes['organization-activity/activity-details']
+const materializationFactory =
+  installedModulePersistenceCapabilityFactories.resourceMaterializations[
+    'organization-activity/character-jobs'
+  ]
+let checkpointPersistence: ReturnType<typeof checkpointFactory>
+let snapshotPersistence: ReturnType<typeof snapshotFactory>
 const moduleId = 'organization-activity'
-const migrationName = 'organization-activity-001-initial.sql'
+const migrationNames = [
+  'organization-activity-001-initial.sql',
+  'organization-activity-002-persistence-operations.sql',
+] as const
 const lifecycleId = randomUUID()
 const activityId = randomUUID()
 const snapshot = summarySnapshot(
@@ -43,26 +64,33 @@ beforeAll(async () => {
     `postgres://eve_space:${password}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`,
   )
   await runMigrations(connection)
-  const sql = await readFile(
-    new URL('../../../migrations/organization-activity-001-initial.sql', import.meta.url),
-    'utf8',
+  const migrations = await Promise.all(
+    migrationNames.map(async (name) => ({
+      name,
+      sql: await readFile(new URL(`../../../migrations/${name}`, import.meta.url), 'utf8'),
+    })),
   )
-  await runModuleMigrationSets(connection, [
-    { moduleId, migrations: [{ name: migrationName, sql }] },
-  ])
-  await runModuleMigrationSets(connection, [
-    { moduleId, migrations: [{ name: migrationName, sql }] },
-  ])
-  persistence = capability()
+  const migrationSet = {
+    moduleId,
+    migrations,
+    persistenceOperations: installedModulePersistenceOperations,
+  }
+  await runModuleMigrationSets(connection, [migrationSet])
+  await runModuleMigrationSets(connection, [migrationSet])
+  const readInvoker = createStandaloneModulePersistenceOperationInvoker(
+    connection,
+    moduleId,
+    installedModulePersistenceOperations,
+    { readOnly: true },
+  )
+  checkpointPersistence = checkpointFactory(readInvoker)
+  snapshotPersistence = snapshotFactory(readInvoker)
 })
 afterAll(async () => {
   await connection?.end()
   await container?.stop()
 })
 
-function capability() {
-  return createModulePersistenceCapability(connection, moduleId)
-}
 function observation(resourceId: string, revision = 0): ActivityObservation {
   return {
     resourceId,
@@ -72,14 +100,33 @@ function observation(resourceId: string, revision = 0): ActivityObservation {
     snapshots: [{ snapshot, replace: true, validatedAt: new Date().toISOString() }],
   }
 }
-function write(data: ActivityObservation, generation = 4) {
-  return materializeActivityResource({
-    data,
-    subject: { kind: 'character', characterId: 9001, lifecycleId },
-    authorizationGeneration: generation,
-    validatedAt: new Date().toISOString(),
-    capabilities: { persistence },
-  } as never)
+function write(
+  data: ActivityObservation,
+  generation = 4,
+  afterOperation?: () => void | Promise<void>,
+) {
+  return connection.begin(async (transaction) => {
+    const scoped = createTransactionScopedModulePersistenceOperationInvoker(
+      transaction,
+      moduleId,
+      installedModulePersistenceOperations,
+    )
+    try {
+      const result = await materializeActivityResource({
+        data,
+        subject: { kind: 'character', characterId: 9001, lifecycleId },
+        authorizationGeneration: generation,
+        validatedAt: new Date().toISOString(),
+        capabilities: { persistence: materializationFactory(scoped.invoke) },
+      } as never)
+      await afterOperation?.()
+      const suppressedFailure = scoped.suppressedFailure()
+      if (suppressedFailure) throw suppressedFailure.error
+      return result
+    } finally {
+      scoped.close()
+    }
+  })
 }
 function read(resourceId: string, version = 7, generation = 4, lifecycle = lifecycleId) {
   const collectionStatus = {
@@ -92,7 +139,7 @@ function read(resourceId: string, version = 7, generation = 4, lifecycle = lifec
     }),
   }
   return readActivitySnapshots(
-    { persistence, collectionStatus },
+    { persistence: snapshotPersistence, collectionStatus },
     version,
     resourceId,
     { kind: 'character', characterId: 9001 },
@@ -100,16 +147,57 @@ function read(resourceId: string, version = 7, generation = 4, lifecycle = lifec
   )
 }
 
-test('migration is idempotent and module runtime cannot reset its role or access core tables', async () => {
+function readCheckpoint(resourceId: string, generation = 4) {
+  return readActivityCheckpoint(resourceId, {
+    capabilities: { persistence: checkpointPersistence },
+    subject: { lifecycleId },
+    organizationVersion: 7,
+    authorizationGeneration: generation,
+  } as never)
+}
+
+test('migration is idempotent and the runtime role has only generated routine access', async () => {
   const rows =
-    await connection`select name from public.schema_migrations where module = ${moduleId}`
-  expect(rows).toEqual([{ name: migrationName }])
-  await expect(
-    persistence.transaction((tx) => tx.query('select * from public.users')),
-  ).rejects.toThrow(/cross-schema/)
-  await expect(persistence.transaction((tx) => tx.query('reset role'))).rejects.toThrow(
-    /prohibited-operation/,
-  )
+    await connection`select name from public.schema_migrations where module = ${moduleId} order by name`
+  expect(rows).toEqual(migrationNames.map((name) => ({ name })))
+  const [privileges] = await connection<
+    {
+      canReadCore: boolean
+      canReadModuleTables: boolean
+      canExecuteRead: boolean
+      canExecuteWrite: boolean
+    }[]
+  >`
+    select
+      has_table_privilege(
+        'eve_module_organization_activity_runtime',
+        'public.users',
+        'select'
+      ) as "canReadCore",
+      has_table_privilege(
+        'eve_module_organization_activity_runtime',
+        'eve_module_organization_activity.activity_snapshots',
+        'select'
+      ) as "canReadModuleTables",
+      has_function_privilege(
+        'eve_module_organization_activity_runtime',
+        'eve_module_organization_activity.persist_read_activity_checkpoint(jsonb)',
+        'execute'
+      ) as "canExecuteRead",
+      has_function_privilege(
+        'eve_module_organization_activity_runtime',
+        'eve_module_organization_activity.persist_materialize_activity_observation(jsonb)',
+        'execute'
+      ) as "canExecuteWrite"
+  `
+  expect(privileges).toEqual({
+    canReadCore: false,
+    canReadModuleTables: false,
+    canExecuteRead: true,
+    canExecuteWrite: true,
+  })
+  expect(Object.keys(checkpointPersistence)).toEqual(['readActivityCheckpoint'])
+  expect(Object.keys(snapshotPersistence)).toEqual(['readActivitySnapshots'])
 })
 
 test.each([
@@ -123,17 +211,12 @@ test.each([
 ])(
   '%s persists through the real module capability and isolates organization, generation and lifecycle',
   async (resourceId) => {
-    await write(observation(resourceId))
+    expect(await write(observation(resourceId))).toBeUndefined()
     expect((await read(resourceId)).snapshots).toEqual([snapshot])
     expect((await read(resourceId, 8)).snapshots).toEqual([])
     expect((await read(resourceId, 7, 5)).snapshots).toEqual([])
     expect((await read(resourceId, 7, 4, randomUUID())).snapshots).toEqual([])
-    const checkpoint = await readActivityCheckpoint(resourceId, {
-      capabilities: { persistence },
-      subject: { lifecycleId },
-      organizationVersion: 7,
-      authorizationGeneration: 4,
-    } as never)
+    const checkpoint = await readCheckpoint(resourceId)
     expect(checkpoint?.revision).toBe(1)
     expect(checkpoint?.checkpoint.cursors.root).toEqual({ after: 'opaque' })
   },
@@ -155,6 +238,7 @@ test('before pages retain existing data, after pages replace it, and obsolete wr
     snapshots: [{ snapshot: replacement, replace: true, validatedAt: new Date().toISOString() }],
   })
   expect((await read(resourceId)).snapshots[0]?.title).toBe('New title')
+  expect((await readCheckpoint(resourceId))?.revision).toBe(3)
 })
 
 test('complete membership lists prune absent entries only in their own identity', async () => {
@@ -183,14 +267,15 @@ test('incremental completion does not renew untouched snapshots', async () => {
     snapshots: [{ snapshot, replace: true, validatedAt: originalValidatedAt }],
   })
   await write({ ...observation(resourceId, 1), snapshots: [] })
-  const rows = await persistence.transaction((transaction) =>
-    transaction.query<{ unchanged: boolean }>(
-      `select validated_at = $6::timestamptz as unchanged from activity_snapshots
-      where resource_id = $1 and subject_lifecycle_id = $2 and organization_version = $3
-        and authorization_generation = $4 and activity_id = $5`,
-      [resourceId, lifecycleId, 7, 4, activityId, originalValidatedAt],
-    ),
-  )
+  const rows = await connection<{ unchanged: boolean }[]>`
+    select validated_at = ${originalValidatedAt}::timestamptz as unchanged
+    from eve_module_organization_activity.activity_snapshots
+    where resource_id = ${resourceId}
+      and subject_lifecycle_id = ${lifecycleId}
+      and organization_version = 7
+      and authorization_generation = 4
+      and activity_id = ${activityId}
+  `
   expect(rows).toEqual([{ unchanged: true }])
 })
 
@@ -252,14 +337,15 @@ test('campaign retention prunes objectives whose campaigns are no longer active'
       },
     ],
   })
-  const rows = await persistence.transaction((transaction) =>
-    transaction.query<{ id: string }>(
-      `select activity_id::text as id from activity_snapshots
-      where resource_id = $1 and subject_lifecycle_id = $2 and organization_version = $3
-        and authorization_generation = $4 order by activity_id`,
-      [resourceId, lifecycleId, 7, 4],
-    ),
-  )
+  const rows = await connection<{ id: string }[]>`
+    select activity_id::text as id
+    from eve_module_organization_activity.activity_snapshots
+    where resource_id = ${resourceId}
+      and subject_lifecycle_id = ${lifecycleId}
+      and organization_version = 7
+      and authorization_generation = 4
+    order by activity_id
+  `
   expect(rows.map(({ id }) => id).toSorted()).toEqual(
     [activeCampaignId, inactiveCampaignId, activeObjectiveId].toSorted(),
   )
@@ -268,28 +354,47 @@ test('campaign retention prunes objectives whose campaigns are no longer active'
 test('a failed materialization rolls back snapshots and checkpoint together', async () => {
   const data = observation('rollback-test')
   await expect(
-    materializeActivityResource({
-      data,
-      subject: { lifecycleId },
-      authorizationGeneration: 4,
-      validatedAt: new Date().toISOString(),
-      capabilities: {
-        persistence: {
-          transaction: (operation: Parameters<typeof persistence.transaction>[0]) =>
-            persistence.transaction(async (tx) => {
-              await operation(tx)
-              throw new Error('rollback')
-            }),
-        },
-      },
-    } as never),
+    write(data, 4, () => {
+      throw new Error('rollback')
+    }),
   ).rejects.toThrow('rollback')
   expect((await read('rollback-test')).snapshots).toEqual([])
-  const checkpoint = await readActivityCheckpoint('rollback-test', {
-    capabilities: { persistence },
-    subject: { lifecycleId },
-    organizationVersion: 7,
-    authorizationGeneration: 4,
-  } as never)
+  const checkpoint = await readCheckpoint('rollback-test')
   expect(checkpoint).toBeUndefined()
+})
+
+test('stale snapshot cleanup uses the retention index at representative volume', async () => {
+  const planLifecycleId = randomUUID()
+  await connection`
+    insert into eve_module_organization_activity.activity_snapshots (
+      resource_id,
+      subject_lifecycle_id,
+      organization_version,
+      authorization_generation,
+      activity_id,
+      snapshot,
+      validated_at
+    )
+    select
+      'query-plan',
+      ${planLifecycleId},
+      7,
+      4,
+      md5(generate_series::text)::uuid,
+      jsonb_build_object('id', md5(generate_series::text)),
+      case
+        when generate_series <= 100 then now() - '25:00:00'::interval
+        else now()
+      end
+    from generate_series(1, 10000)
+  `
+  await connection`analyze eve_module_organization_activity.activity_snapshots`
+
+  const [explained] = await connection<{ 'QUERY PLAN': unknown }[]>`
+    explain (format json)
+    delete from eve_module_organization_activity.activity_snapshots
+    where validated_at < now() - '24:00:00'::interval
+  `
+
+  expect(JSON.stringify(explained?.['QUERY PLAN'])).toContain('activity_snapshots_retention_idx')
 })

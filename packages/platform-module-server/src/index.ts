@@ -8,6 +8,7 @@ import {
 
 export * from './cursor.js'
 export * from './errors.js'
+export * from './persistence.js'
 export * from './validation.js'
 
 export type PlatformEsiOperationData<Operation extends StableOperationId> =

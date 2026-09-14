@@ -1,8 +1,11 @@
-import {
-  platformModuleIdMaxLength,
-  platformModuleIdPattern,
-} from '@eve-space/platform-module-contract'
 import type postgres from 'postgres'
+import { modulePersistenceNames } from './module-persistence-identity.js'
+import {
+  reconcileModulePersistenceRoutineGrants,
+  type ModulePersistenceRoutineDescriptor,
+} from './module-persistence-routine-provisioner.js'
+
+export { modulePersistenceNames } from './module-persistence-identity.js'
 
 interface RoleAttributes {
   rolcanlogin: boolean
@@ -14,21 +17,11 @@ interface RoleAttributes {
   rolbypassrls: boolean
 }
 
-export function modulePersistenceNames(moduleId: string) {
-  if (!platformModuleIdPattern.test(moduleId) || moduleId.length > platformModuleIdMaxLength)
-    throw new Error(`Invalid module persistence owner ${moduleId}`)
-
-  const identity = moduleId.replaceAll('-', '_')
-  return {
-    migrationRoleName: `eve_module_${identity}_migrate`,
-    schemaName: `eve_module_${identity}`,
-    runtimeRoleName: `eve_module_${identity}_runtime`,
-  }
-}
-
 export async function provisionModulePersistence(
   connection: postgres.ReservedSql,
   moduleId: string,
+  persistenceOperations: readonly ModulePersistenceRoutineDescriptor[] = [],
+  requireAllRoutines = false,
 ) {
   const { migrationRoleName, schemaName, runtimeRoleName } = modulePersistenceNames(moduleId)
   const [context] = await connection<{ current_user: string }[]>`select current_user`
@@ -193,12 +186,12 @@ export async function provisionModulePersistence(
   await connection`
     alter default privileges for role ${connection(migrationRoleName)}
     in schema ${connection(schemaName)}
-    grant select, insert, update, delete on tables to ${connection(runtimeRoleName)}
+    revoke select, insert, update, delete on tables from ${connection(runtimeRoleName)}
   `
   await connection`
     alter default privileges for role ${connection(migrationRoleName)}
     in schema ${connection(schemaName)}
-    grant usage on sequences to ${connection(runtimeRoleName)}
+    revoke usage on sequences from ${connection(runtimeRoleName)}
   `
   await connection`
     alter default privileges for role ${connection(migrationRoleName)}
@@ -214,14 +207,12 @@ export async function provisionModulePersistence(
   await connection`
     revoke execute on all routines in schema ${connection(schemaName)} from public
   `
-  await connection`
-    grant select, insert, update, delete on all tables in schema ${connection(schemaName)}
-    to ${connection(runtimeRoleName)}
-  `
-  await connection`
-    grant usage on all sequences in schema ${connection(schemaName)}
-    to ${connection(runtimeRoleName)}
-  `
+  await reconcileModulePersistenceRoutineGrants(
+    connection,
+    moduleId,
+    persistenceOperations,
+    requireAllRoutines,
+  )
   await connection`
     insert into public.module_schema_provisioning (module_id, provisioned_at)
     values (${moduleId}, now())

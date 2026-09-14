@@ -93,6 +93,47 @@ registries, then remove the product catalog and pure contract package after call
 back. Core-data products add no SDE ingest, ESI compatibility or cache, OAuth scope, module schema,
 or persisted application-data migration, so rollback must not change or erase any of those states.
 
+## Module Persistence Operations
+
+Feature code persists only through generated, contribution-scoped methods. A module descriptor lists
+each operation's stable ID, TypeScript method name, positive revision, `read` or `write` mode,
+definition export, and append-only migration. Routes, activity providers, resource projections, and
+resource materializers independently reference only the operations they need. Providers and
+projections may reference reads only. A generated capability contains those named methods and no SQL
+statement, database client, transaction, caller-selected operation ID, or generic dispatcher.
+
+Define each operation with `definePlatformPersistenceOperation` in the server package. Use bounded
+Zod input and output schemas plus explicit maximum encoded byte sizes; keep secrets and credentials
+out of both payloads. Export the definition from the package root, add its exact contribution
+references to `module.config.ts`, and run `pnpm registry:generate`. Registry validation rejects
+missing, duplicate, unused, cross-module, mode-incompatible, or unexported definitions.
+
+Create the operation in a new module migration as exactly one module-schema `LANGUAGE SQL` function
+with one `jsonb` input and one `jsonb` result. The body must be directly parsed SQL-standard syntax,
+not a string body. Do not declare overloads, defaults, variadics, output parameters, set returns,
+dynamic SQL, role or session changes, grants, caller-controlled security settings, or core and
+cross-module references. Read operations are `STABLE`; writes are `VOLATILE`; both are
+`PARALLEL UNSAFE`. The platform finalizes the restricted migration-role owner,
+`SECURITY DEFINER`, trusted `search_path`, and exact runtime `EXECUTE` grant inside the migration
+transaction. Runtime roles receive no direct table or sequence privileges.
+
+API startup runs core migrations, checks a previously current generated contract without repairing
+drift, runs module migrations and routine finalization, then reconciles the whole-catalog fingerprint
+and per-operation attestations before opening the HTTP socket. Worker readiness performs the same
+live catalog, definition, role, schema, relation-authority, and grant comparison without mutation.
+A missing, extra, changed, stale, or overprivileged routine keeps the process unavailable and reports
+only the bounded module, operation, and failure category.
+
+Persistence deployment is intentionally non-overlapping because old binaries depended on direct
+runtime relation grants. Stop API and worker processes, back up PostgreSQL, deploy and start the new
+API alone, wait for core and module migrations plus attestation to finish, then start workers and
+enable affected modules. Do not run old and new API or worker versions together during this
+transition. If migration or attestation fails, preserve the database for diagnosis and correct it
+with a reviewed forward migration. Do not fabricate ledger or attestation rows, rewrite an applied
+migration, or grant tables to make startup pass. Rollback requires the pre-deployment PostgreSQL
+backup and prior application image; there is no in-place compatibility rollback after direct grants
+have been revoked.
+
 ## Migration Failure
 
 The API applies migrations for every installed module before opening its HTTP socket, including

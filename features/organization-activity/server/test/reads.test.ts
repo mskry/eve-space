@@ -6,7 +6,7 @@ import { activityRoutes, participationRoutes } from '../src/routes.js'
 const id = '11111111-1111-4111-8111-111111111111'
 const snapshot = { id, campaignId: null, contributed: 12, committed: true }
 function capabilities(status = 'current', failure: string | null = null) {
-  const query = vi.fn().mockResolvedValue([{ snapshot }])
+  const readSnapshots = vi.fn().mockResolvedValue([snapshot])
   const read = vi.fn().mockResolvedValue({
     status,
     subjectLifecycleId: id,
@@ -15,9 +15,9 @@ function capabilities(status = 'current', failure: string | null = null) {
     lastFailureClass: failure,
   })
   return {
-    query,
+    readActivitySnapshots: readSnapshots,
     read,
-    persistence: { transaction: (fn: (tx: { query: typeof query }) => unknown) => fn({ query }) },
+    persistence: { readActivitySnapshots: readSnapshots },
     collectionStatus: { read },
   }
 }
@@ -33,7 +33,13 @@ describe('authorized snapshot reads', () => {
       id,
     )
     expect(result.snapshots).toEqual([snapshot])
-    expect(cap.query.mock.calls[0]?.[1]).toEqual(['character-jobs', id, 7, 9, id])
+    expect(cap.readActivitySnapshots).toHaveBeenCalledWith({
+      resourceId: 'character-jobs',
+      subjectLifecycleId: id,
+      organizationVersion: 7,
+      authorizationGeneration: 9,
+      activityId: id,
+    })
   })
   test.each([
     'never-configured',
@@ -51,7 +57,7 @@ describe('authorized snapshot reads', () => {
         })
       ).snapshots,
     ).toEqual([])
-    expect(cap.query).not.toHaveBeenCalled()
+    expect(cap.readActivitySnapshots).not.toHaveBeenCalled()
   })
   test.each(['esi-unavailable', 'esi-cooldown'])(
     'permits bounded private outage fallback for %s',
@@ -65,7 +71,7 @@ describe('authorized snapshot reads', () => {
           })
         ).snapshots,
       ).toEqual([snapshot])
-      expect(cap.query.mock.calls[0]?.[0]).toContain("interval '1 hour'")
+      expect(cap.readActivitySnapshots).toHaveBeenCalledOnce()
     },
   )
   test('does not release stale private snapshots on invalid upstream data or unauthorized subjects', async () => {
@@ -80,7 +86,7 @@ describe('authorized snapshot reads', () => {
       characterId: 9002,
     })
     expect(denied.status.status).toBe('unavailable')
-    expect(cap.query).not.toHaveBeenCalled()
+    expect(cap.readActivitySnapshots).not.toHaveBeenCalled()
   })
   test('public stale sources retain their safe snapshots', async () => {
     const cap = capabilities('stale')
@@ -119,7 +125,7 @@ describe('activity routes behind host authorization', () => {
     expect((await server.request('/details/job/bad')).status).toBe(400)
     expect((await server.request(`/details/project/${id}`)).status).toBe(400)
     expect((await server.request(`/details/project/${id}?corporationId=-1`)).status).toBe(400)
-    expect(cap.query).not.toHaveBeenCalled()
+    expect(cap.readActivitySnapshots).not.toHaveBeenCalled()
   })
   test('uses only the host-owned character and strips private snapshot fields', async () => {
     const { cap, server } = app()
@@ -135,8 +141,8 @@ describe('activity routes behind host authorization', () => {
   })
   test('resolves a character-only job exclusively through the owned route', async () => {
     const { cap, server } = app()
-    cap.query.mockImplementation(async (_sql, parameters) =>
-      parameters[0] === 'character-jobs' ? [{ snapshot }] : [],
+    cap.readActivitySnapshots.mockImplementation(async ({ resourceId }) =>
+      resourceId === 'character-jobs' ? [snapshot] : [],
     )
     expect(await (await server.request(`/details/job/${id}`)).json()).toMatchObject({
       activity: null,

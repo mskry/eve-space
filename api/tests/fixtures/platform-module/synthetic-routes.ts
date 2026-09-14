@@ -5,13 +5,13 @@ import type {
 } from '@eve-space/platform-module-contract'
 import { Hono } from 'hono'
 
-export interface SyntheticModuleTransaction {
-  readonly moduleScoped: true
+export interface SyntheticModulePersistence {
+  readModuleScope(): Promise<true>
 }
 
 export function createSyntheticSessionRoutes(
   capabilities: PlatformModuleRouteCapabilities<
-    SyntheticModuleTransaction,
+    SyntheticModulePersistence,
     readonly ['published-type-groups']
   >,
 ) {
@@ -22,13 +22,11 @@ export function createSyntheticSessionRoutes(
 }
 
 export function createSyntheticOwnedCharacterRoutes(
-  capabilities: PlatformModuleRouteCapabilities<SyntheticModuleTransaction>,
+  capabilities: PlatformModuleRouteCapabilities<SyntheticModulePersistence>,
 ) {
   return new Hono<PlatformOwnedCharacterRouteEnv>().get('/', async (context) => {
     const affiliation = await context.var.platform.coreReads.loadAffiliation()
-    const stored = await capabilities.persistence.transaction(
-      async (transaction) => transaction.moduleScoped,
-    )
+    const stored = await capabilities.persistence.readModuleScope()
     return context.json(
       { authorization: context.var.platform.authorization, affiliation, stored },
       200,

@@ -8,6 +8,7 @@ import {
   type PlatformModuleManifest,
 } from '../../packages/platform-module-contract/src/index'
 import { definePlatformExecutableEsiOperation } from '../../packages/platform-module-server/src/index'
+import { canonicalizePersistenceRoutineSql } from '../../api/src/db/module-persistence-routine'
 import { coreModuleValidationAuthorities } from '../../scripts/module-registry/authorities'
 import { generateRegistryFiles } from '../../scripts/module-registry/generator'
 import { moduleServerImportViolations } from '../../scripts/module-registry/server-boundaries'
@@ -67,6 +68,108 @@ describe('platform module declarations', () => {
 
     expect(validatePlatformModuleManifests([beta, alpha], coreModuleValidationAuthorities)).toEqual(
       [alpha, beta],
+    )
+  })
+
+  it('accepts module-local persistence operations with phase-compatible grants', () => {
+    const readDeclaration = manifest('alpha', { persistenceOperation: {} })
+    const writeDeclaration = manifest('beta', {
+      persistenceOperation: {
+        id: 'save-snapshot',
+        method: 'saveSnapshot',
+        mode: 'write',
+        exportName: 'saveSnapshotOperation',
+      },
+    })
+    writeDeclaration.server.routes[0]!.persistenceOperations = []
+    writeDeclaration.server.activityProviders[0]!.persistenceOperations = []
+    writeDeclaration.server.resources[0]!.persistence = {
+      projection: [],
+      materialization: [{ operationId: 'save-snapshot' }],
+    }
+
+    expect(() =>
+      validatePlatformModuleManifests(
+        [writeDeclaration, readDeclaration],
+        coreModuleValidationAuthorities,
+      ),
+    ).not.toThrow()
+  })
+
+  it('rejects invalid persistence identities, metadata, migration links, and unused definitions', () => {
+    const invalid = manifest('alpha', {
+      persistenceOperation: {
+        id: 'ReadSnapshot',
+        method: 'read-snapshot',
+        revision: 0,
+        mode: 'execute' as never,
+        exportName: 'read-snapshot',
+        migration: 'alpha-999-missing.sql',
+      },
+    })
+    invalid.server.routes[0]!.persistenceOperations = []
+    invalid.server.activityProviders[0]!.persistenceOperations = []
+    invalid.server.resources[0]!.persistence = { projection: [], materialization: [] }
+    invalid.server.persistenceOperations.push({ ...invalid.server.persistenceOperations[0]! })
+
+    const message = validationErrorMessage(invalid)
+    for (const fragment of [
+      'must use a bounded lowercase kebab-case ID',
+      'is not a valid JavaScript export name',
+      'must use a positive whole revision',
+      'uses unsupported mode execute',
+      'references undeclared migration alpha-999-missing.sql',
+    ])
+      expect(message).toContain(fragment)
+  })
+
+  it('rejects duplicate operation IDs and unused definitions', () => {
+    const invalid = manifest('alpha', { persistenceOperation: {} })
+    invalid.server.routes[0]!.persistenceOperations = []
+    invalid.server.activityProviders[0]!.persistenceOperations = []
+    invalid.server.resources[0]!.persistence = { projection: [], materialization: [] }
+    invalid.server.persistenceOperations.push({ ...invalid.server.persistenceOperations[0]! })
+
+    const message = validationErrorMessage(invalid)
+    expect(message).toContain('persistence operation ID alpha-read is duplicated in alpha')
+    expect(message).toContain(
+      'persistence operation alpha/alpha-read is not granted to a contribution',
+    )
+  })
+
+  it('rejects duplicate, unknown, cross-module, and mode-incompatible persistence grants', () => {
+    const alpha = manifest('alpha', { persistenceOperation: {} })
+    const beta = manifest('beta', {
+      persistenceOperation: {
+        id: 'save-snapshot',
+        method: 'saveSnapshot',
+        mode: 'write',
+        exportName: 'saveSnapshotOperation',
+      },
+    })
+    alpha.server.routes[0]!.persistenceOperations = [
+      { operationId: 'alpha-read' },
+      { operationId: 'alpha-read' },
+      { operationId: 'save-snapshot' },
+      { operationId: 'missing-operation' },
+    ]
+    beta.server.activityProviders[0]!.persistenceOperations = [{ operationId: 'save-snapshot' }]
+    beta.server.resources[0]!.persistence = {
+      projection: [{ operationId: 'save-snapshot' }],
+      materialization: [{ operationId: 'save-snapshot' }],
+    }
+
+    const message = validationErrorMessage([alpha, beta])
+    expect(message).toContain('declares duplicate persistence operation alpha-read')
+    expect(message).toContain(
+      'references cross-module persistence operation save-snapshot owned by beta',
+    )
+    expect(message).toContain('references unknown persistence operation missing-operation')
+    expect(message).toContain(
+      'activity provider beta/beta-activity cannot use write persistence operation save-snapshot; expected read',
+    )
+    expect(message).toContain(
+      'resource projection beta/beta-resource cannot use write persistence operation save-snapshot; expected read',
     )
   })
 
@@ -219,6 +322,7 @@ describe('platform module declarations', () => {
         subjectKind,
         materializationIntervalSeconds: 900,
         eligibility: { kind: eligibilityKind },
+        persistence: { projection: [], materialization: [] },
         exportName: 'alphaResource',
       },
     ]
@@ -441,6 +545,7 @@ describe('platform module declarations', () => {
       authorization: 'owned-character',
       audience: 'member',
       requiredPermission: 'alpha.view',
+      persistenceOperations: [],
     })
 
     expect(() => generateRegistryFiles([invalid])).toThrow(
@@ -459,6 +564,7 @@ describe('platform module declarations', () => {
       authorization: 'owned-character',
       audience: 'member',
       requiredPermission: 'alpha.view',
+      persistenceOperations: [],
     })
 
     expect(() => generateRegistryFiles([valid])).not.toThrow()
@@ -491,6 +597,9 @@ describe('platform module registry generation', () => {
     expect(first.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       'installedModuleEsiOperationDefinitions = {} as const satisfies Record<',
     )
+    expect(first.get('api/src/generated/platform/installed-module-persistence.ts')).toContain(
+      '[] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]',
+    )
     expect(first.get('api/src/generated/platform/installed-module-runtime.ts')).toContain(
       '[] as const satisfies readonly PlatformInstalledModuleDefinition[]',
     )
@@ -514,6 +623,50 @@ describe('platform module registry generation', () => {
     )
   })
 
+  it('generates canonical persistence bindings and exact contribution grants', async () => {
+    const declaration = manifest('alpha', { persistenceOperation: {} })
+    const routine = await canonicalizePersistenceRoutineSql({
+      moduleId: 'alpha',
+      operationId: 'alpha-read',
+      revision: 1,
+      mode: 'read',
+      sql: `
+        create function eve_module_alpha.persist_alpha_read(input jsonb)
+        returns jsonb language sql stable parallel unsafe return input
+      `,
+    })
+    const persistence = generateRegistryFiles({
+      manifests: [declaration],
+      persistenceRoutines: [{ ...routine, migration: 'alpha-001-initial.sql' }],
+    }).get('api/src/generated/platform/installed-module-persistence.ts')
+
+    expect(persistence).toContain(
+      "import { alphaReadOperation as module0PersistenceOperation0 } from '@eve-space/alpha-server'",
+    )
+    expect(persistence).toContain("routineName: 'persist_alpha_read'")
+    expect(persistence).toContain(`definitionFingerprint: '${routine.definitionFingerprint}'`)
+    expect(persistence).toMatch(/installedModulePersistenceContractFingerprint = '[0-9a-f]{64}'/)
+    expect(persistence).toContain(
+      'grants: {"routes":["alpha-route"],"activityProviders":["alpha-activity"],"resourceProjections":["alpha-resource"],"resourceMaterializations":[]}',
+    )
+    expect(persistence).toContain("'alpha/alpha-read': installedModulePersistenceOperations[0]!")
+    expect(persistence).toContain(
+      'export function createModule0Route0Persistence(invoke: PlatformPersistenceOperationInvoker)',
+    )
+    expect(persistence).toContain(
+      "'alphaRead': bindPlatformPersistenceOperation(installedModulePersistenceOperations[0]!, invoke)",
+    )
+    expect(persistence).toContain(
+      'export function createModule0Resource0MaterializationPersistence(_invoke: PlatformPersistenceOperationInvoker) {\n  return {}',
+    )
+    expect(persistence).toContain("'alpha/alpha-route': createModule0Route0Persistence")
+    expect(persistence).toContain(
+      "'alpha/alpha-resource': createModule0Resource0ProjectionPersistence",
+    )
+    expect(persistence).not.toContain("'saveSnapshot': bindPlatformPersistenceOperation")
+    expect(persistence).not.toContain('operationId: string')
+  })
+
   it('sorts modules and navigation independently of input order', () => {
     const alpha = manifest('alpha', { navigation: { order: 20 } })
     const beta = manifest('beta', { navigation: { order: 10 } })
@@ -528,7 +681,7 @@ describe('platform module registry generation', () => {
       api?.indexOf("from '@eve-space/beta-server'") ?? -1,
     )
     expect(api).toContain(
-      "module0Route0Factory(createPlatformModuleRouteCapabilities('alpha', [] as const))",
+      "module0Route0Factory(createPlatformModuleRouteCapabilities('alpha', 'alpha-route', [] as const))",
     )
     expect(api).toContain("{ audience: 'member', requiredPermission: 'alpha.view' }")
     expectInOrder(api, [
@@ -568,6 +721,7 @@ describe('platform module registry generation', () => {
       authorization: 'authenticated-session',
       audience: 'hr',
       requiredPermission: 'alpha.summary',
+      persistenceOperations: [],
     })
 
     const routes = generateRegistryFiles([alpha]).get(
@@ -594,7 +748,7 @@ describe('platform module registry generation', () => {
     const files = generateRegistryFiles([declaration])
 
     expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
-      'createPlatformModuleRouteCapabilities(\'alpha\', ["published-type-groups"] as const)',
+      "createPlatformModuleRouteCapabilities('alpha', 'alpha-route', [\"published-type-groups\"] as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
       'coreDataProducts: ["published-type-groups"] as const',
@@ -619,7 +773,7 @@ describe('platform module registry generation', () => {
     expect(providers).toContain("audience: 'member', requiredPermission: 'alpha.view'")
     expect(providers).toContain("pageIds: ['alpha-page']")
     expect(providers).toContain(
-      "invoke: (context) => module0ActivityProvider0Factory(createPlatformModuleActivityProviderCapabilities('alpha', context, [] as const))(context)",
+      "invoke: (context) => module0ActivityProvider0Factory(createPlatformModuleActivityProviderCapabilities('alpha', 'alpha-activity', context, [] as const))(context)",
     )
   })
 
@@ -649,6 +803,7 @@ describe('platform module registry generation', () => {
       authorization: 'authenticated-session',
       audience: 'member',
       requiredPermission: 'alpha.view',
+      persistenceOperations: [],
     })
     declaration.server.resources.push({
       id: 'alpha-secondary-resource',
@@ -657,6 +812,7 @@ describe('platform module registry generation', () => {
       subjectKind: 'character',
       materializationIntervalSeconds: 900,
       eligibility: { kind: 'current-owned-character' },
+      persistence: { projection: [], materialization: [] },
       exportName: 'alphaSecondaryResource',
     })
     declaration.server.activityProviders.push({
@@ -664,6 +820,7 @@ describe('platform module registry generation', () => {
       exportName: 'alphaSecondaryActivityProvider',
       audience: 'member',
       requiredPermission: 'alpha.view',
+      persistenceOperations: [],
       freshness: { staleAfterSeconds: 900 },
     })
 
@@ -699,10 +856,10 @@ describe('platform module registry generation', () => {
       "import { routes as module1Route0Factory } from '@eve-space/beta-server'",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<typeof module0Resource0, readonly []> } as const)",
+      "({ moduleId: 'alpha', resourceId: 'alpha-resource', operationId: 'alpha-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<typeof module0Resource0, readonly []> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-worker.ts')).toContain(
-      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, implementation: module1Resource0 satisfies PlatformResourceImplementationForProducts<typeof module1Resource0, readonly []> } as const)",
+      "({ moduleId: 'beta', resourceId: 'beta-resource', operationId: 'beta-operation', coreDataProducts: [] as const, subjectKind: 'character', materializationIntervalSeconds: 900, eligibility: { kind: 'current-owned-character' }, persistence: {\"projection\":[],\"materialization\":[]} as const, implementation: module1Resource0 satisfies PlatformResourceImplementationForProducts<typeof module1Resource0, readonly []> } as const)",
     )
     expect(files.get('api/src/generated/platform/installed-module-esi.ts')).toContain(
       "'alpha-operation': module0EsiOperation0.contract,\n  'beta-operation': module1EsiOperation0.contract,",
@@ -802,6 +959,7 @@ interface ManifestOverrides {
   moduleIcon?: PlatformModuleManifest['icon']
   route?: Partial<PlatformModuleManifest['server']['routes'][number]>
   migration?: Partial<PlatformModuleManifest['server']['migrations'][number]>
+  persistenceOperation?: Partial<PlatformModuleManifest['server']['persistenceOperations'][number]>
   resource?: Partial<PlatformModuleManifest['server']['resources'][number]>
   operation?: Partial<PlatformModuleManifest['server']['esiOperations'][number]>
   activityProvider?: Partial<PlatformModuleManifest['server']['activityProviders'][number]>
@@ -813,6 +971,17 @@ interface ManifestOverrides {
 function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModuleManifest {
   const pageName = overrides.page?.name ?? `eve-${id}-audit`
   const operationId = overrides.operation?.id ?? `${id}-operation`
+  const persistenceOperation = overrides.persistenceOperation
+    ? {
+        id: `${id}-read`,
+        method: `${camelCase(id)}Read`,
+        revision: 1,
+        mode: 'read' as const,
+        exportName: `${camelCase(id)}ReadOperation`,
+        migration: `${id}-001-initial.sql`,
+        ...overrides.persistenceOperation,
+      }
+    : undefined
   return {
     id,
     icon: overrides.moduleIcon ?? 'character',
@@ -827,10 +996,14 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
           authorization: 'owned-character',
           audience: 'member',
           requiredPermission: `${id}.view`,
+          persistenceOperations: persistenceOperation
+            ? [{ operationId: persistenceOperation.id }]
+            : [],
           ...overrides.route,
         },
       ],
       migrations: [{ name: `${id}-001-initial.sql`, ...overrides.migration }],
+      persistenceOperations: persistenceOperation ? [persistenceOperation] : [],
       resources: [
         {
           id: `${id}-resource`,
@@ -838,6 +1011,10 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
           subjectKind: 'character',
           materializationIntervalSeconds: 900,
           eligibility: { kind: 'current-owned-character' },
+          persistence: {
+            projection: persistenceOperation ? [{ operationId: persistenceOperation.id }] : [],
+            materialization: [],
+          },
           exportName: `${camelCase(id)}Resource`,
           ...overrides.resource,
         },
@@ -855,6 +1032,9 @@ function manifest(id: string, overrides: ManifestOverrides = {}): PlatformModule
           exportName: `${camelCase(id)}ActivityProvider`,
           audience: 'member',
           requiredPermission: `${id}.view`,
+          persistenceOperations: persistenceOperation
+            ? [{ operationId: persistenceOperation.id }]
+            : [],
           freshness: { staleAfterSeconds: 300 },
           ...overrides.activityProvider,
         },
@@ -912,9 +1092,14 @@ function executableOperationPolicy() {
   } as const
 }
 
-function validationErrorMessage(moduleManifest: PlatformModuleManifest) {
+function validationErrorMessage(
+  moduleManifest: PlatformModuleManifest | readonly PlatformModuleManifest[],
+) {
   try {
-    validatePlatformModuleManifests([moduleManifest], coreModuleValidationAuthorities)
+    validatePlatformModuleManifests(
+      Array.isArray(moduleManifest) ? moduleManifest : [moduleManifest],
+      coreModuleValidationAuthorities,
+    )
     throw new Error('Expected validation to fail')
   } catch (error) {
     if (error instanceof PlatformModuleValidationError) return error.message
