@@ -2,6 +2,7 @@ import type { EsiResponse } from '@evespace/esi-client'
 import type {
   OperationExecutionDescriptor,
   OperationRequestArguments,
+  OperationSchema,
 } from '@evespace/esi-client/operations'
 import type { CharacterMutationEsiOperation, EsiOperation } from './catalog.js'
 import type { EsiLoadResult } from './types.js'
@@ -37,6 +38,16 @@ interface EsiRepresentationOptions<
   recover?: (error: unknown, input: Input) => EsiLoadResult<Result> | undefined
 }
 
+type EsiReadRepresentationOptions<
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+> = EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result> & {
+  cacheSchema: OperationSchema<Result>
+}
+
 /** Opaque registered binding between an application representation and one SDK operation. */
 export interface EsiRepresentation<
   Authorization extends EsiRepresentationAuthorization,
@@ -58,13 +69,24 @@ export interface EsiRepresentation<
   recover?(error: unknown, input: Input): EsiLoadResult<Result> | undefined
 }
 
+export type EsiReadRepresentation<
+  Authorization extends EsiRepresentationAuthorization,
+  Operation extends EsiOperation,
+  Input,
+  Arguments extends OperationRequestArguments,
+  WireResult,
+  Result,
+> = EsiRepresentation<Authorization, Operation, Input, Arguments, WireResult, Result> & {
+  readonly cacheSchema: OperationSchema<Result>
+}
+
 export type EsiCharacterRepresentation<
   Operation extends EsiOperation,
   Input,
   Arguments extends OperationRequestArguments,
   WireResult,
   Result,
-> = EsiRepresentation<'character', Operation, Input, Arguments, WireResult, Result>
+> = EsiReadRepresentation<'character', Operation, Input, Arguments, WireResult, Result>
 
 export type EsiCharacterMutation<
   Operation extends CharacterMutationEsiOperation,
@@ -80,7 +102,7 @@ export type EsiPublicRepresentation<
   Arguments extends OperationRequestArguments,
   WireResult,
   Result,
-> = EsiRepresentation<'public', Operation, Input, Arguments, WireResult, Result>
+> = EsiReadRepresentation<'public', Operation, Input, Arguments, WireResult, Result>
 
 export function defineCharacterEsiRepresentation<
   Operation extends EsiOperation,
@@ -89,9 +111,12 @@ export function defineCharacterEsiRepresentation<
   WireResult,
   Result,
 >(
-  options: EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
+  options: EsiReadRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
 ): EsiCharacterRepresentation<Operation, Input, Arguments, WireResult, Result> {
-  return defineEsiRepresentation('read', 'character', options)
+  return {
+    ...defineEsiRepresentation('read', 'character', options),
+    cacheSchema: options.cacheSchema,
+  }
 }
 
 export function defineCharacterEsiMutation<
@@ -113,9 +138,12 @@ export function definePublicEsiRepresentation<
   WireResult,
   Result,
 >(
-  options: EsiRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
+  options: EsiReadRepresentationOptions<Operation, Input, Arguments, WireResult, Result>,
 ): EsiPublicRepresentation<Operation, Input, Arguments, WireResult, Result> {
-  return defineEsiRepresentation('read', 'public', options)
+  return {
+    ...defineEsiRepresentation('read', 'public', options),
+    cacheSchema: options.cacheSchema,
+  }
 }
 
 function defineEsiRepresentation<

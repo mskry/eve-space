@@ -1,7 +1,10 @@
+import type { OperationSchema } from '@evespace/esi-client/operations'
+
 type FeatureExecutionModule = typeof import('../../src/esi-gateway/feature-execution.js')
 
 export interface CapturedEsiCallable {
   readonly execution: 'read' | 'mutation'
+  readonly cacheSchema?: OperationSchema<unknown>
   execute(input: unknown): Promise<unknown>
 }
 
@@ -33,10 +36,21 @@ function captureFactory(
       throw new Error(`Expected ${definition.name} to create an ESI callable`)
     callables.set(definition.name, {
       execution,
+      ...(hasCacheSchema(definition) ? { cacheSchema: definition.cacheSchema } : {}),
       execute: (input) => Promise.resolve(Reflect.apply(callable.execute, callable, [input])),
     })
     return callable
   }
+}
+
+function hasCacheSchema(value: unknown): value is { cacheSchema: OperationSchema<unknown> } {
+  if (typeof value !== 'object' || value === null || !('cacheSchema' in value)) return false
+  const schema = value.cacheSchema
+  return (
+    typeof schema === 'object' &&
+    schema !== null &&
+    typeof Reflect.get(schema, 'safeParse') === 'function'
+  )
 }
 
 function hasStringProperty<Value extends string>(

@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { and, asc, inArray, lte, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../db/client.js'
 import { characters } from '../db/schema.js'
 import { env } from '../env.js'
@@ -12,10 +13,19 @@ if (generatedAffiliationBatchLimit === null)
   throw new Error('Bulk affiliation operation must declare a maximum batch size')
 const affiliationBatchLimit = generatedAffiliationBatchLimit
 
+const affiliationObservationCacheSchema = z.array(
+  z.object({
+    characterId: z.number(),
+    corporationId: z.number(),
+    allianceId: z.number().nullable(),
+  }),
+)
+
 const bulkAffiliationRead = createPublicEsiRead({
   operation: 'bulk-affiliation',
   name: 'bulk-affiliation-core',
   descriptor: operationRegistry.PostCharactersAffiliation.transport,
+  cacheSchema: affiliationObservationCacheSchema,
   encodeRequest: (input: { body: number[]; signal?: AbortSignal }) => ({ body: input.body }),
   map: ({ data }): AffiliationObservation[] =>
     data.map((affiliation) => ({

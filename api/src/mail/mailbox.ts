@@ -4,6 +4,7 @@ import type {
   GetCharactersCharacterIdMailResponse,
   GetCharactersCharacterIdSearchResponse,
 } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
 import {
   EsiQuotaError,
@@ -182,6 +183,45 @@ interface EsiMailParties {
   recipients?: EsiMailRecipient[]
 }
 
+const mailPartyCacheSchema = z.object({
+  id: z.number(),
+  type: z.enum(['alliance', 'character', 'corporation', 'mailing_list', 'unknown']),
+  name: z.string().nullable(),
+})
+const mailHeaderCacheSchema = z.object({
+  mailId: z.number(),
+  sender: mailPartyCacheSchema.nullable(),
+  recipients: z.array(mailPartyCacheSchema),
+  subject: z.string().nullable(),
+  sentAt: z.string().nullable(),
+  labelIds: z.array(z.number()),
+  isRead: z.boolean().nullable(),
+})
+const mailHeadersCacheSchema = z.object({
+  messages: z.array(mailHeaderCacheSchema),
+  nextLastMailId: z.number().nullable(),
+})
+const mailDetailCacheSchema = mailHeaderCacheSchema.extend({ body: z.string().nullable() })
+const mailLabelsCacheSchema = z.object({
+  labels: z.array(
+    z.object({
+      labelId: z.number().nullable(),
+      name: z.string().nullable(),
+      color: z.enum(mailLabelColors).nullable(),
+      unreadCount: z.number().nullable(),
+    }),
+  ),
+  totalUnreadCount: z.number().nullable(),
+})
+const mailingListsCacheSchema = z.array(z.object({ mailingListId: z.number(), name: z.string() }))
+const mailRecipientSearchCacheSchema = z.array(
+  z.object({
+    id: z.number(),
+    type: z.enum(['alliance', 'character', 'corporation']),
+    name: z.string(),
+  }),
+)
+
 interface MailHeadersRepresentationInput {
   characterId: number
   subjectLifecycleId: string
@@ -193,6 +233,7 @@ const mailHeadersRead = createCharacterEsiRead({
   operation: 'mail-headers',
   name: 'mail-headers-core',
   descriptor: operationRegistry.GetCharactersCharacterIdMail.transport,
+  cacheSchema: mailHeadersCacheSchema,
   encodeRequest: (input: MailHeadersRepresentationInput) => ({
     path: { character_id: input.characterId },
     ...(input.labels === null && input.lastMailId === null
@@ -218,6 +259,7 @@ const mailDetailRead = createCharacterEsiRead({
   operation: 'mail-message',
   name: 'mail-message-core',
   descriptor: operationRegistry.GetCharactersCharacterIdMailMailId.transport,
+  cacheSchema: mailDetailCacheSchema,
   encodeRequest: (input: MailDetailRepresentationInput) => ({
     path: { character_id: input.characterId, mail_id: input.mailId },
   }),
@@ -234,6 +276,7 @@ const mailLabelsRead = createCharacterEsiRead({
   operation: 'mail-labels',
   name: 'mail-labels-core',
   descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
+  cacheSchema: mailLabelsCacheSchema,
   encodeRequest: (input: CharacterRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -252,6 +295,7 @@ const mailListsRead = createCharacterEsiRead({
   operation: 'mail-lists',
   name: 'mail-lists-core',
   descriptor: operationRegistry.GetCharactersCharacterIdMailLists.transport,
+  cacheSchema: mailingListsCacheSchema,
   encodeRequest: (input: CharacterRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -272,6 +316,7 @@ const characterSearchRead = createCharacterEsiRead({
   operation: 'character-search',
   name: 'character-search-mail',
   descriptor: operationRegistry.GetCharactersCharacterIdSearch.transport,
+  cacheSchema: mailRecipientSearchCacheSchema,
   encodeRequest: (input: CharacterSearchRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: {
@@ -292,6 +337,7 @@ const characterCspaChargeRead = createCharacterEsiRead({
   operation: 'character-cspa-charge',
   name: 'character-cspa-charge-mail',
   descriptor: operationRegistry.PostCharactersCharacterIdCspa.transport,
+  cacheSchema: operationRegistry.PostCharactersCharacterIdCspa.responseSchema,
   encodeRequest: (input: CharacterCspaChargeRepresentationInput) => ({
     path: { character_id: input.characterId },
     body: [...input.characterIds],

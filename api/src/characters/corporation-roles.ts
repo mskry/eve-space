@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdRolesResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import { createCharacterEsiRead } from '../esi-gateway/feature-execution.js'
 
 interface CharacterCorporationRolesRepresentationInput {
@@ -8,10 +9,18 @@ interface CharacterCorporationRolesRepresentationInput {
   signal?: AbortSignal
 }
 
+const characterCorporationRolesCacheSchema = z.object({
+  roles: z.array(z.string()),
+  rolesAtBase: z.array(z.string()),
+  rolesAtHeadquarters: z.array(z.string()),
+  rolesAtOther: z.array(z.string()),
+})
+
 const characterCorporationRolesRead = createCharacterEsiRead({
   operation: 'character-corporation-roles',
   name: 'character-corporation-roles-core',
   descriptor: operationRegistry.GetCharactersCharacterIdRoles.transport,
+  cacheSchema: characterCorporationRolesCacheSchema,
   encodeRequest: (input: CharacterCorporationRolesRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),

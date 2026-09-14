@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdCorporationhistoryResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 import { resolveUniverseNames } from '../universe/names.js'
 
@@ -17,10 +18,24 @@ interface CharacterEmploymentHistoryEntry {
 /** CCP allocates NPC corporations below this ID; player-created corporations sit above it. */
 const FIRST_PLAYER_CORPORATION_ID = 2_000_000
 
+const employmentHistoryCacheSchema = z.array(
+  z.object({
+    recordId: z.number(),
+    startDate: z.string(),
+    isDeleted: z.boolean(),
+    corporation: z.object({
+      id: z.number(),
+      name: z.string(),
+      isNpc: z.boolean(),
+    }),
+  }),
+)
+
 const employmentHistoryRead = createPublicEsiRead({
   operation: 'employment-history',
   name: 'employment-history-core',
   descriptor: operationRegistry.GetCharactersCharacterIdCorporationhistory.transport,
+  cacheSchema: employmentHistoryCacheSchema,
   encodeRequest: (input: { characterId: number }) => ({
     path: { character_id: input.characterId },
   }),

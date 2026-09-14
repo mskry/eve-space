@@ -63,8 +63,8 @@ const allowedImportTiersBySourceTier: Record<CharacterTier, readonly CharacterTi
 
 const allowedPackagesByTier: Record<CharacterTier, ReadonlySet<string>> = {
   'pure-leaf': new Set(),
-  'read-projection': new Set(['drizzle-orm']),
-  'affiliation-use-case': new Set(['drizzle-orm']),
+  'read-projection': new Set(['drizzle-orm', 'zod']),
+  'affiliation-use-case': new Set(['drizzle-orm', 'zod']),
   'route-adapter': new Set(['hono', 'zod']),
 }
 

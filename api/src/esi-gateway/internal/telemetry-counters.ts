@@ -27,6 +27,7 @@ const cacheEnvelopeRejections: Record<EsiCacheEnvelopeRejectionReason, number> =
   malformedJson: 0,
   versionMismatch: 0,
   invalidShape: 0,
+  invalidPayload: 0,
   incoherentFreshnessWindow: 0,
 }
 const foundEnvelopeVersionCounts = new Map<string, number>()

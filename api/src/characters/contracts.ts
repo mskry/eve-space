@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdContractsResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
@@ -45,10 +46,48 @@ interface CharacterContractsData {
 
 type CharacterContractsResult = CharacterContractsData & EsiReadResultMetadata
 
+const characterContractCacheSchema = z.object({
+  contractId: z.number(),
+  type: z.enum(['unknown', 'item_exchange', 'auction', 'courier', 'loan']),
+  status: z.enum([
+    'outstanding',
+    'in_progress',
+    'finished_issuer',
+    'finished_contractor',
+    'finished',
+    'cancelled',
+    'rejected',
+    'failed',
+    'deleted',
+    'reversed',
+  ]),
+  availability: z.enum(['public', 'personal', 'corporation', 'alliance']),
+  role: z.enum(['assigned', 'issued']),
+  title: z.string().nullable(),
+  issuedAt: z.string(),
+  expiredAt: z.string(),
+  acceptedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  daysToComplete: z.number().nullable(),
+  startLocationId: z.number().nullable(),
+  endLocationId: z.number().nullable(),
+  price: z.number().nullable(),
+  reward: z.number().nullable(),
+  collateral: z.number().nullable(),
+  buyout: z.number().nullable(),
+  volume: z.number().nullable(),
+})
+const characterContractsCacheSchema = z.object({
+  contracts: z.array(characterContractCacheSchema),
+  page: z.number(),
+  totalPages: z.number(),
+})
+
 const characterContractsRead = createCharacterEsiRead({
   operation: 'character-contracts',
   name: 'character-contracts-core',
   descriptor: operationRegistry.GetCharactersCharacterIdContracts.transport,
+  cacheSchema: characterContractsCacheSchema,
   encodeRequest: (input: CharacterContractsRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },
@@ -107,10 +146,25 @@ interface CharacterContractItemsData {
 
 type CharacterContractItemsResult = CharacterContractItemsData & EsiReadResultMetadata
 
+const characterContractItemsCacheSchema = z.object({
+  items: z.array(
+    z.object({
+      recordId: z.number(),
+      typeId: z.number(),
+      typeName: z.string(),
+      direction: z.enum(['included', 'requested']),
+      quantity: z.number(),
+      isSingleton: z.boolean(),
+      blueprint: z.enum(['original', 'copy']).nullable(),
+    }),
+  ),
+})
+
 const characterContractItemsRead = createCharacterEsiRead({
   operation: 'character-contract-items',
   name: 'character-contract-items-core',
   descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdItems.transport,
+  cacheSchema: characterContractItemsCacheSchema,
   encodeRequest: (input: CharacterContractItemsRepresentationInput) => ({
     path: { character_id: input.characterId, contract_id: input.contractId },
   }),
@@ -146,10 +200,21 @@ interface CharacterContractBidsData {
 
 type CharacterContractBidsResult = CharacterContractBidsData & EsiReadResultMetadata
 
+const characterContractBidsCacheSchema = z.object({
+  bids: z.array(
+    z.object({
+      bidId: z.number(),
+      amount: z.number(),
+      bidAt: z.string(),
+    }),
+  ),
+})
+
 const characterContractBidsRead = createCharacterEsiRead({
   operation: 'character-contract-bids',
   name: 'character-contract-bids-core',
   descriptor: operationRegistry.GetCharactersCharacterIdContractsContractIdBids.transport,
+  cacheSchema: characterContractBidsCacheSchema,
   encodeRequest: (input: CharacterContractBidsRepresentationInput) => ({
     path: { character_id: input.characterId, contract_id: input.contractId },
   }),

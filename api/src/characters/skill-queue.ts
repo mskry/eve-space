@@ -1,6 +1,7 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdSkillqueueResponse } from '@evespace/esi-client/types'
 import { and, eq, inArray } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../db/client.js'
 import { sdeGroups, sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
 import {
@@ -20,10 +21,38 @@ interface CharacterSkillQueueRepresentationInput {
   subjectLifecycleId: string
 }
 
+const skillAttributeCacheSchema = z.enum([
+  'charisma',
+  'intelligence',
+  'memory',
+  'perception',
+  'willpower',
+])
+const characterSkillQueueCacheSchema = z.object({
+  entries: z.array(
+    z.object({
+      queuePosition: z.number(),
+      typeId: z.number(),
+      name: z.string(),
+      groupId: z.number().nullable(),
+      groupName: z.string(),
+      finishedLevel: z.number(),
+      levelStartSp: z.number().nullable(),
+      levelEndSp: z.number().nullable(),
+      trainingStartSp: z.number().nullable(),
+      startDate: z.string().nullable(),
+      finishDate: z.string().nullable(),
+      primaryAttribute: skillAttributeCacheSchema.nullable(),
+      secondaryAttribute: skillAttributeCacheSchema.nullable(),
+    }),
+  ),
+})
+
 const characterSkillQueueRead = createCharacterEsiRead({
   operation: 'skill-queue',
   name: 'character-skill-queue-core',
   descriptor: operationRegistry.GetCharactersCharacterIdSkillqueue.transport,
+  cacheSchema: characterSkillQueueCacheSchema,
   encodeRequest: (input: CharacterSkillQueueRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),

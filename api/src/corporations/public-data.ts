@@ -4,6 +4,7 @@ import type {
   GetCorporationsCorporationIdAlliancehistoryResponse,
   GetCorporationsCorporationIdResponse,
 } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import { eveDescriptionToPlainText } from '../text/eve-description.js'
 import { createPublicEsiRead, type EsiReadResult } from '../esi-gateway/feature-execution.js'
 import { resolveUniverseNames } from '../universe/names.js'
@@ -49,10 +50,47 @@ interface AllianceHistoryEntry {
   startDate: string
 }
 
+const publicCorporationResultCacheSchema = z.object({
+  name: z.string(),
+  ticker: z.string(),
+  memberCount: z.number(),
+  ceoId: z.number().nullable(),
+  ceoName: z.string().nullable(),
+  creatorId: z.number().nullable(),
+  creatorName: z.string().nullable(),
+  taxRate: z.number().nullable(),
+  dateFounded: z.string().nullable(),
+  description: z.string().nullable(),
+  url: z.string().nullable(),
+  factionId: z.number().nullable(),
+  homeStationId: z.number().nullable(),
+  homeStationName: z.string().nullable(),
+  shares: z.number().nullable(),
+  allianceId: z.number().nullable(),
+  allianceName: z.string().nullable(),
+  type: z.string(),
+  state: z.string(),
+  warEligible: z.boolean().nullable(),
+})
+const corporationLookupCacheSchema = z.discriminatedUnion('found', [
+  z.object({ found: z.literal(true), corporation: publicCorporationResultCacheSchema }),
+  z.object({ found: z.literal(false) }),
+])
+const corporationAllianceHistoryCacheSchema = z.array(
+  z.object({
+    allianceId: z.number().nullable(),
+    allianceName: z.string().nullable(),
+    isDeleted: z.boolean(),
+    recordId: z.number(),
+    startDate: z.string(),
+  }),
+)
+
 const publicCorporationRead = createPublicEsiRead({
   operation: 'public-corporation',
   name: 'public-corporation-core',
   descriptor: operationRegistry.GetCorporationsCorporationId.transport,
+  cacheSchema: corporationLookupCacheSchema,
   encodeRequest: (input: { corporationId: number }) => ({
     path: { corporation_id: input.corporationId },
   }),
@@ -70,6 +108,7 @@ const corporationAllianceHistoryRead = createPublicEsiRead({
   operation: 'corporation-alliance-history',
   name: 'corporation-alliance-history-core',
   descriptor: operationRegistry.GetCorporationsCorporationIdAlliancehistory.transport,
+  cacheSchema: corporationAllianceHistoryCacheSchema,
   encodeRequest: (input: { corporationId: number }) => ({
     path: { corporation_id: input.corporationId },
   }),
@@ -80,6 +119,7 @@ const corporationNpcListRead = createPublicEsiRead({
   operation: 'corporation-npc-list',
   name: 'corporation-npc-list-core',
   descriptor: operationRegistry.GetCorporationsNpccorps.transport,
+  cacheSchema: operationRegistry.GetCorporationsNpccorps.responseSchema,
   encodeRequest: () => ({}),
   map: (response): number[] => response.data,
 })

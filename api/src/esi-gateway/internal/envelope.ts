@@ -1,4 +1,5 @@
 import type { EsiResponseMetadata } from '@evespace/esi-client'
+import type { OperationSchema } from '@evespace/esi-client/operations'
 import { z } from 'zod'
 import { isRecord } from '../../type-guards.js'
 import type { EsiFreshnessContract, EsiOperationContract } from './contract-types.js'
@@ -17,6 +18,7 @@ export type EsiCacheEnvelopeRejectionReason =
   | 'malformedJson'
   | 'versionMismatch'
   | 'invalidShape'
+  | 'invalidPayload'
   | 'incoherentFreshnessWindow'
 
 export type EsiCacheEnvelopeParseResult<Data> =
@@ -109,7 +111,10 @@ export function createCacheEnvelope<Data>(options: {
   }
 }
 
-export function parseEnvelope<Data>(serialized: string): EsiCacheEnvelopeParseResult<Data> {
+export function parseEnvelope<Data>(
+  serialized: string,
+  dataSchema: OperationSchema<Data>,
+): EsiCacheEnvelopeParseResult<Data> {
   let raw: unknown
   try {
     raw = JSON.parse(serialized) as unknown
@@ -122,7 +127,16 @@ export function parseEnvelope<Data>(serialized: string): EsiCacheEnvelopeParseRe
   if (!isValidEnvelope(raw)) return { success: false, reason: 'invalidShape' }
   if (raw.freshUntil > raw.staleUntil || raw.staleUntil > raw.retainUntil)
     return { success: false, reason: 'incoherentFreshnessWindow' }
-  return { success: true, envelope: raw as EsiCacheEnvelope<Data> }
+  return validateEnvelopeData(raw, dataSchema)
+}
+
+export function validateEnvelopeData<Data>(
+  envelope: EsiCacheEnvelope<unknown>,
+  dataSchema: OperationSchema<Data>,
+): EsiCacheEnvelopeParseResult<Data> {
+  const parsed = dataSchema.safeParse(envelope.data)
+  if (!parsed.success) return { success: false, reason: 'invalidPayload' }
+  return { success: true, envelope: { ...envelope, data: parsed.data } }
 }
 
 export function updateNotModifiedEnvelope<Data>(options: {

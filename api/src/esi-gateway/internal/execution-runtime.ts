@@ -5,7 +5,11 @@ import {
   type EsiResponseMetadata,
 } from '@evespace/esi-client'
 import type { PlatformExecutableEsiOperationDefinition } from '@eve-space/platform-module-server'
-import type { OperationRequestArguments, StableOperationId } from '@evespace/esi-client/operations'
+import type {
+  OperationRequestArguments,
+  OperationSchema,
+  StableOperationId,
+} from '@evespace/esi-client/operations'
 import { isPositiveSafeInteger, isRecord } from '../../type-guards.js'
 import { getEsiOperationContract } from './catalog-access.js'
 import { type CharacterMutationEsiOperation, type EsiOperation } from './catalog.js'
@@ -20,6 +24,7 @@ import {
   parseEnvelope,
   toRevalidation,
   updateNotModifiedEnvelope,
+  validateEnvelopeData,
 } from './envelope.js'
 import {
   characterEsiPrincipal,
@@ -29,7 +34,11 @@ import {
 } from './identity.js'
 import { cacheEnvelopeKey } from './keys.js'
 import { isRegisteredEsiRepresentation } from './representation-registry.js'
-import type { EsiCharacterMutation, EsiRepresentation } from './representations.js'
+import type {
+  EsiCharacterMutation,
+  EsiReadRepresentation,
+  EsiRepresentation,
+} from './representations.js'
 import { EsiResourceRevisionRegistry } from './resource-revision.js'
 import {
   classifyEsiRefreshFailure,
@@ -103,9 +112,14 @@ interface EsiExecutionResource<Data> {
   ): Promise<EsiCanonicalLoad<Data>>
 }
 
+interface EsiCachedExecutionResource<Data> extends EsiExecutionResource<Data> {
+  cacheSchema: OperationSchema<Data>
+}
+
 interface DirectInternalEsiResource<Data> {
   operation: EsiOperation
   inputs: Readonly<Record<string, unknown>>
+  cacheSchema: OperationSchema<Data>
   representationName?: string
   authorization?: EsiCacheAuthorization
   resourceRevisionPrincipal?: string
@@ -118,6 +132,7 @@ interface DirectInternalEsiResource<Data> {
 interface LazyInternalEsiResource<Data> {
   operation: EsiOperation
   inputs: Readonly<Record<string, unknown>>
+  cacheSchema: OperationSchema<Data>
   representationName?: string
   authorization: EsiCacheAuthorization
   resourceRevisionPrincipal?: string
@@ -132,6 +147,10 @@ interface LazyInternalEsiResource<Data> {
 type InternalEsiResource<Data> = DirectInternalEsiResource<Data> | LazyInternalEsiResource<Data>
 
 type ResolvedInternalEsiResource<Data> = DirectInternalEsiResource<Data>
+type ResolvedEsiLoadResource<Data> = Pick<
+  ResolvedInternalEsiResource<Data>,
+  'operation' | 'inputs' | 'signal' | 'load'
+>
 
 /**
  * Which shared dependencies this request may still use. Coordination loss revokes the distributed
@@ -234,7 +253,7 @@ class EsiExecutionRuntimeImplementation {
     WireResult,
     Result,
   >(
-    representation: EsiRepresentation<
+    representation: EsiReadRepresentation<
       Authorization,
       Operation,
       Input,
@@ -256,9 +275,10 @@ class EsiExecutionRuntimeImplementation {
     )
     const request = representation.encodeRequest(input)
     assertNoCallerEsiRevalidationHeaders(request)
-    const resource: EsiExecutionResource<Result> = {
+    const resource: EsiCachedExecutionResource<Result> = {
       operation: representation.operation,
       inputs: request,
+      cacheSchema: representation.cacheSchema,
       signal,
       load: (authorization, revalidation) =>
         this.#dispatchRepresentation(
@@ -363,6 +383,7 @@ class EsiExecutionRuntimeImplementation {
           this.#get({
             operation: request.operation,
             inputs,
+            cacheSchema: definition.descriptor.responseSchema,
             signal: request.signal,
             load: (revalidation) =>
               this.#dispatchPlatformOperation(
@@ -390,6 +411,7 @@ class EsiExecutionRuntimeImplementation {
           {
             operation: request.operation,
             inputs,
+            cacheSchema: definition.descriptor.responseSchema,
             signal: request.signal,
             load: (authority, revalidation) => {
               if (!authority) throw new Error('Character ESI authorization is required')
@@ -633,7 +655,7 @@ class EsiExecutionRuntimeImplementation {
   }
 
   async #executeCharacter<Data>(
-    resource: EsiExecutionResource<Data>,
+    resource: EsiCachedExecutionResource<Data>,
     representationName: string,
     subjectLifecycleId: string,
   ) {
@@ -757,7 +779,7 @@ class EsiExecutionRuntimeImplementation {
   }
 
   async #getCharacterAuthorized<Data>(
-    resource: EsiExecutionResource<Data>,
+    resource: EsiCachedExecutionResource<Data>,
     authorization: CharacterEsiAuthorizationResolver,
     cacheAuthorization = authorization.cacheAuthorization,
     representationName?: string,
@@ -767,6 +789,7 @@ class EsiExecutionRuntimeImplementation {
     const result = await this.#get({
       operation: resource.operation,
       inputs: resource.inputs,
+      cacheSchema: resource.cacheSchema,
       representationName,
       authorization: cacheAuthorization,
       resourceRevisionPrincipal: authorization.transportPrincipal,
@@ -1033,7 +1056,7 @@ class EsiExecutionRuntimeImplementation {
   }
 
   async #loadWithRetry<Data>(
-    resource: ResolvedInternalEsiResource<Data>,
+    resource: ResolvedEsiLoadResource<Data>,
     revalidation: EsiRevalidation,
     stale: EsiCacheEnvelope<Data> | undefined,
     policy: EsiOperationContract,
@@ -1101,6 +1124,7 @@ class EsiExecutionRuntimeImplementation {
     return {
       operation: resource.operation,
       inputs: resource.inputs,
+      cacheSchema: resource.cacheSchema,
       representationName: resource.representationName,
       authorization,
       signal: resource.signal,
@@ -1236,7 +1260,7 @@ class EsiExecutionRuntimeImplementation {
   }
 
   #readL1<Data>(context: EsiRequestContext<Data>) {
-    const envelope = this.state.l1.get<Data>(context.key)
+    const envelope = this.state.l1.get<unknown>(context.key)
     if (!envelope) return undefined
     if (
       !isCompatibleEnvelope(envelope, context) ||
@@ -1245,7 +1269,13 @@ class EsiExecutionRuntimeImplementation {
       this.state.l1.delete(context.key)
       return undefined
     }
-    return envelope
+    const validated = validateEnvelopeData(envelope, context.resource.cacheSchema)
+    if (!validated.success) {
+      recordEsiCacheEnvelopeRejection(validated)
+      this.state.l1.delete(context.key)
+      return undefined
+    }
+    return validated.envelope
   }
 
   async #readL2<Data>(context: EsiRequestContext<Data>) {
@@ -1256,7 +1286,7 @@ class EsiExecutionRuntimeImplementation {
       ])
       context.resource.signal?.throwIfAborted()
       if (!serialized || committedFence === undefined) return undefined
-      const parsed = parseEnvelope<Data>(serialized)
+      const parsed = parseEnvelope(serialized, context.resource.cacheSchema)
       if (!parsed.success) {
         recordEsiCacheEnvelopeRejection(parsed)
         return undefined

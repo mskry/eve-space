@@ -3,6 +3,7 @@ import type {
   GetCharactersCharacterIdLocationResponse,
   GetCharactersCharacterIdShipResponse,
 } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import {
   combineEsiReadResultMetadata,
   createCharacterEsiRead,
@@ -18,10 +19,17 @@ interface CharacterLocationSnapshot {
   structureId?: number
 }
 
+const characterLocationCacheSchema = z.object({
+  solarSystemId: z.number(),
+  stationId: z.number().optional(),
+  structureId: z.number().optional(),
+})
+
 const characterLocationRead = createCharacterEsiRead({
   operation: 'location',
   name: 'character-location-core',
   descriptor: operationRegistry.GetCharactersCharacterIdLocation.transport,
+  cacheSchema: characterLocationCacheSchema,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
@@ -33,10 +41,14 @@ interface CharacterShipSnapshot {
   name: string
 }
 
+const characterShipCacheSchema = z.object({ typeId: z.number(), name: z.string() })
+const universeTypeCacheSchema = z.object({ name: z.string() })
+
 const characterShipRead = createCharacterEsiRead({
   operation: 'ship',
   name: 'character-ship-core',
   descriptor: operationRegistry.GetCharactersCharacterIdShip.transport,
+  cacheSchema: characterShipCacheSchema,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
@@ -47,6 +59,7 @@ const universeTypeRead = createPublicEsiRead({
   operation: 'universe-type',
   name: 'universe-type-core',
   descriptor: operationRegistry.GetUniverseTypesTypeId.transport,
+  cacheSchema: universeTypeCacheSchema,
   encodeRequest: (input: { typeId: number }) => ({ path: { type_id: input.typeId } }),
   map: (response) => ({ name: response.data.name }),
 })

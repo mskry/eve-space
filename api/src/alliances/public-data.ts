@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetAlliancesAllianceIdResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 
 export interface PublicAllianceResult {
@@ -8,10 +9,17 @@ export interface PublicAllianceResult {
   executorCorporationId: number | null
 }
 
+const publicAllianceCacheSchema = z.object({
+  name: z.string(),
+  ticker: z.string(),
+  executorCorporationId: z.number().nullable(),
+})
+
 const publicAllianceRead = createPublicEsiRead({
   operation: 'public-alliance',
   name: 'public-alliance-core',
   descriptor: operationRegistry.GetAlliancesAllianceId.transport,
+  cacheSchema: publicAllianceCacheSchema,
   encodeRequest: (input: { allianceId: number }) => ({
     path: { alliance_id: input.allianceId },
   }),

@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdAttributesResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
@@ -11,10 +12,22 @@ interface CharacterAttributesRepresentationInput {
   subjectLifecycleId: string
 }
 
+const characterAttributesCacheSchema = z.object({
+  charisma: z.number(),
+  intelligence: z.number(),
+  memory: z.number(),
+  perception: z.number(),
+  willpower: z.number(),
+  bonusRemaps: z.number(),
+  accruedRemapCooldownDate: z.string().nullable(),
+  lastRemapDate: z.string().nullable(),
+})
+
 const characterAttributesRead = createCharacterEsiRead({
   operation: 'attributes',
   name: 'character-attributes-core',
   descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
+  cacheSchema: characterAttributesCacheSchema,
   encodeRequest: (input: CharacterAttributesRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),

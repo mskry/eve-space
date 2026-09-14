@@ -1362,6 +1362,7 @@ describe('registered representation mapping', () => {
       if (!caller) throw new Error(`Missing registered ESI caller ${fixture.name}`)
 
       const result = await caller.execute(fixture.input)
+      expect(cacheSchemaAcceptsResult(caller, result, fixture.name)).toBe(true)
 
       const comparableResult =
         caller.execution === 'mutation'
@@ -1378,7 +1379,40 @@ describe('registered representation mapping', () => {
       await runtime.close()
     },
   )
+
+  test('rejects an unknown wallet journal reference type', () => {
+    const schema = gatewayMocks.callables.get('wallet-journal-core')?.cacheSchema
+    if (!schema) throw new Error('Missing wallet journal cache schema')
+
+    expect(
+      schema.safeParse({
+        entries: [
+          {
+            journalId: 40,
+            date: '2026-01-01T00:00:00Z',
+            amount: null,
+            balance: null,
+            referenceType: 'not-a-wallet-reference-type',
+            description: '',
+            reason: null,
+            taxAmount: null,
+            context: null,
+          },
+        ],
+        page: 1,
+        totalPages: 1,
+      }).success,
+    ).toBe(false)
+  })
 })
+
+function cacheSchemaAcceptsResult(caller: CapturedEsiCallable, result: unknown, name: string) {
+  if (caller.execution === 'mutation') return true
+  if (!caller.cacheSchema) throw new Error(`Missing cache schema for ${name}`)
+  if (typeof result !== 'object' || result === null || !('data' in result))
+    throw new Error(`Missing read result data for ${name}`)
+  return caller.cacheSchema.safeParse(result.data).success
+}
 
 function marketOrder() {
   return {

@@ -4,6 +4,7 @@ import type {
   GetCharactersCharacterIdImplantsResponse,
 } from '@evespace/esi-client/types'
 import { and, eq, inArray } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../db/client.js'
 import { sdeTypeDogmaAttributes, sdeTypes } from '../db/schema.js'
 import { isPositiveSafeInteger } from '../type-guards.js'
@@ -28,10 +29,35 @@ interface CharacterCloneStateRepresentationInput {
   subjectLifecycleId: string
 }
 
+const cloneLocationTypeCacheSchema = z.enum(['station', 'structure'])
+const characterClonesCacheSchema = z.object({
+  homeLocation: z
+    .object({
+      locationId: z.number().nullable(),
+      locationType: cloneLocationTypeCacheSchema.nullable(),
+    })
+    .nullable(),
+  jumpClones: z.array(
+    z.object({
+      jumpCloneId: z.number(),
+      name: z.string().nullable(),
+      location: z.object({
+        locationId: z.number(),
+        locationType: cloneLocationTypeCacheSchema,
+      }),
+      implantTypeIds: z.array(z.number()),
+    }),
+  ),
+  lastCloneJumpAt: z.string().nullable(),
+  lastStationChangeAt: z.string().nullable(),
+})
+const characterImplantsCacheSchema = z.object({ implantTypeIds: z.array(z.number()) })
+
 const characterClonesRead = createCharacterEsiRead({
   operation: 'character-clones',
   name: 'character-clones-core',
   descriptor: operationRegistry.GetCharactersCharacterIdClones.transport,
+  cacheSchema: characterClonesCacheSchema,
   encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -42,6 +68,7 @@ const characterImplantsRead = createCharacterEsiRead({
   operation: 'character-implants',
   name: 'character-implants-core',
   descriptor: operationRegistry.GetCharactersCharacterIdImplants.transport,
+  cacheSchema: characterImplantsCacheSchema,
   encodeRequest: (input: CharacterCloneStateRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
