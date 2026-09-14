@@ -21,6 +21,13 @@ export const sdeBuilds = pgTable('sde_builds', {
   ingestVersion: integer('ingest_version').default(1).notNull(),
 })
 
+export const sdeProjectionState = pgTable('sde_projection_state', {
+  singleton: boolean().default(true).primaryKey().notNull(),
+  activeBuildNumber: bigint('active_build_number', { mode: 'number' }).references(
+    () => sdeBuilds.buildNumber,
+  ),
+})
+
 export const sdeSolarSystems = pgTable('sde_solar_systems', {
   solarSystemId: bigint('solar_system_id', { mode: 'number' }).primaryKey().notNull(),
   name: text().notNull(),

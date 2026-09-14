@@ -1,6 +1,8 @@
 use crate::db::{self, BuildProjection};
 use crate::feed::{LatestBuild, OfficialSdeSource, SdeSource};
-use crate::projection::{INGEST_PROJECTION_VERSION, IngestProgress, IngestReport, import_archive};
+use crate::projection::{
+    INGEST_PROJECTION_VERSION, IngestProgress, IngestReport, PublicationOutcome, import_archive,
+};
 use anyhow::Result;
 use std::path::Path;
 use std::time::Duration;
@@ -42,16 +44,21 @@ impl SdeIngestor {
         };
         let current = self.store.latest_projection()?;
         if !db::needs_ingest(current, projection.build_number, projection.ingest_version) {
-            return Ok(IngestOutcome::Unchanged { projection });
+            return Ok(IngestOutcome::Unchanged {
+                projection: current.unwrap_or(projection),
+            });
         }
 
         self.progress.ingest_required(current, projection);
         let archive = self.source.acquire_archive(latest.build_number)?;
-        let report = self
+        let outcome = self
             .store
             .import_archive(&archive, &latest, self.progress.as_mut())?;
         self.source.release_archive(&archive);
-        Ok(IngestOutcome::Imported { projection, report })
+        Ok(match outcome {
+            PublicationOutcome::Published(report) => IngestOutcome::Imported { projection, report },
+            PublicationOutcome::Unchanged(projection) => IngestOutcome::Unchanged { projection },
+        })
     }
 }
 
@@ -62,7 +69,7 @@ trait ProjectionStore {
         archive: &Path,
         build: &LatestBuild,
         progress: &mut dyn IngestProgress,
-    ) -> Result<IngestReport>;
+    ) -> Result<PublicationOutcome>;
 }
 
 struct PostgresProjectionStore {
@@ -79,7 +86,7 @@ impl ProjectionStore for PostgresProjectionStore {
         archive: &Path,
         build: &LatestBuild,
         progress: &mut dyn IngestProgress,
-    ) -> Result<IngestReport> {
+    ) -> Result<PublicationOutcome> {
         import_archive(
             &mut self.client,
             archive,
@@ -163,7 +170,7 @@ mod tests {
 
     struct FixtureStore {
         current: Option<BuildProjection>,
-        report: Option<Result<IngestReport>>,
+        publication: Option<Result<PublicationOutcome>>,
         imported: Rc<RefCell<Vec<PathBuf>>>,
     }
 
@@ -177,9 +184,9 @@ mod tests {
             archive: &Path,
             _build: &LatestBuild,
             _progress: &mut dyn IngestProgress,
-        ) -> Result<IngestReport> {
+        ) -> Result<PublicationOutcome> {
             self.imported.borrow_mut().push(archive.to_owned());
-            self.report.take().expect("fixture import result")
+            self.publication.take().expect("fixture import result")
         }
     }
 
@@ -202,7 +209,7 @@ mod tests {
         let imported = Rc::new(RefCell::new(Vec::new()));
         let mut ingestor = fixture_ingestor(
             Some(projection),
-            Ok(empty_report()),
+            Ok(PublicationOutcome::Published(empty_report())),
             source_state.clone(),
             imported.clone(),
         );
@@ -234,7 +241,7 @@ mod tests {
                 build_number: 1234,
                 ingest_version: INGEST_PROJECTION_VERSION - 1,
             }),
-            Ok(report.clone()),
+            Ok(PublicationOutcome::Published(report.clone())),
             source_state.clone(),
             imported.clone(),
         );
@@ -268,9 +275,59 @@ mod tests {
         assert!(source_state.borrow().released.is_empty());
     }
 
+    #[test]
+    fn newer_active_projection_skips_archive_acquisition() {
+        let active = BuildProjection {
+            build_number: 1235,
+            ingest_version: INGEST_PROJECTION_VERSION,
+        };
+        let source_state = Rc::new(RefCell::new(SourceState::default()));
+        let imported = Rc::new(RefCell::new(Vec::new()));
+        let mut ingestor = fixture_ingestor(
+            Some(active),
+            Ok(PublicationOutcome::Published(empty_report())),
+            source_state.clone(),
+            imported.clone(),
+        );
+
+        assert_eq!(
+            ingestor.run().unwrap(),
+            IngestOutcome::Unchanged { projection: active }
+        );
+        assert!(source_state.borrow().acquired.is_empty());
+        assert!(imported.borrow().is_empty());
+    }
+
+    #[test]
+    fn lost_publication_race_releases_archive_and_reports_the_winner() {
+        let active = BuildProjection {
+            build_number: 1235,
+            ingest_version: INGEST_PROJECTION_VERSION,
+        };
+        let source_state = Rc::new(RefCell::new(SourceState::default()));
+        let imported = Rc::new(RefCell::new(Vec::new()));
+        let mut ingestor = fixture_ingestor(
+            None,
+            Ok(PublicationOutcome::Unchanged(active)),
+            source_state.clone(),
+            imported.clone(),
+        );
+
+        assert_eq!(
+            ingestor.run().unwrap(),
+            IngestOutcome::Unchanged { projection: active }
+        );
+        assert_eq!(source_state.borrow().acquired, vec![1234]);
+        assert_eq!(
+            source_state.borrow().released,
+            vec![PathBuf::from("fixture.zip")]
+        );
+        assert_eq!(*imported.borrow(), vec![PathBuf::from("fixture.zip")]);
+    }
+
     fn fixture_ingestor(
         current: Option<BuildProjection>,
-        report: Result<IngestReport>,
+        publication: Result<PublicationOutcome>,
         source_state: Rc<RefCell<SourceState>>,
         imported: Rc<RefCell<Vec<PathBuf>>>,
     ) -> SdeIngestor {
@@ -285,7 +342,7 @@ mod tests {
             }),
             store: Box::new(FixtureStore {
                 current,
-                report: Some(report),
+                publication: Some(publication),
                 imported,
             }),
             progress: Box::new(SilentProgress),

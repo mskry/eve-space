@@ -44,15 +44,15 @@ describe('core migration manifest', () => {
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '044_next.sql', sha256: migrationSha256('select 1;') },
+        { name: '045_next.sql', sha256: migrationSha256('select 1;') },
       ]),
     ).toThrow('match the accepted frozen inventory')
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '041_reused.sql', sha256: migrationSha256('select 1;') },
+        { name: '044_reused.sql', sha256: migrationSha256('select 1;') },
       ]),
-    ).toThrow('append a unique sequence after 43')
+    ).toThrow('append a unique sequence after 44')
   })
 })
 

@@ -50,7 +50,9 @@ export function loadPublishedTypeGroupsProduct(
     new CoreDataProductUnavailableError('Published type-group database operation timed out'),
     async (transaction, signal) => {
       await executeUniverseQuery(
-        transaction`lock table sde_builds, sde_types, sde_groups in access share mode`,
+        transaction`
+          lock table sde_projection_state, sde_builds, sde_types, sde_groups in access share mode
+        `,
         signal,
       )
       const revision = await selectLatestRevision(transaction, signal)
@@ -70,12 +72,12 @@ async function selectLatestRevision(
   const [row] = await executeUniverseQuery(
     transaction<RevisionRow[]>`
       select
-        build_number::text as build_number,
-        ingest_version,
-        ingested_at::text as ingested_at
-      from sde_builds
-      order by ingested_at desc, build_number desc
-      limit 1
+        builds.build_number::text as build_number,
+        builds.ingest_version,
+        builds.ingested_at::text as ingested_at
+      from sde_projection_state as state
+      inner join sde_builds as builds on builds.build_number = state.active_build_number
+      where state.singleton = true
     `,
     signal,
   )

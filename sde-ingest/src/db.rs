@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
-use postgres::{Client, NoTls, Transaction};
+use anyhow::{Context, Result, ensure};
+use postgres::{Client, GenericClient, NoTls, Transaction};
 use std::io::Write;
 use time::OffsetDateTime;
 
@@ -10,7 +10,15 @@ const RECORD_BUILD_SQL: &str =
        ingest_version = excluded.ingest_version,
        ingested_at = now()";
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+const ACTIVATE_BUILD_SQL: &str =
+    "update sde_projection_state set active_build_number = $1 where singleton = true";
+
+const ACTIVE_PROJECTION_SQL: &str = "select builds.build_number, builds.ingest_version
+     from sde_projection_state as state
+     left join sde_builds as builds on builds.build_number = state.active_build_number
+     where state.singleton = true";
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct BuildProjection {
     pub build_number: i64,
     pub ingest_version: i32,
@@ -21,19 +29,20 @@ pub fn connect(database_url: &str) -> Result<Client> {
 }
 
 pub fn latest_build_projection(client: &mut Client) -> Result<Option<BuildProjection>> {
-    let row = client
-        .query_opt(
-            "select build_number, ingest_version
-             from sde_builds
-             order by build_number desc
-             limit 1",
+    active_projection(client)
+}
+
+pub fn lock_active_projection(transaction: &mut Transaction) -> Result<Option<BuildProjection>> {
+    transaction
+        .query_one(
+            "select singleton
+             from sde_projection_state
+             where singleton = true
+             for update",
             &[],
         )
-        .context("reading latest ingested SDE build")?;
-    Ok(row.map(|row| BuildProjection {
-        build_number: row.get("build_number"),
-        ingest_version: row.get("ingest_version"),
-    }))
+        .context("acquiring SDE publication ownership")?;
+    active_projection(transaction)
 }
 
 pub fn needs_ingest(
@@ -41,14 +50,14 @@ pub fn needs_ingest(
     build_number: i64,
     ingest_version: i32,
 ) -> bool {
-    current
-        != Some(BuildProjection {
-            build_number,
-            ingest_version,
-        })
+    let candidate = BuildProjection {
+        build_number,
+        ingest_version,
+    };
+    current.is_none_or(|current| candidate > current)
 }
 
-pub fn record_build(
+pub fn record_publication(
     client: &mut Transaction,
     build_number: i64,
     release_date: OffsetDateTime,
@@ -60,7 +69,27 @@ pub fn record_build(
             &[&build_number, &release_date, &ingest_version],
         )
         .context("recording ingested SDE build")?;
+    let updated = client
+        .execute(ACTIVATE_BUILD_SQL, &[&build_number])
+        .context("activating ingested SDE build")?;
+    ensure!(updated == 1, "SDE projection state row is missing");
     Ok(())
+}
+
+fn active_projection(client: &mut impl GenericClient) -> Result<Option<BuildProjection>> {
+    let row = client
+        .query_one(ACTIVE_PROJECTION_SQL, &[])
+        .context("reading active SDE projection")?;
+    let Some(build_number) = row.get::<_, Option<i64>>("build_number") else {
+        return Ok(None);
+    };
+    let ingest_version = row
+        .get::<_, Option<i32>>("ingest_version")
+        .context("active SDE build is missing its projection version")?;
+    Ok(Some(BuildProjection {
+        build_number,
+        ingest_version,
+    }))
 }
 
 pub fn truncate_all(client: &mut Transaction, tables: &[&str]) -> Result<()> {
@@ -139,7 +168,9 @@ pub fn boolean(value: bool) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{BuildProjection, RECORD_BUILD_SQL, needs_ingest, opt_text, text};
+    use super::{
+        ACTIVATE_BUILD_SQL, BuildProjection, RECORD_BUILD_SQL, needs_ingest, opt_text, text,
+    };
 
     #[test]
     fn copy_text_escapes_postgres_control_characters_and_nulls() {
@@ -152,13 +183,15 @@ mod tests {
     }
 
     #[test]
-    fn ingest_decision_requires_both_build_and_projection_version_to_match() {
+    fn ingest_decision_only_accepts_a_newer_projection() {
         let current = BuildProjection {
             build_number: 1234,
             ingest_version: 2,
         };
 
         assert!(!needs_ingest(Some(current), 1234, 2));
+        assert!(!needs_ingest(Some(current), 1234, 1));
+        assert!(!needs_ingest(Some(current), 1233, 3));
         assert!(needs_ingest(Some(current), 1235, 2));
         assert!(needs_ingest(Some(current), 1234, 3));
         assert!(needs_ingest(None, 1234, 2));
@@ -168,5 +201,6 @@ mod tests {
     fn build_record_upsert_updates_the_completed_projection() {
         assert!(RECORD_BUILD_SQL.contains("ingest_version = excluded.ingest_version"));
         assert!(RECORD_BUILD_SQL.contains("ingested_at = now()"));
+        assert!(ACTIVATE_BUILD_SQL.contains("active_build_number = $1"));
     }
 }
