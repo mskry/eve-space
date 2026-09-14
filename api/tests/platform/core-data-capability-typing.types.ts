@@ -5,20 +5,23 @@ import type {
   PlatformResourceImplementationForProducts,
   PlatformResourceOperationImplementation,
   PlatformResourceCollectionContext,
-  PlatformModuleResourceTransaction,
   PlatformCharacterResourceSubject,
 } from '@eve-space/platform-module-contract'
 
+interface RoutePersistence {
+  readSnapshot(): Promise<unknown>
+}
+
 declare const routeWithProduct: PlatformModuleRouteCapabilities<
-  PlatformModuleResourceTransaction,
+  RoutePersistence,
   readonly ['published-type-groups']
 >
-declare const routeWithoutProducts: PlatformModuleRouteCapabilities<PlatformModuleResourceTransaction>
+declare const routeWithoutProducts: PlatformModuleRouteCapabilities<RoutePersistence>
 declare const resourceWithProduct: PlatformResourceCollectionContext<
   import('@eve-space/platform-module-contract').PlatformCharacterResourceSubject,
   readonly ['published-type-groups']
 >
-declare const providerWithoutProducts: PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction>
+declare const providerWithoutProducts: PlatformActivityProviderCapabilities<RoutePersistence>
 declare const materialization: PlatformModuleResourceMaterializationCapabilities
 declare const resourceImplementationWithProduct: PlatformResourceOperationImplementation<
   'operation',
@@ -31,6 +34,7 @@ declare const resourceImplementationWithProduct: PlatformResourceOperationImplem
 >
 
 void routeWithProduct.coreData.publishedTypeGroups({ typeIds: [34] })
+void routeWithProduct.persistence.readSnapshot()
 void resourceWithProduct.capabilities.coreData.publishedTypeGroups({ typeIds: [34] })
 
 // @ts-expect-error contributions that omit products receive no product methods

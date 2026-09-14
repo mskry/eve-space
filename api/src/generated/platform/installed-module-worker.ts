@@ -27,6 +27,10 @@ export const installedModuleResources = [
     subjectKind: 'deployment',
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-deployment' },
+    persistence: {
+      projection: [{ operationId: 'read-activity-checkpoint' }],
+      materialization: [{ operationId: 'materialize-activity-observation' }],
+    } as const,
     implementation: module0Resource0 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource0,
       readonly []
@@ -41,6 +45,10 @@ export const installedModuleResources = [
     subjectKind: 'deployment',
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-deployment' },
+    persistence: {
+      projection: [{ operationId: 'read-activity-checkpoint' }],
+      materialization: [{ operationId: 'materialize-activity-observation' }],
+    } as const,
     implementation: module0Resource1 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource1,
       readonly []
@@ -54,6 +62,10 @@ export const installedModuleResources = [
     subjectKind: 'corporation',
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-managed-corporation-source' },
+    persistence: {
+      projection: [{ operationId: 'read-activity-checkpoint' }],
+      materialization: [{ operationId: 'materialize-activity-observation' }],
+    } as const,
     implementation: module0Resource2 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource2,
       readonly []
@@ -68,6 +80,10 @@ export const installedModuleResources = [
     subjectKind: 'corporation',
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-managed-corporation-source' },
+    persistence: {
+      projection: [{ operationId: 'read-activity-checkpoint' }],
+      materialization: [{ operationId: 'materialize-activity-observation' }],
+    } as const,
     implementation: module0Resource3 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource3,
       readonly []
@@ -82,6 +98,10 @@ export const installedModuleResources = [
     subjectKind: 'character',
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-owned-character' },
+    persistence: {
+      projection: [{ operationId: 'read-activity-checkpoint' }],
+      materialization: [{ operationId: 'materialize-activity-observation' }],
+    } as const,
     implementation: module0Resource4 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource4,
       readonly []
@@ -96,6 +116,10 @@ export const installedModuleResources = [
     subjectKind: 'character',
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-owned-character' },
+    persistence: {
+      projection: [{ operationId: 'read-activity-checkpoint' }],
+      materialization: [{ operationId: 'materialize-activity-observation' }],
+    } as const,
     implementation: module0Resource5 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource5,
       readonly []
@@ -110,6 +134,10 @@ export const installedModuleResources = [
     subjectKind: 'character',
     materializationIntervalSeconds: 60,
     eligibility: { kind: 'current-owned-character' },
+    persistence: {
+      projection: [{ operationId: 'read-activity-checkpoint' }],
+      materialization: [{ operationId: 'materialize-activity-observation' }],
+    } as const,
     implementation: module0Resource6 satisfies PlatformResourceImplementationForProducts<
       typeof module0Resource6,
       readonly []

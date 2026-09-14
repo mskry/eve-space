@@ -1,13 +1,12 @@
 import type {
   PlatformAuthenticatedSessionRouteEnv,
-  PlatformModuleResourceTransaction,
-  PlatformModuleRouteCapabilities,
   PlatformOwnedCharacterRouteEnv,
 } from '@eve-space/platform-module-contract'
 import { zValidator } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { readActivitySnapshots } from './snapshot-reads.js'
+import type { ActivitySnapshotPersistence } from './persistence.js'
 
 const activityParams = z.object({
   kind: z.enum(['project', 'job', 'campaign']),
@@ -25,9 +24,11 @@ const characterResourceIds = {
   campaign: 'character-campaigns',
 } as const
 
-export function activityRoutes(
-  capabilities: PlatformModuleRouteCapabilities<PlatformModuleResourceTransaction>,
-) {
+interface ActivityRouteCapabilities {
+  readonly persistence: ActivitySnapshotPersistence
+}
+
+export function activityRoutes(capabilities: ActivityRouteCapabilities) {
   return new Hono<PlatformAuthenticatedSessionRouteEnv>().get(
     '/:kind/:activityId',
     zValidator('param', activityParams),
@@ -77,9 +78,7 @@ export function activityRoutes(
   )
 }
 
-export function participationRoutes(
-  capabilities: PlatformModuleRouteCapabilities<PlatformModuleResourceTransaction>,
-) {
+export function participationRoutes(capabilities: ActivityRouteCapabilities) {
   return new Hono<PlatformOwnedCharacterRouteEnv>().get(
     '/:kind/:activityId',
     zValidator('param', activityParams),

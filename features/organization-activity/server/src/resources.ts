@@ -3,7 +3,11 @@ import type {
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract'
 import { collectActivityResource } from './collection.js'
-import { materializeActivityResource } from './collection-store.js'
+import {
+  materializeActivityResource,
+  type ResourceCollectionContext,
+  type ResourceMaterializationContext,
+} from './collection-store.js'
 import type { ActivityObservation } from './collection-types.js'
 
 export const campaignsResource = {
@@ -17,10 +21,11 @@ export const campaignsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'campaigns', rootOperation: 'campaign-list', paginated: false },
-      context,
+      context as unknown as ResourceCollectionContext,
     )
   },
-  materialize: materializeActivityResource,
+  materialize: (context) =>
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -41,10 +46,11 @@ export const publicJobsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'public-jobs', rootOperation: 'job-list', paginated: true },
-      context,
+      context as unknown as ResourceCollectionContext,
     )
   },
-  materialize: materializeActivityResource,
+  materialize: (context) =>
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -65,10 +71,11 @@ export const corporationJobsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'corporation-jobs', rootOperation: 'corporation-jobs', paginated: true },
-      context,
+      context as unknown as ResourceCollectionContext,
     )
   },
-  materialize: materializeActivityResource,
+  materialize: (context) =>
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -89,10 +96,11 @@ export const corporationProjectsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'corporation-projects', rootOperation: 'project-list', paginated: true },
-      context,
+      context as unknown as ResourceCollectionContext,
     )
   },
-  materialize: materializeActivityResource,
+  materialize: (context) =>
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -113,10 +121,11 @@ export const characterJobsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'character-jobs', rootOperation: 'character-jobs', paginated: false },
-      context,
+      context as unknown as ResourceCollectionContext,
     )
   },
-  materialize: materializeActivityResource,
+  materialize: (context) =>
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -137,10 +146,11 @@ export const characterCampaignsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'character-campaigns', rootOperation: 'character-objectives', paginated: true },
-      context,
+      context as unknown as ResourceCollectionContext,
     )
   },
-  materialize: materializeActivityResource,
+  materialize: (context) =>
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,
@@ -161,10 +171,11 @@ export const characterProjectsResource = {
   collect(context) {
     return collectActivityResource(
       { id: 'character-projects', rootOperation: 'project-list', paginated: true },
-      context,
+      context as unknown as ResourceCollectionContext,
     )
   },
-  materialize: materializeActivityResource,
+  materialize: (context) =>
+    materializeActivityResource(context as unknown as ResourceMaterializationContext),
 } satisfies PlatformResourceOperationImplementation<
   string,
   unknown,

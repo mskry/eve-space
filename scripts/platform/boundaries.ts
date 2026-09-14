@@ -18,6 +18,7 @@ const modulesByTier = {
     'core-read-capabilities',
     'core-resource-materialization',
     'module-logging',
+    'module-persistence-capabilities',
     'module-route-capabilities',
     'module-settings',
     'resource-eligibility',

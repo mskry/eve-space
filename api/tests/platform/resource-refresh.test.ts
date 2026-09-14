@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   begin: vi.fn(),
-  createPersistence: vi.fn(),
+  createRoutinePersistence: vi.fn(),
   databaseTransaction: vi.fn(),
   execute: vi.fn(),
   loadState: vi.fn(),
@@ -20,8 +20,8 @@ vi.mock('../../src/db/client.js', () => ({
   db: { transaction: mocks.databaseTransaction },
   sql: { begin: mocks.begin },
 }))
-vi.mock('../../src/db/module-persistence.js', () => ({
-  createTransactionScopedModulePersistenceCapability: mocks.createPersistence,
+vi.mock('../../src/platform/module-persistence-capabilities.js', () => ({
+  createPlatformResourceMaterializationPersistence: mocks.createRoutinePersistence,
 }))
 vi.mock('../../src/organization/compliance.js', () => ({
   recomputeAllOrganizationAccountsInTransaction: mocks.recomputeAllAccounts,
@@ -75,7 +75,7 @@ describe('local resource observations', () => {
       nextEligibleAt: null,
     })
     mocks.recordSuccess.mockResolvedValue(undefined)
-    mocks.createPersistence.mockReturnValue(scopedPersistence())
+    mocks.createRoutinePersistence.mockReturnValue(scopedRoutinePersistence())
   })
 
   test('persists a partial checkpoint without announcing successful collection', async () => {
@@ -112,7 +112,7 @@ describe('local resource observations', () => {
     })
 
     expect(materialize).not.toHaveBeenCalled()
-    expect(mocks.createPersistence).not.toHaveBeenCalled()
+    expect(mocks.createRoutinePersistence).not.toHaveBeenCalled()
     expect(mocks.recordSuccess).toHaveBeenCalledOnce()
     expect(mocks.recordSuccess).toHaveBeenCalledWith(
       identity,
@@ -122,7 +122,7 @@ describe('local resource observations', () => {
     )
   })
 
-  test('passes complete worker-memory data to the existing materializer once', async () => {
+  test('passes complete worker-memory data to the generated materializer once', async () => {
     const materialize = vi.fn().mockResolvedValue(undefined)
 
     await applyInstalledResourceObservation({
@@ -132,7 +132,12 @@ describe('local resource observations', () => {
     })
 
     expect(materialize).toHaveBeenCalledOnce()
-    expect(mocks.createPersistence).toHaveBeenCalledWith(mocks.transaction, identity.moduleId)
+    expect(mocks.createRoutinePersistence).toHaveBeenCalledWith(
+      mocks.transaction,
+      identity.moduleId,
+      identity.resourceId,
+      undefined,
+    )
     expect(materialize).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { score: 10 },
@@ -144,29 +149,61 @@ describe('local resource observations', () => {
       'logger',
       'persistence',
     ])
+    expect(scopedRoutinePersistenceValue.close).toHaveBeenCalledOnce()
     expect(mocks.recordSuccess).toHaveBeenCalledOnce()
   })
 
-  test('refuses to record success when the module swallows its own persistence failure', async () => {
-    const failure = new Error('module write rejected')
+  test('provides only generated methods to declared resource materialization', async () => {
+    const controller = new AbortController()
     const materialize = vi.fn(async ({ capabilities }) => {
-      await capabilities.persistence
-        .transaction(async () => {
-          throw failure
-        })
-        .catch(() => undefined)
+      expect(capabilities.persistence).toBe(scopedRoutinePersistenceValue.persistence)
     })
-    mocks.createPersistence.mockReturnValue(scopedPersistence(failure))
+    const input = observation(materialize)
 
+    await applyInstalledResourceObservation({
+      ...input,
+      resource: declaredPersistenceResource(input.resource),
+      outcome: 'complete',
+      data: { score: 10 },
+      signal: controller.signal,
+    })
+
+    expect(mocks.createRoutinePersistence).toHaveBeenCalledWith(
+      mocks.transaction,
+      identity.moduleId,
+      identity.resourceId,
+      controller.signal,
+    )
+    expect(scopedRoutinePersistenceValue.close).toHaveBeenCalledOnce()
+    expect(mocks.recordSuccess).toHaveBeenCalledOnce()
+  })
+
+  test('does not record success for declared obsolete writes or caught operation failures', async () => {
+    const obsoleteInput = observation(vi.fn(async () => ({ outcome: 'obsolete' as const })))
+    await applyInstalledResourceObservation({
+      ...obsoleteInput,
+      resource: declaredPersistenceResource(obsoleteInput.resource),
+      outcome: 'complete',
+      data: { score: 10 },
+    })
+    expect(mocks.recordSuccess).not.toHaveBeenCalled()
+
+    const failure = new Error('bounded operation failure')
+    const caughtInput = observation(
+      vi.fn(async ({ capabilities }) => {
+        await capabilities.persistence.writeSnapshot().catch(() => undefined)
+      }),
+    )
+    scopedRoutinePersistenceValue.persistence.writeSnapshot.mockRejectedValueOnce(failure)
+    mocks.createRoutinePersistence.mockReturnValueOnce(scopedRoutinePersistence(failure))
     await expect(
       applyInstalledResourceObservation({
-        ...observation(materialize),
+        ...caughtInput,
+        resource: declaredPersistenceResource(caughtInput.resource),
         outcome: 'complete',
         data: { score: 10 },
       }),
     ).rejects.toBe(failure)
-
-    expect(materialize).toHaveBeenCalledOnce()
     expect(mocks.recordSuccess).not.toHaveBeenCalled()
   })
 
@@ -338,10 +375,25 @@ function observation(materialize: PlatformResourceOperationImplementation['mater
     validatedAt: '2026-08-26T14:58:00.000Z',
   }
 }
-function scopedPersistence(failure?: unknown) {
+const scopedRoutinePersistenceValue = {
+  persistence: { writeSnapshot: vi.fn().mockResolvedValue({ outcome: 'applied' }) },
+  close: vi.fn(),
+}
+
+function scopedRoutinePersistence(failure?: unknown) {
   return {
-    capability: { transaction: vi.fn(async (operation) => operation({ query: vi.fn() })) },
+    ...scopedRoutinePersistenceValue,
     suppressedFailure: () => (failure === undefined ? undefined : { error: failure }),
+  }
+}
+
+function declaredPersistenceResource<Resource extends object>(resource: Resource) {
+  return {
+    ...resource,
+    persistence: {
+      projection: [],
+      materialization: [{ operationId: 'write-snapshot' }],
+    },
   }
 }
 

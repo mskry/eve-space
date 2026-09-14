@@ -2,15 +2,14 @@ import type {
   PlatformCollectionStatus,
   PlatformCollectionStatusSubject,
   PlatformModuleCollectionStatusReads,
-  PlatformModulePersistence,
-  PlatformModuleResourceTransaction,
 } from '@eve-space/platform-module-contract'
 import type { ActivitySnapshot } from './snapshot.js'
 import type { ActivitySourceRead } from './activity-source.js'
+import type { ActivitySnapshotPersistence } from './persistence.js'
 
 export async function readActivitySnapshots(
   capabilities: {
-    readonly persistence: PlatformModulePersistence<PlatformModuleResourceTransaction>
+    readonly persistence: ActivitySnapshotPersistence
     readonly collectionStatus: PlatformModuleCollectionStatusReads
   },
   organizationVersion: number,
@@ -36,24 +35,14 @@ export async function readActivitySnapshots(
   const result = { resourceId, status, snapshots: [] as readonly ActivitySnapshot[] }
   if (!status.subjectLifecycleId || !canReadSnapshots(status, subject.kind === 'deployment'))
     return result
-  const rows = await capabilities.persistence.transaction((transaction) =>
-    transaction.query<{ snapshot: ActivitySnapshot }>(
-      `select snapshot from activity_snapshots
-     where resource_id = $1 and subject_lifecycle_id = $2 and organization_version = $3
-       and authorization_generation = $4
-       and validated_at >= now() - interval '1 hour'
-       and ($5::text is null or activity_id::text = $5 or snapshot->>'campaignId' = $5)
-     order by (activity_id::text = $5) desc, activity_id limit 100`,
-      [
-        resourceId,
-        status.subjectLifecycleId,
-        organizationVersion,
-        status.authorizationGeneration ?? -1,
-        activityId ?? null,
-      ],
-    ),
-  )
-  return { ...result, snapshots: rows.map(({ snapshot }) => snapshot) }
+  const snapshots = await capabilities.persistence.readActivitySnapshots({
+    resourceId,
+    subjectLifecycleId: status.subjectLifecycleId,
+    organizationVersion,
+    authorizationGeneration: status.authorizationGeneration ?? -1,
+    activityId: activityId ?? null,
+  })
+  return { ...result, snapshots }
 }
 
 function canReadSnapshots(status: PlatformCollectionStatus, isPublic: boolean) {

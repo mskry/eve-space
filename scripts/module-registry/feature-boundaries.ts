@@ -84,6 +84,7 @@ const nuxtRuntimeImports = new Set([
 const definitionCalls = new Set([
   'defineNuxtModule',
   'definePlatformExecutableEsiOperation',
+  'definePlatformPersistenceOperation',
   'definePlatformResourceOperation',
 ])
 
@@ -142,6 +143,56 @@ const forbiddenSdeIdentifiers = new Set([
   'sdedatasetrows',
   'sdegroups',
   'sdetypes',
+])
+
+const sqlStatementPrefixes = [
+  'alter function ',
+  'alter procedure ',
+  'alter role ',
+  'alter schema ',
+  'alter sequence ',
+  'alter table ',
+  'call ',
+  'create extension ',
+  'create function ',
+  'create index ',
+  'create procedure ',
+  'create role ',
+  'create schema ',
+  'create sequence ',
+  'create table ',
+  'create type ',
+  'delete from ',
+  'drop extension ',
+  'drop function ',
+  'drop index ',
+  'drop procedure ',
+  'drop role ',
+  'drop schema ',
+  'drop sequence ',
+  'drop table ',
+  'drop type ',
+  'grant ',
+  'insert into ',
+  'reset role',
+  'reset session authorization',
+  'revoke ',
+  'set role ',
+  'set session authorization ',
+  'truncate ',
+  'update ',
+  'with ',
+] as const
+
+const genericPersistenceMethods = new Set([
+  'call',
+  'dispatch',
+  'execute',
+  'invoke',
+  'query',
+  'run',
+  'transaction',
+  'unsafe',
 ])
 
 const coreDataProductReferences = new Set<string>([
@@ -310,7 +361,7 @@ async function installedFeatureBoundaryViolations(root: string) {
   return violations.flat().toSorted((left, right) => left.localeCompare(right))
 }
 
-async function manifestCompositionBoundaryViolations(
+export async function manifestCompositionBoundaryViolations(
   root: string,
   manifest: PlatformModuleManifest,
 ) {
@@ -338,7 +389,125 @@ async function manifestCompositionBoundaryViolations(
         `features/${manifest.id}/server: definition export ${contribution.exportName} must resolve to one local declaration`,
       )
   }
+  for (const operation of manifest.server.persistenceOperations)
+    validatePersistenceDefinitionExport(sources, manifest.id, operation.exportName, violations)
+  const declaredPersistenceDefinitions = new Set(
+    manifest.server.persistenceOperations.map(({ exportName }) => exportName),
+  )
+  for (const definition of findPersistenceDefinitionExports(sources))
+    if (!declaredPersistenceDefinitions.has(definition.exportName))
+      violations.push(
+        `${definition.path}: persistence definition export ${definition.exportName} is not declared by module ${manifest.id}`,
+      )
   return violations.toSorted((left, right) => left.localeCompare(right))
+}
+
+function findPersistenceDefinitionExports(sources: readonly FeatureBoundarySource[]) {
+  return sources.flatMap((source) =>
+    parseSourceFiles(source, []).flatMap((sourceFile) =>
+      sourceFile.statements.flatMap((statement) => {
+        if (!ts.isVariableStatement(statement)) return []
+        return statement.declarationList.declarations.flatMap((declaration) => {
+          if (
+            !ts.isIdentifier(declaration.name) ||
+            !isPersistenceDefinitionDeclaration(declaration)
+          )
+            return []
+          return [{ exportName: declaration.name.text, path: source.path }]
+        })
+      }),
+    ),
+  )
+}
+
+function validatePersistenceDefinitionExport(
+  sources: readonly FeatureBoundarySource[],
+  moduleId: string,
+  exportName: string,
+  violations: string[],
+) {
+  const matches = sources.flatMap((source) =>
+    parseSourceFiles(source, violations).flatMap((sourceFile) =>
+      findNamedDeclarations(sourceFile, exportName).map((declaration) => ({
+        declaration,
+        source,
+      })),
+    ),
+  )
+  if (matches.length !== 1) {
+    violations.push(
+      `features/${moduleId}/server: persistence definition export ${exportName} must resolve to one local declaration`,
+    )
+    return
+  }
+  const match = matches[0]!
+  if (!isPersistenceDefinitionDeclaration(match.declaration))
+    violations.push(
+      `${match.source.path}: persistence definition export ${exportName} must directly call definePlatformPersistenceOperation`,
+    )
+  if (!isPackageRootExport(sources, match.source, exportName))
+    violations.push(
+      `features/${moduleId}/server: persistence definition export ${exportName} must be exported from the package root`,
+    )
+}
+
+function isPersistenceDefinitionDeclaration(declaration: ts.Node) {
+  if (!ts.isVariableDeclaration(declaration) || !declaration.initializer) return false
+  const initializer = unwrapExpression(declaration.initializer)
+  return (
+    ts.isCallExpression(initializer) &&
+    identifierText(initializer.expression) === 'definePlatformPersistenceOperation'
+  )
+}
+
+function isPackageRootExport(
+  sources: readonly FeatureBoundarySource[],
+  definitionSource: FeatureBoundarySource,
+  exportName: string,
+) {
+  const locallyExported = parseSourceFiles(definitionSource, []).some((sourceFile) =>
+    findNamedDeclarations(sourceFile, exportName).some(isExportedDeclaration),
+  )
+  if (!locallyExported) return false
+  if (/\/server\/src\/index\.[cm]?[jt]sx?$/.test(definitionSource.path)) return true
+
+  const entry = sources.find((source) => /\/server\/src\/index\.[cm]?[jt]sx?$/.test(source.path))
+  if (!entry) return false
+  return parseSourceFiles(entry, []).some((sourceFile) =>
+    sourceFile.statements.some(
+      (statement) =>
+        ts.isExportDeclaration(statement) &&
+        statement.moduleSpecifier !== undefined &&
+        ts.isStringLiteral(statement.moduleSpecifier) &&
+        exportDeclarationMatchesSource(statement, entry.path, definitionSource.path, exportName),
+    ),
+  )
+}
+
+function isExportedDeclaration(declaration: ts.Node) {
+  const statement = ts.isVariableDeclaration(declaration) ? declaration.parent.parent : declaration
+  return hasModifier(statement, ts.SyntaxKind.ExportKeyword)
+}
+
+function exportDeclarationMatchesSource(
+  declaration: ts.ExportDeclaration,
+  entryPath: string,
+  definitionPath: string,
+  exportName: string,
+) {
+  const specifier = (declaration.moduleSpecifier as ts.StringLiteral).text
+  const target = resolve('/', dirname(entryPath), specifier)
+  if (sourceModuleIdentity(target) !== sourceModuleIdentity(resolve('/', definitionPath)))
+    return false
+  if (!declaration.exportClause) return true
+  if (!ts.isNamedExports(declaration.exportClause)) return false
+  return declaration.exportClause.elements.some(
+    (element) => (element.propertyName?.text ?? element.name.text) === exportName,
+  )
+}
+
+function sourceModuleIdentity(path: string) {
+  return path.replace(/\.(?:[cm]?[jt]sx?)$/, '')
 }
 
 function isNuxtSideEffectsDeclaration(sideEffects: unknown) {
@@ -754,6 +923,94 @@ function validateServerRuntimeBoundaries(
         violations.push(`${path}: feature server code must not construct network or worker clients`)
     }
   })
+  validateModulePersistenceBoundaries(path, sourceFile, violations)
+}
+
+function validateModulePersistenceBoundaries(
+  path: string,
+  sourceFile: ts.SourceFile,
+  violations: string[],
+) {
+  const persistenceNames = persistenceCapabilityNames(sourceFile)
+  let containsSql = false
+  let containsGenericDispatch = false
+  visit(sourceFile, (node) => {
+    if (isRuntimeSqlLiteral(node)) containsSql = true
+    if (ts.isCallExpression(node) && isGenericPersistenceCall(node.expression, persistenceNames))
+      containsGenericDispatch = true
+  })
+  if (containsSql)
+    violations.push(`${path}: feature server code must not contain runtime SQL statements`)
+  if (containsGenericDispatch)
+    violations.push(`${path}: feature server code must not use generic persistence dispatch`)
+}
+
+function persistenceCapabilityNames(sourceFile: ts.SourceFile) {
+  const names = new Set(['persistence'])
+  let changed = true
+  while (changed) {
+    changed = false
+    visit(sourceFile, (node) => {
+      if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name) || !node.initializer)
+        return
+      const initializer = unwrapExpression(node.initializer)
+      const aliasesPersistence =
+        (ts.isIdentifier(initializer) && names.has(initializer.text)) ||
+        (ts.isPropertyAccessExpression(initializer) && initializer.name.text === 'persistence')
+      if (aliasesPersistence && !names.has(node.name.text)) {
+        names.add(node.name.text)
+        changed = true
+      }
+    })
+  }
+  return names
+}
+
+function isGenericPersistenceCall(
+  expression: ts.LeftHandSideExpression,
+  persistenceNames: ReadonlySet<string>,
+) {
+  const target = unwrapExpression(expression)
+  if (ts.isPropertyAccessExpression(target))
+    return (
+      genericPersistenceMethods.has(target.name.text) &&
+      expressionReferencesPersistence(target.expression, persistenceNames)
+    )
+  if (!ts.isElementAccessExpression(target)) return false
+  return expressionReferencesPersistence(target.expression, persistenceNames)
+}
+
+function expressionReferencesPersistence(
+  expression: ts.Expression,
+  persistenceNames: ReadonlySet<string>,
+) {
+  const target = unwrapExpression(expression)
+  if (ts.isIdentifier(target)) return persistenceNames.has(target.text)
+  if (ts.isPropertyAccessExpression(target))
+    return (
+      target.name.text === 'persistence' ||
+      expressionReferencesPersistence(target.expression, persistenceNames)
+    )
+  if (ts.isElementAccessExpression(target))
+    return expressionReferencesPersistence(target.expression, persistenceNames)
+  return false
+}
+
+function isRuntimeSqlLiteral(node: ts.Node) {
+  if (ts.isTaggedTemplateExpression(node)) {
+    const tag = identifierText(node.tag)
+    if (tag === 'sql' || tag === 'query') return true
+  }
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+    return hasSqlStatementPrefix(node.text)
+  if (ts.isTemplateExpression(node)) return hasSqlStatementPrefix(node.head.text)
+  return false
+}
+
+function hasSqlStatementPrefix(value: string) {
+  const normalized = value.trimStart().toLowerCase()
+  if (normalized.startsWith('select ') && normalized.includes(' from ')) return true
+  return sqlStatementPrefixes.some((prefix) => normalized.startsWith(prefix))
 }
 
 function validateCoreDataBypasses(path: string, sourceFile: ts.SourceFile, violations: string[]) {
@@ -969,7 +1226,9 @@ function validateCompositionInitializers(
 ) {
   for (const declaration of statement.declarationList.declarations)
     if (declaration.initializer && !isPureCompositionExpression(declaration.initializer))
-      violations.push(`${path}: feature package entry or definition has an executable initializer`)
+      violations.push(
+        `${path}: feature package entry or definition ${declaration.name.getText()} has an executable initializer`,
+      )
 }
 
 function validateCompositionDefaultExport(

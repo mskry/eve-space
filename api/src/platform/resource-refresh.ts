@@ -4,6 +4,7 @@ import type {
   PlatformResourceSubject,
 } from '@eve-space/platform-module-contract'
 import { sql as drizzleSql } from 'drizzle-orm'
+import type postgres from 'postgres'
 import { db, sql } from '../db/client.js'
 import {
   characterLockKey,
@@ -11,8 +12,8 @@ import {
   resourceRefreshLockKey,
   resourceRefreshLockNamespace,
 } from '../db/locks.js'
-import { createTransactionScopedModulePersistenceCapability } from '../db/module-persistence.js'
 import { createPlatformModuleLogger } from './module-logging.js'
+import { createPlatformResourceMaterializationPersistence } from './module-persistence-capabilities.js'
 import { materializeCoreResourceObservation } from './core-resource-materialization.js'
 import {
   recomputeAllOrganizationAccountsInTransaction,
@@ -148,23 +149,12 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
       if (settings?.version !== observation.organizationVersion) return
     }
     if (observation.outcome === 'complete') {
-      const persistence = createTransactionScopedModulePersistenceCapability(
+      const materialized = await materializeInstalledResourceObservation(
         transaction,
-        observation.resource.moduleId,
+        observation,
+        implementation,
       )
-      const materialized = await implementation.materialize({
-        subject: observation.subject,
-        data: observation.data,
-        validatedAt: observation.validatedAt,
-        authorizationGeneration: observation.authorizationGeneration,
-        capabilities: {
-          logger: createPlatformModuleLogger(observation.resource.moduleId),
-          persistence: persistence.capability,
-        },
-      })
       observation.signal?.throwIfAborted()
-      const suppressed = persistence.suppressedFailure()
-      if (suppressed) throw suppressed.error
       if (materialized?.outcome === 'obsolete') return
     }
 
@@ -202,6 +192,51 @@ export async function applyInstalledResourceObservation(observation: PlatformRes
     )
     observation.signal?.throwIfAborted()
   })
+}
+
+async function materializeInstalledResourceObservation(
+  transaction: postgres.TransactionSql,
+  observation: Extract<PlatformResourceObservation, { outcome: 'complete' }>,
+  implementation: PlatformResourceOperationImplementation<
+    string,
+    unknown,
+    unknown,
+    string,
+    unknown,
+    PlatformResourceSubject
+  >,
+) {
+  const persistence = createPlatformResourceMaterializationPersistence(
+    transaction,
+    observation.resource.moduleId,
+    observation.resource.resourceId,
+    observation.signal,
+  )
+  try {
+    const result = await implementation.materialize({
+      ...materializationContext(observation),
+      capabilities: {
+        logger: createPlatformModuleLogger(observation.resource.moduleId),
+        persistence: persistence.persistence as never,
+      },
+    })
+    const suppressed = persistence.suppressedFailure()
+    if (suppressed) throw suppressed.error
+    return result
+  } finally {
+    persistence.close()
+  }
+}
+
+function materializationContext(
+  observation: Extract<PlatformResourceObservation, { outcome: 'complete' }>,
+) {
+  return {
+    subject: observation.subject,
+    data: observation.data,
+    validatedAt: observation.validatedAt,
+    authorizationGeneration: observation.authorizationGeneration,
+  }
 }
 
 async function applyCoreResourceObservation(observation: PlatformResourceObservation) {

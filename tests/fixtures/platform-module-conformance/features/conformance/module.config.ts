@@ -14,9 +14,31 @@ const manifest = {
         authorization: 'owned-character',
         audience: 'member',
         requiredPermission: 'conformance.view',
+        persistenceOperations: [],
       },
     ],
-    migrations: [{ name: 'conformance-001-initial.sql' }],
+    migrations: [
+      { name: 'conformance-001-initial.sql' },
+      { name: 'conformance-002-persistence-operations.sql' },
+    ],
+    persistenceOperations: [
+      {
+        id: 'read-conformance-snapshot',
+        method: 'readConformanceSnapshot',
+        revision: 1,
+        mode: 'read',
+        exportName: 'readConformanceSnapshotOperation',
+        migration: 'conformance-002-persistence-operations.sql',
+      },
+      {
+        id: 'upsert-conformance-snapshot',
+        method: 'upsertConformanceSnapshot',
+        revision: 1,
+        mode: 'write',
+        exportName: 'upsertConformanceSnapshotOperation',
+        migration: 'conformance-002-persistence-operations.sql',
+      },
+    ],
     resources: [
       {
         id: 'conformance-status',
@@ -25,6 +47,10 @@ const manifest = {
         subjectKind: 'character',
         materializationIntervalSeconds: 300,
         eligibility: { kind: 'current-owned-character' },
+        persistence: {
+          projection: [],
+          materialization: [{ operationId: 'upsert-conformance-snapshot' }],
+        },
         exportName: 'conformanceStatusResource',
       },
     ],
@@ -40,6 +66,7 @@ const manifest = {
         exportName: 'conformanceActivityProvider',
         audience: 'member',
         requiredPermission: 'conformance.view',
+        persistenceOperations: [{ operationId: 'read-conformance-snapshot' }],
         freshness: { staleAfterSeconds: 300 },
       },
     ],

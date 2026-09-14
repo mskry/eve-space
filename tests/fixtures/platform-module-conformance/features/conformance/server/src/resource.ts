@@ -1,7 +1,9 @@
 import {
   definePlatformResourceOperation,
   type PlatformCharacterResourceSubject,
+  type PlatformResourceMaterializationContext,
 } from '@eve-space/platform-module-contract'
+import type { ConformanceSnapshotWritePersistence } from './persistence.js'
 
 interface ConformanceStatusData {
   readonly players: number
@@ -11,6 +13,12 @@ interface ConformanceStatusProjection extends ConformanceStatusData {
   readonly publishedTypeCount?: number
   readonly sdeBuildNumber?: number
 }
+
+type ConformanceMaterializationContext = PlatformResourceMaterializationContext<
+  ConformanceStatusProjection,
+  PlatformCharacterResourceSubject,
+  ConformanceSnapshotWritePersistence
+>
 
 export const conformanceStatusResource = definePlatformResourceOperation<
   'conformance-status-operation',
@@ -40,19 +48,22 @@ export const conformanceStatusResource = definePlatformResourceOperation<
   map({ data }) {
     return { players: data.players }
   },
-  async materialize({ subject, data, validatedAt, capabilities }) {
-    await capabilities.persistence.transaction(async (transaction) => {
-      await transaction.query(
-        `insert into conformance_snapshots (character_id, pilots_online, validated_at)
-         values ($1, $2, $3)
-         on conflict (character_id) do update
-         set pilots_online = excluded.pilots_online,
-             validated_at = excluded.validated_at`,
-        [subject.characterId, data.players, validatedAt],
-      )
-    })
-    capabilities.logger.info('conformance.resource.materialized', {
-      characterId: subject.characterId,
-    })
-  },
+  materialize: (context) =>
+    materializeConformanceStatus(context as unknown as ConformanceMaterializationContext),
 })
+
+async function materializeConformanceStatus({
+  subject,
+  data,
+  validatedAt,
+  capabilities,
+}: ConformanceMaterializationContext) {
+  await capabilities.persistence.upsertConformanceSnapshot({
+    characterId: subject.characterId,
+    pilotsOnline: data.players,
+    validatedAt,
+  })
+  capabilities.logger.info('conformance.resource.materialized', {
+    characterId: subject.characterId,
+  })
+}

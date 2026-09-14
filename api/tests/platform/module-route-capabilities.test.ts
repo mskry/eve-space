@@ -2,18 +2,17 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   collectionStatus: { read: vi.fn() },
-  createModulePersistenceCapability: vi.fn(),
+  createPlatformModuleActivityProviderPersistence: vi.fn(() => ({})),
+  createPlatformModuleRoutePersistence: vi.fn(() => ({})),
+  createPlatformResourceProjectionPersistence: vi.fn(() => ({})),
   createCoreDataCapability: vi.fn(),
   coreData: { publishedTypeGroups: vi.fn() },
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-  persistence: { transaction: vi.fn() },
-  sql: vi.fn(),
+  providerPersistence: { readProviderSnapshot: vi.fn() },
+  projectionPersistence: { readProjectionSnapshot: vi.fn() },
+  routePersistence: { readRouteSnapshot: vi.fn() },
 }))
 
-vi.mock('../../src/db/client.js', () => ({ sql: mocks.sql }))
-vi.mock('../../src/db/module-persistence.js', () => ({
-  createModulePersistenceCapability: mocks.createModulePersistenceCapability,
-}))
 vi.mock('../../src/core-data/capabilities.js', () => ({
   createCoreDataCapability: mocks.createCoreDataCapability,
 }))
@@ -22,6 +21,12 @@ vi.mock('../../src/platform/module-collection-status-capabilities.js', () => ({
 }))
 vi.mock('../../src/platform/module-logging.js', () => ({
   createPlatformModuleLogger: vi.fn(() => mocks.logger),
+}))
+vi.mock('../../src/platform/module-persistence-capabilities.js', () => ({
+  createPlatformModuleRoutePersistence: mocks.createPlatformModuleRoutePersistence,
+  createPlatformResourceProjectionPersistence: mocks.createPlatformResourceProjectionPersistence,
+  createPlatformModuleActivityProviderPersistence:
+    mocks.createPlatformModuleActivityProviderPersistence,
 }))
 
 import {
@@ -32,40 +37,31 @@ import { createPlatformModuleActivityProviderCapabilities } from '../../src/plat
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.createModulePersistenceCapability.mockReturnValue(mocks.persistence)
+  mocks.createPlatformModuleActivityProviderPersistence.mockReturnValue(mocks.providerPersistence)
+  mocks.createPlatformModuleRoutePersistence.mockReturnValue(mocks.routePersistence)
+  mocks.createPlatformResourceProjectionPersistence.mockReturnValue(mocks.projectionPersistence)
   mocks.createCoreDataCapability.mockImplementation((products: readonly string[]) =>
     products.includes('published-type-groups') ? mocks.coreData : {},
   )
 })
 
 describe('platform module route capabilities', () => {
-  test('provides only declared product methods and module-scoped persistence', async () => {
-    const query = vi.fn().mockResolvedValue([{ type_id: 34 }])
-    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ query }))
-    const capabilities = createPlatformModuleRouteCapabilities('alpha', [
+  test('provides only declared product and persistence methods', () => {
+    const capabilities = createPlatformModuleRouteCapabilities('alpha', 'alpha-route', [
       'published-type-groups',
     ] as const)
 
     expect(capabilities).toEqual({
       coreData: mocks.coreData,
       logger: mocks.logger,
-      persistence: { transaction: expect.any(Function) },
+      persistence: mocks.routePersistence,
     })
     expect(Object.keys(capabilities)).toEqual(['coreData', 'logger', 'persistence'])
     expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(['published-type-groups'], 'route')
-    expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha')
-    await expect(
-      capabilities.persistence.transaction((transaction) =>
-        transaction.query('select type_id from types', [34]),
-      ),
-    ).resolves.toEqual([{ type_id: 34 }])
-    expect(query).toHaveBeenCalledWith('select type_id from types', [34])
+    expect(mocks.createPlatformModuleRoutePersistence).toHaveBeenCalledWith('alpha', 'alpha-route')
   })
 
-  test('provides resource collectors read-only bounded persistence', async () => {
-    const query = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
-    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ query }))
-
+  test('provides resource collectors read-only bounded persistence', () => {
     const capabilities = createPlatformResourceReadCapabilities({
       moduleId: 'alpha',
       resourceId: 'resource',
@@ -77,30 +73,23 @@ describe('platform module route capabilities', () => {
       implementation: {},
     })
 
-    await expect(
-      capabilities.persistence.transaction((transaction) =>
-        transaction.query('select activity_id from activities'),
-      ),
-    ).resolves.toEqual([{ activity_id: 'one' }])
     expect(capabilities).toEqual({
       coreData: mocks.coreData,
       logger: mocks.logger,
-      persistence: { transaction: expect.any(Function) },
+      persistence: mocks.projectionPersistence,
     })
     expect(mocks.createCoreDataCapability).toHaveBeenCalledWith(
       ['published-type-groups'],
       'resource-projection',
     )
-    expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha', {
-      readOnly: true,
-      statementTimeoutMilliseconds: 2_000,
-    })
-    expect(query).toHaveBeenCalledWith('select activity_id from activities')
+    expect(mocks.createPlatformResourceProjectionPersistence).toHaveBeenCalledWith(
+      'alpha',
+      'resource',
+      undefined,
+    )
   })
 
-  test('provides activity providers bounded status, logging, and persistence', async () => {
-    const query = vi.fn().mockResolvedValue([{ activity_id: 'one' }])
-    mocks.persistence.transaction.mockImplementation(async (operation) => operation({ query }))
+  test('provides activity providers bounded status, logging, and persistence', () => {
     const controller = new AbortController()
     const context = {
       userId: 'user-1',
@@ -109,16 +98,11 @@ describe('platform module route capabilities', () => {
       signal: controller.signal,
       characters: [],
     }
-    const capabilities = createPlatformModuleActivityProviderCapabilities('alpha', context)
-    let retainedTransaction: { query(statement: string): Promise<readonly object[]> } | undefined
-
-    await expect(
-      capabilities.persistence.transaction(async (transaction) => {
-        retainedTransaction = transaction
-        return transaction.query('select activity_id from activities', ['one'])
-      }),
-    ).resolves.toEqual([{ activity_id: 'one' }])
-
+    const capabilities = createPlatformModuleActivityProviderCapabilities(
+      'alpha',
+      'alpha-provider',
+      context,
+    )
     expect(Object.keys(capabilities)).toEqual([
       'collectionStatus',
       'coreData',
@@ -126,16 +110,11 @@ describe('platform module route capabilities', () => {
       'persistence',
     ])
     expect(capabilities.coreData).toEqual({})
-    expect(mocks.createModulePersistenceCapability).toHaveBeenCalledWith(mocks.sql, 'alpha', {
-      assertActive: expect.any(Function),
-      readOnly: true,
-      statementTimeoutMilliseconds: 2000,
-    })
-    expect(query).toHaveBeenCalledWith('select activity_id from activities', ['one'])
-
-    controller.abort()
-    const options = mocks.createModulePersistenceCapability.mock.calls[0]![2]
-    expect(() => options.assertActive()).toThrow('Module activity provider was aborted')
-    expect(retainedTransaction).toBeDefined()
+    expect(mocks.createPlatformModuleActivityProviderPersistence).toHaveBeenCalledWith(
+      'alpha',
+      'alpha-provider',
+      controller.signal,
+      2000,
+    )
   })
 })

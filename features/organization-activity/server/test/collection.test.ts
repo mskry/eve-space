@@ -17,7 +17,9 @@ const summary = {
 }
 const unavailableItem = { code: 'ESI_HTTP_ERROR', status: 404 }
 function context(execute: ReturnType<typeof vi.fn>, checkpoint?: unknown) {
-  const query = vi.fn().mockResolvedValue(checkpoint ? [{ checkpoint, revision: 3 }] : [])
+  const readActivityCheckpoint = vi
+    .fn()
+    .mockResolvedValue(checkpoint ? { checkpoint, revision: 3 } : null)
   return {
     subject: { kind: 'character', characterId: 9001, lifecycleId: id },
     organizationVersion: 7,
@@ -26,7 +28,7 @@ function context(execute: ReturnType<typeof vi.fn>, checkpoint?: unknown) {
     requestBudget: 32,
     execute,
     capabilities: {
-      persistence: { transaction: (fn: (tx: { query: typeof query }) => unknown) => fn({ query }) },
+      persistence: { readActivityCheckpoint },
     },
   } as unknown as PlatformResourceCollectionContext<PlatformResourceSubject>
 }
@@ -184,23 +186,29 @@ describe('activity collection', () => {
   })
 
   test('rejects obsolete checkpoint writers before touching snapshots', async () => {
-    const query = vi.fn().mockResolvedValue([{ revision: 5 }])
+    const materializeActivityObservation = vi
+      .fn()
+      .mockResolvedValue({ outcome: 'obsolete' as const })
     const result = await materializeActivityResource({
       subject: { lifecycleId: id },
       authorizationGeneration: 4,
-      data: { resourceId: 'character-jobs', organizationVersion: 7, expectedRevision: 3 },
-      capabilities: {
-        persistence: {
-          transaction: (fn: (tx: { query: typeof query }) => unknown) => fn({ query }),
-        },
+      data: {
+        resourceId: 'character-jobs',
+        organizationVersion: 7,
+        expectedRevision: 3,
+        checkpoint: { initialized: true, requests: [], cursors: {} },
+        snapshots: [],
       },
+      capabilities: { persistence: { materializeActivityObservation } },
     } as never)
     expect(result).toEqual({ outcome: 'obsolete' })
-    expect(query).toHaveBeenCalledTimes(1)
+    expect(materializeActivityObservation).toHaveBeenCalledOnce()
   })
 
-  test('writes snapshots, revision and membership pruning in the provided transaction', async () => {
-    const query = vi.fn().mockResolvedValue([])
+  test('submits snapshots, revision and membership pruning through one generated operation', async () => {
+    const materializeActivityObservation = vi
+      .fn()
+      .mockResolvedValue({ outcome: 'applied' as const, revision: 1 })
     const collect = await collectActivityResource(
       { id: 'character-jobs', rootOperation: 'character-jobs', paginated: false },
       context(vi.fn().mockResolvedValue({ data: { freelance_jobs: [] }, validatedAt: now })),
@@ -210,29 +218,28 @@ describe('activity collection', () => {
       authorizationGeneration: 4,
       validatedAt: now,
       data: collect.data,
-      capabilities: {
-        persistence: {
-          transaction: (fn: (tx: { query: typeof query }) => unknown) => fn({ query }),
-        },
-      },
+      capabilities: { persistence: { materializeActivityObservation } },
     } as never)
-    expect(query.mock.calls.find(([sql]) => sql.includes('not (activity_id'))?.[1]).toEqual([
-      'character-jobs',
-      id,
-      7,
-      4,
-      [],
-      [],
-    ])
-    expect(
-      query.mock.calls
-        .find(([sql]) => sql.includes('insert into collection_checkpoints'))?.[1]
-        .at(-1),
-    ).toBe(1)
+    expect(materializeActivityObservation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceId: 'character-jobs',
+        subjectLifecycleId: id,
+        organizationVersion: 7,
+        authorizationGeneration: 4,
+        expectedRevision: 0,
+        checkpoint: expect.objectContaining({ retainedIds: [], retainedCampaignIds: undefined }),
+        snapshots: [],
+      }),
+    )
+    expect(materializeActivityObservation.mock.calls[0]?.[0].materializationId).toMatch(
+      /^[0-9a-f-]{36}$/,
+    )
   })
 
   test('does not renew snapshots absent from an incremental response', async () => {
-    const query = vi.fn().mockResolvedValue([])
+    const materializeActivityObservation = vi
+      .fn()
+      .mockResolvedValue({ outcome: 'applied' as const, revision: 1 })
     await materializeActivityResource({
       subject: { lifecycleId: id },
       authorizationGeneration: 4,
@@ -244,14 +251,10 @@ describe('activity collection', () => {
         checkpoint: { initialized: true, requests: [], cursors: { root: { after: 'next' } } },
         snapshots: [],
       },
-      capabilities: {
-        persistence: {
-          transaction: (fn: (tx: { query: typeof query }) => unknown) => fn({ query }),
-        },
-      },
+      capabilities: { persistence: { materializeActivityObservation } },
     } as never)
-    expect(
-      query.mock.calls.some(([sql]) => sql.includes('update activity_snapshots set validated_at')),
-    ).toBe(false)
+    expect(materializeActivityObservation).toHaveBeenCalledWith(
+      expect.objectContaining({ snapshots: [] }),
+    )
   })
 })

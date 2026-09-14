@@ -1,4 +1,10 @@
 import type { CoreDataMethodsFor, CoreDataProductId } from '@eve-space/core-data-contract'
+import type {
+  PlatformPersistenceContributionReferences,
+  PlatformPersistenceOperationContribution,
+  PlatformPersistenceOperationReference,
+  PlatformResourcePersistenceReferences,
+} from './persistence.js'
 
 export const platformModuleIdPattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
 export const platformModuleIdMaxLength = 44
@@ -216,7 +222,8 @@ export function resolvePlatformModuleRoutePath(namespace: string) {
   return `${platformModuleRouteMount}${namespace}`
 }
 
-export interface PlatformRouteContribution extends PlatformOrganizationContributionAuthorization {
+export interface PlatformRouteContribution
+  extends PlatformOrganizationContributionAuthorization, PlatformPersistenceContributionReferences {
   readonly coreDataProducts?: readonly CoreDataProductId[]
   id: string
   namespace: string
@@ -310,17 +317,13 @@ export interface PlatformModuleErrorBody extends PlatformSafeErrorBody {
   readonly code: string
 }
 
-export interface PlatformModulePersistence<Transaction> {
-  transaction<T>(operation: (transaction: Transaction) => Promise<T>): Promise<T>
-}
-
 export interface PlatformModuleRouteCapabilities<
-  Transaction,
+  Persistence extends object = object,
   ProductIds extends readonly CoreDataProductId[] = readonly [],
 > {
   readonly coreData: CoreDataMethodsFor<ProductIds>
   readonly logger: PlatformModuleLogger
-  readonly persistence: PlatformModulePersistence<Transaction>
+  readonly persistence: Persistence
 }
 
 export interface PlatformAuthorizedOrganizationContext {
@@ -330,24 +333,20 @@ export interface PlatformAuthorizedOrganizationContext {
   readonly entitlementScope: 'all' | 'review'
 }
 
-export interface PlatformModuleResourceTransaction {
-  query<Row extends object = Readonly<Record<string, unknown>>>(
-    statement: string,
-    parameters?: readonly unknown[],
-  ): Promise<readonly Row[]>
-}
-
 export interface PlatformModuleResourceCapabilities<
+  Persistence extends object = object,
   ProductIds extends readonly CoreDataProductId[] = readonly [],
 > {
   readonly coreData: CoreDataMethodsFor<ProductIds>
   readonly logger: PlatformModuleLogger
-  readonly persistence: PlatformModulePersistence<PlatformModuleResourceTransaction>
+  readonly persistence: Persistence
 }
 
-export interface PlatformModuleResourceMaterializationCapabilities {
+export interface PlatformModuleResourceMaterializationCapabilities<
+  Persistence extends object = object,
+> {
   readonly logger: PlatformModuleLogger
-  readonly persistence: PlatformModulePersistence<PlatformModuleResourceTransaction>
+  readonly persistence: Persistence
 }
 
 export interface PlatformAuthenticatedSessionRouteContext {
@@ -479,6 +478,7 @@ export interface PlatformResourceBatchContribution {
 interface PlatformResourceContributionBase {
   coreDataProducts?: readonly CoreDataProductId[]
   dependentOperationIds?: readonly string[]
+  persistence: PlatformResourcePersistenceReferences
   id: string
   operationId: string
   materializationIntervalSeconds: number
@@ -572,12 +572,13 @@ export interface PlatformEsiLoadResult<Data> {
 export interface PlatformResourceMaterializationContext<
   Data,
   Subject extends PlatformResourceSubject = PlatformResourceSubject,
+  Persistence extends object = object,
 > {
   readonly subject: Subject
   readonly data: Data
   readonly validatedAt: string
   readonly authorizationGeneration: number | null
-  readonly capabilities: PlatformModuleResourceMaterializationCapabilities
+  readonly capabilities: PlatformModuleResourceMaterializationCapabilities<Persistence>
 }
 
 export type PlatformCompleteObservationBatchOutcome<Data> =
@@ -624,12 +625,13 @@ export type PlatformResourceBatchOperationImplementation<
 export interface PlatformResourceCollectionContext<
   Subject extends PlatformResourceSubject,
   ProductIds extends readonly CoreDataProductId[] = readonly [],
+  Persistence extends object = object,
 > {
   readonly subject: Subject
   readonly organizationVersion: number
   readonly corporationId: number | null
   readonly authorizationGeneration: number | null
-  readonly capabilities: PlatformModuleResourceCapabilities<ProductIds>
+  readonly capabilities: PlatformModuleResourceCapabilities<Persistence, ProductIds>
   readonly requestBudget: number
   execute(
     operationId: string,
@@ -744,6 +746,7 @@ interface PlatformInstalledResourceDescriptorBase<
   readonly resourceId: string
   readonly operationId: string
   readonly materializationIntervalSeconds: number
+  readonly persistence?: PlatformResourcePersistenceReferences
   readonly implementation: Implementation
 }
 
@@ -872,13 +875,13 @@ export interface PlatformActivityProviderContext {
 }
 
 export interface PlatformActivityProviderCapabilities<
-  Transaction,
+  Persistence extends object = object,
   ProductIds extends readonly CoreDataProductId[] = readonly [],
 > {
   readonly collectionStatus: PlatformModuleCollectionStatusReads
   readonly coreData: CoreDataMethodsFor<ProductIds>
   readonly logger: PlatformModuleLogger
-  readonly persistence: PlatformModulePersistence<Transaction>
+  readonly persistence: Persistence
 }
 
 export type PlatformActivityProvider = (
@@ -886,13 +889,14 @@ export type PlatformActivityProvider = (
 ) => Promise<PlatformActivityProviderResult>
 
 export type PlatformActivityProviderFactory<
-  Transaction = PlatformModuleResourceTransaction,
+  Persistence extends object = object,
   ProductIds extends readonly CoreDataProductId[] = readonly [],
 > = (
-  capabilities: PlatformActivityProviderCapabilities<Transaction, ProductIds>,
+  capabilities: PlatformActivityProviderCapabilities<Persistence, ProductIds>,
 ) => PlatformActivityProvider
 
-export interface PlatformActivityProviderContribution extends PlatformOrganizationContributionAuthorization {
+export interface PlatformActivityProviderContribution
+  extends PlatformOrganizationContributionAuthorization, PlatformPersistenceContributionReferences {
   readonly coreDataProducts?: readonly CoreDataProductId[]
   readonly id: string
   readonly exportName: string
@@ -909,6 +913,7 @@ export interface PlatformInstalledActivityProviderDescriptor extends PlatformOrg
     readonly staleAfterSeconds: number
   }
   readonly pageIds: readonly string[]
+  readonly persistenceOperations?: readonly PlatformPersistenceOperationReference[]
   readonly invoke: PlatformActivityProvider
 }
 
@@ -967,6 +972,7 @@ export interface PlatformModuleManifest {
     package: string
     routes: readonly PlatformRouteContribution[]
     migrations: readonly PlatformMigrationContribution[]
+    persistenceOperations: readonly PlatformPersistenceOperationContribution[]
     resources: readonly PlatformResourceContribution[]
     esiOperations: readonly PlatformEsiOperationContribution[]
     activityProviders: readonly PlatformActivityProviderContribution[]

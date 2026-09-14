@@ -365,6 +365,12 @@
   align-content: start;
 }
 
+.admin-setup-organization-type {
+  width: max-content;
+  max-width: 100%;
+  justify-self: start;
+}
+
 .admin-field > label,
 .admin-field > span:first-child {
   color: var(--ui-text-muted);
@@ -504,7 +510,7 @@
   grid-column: 1 / -1;
 }
 
-.admin-setup-resolved {
+.admin-setup-selection {
   min-height: 2.9375rem;
   margin: 0;
   padding: 0.75rem 0.875rem;
@@ -517,7 +523,7 @@
   font-size: 0.8125rem;
 }
 
-.admin-setup-resolved > span {
+.admin-setup-selection > span {
   width: 1.5rem;
   height: 1.5rem;
   flex: none;

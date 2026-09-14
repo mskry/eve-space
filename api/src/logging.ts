@@ -16,6 +16,7 @@ const diagnosticFailureCategories = [
   'module-failure',
   'permanent job failure',
   'processing-failure',
+  'persistence-failure',
   'queue-rejected',
   'queue-unavailable',
   'retryable dependency failure',
@@ -47,6 +48,11 @@ const diagnosticCatalog = {
   'platform.module.error': diagnostic('error', ['moduleId', 'moduleEvent'], 'module-failure'),
   'platform.module.info': diagnostic('info', ['moduleId', 'moduleEvent']),
   'platform.module.warn': diagnostic('warn', ['moduleId', 'moduleEvent']),
+  'platform.persistence.failed': diagnostic(
+    'error',
+    ['moduleId', 'operationId', 'persistenceFailure'],
+    'persistence-failure',
+  ),
   'queue.runtime.failed': diagnostic('error', [], 'queue-unavailable'),
   'scheduler.marker-update.failed': diagnostic('error', [], 'dependency-unavailable'),
   'scheduler.overlap-lock.expired': diagnostic('error', ['schedulerId'], 'dependency-unavailable'),
@@ -87,9 +93,11 @@ interface DiagnosticContext {
   method?: string
   moduleEvent?: string
   moduleId?: string
+  operationId?: string
   path?: string
   payloadVersion?: number
   port?: number
+  persistenceFailure?: string
   schedulerId?: string
 }
 

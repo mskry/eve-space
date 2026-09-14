@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   descriptorBoundaryViolations,
   featurePackageManifestViolations,
+  manifestCompositionBoundaryViolations,
   nuxtSourceBoundaryViolations,
   serverFactoryBoundaryViolations,
   serverSourceBoundaryViolations,
@@ -386,11 +387,87 @@ describe('descriptor and composition purity', () => {
     `)
     expect(serverSourceBoundaryViolations(source)).toEqual(
       [
-        'feature package entry or definition has an executable initializer',
-        'feature package entry or definition has an executable initializer',
+        'feature package entry or definition first has an executable initializer',
+        'feature package entry or definition second has an executable initializer',
         'feature package default export has an executable initializer',
         'feature package entry contains executable top-level code',
       ].map((message) => `${source.path}: ${message}`),
+    )
+  })
+
+  it('allows declarative persistence operation definitions', () => {
+    const source = serverSource(`
+      import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
+      import { z } from 'zod'
+      export const readSnapshot = definePlatformPersistenceOperation({
+        id: 'read-snapshot', method: 'readSnapshot', revision: 1, mode: 'read',
+        inputSchema: z.object({ id: z.string().max(100) }),
+        outputSchema: z.object({ value: z.string().max(100).nullable() }),
+        maximumInputBytes: 1024, maximumOutputBytes: 4096,
+      })
+    `)
+
+    expect(serverSourceBoundaryViolations(source)).toEqual([])
+  })
+
+  it('rejects runtime SQL and generic persistence dispatch while allowing named methods', () => {
+    const source = serverSource(`
+      export async function load(capabilities) {
+        const persistence = capabilities.persistence
+        await persistence.readSnapshot({ id: 'alpha' })
+        await persistence.execute('read-snapshot', { id: 'alpha' })
+        return 'select value from module_records'
+      }
+    `)
+
+    expect(serverSourceBoundaryViolations(source)).toEqual(
+      [
+        'feature server code must not contain runtime SQL statements',
+        'feature server code must not use generic persistence dispatch',
+      ].map((message) => `${source.path}: ${message}`),
+    )
+  })
+
+  it('requires exact persistence definition exports at the package root', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'eve-space-persistence-definitions-'))
+    temporaryRoots.push(root)
+    const sourceRoot = join(root, 'features/alpha/server/src')
+    await mkdir(sourceRoot, { recursive: true })
+    await writeFile(
+      join(sourceRoot, 'persistence.ts'),
+      `
+        import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
+        import { z } from 'zod'
+        export const alphaReadOperation = definePlatformPersistenceOperation({
+          id: 'alpha-read', method: 'alphaRead', revision: 1, mode: 'read',
+          inputSchema: z.object({ id: z.string().max(100) }),
+          outputSchema: z.object({ value: z.string().max(100).nullable() }),
+          maximumInputBytes: 1024, maximumOutputBytes: 4096,
+        })
+        export const unusedOperation = definePlatformPersistenceOperation({
+          id: 'unused', method: 'unused', revision: 1, mode: 'read',
+          inputSchema: z.object({}), outputSchema: z.object({}),
+          maximumInputBytes: 1024, maximumOutputBytes: 1024,
+        })
+      `,
+      'utf8',
+    )
+    await writeFile(join(sourceRoot, 'index.ts'), "export * from './persistence.js'\n", 'utf8')
+
+    const violations = await manifestCompositionBoundaryViolations(
+      root,
+      persistenceManifest('alphaReadOperation'),
+    )
+    expect(violations).toContain(
+      'features/alpha/server/src/persistence.ts: persistence definition export unusedOperation is not declared by module alpha',
+    )
+
+    const missing = await manifestCompositionBoundaryViolations(
+      root,
+      persistenceManifest('missingOperation'),
+    )
+    expect(missing).toContain(
+      'features/alpha/server: persistence definition export missingOperation must resolve to one local declaration',
     )
   })
 
@@ -403,7 +480,7 @@ describe('descriptor and composition purity', () => {
           import type { PlatformModuleManifest } from '@eve-space/platform-module-contract'
           const manifest = {
             id: 'alpha', icon: 'character', defaultEnabled: false,
-            server: { package: '@eve-space/alpha-server', routes: [], migrations: [], resources: [], esiOperations: [], activityProviders: [] },
+            server: { package: '@eve-space/alpha-server', routes: [], migrations: [], persistenceOperations: [], resources: [], esiOperations: [], activityProviders: [] },
             nuxt: { package: '@eve-space/alpha-nuxt', pages: [], navigation: [] },
           } satisfies PlatformModuleManifest
           export default manifest
@@ -504,16 +581,16 @@ describe('descriptor and composition purity', () => {
       serverSource(`
         import { Hono } from 'hono'
         import { zValidator } from '@hono/zod-validator'
-        import { z } from 'zod'
-        export function alphaRoutes(capabilities) {
-          return new Hono().get('/', zValidator('query', z.object({ view: z.string() })), async (context) => {
-            await capabilities.persistence.transaction(async () => [])
+          import { z } from 'zod'
+          export function alphaRoutes(capabilities) {
+            return new Hono().get('/', zValidator('query', z.object({ view: z.string() })), async (context) => {
+            await capabilities.persistence.readSnapshot({ id: 'alpha' })
             return context.json({ ok: true })
           })
         }
         export function alphaProvider(capabilities) {
           return async () => {
-            await capabilities.persistence.transaction(async () => [])
+            await capabilities.persistence.readSnapshot({ id: 'alpha' })
             return { activities: [], freshness: { state: 'current', collectedAt: null } }
           }
         }
@@ -525,7 +602,7 @@ describe('descriptor and composition purity', () => {
     const eager = [
       serverSource(`
         export function alphaRoutes(capabilities) {
-          capabilities.persistence.transaction(async () => [])
+          capabilities.persistence.readSnapshot({ id: 'alpha' })
           return {}
         }
         export function alphaProvider() {
@@ -608,6 +685,37 @@ function packageManifest(moduleId: string, environment: 'server' | 'nuxt') {
           }
         : { '.': { types: './dist/module.d.ts', import: './dist/module.js' } },
   }
+}
+
+function persistenceManifest(exportName: string) {
+  return {
+    id: 'alpha',
+    icon: 'character',
+    defaultEnabled: false,
+    server: {
+      package: '@eve-space/alpha-server',
+      routes: [],
+      migrations: [{ name: 'alpha-001-persistence.sql' }],
+      persistenceOperations: [
+        {
+          id: 'alpha-read',
+          method: 'alphaRead',
+          revision: 1,
+          mode: 'read',
+          exportName,
+          migration: 'alpha-001-persistence.sql',
+        },
+      ],
+      resources: [],
+      esiOperations: [],
+      activityProviders: [],
+    },
+    nuxt: {
+      package: '@eve-space/alpha-nuxt',
+      pages: [],
+      navigation: [],
+    },
+  } as const
 }
 
 function serverSource(source: string) {

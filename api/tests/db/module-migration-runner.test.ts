@@ -47,6 +47,36 @@ describe('installed module migration loading', () => {
     ])
   })
 
+  test('groups generated persistence routines with their owning migration set', async () => {
+    const operation = persistenceOperationDescriptor()
+
+    await expect(
+      loadInstalledModuleMigrationSets(
+        [{ moduleId: 'alpha', name: 'alpha-001-first.sql' }],
+        async () => declaredReadRoutine(),
+        ['alpha'],
+        [operation],
+      ),
+    ).resolves.toEqual([
+      {
+        moduleId: 'alpha',
+        migrations: [{ name: 'alpha-001-first.sql', sql: declaredReadRoutine() }],
+        persistenceOperations: [operation],
+      },
+    ])
+  })
+
+  test('rejects persistence routines associated with an uninstalled migration', async () => {
+    await expect(
+      loadInstalledModuleMigrationSets(
+        [{ moduleId: 'alpha', name: 'alpha-002-other.sql' }],
+        async () => 'select 1',
+        ['alpha'],
+        [persistenceOperationDescriptor()],
+      ),
+    ).rejects.toThrow('Persistence operation references uninstalled migration alpha/read-snapshot')
+  })
+
   test.each([
     [[{ moduleId: 'core', name: 'core-001.sql' }], 'Invalid installed module migration owner'],
     [[{ moduleId: 'Alpha', name: 'Alpha-001.sql' }], 'Invalid installed module migration owner'],
@@ -85,6 +115,191 @@ describe('module persistence names', () => {
 })
 
 describe('module migration SQL validation', () => {
+  test.each([
+    `
+      create function eve_module_alpha.persist_read_snapshot(input jsonb)
+      returns jsonb
+      language sql
+      stable
+      parallel unsafe
+      return input
+    `,
+    `
+      create function eve_module_alpha.persist_read_snapshot(input jsonb)
+      returns jsonb
+      language sql
+      stable
+      parallel unsafe
+      begin atomic
+        select input;
+      end
+    `,
+  ])('accepts a declared directly parsed SQL routine: %s', async (sql) => {
+    await expect(validateDeclaredRoutine(sql)).resolves.toBeUndefined()
+  })
+
+  test('accepts the fixed mode attributes for a declared write routine', async () => {
+    await expect(
+      validateDeclaredRoutine(
+        `
+          create function eve_module_alpha.persist_write_snapshot(input jsonb)
+          returns jsonb
+          language sql
+          volatile
+          parallel unsafe
+          begin atomic
+            insert into records (id) values (1) on conflict (id) do nothing;
+            select input;
+          end
+        `,
+        { operationId: 'write-snapshot', routineName: 'persist_write_snapshot', mode: 'write' },
+      ),
+    ).resolves.toBeUndefined()
+  })
+
+  test.each([
+    [
+      'an undeclared function',
+      declaredReadRoutine().replace('persist_read_snapshot', 'persist_other'),
+      'prohibited-operation',
+    ],
+    [
+      'an unqualified function',
+      declaredReadRoutine().replace(
+        'eve_module_alpha.persist_read_snapshot',
+        'persist_read_snapshot',
+      ),
+      'unsupported-statement',
+    ],
+    [
+      'a string body',
+      declaredReadRoutine().replace('return input', "as 'select input'"),
+      'unsupported-statement',
+    ],
+    [
+      'a procedural dynamic body',
+      declaredReadRoutine()
+        .replace('language sql', 'language plpgsql')
+        .replace('return input', "as 'begin execute ''select 1''; return input; end'"),
+      'unsupported-statement',
+    ],
+    [
+      'an unsupported language',
+      declaredReadRoutine().replace('language sql', 'language plpgsql'),
+      'unsupported-statement',
+    ],
+    [
+      'an overloaded signature',
+      declaredReadRoutine().replace('input jsonb)', 'input jsonb, extra jsonb)'),
+      'unsupported-statement',
+    ],
+    [
+      'a default argument',
+      declaredReadRoutine().replace('input jsonb)', 'input jsonb default null)'),
+      'unsupported-statement',
+    ],
+    [
+      'a variadic argument',
+      declaredReadRoutine().replace('input jsonb)', 'variadic input jsonb[])'),
+      'unsupported-statement',
+    ],
+    [
+      'an output argument',
+      declaredReadRoutine().replace('input jsonb)', 'input jsonb, out result jsonb)'),
+      'unsupported-statement',
+    ],
+    [
+      'a set-returning result',
+      declaredReadRoutine().replace('returns jsonb', 'returns setof jsonb'),
+      'unsupported-statement',
+    ],
+    [
+      'a caller-selected security context',
+      declaredReadRoutine().replace('stable', 'security definer\n      stable'),
+      'unsupported-statement',
+    ],
+    [
+      'a caller-selected search path',
+      declaredReadRoutine().replace(
+        'parallel unsafe',
+        'parallel unsafe\n      set search_path to eve_module_alpha',
+      ),
+      'unsupported-statement',
+    ],
+    [
+      'the wrong read volatility',
+      declaredReadRoutine().replace('stable', 'volatile'),
+      'unsupported-statement',
+    ],
+    [
+      'parallel safe execution',
+      declaredReadRoutine().replace('parallel unsafe', 'parallel safe'),
+      'unsupported-statement',
+    ],
+    [
+      'a cross-schema body reference',
+      declaredReadRoutine().replace(
+        'return input',
+        'return (select to_jsonb(users) from public.users)',
+      ),
+      'cross-schema',
+    ],
+    [
+      'a nested role reset',
+      declaredReadRoutine().replace('return input', 'begin atomic reset role; select input; end'),
+      'prohibited-operation',
+    ],
+    [
+      'a nested session-role function',
+      declaredReadRoutine().replace(
+        'return input',
+        "begin atomic select set_config('role', 'none', true); select input; end",
+      ),
+      'prohibited-operation',
+    ],
+    [
+      'a nested privilege change',
+      declaredReadRoutine().replace(
+        'return input',
+        'begin atomic grant select on records to public; select input; end',
+      ),
+      'prohibited-operation',
+    ],
+    [
+      'a nested procedure call',
+      declaredReadRoutine().replace(
+        'return input',
+        'begin atomic call local_proc(); select input; end',
+      ),
+      'prohibited-operation',
+    ],
+  ])('rejects %s in a persistence routine', async (_description, sql, category) => {
+    await expect(validateDeclaredRoutine(sql)).rejects.toMatchObject({ category })
+  })
+
+  test.each(['query_to_xml', 'query_to_xmlschema', 'query_to_xml_and_xmlschema'])(
+    'rejects dynamic SQL through %s in a persistence routine',
+    async (functionName) => {
+      const sql = declaredReadRoutine().replace(
+        'return input',
+        `return to_jsonb(${functionName}(input ->> 'query', true, false, ''))`,
+      )
+
+      await expect(validateDeclaredRoutine(sql)).rejects.toMatchObject({
+        category: 'prohibited-operation',
+      })
+    },
+  )
+
+  test('requires every routine associated with the migration to be present exactly once', async () => {
+    await expect(validateDeclaredRoutine('select 1')).rejects.toMatchObject({
+      category: 'unsupported-statement',
+    })
+    await expect(
+      validateDeclaredRoutine(`${declaredReadRoutine()}; ${declaredReadRoutine()}`),
+    ).rejects.toMatchObject({ category: 'prohibited-operation' })
+  })
+
   test.each([
     'EXCLUDED.value',
     'excluded.value',
@@ -337,6 +552,7 @@ describe('module migration SQL validation', () => {
     ],
     ['extension management', 'create extension hstore', 'prohibited-operation'],
     ['schema creation', 'create schema escaped', 'prohibited-operation'],
+    ['function creation without a declaration', declaredReadRoutine(), 'prohibited-operation'],
     ['procedural dynamic SQL', "do $$ begin execute 'reset role'; end $$", 'prohibited-operation'],
     ['temporary objects', 'create temporary table escaped (id integer)', 'prohibited-operation'],
     ['selecting into a temporary table', 'select 1 into temporary escaped', 'prohibited-operation'],
@@ -374,4 +590,47 @@ async function validateModuleSql(sql: string) {
     name: 'alpha-001-test.sql',
     sql,
   })
+}
+
+const readRoutineDeclaration = {
+  operationId: 'read-snapshot',
+  routineName: 'persist_read_snapshot',
+  mode: 'read',
+} as const
+
+async function validateDeclaredRoutine(
+  sql: string,
+  declaration: {
+    readonly operationId: string
+    readonly routineName: string
+    readonly mode: 'read' | 'write'
+  } = readRoutineDeclaration,
+) {
+  await assertModuleMigrationSql('alpha', 'eve_module_alpha', { name: 'alpha-001-test.sql', sql }, [
+    declaration,
+  ])
+}
+
+function declaredReadRoutine() {
+  return `
+    create function eve_module_alpha.persist_read_snapshot(input jsonb)
+    returns jsonb
+    language sql
+    stable
+    parallel unsafe
+    return input
+  `
+}
+
+function persistenceOperationDescriptor() {
+  return {
+    definitionFingerprint: '0'.repeat(64),
+    migration: 'alpha-001-first.sql',
+    mode: 'read' as const,
+    moduleId: 'alpha',
+    operationId: 'read-snapshot',
+    revision: 1,
+    routineName: 'persist_read_snapshot',
+    schemaName: 'eve_module_alpha',
+  }
 }

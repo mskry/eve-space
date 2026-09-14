@@ -1,7 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { definePlatformPersistenceOperation } from '@eve-space/platform-module-server'
 import postgres from 'postgres'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers'
+import { z } from 'zod'
 import {
   migrationLockId,
   moduleMigrationLockKey,
@@ -10,10 +12,13 @@ import {
 import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.js'
 import { runModuleMigrationSets } from '../../../src/db/module-migration-runner.js'
 import { ModuleMigrationValidationError } from '../../../src/db/module-migration-validation.js'
+import { persistenceContractFingerprintFor } from '../../../src/db/module-persistence-attestation.js'
+import { canonicalizePersistenceRoutineSql } from '../../../src/db/module-persistence-routine.js'
+import { ModulePersistenceRoutineProvisioningError } from '../../../src/db/module-persistence-routine-provisioner.js'
 import {
-  createModulePersistenceCapability,
-  createTransactionScopedModulePersistenceCapability,
-} from '../../../src/db/module-persistence.js'
+  createStandaloneModulePersistenceOperationInvoker,
+  createTransactionScopedModulePersistenceOperationInvoker,
+} from '../../../src/db/module-persistence-operation-transaction.js'
 import { runStartupMigrations } from '../../../src/db/startup-migrations.js'
 import {
   loadModuleRuntimeState,
@@ -60,6 +65,7 @@ beforeEach(async () => {
           drop schema if exists eve_module_delta cascade;
           drop schema if exists eve_module_empty_module cascade;
           drop schema if exists eve_module_gamma cascade;
+          drop schema if exists eve_module_organization_activity cascade;
           drop schema public cascade;
           create schema public;
         `,
@@ -108,6 +114,152 @@ async function loadIsolationMigrationSql({ moduleId }: { moduleId: string }) {
   `
 }
 
+function declaredReadRoutineSql() {
+  return `
+    create table routine_records (id bigint generated always as identity primary key);
+    ${declaredReadFunctionSql()}
+  `
+}
+
+function declaredReadFunctionSql() {
+  return `
+    create function eve_module_alpha.persist_read_snapshot(input jsonb)
+    returns jsonb
+    language sql
+    stable
+    parallel unsafe
+    return input
+  `
+}
+
+async function persistenceRoutineDescriptor(migration: string, sql: string) {
+  const canonical = await canonicalizePersistenceRoutineSql({
+    moduleId: 'alpha',
+    operationId: 'read-snapshot',
+    revision: 1,
+    mode: 'read',
+    sql,
+  })
+  return {
+    moduleId: 'alpha',
+    operationId: 'read-snapshot',
+    revision: 1,
+    mode: 'read' as const,
+    migration,
+    schemaName: canonical.identity.schemaName,
+    routineName: canonical.identity.routineName,
+    definitionFingerprint: canonical.definitionFingerprint,
+  }
+}
+
+async function installAlphaPersistence(connection: postgres.Sql) {
+  const migrationName = 'alpha-020-read-snapshot.sql'
+  const sql = declaredReadRoutineSql()
+  const operation = await persistenceRoutineDescriptor(migrationName, sql)
+  const options = {
+    installed: [{ moduleId: 'alpha', name: migrationName }],
+    persistenceOperations: [operation],
+    loadModuleSql: async () => sql,
+  } as const
+  await runStartupMigrations(connection, options)
+  return { migrationName, operation, options }
+}
+
+async function waitForBackendLock(connection: postgres.Sql, pid: number) {
+  const deadline = Date.now() + 5_000
+  while (Date.now() < deadline) {
+    const [activity] = await connection<{ wait_event_type: string | null }[]>`
+      select wait_event_type from pg_stat_activity where pid = ${pid}
+    `
+    if (activity?.wait_event_type === 'Lock') return
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  throw new Error('Module migration did not reach the expected lock')
+}
+
+function runtimePersistenceMigrationSql() {
+  return `
+    create table routine_records (
+      id bigint generated always as identity primary key,
+      value text not null
+    );
+
+    create function eve_module_alpha.persist_read_records(input jsonb)
+    returns jsonb
+    language sql
+    stable
+    parallel unsafe
+    return jsonb_build_object(
+      'count'::text,
+      (select count(*) from routine_records)
+    );
+
+    create function eve_module_alpha.persist_write_record(input jsonb)
+    returns jsonb
+    language sql
+    volatile
+    parallel unsafe
+    begin atomic
+      insert into routine_records (value) values ('must roll back'::text);
+      select jsonb_build_object('unexpected'::text, true);
+    end;
+  `
+}
+
+async function runtimePersistenceOperations(migration: string, sql: string) {
+  const definitions = [
+    definePlatformPersistenceOperation({
+      id: 'read-records',
+      method: 'readRecords',
+      revision: 1,
+      mode: 'read',
+      inputSchema: z.object({}).strict(),
+      outputSchema: z.object({ count: z.number().int().nonnegative() }).strict(),
+      maximumInputBytes: 64,
+      maximumOutputBytes: 64,
+    }),
+    definePlatformPersistenceOperation({
+      id: 'write-record',
+      method: 'writeRecord',
+      revision: 1,
+      mode: 'write',
+      inputSchema: z.object({ value: z.string().min(1).max(100) }).strict(),
+      outputSchema: z.object({ applied: z.literal(true) }).strict(),
+      maximumInputBytes: 256,
+      maximumOutputBytes: 64,
+    }),
+  ] as const
+  return Promise.all(
+    definitions.map(async (definition) => {
+      const canonical = await canonicalizePersistenceRoutineSql({
+        moduleId: 'alpha',
+        operationId: definition.id,
+        revision: definition.revision,
+        mode: definition.mode,
+        sql,
+      })
+      return {
+        moduleId: 'alpha',
+        operationId: definition.id,
+        method: definition.method,
+        revision: definition.revision,
+        mode: definition.mode,
+        migration,
+        schemaName: canonical.identity.schemaName,
+        routineName: canonical.identity.routineName,
+        definitionFingerprint: canonical.definitionFingerprint,
+        definition,
+        grants: {
+          routes: [],
+          activityProviders: [],
+          resourceProjections: [],
+          resourceMaterializations: [],
+        },
+      }
+    }),
+  )
+}
+
 describe('multi-process safety', () => {
   test('refuses worker readiness until its expected migration is applied', async () => {
     const connection = postgres(databaseUrl)
@@ -149,7 +301,20 @@ describe('multi-process safety', () => {
 
       const { checkWorkerReadiness } = await import('../../../src/worker/readiness.js')
       await runStartupMigrations(inspector)
+      const [beforeReadiness] = await inspector<{ attested_at: Date; reconciled_at: Date }[]>`
+        select
+          max(attested_at) as attested_at,
+          (select reconciled_at from module_persistence_contract) as reconciled_at
+        from module_persistence_operation_attestations
+      `
       await expect(checkWorkerReadiness(inspector)).resolves.toEqual({ healthy: true })
+      const [afterReadiness] = await inspector<{ attested_at: Date; reconciled_at: Date }[]>`
+        select
+          max(attested_at) as attested_at,
+          (select reconciled_at from module_persistence_contract) as reconciled_at
+        from module_persistence_operation_attestations
+      `
+      expect(afterReadiness).toEqual(beforeReadiness)
     } finally {
       await Promise.all([first.end(), second.end(), inspector.end()])
     }
@@ -565,6 +730,7 @@ describe('multi-process safety', () => {
       ['cross-module DDL', 'drop table eve_module_beta.beta_records', 'cross-schema'],
       ['privilege change', 'grant select on alpha_policy_probe to public', 'prohibited-operation'],
       ['role change', 'alter role eve_module_beta_runtime login', 'prohibited-operation'],
+      ['alternate role', 'set role eve_module_beta_runtime', 'prohibited-operation'],
       ['role reset', 'reset role', 'prohibited-operation'],
       ['session authorization', 'set session authorization eve_space', 'prohibited-operation'],
       ['extension operation', 'create extension hstore', 'prohibited-operation'],
@@ -629,6 +795,557 @@ describe('multi-process safety', () => {
         escaped_schema_exists: false,
         extension_exists: false,
         user_exists: true,
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('finalizes declared persistence routine authority before recording its migration', async () => {
+    const connection = postgres(databaseUrl)
+    const migrationName = 'alpha-020-read-snapshot.sql'
+    const sql = declaredReadRoutineSql()
+    const operation = await persistenceRoutineDescriptor(migrationName, sql)
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: migrationName }],
+        persistenceOperations: [operation],
+        loadModuleSql: async () => sql,
+      })
+      const [metadata] = await connection<
+        {
+          direct_table_access: boolean
+          direct_sequence_access: boolean
+          owner: string
+          parallel: string
+          public_execute: boolean
+          runtime_execute: boolean
+          security_definer: boolean
+          settings: string[] | null
+          volatility: string
+        }[]
+      >`
+        select
+          pg_get_userbyid(routine.proowner) as owner,
+          routine.prosecdef as security_definer,
+          routine.provolatile as volatility,
+          routine.proparallel as parallel,
+          routine.proconfig as settings,
+          exists (
+            select 1
+            from aclexplode(coalesce(routine.proacl, acldefault('f', routine.proowner))) privilege
+            where privilege.grantee = 0 and privilege.privilege_type = 'EXECUTE'
+          ) as public_execute,
+          has_function_privilege(
+            'eve_module_alpha_runtime',
+            routine.oid,
+            'EXECUTE'
+          ) as runtime_execute,
+          has_table_privilege(
+            'eve_module_alpha_runtime',
+            'eve_module_alpha.routine_records',
+            'SELECT, INSERT, UPDATE, DELETE'
+          ) as direct_table_access,
+          has_sequence_privilege(
+            'eve_module_alpha_runtime',
+            'eve_module_alpha.routine_records_id_seq',
+            'USAGE'
+          ) as direct_sequence_access
+        from pg_proc routine
+        join pg_namespace namespace on namespace.oid = routine.pronamespace
+        where namespace.nspname = 'eve_module_alpha'
+          and routine.proname = 'persist_read_snapshot'
+      `
+      const [invocation] = await connection.begin(async (transaction) => {
+        await transaction`set local role eve_module_alpha_runtime`
+        return transaction<{ result: { marker: string } }[]>`
+          select eve_module_alpha.persist_read_snapshot('{"marker":"kept"}'::jsonb) as result
+        `
+      })
+      const [attestation] = await connection<
+        { definition_fingerprint: string; migration_name: string; mode: string; revision: number }[]
+      >`
+        select definition_fingerprint, migration_name, mode, revision
+        from module_persistence_operation_attestations
+        where module_id = 'alpha' and operation_id = 'read-snapshot'
+      `
+
+      expect(metadata).toEqual({
+        direct_table_access: false,
+        direct_sequence_access: false,
+        owner: 'eve_module_alpha_migrate',
+        parallel: 'u',
+        public_execute: false,
+        runtime_execute: true,
+        security_definer: true,
+        settings: ['search_path=pg_catalog, eve_module_alpha, pg_temp'],
+        volatility: 's',
+      })
+      expect(invocation?.result).toEqual({ marker: 'kept' })
+      expect(attestation).toEqual({
+        definition_fingerprint: operation.definitionFingerprint,
+        migration_name: migrationName,
+        mode: 'read',
+        revision: 1,
+      })
+
+      await connection`
+        grant execute on function eve_module_alpha.persist_read_snapshot(jsonb) to public
+      `
+      await expect(
+        runStartupMigrations(connection, {
+          installed: [{ moduleId: 'alpha', name: migrationName }],
+          persistenceOperations: [operation],
+          loadModuleSql: async () => sql,
+        }),
+      ).rejects.toMatchObject({
+        moduleId: 'alpha',
+        operationId: 'read-snapshot',
+        failure: 'grants',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rejects changed persistence definitions before startup reconciliation', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      const { operation, options } = await installAlphaPersistence(connection)
+      await connection.begin(async (transaction) => {
+        await transaction`set local role eve_module_alpha_migrate`
+        await transaction.unsafe(`
+          create or replace function eve_module_alpha.persist_read_snapshot(input jsonb)
+          returns jsonb
+          language sql
+          stable
+          parallel unsafe
+          security definer
+          set search_path to pg_catalog, eve_module_alpha, pg_temp
+          return jsonb_build_object('changed'::text, true)
+        `)
+      })
+
+      await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        moduleId: 'alpha',
+        operationId: operation.operationId,
+        failure: 'definition',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rejects changed persistence owners and fixed settings', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      const { operation, options } = await installAlphaPersistence(connection)
+      await connection`
+        alter function eve_module_alpha.persist_read_snapshot(jsonb) owner to eve_space
+      `
+      await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        moduleId: 'alpha',
+        operationId: operation.operationId,
+        failure: 'metadata',
+      })
+
+      await connection`
+        alter function eve_module_alpha.persist_read_snapshot(jsonb)
+        owner to eve_module_alpha_migrate
+      `
+      await connection`
+        alter function eve_module_alpha.persist_read_snapshot(jsonb)
+        set search_path to pg_catalog, pg_temp
+      `
+      await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        moduleId: 'alpha',
+        operationId: operation.operationId,
+        failure: 'metadata',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rejects changed persistence signatures and extra routines', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      const { operation, options } = await installAlphaPersistence(connection)
+      await connection.begin(async (transaction) => {
+        await transaction`set local role eve_module_alpha_migrate`
+        await transaction`drop function eve_module_alpha.persist_read_snapshot(jsonb)`
+        await transaction.unsafe(`
+          create function eve_module_alpha.persist_read_snapshot(input text)
+          returns jsonb
+          language sql
+          stable
+          parallel unsafe
+          return '{}'::jsonb
+        `)
+      })
+      await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        moduleId: 'alpha',
+        operationId: operation.operationId,
+        failure: 'signature',
+      })
+
+      await connection.begin(async (transaction) => {
+        await transaction`set local role eve_module_alpha_migrate`
+        await transaction`drop function eve_module_alpha.persist_read_snapshot(text)`
+        await transaction.unsafe(declaredReadFunctionSql()).simple()
+        await transaction.unsafe(`
+          create function eve_module_alpha.persist_extra(input jsonb)
+          returns jsonb
+          language sql
+          stable
+          parallel unsafe
+          return input
+        `)
+      })
+      await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        failure: 'inventory',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rejects stale persistence attestations at API startup', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      const { operation, options } = await installAlphaPersistence(connection)
+      await connection`
+        update module_persistence_operation_attestations
+        set revision = revision + 1
+        where module_id = 'alpha' and operation_id = 'read-snapshot'
+      `
+
+      await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        moduleId: 'alpha',
+        operationId: operation.operationId,
+        failure: 'metadata',
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('ignores retained persistence state from statically uninstalled modules', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      const { migrationName } = await installAlphaPersistence(connection)
+      const contractFingerprint = persistenceContractFingerprintFor([], [])
+
+      await expect(
+        runStartupMigrations(connection, {
+          installed: [],
+          moduleIds: [],
+          persistenceOperations: [],
+          persistenceContractFingerprint: contractFingerprint,
+        }),
+      ).resolves.toBeUndefined()
+
+      const [retained] = await connection<
+        { attested: boolean; migrated: boolean; routine_exists: boolean; schema_exists: boolean }[]
+      >`
+        select
+          exists (
+            select 1 from module_persistence_operation_attestations
+            where module_id = 'alpha' and operation_id = 'read-snapshot'
+          ) as attested,
+          exists (
+            select 1 from schema_migrations
+            where module = 'alpha' and name = ${migrationName}
+          ) as migrated,
+          to_regprocedure('eve_module_alpha.persist_read_snapshot(jsonb)') is not null
+            as routine_exists,
+          to_regnamespace('eve_module_alpha') is not null as schema_exists
+      `
+      expect(retained).toEqual({
+        attested: true,
+        migrated: true,
+        routine_exists: true,
+        schema_exists: true,
+      })
+
+      const { checkWorkerReadiness, expectedWorkerMigration } =
+        await import('../../../src/worker/readiness.js')
+      await expect(
+        checkWorkerReadiness(connection, [{ module: 'core', name: expectedWorkerMigration }], [], {
+          contractFingerprint,
+          operations: [],
+        }),
+      ).resolves.toEqual({ healthy: true })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('worker readiness rejects stale contracts and excess runtime authority without repair', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      const { migrationName, operation } = await installAlphaPersistence(connection)
+      const { checkWorkerReadiness, expectedWorkerMigration } =
+        await import('../../../src/worker/readiness.js')
+      const persistenceRequirement = {
+        contractFingerprint: persistenceContractFingerprintFor([operation]),
+        operations: [operation],
+      }
+      const check = () =>
+        checkWorkerReadiness(
+          connection,
+          [
+            { module: 'core', name: expectedWorkerMigration },
+            { module: 'alpha', name: migrationName },
+          ],
+          ['alpha'],
+          persistenceRequirement,
+        )
+
+      await connection`
+        update module_persistence_contract
+        set contract_fingerprint = ${'0'.repeat(64)}
+      `
+      await expect(check()).resolves.toMatchObject({
+        healthy: false,
+        reason: expect.stringContaining('rejected: contract'),
+      })
+      const [staleContract] = await connection<{ contract_fingerprint: string }[]>`
+        select contract_fingerprint from module_persistence_contract
+      `
+      expect(staleContract?.contract_fingerprint).toBe('0'.repeat(64))
+
+      await connection`
+        update module_persistence_contract
+        set contract_fingerprint = ${persistenceRequirement.contractFingerprint}
+      `
+      await connection`
+        grant select on eve_module_alpha.routine_records to eve_module_alpha_runtime
+      `
+      await expect(check()).resolves.toMatchObject({
+        healthy: false,
+        reason: expect.stringContaining('rejected: authority'),
+      })
+      const [excessAuthority] = await connection<{ can_read: boolean }[]>`
+        select has_table_privilege(
+          'eve_module_alpha_runtime',
+          'eve_module_alpha.routine_records',
+          'SELECT'
+        ) as can_read
+      `
+      expect(excessAuthority?.can_read).toBe(true)
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('rolls back routine creation and the ledger when finalization fails', async () => {
+    const connection = postgres(databaseUrl)
+    const migrationName = 'alpha-020-read-snapshot.sql'
+    const sql = declaredReadRoutineSql()
+    const operation = {
+      ...(await persistenceRoutineDescriptor(migrationName, sql)),
+      definitionFingerprint: '0'.repeat(64),
+    }
+
+    try {
+      const failure = await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: migrationName }],
+        persistenceOperations: [operation],
+        loadModuleSql: async () => sql,
+      }).catch((error: unknown) => error)
+
+      expect(failure).toBeInstanceOf(ModulePersistenceRoutineProvisioningError)
+      expect(failure).toMatchObject({
+        moduleId: 'alpha',
+        operationId: 'read-snapshot',
+        failure: 'definition',
+      })
+      const [state] = await connection<
+        { applied: boolean; attested: boolean; routine_exists: boolean; schema_exists: boolean }[]
+      >`
+        select
+          exists (
+            select 1 from schema_migrations
+            where module = 'alpha' and name = ${migrationName}
+          ) as applied,
+          exists (
+            select 1 from module_persistence_operation_attestations
+            where module_id = 'alpha' and operation_id = 'read-snapshot'
+          ) as attested,
+          to_regprocedure('eve_module_alpha.persist_read_snapshot(jsonb)') is not null
+            as routine_exists,
+          to_regnamespace('eve_module_alpha') is not null as schema_exists
+      `
+      expect(state).toEqual({
+        applied: false,
+        attested: false,
+        routine_exists: false,
+        schema_exists: false,
+      })
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('never exposes a routine with its default public grant', async () => {
+    const migrator = postgres(databaseUrl, { max: 1 })
+    const blocker = postgres(databaseUrl, { max: 1 })
+    const observer = postgres(databaseUrl)
+    const initialMigration = 'alpha-010-routine-gate.sql'
+    const routineMigration = 'alpha-020-read-snapshot.sql'
+    const routineSql = `
+      ${declaredReadRoutineSql()};
+      alter table routine_gate add column finalized boolean;
+    `
+    const operation = await persistenceRoutineDescriptor(routineMigration, routineSql)
+    let migration: Promise<void> | undefined
+
+    try {
+      await runStartupMigrations(migrator, {
+        installed: [{ moduleId: 'alpha', name: initialMigration }],
+        loadModuleSql: async () => 'create table routine_gate (id bigint primary key);',
+      })
+      const [backend] = await migrator<{ pid: number }[]>`select pg_backend_pid() as pid`
+      await blocker`begin`
+      await blocker`select * from eve_module_alpha.routine_gate`
+
+      migration = runStartupMigrations(migrator, {
+        installed: [
+          { moduleId: 'alpha', name: initialMigration },
+          { moduleId: 'alpha', name: routineMigration },
+        ],
+        persistenceOperations: [operation],
+        loadModuleSql: async ({ name }) =>
+          name === initialMigration
+            ? 'create table routine_gate (id bigint primary key);'
+            : routineSql,
+      })
+      await waitForBackendLock(observer, backend!.pid)
+
+      const [duringMigration] = await observer<{ visible: boolean }[]>`
+        select to_regprocedure('eve_module_alpha.persist_read_snapshot(jsonb)') is not null
+          as visible
+      `
+      expect(duringMigration?.visible).toBe(false)
+
+      await blocker`rollback`
+      await migration
+      migration = undefined
+
+      const [afterCommit] = await observer<{ public_execute: boolean }[]>`
+        select exists (
+          select 1
+          from pg_proc routine
+          cross join lateral aclexplode(
+            coalesce(routine.proacl, acldefault('f', routine.proowner))
+          ) privilege
+          where routine.oid = 'eve_module_alpha.persist_read_snapshot(jsonb)'::regprocedure
+            and privilege.grantee = 0
+            and privilege.privilege_type = 'EXECUTE'
+        ) as public_execute
+      `
+      expect(afterCommit?.public_execute).toBe(false)
+    } finally {
+      await blocker`rollback`.catch(() => undefined)
+      await migration?.catch(() => undefined)
+      await Promise.all([migrator.end(), blocker.end(), observer.end()])
+    }
+  })
+
+  test('enforces timeout and cancellation for installed read operations', async () => {
+    const connection = postgres(databaseUrl, { max: 1 })
+    const blocker = postgres(databaseUrl, { max: 1 })
+    const migrationName = 'alpha-030-runtime-operations.sql'
+    const migrationSql = runtimePersistenceMigrationSql()
+    const operations = await runtimePersistenceOperations(migrationName, migrationSql)
+    const readOperation = operations[0]!
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: migrationName }],
+        persistenceOperations: operations,
+        loadModuleSql: async () => migrationSql,
+      })
+      await blocker`begin`
+      await blocker`alter table eve_module_alpha.routine_records add column timeout_gate boolean`
+      const timedInvoke = createStandaloneModulePersistenceOperationInvoker(
+        connection,
+        'alpha',
+        operations,
+        { readOnly: true, statementTimeoutMilliseconds: 100 },
+      )
+
+      await expect(timedInvoke(readOperation, {})).rejects.toMatchObject({
+        category: 'execution',
+      })
+      await blocker`rollback`
+
+      const controller = new AbortController()
+      await blocker`begin`
+      await blocker`alter table eve_module_alpha.routine_records add column cancellation_gate boolean`
+      const cancelledInvoke = createStandaloneModulePersistenceOperationInvoker(
+        connection,
+        'alpha',
+        operations,
+        { readOnly: true, signal: controller.signal },
+      )
+      const cancelled = cancelledInvoke(readOperation, {})
+      setTimeout(() => controller.abort(), 50).unref()
+      await expect(cancelled).rejects.toMatchObject({ category: 'cancelled' })
+      await blocker`rollback`
+
+      const [session] = await connection<{ role: string }[]>`select current_user as role`
+      expect(session?.role).toBe('eve_space')
+    } finally {
+      await blocker`rollback`.catch(() => undefined)
+      await Promise.all([connection.end(), blocker.end()])
+    }
+  })
+
+  test('rolls malformed scoped write output back and retains the first failure', async () => {
+    const connection = postgres(databaseUrl)
+    const migrationName = 'alpha-030-runtime-operations.sql'
+    const migrationSql = runtimePersistenceMigrationSql()
+    const operations = await runtimePersistenceOperations(migrationName, migrationSql)
+    const writeOperation = operations[1]!
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: migrationName }],
+        persistenceOperations: operations,
+        loadModuleSql: async () => migrationSql,
+      })
+
+      await connection.begin(async (transaction) => {
+        const scoped = createTransactionScopedModulePersistenceOperationInvoker(
+          transaction,
+          'alpha',
+          operations,
+        )
+        const first = await scoped
+          .invoke(writeOperation, { value: 'must roll back' })
+          .catch((error: unknown) => error)
+        expect(first).toMatchObject({ category: 'output' })
+        expect(scoped.suppressedFailure()?.error).toBe(first)
+        await expect(
+          scoped.invoke(writeOperation, { value: 'must not run' }),
+        ).rejects.toMatchObject({ category: 'repeated' })
+        scoped.close()
+
+        const [state] = await transaction<{ count: number; role: string }[]>`
+          select
+            current_user as role,
+            (select count(*)::integer from eve_module_alpha.routine_records) as count
+        `
+        expect(state).toEqual({ count: 0, role: 'eve_space' })
       })
     } finally {
       await connection.end()
@@ -814,7 +1531,14 @@ describe('multi-process safety', () => {
         checkWorkerReadiness(
           connection,
           [{ module: 'core', name: expectedWorkerMigration }],
-          ['empty-module'],
+          ['alpha', 'beta', 'empty-module'],
+          {
+            contractFingerprint: persistenceContractFingerprintFor(
+              [],
+              ['alpha', 'beta', 'empty-module'],
+            ),
+            operations: [],
+          },
         ),
       ).resolves.toEqual({ healthy: true })
 
@@ -839,6 +1563,8 @@ describe('multi-process safety', () => {
           migration_rolsuper: boolean
           migration_rolbypassrls: boolean
           migration_set_option: boolean
+          runtime_sequence_access: boolean
+          runtime_table_access: boolean
           rolcanlogin: boolean
           rolcreatedb: boolean
           rolcreaterole: boolean
@@ -877,6 +1603,16 @@ describe('multi-process safety', () => {
           has_schema_privilege(runtime.rolname, 'eve_module_alpha', 'USAGE') as alpha_usage,
           has_schema_privilege(runtime.rolname, 'eve_module_alpha', 'CREATE') as alpha_create,
           has_schema_privilege(runtime.rolname, 'eve_module_beta', 'USAGE') as beta_usage,
+          has_table_privilege(
+            runtime.rolname,
+            'eve_module_alpha.alpha_records',
+            'SELECT, INSERT, UPDATE, DELETE'
+          ) as runtime_table_access,
+          has_sequence_privilege(
+            runtime.rolname,
+            'eve_module_alpha.alpha_records_id_seq',
+            'USAGE'
+          ) as runtime_sequence_access,
           has_schema_privilege(migration.rolname, 'eve_module_alpha', 'CREATE')
             as migration_alpha_create,
           has_schema_privilege(migration.rolname, 'eve_module_beta', 'USAGE')
@@ -917,6 +1653,8 @@ describe('multi-process safety', () => {
         migration_rolsuper: false,
         migration_rolbypassrls: false,
         migration_set_option: true,
+        runtime_sequence_access: false,
+        runtime_table_access: false,
         rolcanlogin: false,
         rolcreatedb: false,
         rolcreaterole: false,
@@ -928,6 +1666,18 @@ describe('multi-process safety', () => {
       })
       expect(security?.schema_owner).toBe('eve_space')
       expect(security?.table_owner).toBe('eve_module_alpha_migrate')
+      for (const statement of [
+        'select * from eve_module_alpha.alpha_records',
+        'select * from eve_module_beta.beta_records',
+        'select * from public.users',
+      ])
+        await expect(
+          connection.begin(async (transaction) => {
+            await transaction`set local role eve_module_alpha_runtime`
+            await transaction.unsafe(statement)
+          }),
+        ).rejects.toMatchObject({ code: '42501' })
+
       const [migrationIdentity] = await connection<{ role_name: string }[]>`
         select role_name from eve_module_alpha.alpha_migration_identity
       `
@@ -942,124 +1692,86 @@ describe('multi-process safety', () => {
           `
         }),
       ).rejects.toMatchObject({ code: '42501' })
+    } finally {
+      await connection.end()
+    }
+  })
 
-      const alphaPersistence = createModulePersistenceCapability(connection, 'alpha')
-      await expect(
-        alphaPersistence.transaction(async (restricted) => {
-          const [identity] = await restricted.query<{
-            current_user: string
-            session_user: string
-          }>('select current_user, session_user')
-          const [inserted] = await restricted.query<{ id: number; value: string }>(
-            "insert into alpha_records (value) values ('allowed') returning id, value",
-          )
-          return { identity, inserted }
-        }),
-      ).resolves.toEqual({
-        identity: {
-          current_user: 'eve_module_alpha_runtime',
-          session_user: 'eve_space',
-        },
-        inserted: { id: 1, value: 'allowed' },
-      })
-      const readOnlyPersistence = createModulePersistenceCapability(connection, 'alpha', {
-        readOnly: true,
-        statementTimeoutMilliseconds: 2_000,
-      })
-      await expect(
-        readOnlyPersistence.transaction(async (restricted) => {
-          const [record] = await restricted.query<{ value: string }>(
-            'select value from alpha_records where id = 1',
-          )
-          return record
-        }),
-      ).resolves.toEqual({ value: 'allowed' })
-      await expect(
-        readOnlyPersistence.transaction((restricted) =>
-          restricted.query("insert into alpha_records (value) values ('forbidden')"),
-        ),
-      ).rejects.toMatchObject({ code: '25006' })
-      const writableEscapeAttempts: unknown[] = []
-      await expect(
-        alphaPersistence.transaction(async (restricted) => {
-          for (const statement of [
-            'reset role',
-            'select count(*) from public.users',
-            'insert into public.users default values',
-            'select count(*) from eve_module_beta.beta_records',
-            "insert into eve_module_beta.beta_records (value) values ('escaped')",
-          ]) {
-            writableEscapeAttempts.push(await restricted.query(statement).catch((error) => error))
-          }
-          await restricted.query(
-            "insert into alpha_records (value) values ('escape transaction rolled back')",
-          )
-        }),
-      ).rejects.toMatchObject({ category: 'prohibited-operation' })
-      expect(writableEscapeAttempts).toEqual([
-        expect.objectContaining({ category: 'prohibited-operation' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-      ])
+  test('attests runtime authority for a module without persistence operations', async () => {
+    const connection = postgres(databaseUrl)
+    const options = {
+      installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
+      loadModuleSql: loadIsolationMigrationSql,
+    } as const
 
-      const readOnlyEscapeAttempts: unknown[] = []
-      await expect(
-        readOnlyPersistence.transaction(async (restricted) => {
-          for (const statement of [
-            'reset role',
-            'select count(*) from public.users',
-            'select count(*) from eve_module_beta.beta_records',
-          ]) {
-            readOnlyEscapeAttempts.push(await restricted.query(statement).catch((error) => error))
-          }
-        }),
-      ).rejects.toMatchObject({ category: 'prohibited-operation' })
-      expect(readOnlyEscapeAttempts).toEqual([
-        expect.objectContaining({ category: 'prohibited-operation' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-      ])
-      await expect(
-        alphaPersistence.transaction((restricted) =>
-          restricted.query('create table eve_module_alpha.forbidden (id integer)'),
-        ),
-      ).rejects.toMatchObject({ code: '42501' })
-      await expect(
-        alphaPersistence.transaction(async (restricted) => {
-          await restricted.query("insert into alpha_records (value) values ('rolled back')")
-          throw new Error('rollback module transaction')
-        }),
-      ).rejects.toThrow('rollback module transaction')
-
-      const [outside] = await connection<
-        {
-          current_user: string
-          escaped_rows: number
-          rolled_back_rows: number
-          session_user: string
-        }[]
-      >`
-        select
-          current_user,
-          session_user,
-          (
-            select count(*)::integer
-            from eve_module_alpha.alpha_records
-            where value = 'rolled back'
-          ) as rolled_back_rows,
-          (
-            select count(*)::integer
-            from eve_module_alpha.alpha_records
-            where value = 'escape transaction rolled back'
-          ) as escaped_rows
+    try {
+      await runStartupMigrations(connection, options)
+      await connection`
+        grant select on eve_module_alpha.alpha_records to eve_module_alpha_runtime
       `
-      expect(outside).toEqual({
-        current_user: 'eve_space',
-        escaped_rows: 0,
-        rolled_back_rows: 0,
+
+      await expect(runStartupMigrations(connection, options)).rejects.toMatchObject({
+        moduleId: 'alpha',
+        operationId: 'catalog',
+        failure: 'authority',
+      })
+      const [authority] = await connection<{ can_read: boolean }[]>`
+        select has_table_privilege(
+          'eve_module_alpha_runtime',
+          'eve_module_alpha.alpha_records',
+          'SELECT'
+        ) as can_read
+      `
+      expect(authority?.can_read).toBe(true)
+    } finally {
+      await connection.end()
+    }
+  })
+
+  test('characterizes PostgreSQL role recovery that fixed operations exclude', async () => {
+    const connection = postgres(databaseUrl)
+
+    try {
+      await runStartupMigrations(connection, {
+        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
+        loadModuleSql: loadIsolationMigrationSql,
+      })
+
+      const [privileges] = await connection<{ can_read_users: boolean }[]>`
+        select has_table_privilege(
+          'eve_module_alpha_runtime',
+          'public.users',
+          'SELECT'
+        ) as can_read_users
+      `
+      expect(privileges?.can_read_users).toBe(false)
+
+      const recovered = await connection.begin(async (transaction) => {
+        await transaction`set local role eve_module_alpha_runtime`
+        const [restricted] = await transaction<{ current_user: string; session_user: string }[]>`
+          select current_user, session_user
+        `
+
+        await transaction.unsafe('reset role').simple()
+        const [restored] = await transaction<
+          { current_user: string; session_user: string; user_count: number }[]
+        >`
+          select
+            current_user,
+            session_user,
+            (select count(*)::integer from public.users) as user_count
+        `
+        return { restricted, restored }
+      })
+
+      expect(recovered.restricted).toEqual({
+        current_user: 'eve_module_alpha_runtime',
         session_user: 'eve_space',
+      })
+      expect(recovered.restored).toEqual({
+        current_user: 'eve_space',
+        session_user: 'eve_space',
+        user_count: 0,
       })
     } finally {
       await connection.end()
@@ -1120,231 +1832,6 @@ describe('multi-process safety', () => {
         routine_owner: 'eve_module_alpha_migrate',
         schema_owner: 'eve_space',
         type_owner: 'eve_module_alpha_migrate',
-      })
-    } finally {
-      await connection.end()
-    }
-  })
-
-  test('restores the platform role and search path after a module operation succeeds', async () => {
-    const connection = postgres(databaseUrl)
-
-    try {
-      await runStartupMigrations(connection, {
-        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
-        loadModuleSql: loadIsolationMigrationSql,
-      })
-
-      const observed = await connection.begin(async (transaction) => {
-        const [before] = await transaction<{ role: string; search_path: string }[]>`
-          select current_user as role, current_setting('search_path') as search_path
-        `
-        const { capability } = createTransactionScopedModulePersistenceCapability(
-          transaction,
-          'alpha',
-        )
-        const moduleRole = await capability.transaction(async (scoped) => {
-          await scoped.query("insert into alpha_records (value) values ('kept')")
-          const rows = await scoped.query<{ role: string }>('select current_user as role')
-          return rows[0]?.role
-        })
-        const [after] = await transaction<{ role: string; search_path: string }[]>`
-          select current_user as role, current_setting('search_path') as search_path
-        `
-        return { before, moduleRole, after }
-      })
-
-      expect(observed.moduleRole).toBe('eve_module_alpha_runtime')
-      expect(observed.before?.role).toBe('eve_space')
-      expect(observed.after).toEqual(observed.before)
-
-      const [kept] = await connection<{ count: number }[]>`
-        select count(*)::integer as count
-        from eve_module_alpha.alpha_records
-        where value = 'kept'
-      `
-      expect(kept?.count).toBe(1)
-    } finally {
-      await connection.end()
-    }
-  })
-
-  test('restores the platform role after a transaction-scoped module attempts a role escape', async () => {
-    const connection = postgres(databaseUrl)
-
-    try {
-      await runStartupMigrations(connection, {
-        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
-        loadModuleSql: loadIsolationMigrationSql,
-      })
-
-      const observed = await connection.begin(async (transaction) => {
-        const [before] = await transaction<{ role: string; search_path: string }[]>`
-          select current_user as role, current_setting('search_path') as search_path
-        `
-        const persistence = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
-        const escapeAttempts: unknown[] = []
-        const failure = await persistence.capability
-          .transaction(async (scoped) => {
-            await scoped.query("insert into alpha_records (value) values ('rolled back')")
-            escapeAttempts.push(await scoped.query('reset role').catch((error) => error))
-            escapeAttempts.push(
-              await scoped.query('select count(*) from public.users').catch((error) => error),
-            )
-            escapeAttempts.push(
-              await scoped
-                .query("insert into eve_module_beta.beta_records (value) values ('escaped')")
-                .catch((error) => error),
-            )
-          })
-          .catch((error: unknown) => error)
-
-        const [after] = await transaction<{ role: string; search_path: string }[]>`
-          select current_user as role, current_setting('search_path') as search_path
-        `
-        // The platform must still own the transaction it lent to the module.
-        await transaction`insert into deployment_modules (module_id) values ('alpha')`
-        const [rolledBack] = await transaction<{ count: number }[]>`
-          select count(*)::integer as count
-          from eve_module_alpha.alpha_records
-          where value = 'rolled back'
-        `
-        return {
-          after,
-          before,
-          escapeAttempts,
-          failure,
-          rolledBack,
-          suppressed: persistence.suppressedFailure()?.error,
-        }
-      })
-
-      expect(observed.escapeAttempts).toEqual([
-        expect.objectContaining({ category: 'prohibited-operation' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-        expect.objectContaining({ category: 'cross-schema' }),
-      ])
-      expect(observed.failure).toMatchObject({ category: 'prohibited-operation' })
-      expect(observed.suppressed).toBe(observed.failure)
-      expect(observed.after).toEqual(observed.before)
-      expect(observed.rolledBack?.count).toBe(0)
-
-      const [modules] = await connection<{ count: number }[]>`
-        select count(*)::integer as count from deployment_modules where module_id = 'alpha'
-      `
-      expect(modules?.count).toBe(1)
-    } finally {
-      await connection.end()
-    }
-  })
-
-  test('rolls back module materialization and platform collection state atomically', async () => {
-    const connection = postgres(databaseUrl)
-    const userId = randomUUID()
-    const lifecycleId = randomUUID()
-    const rollback = new Error('rollback materialization and collection state')
-
-    try {
-      await runStartupMigrations(connection, {
-        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
-        loadModuleSql: loadIsolationMigrationSql,
-      })
-      await connection`insert into users (id) values (${userId})`
-      await connection`
-        insert into characters (character_id, user_id, name, corporation_id)
-        values (9001, ${userId}, 'Atomic Pilot', 9801)
-      `
-      await connection`
-        insert into platform_subject_lifecycles (
-          subject_lifecycle_id,
-          subject_kind,
-          subject_id,
-          character_id
-        ) values (${lifecycleId}, 'character', '9001', 9001)
-      `
-      await connection`insert into deployment_modules (module_id) values ('alpha')`
-
-      await expect(
-        connection.begin(async (transaction) => {
-          const { capability } = createTransactionScopedModulePersistenceCapability(
-            transaction,
-            'alpha',
-          )
-          await capability.transaction((scoped) =>
-            scoped.query("insert into alpha_records (value) values ('atomic rollback')"),
-          )
-          await transaction`
-            insert into platform_collection_state (
-              module_id,
-              resource_id,
-              subject_kind,
-              subject_lifecycle_id,
-              subject_id,
-              next_eligible_at,
-              authorization_generation,
-              validated_at
-            ) values (
-              'alpha',
-              'records',
-              'character',
-              ${lifecycleId},
-              '9001',
-              '2026-09-13T12:00:00.000Z',
-              1,
-              '2026-09-13T11:00:00.000Z'
-            )
-          `
-          throw rollback
-        }),
-      ).rejects.toBe(rollback)
-
-      const [counts] = await connection<{ collection_states: number; module_records: number }[]>`
-        select
-          (
-            select count(*)::integer
-            from eve_module_alpha.alpha_records
-            where value = 'atomic rollback'
-          ) as module_records,
-          (
-            select count(*)::integer
-            from platform_collection_state
-            where module_id = 'alpha' and resource_id = 'records'
-          ) as collection_states
-      `
-      expect(counts).toEqual({ collection_states: 0, module_records: 0 })
-    } finally {
-      await connection.end()
-    }
-  })
-
-  test('rejects nested and repeated module resource transactions', async () => {
-    const connection = postgres(databaseUrl)
-
-    try {
-      await runStartupMigrations(connection, {
-        installed: [{ moduleId: 'alpha', name: 'alpha-010-records.sql' }],
-        loadModuleSql: loadIsolationMigrationSql,
-      })
-
-      await connection.begin(async (transaction) => {
-        const nested = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
-        await expect(
-          nested.capability.transaction(async () =>
-            nested.capability.transaction(async () => undefined),
-          ),
-        ).rejects.toThrow('Nested module resource transactions are not supported')
-
-        const reused = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
-        await reused.capability.transaction(async () => undefined)
-        await expect(reused.capability.transaction(async () => undefined)).rejects.toThrow(
-          'Module resource transaction capability is single-use',
-        )
-
-        const expired = createTransactionScopedModulePersistenceCapability(transaction, 'alpha')
-        const escaped = await expired.capability.transaction(async (scoped) => scoped)
-        await expect(escaped.query('select 1')).rejects.toThrow(
-          'Module query transaction is no longer active',
-        )
       })
     } finally {
       await connection.end()

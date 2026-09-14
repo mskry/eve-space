@@ -97,7 +97,7 @@ const organizationIdHint = computed(() =>
     ? 'Enter the numeric EVE ID without spaces or separators.'
     : `Numeric ID from the ${organizationLabel.value.toLowerCase()} record.`,
 )
-const resolvedEntity = computed(() =>
+const organizationSelection = computed(() =>
   fieldErrors.value.organizationId
     ? 'Awaiting ID'
     : `${organizationLabel.value} ${organizationId.value.trim()}`,
@@ -234,7 +234,7 @@ function returnToOwnerStep() {
 
         <section class="admin-setup-section">
           <p class="ui-eyebrow">ORGANIZATION</p>
-          <div class="admin-field">
+          <div class="admin-field admin-setup-organization-type">
             <span>Organization type</span>
             <UiToggleGroup
               v-model="organizationTypeSelection"
@@ -257,12 +257,12 @@ function returnToOwnerStep() {
               </small>
             </label>
             <div class="admin-field">
-              <span>Resolved</span>
-              <p class="admin-setup-resolved">
+              <span>Selection</span>
+              <p class="admin-setup-selection">
                 <span aria-hidden="true">{{ organizationInitial }}</span>
-                {{ resolvedEntity }}
+                {{ organizationSelection }}
               </p>
-              <small>Verified against ESI when the deployment launches.</small>
+              <small>Name and type are verified against ESI when the deployment launches.</small>
             </div>
           </div>
         </section>

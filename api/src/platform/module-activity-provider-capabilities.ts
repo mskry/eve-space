@@ -1,30 +1,21 @@
 import type { CoreDataProductId } from '@eve-space/core-data-contract'
-import type {
-  PlatformActivityProviderContext,
-  PlatformActivityProviderCapabilities,
-  PlatformModuleResourceTransaction,
-} from '@eve-space/platform-module-contract'
+import type { PlatformActivityProviderContext } from '@eve-space/platform-module-contract'
 import { platformActivityProviderTimeoutMilliseconds } from '@eve-space/platform-module-contract'
-import { sql } from '../db/client.js'
-import { createModulePersistenceCapability } from '../db/module-persistence.js'
 import { createCoreDataCapability } from '../core-data/capabilities.js'
 import { createPlatformModuleCollectionStatusReads } from './module-collection-status-capabilities.js'
 import { createPlatformModuleLogger } from './module-logging.js'
+import { createPlatformModuleActivityProviderPersistence } from './module-persistence-capabilities.js'
 
 export function createPlatformModuleActivityProviderCapabilities<
+  const ModuleId extends string,
+  const ProviderId extends string,
   const ProductIds extends readonly CoreDataProductId[] = readonly [],
 >(
-  moduleId: string,
+  moduleId: ModuleId,
+  providerId: ProviderId,
   context: PlatformActivityProviderContext,
   productIds: ProductIds = [] as unknown as ProductIds,
-): PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction, ProductIds> {
-  const persistence = createModulePersistenceCapability(sql, moduleId, {
-    assertActive: () => {
-      if (context.signal.aborted) throw new Error('Module activity provider was aborted')
-    },
-    readOnly: true,
-    statementTimeoutMilliseconds: platformActivityProviderTimeoutMilliseconds,
-  })
+) {
   return {
     collectionStatus: createPlatformModuleCollectionStatusReads({
       moduleId,
@@ -34,6 +25,11 @@ export function createPlatformModuleActivityProviderCapabilities<
     }),
     coreData: createCoreDataCapability(productIds, 'activity-provider'),
     logger: createPlatformModuleLogger(moduleId),
-    persistence,
+    persistence: createPlatformModuleActivityProviderPersistence(
+      moduleId,
+      providerId,
+      context.signal,
+      platformActivityProviderTimeoutMilliseconds,
+    ),
   }
 }

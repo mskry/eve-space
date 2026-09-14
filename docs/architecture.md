@@ -88,7 +88,7 @@ Organization membership and governance:
 - `GET /api/organization/compliance` returns only the caller's attached-character compliance details and remediation state.
 - `GET /api/organization/roster-coverage` and `/exceptions` expose HR-scoped registration coverage and external-character exceptions.
 - `/api/organization/roles`, `/registration-policy`, `/corporations/:corporationId/source`, `/groups`, and `/members/:userId/block` expose reasoned, audited organization-management operations to their required roles.
-- `GET /api/organization/activities` aggregates enabled member-safe activity providers. The activity provider contract exists, but no organization activity feature module is installed yet.
+- `GET /api/organization/activities` aggregates enabled member-safe activity providers.
 - `GET /auth/eve/claim-organization-owner/:characterId` starts the separate EVE-backed organization-owner verification flow.
 
 Although character and corporation profile data originates from public ESI endpoints, the root Hono app requires an application session for `/api/characters/*` and `/api/corporations/*`. Every `/api/me/characters/:characterId/*` route additionally verifies character ownership before token or ESI access.
@@ -97,6 +97,14 @@ Installed module server packages run inside the existing API and worker processe
 boundaries, not one service per module. Installation, runtime enablement, safe disablement, migration
 failure, retained data, telemetry, and explicit removal are documented in
 [`platform-module-foundation.md`](platform-module-foundation.md).
+
+Module persistence is a generated operation seam rather than a SQL or transaction API. Each
+contribution receives only its declared named methods. The host validates bounded JSON input and
+output, constructs a fixed call to an attested module-schema SQL routine, and retains transaction,
+timeout, cancellation, and failure ownership. Restricted runtime roles can execute only their exact
+routines and have no direct relation privileges. API startup and worker readiness compare the same
+whole-catalog fingerprint, operation attestations, live definitions, grants, and role authority
+before admitting work.
 
 ## Core EVE Data Boundary
 

@@ -14,6 +14,7 @@ const manifest = {
         authorization: 'authenticated-session',
         audience: 'member',
         requiredPermission: 'organization-activity.view',
+        persistenceOperations: [{ operationId: 'read-activity-snapshots' }],
       },
       {
         id: 'activity-participation',
@@ -22,11 +23,41 @@ const manifest = {
         authorization: 'owned-character',
         audience: 'member',
         requiredPermission: 'organization-activity.view',
+        persistenceOperations: [{ operationId: 'read-activity-snapshots' }],
       },
     ],
     migrations: [
       {
         name: 'organization-activity-001-initial.sql',
+      },
+      {
+        name: 'organization-activity-002-persistence-operations.sql',
+      },
+    ],
+    persistenceOperations: [
+      {
+        id: 'read-activity-checkpoint',
+        method: 'readActivityCheckpoint',
+        revision: 1,
+        mode: 'read',
+        exportName: 'readActivityCheckpointOperation',
+        migration: 'organization-activity-002-persistence-operations.sql',
+      },
+      {
+        id: 'read-activity-snapshots',
+        method: 'readActivitySnapshots',
+        revision: 1,
+        mode: 'read',
+        exportName: 'readActivitySnapshotsOperation',
+        migration: 'organization-activity-002-persistence-operations.sql',
+      },
+      {
+        id: 'materialize-activity-observation',
+        method: 'materializeActivityObservation',
+        revision: 1,
+        mode: 'write',
+        exportName: 'materializeActivityObservationOperation',
+        migration: 'organization-activity-002-persistence-operations.sql',
       },
     ],
     resources: [
@@ -43,6 +74,10 @@ const manifest = {
         eligibility: {
           kind: 'current-deployment',
         },
+        persistence: {
+          projection: [{ operationId: 'read-activity-checkpoint' }],
+          materialization: [{ operationId: 'materialize-activity-observation' }],
+        },
         exportName: 'campaignsResource',
       },
       {
@@ -53,6 +88,10 @@ const manifest = {
         materializationIntervalSeconds: 60,
         eligibility: {
           kind: 'current-deployment',
+        },
+        persistence: {
+          projection: [{ operationId: 'read-activity-checkpoint' }],
+          materialization: [{ operationId: 'materialize-activity-observation' }],
         },
         exportName: 'publicJobsResource',
       },
@@ -65,6 +104,10 @@ const manifest = {
         eligibility: {
           kind: 'current-managed-corporation-source',
         },
+        persistence: {
+          projection: [{ operationId: 'read-activity-checkpoint' }],
+          materialization: [{ operationId: 'materialize-activity-observation' }],
+        },
         exportName: 'corporationJobsResource',
       },
       {
@@ -75,6 +118,10 @@ const manifest = {
         materializationIntervalSeconds: 60,
         eligibility: {
           kind: 'current-managed-corporation-source',
+        },
+        persistence: {
+          projection: [{ operationId: 'read-activity-checkpoint' }],
+          materialization: [{ operationId: 'materialize-activity-observation' }],
         },
         exportName: 'corporationProjectsResource',
       },
@@ -87,6 +134,10 @@ const manifest = {
         eligibility: {
           kind: 'current-owned-character',
         },
+        persistence: {
+          projection: [{ operationId: 'read-activity-checkpoint' }],
+          materialization: [{ operationId: 'materialize-activity-observation' }],
+        },
         exportName: 'characterJobsResource',
       },
       {
@@ -98,6 +149,10 @@ const manifest = {
         eligibility: {
           kind: 'current-owned-character',
         },
+        persistence: {
+          projection: [{ operationId: 'read-activity-checkpoint' }],
+          materialization: [{ operationId: 'materialize-activity-observation' }],
+        },
         exportName: 'characterCampaignsResource',
       },
       {
@@ -108,6 +163,10 @@ const manifest = {
         materializationIntervalSeconds: 60,
         eligibility: {
           kind: 'current-owned-character',
+        },
+        persistence: {
+          projection: [{ operationId: 'read-activity-checkpoint' }],
+          materialization: [{ operationId: 'materialize-activity-observation' }],
         },
         exportName: 'characterProjectsResource',
       },
@@ -176,6 +235,7 @@ const manifest = {
         exportName: 'organizationActivityProvider',
         audience: 'member',
         requiredPermission: 'organization-activity.view',
+        persistenceOperations: [{ operationId: 'read-activity-snapshots' }],
         freshness: {
           staleAfterSeconds: 3600,
         },

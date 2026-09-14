@@ -17,9 +17,11 @@ export const installedModuleActivityProviders = [
       'organization-activity-jobs',
       'organization-activity-campaigns',
     ],
+    persistenceOperations: [{ operationId: 'read-activity-snapshots' }] as const,
     invoke: (context) =>
       module0ActivityProvider0Factory(
         createPlatformModuleActivityProviderCapabilities(
+          'organization-activity',
           'organization-activity',
           context,
           [] as const,

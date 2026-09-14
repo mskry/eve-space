@@ -18,6 +18,14 @@ import {
   type PlatformModuleManifest,
   type PlatformResourceContribution,
 } from './contract.js'
+import {
+  platformPersistenceOperationIdMaxLength,
+  platformPersistenceOperationIdPattern,
+  platformPersistenceOperationModes,
+  type PlatformPersistenceOperationContribution,
+  type PlatformPersistenceOperationMode,
+  type PlatformPersistenceOperationReference,
+} from './persistence.js'
 
 export interface PlatformModuleValidationAuthorities {
   reservedModuleIds: readonly string[]
@@ -33,6 +41,14 @@ export interface PlatformModuleValidationAuthorities {
       }
     >
   >
+}
+
+interface PersistenceReferenceValidationContext {
+  readonly moduleId: string
+  readonly operations: ReadonlyMap<string, PlatformPersistenceOperationContribution>
+  readonly owners: ReadonlyMap<string, ReadonlySet<string>>
+  readonly referenced: Set<string>
+  readonly issues: string[]
 }
 
 export function compareStable(left: string, right: string) {
@@ -68,6 +84,7 @@ export function validatePlatformModuleManifests(
   const migrationIds = new Map<string, string>()
   const resourceIds = new Map<string, string>()
   const activityProviderIds = new Map<string, string>()
+  const persistenceOperationOwners = indexPersistenceOperationOwners(sorted)
 
   for (const manifest of sorted)
     claimValue(moduleIds, manifest.id, manifest.id, 'module ID', issues)
@@ -89,6 +106,7 @@ export function validatePlatformModuleManifests(
     validateRouteNamespaceIntersections(manifest, issues)
     validateRoutes(manifest, routeCoordinates, authorities.coreDataProductContracts, issues)
     validateMigrations(manifest, migrationIds, issues)
+    const persistenceOperations = validatePersistenceOperations(manifest, issues)
     validateEsiOperations(manifest, issues)
     validateResources(
       manifest,
@@ -103,6 +121,7 @@ export function validatePlatformModuleManifests(
       authorities.coreDataProductContracts,
       issues,
     )
+    validatePersistenceGrants(manifest, persistenceOperations, persistenceOperationOwners, issues)
     validatePages(manifest, issues)
     validateNavigation(manifest, navigationIds, issues)
     validateExposedContributions(manifest, issues)
@@ -110,6 +129,170 @@ export function validatePlatformModuleManifests(
 
   if (issues.length > 0) throw new PlatformModuleValidationError(issues)
   return sorted
+}
+
+function indexPersistenceOperationOwners(manifests: readonly PlatformModuleManifest[]) {
+  const owners = new Map<string, Set<string>>()
+  for (const manifest of manifests)
+    for (const operation of manifest.server.persistenceOperations) {
+      if (typeof operation.id !== 'string') continue
+      const key = normalizeIdentity(operation.id)
+      const operationOwners = owners.get(key) ?? new Set<string>()
+      operationOwners.add(manifest.id)
+      owners.set(key, operationOwners)
+    }
+  return owners
+}
+
+function validatePersistenceOperations(
+  manifest: PlatformModuleManifest,
+  issues: string[],
+): ReadonlyMap<string, PlatformPersistenceOperationContribution> {
+  const operations = new Map<string, PlatformPersistenceOperationContribution>()
+  const methods = new Map<string, string>()
+  const exports = new Map<string, string>()
+  const migrations = new Set(manifest.server.migrations.map(({ name }) => name))
+
+  for (const operation of manifest.server.persistenceOperations) {
+    const identity = `${manifest.id}/${String(operation.id)}`
+    validatePersistenceOperationId(operation, identity, manifest.id, operations, issues)
+    if (typeof operation.method !== 'string')
+      issues.push(`persistence operation ${identity} must declare a method name`)
+    else {
+      validateExportName(operation.method, manifest.id, 'persistence operation method', issues)
+      claimValue(methods, operation.method, identity, 'persistence operation method', issues)
+    }
+    if (typeof operation.exportName !== 'string')
+      issues.push(`persistence operation ${identity} must declare a definition export`)
+    else {
+      validateExportName(operation.exportName, manifest.id, 'persistence operation', issues)
+      claimValue(exports, operation.exportName, identity, 'persistence definition export', issues)
+    }
+    if (!Number.isSafeInteger(operation.revision) || operation.revision < 1)
+      issues.push(`persistence operation ${identity} must use a positive whole revision`)
+    validateMember(
+      operation.mode,
+      platformPersistenceOperationModes,
+      `persistence operation ${identity} uses unsupported mode ${String(operation.mode)}`,
+      issues,
+    )
+    if (typeof operation.migration !== 'string' || !migrations.has(operation.migration))
+      issues.push(
+        `persistence operation ${identity} references undeclared migration ${String(operation.migration)}`,
+      )
+  }
+  return operations
+}
+
+function validatePersistenceOperationId(
+  operation: PlatformPersistenceOperationContribution,
+  identity: string,
+  moduleId: string,
+  operations: Map<string, PlatformPersistenceOperationContribution>,
+  issues: string[],
+) {
+  if (
+    typeof operation.id !== 'string' ||
+    !platformPersistenceOperationIdPattern.test(operation.id) ||
+    operation.id.length > platformPersistenceOperationIdMaxLength
+  ) {
+    issues.push(`persistence operation ${identity} must use a bounded lowercase kebab-case ID`)
+    return
+  }
+  const key = normalizeIdentity(operation.id)
+  if (operations.has(key))
+    issues.push(`persistence operation ID ${operation.id} is duplicated in ${moduleId}`)
+  else operations.set(key, operation)
+}
+
+function validatePersistenceGrants(
+  manifest: PlatformModuleManifest,
+  operations: ReadonlyMap<string, PlatformPersistenceOperationContribution>,
+  owners: ReadonlyMap<string, ReadonlySet<string>>,
+  issues: string[],
+) {
+  const referenced = new Set<string>()
+  const validationContext: PersistenceReferenceValidationContext = {
+    moduleId: manifest.id,
+    operations,
+    owners,
+    referenced,
+    issues,
+  }
+  for (const route of manifest.server.routes)
+    validatePersistenceReferences(
+      route.persistenceOperations,
+      `route ${manifest.id}/${route.id}`,
+      undefined,
+      validationContext,
+    )
+  for (const provider of manifest.server.activityProviders)
+    validatePersistenceReferences(
+      provider.persistenceOperations,
+      `activity provider ${manifest.id}/${provider.id}`,
+      'read',
+      validationContext,
+    )
+  for (const resource of manifest.server.resources) {
+    validatePersistenceReferences(
+      resource.persistence?.projection,
+      `resource projection ${manifest.id}/${resource.id}`,
+      'read',
+      validationContext,
+    )
+    validatePersistenceReferences(
+      resource.persistence?.materialization,
+      `resource materialization ${manifest.id}/${resource.id}`,
+      'write',
+      validationContext,
+    )
+  }
+  for (const [operationId, operation] of operations)
+    if (!referenced.has(operationId))
+      issues.push(
+        `persistence operation ${manifest.id}/${operation.id} is not granted to a contribution`,
+      )
+}
+
+function validatePersistenceReferences(
+  value: unknown,
+  identity: string,
+  expectedMode: PlatformPersistenceOperationMode | undefined,
+  context: PersistenceReferenceValidationContext,
+) {
+  const { moduleId, operations, owners, referenced, issues } = context
+  if (!Array.isArray(value)) {
+    issues.push(`${identity} persistence operations must be an array`)
+    return
+  }
+  const seen = new Set<string>()
+  for (const reference of value as readonly PlatformPersistenceOperationReference[]) {
+    if (!isRecord(reference) || typeof reference.operationId !== 'string') {
+      issues.push(`${identity} contains an invalid persistence operation reference`)
+      continue
+    }
+    const key = normalizeIdentity(reference.operationId)
+    if (seen.has(key)) {
+      issues.push(`${identity} declares duplicate persistence operation ${reference.operationId}`)
+      continue
+    }
+    seen.add(key)
+    const operation = operations.get(key)
+    if (!operation) {
+      const foreignOwners = [...(owners.get(key) ?? [])].filter((owner) => owner !== moduleId)
+      issues.push(
+        foreignOwners.length > 0
+          ? `${identity} references cross-module persistence operation ${reference.operationId} owned by ${foreignOwners.toSorted(compareStable).join(', ')}`
+          : `${identity} references unknown persistence operation ${reference.operationId}`,
+      )
+      continue
+    }
+    referenced.add(key)
+    if (expectedMode && operation.mode !== expectedMode)
+      issues.push(
+        `${identity} cannot use ${operation.mode} persistence operation ${reference.operationId}; expected ${expectedMode}`,
+      )
+  }
 }
 
 function validateRoutes(
@@ -528,6 +711,10 @@ function claimValue(
 
 function normalizeIdentity(value: string) {
   return value.normalize('NFKC').toLowerCase()
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function canonicalizePath(path: string) {

@@ -24,15 +24,17 @@ describe.each(['enabled', 'disabled'] as const)('%s module composition probe', (
     const capabilities = {
       coreData: {},
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      persistence: { transaction: vi.fn() },
+      persistence: {},
     }
+    const readConformanceSnapshot = vi.fn()
+    const upsertConformanceSnapshot = vi.fn()
 
     server.conformanceRoutes(capabilities)
     server.conformanceActivityProvider({
       collectionStatus: { read: vi.fn() },
       coreData: {},
       logger: capabilities.logger,
-      persistence: { transaction: vi.fn() },
+      persistence: { readConformanceSnapshot },
     })
     server.conformanceStatusResource.request({
       kind: 'character',
@@ -44,6 +46,7 @@ describe.each(['enabled', 'disabled'] as const)('%s module composition probe', (
     expect(fetch).not.toHaveBeenCalled()
     expect(interval).not.toHaveBeenCalled()
     expect(timeout).not.toHaveBeenCalled()
-    expect(capabilities.persistence.transaction).not.toHaveBeenCalled()
+    expect(readConformanceSnapshot).not.toHaveBeenCalled()
+    expect(upsertConformanceSnapshot).not.toHaveBeenCalled()
   })
 })

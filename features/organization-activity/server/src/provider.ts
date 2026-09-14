@@ -1,11 +1,13 @@
 import type {
-  PlatformActivityProviderFactory,
+  PlatformActivityProviderContext,
   PlatformCollectionStatusSubject,
+  PlatformModuleCollectionStatusReads,
 } from '@eve-space/platform-module-contract'
 import { readActivitySnapshots } from './snapshot-reads.js'
 import type { ActivitySourceRead } from './activity-source.js'
 import { combineActivitySources } from './provider-activities.js'
 import { mapWithConcurrency } from './bounded-map.js'
+import type { ActivitySnapshotPersistence } from './persistence.js'
 
 const maximumConcurrentReads = 4
 
@@ -15,8 +17,14 @@ type SourceRequest = {
   characterId?: number
 }
 
-export const organizationActivityProvider: PlatformActivityProviderFactory =
-  (capabilities) => async (context) => {
+interface ActivityProviderCapabilities {
+  readonly collectionStatus: PlatformModuleCollectionStatusReads
+  readonly persistence: ActivitySnapshotPersistence
+}
+
+export const organizationActivityProvider =
+  (capabilities: ActivityProviderCapabilities) =>
+  async (context: PlatformActivityProviderContext) => {
     const characters = context.characters.filter((character) => character.membership === 'managed')
     const corporationIds = [...new Set(characters.map((character) => character.corporationId))]
     const requests: SourceRequest[] = ['campaigns', 'public-jobs'].map((resourceId) => ({

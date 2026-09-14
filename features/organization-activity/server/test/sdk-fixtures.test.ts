@@ -176,10 +176,7 @@ test('all resource definitions execute only through bounded collection and mater
       requestBudget: 32,
       execute,
       capabilities: {
-        persistence: {
-          transaction: (fn: (tx: { query: () => Promise<unknown[]> }) => unknown) =>
-            fn({ query: async () => [] }),
-        },
+        persistence: { readActivityCheckpoint: vi.fn().mockResolvedValue(null) },
       },
     } as never)
     expect(result.complete).toBe(true)
@@ -199,10 +196,7 @@ test.each(['current', 'stale', 'unavailable'])(
     })
     const provider = organizationActivityProvider({
       collectionStatus: { read },
-      persistence: {
-        transaction: (fn: (tx: { query: () => Promise<unknown[]> }) => unknown) =>
-          fn({ query: async () => [] }),
-      },
+      persistence: { readActivitySnapshots: vi.fn().mockResolvedValue([]) },
     } as never)
     const result = await provider({
       organizationVersion: 7,

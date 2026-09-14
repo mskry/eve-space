@@ -1,10 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import type {
-  PlatformActivityProviderCapabilities,
-  PlatformActivityProviderContext,
-  PlatformModuleResourceTransaction,
-  PlatformModuleRouteCapabilities,
-} from '@eve-space/platform-module-contract'
+import type { PlatformActivityProviderContext } from '@eve-space/platform-module-contract'
 import { PlatformModuleHttpError } from '@eve-space/platform-module-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -113,8 +108,9 @@ beforeEach(() => {
 
 describe('production-shaped module conformance', () => {
   it('loads the real fixture root and generates every declared contribution', async () => {
-    const manifests = await loadInstalledModuleManifests(fixtureRoot)
-    const files = generateRegistryFiles(manifests)
+    const registry = await loadInstalledModuleManifests(fixtureRoot)
+    const files = generateRegistryFiles(registry)
+    const { manifests } = registry
 
     expect(manifests).toHaveLength(1)
     expect(manifests[0]).toMatchObject({
@@ -122,11 +118,14 @@ describe('production-shaped module conformance', () => {
       defaultEnabled: true,
       server: {
         package: '@eve-space/conformance-server',
-        migrations: [{ name: 'conformance-001-initial.sql' }],
+        migrations: [
+          { name: 'conformance-001-initial.sql' },
+          { name: 'conformance-002-persistence-operations.sql' },
+        ],
       },
       nuxt: { package: '@eve-space/conformance-nuxt' },
     })
-    expect(files).toHaveLength(9)
+    expect(files).toHaveLength(10)
     expect(files.get('api/src/generated/platform/installed-module-routes.ts')).toContain(
       "platformModuleRouteComposers['owned-character']",
     )
@@ -142,6 +141,27 @@ describe('production-shaped module conformance', () => {
     expect(
       files.get('api/src/generated/platform/installed-module-activity-providers.ts'),
     ).toContain('conformanceActivityProvider')
+    const persistenceRegistry = files.get(
+      'api/src/generated/platform/installed-module-persistence.ts',
+    )!
+    expect(persistenceRegistry).toContain('readConformanceSnapshotOperation')
+    expect(persistenceRegistry).toContain('upsertConformanceSnapshotOperation')
+    const providerFactory = persistenceRegistry.slice(
+      persistenceRegistry.indexOf('function createModule0ActivityProvider0Persistence'),
+      persistenceRegistry.indexOf('function createModule0Resource0ProjectionPersistence'),
+    )
+    expect(providerFactory).toContain('readConformanceSnapshot')
+    expect(providerFactory).not.toContain('upsertConformanceSnapshot')
+    expect(providerFactory).not.toContain('transaction')
+    expect(providerFactory).not.toContain('query')
+    const materializationFactory = persistenceRegistry.slice(
+      persistenceRegistry.indexOf('function createModule0Resource0MaterializationPersistence'),
+      persistenceRegistry.indexOf('export const installedModulePersistenceCapabilityFactories'),
+    )
+    expect(materializationFactory).toContain('upsertConformanceSnapshot')
+    expect(materializationFactory).not.toContain('readConformanceSnapshot')
+    expect(materializationFactory).not.toContain('transaction')
+    expect(persistenceRegistry).not.toContain('deleteConformanceSnapshot')
     expect(files.get('generated/platform/installed-nuxt-contributions.ts')).toContain(
       'ConformanceActivityPage.vue',
     )
@@ -151,10 +171,10 @@ describe('production-shaped module conformance', () => {
     const server =
       await import('../fixtures/platform-module-conformance/features/conformance/server/src/index')
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-    const capabilities: PlatformModuleRouteCapabilities<unknown> = {
+    const capabilities: Parameters<typeof server.conformanceRoutes>[0] = {
       coreData: {},
       logger,
-      persistence: { transaction: vi.fn() },
+      persistence: {},
     }
     const app = conformanceRouteApp(server.conformanceRoutes(capabilities))
     const request = (query: string) =>
@@ -205,26 +225,19 @@ describe('production-shaped module conformance', () => {
   it('executes the declared resource and activity provider through bounded capabilities', async () => {
     const server =
       await import('../fixtures/platform-module-conformance/features/conformance/server/src/index')
-    const query = vi
-      .fn()
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          character_id: 90_000_001,
-          pilots_online: 23,
-          validated_at: '2026-09-06T20:00:00Z',
-        },
-      ])
+    const readConformanceSnapshot = vi.fn().mockResolvedValue({
+      characterId: 90_000_001,
+      pilotsOnline: 23,
+      validatedAt: '2026-09-06T20:00:00Z',
+    })
+    const upsertConformanceSnapshot = vi.fn().mockResolvedValue({ applied: true })
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-    const providerCapabilities: PlatformActivityProviderCapabilities<PlatformModuleResourceTransaction> =
-      {
-        collectionStatus: { read: vi.fn().mockResolvedValue(currentStatus()) },
-        coreData: {},
-        logger,
-        persistence: {
-          transaction: (operation) => operation({ query }),
-        },
-      }
+    const providerCapabilities = {
+      collectionStatus: { read: vi.fn().mockResolvedValue(currentStatus()) },
+      coreData: {},
+      logger,
+      persistence: { readConformanceSnapshot },
+    }
     const subject = {
       kind: 'character' as const,
       characterId: 90_000_001,
@@ -249,7 +262,7 @@ describe('production-shaped module conformance', () => {
       capabilities: {
         coreData: { publishedTypeGroups },
         logger,
-        persistence: providerCapabilities.persistence,
+        persistence: {},
       },
       requestBudget: 32,
       execute,
@@ -261,7 +274,7 @@ describe('production-shaped module conformance', () => {
       authorizationGeneration: 2,
       capabilities: {
         logger,
-        persistence: providerCapabilities.persistence,
+        persistence: { upsertConformanceSnapshot },
       },
     })
     const provider = server.conformanceActivityProvider(providerCapabilities)
@@ -279,13 +292,14 @@ describe('production-shaped module conformance', () => {
       data: { players: 23, publishedTypeCount: 1, sdeBuildNumber: 1234 },
     })
     expect(publishedTypeGroups.mock.invocationCallOrder[0]).toBeLessThan(
-      query.mock.invocationCallOrder[0]!,
+      upsertConformanceSnapshot.mock.invocationCallOrder[0]!,
     )
-    expect(query).toHaveBeenNthCalledWith(
-      1,
-      expect.stringContaining('insert into conformance_snapshots'),
-      [90_000_001, 23, '2026-09-06T20:00:00Z'],
-    )
+    expect(upsertConformanceSnapshot).toHaveBeenCalledWith({
+      characterId: 90_000_001,
+      pilotsOnline: 23,
+      validatedAt: '2026-09-06T20:00:00Z',
+    })
+    expect(readConformanceSnapshot).toHaveBeenCalledWith({ characterId: 90_000_001 })
     expect(result).toMatchObject({
       freshness: { state: 'current' },
       activities: [

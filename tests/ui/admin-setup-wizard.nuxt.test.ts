@@ -59,6 +59,9 @@ it('summarises the deployment and emits the trimmed setup payload', async () => 
   const wrapper = await mountWizard()
   await completeOwnerStep(wrapper)
 
+  expect(wrapper.find('.admin-setup-selection').text()).toContain('Corporation 98000001')
+  expect(wrapper.text()).not.toContain('Resolved')
+
   await wrapper.find('form').trigger('submit')
 
   const summary = wrapper.findAll('.admin-setup-summary dd').map((row) => row.text())

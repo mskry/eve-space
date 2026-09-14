@@ -20,6 +20,10 @@ import {
   modulePersistenceNames,
   provisionModulePersistence,
 } from './module-persistence-provisioner.js'
+import {
+  finalizeModulePersistenceRoutines,
+  type ModulePersistenceRoutineDescriptor,
+} from './module-persistence-routine-provisioner.js'
 
 const moduleMigrationLockTimeoutMs = 30_000
 
@@ -28,6 +32,7 @@ export type InstalledModuleMigrationDescriptor = PlatformInstalledModuleMigratio
 export interface ModuleMigrationSet {
   readonly moduleId: string
   readonly migrations: readonly Migration[]
+  readonly persistenceOperations?: readonly ModulePersistenceRoutineDescriptor[]
 }
 
 export type ModuleMigrationSqlLoader = (
@@ -38,8 +43,10 @@ export async function loadInstalledModuleMigrationSets(
   descriptors: readonly InstalledModuleMigrationDescriptor[],
   loadSql: ModuleMigrationSqlLoader = loadModuleMigrationSql,
   moduleIds: readonly string[] = [...new Set(descriptors.map(({ moduleId }) => moduleId))],
+  persistenceOperations: readonly ModulePersistenceRoutineDescriptor[] = [],
 ): Promise<readonly ModuleMigrationSet[]> {
   validateDescriptors(descriptors, moduleIds)
+  validatePersistenceOperations(persistenceOperations, descriptors, moduleIds)
   const grouped = new Map<string, InstalledModuleMigrationDescriptor[]>()
   for (const moduleId of moduleIds) grouped.set(moduleId, [])
   for (const descriptor of descriptors) {
@@ -52,15 +59,26 @@ export async function loadInstalledModuleMigrationSets(
   return Promise.all(
     [...grouped]
       .toSorted(([left], [right]) => compareStable(left, right))
-      .map(async ([moduleId, migrations]) => ({
-        moduleId,
-        migrations: await Promise.all(
-          migrations.map(async ({ name, ...descriptor }) => ({
-            name,
-            sql: await loadSql({ name, ...descriptor }),
-          })),
-        ),
-      })),
+      .map(async ([moduleId, migrations]) => {
+        const moduleOperations = persistenceOperations.filter(
+          (operation) => operation.moduleId === moduleId,
+        )
+        const migrationSet: {
+          moduleId: string
+          migrations: Migration[]
+          persistenceOperations?: readonly ModulePersistenceRoutineDescriptor[]
+        } = {
+          moduleId,
+          migrations: await Promise.all(
+            migrations.map(async ({ name, ...descriptor }) => ({
+              name,
+              sql: await loadSql({ name, ...descriptor }),
+            })),
+          ),
+        }
+        if (moduleOperations.length > 0) migrationSet.persistenceOperations = moduleOperations
+        return migrationSet
+      }),
   )
 }
 
@@ -78,11 +96,16 @@ export async function runModuleMigrationSets(
   )
   if (new Set(moduleIds).size !== moduleIds.length)
     throw new Error('Installed module migration sets contain duplicate module owners')
-  for (const { moduleId, migrations } of migrationSets) {
+  for (const { moduleId, migrations, persistenceOperations = [] } of migrationSets) {
     const { schemaName } = modulePersistenceNames(moduleId)
     for (const migration of migrations) {
       // oxlint-disable-next-line no-await-in-loop
-      await assertModuleMigrationSql(moduleId, schemaName, migration)
+      await assertModuleMigrationSql(
+        moduleId,
+        schemaName,
+        migration,
+        persistenceOperations.filter(({ migration: name }) => name === migration.name),
+      )
     }
   }
 
@@ -94,13 +117,13 @@ export async function runModuleMigrationSets(
 
 async function runModuleMigrationSet(
   connection: postgres.Sql,
-  { moduleId, migrations }: ModuleMigrationSet,
+  { moduleId, migrations, persistenceOperations = [] }: ModuleMigrationSet,
   lockTimeoutMs: number,
 ) {
   const lease = await acquireModuleMigrationLease(connection, moduleId, lockTimeoutMs)
   let failure: Failure | undefined
   try {
-    await applyModuleMigrationSet(lease.connection, moduleId, migrations)
+    await applyModuleMigrationSet(lease.connection, moduleId, migrations, persistenceOperations)
   } catch (error) {
     failure = { error }
   }
@@ -114,6 +137,7 @@ async function applyModuleMigrationSet(
   connection: postgres.ReservedSql,
   moduleId: string,
   migrations: readonly Migration[],
+  persistenceOperations: readonly ModulePersistenceRoutineDescriptor[],
 ) {
   const applied = await connection<{ name: string }[]>`
     select name from public.schema_migrations where module = ${moduleId}
@@ -121,7 +145,9 @@ async function applyModuleMigrationSet(
   const appliedNames = new Set(applied.map(({ name }) => name))
   const pendingMigrations = migrations.filter(({ name }) => !appliedNames.has(name))
   if (pendingMigrations.length === 0) {
-    await runInTransaction(connection, () => provisionModulePersistence(connection, moduleId))
+    await runInTransaction(connection, () =>
+      provisionModulePersistence(connection, moduleId, persistenceOperations, true),
+    )
     return
   }
 
@@ -130,11 +156,18 @@ async function applyModuleMigrationSet(
   for (const [index, migration] of pendingMigrations.entries()) {
     // oxlint-disable-next-line no-await-in-loop
     await runInTransaction(connection, async () => {
-      if (index === 0) await provisionModulePersistence(connection, moduleId)
+      if (index === 0)
+        await provisionModulePersistence(connection, moduleId, persistenceOperations, false)
       await connection`set local role ${connection(migrationRoleName)}`
       await connection`select set_config('search_path', ${searchPath}, true)`
       await connection.unsafe(migration.sql).simple()
       await connection`reset role`
+      await finalizeModulePersistenceRoutines(
+        connection,
+        moduleId,
+        migration.name,
+        persistenceOperations.filter(({ migration: name }) => name === migration.name),
+      )
       await connection`
         insert into public.schema_migrations (module, name)
         values (${moduleId}, ${migration.name})
@@ -275,6 +308,26 @@ function validateDescriptors(
     identities.add(identity)
   }
   assertDistinctModuleMigrationLockKeys(moduleIds)
+}
+
+function validatePersistenceOperations(
+  operations: readonly ModulePersistenceRoutineDescriptor[],
+  migrations: readonly InstalledModuleMigrationDescriptor[],
+  moduleIds: readonly string[],
+) {
+  const installedModules = new Set(moduleIds)
+  const installedMigrations = new Set(migrations.map(({ moduleId, name }) => `${moduleId}/${name}`))
+  const identities = new Set<string>()
+  for (const operation of operations) {
+    const identity = `${operation.moduleId}/${operation.operationId}`
+    if (identities.has(identity))
+      throw new Error(`Duplicate installed persistence operation ${identity}`)
+    identities.add(identity)
+    if (!installedModules.has(operation.moduleId))
+      throw new Error(`Persistence operation references uninstalled module ${identity}`)
+    if (!installedMigrations.has(`${operation.moduleId}/${operation.migration}`))
+      throw new Error(`Persistence operation references uninstalled migration ${identity}`)
+  }
 }
 
 function validateModuleId(moduleId: string) {
