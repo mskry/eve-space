@@ -3,6 +3,7 @@ import { Effect } from 'effect'
 import { TestClock } from 'effect/testing'
 import { GenericContainer, Wait, type StartedTestContainer } from 'testcontainers'
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
+import { z } from 'zod'
 import {
   acquireEsiRequestLease,
   commitEsiFence,
@@ -971,6 +972,7 @@ async function statusRepresentation() {
     operation: 'status',
     name: 'redis-status',
     descriptor: operationRegistry.GetStatus.transport,
+    cacheSchema: z.object({ name: z.string() }),
     encodeRequest: () => ({}),
     map: ({ data }) => ({ name: data.server_version }),
   })
@@ -985,6 +987,7 @@ async function walletRepresentation() {
     operation: 'wallet-balance',
     name: 'redis-wallet-balance',
     descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
+    cacheSchema: operationRegistry.GetCharactersCharacterIdWallet.responseSchema,
     encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
       path: { character_id: input.characterId },
     }),
@@ -1001,6 +1004,7 @@ async function mailRepresentation() {
     operation: 'mail-message',
     name: 'redis-mail-message',
     descriptor: operationRegistry.GetCharactersCharacterIdMailMailId.transport,
+    cacheSchema: operationRegistry.GetCharactersCharacterIdMailMailId.responseSchema,
     encodeRequest: (input: {
       characterId: number
       mailId: number

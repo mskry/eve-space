@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { PostUniverseIdsResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import { createPublicEsiRead } from '../esi-gateway/feature-execution.js'
 import {
   readUniverseIds,
@@ -39,6 +40,10 @@ export interface UniverseId {
   category: string
 }
 
+const universeResolutionCacheSchema = z.array(
+  z.object({ id: z.number(), name: z.string(), category: z.string() }),
+)
+
 interface ResolutionSplitState {
   count: number
 }
@@ -56,6 +61,7 @@ const universeNamesRead = createPublicEsiRead({
   operation: 'universe-resolve-names',
   name: 'universe-names-core',
   descriptor: operationRegistry.PostUniverseNames.transport,
+  cacheSchema: universeResolutionCacheSchema,
   encodeRequest: (input: { body: number[] }) => input,
   map: ({ data }): UniverseName[] => data.map(({ id, name, category }) => ({ id, name, category })),
 })
@@ -64,6 +70,7 @@ const universeIdsRead = createPublicEsiRead({
   operation: 'universe-resolve-ids',
   name: 'universe-ids-core',
   descriptor: operationRegistry.PostUniverseIds.transport,
+  cacheSchema: universeResolutionCacheSchema,
   encodeRequest: (input: { body: string[] }) => input,
   map: ({ data }) => mapUniverseIds(data),
 })

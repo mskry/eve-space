@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { describe, expect, test, vi } from 'vitest'
+import { z } from 'zod'
 import {
   createCharacterEsiMutation,
   createCharacterEsiRead,
@@ -7,6 +8,7 @@ import {
 } from '../../src/esi-gateway/feature-execution.js'
 import { EsiQuotaError } from '../../src/esi-gateway/failures.js'
 import { installedModuleEsiOperationDefinitions } from '../../src/generated/platform/installed-module-esi.js'
+import { getEsiCacheEnvelopeCounterSnapshot } from '../../src/esi-gateway/internal/telemetry-counters.js'
 import type {
   EsiExecutionRuntimePorts,
   EsiRequestLease,
@@ -35,6 +37,7 @@ const statusRead = createPublicEsiRead({
   operation: 'status',
   name: 'runtime-behavior-status',
   descriptor: operationRegistry.GetStatus.transport,
+  cacheSchema: z.number(),
   encodeRequest: (_input: Record<string, never>) => ({}),
   map: ({ data }) => data.players,
 })
@@ -43,6 +46,7 @@ const walletRead = createCharacterEsiRead({
   operation: 'wallet-balance',
   name: 'runtime-behavior-wallet',
   descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
+  cacheSchema: operationRegistry.GetCharactersCharacterIdWallet.responseSchema,
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
@@ -53,10 +57,20 @@ const mailLabelsRead = createCharacterEsiRead({
   operation: 'mail-labels',
   name: 'runtime-behavior-mail-labels',
   descriptor: operationRegistry.GetCharactersCharacterIdMailLabels.transport,
+  cacheSchema: z.number(),
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
   map: ({ data }) => data.total_unread_count ?? 0,
+})
+
+const mutableStatusRead = createPublicEsiRead({
+  operation: 'status',
+  name: 'runtime-behavior-mutable-status',
+  descriptor: operationRegistry.GetStatus.transport,
+  cacheSchema: z.object({ players: z.number() }),
+  encodeRequest: (_input: Record<string, never>) => ({}),
+  map: ({ data }) => ({ players: data.players }),
 })
 
 const deleteMail = createCharacterEsiMutation({
@@ -175,6 +189,137 @@ describe('ESI execution runtime behavior', () => {
 
     expect(fetch).toHaveBeenCalledOnce()
     expect(acquireRequestPermit).toHaveBeenCalledOnce()
+  })
+
+  test('rejects a malformed L1 payload before it becomes a cache hit', async () => {
+    const fetch = vi.fn()
+    const runtime = createRuntimeTestExecution(
+      createRuntimeTestPorts({ response: statusResponse(10), fetch }),
+    )
+    runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
+    const first = await mutableStatusRead.execute({})
+    ;(first.data as { players: unknown }).players = 'private-cache-value'
+
+    await expect(mutableStatusRead.execute({})).resolves.toMatchObject({
+      data: { players: 10 },
+      source: 'esi',
+    })
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  test('rejects a malformed public canonical L2 payload without promoting it', async () => {
+    const rejectionCount = getEsiCacheEnvelopeCounterSnapshot().rejections.invalidPayload
+    let serialized = serializedEnvelope({
+      data: { players: 'private-cache-value' },
+      representationVersion: 'runtime-behavior-status@v1',
+    })
+    const fetch = vi.fn()
+    const ports = createRuntimeTestPorts({
+      response: statusResponse(20),
+      fetch,
+      overrides: {
+        cache: {
+          get: async () => serialized,
+          set: async (_key, value) => {
+            serialized = value
+          },
+        },
+        coordination: coordinatedOverrides({
+          acquireRequestLease: vi.fn(async () => ownerLease),
+          commitFence: vi.fn(async () => true),
+          getCommittedFence: vi.fn(async () => ownerLease.fence),
+        }),
+      },
+    })
+    const runtime = createRuntimeTestExecution(ports)
+    runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
+
+    await expect(statusRead.execute({})).resolves.toMatchObject({ data: 20, source: 'esi' })
+    await expect(statusRead.execute({})).resolves.toMatchObject({ data: 20, source: 'cache' })
+
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(getEsiCacheEnvelopeCounterSnapshot().rejections.invalidPayload).toBe(rejectionCount + 1)
+  })
+
+  test('rejects a malformed private canonical L2 payload with current authorization state', async () => {
+    let serialized = serializedEnvelope({
+      data: 'private-cache-value',
+      representationVersion: 'runtime-behavior-mail-labels@v1',
+      authorization: {
+        kind: 'character',
+        principal: `character-${characterId}-lifecycle-${subjectLifecycleId}`,
+        generation: 1,
+      },
+      resourceRevision: { namespace: 'mailbox', value: 0 },
+    })
+    const fetch = vi.fn()
+    const ports = createRuntimeTestPorts({
+      response: { labels: [], total_unread_count: 6 },
+      fetch,
+      overrides: {
+        cache: {
+          get: async () => serialized,
+          set: async (_key, value) => {
+            serialized = value
+          },
+        },
+        coordination: coordinatedOverrides({
+          acquireRequestLease: vi.fn(async () => ownerLease),
+          commitFence: vi.fn(async () => true),
+          getCommittedFence: vi.fn(async () => ownerLease.fence),
+          getResourceRevision: vi.fn(async () => 0),
+        }),
+      },
+    })
+    const runtime = createRuntimeTestExecution(ports)
+    runtimeMocks.getProductionRuntime.mockResolvedValue(runtime)
+
+    await expect(
+      mailLabelsRead.execute({ characterId, subjectLifecycleId }),
+    ).resolves.toMatchObject({
+      data: 6,
+      source: 'esi',
+    })
+
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  test('rejects a malformed platform SDK-wire L2 payload', async () => {
+    const operation = 'organization-activity-campaign-list'
+    let serialized = serializedEnvelope({
+      data: { campaigns: 'private-cache-value' },
+      representationVersion: 'v1',
+    })
+    const fetch = vi.fn()
+    const ports = createRuntimeTestPorts({
+      response: { campaigns: [] },
+      fetch,
+      overrides: {
+        cache: {
+          get: async () => serialized,
+          set: async (_key, value) => {
+            serialized = value
+          },
+        },
+        coordination: coordinatedOverrides({
+          acquireRequestLease: vi.fn(async () => ownerLease),
+          commitFence: vi.fn(async () => true),
+          getCommittedFence: vi.fn(async () => ownerLease.fence),
+        }),
+      },
+    })
+    const runtime = createRuntimeTestExecution(ports)
+
+    await expect(
+      runtime.executePlatformOperation(
+        { operation, authorization: { kind: 'public' } },
+        installedModuleEsiOperationDefinitions[operation],
+        {},
+      ),
+    ).resolves.toMatchObject({ result: { data: { campaigns: [] }, source: 'esi' } })
+
+    expect(fetch).toHaveBeenCalledOnce()
   })
 
   test('acquires and releases one request permit for every retry attempt', async () => {
@@ -542,4 +687,29 @@ function statusResponse(players: number) {
     start_time: '2026-09-11T00:00:00Z',
     vip: false,
   }
+}
+
+function serializedEnvelope(options: {
+  data: unknown
+  representationVersion: string
+  authorization?: {
+    kind: 'character'
+    principal: string
+    generation: number
+  }
+  resourceRevision?: { namespace: string; value: number }
+}) {
+  const freshUntil = Date.now() + 60_000
+  return JSON.stringify({
+    version: 3,
+    representationVersion: options.representationVersion,
+    data: options.data,
+    freshUntil,
+    staleUntil: freshUntil,
+    retainUntil: freshUntil,
+    validatedAt: new Date().toISOString(),
+    fence: ownerLease.fence,
+    authorization: options.authorization,
+    resourceRevision: options.resourceRevision,
+  })
 }

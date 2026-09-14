@@ -14,8 +14,7 @@ export function registerCallableEsiRepresentation<
   Arguments extends OperationRequestArguments,
   WireResult,
   Result,
->(
-  representation: EsiRepresentation<
+  Representation extends EsiRepresentation<
     Authorization,
     Operation,
     Input,
@@ -24,7 +23,7 @@ export function registerCallableEsiRepresentation<
     Result,
     Execution
   >,
-): EsiRepresentation<Authorization, Operation, Input, Arguments, WireResult, Result, Execution> {
+>(representation: Representation): Representation {
   const sdkOperation = Object.values(operationRegistry).find(
     ({ transport }) => transport === representation.descriptor,
   )

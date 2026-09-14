@@ -50,6 +50,7 @@ describe('ESI execution path selection', () => {
       operation: 'status',
       name: 'status-execution-selection-fixture',
       descriptor: operationRegistry.GetStatus.transport,
+      cacheSchema: operationRegistry.GetStatus.responseSchema,
       encodeRequest: () => ({}),
       map: ({ data }) => data,
     })

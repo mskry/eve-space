@@ -1,6 +1,7 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdAssetsResponse } from '@evespace/esi-client/types'
 import { eq, inArray } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../db/client.js'
 import { sdeCategories, sdeGroups, sdeTypes } from '../db/schema.js'
 import {
@@ -68,10 +69,29 @@ interface CharacterAssetsPageRepresentationInput {
   subjectLifecycleId: string
 }
 
+const characterAssetCacheSchema = z.object({
+  itemId: z.number(),
+  typeId: z.number(),
+  quantity: z.number(),
+  isSingleton: z.boolean(),
+  isBlueprintCopy: z.boolean().nullable(),
+  locationId: z.number(),
+  locationType: z.enum(['station', 'solar_system', 'item', 'other']),
+  locationFlag: z.string(),
+  parentItemId: z.number().nullable(),
+})
+const characterAssetPageCacheSchema = z.object({
+  page: z.number(),
+  totalPages: z.number(),
+  assets: z.array(characterAssetCacheSchema),
+})
+const characterAssetNamesCacheSchema = z.array(z.object({ itemId: z.number(), name: z.string() }))
+
 const characterAssetsPageRead = createCharacterEsiRead({
   operation: 'character-assets-page',
   name: 'character-assets-page-core',
   descriptor: operationRegistry.GetCharactersCharacterIdAssets.transport,
+  cacheSchema: characterAssetPageCacheSchema,
   encodeRequest: (input: CharacterAssetsPageRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },
@@ -87,6 +107,7 @@ const characterAssetNamesRead = createCharacterEsiRead({
   operation: 'character-asset-names',
   name: 'character-asset-names-core',
   descriptor: operationRegistry.PostCharactersCharacterIdAssetsNames.transport,
+  cacheSchema: characterAssetNamesCacheSchema,
   encodeRequest: (input: {
     path: { character_id: number }
     body: number[]

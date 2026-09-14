@@ -40,6 +40,7 @@ interface EsiCacheDependencyStatus extends EsiDependencyStatus {
     readonly malformedJson: number
     readonly versionMismatch: number
     readonly invalidShape: number
+    readonly invalidPayload: number
     readonly incoherentFreshnessWindow: number
   }
   readonly envelopeVersionMismatches: {

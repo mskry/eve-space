@@ -1,6 +1,7 @@
 import { EsiTransportError } from '@evespace/esi-client'
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { z } from 'zod'
 
 const mocks = vi.hoisted(() => ({
   acquirePermit: vi.fn(),
@@ -108,6 +109,7 @@ describe('callable ESI feature execution', () => {
       operation: 'status',
       name: 'callable-status',
       descriptor: operationRegistry.GetStatus.transport,
+      cacheSchema: z.object({ playerCount: z.number() }),
       encodeRequest: () => ({}),
       map: ({ data }) => ({ playerCount: data.players }),
     })
@@ -141,6 +143,7 @@ describe('callable ESI feature execution', () => {
       operation: 'status',
       name: 'callable-status-cancellation',
       descriptor: operationRegistry.GetStatus.transport,
+      cacheSchema: operationRegistry.GetStatus.responseSchema,
       encodeRequest: (_input: { signal?: AbortSignal }) => ({}),
       map: ({ data }) => data,
     })
@@ -155,6 +158,7 @@ describe('callable ESI feature execution', () => {
       operation: 'skills',
       name: 'callable-skills',
       descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+      cacheSchema: z.object({ totalSp: z.number() }),
       encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
         path: { character_id: input.characterId },
       }),
@@ -182,6 +186,7 @@ describe('callable ESI feature execution', () => {
       operation: 'skills',
       name: 'callable-skills-authorization-rejection',
       descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+      cacheSchema: z.number(),
       encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
         path: { character_id: input.characterId },
       }),
@@ -201,6 +206,7 @@ describe('callable ESI feature execution', () => {
       operation: 'public-character',
       name: 'callable-character-recovery',
       descriptor: operationRegistry.GetCharactersDetail.transport,
+      cacheSchema: z.object({ id: z.number(), name: z.string() }),
       encodeRequest: (input: { characterId: number }) => ({
         path: { character_id: input.characterId },
       }),
@@ -235,6 +241,7 @@ describe('callable ESI feature execution', () => {
       operation: 'wallet-balance',
       name: 'callable-wallet-metadata',
       descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
+      cacheSchema: operationRegistry.GetCharactersCharacterIdWallet.responseSchema,
       encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
         path: { character_id: input.characterId },
       }),
@@ -313,6 +320,7 @@ describe('callable ESI feature execution', () => {
         operation: 'attributes',
         name: 'callable-attributes',
         descriptor: { ...operationRegistry.GetCharactersCharacterIdAttributes.transport },
+        cacheSchema: operationRegistry.GetCharactersCharacterIdAttributes.responseSchema,
         encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
           path: { character_id: input.characterId },
         }),
@@ -324,6 +332,7 @@ describe('callable ESI feature execution', () => {
       operation: 'attributes',
       name: 'callable-attributes',
       descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
+      cacheSchema: operationRegistry.GetCharactersCharacterIdAttributes.responseSchema,
       encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
         path: { character_id: input.characterId },
       }),
@@ -336,6 +345,7 @@ describe('callable ESI feature execution', () => {
         operation: 'attributes',
         name: 'callable-attributes',
         descriptor: operationRegistry.GetCharactersCharacterIdAttributes.transport,
+        cacheSchema: operationRegistry.GetCharactersCharacterIdAttributes.responseSchema,
         encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
           path: { character_id: input.characterId },
         }),
@@ -350,6 +360,7 @@ describe('callable ESI feature execution', () => {
         operation: 'skills' as never,
         name: 'callable-skills-public',
         descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+        cacheSchema: operationRegistry.GetCharactersCharacterIdSkills.responseSchema,
         encodeRequest: () => ({ path: { character_id: 1 } }),
         map: ({ data }) => data,
       }),
@@ -374,6 +385,7 @@ describe('callable ESI feature execution', () => {
         operation: 'not-an-operation' as never,
         name: 'callable-unknown',
         descriptor: operationRegistry.GetStatus.transport,
+        cacheSchema: operationRegistry.GetStatus.responseSchema,
         encodeRequest: () => ({}),
         map: ({ data }) => data,
       }),
@@ -384,6 +396,7 @@ describe('callable ESI feature execution', () => {
         operation: 'universe-races',
         name: 'callable-wrong-descriptor',
         descriptor: operationRegistry.GetStatus.transport,
+        cacheSchema: operationRegistry.GetStatus.responseSchema,
         encodeRequest: () => ({}),
         map: ({ data }) => data,
       }),

@@ -460,6 +460,7 @@ async function executeStatus(signal?: AbortSignal) {
     operation: 'status',
     name: `status-transport-fixture-${representationSequence++}`,
     descriptor: operationRegistry.GetStatus.transport,
+    cacheSchema: operationRegistry.GetStatus.responseSchema,
     encodeRequest: () => ({}),
     map: ({ data }) => data,
   }).execute(signal ? { signal } : undefined)

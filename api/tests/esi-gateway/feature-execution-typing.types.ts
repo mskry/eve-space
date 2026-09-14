@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { expectTypeOf } from 'vitest'
+import { z } from 'zod'
 import {
   createCharacterEsiMutation,
   createCharacterEsiRead,
@@ -12,6 +13,7 @@ const status = createPublicEsiRead({
   operation: 'status',
   name: 'callable-status-typing',
   descriptor: operationRegistry.GetStatus.transport,
+  cacheSchema: z.object({ playerCount: z.number() }),
   encodeRequest: (_input: undefined) => ({}),
   map: ({ data }) => ({ playerCount: data.players }),
 })
@@ -34,6 +36,7 @@ const skills = createCharacterEsiRead({
   operation: 'skills',
   name: 'callable-skills-typing',
   descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+  cacheSchema: z.object({ totalSp: z.number() }),
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },
   }),
@@ -69,6 +72,7 @@ createCharacterEsiRead({
   operation: 'skills',
   name: 'callable-skills-header-typing',
   descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+  cacheSchema: operationRegistry.GetCharactersCharacterIdSkills.responseSchema,
   // @ts-expect-error revalidation headers remain executor-owned
   encodeRequest: (input: { characterId: number; subjectLifecycleId: string }) => ({
     path: { character_id: input.characterId },

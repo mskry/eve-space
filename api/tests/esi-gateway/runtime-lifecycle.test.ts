@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import { afterEach, describe, expect, test, vi } from 'vitest'
+import { z } from 'zod'
 import {
   createEsiExecutionRuntime,
   type EsiExecutionRuntime,
@@ -19,6 +20,7 @@ const runtimeStatusRepresentation = registerCallableEsiRepresentation(
     operation: 'status',
     name: 'runtime-isolation-status',
     descriptor: operationRegistry.GetStatus.transport,
+    cacheSchema: z.number(),
     encodeRequest: (_input: Record<string, never>) => ({}),
     map: ({ data }) => data.players,
   }),

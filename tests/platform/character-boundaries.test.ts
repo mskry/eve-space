@@ -132,6 +132,12 @@ describe('character module boundaries', () => {
     },
   )
 
+  it.each(['assets', 'affiliation-sync'])('allows representation schemas in %s', (module) => {
+    expect(
+      characterBoundaryViolations(characterSources({ [module]: "import { z } from 'zod'" })),
+    ).toEqual([])
+  })
+
   it.each([
     ['../alliances/public-data.js', 'skills'],
     ['../corporations/public-data.js', 'assets'],

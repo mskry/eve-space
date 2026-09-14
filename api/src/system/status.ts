@@ -1,4 +1,5 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
+import { z } from 'zod'
 import { sql } from '../db/client.js'
 import { probeDomainEventStatus, type DomainEventStatus } from '../domain-events/status.js'
 import { classifyEsiRefreshFailure } from '../esi-gateway/failures.js'
@@ -11,10 +12,18 @@ import {
 } from '../esi-gateway/status-interface.js'
 import { probeQueueStatus, type QueueStatus } from '../queue/status.js'
 
+const esiStatusCacheSchema = z.object({
+  players: z.number(),
+  serverVersion: z.string(),
+  startedAt: z.string(),
+  vip: z.boolean(),
+})
+
 const esiStatusRead = createPublicEsiRead({
   operation: 'status',
   name: 'esi-status-core',
   descriptor: operationRegistry.GetStatus.transport,
+  cacheSchema: esiStatusCacheSchema,
   encodeRequest: (input: Record<string, never>) => input,
   map: ({ data }) => ({
     players: data.players,
