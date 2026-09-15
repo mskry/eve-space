@@ -28,10 +28,7 @@ const manifest = {
     ],
     migrations: [
       {
-        name: 'organization-activity-001-initial.sql',
-      },
-      {
-        name: 'organization-activity-002-persistence-operations.sql',
+        name: 'organization-activity-001-baseline.sql',
       },
     ],
     persistenceOperations: [
@@ -41,7 +38,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readActivityCheckpointOperation',
-        migration: 'organization-activity-002-persistence-operations.sql',
+        migration: 'organization-activity-001-baseline.sql',
       },
       {
         id: 'read-activity-snapshots',
@@ -49,7 +46,7 @@ const manifest = {
         revision: 1,
         mode: 'read',
         exportName: 'readActivitySnapshotsOperation',
-        migration: 'organization-activity-002-persistence-operations.sql',
+        migration: 'organization-activity-001-baseline.sql',
       },
       {
         id: 'materialize-activity-observation',
@@ -57,7 +54,7 @@ const manifest = {
         revision: 1,
         mode: 'write',
         exportName: 'materializeActivityObservationOperation',
-        migration: 'organization-activity-002-persistence-operations.sql',
+        migration: 'organization-activity-001-baseline.sql',
       },
     ],
     resources: [

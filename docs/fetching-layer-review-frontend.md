@@ -2,7 +2,7 @@
 
 ## Recheck completed
 
-See [the current Layer 1 recheck](fetching-layer-review-frontend-recheck.md) for the latest verdict and verification evidence. F1–F4 and the persistence allowlist conflict are resolved. The recheck confirmed a separate mail-header purge defect and identified a remaining platform test-fixture mismatch.
+See [the current Layer 1 recheck](fetching-layer-review-frontend-recheck.md) for the latest verdict and verification evidence. F1–F4, the persistence allowlist conflict, the later mail-header purge defect, and the platform test-fixture mismatch are resolved in the tested scope.
 
 The original report below is historical. Its findings, policy conflict, request classifications, and failing-test counts describe the earlier working tree and are superseded by the recheck.
 

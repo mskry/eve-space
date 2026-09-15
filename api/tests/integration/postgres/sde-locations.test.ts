@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
-import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.js'
+import { runMigrations } from '../../../src/db/migration-runner.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
@@ -25,13 +25,10 @@ beforeAll(async () => {
     `postgres://eve_space:${password}@${container.getHost()}:${container.getMappedPort(5432)}/eve_space`,
     { debug: (_, query) => queries.push(query), onnotice: () => {} },
   )
-  const migrations = await loadMigrations()
-  const index = migrations.findIndex(({ name }) => name === '041_sde_locations.sql')
-  if (index < 0) throw new Error('SDE location migration is missing')
-  await runMigrations(connection, migrations.slice(0, index))
+  await runMigrations(connection)
   await connection`insert into sde_builds (build_number, release_date, ingest_version) values (1234, now(), 2)`
+  await connection`update sde_projection_state set active_build_number = 1234`
   await connection`insert into sde_dataset_rows (dataset, key, data) values ('npcStations', '60003760', '{"_key":60003760,"solarSystemID":30000142}')`
-  await runMigrations(connection, migrations.slice(index))
   await connection`insert into sde_solar_systems (solar_system_id, name, security_status)
     select 30000000 + n, 'System ' || n, case when n = 1 then -0.06 when n = 2 then 0 else 0.945913 end from generate_series(1, 300) n`
   await connection`insert into sde_npc_stations (station_id, solar_system_id)
@@ -54,7 +51,7 @@ afterAll(async () => {
 })
 
 describe('SDE location projection', () => {
-  test('preserves existing raw data and leaves the old projection eligible for reload', async () => {
+  test('keeps raw SDE data available alongside the location projection', async () => {
     expect(
       await connection`select ingest_version from sde_builds where build_number = 1234`,
     ).toEqual([{ ingest_version: 2 }])

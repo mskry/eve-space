@@ -299,15 +299,32 @@ describe('multi-process safety', () => {
         migrations.map(({ name, sha256 }) => ({ name, sha256 })),
       )
 
-      const { checkWorkerReadiness } = await import('../../../src/worker/readiness.js')
-      await runStartupMigrations(inspector)
+      const { checkWorkerReadiness, expectedWorkerMigration } =
+        await import('../../../src/worker/readiness.js')
+      const persistenceRequirement = {
+        contractFingerprint: persistenceContractFingerprintFor([], []),
+        operations: [],
+      }
+      await runStartupMigrations(inspector, {
+        installed: [],
+        moduleIds: [],
+        persistenceOperations: [],
+        persistenceContractFingerprint: persistenceRequirement.contractFingerprint,
+      })
       const [beforeReadiness] = await inspector<{ attested_at: Date; reconciled_at: Date }[]>`
         select
           max(attested_at) as attested_at,
           (select reconciled_at from module_persistence_contract) as reconciled_at
         from module_persistence_operation_attestations
       `
-      await expect(checkWorkerReadiness(inspector)).resolves.toEqual({ healthy: true })
+      await expect(
+        checkWorkerReadiness(
+          inspector,
+          [{ module: 'core', name: expectedWorkerMigration }],
+          [],
+          persistenceRequirement,
+        ),
+      ).resolves.toEqual({ healthy: true })
       const [afterReadiness] = await inspector<{ attested_at: Date; reconciled_at: Date }[]>`
         select
           max(attested_at) as attested_at,
@@ -333,15 +350,15 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('resumes an interrupted current migration prefix', async () => {
+  test('keeps a completed baseline idempotent', async () => {
     const connection = postgres(databaseUrl)
     const migrations = await loadMigrations()
-    const initialMigration = migrations.find(({ name }) => name === '001_initial.sql')
+    const baseline = migrations.find(({ name }) => name === '001_baseline.sql')
 
-    expect(initialMigration).toBeDefined()
+    expect(baseline).toBeDefined()
 
     try {
-      await runMigrations(connection, [initialMigration!])
+      await runMigrations(connection, [baseline!])
       await runMigrations(connection)
 
       const [result] = await connection<
@@ -423,9 +440,8 @@ describe('multi-process safety', () => {
     }
   })
 
-  test('rejects a non-prefix clean-install ledger before running migration SQL', async () => {
+  test('rejects a retired clean-install ledger before running baseline SQL', async () => {
     const connection = postgres(databaseUrl)
-    const migrations = await loadMigrations()
 
     try {
       await connection`
@@ -439,12 +455,10 @@ describe('multi-process safety', () => {
       `
       await connection`
         insert into schema_migrations (module, name, content_sha256)
-        values ('core', ${migrations[1]!.name}, ${migrations[1]!.sha256})
+        values ('core', '001_retired.sql', ${'0'.repeat(64)})
       `
 
-      await expect(runMigrations(connection)).rejects.toThrow(
-        `non-prefix migration): ${migrations[1]!.name}`,
-      )
+      await expect(runMigrations(connection)).rejects.toThrow('unknown migration): 001_retired.sql')
       const [state] = await connection<{ usersExists: boolean }[]>`
         select to_regclass('users') is not null as "usersExists"
       `
@@ -2149,7 +2163,7 @@ describe('multi-process safety', () => {
 
   test('rolls back every domain-event migration object when the migration fails', async () => {
     const connection = postgres(databaseUrl)
-    const migration = (await loadMigrations()).find(({ name }) => name === '001_initial.sql')
+    const migration = (await loadMigrations()).find(({ name }) => name === '001_baseline.sql')
     expect(migration).toBeDefined()
 
     try {
@@ -2170,7 +2184,7 @@ describe('multi-process safety', () => {
           to_regprocedure('prevent_domain_event_envelope_update()') is not null as function_exists,
           (
             select count(*)::integer from schema_migrations
-            where name = '001_initial.sql'
+            where name = '001_baseline.sql'
           ) as migration_count
       `
       expect(objects).toEqual({

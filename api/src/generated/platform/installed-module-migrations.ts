@@ -4,9 +4,5 @@ import type { PlatformInstalledModuleMigrationDescriptor } from '@eve-space/plat
 
 export const installedModuleIds = ['organization-activity'] as const
 export const installedModuleMigrations = [
-  { moduleId: 'organization-activity', name: 'organization-activity-001-initial.sql' },
-  {
-    moduleId: 'organization-activity',
-    name: 'organization-activity-002-persistence-operations.sql',
-  },
+  { moduleId: 'organization-activity', name: 'organization-activity-001-baseline.sql' },
 ] as const satisfies readonly PlatformInstalledModuleMigrationDescriptor[]

@@ -2,13 +2,14 @@ import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.js'
+import { runMigrations } from '../../../src/db/migration-runner.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
 const databasePassword = randomUUID()
 const adminId = randomUUID()
 const userId = randomUUID()
+const sourceId = randomUUID()
 const characterId = 1_404_328_063
 const encryptedTokens = 'v1.encrypted-token-envelope'
 const scopes = ['esi-location.read_location.v1', 'esi-skills.read_skills.v1']
@@ -29,14 +30,8 @@ beforeAll(async () => {
   )
   await waitForDatabase()
 
-  const migrations = await loadMigrations()
-  const organizationMigrationIndex = migrations.findIndex(
-    ({ name }) => name === '021_organization_policy.sql',
-  )
-  if (organizationMigrationIndex < 0) throw new Error('Organization policy migration is missing')
-  await runMigrations(connection, migrations.slice(0, organizationMigrationIndex))
-  await seedLegacyDeployment()
-  await runMigrations(connection, migrations.slice(organizationMigrationIndex))
+  await runMigrations(connection)
+  await seedCurrentDeployment()
 })
 
 afterAll(async () => {
@@ -45,7 +40,7 @@ afterAll(async () => {
 })
 
 describe('organization foundation migration', () => {
-  test('preserves existing character and token data while initializing a locked organization epoch', async () => {
+  test('supports character and token data within a locked organization epoch', async () => {
     const [settings] = await connection<
       {
         organization_version: string
@@ -89,7 +84,7 @@ describe('organization foundation migration', () => {
     const [installation] = await connection<{ owner_admin_id: string | null }[]>`
       select owner_admin_id from deployment_installation_settings where id = 1
     `
-    const [legacyOwnerColumn] = await connection<{ present: boolean }[]>`
+    const [settingsOwnerColumn] = await connection<{ present: boolean }[]>`
       select exists(
         select 1 from information_schema.columns
         where table_name = 'deployment_settings' and column_name = 'owner_admin_id'
@@ -116,23 +111,10 @@ describe('organization foundation migration', () => {
     expect(token).toEqual({ encrypted_tokens: encryptedTokens, scopes, token_version: 7 })
     expect(ownerGrants?.count).toBe(0)
     expect(installation?.owner_admin_id).toBe(adminId)
-    expect(legacyOwnerColumn?.present).toBe(false)
+    expect(settingsOwnerColumn?.present).toBe(false)
   })
 
   test('requires roster observations to identify a valid authorization generation', async () => {
-    const sourceId = randomUUID()
-    await connection`
-      insert into organization_corporation_sources (
-        source_id,
-        deployment_id,
-        organization_version,
-        corporation_id,
-        character_id,
-        evidence_character_id,
-        registered_by_user_id
-      ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
-    `
-
     await expect(
       connection`
         insert into organization_corporation_roster_observations (
@@ -163,7 +145,7 @@ describe('organization foundation migration', () => {
     })
   })
 
-  test('invalidates roster collection state after legacy observations are reset', async () => {
+  test('stores roster collection state for the current source lifecycle', async () => {
     const [source] = await connection<{ source_id: string }[]>`
       select source_id
       from organization_corporation_sources
@@ -202,13 +184,6 @@ describe('organization foundation migration', () => {
         now()
       )
     `
-    const migration = (await loadMigrations()).find(
-      ({ name }) => name === '039_refresh_roster_collection_contract.sql',
-    )
-    if (!migration) throw new Error('Roster collection contract migration is missing')
-
-    await connection.unsafe(migration.sql).simple()
-
     const [state] = await connection<{ count: number }[]>`
       select count(*)::integer as count
       from platform_collection_state
@@ -216,7 +191,7 @@ describe('organization foundation migration', () => {
         and resource_id = 'corporation-roster'
         and subject_kind = 'corporation'
     `
-    expect(state?.count).toBe(0)
+    expect(state?.count).toBe(1)
   })
 
   test('rejects foreign references that mix organization versions', async () => {
@@ -348,25 +323,18 @@ describe('organization foundation migration', () => {
   })
 })
 
-async function seedLegacyDeployment() {
+async function seedCurrentDeployment() {
   await connection`
     insert into deployment_admins (id, email, password_hash)
-    values (${adminId}, 'owner@example.com', 'legacy-password-hash')
+    values (${adminId}, 'owner@example.com', 'password-hash')
   `
   await connection`
-    insert into deployment_settings (
-      id,
-      owner_admin_id,
-      organization_type,
-      organization_id,
-      organization_name,
-      organization_ticker
-    ) values (1, ${adminId}, 'corporation', 98000001, 'Legacy Corporation', 'OLD')
+    update deployment_installation_settings set owner_admin_id = ${adminId} where id = 1
   `
   await connection`insert into users (id) values (${userId})`
   await connection`
     insert into characters (character_id, user_id, name, corporation_id, is_main)
-    values (${characterId}, ${userId}, 'Legacy Pilot', 98000001, true)
+    values (${characterId}, ${userId}, 'Current Pilot', 98000001, true)
   `
   await connection`
     insert into eve_tokens (
@@ -382,6 +350,45 @@ async function seedLegacyDeployment() {
       ${connection.json(scopes)},
       7
     )
+  `
+  await connection`
+    insert into organization_epochs (
+      deployment_id,
+      organization_version,
+      organization_type,
+      organization_id,
+      organization_name,
+      organization_ticker
+    ) values (1, 1, 'corporation', 98000001, 'Current Corporation', 'CURR')
+  `
+  await connection`
+    insert into deployment_settings (
+      id,
+      organization_type,
+      organization_id,
+      organization_name,
+      organization_ticker
+    ) values (1, 'corporation', 98000001, 'Current Corporation', 'CURR')
+  `
+  await connection`
+    insert into organization_managed_corporations (
+      deployment_id,
+      organization_version,
+      corporation_id,
+      first_observed_at,
+      last_observed_at
+    ) values (1, 1, 98000001, now(), now())
+  `
+  await connection`
+    insert into organization_corporation_sources (
+      source_id,
+      deployment_id,
+      organization_version,
+      corporation_id,
+      character_id,
+      evidence_character_id,
+      registered_by_user_id
+    ) values (${sourceId}, 1, 1, 98000001, ${characterId}, ${characterId}, ${userId})
   `
 }
 

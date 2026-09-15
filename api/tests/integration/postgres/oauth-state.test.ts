@@ -2,13 +2,12 @@ import { createHash, randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest'
-import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.js'
+import { runMigrations } from '../../../src/db/migration-runner.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
 let oauthStateStore: typeof import('../../../src/auth/oauth-state-store.js')
 let dbClient: typeof import('../../../src/db/client.js')
-let legacyReturnPath: string | null | undefined
 const databasePassword = randomUUID()
 const characterId = 1404328063
 
@@ -32,28 +31,7 @@ beforeAll(async () => {
     TOKEN_ENCRYPTION_KEY: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
   })
 
-  const migrations = await loadMigrations()
-  const returnPathMigrationIndex = migrations.findIndex(
-    ({ name }) => name === '020_oauth_state_return_path.sql',
-  )
-  const loginReturnPathMigrationIndex = migrations.findIndex(
-    ({ name }) => name === '025_login_oauth_return_path.sql',
-  )
-  if (returnPathMigrationIndex < 0) throw new Error('OAuth return-path migration is missing')
-  if (loginReturnPathMigrationIndex < 0)
-    throw new Error('Login OAuth return-path migration is missing')
-  await runMigrations(connection, migrations.slice(0, returnPathMigrationIndex))
-  const userId = await insertOwnedCharacter()
-  await connection`
-    insert into oauth_states (state_hash, intent, user_id, character_id, expires_at)
-    values (${'a'.repeat(64)}, 'reauthorize', ${userId}, ${characterId}, now() + interval '10 minutes')
-  `
-  await runMigrations(connection, migrations.slice(returnPathMigrationIndex))
-  const [legacyState] = await connection<{ return_path: string | null }[]>`
-    select return_path from oauth_states where state_hash = ${'a'.repeat(64)}
-  `
-  legacyReturnPath = legacyState?.return_path
-  await runMigrations(connection, [migrations[loginReturnPathMigrationIndex]!])
+  await runMigrations(connection)
 
   oauthStateStore = await import('../../../src/auth/oauth-state-store.js')
   dbClient = await import('../../../src/db/client.js')
@@ -74,7 +52,7 @@ afterAll(async () => {
 })
 
 describe('OAuth state return path persistence', () => {
-  test('applies a nullable varchar(512) column while preserving context constraints and legacy rows', async () => {
+  test('defines a nullable varchar(512) column with the current context constraints', async () => {
     const [column] = await connection<
       {
         data_type: string
@@ -111,7 +89,6 @@ describe('OAuth state return path persistence', () => {
         'oauth_states_user_id_fkey',
       ]),
     )
-    expect(legacyReturnPath).toBeNull()
   })
 
   test('enforces the return-path bound and login-or-reauthorization context constraint', async () => {

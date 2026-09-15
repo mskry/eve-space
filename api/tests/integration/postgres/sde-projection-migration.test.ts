@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import postgres from 'postgres'
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import { loadMigrations, runMigrations } from '../../../src/db/migration-runner.js'
+import { runMigrations } from '../../../src/db/migration-runner.js'
 
 let container: StartedTestContainer
 let connection: postgres.Sql
@@ -24,13 +24,7 @@ beforeAll(async () => {
   connection = postgres(databaseUrl, { onnotice: () => {} })
   await waitForDatabase()
 
-  const migrations = await loadMigrations()
-  const migrationIndex = migrations.findIndex(
-    ({ name }) => name === '021_sde_type_descriptions.sql',
-  )
-  if (migrationIndex < 0) throw new Error('SDE type-description migration is missing')
-
-  await runMigrations(connection, migrations.slice(0, migrationIndex))
+  await runMigrations(connection)
   await connection`
     insert into sde_types (type_id, group_id, name, published)
     values (3300, 255, 'Gunnery', true)
@@ -39,7 +33,9 @@ beforeAll(async () => {
     insert into sde_builds (build_number, release_date, ingested_at)
     values (${buildNumber}, '2026-01-01T11:00:00Z', '2026-01-01T12:00:00Z')
   `
-  await runMigrations(connection, migrations.slice(migrationIndex))
+  await connection`
+    update sde_projection_state set active_build_number = ${buildNumber}
+  `
 })
 
 afterAll(async () => {
@@ -48,11 +44,11 @@ afterAll(async () => {
 })
 
 describe('SDE projection migrations', () => {
-  test('preserves existing types and enables a versioned same-build reload', async () => {
+  test('supports nullable type descriptions and a versioned same-build reload', async () => {
     const [type] = await connection<{ description: string | null; name: string }[]>`
       select name, description from sde_types where type_id = 3300
     `
-    const [legacyBuild] = await connection<
+    const [initialBuild] = await connection<
       { build_number: string; ingest_version: number; ingested_at: Date }[]
     >`
       select build_number, ingest_version, ingested_at
@@ -67,12 +63,12 @@ describe('SDE projection migrations', () => {
     `
 
     expect(type).toEqual({ name: 'Gunnery', description: null })
-    expect(legacyBuild).toMatchObject({ build_number: String(buildNumber), ingest_version: 1 })
+    expect(initialBuild).toMatchObject({ build_number: String(buildNumber), ingest_version: 1 })
     expect(projectionState).toEqual({
       singleton: true,
       active_build_number: String(buildNumber),
     })
-    expect(needsReload(legacyBuild)).toBe(true)
+    expect(needsReload(initialBuild)).toBe(true)
 
     await connection`
       insert into sde_builds (build_number, release_date, ingest_version)
@@ -92,7 +88,7 @@ describe('SDE projection migrations', () => {
     `
     expect(needsReload(completedBuild)).toBe(false)
     expect(completedBuild?.ingested_at.getTime()).toBeGreaterThan(
-      legacyBuild!.ingested_at.getTime(),
+      initialBuild!.ingested_at.getTime(),
     )
   })
 })
