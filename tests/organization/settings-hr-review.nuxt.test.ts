@@ -13,6 +13,7 @@ import type {
 import { refreshPrivateAuthorization } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { cacheAdmissionForOrganization } from '../support/cache-admission'
+import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
@@ -128,12 +129,6 @@ describe('SettingsOrganizationHrReview', () => {
     expect(wrapper.get('.hr-decision-form textarea').element).toHaveProperty('value', '')
   })
 })
-
-function clearQueryCache() {
-  const queryCache = useQueryCache()
-  queryCache.cancelQueries()
-  for (const entry of queryCache.getEntries()) queryCache.remove(entry)
-}
 
 function installCommonHandlers(canReview: boolean, memberAccess = canReview) {
   queryServer.use(

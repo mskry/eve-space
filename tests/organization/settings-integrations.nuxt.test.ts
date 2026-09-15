@@ -11,6 +11,7 @@ import { refreshPrivateAuthorization } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { createApiClient } from '../../app/utils/api-client'
 import { cacheAdmissionForOrganization } from '../support/cache-admission'
+import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
@@ -143,12 +144,6 @@ async function mountSettingsIntegrations() {
   await vi.waitFor(() => expect(wrapper.text()).toContain('Example Corporation'))
   await vi.waitFor(() => expect(wrapper.text()).toContain('Authority Pilot'))
   return wrapper
-}
-
-function clearQueryCache() {
-  const queryCache = useQueryCache()
-  queryCache.cancelQueries()
-  for (const entry of queryCache.getEntries()) queryCache.remove(entry)
 }
 
 function installHandlers() {

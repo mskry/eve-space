@@ -11,6 +11,7 @@ import { provideCharacterReauthorization } from '../../app/composables/useCharac
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import type { FinanceContract, FinanceResourceState } from '../../app/types/finance'
 import { cacheAdmissionForCharacter } from '../support/cache-admission'
+import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
 interface FinanceScenario {
@@ -91,12 +92,6 @@ afterEach(async () => {
   document.body.replaceChildren()
   vi.useRealTimers()
 })
-
-function clearQueryCache() {
-  const cache = useQueryCache()
-  cache.cancelQueries()
-  for (const entry of cache.getEntries()) cache.remove(entry)
-}
 
 describe('character Finance page', () => {
   it('labels complete and current-page summaries and keeps ledger filters local to each tab', async () => {

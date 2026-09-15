@@ -8,6 +8,7 @@ import { defineComponent, h } from 'vue'
 import MemberOverviewPage from '../../app/pages/index.vue'
 import type { OrganizationActivities, OrganizationCompliance } from '../../app/queries/organization'
 import { ADMIN_QUERY_KEYS } from '../../app/queries/query-keys'
+import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
@@ -23,12 +24,6 @@ afterEach(async () => {
   vi.restoreAllMocks()
   await flushPromises()
 })
-
-function clearQueryCache() {
-  const queryCache = useQueryCache()
-  queryCache.cancelQueries()
-  for (const entry of queryCache.getEntries()) queryCache.remove(entry)
-}
 
 describe('authenticated member overview', () => {
   it('prioritizes compliance, remediation, and eligible-character activity', async () => {
