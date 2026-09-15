@@ -80,12 +80,9 @@ async function resolveOrganizationAdmission(
   now: Date,
   options: CacheAdmissionServiceOptions,
 ) {
-  if (
-    !foundation ||
-    foundation.context.blocked ||
-    resolveOrganizationEntitlementScope(foundation.context, now) === 'none'
-  )
-    return null
+  if (!foundation || foundation.context.blocked) return null
+  const entitlementScope = resolveOrganizationEntitlementScope(foundation.context, now)
+  if (entitlementScope === 'none') return null
 
   const enabledModuleIds = new Set(
     foundation.modules.filter(({ enabled }) => enabled).map(({ moduleId }) => moduleId),
@@ -114,7 +111,7 @@ async function resolveOrganizationAdmission(
     .map(({ declaration }) => declaration.admissionScope)
   const admissionScopes = [
     coreOrganizationAdmissionScopes.activities,
-    ...(revisionFacts.roles.some(({ role }) => role === 'hr_auditor')
+    ...(entitlementScope === 'all' && revisionFacts.roles.some(({ role }) => role === 'hr_auditor')
       ? [coreOrganizationAdmissionScopes.rosterCoverage]
       : []),
     ...moduleScopes,

@@ -205,9 +205,11 @@ describe('explicit character transfer production journeys', async () => {
       destinationMain.characterId,
       'Repair split account',
     )
-    await sourceContext.request.patch(
+    const selectMovingMainResponse = await sourceContext.request.patch(
       `${infrastructure.api.origin}/api/me/characters/${movingCharacter.characterId}/main`,
+      { headers: { Origin: webOrigin } },
     )
+    expect(selectMovingMainResponse.status()).toBe(200)
     await openTransferLink(destinationPage, transferLink)
     infrastructure.sso.queue(movingCharacter)
     await destinationPage.getByRole('button', { name: 'CONTINUE TO EVE ONLINE' }).click()
@@ -216,9 +218,11 @@ describe('explicit character transfer production journeys', async () => {
     })
     await destinationPage.getByText(/choose another main character/i).waitFor()
 
-    await sourceContext.request.patch(
+    const selectSourceMainResponse = await sourceContext.request.patch(
       `${infrastructure.api.origin}/api/me/characters/${sourceMain.characterId}/main`,
+      { headers: { Origin: webOrigin } },
     )
+    expect(selectSourceMainResponse.status()).toBe(200)
     await openTransferLink(destinationPage, transferLink)
     infrastructure.sso.queue(movingCharacter)
     await destinationPage.getByRole('button', { name: 'CONTINUE TO EVE ONLINE' }).click()

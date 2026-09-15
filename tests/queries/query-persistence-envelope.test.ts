@@ -2,11 +2,16 @@ import type { QueryMeta } from '@pinia/colada'
 import { describe, expect, it } from 'vitest'
 import type { CacheAdmissionContext } from '../../app/queries/auth'
 import {
+  PERSISTED_ESI_QUERY_CACHE_MAX_BYTES,
+  PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES,
+  PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION,
   PERSISTED_ESI_QUERY_CACHE_RETENTION_MS,
   parsePersistedEnvelope,
   serializePersistedEnvelope,
   shouldPersistEsiQuery,
+  toPublicOnlySerializedEnvelope,
   type EsiQueryCacheEnvelope,
+  type PersistedQueryCache,
   type PersistedQueryTuple,
 } from '../../app/query-persistence/envelope'
 
@@ -186,6 +191,131 @@ describe('query persistence envelope policy', () => {
     expect(result.envelope.public).toEqual({})
   })
 
+  it('retains the newest entries within each partition limit', () => {
+    const cache = publicEntries(PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION + 2)
+
+    const result = serializePersistedEnvelope(cache, {
+      ...serializeOptions(),
+      readOriginalSuccessTime: (keyHash) => cache[keyHash]?.[2],
+    })
+
+    expect(Object.keys(result.envelope.public)).toHaveLength(
+      PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION,
+    )
+    expect(result.envelope.public[boundedPublicKey(0)]).toBeDefined()
+    expect(
+      result.envelope.public[
+        boundedPublicKey(PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION + 1)
+      ],
+    ).toBeUndefined()
+    expect(result.acceptedSuccessfulTimes.size).toBe(
+      PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION,
+    )
+  })
+
+  it('retains the newest entries within the total envelope limit', () => {
+    const priorEnvelope = envelopeWithCharacterEntryCount(
+      5,
+      PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION,
+    )
+
+    const result = serializePersistedEnvelope(
+      {},
+      {
+        ...serializeOptions(),
+        admission: null,
+        priorEnvelope,
+      },
+    )
+
+    expect(envelopeEntryCount(result.envelope)).toBe(PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES)
+    expect(result.envelope.characters['1']).toBeDefined()
+    expect(result.envelope.characters['5']).toBeUndefined()
+  })
+
+  it('drops entries until the serialized envelope fits its byte limit', () => {
+    const keyHash = boundedPublicKey(0)
+    const cache: PersistedQueryCache = {
+      [keyHash]: tuple({ payload: 'x'.repeat(PERSISTED_ESI_QUERY_CACHE_MAX_BYTES) }, NOW, {
+        kind: 'public-esi',
+      }),
+    }
+
+    const result = serializePersistedEnvelope(cache, {
+      ...serializeOptions(),
+      readOriginalSuccessTime: () => NOW,
+    })
+
+    expect(result.envelope.public).toEqual({})
+    expect(result.acceptedSuccessfulTimes.size).toBe(0)
+    expect(new TextEncoder().encode(result.serialized).byteLength).toBeLessThanOrEqual(
+      PERSISTED_ESI_QUERY_CACHE_MAX_BYTES,
+    )
+  })
+
+  it('keeps newer public data when removing an oldest singleton private partition is sufficient', () => {
+    const publicKey = boundedPublicKey(0)
+    const publicOnly = {
+      [publicKey]: tuple({ payload: '' }, NOW, { kind: 'public-esi' }),
+    }
+    const base = serializePersistedEnvelope(publicOnly, {
+      ...serializeOptions(),
+      readOriginalSuccessTime: () => NOW,
+    })
+    const payload = 'x'.repeat(
+      PERSISTED_ESI_QUERY_CACHE_MAX_BYTES - new TextEncoder().encode(base.serialized).byteLength,
+    )
+    const cache: PersistedQueryCache = {
+      [publicKey]: tuple({ payload }, NOW, { kind: 'public-esi' }),
+      [JSON.stringify(CHARACTER_KEY)]: tuple({ name: 'Old character data' }, NOW - 1, {
+        kind: 'character-esi',
+        characterId: 7,
+      }),
+    }
+
+    const result = serializePersistedEnvelope(cache, {
+      ...serializeOptions(),
+      readOriginalSuccessTime: (keyHash) => cache[keyHash]?.[2],
+    })
+
+    expect(result.envelope.public[publicKey]).toBeDefined()
+    expect(result.envelope.characters).toEqual({})
+    expect(new TextEncoder().encode(result.serialized).byteLength).toBe(
+      PERSISTED_ESI_QUERY_CACHE_MAX_BYTES,
+    )
+  })
+
+  it('does not salvage public data from an envelope above its entry limits', () => {
+    const oversized = {
+      ...emptyEnvelope(),
+      public: publicEntries(PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION + 1),
+    }
+
+    expect(toPublicOnlySerializedEnvelope(JSON.stringify(oversized), 1, NOW)).toBeNull()
+  })
+
+  it('rejects restored envelopes above byte, partition, and total entry limits', () => {
+    expect(() =>
+      parsePersistedEnvelope('x'.repeat(PERSISTED_ESI_QUERY_CACHE_MAX_BYTES + 1), NOW),
+    ).toThrow('exceeds the size limit')
+
+    const oversizedPartition = {
+      ...emptyEnvelope(),
+      public: publicEntries(PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION + 1),
+    }
+    expect(() => parsePersistedEnvelope(JSON.stringify(oversizedPartition), NOW)).toThrow(
+      'exceeds the partition entry limit',
+    )
+
+    const oversizedEnvelope = envelopeWithCharacterEntryCount(
+      5,
+      PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION,
+    )
+    expect(() => parsePersistedEnvelope(JSON.stringify(oversizedEnvelope), NOW)).toThrow(
+      'exceeds the total entry limit',
+    )
+  })
+
   it('drops tuples at their absolute retention boundary', () => {
     const stored = emptyEnvelope()
     stored.public[JSON.stringify(PUBLIC_KEY)] = tuple(
@@ -341,6 +471,54 @@ function serializeOptions() {
     retainedPrivateAccessOpen: true,
     verifiedUserId: 'user-1',
   }
+}
+
+function publicEntries(entryCount: number): PersistedQueryCache {
+  return Object.fromEntries(
+    Array.from({ length: entryCount }, (_, index) => [
+      boundedPublicKey(index),
+      tuple({ index }, NOW - index, { kind: 'public-esi' }),
+    ]),
+  )
+}
+
+function boundedPublicKey(index: number) {
+  return JSON.stringify(['public', 'bounded', index])
+}
+
+function envelopeWithCharacterEntryCount(partitionCount: number, entriesPerPartition: number) {
+  const envelope = emptyEnvelope()
+  for (let characterId = 1; characterId <= partitionCount; characterId += 1) {
+    const cache = Object.fromEntries(
+      Array.from({ length: entriesPerPartition }, (_, index) => {
+        const ordinal = (characterId - 1) * entriesPerPartition + index
+        return [
+          JSON.stringify(['private', 'characters', characterId, 'bounded', index]),
+          tuple({ index }, NOW - ordinal, { kind: 'character-esi', characterId }),
+        ]
+      }),
+    )
+    envelope.characters[String(characterId)] = {
+      ownerUserId: 'user-1',
+      admissionRevision: `character-revision-${characterId}`,
+      cache,
+    }
+  }
+  return envelope
+}
+
+function envelopeEntryCount(envelope: EsiQueryCacheEnvelope) {
+  return (
+    Object.keys(envelope.public).length +
+    Object.values(envelope.characters).reduce(
+      (total, partition) => total + Object.keys(partition.cache).length,
+      0,
+    ) +
+    Object.values(envelope.organizations).reduce(
+      (total, partition) => total + Object.keys(partition.cache).length,
+      0,
+    )
+  )
 }
 
 function candidate(key: readonly unknown[], esiPersistence: Parameters<typeof tuple>[2]) {

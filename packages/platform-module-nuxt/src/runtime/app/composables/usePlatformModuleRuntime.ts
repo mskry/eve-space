@@ -39,7 +39,7 @@ export function usePlatformModulePersistenceLifecycle(
 ) {
   const queryCache = useQueryCache()
   const { enabledModuleIds } = usePlatformModuleRuntime()
-  let previousEnabledModuleIds = new Set<string>()
+  let previousEnabledModuleIds = new Set(enabledModuleIds.value)
 
   watch(
     enabledModuleIds,

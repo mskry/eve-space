@@ -39,6 +39,11 @@ serializing, local updates, or a failed refresh does not move that absolute dead
 current response starts a new retention period; repeated server-stale responses retain the existing
 deadline unless the server supplies an authoritative earlier success time.
 
+The persisted envelope retains the newest 128 results per public, character, or organization-scope
+partition, at most 512 results in total, and at most 4 MiB of UTF-8 JSON. Ties use the serialized
+query key for deterministic selection. Restoration rejects snapshots exceeding any limit before
+their entries can be admitted.
+
 The interface distinguishes two degraded presentations:
 
 - **Historical data, refresh failed.** EVE Space is showing an admitted browser snapshot after the

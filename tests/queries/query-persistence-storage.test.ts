@@ -3,9 +3,10 @@ import {
   createIndexedDbQueryPersistenceStorage,
   type QueryPersistenceStorage,
 } from '../../app/query-persistence/storage'
-import type {
-  EsiQueryCacheEnvelope,
-  PersistedQueryTuple,
+import {
+  PERSISTED_ESI_QUERY_CACHE_MAX_BYTES,
+  type EsiQueryCacheEnvelope,
+  type PersistedQueryTuple,
 } from '../../app/query-persistence/envelope'
 
 const NOW = Date.parse('2026-09-14T11:00:00.000Z')
@@ -52,6 +53,22 @@ describe('IndexedDB query persistence storage', () => {
 
     await expect(storage.read()).resolves.toEqual({ generation: 0, value: null })
     await expect(storage.readGeneration()).resolves.toBe(0)
+  })
+
+  it('rejects and removes an oversized envelope during restoration', async () => {
+    const indexedDb = new FakeIndexedDb()
+    indexedDb.setRecord(
+      'eve-space-esi-query-cache',
+      'x'.repeat(PERSISTED_ESI_QUERY_CACHE_MAX_BYTES + 1),
+    )
+    const storage = createIndexedDbQueryPersistenceStorage({
+      indexedDb: indexedDb as unknown as IDBFactory,
+      localStorage: new FakeStorage(),
+      now: () => NOW,
+    })
+
+    await expect(storage.read()).resolves.toEqual({ generation: 0, value: null })
+    await expect(storage.read()).resolves.toEqual({ generation: 0, value: null })
   })
 
   it('invalidates one module scope atomically and rejects its stale captured-generation write', async () => {

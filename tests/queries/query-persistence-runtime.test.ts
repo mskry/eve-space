@@ -678,12 +678,18 @@ describe('query persistence runtime', () => {
     },
   )
 
-  it('purges a scope-denied retained partition without removing successful live siblings', async () => {
+  it('purges a scope-denied retained partition without resetting successful live state', async () => {
     const storage = new MemoryQueryPersistenceStorage(envelopeWithPrivatePartitions())
     const runtime = createRuntime(storage)
     await readyRuntime(runtime)
     await applyVerifiedQueryIdentity(runtime.queryCache, authenticatedSession(), async () =>
       admission(),
+    )
+    const resetConsumerState = vi.fn()
+    subscribePrivateQueryInvalidation(
+      runtime.queryCache,
+      { kind: 'character', characterId: 7 },
+      resetConsumerState,
     )
     const siblingEntry = runtime.queryCache.ensure({
       key: CHARACTER_SIBLING_KEY,
@@ -705,6 +711,7 @@ describe('query persistence runtime', () => {
 
     expect(runtime.queryCache.getQueryData(CHARACTER_KEY)).toBeUndefined()
     expect(runtime.queryCache.getQueryData(CHARACTER_SIBLING_KEY)).toEqual({ balance: 100 })
+    expect(resetConsumerState).not.toHaveBeenCalled()
     expect(storage.snapshot()?.characters).toEqual({})
     runtime.dispose()
   })

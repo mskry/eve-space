@@ -412,7 +412,7 @@ describe('Nuxt anonymous SSR boundary', async () => {
       .toBe(publicFixtureText)
 
     const records = await readPersistenceRecords(publicPage)
-    expect(records.control).toEqual({ invalid: true })
+    expect(records.control).toEqual({ version: 1, invalidationGeneration: null })
     expect(records.envelope?.characters).toEqual({})
     expect(await textWasObserved(page)).toBe(false)
     expect(JSON.stringify(records.envelope)).not.toContain(obsoletePrivateText)

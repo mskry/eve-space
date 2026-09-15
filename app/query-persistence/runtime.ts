@@ -253,7 +253,7 @@ function createQueryPersistenceRuntime(
           preserveFreshSuccesses,
           preserveSession,
         )
-        if (preserveErrors || !preserveFreshSuccesses) {
+        if (!preserveFreshSuccesses) {
           notifyPrivateQueryInvalidation(invalidationSubscribers, scope)
         }
       },

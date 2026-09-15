@@ -142,20 +142,18 @@ useHead({ title: 'Characters // EVE Space' })
       {{ attachFeedback }}
     </p>
 
-    <UiStatePanel v-if="authLoading" compact role="status">
-      <template #icon><div class="app-scanner" aria-hidden="true" /></template>
-      <p>Verifying account identity...</p>
-    </UiStatePanel>
     <UiStatePanel
-      v-else-if="authUnavailable"
-      code="ERR / SESSION"
-      title="Session unavailable"
+      v-if="authLoading || authUnavailable"
+      :code="authUnavailable ? 'ERR / SESSION' : undefined"
+      :title="authUnavailable ? 'Session unavailable' : undefined"
       compact
-      role="alert"
-      tone="error"
+      :role="authUnavailable ? 'alert' : 'status'"
+      :tone="authUnavailable ? 'error' : 'default'"
     >
-      <p>EVE Space could not verify your session. Character data remains locked.</p>
-      <template #action>
+      <template v-if="authLoading" #icon><div class="app-scanner" aria-hidden="true" /></template>
+      <p v-if="authLoading">Verifying account identity...</p>
+      <p v-else>EVE Space could not verify your session. Character data remains locked.</p>
+      <template v-if="authUnavailable" #action>
         <button class="ui-action-secondary" type="button" @click="initializeAuth(true)">
           RETRY UPLINK
         </button>

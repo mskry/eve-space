@@ -13,6 +13,9 @@ const PERSISTED_CACHE_VERSION = 1
 
 export const PERSISTED_ESI_QUERY_CACHE_KEY = 'eve-space-esi-query-cache'
 export const PERSISTED_ESI_QUERY_CACHE_RETENTION_MS = ESI_QUERY_RETENTION_MS
+export const PERSISTED_ESI_QUERY_CACHE_MAX_BYTES = 4 * 1024 * 1024
+export const PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES = 512
+export const PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION = 128
 
 export type PersistedQueryTuple = [data: unknown, error: null, when: number, meta: QueryMeta]
 export type PersistedQueryCache = Record<string, PersistedQueryTuple>
@@ -57,6 +60,29 @@ interface ParsedTuple {
   readonly meta: QueryMeta
   readonly persistence: PersistableEsiQuery
   readonly tuple: PersistedQueryTuple
+}
+
+interface EnvelopeEntry {
+  readonly cache: PersistedQueryCache
+  readonly keyHash: string
+  readonly tuple: PersistedQueryTuple
+}
+
+interface ParseEnvelopeBudget {
+  entries: number
+}
+
+type PrivateCacheLocation =
+  | { readonly kind: 'character'; readonly key: string }
+  | { readonly kind: 'organization'; readonly key: string }
+
+interface EnvelopeBytePruningState {
+  readonly cacheSizes: Map<PersistedQueryCache, number>
+  readonly privateCacheLocations: ReadonlyMap<PersistedQueryCache, PrivateCacheLocation>
+  readonly privatePartitionCounts: {
+    character: number
+    organization: number
+  }
 }
 
 interface SerializeEnvelopeOptions {
@@ -106,15 +132,23 @@ export function serializePersistedEnvelope(
   }
 
   mergePriorSuccessfulTuples(next, observedKeys, options)
+  const serialized = serializeBoundedEnvelope(next)
+  const retainedKeys = new Set(envelopeEntries(next).map(({ keyHash }) => keyHash))
+  for (const keyHash of acceptedSuccessfulTimes.keys()) {
+    if (!retainedKeys.has(keyHash)) acceptedSuccessfulTimes.delete(keyHash)
+  }
   return {
     acceptedSuccessfulTimes,
     envelope: next,
     observedKeys,
-    serialized: JSON.stringify(next),
+    serialized,
   }
 }
 
 export function parsePersistedEnvelope(stored: string, now: number) {
+  if (serializedEnvelopeExceedsByteLimit(stored)) {
+    throw new TypeError('Persisted ESI cache envelope exceeds the size limit.')
+  }
   const value: unknown = JSON.parse(stored)
   if (
     !isExactRecord(value, [
@@ -134,17 +168,19 @@ export function parsePersistedEnvelope(stored: string, now: number) {
     throw new TypeError('Persisted ESI cache invalidation generation is invalid.')
   }
 
+  const budget = { entries: 0 }
   const publicCache = parsePartitionCache(
     value.public,
     now,
     (persistence) => persistence.kind === 'public-esi',
+    budget,
   )
 
   if (!isRecord(value.characters) || !isRecord(value.organizations)) {
     throw new TypeError('Persisted ESI cache partitions are invalid.')
   }
-  const characters = parseCharacterPartitions(value.characters, now)
-  const organizations = parseOrganizationPartitions(value.organizations, now)
+  const characters = parseCharacterPartitions(value.characters, now, budget)
+  const organizations = parseOrganizationPartitions(value.organizations, now, budget)
   const pruned = publicCache.pruned || characters.pruned || organizations.pruned
 
   return {
@@ -363,7 +399,7 @@ export function isRetainedSuccessTimestamp(value: unknown, now: number): value i
 }
 
 export function readSerializedEnvelopeGeneration(value: string | null) {
-  if (value === null) return null
+  if (value === null || serializedEnvelopeExceedsByteLimit(value)) return null
   try {
     const parsed: unknown = JSON.parse(value)
     return isRecord(parsed) && isInvalidationGeneration(parsed.invalidationGeneration)
@@ -374,12 +410,16 @@ export function readSerializedEnvelopeGeneration(value: string | null) {
   }
 }
 
-export function toPublicOnlySerializedEnvelope(value: string | null, generation: number) {
+export function toPublicOnlySerializedEnvelope(
+  value: string | null,
+  generation: number,
+  now: number,
+) {
   if (value === null) return null
+  if (serializedEnvelopeExceedsByteLimit(value)) return null
   try {
-    const parsed: unknown = JSON.parse(value)
-    if (!isRecord(parsed)) return value
-    return JSON.stringify({
+    const parsed = parsePersistedEnvelope(value, now).envelope
+    return serializeBoundedEnvelope({
       version: parsed.version,
       invalidationGeneration: generation,
       public: parsed.public,
@@ -387,7 +427,7 @@ export function toPublicOnlySerializedEnvelope(value: string | null, generation:
       organizations: {},
     })
   } catch {
-    return value
+    return null
   }
 }
 
@@ -406,12 +446,13 @@ export function mergePublicSerializedEnvelope(
       retainedPrivate = emptyEnvelope(generation)
     }
   }
-  return JSON.stringify({
+  const merged = {
     ...retainedPrivate,
     version: PERSISTED_CACHE_VERSION,
     invalidationGeneration: generation,
     public: candidate.public,
-  } satisfies EsiQueryCacheEnvelope)
+  } satisfies EsiQueryCacheEnvelope
+  return serializeBoundedEnvelope(merged)
 }
 
 export function invalidateSerializedEnvelope(
@@ -424,7 +465,7 @@ export function invalidateSerializedEnvelope(
   try {
     const stored = parsePersistedEnvelope(storedValue, now).envelope
     if (stored.invalidationGeneration !== currentGeneration) {
-      return JSON.stringify({
+      return serializeBoundedEnvelope({
         ...stored,
         invalidationGeneration: generation,
         characters: {},
@@ -432,24 +473,33 @@ export function invalidateSerializedEnvelope(
       } satisfies EsiQueryCacheEnvelope)
     }
     removeEnvelopePartitions(stored, scope)
-    return JSON.stringify({ ...stored, invalidationGeneration: generation })
+    return serializeBoundedEnvelope({ ...stored, invalidationGeneration: generation })
   } catch {
     return null
   }
 }
 
-function parseCharacterPartitions(value: Record<string, unknown>, now: number) {
+function parseCharacterPartitions(
+  value: Record<string, unknown>,
+  now: number,
+  budget: ParseEnvelopeBudget,
+) {
   const partitions: EsiQueryCacheEnvelope['characters'] = {}
   let pruned = false
   for (const [characterIdKey, candidate] of Object.entries(value)) {
-    const parsed = parseCharacterPartition(characterIdKey, candidate, now)
+    const parsed = parseCharacterPartition(characterIdKey, candidate, now, budget)
     pruned ||= parsed.pruned
     if (parsed.partition) partitions[characterIdKey] = parsed.partition
   }
   return { partitions, pruned }
 }
 
-function parseCharacterPartition(characterIdKey: string, candidate: unknown, now: number) {
+function parseCharacterPartition(
+  characterIdKey: string,
+  candidate: unknown,
+  now: number,
+  budget: ParseEnvelopeBudget,
+) {
   const characterId = Number(characterIdKey)
   if (!isPositiveInteger(characterId) || String(characterId) !== characterIdKey) {
     throw new TypeError('Persisted character cache identity is invalid.')
@@ -465,6 +515,7 @@ function parseCharacterPartition(characterIdKey: string, candidate: unknown, now
     now,
     (persistence) =>
       persistence.kind === 'character-esi' && persistence.characterId === characterId,
+    budget,
   )
   if (Object.keys(parsed.cache).length === 0) return { partition: null, pruned: true }
   return {
@@ -477,18 +528,27 @@ function parseCharacterPartition(characterIdKey: string, candidate: unknown, now
   }
 }
 
-function parseOrganizationPartitions(value: Record<string, unknown>, now: number) {
+function parseOrganizationPartitions(
+  value: Record<string, unknown>,
+  now: number,
+  budget: ParseEnvelopeBudget,
+) {
   const partitions: EsiQueryCacheEnvelope['organizations'] = {}
   let pruned = false
   for (const [admissionScope, candidate] of Object.entries(value)) {
-    const parsed = parseOrganizationPartition(admissionScope, candidate, now)
+    const parsed = parseOrganizationPartition(admissionScope, candidate, now, budget)
     pruned ||= parsed.pruned
     if (parsed.partition) partitions[admissionScope] = parsed.partition
   }
   return { partitions, pruned }
 }
 
-function parseOrganizationPartition(admissionScope: string, candidate: unknown, now: number) {
+function parseOrganizationPartition(
+  admissionScope: string,
+  candidate: unknown,
+  now: number,
+  budget: ParseEnvelopeBudget,
+) {
   if (!isNonemptyString(admissionScope)) {
     throw new TypeError('Persisted organization cache scope is invalid.')
   }
@@ -516,6 +576,7 @@ function parseOrganizationPartition(admissionScope: string, candidate: unknown, 
     now,
     (persistence) =>
       persistence.kind === 'organization-esi' && persistence.admissionScope === admissionScope,
+    budget,
   )
   if (Object.keys(parsed.cache).length === 0) return { partition: null, pruned: true }
   return {
@@ -663,15 +724,180 @@ function forEachEnvelopeTuple(
   forEachPrivateTuple(envelope, visitor)
 }
 
+export function serializeBoundedEnvelope(envelope: EsiQueryCacheEnvelope) {
+  pruneEnvelopeEntryCounts(envelope)
+  let serialized = JSON.stringify(envelope)
+  if (!serializedEnvelopeExceedsByteLimit(serialized)) return serialized
+
+  pruneEnvelopeBytes(envelope, utf8ByteLength(serialized))
+  removeEmptyPrivatePartitions(envelope)
+  serialized = JSON.stringify(envelope)
+  if (serializedEnvelopeExceedsByteLimit(serialized)) {
+    throw new TypeError('Persisted ESI cache envelope could not be bounded.')
+  }
+  return serialized
+}
+
+function pruneEnvelopeBytes(envelope: EsiQueryCacheEnvelope, serializedBytes: number) {
+  const state: EnvelopeBytePruningState = {
+    cacheSizes: new Map(
+      envelopeCaches(envelope).map((cache) => [cache, Object.keys(cache).length]),
+    ),
+    privateCacheLocations: locatePrivateCaches(envelope),
+    privatePartitionCounts: {
+      character: Object.keys(envelope.characters).length,
+      organization: Object.keys(envelope.organizations).length,
+    },
+  }
+  const oldestEntries = envelopeEntries(envelope).toSorted(compareOldestEnvelopeEntry)
+  for (const entry of oldestEntries) {
+    if (serializedBytes <= PERSISTED_ESI_QUERY_CACHE_MAX_BYTES) break
+    serializedBytes -= removeEnvelopeEntry(envelope, entry, state)
+  }
+}
+
+function removeEnvelopeEntry(
+  envelope: EsiQueryCacheEnvelope,
+  entry: EnvelopeEntry,
+  state: EnvelopeBytePruningState,
+) {
+  const cacheSize = state.cacheSizes.get(entry.cache) ?? 0
+  state.cacheSizes.set(entry.cache, cacheSize - 1)
+  const location = state.privateCacheLocations.get(entry.cache)
+  if (cacheSize === 1 && location) {
+    return removePrivateEnvelopePartition(envelope, location, state.privatePartitionCounts)
+  }
+  delete entry.cache[entry.keyHash]
+  return serializedEnvelopeEntryBytes(entry) + (cacheSize > 1 ? 1 : 0)
+}
+
+function removePrivateEnvelopePartition(
+  envelope: EsiQueryCacheEnvelope,
+  location: PrivateCacheLocation,
+  partitionCounts: EnvelopeBytePruningState['privatePartitionCounts'],
+) {
+  if (location.kind === 'character') {
+    const partition = envelope.characters[location.key]!
+    const removedBytes =
+      serializedEnvelopePartitionBytes(location.key, partition) +
+      (partitionCounts.character > 1 ? 1 : 0)
+    delete envelope.characters[location.key]
+    partitionCounts.character -= 1
+    return removedBytes
+  }
+  const partition = envelope.organizations[location.key]!
+  const removedBytes =
+    serializedEnvelopePartitionBytes(location.key, partition) +
+    (partitionCounts.organization > 1 ? 1 : 0)
+  delete envelope.organizations[location.key]
+  partitionCounts.organization -= 1
+  return removedBytes
+}
+
+function pruneEnvelopeEntryCounts(envelope: EsiQueryCacheEnvelope) {
+  for (const cache of envelopeCaches(envelope)) {
+    const entries = cacheEntries(cache).toSorted(compareNewestEnvelopeEntry)
+    for (const entry of entries.slice(PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION)) {
+      delete entry.cache[entry.keyHash]
+    }
+  }
+
+  const entries = envelopeEntries(envelope).toSorted(compareNewestEnvelopeEntry)
+  for (const entry of entries.slice(PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES)) {
+    delete entry.cache[entry.keyHash]
+  }
+  removeEmptyPrivatePartitions(envelope)
+}
+
+function envelopeEntries(envelope: EsiQueryCacheEnvelope) {
+  return envelopeCaches(envelope).flatMap(cacheEntries)
+}
+
+function envelopeCaches(envelope: EsiQueryCacheEnvelope) {
+  return [
+    envelope.public,
+    ...Object.values(envelope.characters).map(({ cache }) => cache),
+    ...Object.values(envelope.organizations).map(({ cache }) => cache),
+  ]
+}
+
+function cacheEntries(cache: PersistedQueryCache): EnvelopeEntry[] {
+  return Object.entries(cache).map(([keyHash, tuple]) => ({ cache, keyHash, tuple }))
+}
+
+function compareNewestEnvelopeEntry(left: EnvelopeEntry, right: EnvelopeEntry) {
+  const timestampDifference = right.tuple[2] - left.tuple[2]
+  if (timestampDifference !== 0) return timestampDifference
+  if (left.keyHash < right.keyHash) return -1
+  if (left.keyHash > right.keyHash) return 1
+  return 0
+}
+
+function compareOldestEnvelopeEntry(left: EnvelopeEntry, right: EnvelopeEntry) {
+  const timestampDifference = left.tuple[2] - right.tuple[2]
+  if (timestampDifference !== 0) return timestampDifference
+  if (left.keyHash > right.keyHash) return -1
+  if (left.keyHash < right.keyHash) return 1
+  return 0
+}
+
+function serializedEnvelopeEntryBytes(entry: EnvelopeEntry) {
+  return utf8ByteLength(JSON.stringify({ [entry.keyHash]: entry.tuple })) - 2
+}
+
+function serializedEnvelopePartitionBytes(key: string, partition: PrivatePartition) {
+  return utf8ByteLength(JSON.stringify({ [key]: partition })) - 2
+}
+
+function locatePrivateCaches(envelope: EsiQueryCacheEnvelope) {
+  const locations = new Map<PersistedQueryCache, PrivateCacheLocation>()
+  for (const [key, partition] of Object.entries(envelope.characters)) {
+    locations.set(partition.cache, { kind: 'character', key })
+  }
+  for (const [key, partition] of Object.entries(envelope.organizations)) {
+    locations.set(partition.cache, { kind: 'organization', key })
+  }
+  return locations
+}
+
+function removeEmptyPrivatePartitions(envelope: EsiQueryCacheEnvelope) {
+  for (const [characterId, partition] of Object.entries(envelope.characters)) {
+    if (Object.keys(partition.cache).length === 0) delete envelope.characters[characterId]
+  }
+  for (const [admissionScope, partition] of Object.entries(envelope.organizations)) {
+    if (Object.keys(partition.cache).length === 0) delete envelope.organizations[admissionScope]
+  }
+}
+
+function serializedEnvelopeExceedsByteLimit(serialized: string) {
+  return (
+    serialized.length > PERSISTED_ESI_QUERY_CACHE_MAX_BYTES ||
+    utf8ByteLength(serialized) > PERSISTED_ESI_QUERY_CACHE_MAX_BYTES
+  )
+}
+
+function utf8ByteLength(value: string) {
+  return new TextEncoder().encode(value).byteLength
+}
+
 function parsePartitionCache(
   value: unknown,
   now: number,
   accepts: (persistence: PersistableEsiQuery) => boolean,
+  budget: ParseEnvelopeBudget,
 ) {
   if (!isRecord(value)) throw new TypeError('Persisted ESI query cache is invalid.')
+  const entries = Object.entries(value)
+  if (entries.length > PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES_PER_PARTITION) {
+    throw new TypeError('Persisted ESI query cache exceeds the partition entry limit.')
+  }
+  budget.entries += entries.length
+  if (budget.entries > PERSISTED_ESI_QUERY_CACHE_MAX_ENTRIES) {
+    throw new TypeError('Persisted ESI cache envelope exceeds the total entry limit.')
+  }
   const cache = createCache()
   let pruned = false
-  for (const [keyHash, tuple] of Object.entries(value)) {
+  for (const [keyHash, tuple] of entries) {
     const parsed = parseTuple(keyHash, tuple, now, true)
     if (!parsed || !accepts(parsed.persistence)) {
       throw new TypeError('Persisted ESI query cache entry is invalid.')

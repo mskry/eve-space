@@ -237,6 +237,9 @@ describe('cache admission service', () => {
       expect(context.organization?.admissionRevision).not.toBe(baseline.admissionRevision)
     expect(changedContexts[2]?.organization?.admissionScopes).not.toContain(moduleScope)
     expect(changedContexts[3]?.organization?.validUntil).toBe('2026-09-14T12:30:00.000Z')
+    expect(changedContexts[3]?.organization?.admissionScopes).not.toContain(
+      coreOrganizationAdmissionScopes.rosterCoverage,
+    )
     expect(changedContexts[4]?.organization?.admissionScopes).not.toContain(moduleScope)
 
     const suspended = await loadCacheAdmissionContext(

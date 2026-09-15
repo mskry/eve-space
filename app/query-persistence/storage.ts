@@ -5,6 +5,7 @@ import {
   parsePersistedEnvelope,
   PERSISTED_ESI_QUERY_CACHE_KEY,
   readSerializedEnvelopeGeneration,
+  serializeBoundedEnvelope,
   toPublicOnlySerializedEnvelope,
   type PrivateQueryInvalidationScope,
 } from './envelope'
@@ -182,6 +183,7 @@ export function createIndexedDbQueryPersistenceStorage(
                   barrier: storedBarrier,
                 },
                 recoverPendingInvalidation,
+                now(),
               )
             })
           },
@@ -233,7 +235,7 @@ export function createIndexedDbQueryPersistenceStorage(
               const control = parseInvalidationControl(storedControl)
               if (storedControl !== undefined && !control) {
                 store.put(
-                  toPublicOnlySerializedEnvelope(JSON.stringify(candidate), 0)!,
+                  toPublicOnlySerializedEnvelope(JSON.stringify(candidate), 0, now())!,
                   PERSISTED_ESI_QUERY_CACHE_KEY,
                 )
                 complete({ generation: null, privateAccepted: false })
@@ -249,12 +251,12 @@ export function createIndexedDbQueryPersistenceStorage(
                 !invalidationPending &&
                 allowPrivateWrite &&
                 candidate.invalidationGeneration === generation
-              const serializedCandidate = JSON.stringify(candidate)
+              const serializedCandidate = serializeBoundedEnvelope(candidate)
               let nextValue: string
               if (privateAccepted) {
                 nextValue = serializedCandidate
               } else if (invalidationPending) {
-                nextValue = toPublicOnlySerializedEnvelope(serializedCandidate, generation)!
+                nextValue = toPublicOnlySerializedEnvelope(serializedCandidate, generation, now())!
               } else {
                 nextValue = mergePublicSerializedEnvelope(candidate, storedValue, generation, now())
               }
@@ -288,16 +290,17 @@ function completeStorageRead(
   complete: (value: QueryPersistenceStorageRead) => void,
   storedState: StoredState,
   recoverPendingInvalidation: boolean,
+  now: number,
 ) {
   const control = parseInvalidationControl(storedState.control)
   if (recoverPendingInvalidation || storedState.barrier !== undefined) {
-    return completeRecoveredStorageRead(store, complete, storedState, control)
+    return completeRecoveredStorageRead(store, complete, storedState, control, now)
   }
   if (storedState.control !== undefined && !control) {
-    completeStorageReadWithInvalidControl(store, complete, storedState.value)
+    completeStorageReadWithInvalidControl(store, complete, storedState.value, now)
     return false
   }
-  completeStorageReadAtGeneration(store, complete, storedState.value, control)
+  completeStorageReadAtGeneration(store, complete, storedState.value, control, now)
   return false
 }
 
@@ -306,6 +309,7 @@ function completeRecoveredStorageRead(
   complete: (value: QueryPersistenceStorageRead) => void,
   storedState: StoredState,
   control: InvalidationControl | null,
+  now: number,
 ) {
   const invalidControl = storedState.control !== undefined && !control
   if (invalidControl || control?.invalidationGeneration === Number.MAX_SAFE_INTEGER) {
@@ -318,7 +322,7 @@ function completeRecoveredStorageRead(
   const generation = (control?.invalidationGeneration ?? 0) + 1
   store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
   store.delete(INVALIDATION_BARRIER_KEY)
-  const value = toPublicOnlySerializedEnvelope(storedState.value, generation)
+  const value = toPublicOnlySerializedEnvelope(storedState.value, generation, now)
   storeSerializedEnvelope(store, value)
   complete({ value, generation })
   return false
@@ -328,8 +332,9 @@ function completeStorageReadWithInvalidControl(
   store: IDBObjectStore,
   complete: (value: QueryPersistenceStorageRead) => void,
   storedValue: string | null,
+  now: number,
 ) {
-  const publicOnly = toPublicOnlySerializedEnvelope(storedValue, 0)
+  const publicOnly = toPublicOnlySerializedEnvelope(storedValue, 0, now)
   if (publicOnly === null || readSerializedEnvelopeGeneration(publicOnly) === null) {
     store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
   } else {
@@ -343,6 +348,7 @@ function completeStorageReadAtGeneration(
   complete: (value: QueryPersistenceStorageRead) => void,
   storedValue: string | null,
   control: InvalidationControl | null,
+  now: number,
 ) {
   const generation = control?.invalidationGeneration ?? 0
   if (!control) store.put(createInvalidationControl(generation), INVALIDATION_CONTROL_KEY)
@@ -353,7 +359,12 @@ function completeStorageReadAtGeneration(
     return
   }
 
-  const value = toPublicOnlySerializedEnvelope(storedValue, generation)
+  const value = toPublicOnlySerializedEnvelope(storedValue, generation, now)
+  if (value === null) {
+    store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
+    complete({ value: null, generation })
+    return
+  }
   if (value === storedValue && envelopeGeneration === null) {
     store.delete(PERSISTED_ESI_QUERY_CACHE_KEY)
   } else {

@@ -128,6 +128,24 @@ describe('module enablement middleware scope', () => {
       scope.stop()
     }
   })
+
+  it('invalidates a module that was enabled before the lifecycle watcher was installed', () => {
+    data.value = { enabledModuleIds: ['alpha'] }
+    const scope = effectScope()
+    try {
+      scope.run(() => usePlatformModulePersistenceLifecycle(mocks.invalidateQueryPersistence))
+
+      data.value = { enabledModuleIds: [] }
+
+      expect(mocks.invalidateQueryPersistence).toHaveBeenCalledWith({
+        admissionScopes: ['organization:v1:alpha:member:alpha.view'],
+        moduleId: 'alpha',
+      })
+      expect(mocks.getEntries).toHaveBeenCalledOnce()
+    } finally {
+      scope.stop()
+    }
+  })
 })
 
 describe('module enablement server navigation', () => {
