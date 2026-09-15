@@ -89,6 +89,7 @@ describe('character profile', () => {
           ...result([{ bloodlineId: 5, name: 'Khanid' }]),
           ...base,
           stale: true,
+          retryAt: '2026-08-20T12:05:00.000Z',
           refreshFailureClass: 'response-invalid',
         })
       const defaults = {
@@ -121,6 +122,7 @@ describe('character profile', () => {
     await expect(getCharacterProfile(90_000_001)).resolves.toMatchObject({
       validatedAt: '2026-08-20T11:56:00.000Z',
       stale: true,
+      retryAt: '2026-08-20T12:05:00.000Z',
       refreshFailureClass: 'response-invalid',
     })
   })

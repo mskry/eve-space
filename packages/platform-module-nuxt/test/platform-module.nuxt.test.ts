@@ -81,6 +81,21 @@ describe('platform Nuxt module fixture', async () => {
     expect(retainedAuthorization).not.toContain('Alpha authorization required')
   })
 
+  it('keeps retained feature data while distinguishing persistence provenance', async () => {
+    const restored = await $fetch('/characters/7/alpha?retained=true&presentation=refresh-failed')
+    expect(restored).toContain('Alpha nested page')
+    expect(restored).toContain('Historical data, refresh failed.')
+    expect(restored).toContain('datetime="2026-09-15T01:00:00.000Z"')
+    expect(restored).toContain('datetime="2026-09-15T01:05:00.000Z"')
+
+    const serverStale = await $fetch(
+      '/characters/7/alpha?state=stale&retained=true&presentation=server-stale',
+    )
+    expect(serverStale).toContain('Alpha nested page')
+    expect(serverStale).toContain('Server-stale data.')
+    expect(serverStale).toContain('esi-cooldown')
+  })
+
   it('rejects direct disabled-page navigation and restores it without rebuilding', async () => {
     alphaEnabled = false
     await expect($fetch('/characters/7/alpha')).rejects.toMatchObject({ statusCode: 404 })
@@ -129,9 +144,11 @@ describe('platform Nuxt module fixture', async () => {
   it('emits typed metadata with module icon defaults and entry overrides', async () => {
     const vfs = useTestContext().nuxt!.vfs
     const navigation = vfs['#build/eve-space-platform/navigation.ts']
+    const queryAdmissionScopes = vfs['#build/eve-space-platform/query-admission-scopes.ts']
     const pageMetaTypes = vfs['#build/types/eve-space-platform-page-meta.d.ts']
 
     expect(navigation).toBeTypeOf('string')
+    expect(queryAdmissionScopes).toBeTypeOf('string')
     expect(pageMetaTypes).toBeTypeOf('string')
     expect(navigation).toContain('"navigationId":"alpha-default-icon"')
     expect(navigation).toContain('"icon":"character"')
@@ -141,5 +158,8 @@ describe('platform Nuxt module fixture', async () => {
       '{"moduleId":"alpha","pageId":"alpha-record","pageName":"eve-alpha-record","audience":"authenticated"}',
     )
     expect(pageMetaTypes).toContain('platformAudience?: PlatformNavigationAudience')
+    expect(queryAdmissionScopes).toContain(
+      '[{"moduleId":"alpha","routeId":"alpha-summary","admissionScope":"organization:v1:alpha:member:alpha.view","authorization":"authenticated-session","audience":"member","requiredPermission":"alpha.view"},{"moduleId":"alpha","routeId":"alpha-record","admissionScope":"organization:v1:alpha:member:alpha.view","authorization":"owned-character","audience":"member","requiredPermission":"alpha.view"}]',
+    )
   })
 })

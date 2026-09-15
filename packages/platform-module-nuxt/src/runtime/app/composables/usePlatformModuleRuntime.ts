@@ -1,9 +1,11 @@
 import { useQuery, useQueryCache } from '@pinia/colada'
+import { platformQueryAdmissionScopes } from '#build/eve-space-platform/query-admission-scopes'
 import { computed, useRuntimeConfig } from '#imports'
 import { watch } from 'vue'
 import type { PlatformNavigationIdentity } from '../../navigation.js'
 import { removePlatformModuleQueries } from '../../query-lifecycle.js'
 import { toApiQueryError } from '../../query-error.js'
+import type { PlatformQueryPersistenceInvalidator } from '../../query-persistence-invalidation.js'
 
 export interface PlatformModuleRuntimeState {
   readonly enabledModuleIds: readonly string[]
@@ -17,7 +19,6 @@ const platformModuleRuntimeQueryKey = ['public', 'modules', 'runtime'] as const
 
 export function usePlatformModuleRuntime() {
   const runtimeConfig = useRuntimeConfig()
-  const queryCache = useQueryCache()
   const runtimeQuery = useQuery({
     key: platformModuleRuntimeQueryKey,
     enabled: globalThis.window !== undefined,
@@ -25,20 +26,40 @@ export function usePlatformModuleRuntime() {
     query: ({ signal }) => loadPlatformModuleRuntimeState(runtimeConfig.public.apiBase, signal),
   })
   const enabledModuleIds = computed(() => new Set(runtimeQuery.data.value?.enabledModuleIds ?? []))
-  let previousEnabledModuleIds = new Set<string>()
-
-  watch(enabledModuleIds, (currentEnabledModuleIds) => {
-    for (const moduleId of previousEnabledModuleIds) {
-      if (!currentEnabledModuleIds.has(moduleId)) removePlatformModuleQueries(queryCache, moduleId)
-    }
-    previousEnabledModuleIds = new Set(currentEnabledModuleIds)
-  })
 
   async function ensureRuntimeState() {
     await runtimeQuery.refresh(true)
   }
 
   return { enabledModuleIds, ensureRuntimeState, runtimeQuery }
+}
+
+export function usePlatformModulePersistenceLifecycle(
+  invalidateQueryPersistence: PlatformQueryPersistenceInvalidator,
+) {
+  const queryCache = useQueryCache()
+  const { enabledModuleIds } = usePlatformModuleRuntime()
+  let previousEnabledModuleIds = new Set(enabledModuleIds.value)
+
+  watch(
+    enabledModuleIds,
+    (currentEnabledModuleIds) => {
+      for (const moduleId of previousEnabledModuleIds) {
+        if (currentEnabledModuleIds.has(moduleId)) continue
+        const admissionScopes = [
+          ...new Set(
+            platformQueryAdmissionScopes
+              .filter((scope) => scope.moduleId === moduleId)
+              .map((scope) => scope.admissionScope),
+          ),
+        ]
+        invalidateQueryPersistence({ admissionScopes, moduleId })
+        removePlatformModuleQueries(queryCache, moduleId)
+      }
+      previousEnabledModuleIds = new Set(currentEnabledModuleIds)
+    },
+    { flush: 'sync' },
+  )
 }
 
 export async function loadPlatformModuleRuntimeState(apiBase: string, signal?: AbortSignal) {

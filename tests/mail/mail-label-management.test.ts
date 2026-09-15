@@ -1,8 +1,10 @@
+import { useQueryCache } from '@pinia/colada'
 import { http, HttpResponse } from 'msw'
 import { computed, defineComponent, h, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { useMailOrganization } from '../../app/composables/useMailOrganization'
 import { useMailOrganizationMutations } from '../../app/composables/useMailOrganizationMutations'
+import { subscribePrivateQueryInvalidation } from '../../app/query-persistence/runtime'
 import type { useCharacterMailbox } from '../../app/composables/useCharacterMailbox'
 import type { MailDetail, MailHeader, MailLabel } from '../../app/queries/mail'
 import { createApiClient } from '../../app/utils/api-client'
@@ -45,6 +47,28 @@ describe('mail label management', () => {
     expect(harness.showToast).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Label created' }),
     )
+    harness.unmount()
+  })
+
+  it('clears private organization dialogs, form values, and owned confirmations', () => {
+    const harness = mountOrganization()
+    harness.organization.openLabelManagement()
+    harness.organization.openLabelAssignment()
+    harness.organization.labelName.value = 'Private label'
+    harness.organization.labelColor.value = '#fe0000'
+    harness.organization.createLabelFeedback.value = 'Private failure'
+    harness.organization.assignmentFeedback.value = 'Private assignment'
+    harness.organization.requestLabelDeletion(priorityLabel)
+
+    harness.organization.resetPrivateState()
+
+    expect(harness.organization.labelManagementOpen.value).toBe(false)
+    expect(harness.organization.labelAssignmentOpen.value).toBe(false)
+    expect(harness.organization.labelName.value).toBe('')
+    expect(harness.organization.labelColor.value).toBeUndefined()
+    expect(harness.organization.createLabelFeedback.value).toBe('')
+    expect(harness.organization.assignmentFeedback.value).toBe('')
+    expect(harness.closeConfirmDialog).toHaveBeenCalledOnce()
     harness.unmount()
   })
 
@@ -115,6 +139,35 @@ describe('mail label management', () => {
         title: 'Mail organization authorization required',
       }),
     )
+    harness.unmount()
+  })
+
+  it('offers reauthorization after a denied read change resets private mail state', async () => {
+    queryServer.use(
+      http.put('http://localhost/api/me/characters/7/mail/1', () =>
+        HttpResponse.json(
+          {
+            authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
+            code: 'EVE_REAUTH_REQUIRED',
+            message: 'Authorize mail organization.',
+          },
+          { status: 403 },
+        ),
+      ),
+    )
+    const harness = mountOrganization()
+
+    harness.organization.changeOpenMessageRead(false)
+
+    await vi.waitFor(() =>
+      expect(harness.showToast).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionHref: 'http://localhost/auth/eve/reauthorize/7',
+          title: 'Mail organization authorization required',
+        }),
+      ),
+    )
+    expect(harness.mutations.readStateOverrides.value.size).toBe(0)
     harness.unmount()
   })
 
@@ -219,6 +272,29 @@ describe('mail label management', () => {
     harness.unmount()
   })
 
+  it('does not restore a selection when pending deletion is invalidated', async () => {
+    let finishRequest!: () => void
+    const requestCanFinish = new Promise<void>((resolve) => (finishRequest = resolve))
+    queryServer.use(
+      http.delete('http://localhost/api/me/characters/7/mail/1', async () => {
+        await requestCanFinish
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const harness = mountOrganization()
+
+    harness.organization.requestMailDeletion()
+    const deletion = lastConfirmation(harness.openConfirmDialog).onConfirm()
+    expect(harness.mailbox.selectedMailId.value).toBeNull()
+    harness.mutations.resetMailMutations()
+    finishRequest()
+    await deletion
+
+    expect(harness.mailbox.selectedMailId.value).toBeNull()
+    expect(harness.showToast).not.toHaveBeenCalled()
+    harness.unmount()
+  })
+
   it('keeps message deletion pending while its label assignment is in flight', async () => {
     const harness = mountOrganization()
     harness.organization.requestMailDeletion()
@@ -280,10 +356,11 @@ describe('mail label management', () => {
 })
 
 function mountOrganization(labelIds: number[] = [1]) {
+  const closeConfirmDialog = vi.fn()
   const openConfirmDialog = vi.fn()
   const showToast = vi.fn(() => 1)
   const dismissToast = vi.fn()
-  vi.stubGlobal('useConfirmDialog', () => ({ openConfirmDialog }))
+  vi.stubGlobal('useConfirmDialog', () => ({ closeConfirmDialog, openConfirmDialog }))
   vi.stubGlobal('useToast', () => ({ dismissToast, showToast }))
   const id = ref<number | undefined>(characterId)
   const activeLabelId = ref<number | null>(null)
@@ -326,11 +403,16 @@ function mountOrganization(labelIds: number[] = [1]) {
         mailbox,
         mutations,
       })
+      subscribePrivateQueryInvalidation(useQueryCache(), { kind: 'character', characterId }, () => {
+        mutations.resetMailMutations()
+        organization.resetPrivateState()
+      })
       return () => h('div')
     },
   })
   const { wrapper } = mountWithQueryPlugins(Root)
   return {
+    closeConfirmDialog,
     mailbox,
     mutations,
     openConfirmDialog,

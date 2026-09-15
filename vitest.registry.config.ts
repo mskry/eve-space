@@ -13,6 +13,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    env: { DATABASE_URL: 'postgres://localhost:5432/eve_space' },
     include: [
       'tests/platform/auth-boundaries.test.ts',
       'tests/platform/character-boundaries.test.ts',

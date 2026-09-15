@@ -13,12 +13,14 @@ const api = usePlatformApi()
 const { enabledModuleIds } = usePlatformModuleRuntime()
 const characterId = computed(() => Number(route.params.characterId))
 const activityQuery = usePlatformProtectedQuery(() => ({
+  esiPersistence: { kind: 'none' },
   access: {
     authenticated: true,
     moduleEnabled: enabledModuleIds.value.has('conformance'),
     ownsCharacter: true,
   },
   moduleId: 'conformance',
+  routeId: 'conformance-character-status',
   resource: ['activity'],
   subject: { kind: 'character', characterId: characterId.value },
   query: async ({ signal }) =>

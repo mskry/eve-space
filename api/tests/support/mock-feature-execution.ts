@@ -69,6 +69,12 @@ function combineMetadata(results: readonly ReturnType<typeof metadataFrom>[]) {
         !current || result.validatedAt < current.validatedAt ? result : current,
       undefined,
     )
+  const retryAt = results
+    .filter(
+      (result) => result.stale && result.retryAt && Number.isFinite(Date.parse(result.retryAt)),
+    )
+    .map((result) => result.retryAt!)
+    .toSorted((left, right) => Date.parse(right) - Date.parse(left))[0]
   return {
     cachedUntil: results.reduce(
       (current, result) => (result.cachedUntil < current ? result.cachedUntil : current),
@@ -79,5 +85,6 @@ function combineMetadata(results: readonly ReturnType<typeof metadataFrom>[]) {
     ...(oldestStale?.refreshFailureClass
       ? { refreshFailureClass: oldestStale.refreshFailureClass }
       : {}),
+    ...(retryAt ? { retryAt } : {}),
   }
 }

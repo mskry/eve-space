@@ -1,24 +1,52 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
 import type { ApiClient } from '../utils/api-client'
+import { isAuthenticationDenial } from '../utils/authentication-denial'
 import { toApiQueryError } from '../utils/query-error'
 import {
   authConfigQuery,
   authSessionQuery,
+  loadCacheAdmission,
   unauthenticatedSession,
   unavailableAuthConfig,
 } from '../queries/auth'
-import {
-  clearAuthenticatedQueries,
-  clearAuthenticatedQueriesAfterSessionTransition,
-} from '../queries/query-cache'
+import { useAuthVerification } from './useAuthVerification'
 
 export function useAuthSession(apiClient: ApiClient) {
   const route = useRoute()
   const queryCache = useQueryCache()
-  const configQuery = useQuery(authConfigQuery(apiClient))
-  const sessionQuery = useQuery({
-    ...authSessionQuery(apiClient),
+  const authVerification = useAuthVerification()
+  const configQuery = useQuery({
+    ...authConfigQuery(apiClient),
     enabled: import.meta.client,
+  })
+  const sessionOptions = authSessionQuery(apiClient)
+  const sessionQuery = useQuery({
+    ...sessionOptions,
+    enabled: import.meta.client,
+    query: async (context) => {
+      const verificationGeneration = authVerification.beginVerification()
+      try {
+        const session = await sessionOptions.query(context)
+        const accepted = await authVerification.markVerified(
+          queryCache,
+          verificationGeneration,
+          session,
+          (signal) => loadCacheAdmission(apiClient, signal),
+          context.signal,
+        )
+        if (!accepted) {
+          queryCache.cancel(context.entry, new Error('Session verification superseded.'))
+        }
+        return session
+      } catch (error) {
+        if (!context.signal.aborted) {
+          authVerification.markUnavailable(queryCache, verificationGeneration, {
+            retainPrivateData: !isAuthenticationDenial(error),
+          })
+        }
+        throw error
+      }
+    },
   })
   const logoutMutation = useMutation({
     mutation: async () => {
@@ -28,10 +56,13 @@ export function useAuthSession(apiClient: ApiClient) {
   })
 
   const authConfig = computed(() => configQuery.data.value ?? unavailableAuthConfig)
-  const authSession = computed(() => sessionQuery.data.value ?? unauthenticatedSession)
-  const authLoading = computed(
-    () => sessionQuery.status.value === 'pending' || sessionQuery.asyncStatus.value === 'loading',
+  const authUnavailable = computed(() => authVerification.unavailable.value)
+  const authSession = computed(() =>
+    authUnavailable.value || !authVerification.verified.value
+      ? unauthenticatedSession
+      : (sessionQuery.data.value ?? unauthenticatedSession),
   )
+  const authLoading = computed(() => !authVerification.verified.value && !authUnavailable.value)
   const authFeedback = computed(() => {
     if (route.query.auth === 'cancelled') return 'EVE login was cancelled.'
     if (route.query.auth === 'error') return 'EVE login could not be completed.'
@@ -39,26 +70,6 @@ export function useAuthSession(apiClient: ApiClient) {
     return ''
   })
   const authFeedbackIsError = computed(() => route.query.auth !== 'success')
-
-  watch(
-    () => {
-      const session = sessionQuery.data.value
-      if (!session) return undefined
-      return session.authenticated ? session.account.userId : null
-    },
-    (authenticatedUserId, previousAuthenticatedUserId) => {
-      if (
-        typeof previousAuthenticatedUserId !== 'string' ||
-        authenticatedUserId === undefined ||
-        authenticatedUserId === previousAuthenticatedUserId
-      ) {
-        return
-      }
-      const session = sessionQuery.data.value
-      if (session) clearAuthenticatedQueriesAfterSessionTransition(queryCache, session)
-    },
-    { flush: 'sync' },
-  )
 
   async function initializeAuth(force = false) {
     if (!import.meta.client) return false
@@ -77,8 +88,31 @@ export function useAuthSession(apiClient: ApiClient) {
   }
 
   async function logout() {
-    await logoutMutation.mutateAsync()
-    clearAuthenticatedQueries(queryCache, unauthenticatedSession)
+    authVerification.beginVerification({ resetIdentity: true })
+    cancelSessionVerification()
+    try {
+      await logoutMutation.mutateAsync()
+    } catch (error) {
+      const failedGeneration = authVerification.beginVerification({ resetIdentity: true })
+      authVerification.markUnavailable(queryCache, failedGeneration, { retainPrivateData: false })
+      throw error
+    }
+
+    const settledGeneration = authVerification.beginVerification({ resetIdentity: true })
+    cancelSessionVerification()
+    await authVerification.markVerified(
+      queryCache,
+      settledGeneration,
+      unauthenticatedSession,
+      (signal) => loadCacheAdmission(apiClient, signal),
+    )
+  }
+
+  function cancelSessionVerification() {
+    queryCache.cancelQueries(
+      { exact: true, key: sessionOptions.key },
+      new Error('Session verification superseded.'),
+    )
   }
 
   return {
@@ -87,6 +121,7 @@ export function useAuthSession(apiClient: ApiClient) {
     authFeedbackIsError,
     authLoading,
     authSession,
+    authUnavailable,
     initializeAuth,
     logout,
     refreshAuthContext,

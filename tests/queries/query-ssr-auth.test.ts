@@ -13,8 +13,8 @@ import { createSSRApp, defineComponent, h, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { unauthenticatedSession } from '../../app/queries/auth'
-import { characterOverviewQuery } from '../../app/queries/characters'
-import { corporationQuery } from '../../app/queries/corporations'
+import { characterOverviewQuery, publicCharacterQuery } from '../../app/queries/characters'
+import { corporationAllianceHistoryQuery, corporationQuery } from '../../app/queries/corporations'
 import { canRunProtectedCharacterQuery } from '../../app/queries/protected-character-query-access'
 import { clearAuthenticatedQueries } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
@@ -109,25 +109,20 @@ describe('SSR and authentication query boundaries', () => {
     expect(revivedError).toMatchObject({ name: queryError.name, message: queryError.message })
   })
 
-  it('catches corporation query failures during SSR', async () => {
-    queryServer.use(
-      http.get('http://localhost/api/corporations/404', () =>
-        HttpResponse.json({ message: 'Corporation not found.' }, { status: 404 }),
-      ),
-    )
+  it('classifies session-protected record lookups as private and non-persistent', () => {
     const apiClient = createApiClient('http://localhost')
-    const Root = defineComponent({
-      setup() {
-        useQuery(corporationQuery({ apiClient, corporationId: 404 }))
-        return () => h('span', 'corporation fallback')
-      },
-    })
-    const pinia = createPinia()
-    const app = createSSRApp(Root)
-    app.use(pinia)
-    app.use(PiniaColada, coladaOptions)
+    const options = [
+      publicCharacterQuery({ apiClient, characterId: 7 }),
+      corporationQuery({ apiClient, corporationId: 8 }),
+      corporationAllianceHistoryQuery({ apiClient, corporationId: 8 }),
+    ]
 
-    await expect(renderToString(app)).resolves.toContain('corporation fallback')
+    expect(options.map((option) => option.key[0])).toEqual(['private', 'private', 'private'])
+    expect(options.map((option) => option.meta?.esiPersistence)).toEqual([
+      { kind: 'none' },
+      { kind: 'none' },
+      { kind: 'none' },
+    ])
   })
 
   it('does not run a protected SSR query and enables it after browser authentication', async () => {

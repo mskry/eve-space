@@ -8,7 +8,8 @@ describe('corporation record route ownership', () => {
 
   it('keeps the detail query and persistent section shell in the parent', () => {
     expect(parent).toContain('corporationQuery({')
-    expect(parent).toContain('enabled: import.meta.client')
+    expect(parent).toContain('recordAccessAllowed.value && corporationId.value !== undefined')
+    expect(parent).toContain('authSession.value.authenticated')
     expect(parent).toContain('<RecordSectionNavigation')
     expect(parent).toContain('<NuxtPage />')
     expect(parent).toContain('to: `${overviewPath}/alliance-history`')
@@ -25,6 +26,7 @@ describe('corporation record route ownership', () => {
   it('loads alliance history only from its routed child and preserves cached data', () => {
     expect(allianceHistory).toContain('corporationAllianceHistoryQuery({')
     expect(allianceHistory).toContain('import.meta.client &&')
+    expect(allianceHistory).toContain('recordAccessAllowed.value &&')
     expect(allianceHistory).toContain("corporation.value?.type === 'player_owned'")
     expect(allianceHistory).toContain("value?.type !== 'npc_owned'")
     expect(allianceHistory).toContain("if (historyQuery.data.value) return 'idle'")

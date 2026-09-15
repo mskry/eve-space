@@ -17,24 +17,20 @@ describe('core migration manifest', () => {
     expect(migrations.map(({ name }) => name)).toEqual(
       activeCoreMigrationManifest.map(({ name }) => name),
     )
-    expect(
-      migrations.findIndex(({ name }) => name === '020_oauth_state_return_path.sql'),
-    ).toBeLessThan(
-      migrations.findIndex(({ name }) => name === '002_extract_platform_validation_functions.sql'),
-    )
+    expect(migrations.map(({ name }) => name)).toEqual(['001_baseline.sql'])
   })
 
   test('rejects missing, extra, changed, and non-tail inventory entries', () => {
     const names = activeCoreMigrationManifest.map(({ name }) => name)
     expect(() => assertCoreMigrationInventory(activeCoreMigrationManifest, names.slice(1))).toThrow(
-      'missing file 001_initial.sql',
+      'missing file 001_baseline.sql',
     )
     expect(() =>
-      assertCoreMigrationInventory(activeCoreMigrationManifest, [...names, '044_extra.sql']),
-    ).toThrow('absent from manifest: 044_extra.sql')
+      assertCoreMigrationInventory(activeCoreMigrationManifest, [...names, '002_extra.sql']),
+    ).toThrow('absent from manifest: 002_extra.sql')
     expect(() =>
       assertCoreMigrationContent(activeCoreMigrationManifest[0]!, 'changed sql'),
-    ).toThrow('content identity mismatch: 001_initial.sql')
+    ).toThrow('content identity mismatch: 001_baseline.sql')
     expect(() => assertCoreMigrationManifest(activeCoreMigrationManifest.slice(1))).toThrow(
       'preserve the reviewed canonical order',
     )
@@ -44,26 +40,27 @@ describe('core migration manifest', () => {
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '046_next.sql', sha256: migrationSha256('select 1;') },
+        { name: '002_next.sql', sha256: migrationSha256('select 1;') },
       ]),
     ).toThrow('match the accepted frozen inventory')
     expect(() =>
       assertCoreMigrationManifest([
         ...activeCoreMigrationManifest,
-        { name: '045_reused.sql', sha256: migrationSha256('select 1;') },
+        { name: '001_reused.sql', sha256: migrationSha256('select 1;') },
       ]),
-    ).toThrow('append a unique sequence after 45')
+    ).toThrow('append a unique sequence after 1')
   })
 })
 
 describe('core migration history', () => {
-  const firstTwo = activeCoreMigrationManifest.slice(0, 2)
+  const baseline = activeCoreMigrationManifest[0]!
+  const futureMigration = { name: '002_future.sql', sha256: migrationSha256('select 1;') }
 
-  test('accepts an empty history and an interrupted current prefix with checksums', () => {
+  test('accepts an empty history and the complete baseline with its checksum', () => {
     expect(() => assertCoreMigrationHistory([], activeCoreMigrationManifest)).not.toThrow()
     expect(() =>
       assertCoreMigrationHistory(
-        firstTwo.map(({ name, sha256 }) => ({ name, contentSha256: sha256 })),
+        [{ name: baseline.name, contentSha256: baseline.sha256 }],
         activeCoreMigrationManifest,
       ),
     ).not.toThrow()
@@ -78,14 +75,14 @@ describe('core migration history', () => {
     ).toThrow('unknown migration')
     expect(() =>
       assertCoreMigrationHistory(
-        [{ name: firstTwo[1]!.name, contentSha256: null }],
-        activeCoreMigrationManifest,
+        [{ name: futureMigration.name, contentSha256: futureMigration.sha256 }],
+        [baseline, futureMigration],
       ),
     ).toThrow('non-prefix migration')
   })
 
   test('requires exact content identities after checksum storage exists', () => {
-    const rows = firstTwo.map(({ name, sha256 }) => ({ name, contentSha256: sha256 }))
+    const rows = [{ name: baseline.name, contentSha256: baseline.sha256 }]
     expect(() => assertCoreMigrationHistory(rows, activeCoreMigrationManifest)).not.toThrow()
     expect(() =>
       assertCoreMigrationHistory(

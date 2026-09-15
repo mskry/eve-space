@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCharacterAssets } from '../../../composables/useCharacterAssets'
+import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
 import type { AssetResourceAction } from '../../../types/assets'
 import { parseRouteId } from '../../../utils/route-id'
 
@@ -20,6 +21,9 @@ const assetsService = useCharacterAssets({
   characterId,
   characters,
 })
+const assetsPersistencePresentation = useQueryPersistencePresentation(() =>
+  PRIVATE_QUERY_KEYS.characterAssets(characterId.value ?? 0),
+)
 
 function authorizeAssets(action: AssetResourceAction) {
   void navigateTo(action.href, { external: true })
@@ -31,6 +35,7 @@ function authorizeAssets(action: AssetResourceAction) {
     <AssetsWorkspace
       :collection="assetsService.assets.value"
       :hierarchy="assetsService.hierarchy.value"
+      :presentation="assetsPersistencePresentation"
       :route-jumps-by-system-id="assetsService.routeJumpsBySystemId.value"
       :state="assetsService.state.value"
       @authorize="authorizeAssets"

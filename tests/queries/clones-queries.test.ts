@@ -13,6 +13,7 @@ import { QUERY_POLICY } from '../../app/queries/query-policy'
 import { createApiClient } from '../../app/utils/api-client'
 import { coladaOptions } from '../../app/utils/colada-options'
 import { ApiQueryError } from '../../app/utils/query-error'
+import { ESI_QUERY_RETENTION_MS } from '../../packages/platform-module-nuxt/src/runtime/esi-query-persistence'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
 
@@ -30,7 +31,7 @@ const freshness = {
 }
 
 describe('character clone queries', () => {
-  it('uses isolated hierarchical keys and two-minute memory policies', () => {
+  it('uses isolated hierarchical keys, two-minute freshness, and persisted retention', () => {
     const clones = characterClonesQuery({ apiClient, characterId: 7, access: allowed })
     const implants = characterImplantsQuery({ apiClient, characterId: 7, access: allowed })
 
@@ -43,8 +44,8 @@ describe('character clone queries', () => {
     )
     expect(QUERY_POLICY.characterClones.staleTime).toBe(120_000)
     expect(QUERY_POLICY.characterImplants.staleTime).toBe(120_000)
-    expect(clones.gcTime).toBe(QUERY_POLICY.characterClones.gcTime)
-    expect(implants.gcTime).toBe(QUERY_POLICY.characterImplants.gcTime)
+    expect(clones.gcTime).toBe(ESI_QUERY_RETENTION_MS)
+    expect(implants.gcTime).toBe(ESI_QUERY_RETENTION_MS)
   })
 
   it.each([

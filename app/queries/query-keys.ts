@@ -6,13 +6,6 @@ import {
 export const PUBLIC_QUERY_KEYS = {
   root: ['public'] as const,
   systemStatus: () => [...PUBLIC_QUERY_KEYS.root, 'system-status'] as const,
-  characters: () => [...PUBLIC_QUERY_KEYS.root, 'characters'] as const,
-  character: (characterId: number) => [...PUBLIC_QUERY_KEYS.characters(), characterId] as const,
-  corporations: () => [...PUBLIC_QUERY_KEYS.root, 'corporations'] as const,
-  corporation: (corporationId: number) =>
-    [...PUBLIC_QUERY_KEYS.corporations(), corporationId] as const,
-  corporationAllianceHistory: (corporationId: number) =>
-    [...PUBLIC_QUERY_KEYS.corporation(corporationId), 'alliance-history'] as const,
   universe: () => [...PUBLIC_QUERY_KEYS.root, 'universe'] as const,
   universeTypes: () => [...PUBLIC_QUERY_KEYS.universe(), 'types'] as const,
   universeType: (typeId: number) => [...PUBLIC_QUERY_KEYS.universeTypes(), typeId] as const,
@@ -26,6 +19,14 @@ export const AUTH_QUERY_KEYS = {
 export const PRIVATE_QUERY_KEYS = {
   root: ['private'] as const,
   session: () => [...PRIVATE_QUERY_KEYS.root, 'session'] as const,
+  records: () => [...PRIVATE_QUERY_KEYS.root, 'records'] as const,
+  characterRecord: (characterId: number) =>
+    [...PRIVATE_QUERY_KEYS.records(), 'characters', characterId] as const,
+  corporationRecords: () => [...PRIVATE_QUERY_KEYS.records(), 'corporations'] as const,
+  corporationRecord: (corporationId: number) =>
+    [...PRIVATE_QUERY_KEYS.corporationRecords(), corporationId] as const,
+  corporationAllianceHistory: (corporationId: number) =>
+    [...PRIVATE_QUERY_KEYS.corporationRecord(corporationId), 'alliance-history'] as const,
   characters: () => [...PRIVATE_QUERY_KEYS.root, 'characters'] as const,
   roster: () => [...PRIVATE_QUERY_KEYS.characters(), 'roster'] as const,
   character: (characterId: number) => [...PRIVATE_QUERY_KEYS.characters(), characterId] as const,

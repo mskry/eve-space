@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { FinanceResourceState } from '../../types/finance'
 import { formatValidatedAt } from '../../utils/format'
 import { toFinanceEsiResourceState } from '../../utils/finance'
 
 const props = defineProps<{
   hasData: boolean
+  presentation?: EsiQueryPersistencePresentation
   state: FinanceResourceState
   title: string
   validatedAt?: string
@@ -23,7 +25,12 @@ const resourceState = computed(() => toFinanceEsiResourceState(props.state, prop
 
 <template>
   <section class="finance-service" :aria-busy="state.loading" :aria-label="title">
-    <EsiResourceBoundary :state="resourceState" :has-data="hasData" @retry="$emit('retry')">
+    <EsiResourceBoundary
+      :state="resourceState"
+      :has-data="hasData"
+      :presentation="presentation"
+      @retry="$emit('retry')"
+    >
       <div class="finance-service-content">
         <output v-if="state.stale" class="finance-stale-notice">
           Retained data is shown after an upstream refresh failure.

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { getStaleEsiResult, hasUnavailableOverviewSection } from '../../app/utils/esi-freshness'
+import {
+  getStaleEsiMetadata,
+  getStaleEsiResult,
+  hasUnavailableOverviewSection,
+} from '../../app/utils/esi-freshness'
 
 describe('ESI freshness metadata', () => {
   it('reads stale metadata from the response root', () => {
@@ -7,12 +11,31 @@ describe('ESI freshness metadata', () => {
       getStaleEsiResult({
         stale: true,
         validatedAt: '2026-09-01T10:58:00.000Z',
+        retryAt: '2026-09-01T11:01:00.000Z',
         refreshFailureClass: 'esi-unavailable',
       }),
     ).toEqual({
       stale: true,
       validatedAt: '2026-09-01T10:58:00.000Z',
+      retryAt: '2026-09-01T11:01:00.000Z',
       refreshFailureClass: 'esi-unavailable',
+    })
+  })
+
+  it('normalizes successful stale metadata without requiring an original timestamp', () => {
+    expect(
+      getStaleEsiMetadata({
+        stale: true,
+        retryAt: '2026-09-01T11:01:00.000Z',
+        refreshFailureClass: 'esi-cooldown',
+      }),
+    ).toEqual({
+      stale: true,
+      retryAt: '2026-09-01T11:01:00.000Z',
+      refreshFailureClass: 'esi-cooldown',
+    })
+    expect(getStaleEsiMetadata({ stale: true, validatedAt: 'unknown', retryAt: 'later' })).toEqual({
+      stale: true,
     })
   })
 

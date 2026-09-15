@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, onScopeDispose, ref } from 'vue'
 import middleware from '../src/runtime/app/middleware/platform-module-enablement.global.js'
-import { usePlatformModuleRuntime } from '../src/runtime/app/composables/usePlatformModuleRuntime.js'
+import {
+  usePlatformModulePersistenceLifecycle,
+  usePlatformModuleRuntime,
+} from '../src/runtime/app/composables/usePlatformModuleRuntime.js'
 
 const mocks = vi.hoisted(() => ({
   refresh: vi.fn(),
-  getEntries: vi.fn(() => []),
+  getEntries: vi.fn(() => [] as { key: (number | string)[] }[]),
+  cancel: vi.fn(),
+  remove: vi.fn(),
+  invalidateQueryPersistence: vi.fn(),
   dispose: vi.fn(),
 }))
 const data = ref<{ enabledModuleIds: string[] }>()
@@ -21,13 +27,16 @@ vi.mock('#imports', async () => ({
   },
 }))
 vi.mock('@pinia/colada', () => ({
-  useQueryCache: () => ({ getEntries: mocks.getEntries }),
+  useQueryCache: () => ({
+    getEntries: mocks.getEntries,
+    cancel: mocks.cancel,
+    remove: mocks.remove,
+  }),
   useQuery: () => {
     onScopeDispose(mocks.dispose)
     return { data, refresh: mocks.refresh }
   },
 }))
-
 beforeEach(() => {
   vi.clearAllMocks()
   vi.stubGlobal('window', {})
@@ -64,10 +73,14 @@ describe('module enablement middleware scope', () => {
     expect(mocks.dispose).toHaveBeenCalledOnce()
   })
 
-  it('keeps component-owned invalidation active until its scope is stopped', async () => {
+  it('keeps the app-owned persistence lifecycle active until its scope is stopped', async () => {
     const scope = effectScope()
     try {
-      const runtime = scope.run(usePlatformModuleRuntime)!
+      const runtime = scope.run(() => {
+        const value = usePlatformModuleRuntime()
+        usePlatformModulePersistenceLifecycle(mocks.invalidateQueryPersistence)
+        return value
+      })!
       await runtime.ensureRuntimeState()
       data.value = { enabledModuleIds: [] }
       await nextTick()
@@ -80,6 +93,58 @@ describe('module enablement middleware scope', () => {
     data.value = { enabledModuleIds: [] }
     await nextTick()
     expect(mocks.getEntries).toHaveBeenCalledOnce()
+  })
+
+  it('synchronously invalidates each generated scope once before removing disabled module entries', () => {
+    const alphaEntry = {
+      key: ['private', 'organization', 3, 'modules', 'alpha', 'summary'],
+    }
+    const unrelatedEntry = {
+      key: ['private', 'organization', 3, 'modules', 'beta', 'summary'],
+    }
+    mocks.getEntries.mockReturnValue([alphaEntry, unrelatedEntry])
+    const scope = effectScope()
+    try {
+      scope.run(() => usePlatformModulePersistenceLifecycle(mocks.invalidateQueryPersistence))
+      data.value = { enabledModuleIds: ['alpha'] }
+
+      data.value = { enabledModuleIds: [] }
+
+      expect(mocks.invalidateQueryPersistence).toHaveBeenCalledOnce()
+      expect(mocks.invalidateQueryPersistence).toHaveBeenCalledWith({
+        admissionScopes: ['organization:v1:alpha:member:alpha.view'],
+        moduleId: 'alpha',
+      })
+      expect(mocks.invalidateQueryPersistence.mock.invocationCallOrder[0]).toBeLessThan(
+        mocks.getEntries.mock.invocationCallOrder[0]!,
+      )
+      expect(mocks.cancel).toHaveBeenCalledWith(
+        alphaEntry,
+        expect.objectContaining({ message: 'Protected query state cleared.' }),
+      )
+      expect(mocks.remove).toHaveBeenCalledWith(alphaEntry)
+      expect(mocks.remove).not.toHaveBeenCalledWith(unrelatedEntry)
+    } finally {
+      scope.stop()
+    }
+  })
+
+  it('invalidates a module that was enabled before the lifecycle watcher was installed', () => {
+    data.value = { enabledModuleIds: ['alpha'] }
+    const scope = effectScope()
+    try {
+      scope.run(() => usePlatformModulePersistenceLifecycle(mocks.invalidateQueryPersistence))
+
+      data.value = { enabledModuleIds: [] }
+
+      expect(mocks.invalidateQueryPersistence).toHaveBeenCalledWith({
+        admissionScopes: ['organization:v1:alpha:member:alpha.view'],
+        moduleId: 'alpha',
+      })
+      expect(mocks.getEntries).toHaveBeenCalledOnce()
+    } finally {
+      scope.stop()
+    }
   })
 })
 

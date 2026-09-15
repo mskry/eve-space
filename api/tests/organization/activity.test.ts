@@ -43,6 +43,7 @@ describe('organization activity aggregation', () => {
 
     expect(result.activities).toEqual([])
     expect(result.sources).toEqual([])
+    expect(result.stale).toBe(false)
     expect(authorize).not.toHaveBeenCalled()
     expect(invoke).not.toHaveBeenCalled()
   })
@@ -255,6 +256,10 @@ describe('organization activity aggregation', () => {
       state: 'current' as const,
       collectedAt: '2026-09-02T11:00:00.000Z',
     }
+    const olderFreshness = {
+      state: 'stale' as const,
+      collectedAt: '2026-09-02T12:30:00.000+02:00',
+    }
     const result = await aggregateOrganizationActivities('user-1', organization, {
       providers: [
         provider(
@@ -264,8 +269,15 @@ describe('organization activity aggregation', () => {
             activities: [activity('old', { freshness: oldFreshness })],
           }),
         ),
+        provider(
+          'beta',
+          vi.fn().mockResolvedValue({
+            freshness: olderFreshness,
+            activities: [activity('older', { freshness: olderFreshness })],
+          }),
+        ),
       ],
-      loadEnabledModuleIds: async () => ['alpha'],
+      loadEnabledModuleIds: async () => ['alpha', 'beta'],
       authorize: authorized,
       loadCharacters: async () => characters,
       now,
@@ -273,6 +285,10 @@ describe('organization activity aggregation', () => {
 
     expect(result.sources[0]?.freshness.state).toBe('stale')
     expect(result.activities[0]?.freshness.state).toBe('stale')
+    expect(result).toMatchObject({
+      stale: true,
+      validatedAt: '2026-09-02T12:30:00.000+02:00',
+    })
   })
 
   test('bounds a provider timeout without failing the aggregate response', async () => {

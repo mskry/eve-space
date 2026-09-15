@@ -1,4 +1,4 @@
-import { defineQueryOptions } from '@pinia/colada'
+import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
 import type { InferResponseType } from 'hono/client'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
@@ -15,7 +15,7 @@ interface PublicTypeDetailParameters {
   typeId: number
 }
 
-export const publicTypeDetailQuery = defineQueryOptions(
+export const publicTypeDetailQuery = defineEsiQueryOptions(
   ({ apiClient, typeId }: PublicTypeDetailParameters) => ({
     key: PUBLIC_QUERY_KEYS.universeType(typeId),
     query: async ({ signal }) => {
@@ -29,6 +29,7 @@ export const publicTypeDetailQuery = defineQueryOptions(
       return response.json() as Promise<PublicTypeDetail>
     },
     ...QUERY_POLICY.staticTypeDetail,
+    esiPersistence: { kind: 'none' },
     ssrCatchError: true,
   }),
 )

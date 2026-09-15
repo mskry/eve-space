@@ -8,10 +8,12 @@ import {
   type PlatformInstalledModuleMigrationDescriptor,
   type PlatformInstalledActivityProviderDescriptor,
   type PlatformInstalledModuleDefinition,
+  type PlatformInstalledOrganizationAdmissionScopeDescriptor,
   type PlatformInstalledNavigation,
   type PlatformModuleManifest,
   type PlatformNavigationDefault,
   type PlatformNuxtContributionDescriptor,
+  platformOrganizationAdmissionScope,
 } from '../../packages/platform-module-contract/src/index.js'
 import {
   canonicalizePersistenceRoutineSql,
@@ -537,6 +539,7 @@ function renderModuleRuntime(manifests: readonly PlatformModuleManifest[]) {
       defaultEnabled,
     }),
   )
+  const admissionScopes = installedOrganizationAdmissionScopes(manifests)
   const navigation: PlatformNavigationDefault[] = [
     ...coreNavigationDefaults,
     ...manifests.flatMap((manifest) =>
@@ -567,7 +570,34 @@ function renderModuleRuntime(manifests: readonly PlatformModuleManifest[]) {
   const definitionAssignment = definitions.length
     ? ` ${renderedDefinitions} satisfies readonly PlatformInstalledModuleDefinition[]`
     : `\n  ${renderedDefinitions} satisfies readonly PlatformInstalledModuleDefinition[]`
-  return `${generatedHeader}import type {\n  PlatformInstalledModuleDefinition,\n  PlatformNavigationDefault,\n} from '@eve-space/platform-module-contract'\n\nexport const installedModuleDefinitions =${definitionAssignment}\nexport const platformNavigationDefaults = ${renderedNavigation} satisfies readonly PlatformNavigationDefault[]\n`
+  const renderedAdmissionScopes = admissionScopes.length
+    ? `[${admissionScopes
+        .map(
+          ({ moduleId, admissionScope, audience, requiredPermission }) =>
+            `\n  { moduleId: ${quote(moduleId)}, admissionScope: ${quote(admissionScope)}, audience: ${quote(audience)}, requiredPermission: ${quote(requiredPermission)} },`,
+        )
+        .join('')}\n] as const`
+    : '[] as const'
+  return `${generatedHeader}import type {\n  PlatformInstalledModuleDefinition,\n  PlatformInstalledOrganizationAdmissionScopeDescriptor,\n  PlatformNavigationDefault,\n} from '@eve-space/platform-module-contract'\n\nexport const installedModuleDefinitions =${definitionAssignment}\nexport const installedModuleOrganizationAdmissionScopes = ${renderedAdmissionScopes} satisfies readonly PlatformInstalledOrganizationAdmissionScopeDescriptor[]\nexport const platformNavigationDefaults = ${renderedNavigation} satisfies readonly PlatformNavigationDefault[]\n`
+}
+
+function installedOrganizationAdmissionScopes(
+  manifests: readonly PlatformModuleManifest[],
+): PlatformInstalledOrganizationAdmissionScopeDescriptor[] {
+  const scopes = new Map<string, PlatformInstalledOrganizationAdmissionScopeDescriptor>()
+  for (const manifest of manifests)
+    for (const authorization of [...manifest.server.routes, ...manifest.server.activityProviders]) {
+      const admissionScope = platformOrganizationAdmissionScope(manifest.id, authorization)
+      scopes.set(admissionScope, {
+        moduleId: manifest.id,
+        admissionScope,
+        audience: authorization.audience,
+        requiredPermission: authorization.requiredPermission,
+      })
+    }
+  return [...scopes.values()].toSorted((left, right) =>
+    compareStable(left.admissionScope, right.admissionScope),
+  )
 }
 
 function renderNuxtModules(manifests: readonly PlatformModuleManifest[]) {
@@ -582,6 +612,13 @@ function renderNuxtContributions(manifests: readonly PlatformModuleManifest[]) {
   const contributions: PlatformNuxtContributionDescriptor[] = manifests.map((manifest) => ({
     moduleId: manifest.id,
     defaultIcon: manifest.icon,
+    queryAdmissionScopes: manifest.server.routes.map((route) => ({
+      routeId: route.id,
+      authorization: route.authorization,
+      audience: route.audience,
+      requiredPermission: route.requiredPermission,
+      admissionScope: platformOrganizationAdmissionScope(manifest.id, route),
+    })),
     pages: manifest.nuxt.pages,
     navigation: manifest.nuxt.navigation,
     ...(manifest.nuxt.exposed ? { exposed: manifest.nuxt.exposed } : {}),

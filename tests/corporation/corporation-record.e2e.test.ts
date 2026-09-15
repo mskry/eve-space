@@ -4,6 +4,7 @@ import { createPage, setup, useTestContext } from '@nuxt/test-utils/e2e'
 import type { Page } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { cacheAdmissionForCharacter } from '../support/cache-admission'
 import { startCorsJsonApi } from '../support/cors-json-api'
 
 type HistoryMode = 'data' | 'empty' | 'error'
@@ -38,6 +39,9 @@ const apiServer = await startCorsJsonApi((request) => {
         },
       },
     }
+  }
+  if (url.pathname === '/api/me/cache-admission') {
+    return { body: cacheAdmissionForCharacter('corporation-e2e-user', 7) }
   }
   if (url.pathname === '/api/admin/session') return { body: { authenticated: false } }
   if (url.pathname === '/api/modules') {

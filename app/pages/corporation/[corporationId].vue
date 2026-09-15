@@ -11,14 +11,20 @@ definePageMeta({ title: 'Corporation', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
+const { authLoading, authSession } = useAuthSession(apiClient)
 const corporationId = computed(() => parseRouteId(route.params.corporationId))
+const recordAccessAllowed = computed(() => !authLoading.value && authSession.value.authenticated)
 const detailQuery = useQuery(() => ({
   ...corporationQuery({ apiClient, corporationId: corporationId.value ?? 0 }),
-  enabled: import.meta.client && corporationId.value !== undefined,
+  enabled: import.meta.client && recordAccessAllowed.value && corporationId.value !== undefined,
 }))
-const corporation = computed(() => detailQuery.data.value?.corporation)
+const corporation = computed(() =>
+  recordAccessAllowed.value ? detailQuery.data.value?.corporation : undefined,
+)
 const detailStatus = computed(() => {
   if (!corporationId.value) return 'not-found'
+  if (authLoading.value) return 'loading'
+  if (!recordAccessAllowed.value) return 'idle'
   if (detailQuery.data.value) return 'idle'
   if (detailQuery.error.value instanceof ApiQueryError && detailQuery.error.value.status === 404) {
     return 'not-found'
@@ -46,7 +52,7 @@ const navigation = computed<readonly RecordSectionNavigationEntry[]>(() => {
   ]
 })
 
-provideCorporationRecord({ corporationId, corporation })
+provideCorporationRecord({ corporationId, corporation, recordAccessAllowed })
 
 useHead({
   title: computed(() =>

@@ -1,4 +1,8 @@
+import { useAuthVerification } from '../composables/useAuthVerification'
+import { loadCacheAdmission, type AuthSession } from '../queries/auth'
+import { createApiClient } from '../utils/api-client'
 import { getLocalAuthRedirect } from '../utils/auth-redirect'
+import { API_BOOTSTRAP_TIMEOUT_MS, createRequestSignal } from '../utils/request-signal'
 import { resolveRouteAudience } from '../utils/route-audience'
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -8,32 +12,48 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // The API session cookie is host-only; protected data stays client-gated while auth resolves.
   if (import.meta.server) return
   const runtimeConfig = useRuntimeConfig()
+  const apiClient = createApiClient(runtimeConfig.public.apiBase)
+  const queryCache = useQueryCache()
+  const authVerification = useAuthVerification()
 
-  try {
-    const session = await $fetch<{ authenticated: boolean }>(
-      `${runtimeConfig.public.apiBase}/auth/session`,
-      {
+  async function verifySession() {
+    const verificationGeneration = authVerification.beginVerification()
+    try {
+      const session = await $fetch<AuthSession>(`${runtimeConfig.public.apiBase}/auth/session`, {
         credentials: 'include',
-      },
-    )
-    if (session.authenticated) {
-      if (isAuthorizationRoute)
-        return navigateTo(getLocalAuthRedirect(to.query.redirect) ?? '/characters', {
-          replace: true,
-        })
+        signal: createRequestSignal(API_BOOTSTRAP_TIMEOUT_MS),
+      })
+      const accepted = await authVerification.markVerified(
+        queryCache,
+        verificationGeneration,
+        session,
+        (signal) => loadCacheAdmission(apiClient, signal),
+      )
+      if (!accepted) return
+      if (session.authenticated) {
+        if (isAuthorizationRoute)
+          return navigateTo(getLocalAuthRedirect(to.query.redirect) ?? '/characters', {
+            replace: true,
+          })
+        return
+      }
+    } catch {
+      // $fetch failures carry no session verdict; an unauthenticated session arrives as a 200 body.
+      authVerification.markUnavailable(queryCache, verificationGeneration, {
+        retainPrivateData: true,
+      })
       return
     }
-  } catch {
-    // Treat a failed session check as unauthenticated rather than rendering protected content.
+
+    if (isAuthorizationRoute) return
+    const redirect = getLocalAuthRedirect(to.fullPath)
+    return navigateTo(redirect ? { path: '/auth', query: { redirect } } : { path: '/auth' })
   }
 
-  if (isAuthorizationRoute) return
-  const redirect = getLocalAuthRedirect(to.fullPath)
-  const authRoute = redirect ? { path: '/auth', query: { redirect } } : { path: '/auth' }
   const nuxtApp = useNuxtApp()
   if (nuxtApp.isHydrating && nuxtApp.payload.serverRendered) {
-    onNuxtReady(() => navigateTo(authRoute))
+    onNuxtReady(() => void verifySession())
     return
   }
-  return navigateTo(authRoute)
+  return verifySession()
 })

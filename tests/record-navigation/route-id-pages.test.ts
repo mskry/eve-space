@@ -42,11 +42,14 @@ describe('record route page ID gates', () => {
   })
 
   it.each(['app/pages/character/[characterId].vue', 'app/pages/corporation/[corporationId].vue'])(
-    '%s does not enable its request for an invalid ID',
+    '%s requires a live session and a valid ID before enabling its request',
     (path) => {
       const source = readWorkspaceFile(path)
 
-      expect(source).toMatch(/enabled: import\.meta\.client && \w+Id\.value !== undefined/)
+      expect(source).toContain('authSession.value.authenticated')
+      expect(source).toMatch(
+        /enabled:\s+import\.meta\.client && recordAccessAllowed\.value && \w+Id\.value !== undefined/,
+      )
     },
   )
 })

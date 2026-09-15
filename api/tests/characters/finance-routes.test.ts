@@ -71,6 +71,7 @@ vi.mock('../../src/characters/contracts.js', () => ({
 
 vi.mock('../../src/characters/history.js', () => ({
   getCharacterEmploymentHistory: mocks.getCharacterEmploymentHistory,
+  getCharacterEmploymentHistoryResult: mocks.getCharacterEmploymentHistory,
 }))
 
 vi.mock('../../src/characters/market.js', () => ({

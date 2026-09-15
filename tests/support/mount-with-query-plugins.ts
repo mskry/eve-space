@@ -2,6 +2,7 @@ import { PiniaColada, useQueryCache } from '@pinia/colada'
 import { mount, type MountingOptions } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import type { Component } from 'vue'
+import { signalNuxtHydrationFinished } from '../../app/query-persistence/runtime'
 import { coladaOptions } from '../../app/utils/colada-options'
 
 export function mountWithQueryPlugins(component: Component, options: MountingOptions<never> = {}) {
@@ -14,9 +15,12 @@ export function mountWithQueryPlugins(component: Component, options: MountingOpt
     },
   })
 
+  const queryCache = useQueryCache(pinia)
+  signalNuxtHydrationFinished(queryCache)
+
   return {
     pinia,
-    queryCache: useQueryCache(pinia),
+    queryCache,
     wrapper,
   }
 }

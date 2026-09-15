@@ -1,7 +1,9 @@
+import { useQueryCache } from '@pinia/colada'
 import { http, HttpResponse } from 'msw'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { useMailComposition } from '../../app/composables/useMailComposition'
+import { subscribePrivateQueryInvalidation } from '../../app/query-persistence/runtime'
 import {
   MAIL_BODY_LIMIT,
   MAIL_RECIPIENT_LIMIT,
@@ -90,7 +92,10 @@ describe('mail composition', () => {
     const characterId = ref<number | undefined>(7)
     const mailbox = compositionMailbox()
     let composition!: ReturnType<typeof useMailComposition>
-    vi.stubGlobal('useConfirmDialog', () => ({ openConfirmDialog: vi.fn() }))
+    vi.stubGlobal('useConfirmDialog', () => ({
+      closeConfirmDialog: vi.fn(),
+      openConfirmDialog: vi.fn(),
+    }))
     vi.stubGlobal('useToast', () => ({ dismissToast: vi.fn(), showToast: vi.fn(() => 1) }))
     const Root = defineComponent({
       setup() {
@@ -125,7 +130,10 @@ describe('mail composition', () => {
   it('adds an exact local mailing list without enabling a protected lookup', () => {
     const mailbox = compositionMailbox([{ mailingListId: 77, name: 'Alliance Logistics' }])
     let composition!: ReturnType<typeof useMailComposition>
-    vi.stubGlobal('useConfirmDialog', () => ({ openConfirmDialog: vi.fn() }))
+    vi.stubGlobal('useConfirmDialog', () => ({
+      closeConfirmDialog: vi.fn(),
+      openConfirmDialog: vi.fn(),
+    }))
     vi.stubGlobal('useToast', () => ({ dismissToast: vi.fn(), showToast: vi.fn(() => 1) }))
     const Root = defineComponent({
       setup() {
@@ -156,7 +164,10 @@ describe('mail composition', () => {
     const fetchMock = vi.fn()
     let composition!: ReturnType<typeof useMailComposition>
     vi.stubGlobal('fetch', fetchMock)
-    vi.stubGlobal('useConfirmDialog', () => ({ openConfirmDialog: vi.fn() }))
+    vi.stubGlobal('useConfirmDialog', () => ({
+      closeConfirmDialog: vi.fn(),
+      openConfirmDialog: vi.fn(),
+    }))
     vi.stubGlobal('useToast', () => ({ dismissToast: vi.fn(), showToast: vi.fn(() => 1) }))
     const Root = defineComponent({
       setup() {
@@ -231,6 +242,8 @@ describe('mail composition', () => {
     expect(harness.showToast).toHaveBeenCalledWith(
       expect.objectContaining({ title: 'Reply unavailable' }),
     )
+    harness.composition.resetPrivateState()
+    expect(harness.dismissToast).toHaveBeenCalledWith(1)
     harness.wrapper.unmount()
     vi.unstubAllGlobals()
   })
@@ -309,6 +322,68 @@ describe('mail composition', () => {
     await send
     expect(harness.composition.open.value).toBe(false)
     expect(harness.showToast).toHaveBeenCalledWith(expect.objectContaining({ title: 'Mail sent' }))
+    harness.wrapper.unmount()
+    vi.unstubAllGlobals()
+  })
+
+  it('clears a private draft and rejects its stale charged-send confirmation', async () => {
+    let sendRequests = 0
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail/cspa', () =>
+        HttpResponse.json({ characterId: 7, cost: 125 }),
+      ),
+      http.post('http://localhost/api/me/characters/7/mail', () => {
+        sendRequests += 1
+        return HttpResponse.json({ characterId: 7, mailId: 9001 }, { status: 201 })
+      }),
+    )
+    const harness = mountCompositionHarness()
+    harness.composition.openNew()
+    harness.composition.recipients.value = [{ id: 44, name: 'Wingmate', type: 'character' }]
+    harness.composition.subject.value = 'Private subject'
+    harness.composition.body.value = 'Private body'
+    await harness.composition.send()
+    const confirmation = lastConfirmation(harness.openConfirmDialog)
+
+    harness.composition.resetPrivateState()
+    await confirmation.onConfirm()
+
+    expect(harness.closeConfirmDialog).toHaveBeenCalledOnce()
+    expect(harness.composition.open.value).toBe(false)
+    expect(harness.composition.recipients.value).toEqual([])
+    expect(harness.composition.subject.value).toBe('')
+    expect(harness.composition.body.value).toBe('')
+    expect(sendRequests).toBe(0)
+    harness.wrapper.unmount()
+    vi.unstubAllGlobals()
+  })
+
+  it('clears pending submission state and ignores a late send result', async () => {
+    let finishRequest!: () => void
+    const requestCanFinish = new Promise<void>((resolve) => (finishRequest = resolve))
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail', async () => {
+        await requestCanFinish
+        return HttpResponse.json({ characterId: 7, mailId: 9001 }, { status: 201 })
+      }),
+    )
+    const harness = mountCompositionHarness()
+    harness.composition.openNew()
+    harness.composition.recipients.value = [
+      { id: 91, name: 'Operations Control', type: 'corporation' },
+    ]
+    harness.composition.subject.value = 'Private subject'
+    const send = harness.composition.send()
+    await vi.waitFor(() => expect(harness.composition.sending.value).toBe(true))
+
+    harness.composition.resetPrivateState()
+
+    expect(harness.composition.sending.value).toBe(false)
+    expect(harness.composition.open.value).toBe(false)
+    finishRequest()
+    await send
+    expect(harness.composition.sending.value).toBe(false)
+    expect(harness.showToast).not.toHaveBeenCalled()
     harness.wrapper.unmount()
     vi.unstubAllGlobals()
   })
@@ -398,6 +473,43 @@ describe('mail composition', () => {
     const confirmation = lastConfirmation(harness.openConfirmDialog)
     await confirmation.onConfirm()
     expect(sentBodies[0]).toMatchObject({ approvedCost: 0 })
+    harness.wrapper.unmount()
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the draft and offers authorization when sending needs a missing scope', async () => {
+    queryServer.use(
+      http.post('http://localhost/api/me/characters/7/mail', () =>
+        HttpResponse.json(
+          {
+            authorizeUrl: 'http://localhost/auth/eve/reauthorize/7',
+            code: 'EVE_SCOPE_REQUIRED',
+            message: 'Authorize mail sending.',
+          },
+          { status: 403 },
+        ),
+      ),
+    )
+    const harness = mountCompositionHarness()
+    harness.composition.openNew()
+    harness.composition.recipients.value = [
+      { id: 91, name: 'Operations Control', type: 'corporation' },
+    ]
+    harness.composition.subject.value = 'Unsent subject'
+    harness.composition.body.value = 'Unsent body'
+
+    await harness.composition.send()
+
+    expect(harness.composition.open.value).toBe(true)
+    expect(harness.composition.subject.value).toBe('Unsent subject')
+    expect(harness.composition.body.value).toBe('Unsent body')
+    expect(harness.composition.sendAuthorizationUrl.value).toContain('/reauthorize/7')
+    expect(harness.showToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionHref: 'http://localhost/auth/eve/reauthorize/7',
+        title: 'Mail sending authorization required',
+      }),
+    )
     harness.wrapper.unmount()
     vi.unstubAllGlobals()
   })
@@ -551,11 +663,12 @@ function mountCompositionHarness({
   mailingLists?: Array<{ mailingListId: number; name: string }>
 } = {}) {
   const mailbox = compositionMailbox(mailingLists, detail)
+  const closeConfirmDialog = vi.fn()
   const openConfirmDialog = vi.fn()
   const dismissToast = vi.fn()
   const showToast = vi.fn(() => 1)
   let composition!: ReturnType<typeof useMailComposition>
-  vi.stubGlobal('useConfirmDialog', () => ({ openConfirmDialog }))
+  vi.stubGlobal('useConfirmDialog', () => ({ closeConfirmDialog, openConfirmDialog }))
   vi.stubGlobal('useToast', () => ({ dismissToast, showToast }))
   const Root = defineComponent({
     setup() {
@@ -567,11 +680,24 @@ function mountCompositionHarness({
         mailbox,
         ownsCharacter: computed(() => true),
       })
+      subscribePrivateQueryInvalidation(
+        useQueryCache(),
+        { kind: 'character', characterId: 7 },
+        composition.resetPrivateState,
+      )
       return () => h('div')
     },
   })
   const { wrapper } = mountWithQueryPlugins(Root)
-  return { composition, dismissToast, mailbox, openConfirmDialog, showToast, wrapper }
+  return {
+    closeConfirmDialog,
+    composition,
+    dismissToast,
+    mailbox,
+    openConfirmDialog,
+    showToast,
+    wrapper,
+  }
 }
 
 function lastConfirmation(openConfirmDialog: ReturnType<typeof vi.fn>) {

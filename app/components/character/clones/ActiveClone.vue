@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { CharacterClones } from '../../../queries/clones'
 import type { CloneResourceState } from '../../../types/clones'
 import type { JumpCloneCapacity } from '../../../utils/clone-derivation'
@@ -7,6 +8,7 @@ import { toCloneEsiResourceState } from '../../../utils/clone-resource-state'
 const props = defineProps<{
   clones?: CharacterClones
   capacity: JumpCloneCapacity
+  presentation?: EsiQueryPersistencePresentation
   state: CloneResourceState
 }>()
 
@@ -60,7 +62,12 @@ function historicalDate(value: string | null | undefined) {
     <template #value>{{ clones ? capacityValue : '--' }}</template>
     <template #label>{{ clones ? capacityLabel : 'CAPACITY UNAVAILABLE' }}</template>
 
-    <EsiResourceBoundary :state="resourceState" :has-data="Boolean(clones)" @retry="$emit('retry')">
+    <EsiResourceBoundary
+      :state="resourceState"
+      :has-data="Boolean(clones)"
+      :presentation="presentation"
+      @retry="$emit('retry')"
+    >
       <template v-if="clones">
         <dl v-if="lastCloneJumpLabel" class="character-summary-stats">
           <div>

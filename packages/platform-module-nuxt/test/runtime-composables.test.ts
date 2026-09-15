@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref, toValue } from 'vue'
+import { platformQueryAdmissionScopes } from '#build/eve-space-platform/query-admission-scopes'
 import { usePlatformApi } from '../src/runtime/app/composables/usePlatformApi.js'
 import { usePlatformEveImages } from '../src/runtime/app/composables/usePlatformEveImages.js'
 import { usePlatformMutationAnnouncement } from '../src/runtime/app/composables/usePlatformMutationAnnouncement.js'
 import { usePlatformProtectedQuery } from '../src/runtime/app/composables/usePlatformProtectedQuery.js'
+import { ESI_QUERY_RETENTION_MS } from '../src/runtime/esi-query-persistence.js'
 import { readPlatformApiResponse } from '../src/runtime.js'
 
 const mocks = vi.hoisted(() => ({
@@ -76,17 +78,20 @@ describe('runtime adapters', () => {
 describe('protected query lifecycle', () => {
   function setup() {
     const options = ref({
+      esiPersistence: { kind: 'none' as const },
       moduleId: 'mail',
+      routeId: 'mail-route',
       resource: ['headers'],
       subject: { kind: 'character' as const, characterId: 7 },
       access: { authenticated: true, moduleEnabled: true, ownsCharacter: true },
+      gcTime: 12_345,
       query: vi.fn(),
     })
     const scope = effectScope()
     scopes.push(scope)
-    scope.run(() => usePlatformProtectedQuery(options))
+    const result = scope.run(() => usePlatformProtectedQuery(options))
     const current = () => toValue(mocks.useQuery.mock.calls[0]![0])
-    return { options, current }
+    return { options, current, result }
   }
   it('blocks SSR and removes retained private results', () => {
     vi.stubGlobal('window', undefined)
@@ -98,9 +103,11 @@ describe('protected query lifecycle', () => {
     })
   })
   it('tracks ownership, authentication, and module enablement reactively', () => {
-    const { options, current } = setup()
+    const { options, current, result } = setup()
     expect(current().enabled).toBe(true)
     expect(current().query).toBe(options.value.query)
+    expect(current().gcTime).toBe(12_345)
+    expect(current().meta).toEqual({ esiPersistence: { kind: 'none' } })
     for (const gate of ['ownsCharacter', 'authenticated', 'moduleEnabled'] as const) {
       options.value.access[gate] = false
       expect(current().enabled).toBe(false)
@@ -108,6 +115,50 @@ describe('protected query lifecycle', () => {
       expect(current().enabled).toBe(true)
     }
     expect(mocks.getEntries).toHaveBeenCalledTimes(3)
+    expect(result?.persistencePresentation.value).toEqual({ kind: 'fresh' })
+  })
+  it('persists authenticated-session routes only through exact generated admission metadata', () => {
+    expect(platformQueryAdmissionScopes).toContainEqual({
+      moduleId: 'mail',
+      routeId: 'mail-summary',
+      admissionScope: 'organization:v1:mail:member:mail.view',
+      authorization: 'authenticated-session',
+      audience: 'member',
+      requiredPermission: 'mail.view',
+    })
+    const options = ref({
+      esiPersistence: { kind: 'organization-esi' as const },
+      moduleId: 'mail',
+      routeId: 'mail-summary',
+      resource: ['summary'],
+      subject: { kind: 'organization' as const, organizationVersion: 3 },
+      access: { authenticated: true, moduleEnabled: true, authorized: true },
+      gcTime: 12_345,
+      query: vi.fn(),
+    })
+    const scope = effectScope()
+    scopes.push(scope)
+    scope.run(() => usePlatformProtectedQuery(options))
+    const current = () => toValue(mocks.useQuery.mock.calls[0]![0])
+
+    expect(current().enabled).toBe(true)
+    expect(current().gcTime).toBe(ESI_QUERY_RETENTION_MS)
+    expect(current().meta).toEqual({
+      esiPersistence: {
+        kind: 'organization-esi',
+        admissionScope: 'organization:v1:mail:member:mail.view',
+      },
+    })
+
+    options.value.routeId = 'unknown-route'
+    expect(current().enabled).toBe(false)
+    expect(current().gcTime).toBe(12_345)
+    expect(current().meta).toEqual({ esiPersistence: { kind: 'none' } })
+
+    options.value.routeId = 'mail-route'
+    expect(current().enabled).toBe(false)
+    expect(current().gcTime).toBe(12_345)
+    expect(current().meta).toEqual({ esiPersistence: { kind: 'none' } })
   })
   it('removes the previous character query on subject changes', () => {
     const { options, current } = setup()

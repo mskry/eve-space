@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter, useRoute, useHead } from '#imports'
 import { useActivityDetail } from '../composables/useActivityDetail'
 
@@ -13,15 +12,11 @@ const {
   selectedCharacter,
   characterId,
   activity,
+  activityPresentation,
   activityResource,
+  participationState,
   state,
-  authorizationUrl,
 } = useActivityDetail(() => props.kind)
-const resource = computed(() => participation.data.value?.resource)
-const authorizationRequired = computed(() => resource.value?.status === 'authorization-required')
-const participationUnavailable = computed(
-  () => participation.error.value || resource.value?.status !== 'current',
-)
 useHead(() => ({ title: activity.value?.title ?? props.title }))
 
 function selectCharacter(event: Event) {
@@ -36,6 +31,7 @@ function selectCharacter(event: Event) {
     <PlatformResourceBoundary
       :state="state"
       :has-data="Boolean(activity)"
+      :presentation="activityPresentation"
       @retry="detail.refresh()"
     >
       <p v-if="activity?.description">{{ activity.description }}</p>
@@ -72,18 +68,15 @@ function selectCharacter(event: Event) {
         {{ character.name }}
       </option>
     </select>
-    <template v-if="selectedCharacter">
-      <PlatformAuthorizationRequired
-        v-if="authorizationRequired"
-        :title="`Authorize ${selectedCharacter.name}`"
-        :authorize-url="authorizationUrl"
-        message="This character needs additional authorization to show participation."
-      />
-      <output v-else-if="participationUnavailable" class="organization-activity-status">
-        Participation is unavailable or stale for {{ selectedCharacter.name }}.
-      </output>
+    <PlatformResourceBoundary
+      v-if="selectedCharacter"
+      :state="participationState"
+      :has-data="Boolean(participation.data.value)"
+      :presentation="participation.persistencePresentation.value"
+      @retry="participation.refresh()"
+    >
       <output
-        v-else-if="!participation.data.value?.participation.length"
+        v-if="!participation.data.value?.participation.length"
         class="organization-activity-status"
       >
         No participation is recorded for {{ selectedCharacter.name }}.
@@ -94,7 +87,7 @@ function selectCharacter(event: Event) {
           {{ entry.committed ? 'Participating.' : 'Not currently participating.' }}
         </li>
       </ul>
-    </template>
+    </PlatformResourceBoundary>
     <p>Participation actions take place in EVE Online.</p>
   </section>
 </template>

@@ -19,7 +19,7 @@ export const installedModulePersistenceOperations = [
     method: 'readActivityCheckpoint',
     revision: 1,
     mode: 'read',
-    migration: 'organization-activity-002-persistence-operations.sql',
+    migration: 'organization-activity-001-baseline.sql',
     schemaName: 'eve_module_organization_activity',
     routineName: 'persist_read_activity_checkpoint',
     definitionFingerprint: 'fb46c61a833bd17111d2cca44325467c728e82d114c0494d24e2a96a8a2238ff',
@@ -50,7 +50,7 @@ export const installedModulePersistenceOperations = [
     method: 'readActivitySnapshots',
     revision: 1,
     mode: 'read',
-    migration: 'organization-activity-002-persistence-operations.sql',
+    migration: 'organization-activity-001-baseline.sql',
     schemaName: 'eve_module_organization_activity',
     routineName: 'persist_read_activity_snapshots',
     definitionFingerprint: '505ebd357ceade137f2fbac0d7a8743897961815136f2149ce48b7b5f946232f',
@@ -73,7 +73,7 @@ export const installedModulePersistenceOperations = [
     method: 'materializeActivityObservation',
     revision: 1,
     mode: 'write',
-    migration: 'organization-activity-002-persistence-operations.sql',
+    migration: 'organization-activity-001-baseline.sql',
     schemaName: 'eve_module_organization_activity',
     routineName: 'persist_materialize_activity_observation',
     definitionFingerprint: '1970f15288caa92cf0484a247d18e1acb5d4069717542045801bf2bd6690d4fa',
@@ -101,7 +101,7 @@ export const installedModulePersistenceOperations = [
 ] as const satisfies readonly PlatformInstalledPersistenceOperationDescriptor[]
 
 export const installedModulePersistenceContractFingerprint =
-  'fa5bd3dbc5648924e44e0bc442106fd4223a338eb3cd9c5a2c701a1ffa4738b8'
+  'a1594e03c0e3489836334184392c19b258c4a3ddc0e2c122c6a07a4c69e8b57c'
 
 export const installedModulePersistenceOperationCatalog = {
   'organization-activity/read-activity-checkpoint': installedModulePersistenceOperations[0]!,

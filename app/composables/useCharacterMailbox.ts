@@ -243,6 +243,14 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     selectedMailId.value = null
   }
 
+  function resetMailboxPrivateState() {
+    resetMailboxView()
+    activeLabelId.value = null
+    search.value = ''
+    unreadOnly.value = false
+    selectedMailingListId.value = null
+  }
+
   function selectLabel(labelId: number | null) {
     if (activeLabelId.value === labelId) return
     resetMailboxView()
@@ -282,7 +290,10 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
   watch(
     () => headersQuery.data.value,
     (page) => {
-      if (!page) return
+      if (!page) {
+        resetMailboxView()
+        return
+      }
       loadedHeaders.value = hasPaginated.value
         ? mergePaginatedMailHeaders(loadedHeaders.value, page.messages)
         : replaceLatestMailHeaders(page.messages)
@@ -343,6 +354,7 @@ export function useCharacterMailbox(options: CharacterMailboxOptions) {
     nextLastMailId,
     removeLoadedHeader,
     removeLoadedLabel,
+    resetMailboxPrivateState,
     resetMailboxView,
     retryAfterSeconds,
     retryMailbox,

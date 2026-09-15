@@ -102,18 +102,21 @@ cache eviction, and paired event delivery order are not authorization mechanisms
 
 ## Deployment And Rollback
 
-Deploy the approval-aware API, worker, and web from one verified revision. The API must start first so
-it can apply migrations `042_character_transfer_approvals.sql` and
-`043_decouple_deployment_administrator.sql`; the worker must then accept that migration ledger before
-the web exposes transfer controls. Do not create a mixed-version window in which ordinary attachment
-can transfer cross-user ownership. After deployment, verify API and worker health, administrator
-authentication, preview/create/inspect/revoke authorization, ordinary cross-user attachment refusal,
-destination-bound transfer initiation, callback blocker feedback, source-session invalidation, and
-current owned-resource access from both source and destination accounts.
+Deploy the approval-aware API, worker, and web from one verified revision. The final schema must
+contain transfer previews, approvals with immutable bindings and terminal states, append-only transfer
+audit, transfer-bound OAuth state, and deployment-administrator ownership independent of organization
+settings and authority. For the approved baseline reset, stop the API and worker processes and recreate
+disposable PostgreSQL plus durable Queue Redis from empty storage together. Start the API first so it
+applies `001_baseline.sql`, then start a worker that accepts the same ledger before the web exposes
+transfer controls. Do not create a mixed-version window in which ordinary attachment can transfer
+cross-user ownership. After deployment, verify API and worker health, administrator authentication,
+preview/create/inspect/revoke authorization, ordinary cross-user attachment refusal, destination-bound
+transfer initiation, callback blocker feedback, source-session invalidation, and current owned-resource
+access from both source and destination accounts.
 
-Rollback is a forward-compatible application deployment, not a schema downgrade or an unmodified
-pre-migration image. Retain migrations 042 and 043 in the migration manifest because startup rejects a
-ledger containing unknown newer migrations. The rollback API must reject new transfer starts and all
+Rollback is a forward-compatible application deployment, not a schema downgrade or an image that
+expects retired migration history. Retain the baseline ledger and final transfer schema because startup
+rejects unsupported migration identities. The rollback API must reject new transfer starts and all
 outstanding transfer callbacks, continue rejecting ordinary cross-user attachment, and preserve the
 approval and append-only audit tables. Deploy matching web handling that removes approval creation and
 redemption controls and gives a generic safe failure for outstanding links. Pending approvals and
@@ -146,7 +149,7 @@ API coverage (157 files, 1,751 tests), frontend coverage (56 files, 541 tests), 
 production-browser coverage (8 files, 53 tests). The browser suite uses real HTTP Hono routes,
 PostgreSQL migrations, browser cookies, and deterministic fake EVE SSO boundaries.
 
-The local Compose smoke test rebuilt the API, applied migrations 042 and 043, and reached healthy
+The local Compose smoke test rebuilt the API against the final transfer schema and reached healthy
 status. `GET /health` returned 200 with a connected database; `GET /api/status` returned 200 and
 operational API, database, ESI, queue, event-relay, cache, and coordination states; public auth
 configuration and signed-out session checks returned 200; malformed character identity returned 400;

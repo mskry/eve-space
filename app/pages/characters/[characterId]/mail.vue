@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useQueryCache } from '@pinia/colada'
+import { selectEsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
+import { PRIVATE_QUERY_KEYS } from '../../../queries/query-keys'
+import { subscribePrivateQueryInvalidation } from '../../../query-persistence/runtime'
 import type { EsiResourceState } from '../../../types/esi-resource'
 import { parseRouteId } from '../../../utils/route-id'
 
@@ -7,6 +11,7 @@ definePageMeta({ title: 'Character Mail', layout: 'headerless' })
 const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
+const queryCache = useQueryCache()
 const { authLoading, authSession } = useAuthSession(apiClient)
 const { characters } = useCharacterRoster(apiClient)
 const characterId = computed(() => parseRouteId(route.params.characterId))
@@ -41,6 +46,19 @@ const composition = useMailComposition({
   mailbox,
   ownsCharacter,
 })
+subscribePrivateQueryInvalidation(
+  queryCache,
+  () =>
+    characterId.value === undefined
+      ? { kind: 'character' }
+      : { kind: 'character', characterId: characterId.value },
+  () => {
+    mailbox.resetMailboxPrivateState()
+    mutations.resetMailMutations()
+    organization.resetPrivateState()
+    composition.resetPrivateState()
+  },
+)
 const {
   activeLabelId,
   authorizeUrl,
@@ -72,6 +90,25 @@ const {
   showMailboxSkeleton,
   unreadOnly,
 } = mailbox
+const headersPersistencePresentation = useQueryPersistencePresentation(() =>
+  PRIVATE_QUERY_KEYS.mailHeaders(
+    characterId.value ?? 0,
+    activeLabelId.value === null ? [] : [activeLabelId.value],
+  ),
+)
+const labelsPersistencePresentation = useQueryPersistencePresentation(() =>
+  PRIVATE_QUERY_KEYS.mailLabels(characterId.value ?? 0),
+)
+const listsPersistencePresentation = useQueryPersistencePresentation(() =>
+  PRIVATE_QUERY_KEYS.mailingLists(characterId.value ?? 0),
+)
+const mailboxPersistencePresentation = computed(() =>
+  selectEsiQueryPersistencePresentation([
+    headersPersistencePresentation.value,
+    labelsPersistencePresentation.value,
+    listsPersistencePresentation.value,
+  ]),
+)
 const {
   assignedLabelIds,
   assignmentFeedback,
@@ -171,6 +208,7 @@ useCharacterReauthorization(characterId, retryMailbox)
     <EsiResourceBoundary
       :state="mailboxResourceState"
       :has-data="mailboxStatus === 'idle' || mailboxStatus === 'loading'"
+      :presentation="mailboxPersistencePresentation"
       @retry="retryMailbox"
     >
       <UiStatePanel v-if="mailboxEmpty" code="NO MAIL" title="Mailbox empty" compact>

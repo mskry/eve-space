@@ -15,7 +15,8 @@ import { clearAuthenticatedQueries, removeCharacterQueries } from '../../app/que
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import { QUERY_POLICY } from '../../app/queries/query-policy'
 import { createApiClient } from '../../app/utils/api-client'
-import { coladaOptions, QUERY_GC_TIME } from '../../app/utils/colada-options'
+import { coladaOptions } from '../../app/utils/colada-options'
+import { ESI_QUERY_RETENTION_MS } from '../../packages/platform-module-nuxt/src/runtime/esi-query-persistence'
 import { ApiQueryError } from '../../app/utils/query-error'
 import { mountWithQueryPlugins } from '../support/mount-with-query-plugins'
 import { queryServer } from '../support/query-server'
@@ -29,13 +30,13 @@ const allowed: ProtectedCharacterQueryAccess = {
 }
 
 describe('character Assets private query', () => {
-  it('uses isolated hierarchical identities and the one-hour memory policy', () => {
+  it('uses isolated hierarchical identities and the 24-hour persistence policy', () => {
     expect(PRIVATE_QUERY_KEYS.characterAssets(7)).toEqual(['private', 'characters', 7, 'assets'])
     expect(PRIVATE_QUERY_KEYS.characterAssets(7)).not.toEqual(PRIVATE_QUERY_KEYS.characterAssets(8))
-    expect(QUERY_POLICY.characterAssets).toEqual({
-      staleTime: 60 * 60_000,
-      gcTime: QUERY_GC_TIME,
-    })
+    expect(QUERY_POLICY.characterAssets.staleTime).toBe(60 * 60_000)
+    expect(characterAssetsQuery({ apiClient, characterId: 7, access: allowed }).gcTime).toBe(
+      ESI_QUERY_RETENTION_MS,
+    )
   })
 
   it('requires browser execution, authentication, exact ownership, and a positive safe ID', () => {

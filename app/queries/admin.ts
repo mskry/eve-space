@@ -1,9 +1,9 @@
-import { defineQueryOptions } from '@pinia/colada'
+import { defineEsiQueryOptions } from '@eve-space/platform-module-nuxt/runtime'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
 import { ADMIN_QUERY_KEYS } from './query-keys'
 
-export const adminSetupQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const adminSetupQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: ADMIN_QUERY_KEYS.setup,
   query: async ({ signal }) => {
     const response = await apiClient.api.admin.setup.$get({}, { init: { signal } })
@@ -11,9 +11,10 @@ export const adminSetupQuery = defineQueryOptions((apiClient: ApiClient) => ({
     return response.json()
   },
   staleTime: 30_000,
+  esiPersistence: { kind: 'none' },
 }))
 
-export const adminSessionQuery = defineQueryOptions((apiClient: ApiClient) => ({
+export const adminSessionQuery = defineEsiQueryOptions((apiClient: ApiClient) => ({
   key: ADMIN_QUERY_KEYS.session,
   query: async ({ signal }) => {
     const response = await apiClient.api.admin.session.$get({}, { init: { signal } })
@@ -21,4 +22,5 @@ export const adminSessionQuery = defineQueryOptions((apiClient: ApiClient) => ({
     return response.json()
   },
   staleTime: 30_000,
+  esiPersistence: { kind: 'none' },
 }))

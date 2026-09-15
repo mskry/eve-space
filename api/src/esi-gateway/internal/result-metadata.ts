@@ -16,6 +16,16 @@ export function combineEsiResultMetadata(results: readonly EsiResultMetadata[]):
         !current || result.validatedAt < current.validatedAt ? result : current,
       undefined,
     )
+  let latestRetryAt: string | undefined
+  let latestRetryTime = Number.NEGATIVE_INFINITY
+  for (const result of results) {
+    if (!result.stale || !result.retryAt) continue
+    const retryTime = Date.parse(result.retryAt)
+    if (Number.isFinite(retryTime) && retryTime > latestRetryTime) {
+      latestRetryAt = result.retryAt
+      latestRetryTime = retryTime
+    }
+  }
 
   return {
     cachedUntil: earliestExpiry.cachedUntil,
@@ -24,5 +34,6 @@ export function combineEsiResultMetadata(results: readonly EsiResultMetadata[]):
     ...(oldestStale?.refreshFailureClass
       ? { refreshFailureClass: oldestStale.refreshFailureClass }
       : {}),
+    ...(latestRetryAt ? { retryAt: latestRetryAt } : {}),
   }
 }

@@ -2,7 +2,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { useQueryCache } from '@pinia/colada'
 import { flushPromises } from '@vue/test-utils'
 import { http, HttpResponse } from 'msw'
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import SettingsOrganizationHrReview from '../../app/components/settings/SettingsOrganizationHrReview.vue'
 import type {
@@ -10,7 +10,10 @@ import type {
   OrganizationContext,
   OrganizationExceptions,
 } from '../../app/queries/organization'
+import { refreshPrivateAuthorization } from '../../app/queries/query-cache'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
+import { cacheAdmissionForOrganization } from '../support/cache-admission'
+import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
 const mountedWrappers: { unmount: () => void }[] = []
@@ -18,8 +21,11 @@ const mountedWrappers: { unmount: () => void }[] = []
 beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
 
+beforeEach(clearQueryCache)
+
 afterEach(async () => {
   for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  clearQueryCache()
   queryServer.resetHandlers()
   await flushPromises()
 })
@@ -101,6 +107,27 @@ describe('SettingsOrganizationHrReview', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('current HR auditor grant'))
     expect(privateRequests).toBe(0)
   })
+
+  it('clears open review forms on same-route organization invalidation', async () => {
+    installCommonHandlers(true)
+    const wrapper = await mountSuspended(SettingsOrganizationHrReview, { route: false })
+    mountedWrappers.push(wrapper)
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Review Pilot'))
+    await wrapper.get('.hr-review-row--candidate > button').trigger('click')
+    await wrapper.get('.hr-candidate-form textarea').setValue('Private approval reason')
+    await wrapper.get('.hr-review-row--decision > button').trigger('click')
+    await wrapper.get('.hr-decision-form textarea').setValue('Private decision reason')
+
+    await refreshPrivateAuthorization(useQueryCache(), { kind: 'organization' })
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Review Pilot'))
+
+    expect(wrapper.find('.hr-candidate-form').exists()).toBe(false)
+    expect(wrapper.find('.hr-decision-form').exists()).toBe(false)
+    await wrapper.get('.hr-review-row--candidate > button').trigger('click')
+    expect(wrapper.get('.hr-candidate-form textarea').element).toHaveProperty('value', '')
+    await wrapper.get('.hr-review-row--decision > button').trigger('click')
+    expect(wrapper.get('.hr-decision-form textarea').element).toHaveProperty('value', '')
+  })
 })
 
 function installCommonHandlers(canReview: boolean, memberAccess = canReview) {
@@ -120,6 +147,9 @@ function installCommonHandlers(canReview: boolean, memberAccess = canReview) {
           mainCharacter: { characterId: 1_404_328_063, name: 'Main Pilot' },
         },
       }),
+    ),
+    http.get('*/api/me/cache-admission', () =>
+      HttpResponse.json(cacheAdmissionForOrganization('member-user', 1_404_328_063)),
     ),
     http.get('*/api/admin/setup', () => HttpResponse.json({ required: false, available: true })),
     http.get('*/api/organization/context', () =>

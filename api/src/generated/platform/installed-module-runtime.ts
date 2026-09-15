@@ -2,12 +2,21 @@
 
 import type {
   PlatformInstalledModuleDefinition,
+  PlatformInstalledOrganizationAdmissionScopeDescriptor,
   PlatformNavigationDefault,
 } from '@eve-space/platform-module-contract'
 
 export const installedModuleDefinitions = [
   { moduleId: 'organization-activity', defaultEnabled: true },
 ] as const satisfies readonly PlatformInstalledModuleDefinition[]
+export const installedModuleOrganizationAdmissionScopes = [
+  {
+    moduleId: 'organization-activity',
+    admissionScope: 'organization:v1:organization-activity:member:organization-activity.view',
+    audience: 'member',
+    requiredPermission: 'organization-activity.view',
+  },
+] as const satisfies readonly PlatformInstalledOrganizationAdmissionScopeDescriptor[]
 export const platformNavigationDefaults = [
   { ownerId: 'core', navigationId: 'core-overview', placement: 'dashboard', order: 10 },
   { ownerId: 'core', navigationId: 'core-characters', placement: 'dashboard', order: 20 },

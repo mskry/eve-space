@@ -1,13 +1,20 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { AssetResourceState } from '../../types/assets'
 import type { EsiResourceState } from '../../types/esi-resource'
 
 const props = defineProps<{
+  hasData?: boolean
+  presentation?: EsiQueryPersistencePresentation
   state: AssetResourceState
 }>()
 
 const emit = defineEmits<{
   retry: []
+}>()
+
+defineSlots<{
+  default(): unknown
 }>()
 
 const resourceState = computed<EsiResourceState>(() => {
@@ -58,5 +65,12 @@ const resourceState = computed<EsiResourceState>(() => {
 </script>
 
 <template>
-  <EsiResourceBoundary :state="resourceState" @retry="emit('retry')" />
+  <EsiResourceBoundary
+    :state="resourceState"
+    :has-data="hasData"
+    :presentation="presentation"
+    @retry="emit('retry')"
+  >
+    <slot />
+  </EsiResourceBoundary>
 </template>

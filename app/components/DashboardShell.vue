@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useQuery, useQueryCache } from '@pinia/colada'
+import { readActiveQueryPersistenceState } from '../query-persistence/runtime'
 import { adminSessionQuery } from '../queries/admin'
 import { characterRosterQuery } from '../queries/characters'
 import { mailLabelsQuery } from '../queries/mail'
 import { canRunProtectedCharacterQuery } from '../queries/protected-character-query-access'
 import { prefetchQuery } from '../queries/query-cache'
-import { PRIVATE_QUERY_KEYS, PUBLIC_QUERY_KEYS } from '../queries/query-keys'
+import { PRIVATE_QUERY_KEYS } from '../queries/query-keys'
 import { systemStatusQuery } from '../queries/system-status'
-import { getStaleEsiResult, hasUnavailableOverviewSection } from '../utils/esi-freshness'
+import { hasUnavailableOverviewSection } from '../utils/esi-freshness'
 import { resolveMailUnreadCount } from '../utils/mail-unread-badge'
 import { parseRouteId } from '../utils/route-id'
 
@@ -22,11 +23,15 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
 const queryCache = useQueryCache()
+const activeQueryPresentation = readActiveQueryPersistenceState(queryCache)
 
 const mobileNavigationOpen = ref(false)
 const mobileNavigationRestoreFocus = ref(true)
 const statusPopoverOpen = ref(false)
-const statusQuery = useQuery(systemStatusQuery(apiClient))
+const statusQuery = useQuery({
+  ...systemStatusQuery(apiClient),
+  enabled: import.meta.client,
+})
 const adminSessionQueryResult = useQuery(() => ({
   ...adminSessionQuery(apiClient),
   enabled: import.meta.client,
@@ -36,26 +41,6 @@ const statusLoading = computed(() => statusQuery.asyncStatus.value === 'loading'
 const statusError = computed(() => statusQuery.status.value === 'error')
 const systemStatus = computed(() => statusQuery.data.value?.telemetry)
 const apiLatencyMs = computed(() => statusQuery.data.value?.latencyMs)
-const activeCharacterStaleResult = computed(() => {
-  const characterId = parseRouteId(route.params.characterId)
-  if (characterId === undefined) return undefined
-
-  let oldest: ReturnType<typeof getStaleEsiResult>
-  for (const entry of queryCache.getEntries({ key: PRIVATE_QUERY_KEYS.character(characterId) })) {
-    if (!entry.active) continue
-    const candidate = getStaleEsiResult(queryCache.getQueryData(entry.key))
-    if (!candidate || (oldest && candidate.validatedAt >= oldest.validatedAt)) continue
-    oldest = candidate
-  }
-  for (const entry of queryCache.getEntries({ key: PUBLIC_QUERY_KEYS.character(characterId) })) {
-    if (!entry.active) continue
-    const result = queryCache.getQueryData(entry.key) as { profile?: unknown } | undefined
-    const candidate = getStaleEsiResult(result?.profile)
-    if (!candidate || (oldest && candidate.validatedAt >= oldest.validatedAt)) continue
-    oldest = candidate
-  }
-  return oldest
-})
 const activeCharacterOverviewUnavailable = computed(() => {
   const characterId = parseRouteId(route.params.characterId)
   if (characterId === undefined) return false
@@ -70,12 +55,10 @@ const upstreamStatus = computed(() => {
   const status = systemStatus.value?.services.esi.status
   if (status === 'unavailable') return status
   if (activeCharacterOverviewUnavailable.value) return 'partial'
-  return activeCharacterStaleResult.value ? 'stale' : status
+  return status
 })
 const upstreamCheckedAt = computed(() =>
-  activeCharacterOverviewUnavailable.value
-    ? undefined
-    : (activeCharacterStaleResult.value?.validatedAt ?? systemStatus.value?.services.esi.checkedAt),
+  activeCharacterOverviewUnavailable.value ? undefined : systemStatus.value?.services.esi.checkedAt,
 )
 const upstreamVip = computed(() => systemStatus.value?.services.esi.vip === true)
 const sidebarExpanded = useCookie<boolean>('eve-space-sidebar-expanded', {
@@ -322,6 +305,7 @@ function closeMobileNavigationForRoute(destinationPath: string) {
         <AppUpstreamNotice
           :status="upstreamStatus"
           :checked-at="upstreamCheckedAt"
+          :presentation="activeQueryPresentation"
           :vip="upstreamVip"
         />
         <slot />

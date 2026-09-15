@@ -4,8 +4,7 @@ import {
   platformModuleIdPattern,
 } from '@eve-space/platform-module-contract'
 import { Hono } from 'hono'
-import type { MiddlewareHandler } from 'hono'
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import type { Context, MiddlewareHandler } from 'hono'
 import { z } from 'zod'
 import {
   createAdminSession,
@@ -37,6 +36,7 @@ import {
 } from '../platform/module-settings.js'
 import { createOpaqueToken, hashPassword, tokensMatch, verifyPassword } from '../auth/security.js'
 import { privateNoStore, setPrivateHeaders } from '../http/private-response.js'
+import { deleteAuthCookie, readAuthCookie, setAuthCookie } from '../http/auth-cookie.js'
 import { requireTrustedMutationOrigin } from '../http/trusted-origin.js'
 import { zValidator } from '../http/validation.js'
 
@@ -99,7 +99,7 @@ const transferApprovalRevokeSchema = z.object({ reason: transferReasonSchema }).
 
 const loadAdminSession: MiddlewareHandler<AdminEnv> = async (context, next) => {
   setPrivateHeaders(context)
-  const token = getCookie(context, adminSessionCookie)
+  const token = readAuthCookie(context, adminSessionCookie)
   context.set('adminSession', token ? await findAdminSession(token) : null)
   return next()
 }
@@ -192,12 +192,9 @@ export const adminRoutes = new Hono<AdminEnv>()
   })
   .post('/logout', loadAdminSession, async (context) => {
     setPrivateHeaders(context)
-    const token = getCookie(context, adminSessionCookie)
+    const token = readAuthCookie(context, adminSessionCookie)
     if (token) await deleteAdminSession(token)
-    deleteCookie(context, adminSessionCookie, {
-      path: '/',
-      secure: env.SESSION_COOKIE_SECURE,
-    })
+    deleteAuthCookie(context, adminSessionCookie)
     return context.body(null, 204)
   })
   .put(
@@ -333,18 +330,11 @@ function sessionExpiry() {
   return new Date(Date.now() + adminSessionDurationSeconds * 1_000)
 }
 
-function setAdminSessionCookie(context: Parameters<typeof setCookie>[0], token: string) {
-  setCookie(context, adminSessionCookie, token, {
-    path: '/',
-    httpOnly: true,
-    secure: env.SESSION_COOKIE_SECURE,
-    sameSite: 'Lax',
-    priority: 'High',
-    maxAge: adminSessionDurationSeconds,
-  })
+function setAdminSessionCookie(context: Context, token: string) {
+  setAuthCookie(context, adminSessionCookie, token, adminSessionDurationSeconds)
 }
 
-function organizationFailure(context: Parameters<typeof setCookie>[0], error: unknown) {
+function organizationFailure(context: Context, error: unknown) {
   const status =
     typeof error === 'object' && error && 'status' in error ? Number(error.status) : undefined
   if (status === 404) {
@@ -359,7 +349,7 @@ function organizationFailure(context: Parameters<typeof setCookie>[0], error: un
   )
 }
 
-function transferApprovalFailure(context: Parameters<typeof setCookie>[0], error: unknown) {
+function transferApprovalFailure(context: Context, error: unknown) {
   if (!(error instanceof CharacterTransferApprovalError)) throw error
   const unavailable = error.code === 'preview-unavailable' || error.code === 'approval-unavailable'
   return context.json(

@@ -17,6 +17,24 @@ export default defineNuxtConfig({
           {
             moduleId: 'organization-activity',
             defaultIcon: 'corporation',
+            queryAdmissionScopes: [
+              {
+                routeId: 'activity-details',
+                admissionScope:
+                  'organization:v1:organization-activity:member:organization-activity.view',
+                authorization: 'authenticated-session',
+                audience: 'member',
+                requiredPermission: 'organization-activity.view',
+              },
+              {
+                routeId: 'activity-participation',
+                admissionScope:
+                  'organization:v1:organization-activity:member:organization-activity.view',
+                authorization: 'owned-character',
+                audience: 'member',
+                requiredPermission: 'organization-activity.view',
+              },
+            ],
             navigation: [],
             pages: [
               {

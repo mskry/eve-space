@@ -82,7 +82,6 @@ vi.mock('../../src/env.js', () => ({
     ESI_USER_AGENT: 'EveSpace/Test',
     EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback',
     PORT: 8788,
-    SESSION_COOKIE_SECURE: false,
     WEB_ORIGIN: 'http://localhost:3000',
   },
   getSsoConfig: () => ({

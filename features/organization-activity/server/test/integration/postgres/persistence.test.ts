@@ -37,10 +37,7 @@ const materializationFactory =
 let checkpointPersistence: ReturnType<typeof checkpointFactory>
 let snapshotPersistence: ReturnType<typeof snapshotFactory>
 const moduleId = 'organization-activity'
-const migrationNames = [
-  'organization-activity-001-initial.sql',
-  'organization-activity-002-persistence-operations.sql',
-] as const
+const migrationNames = ['organization-activity-001-baseline.sql'] as const
 const lifecycleId = randomUUID()
 const activityId = randomUUID()
 const snapshot = summarySnapshot(

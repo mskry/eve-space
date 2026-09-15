@@ -1,5 +1,5 @@
 import { useQuery } from '@pinia/colada'
-import { computed, effectScope, ref } from 'vue'
+import { computed, effectScope, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MailHeader } from '../../app/queries/mail'
 import { useCharacterMailbox } from '../../app/composables/useCharacterMailbox'
@@ -183,6 +183,60 @@ describe('character mailbox', () => {
     expect(mailbox.headerEmptyMessage.value).toBe(
       'No matches in loaded messages. Load older messages to search further.',
     )
+    scope.stop()
+  })
+
+  it('clears copied mailbox state when private query data is purged', async () => {
+    const headers = queryState({
+      characterId: 7,
+      messages: [mailHeader(1, [1])],
+      nextLastMailId: 99,
+    })
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(headers as never)
+      .mockReturnValueOnce(queryState({ characterId: 7, labels: [], totalUnreadCount: 0 }) as never)
+      .mockReturnValueOnce(queryState({ characterId: 7, mailingLists: [] }) as never)
+      .mockReturnValueOnce(queryState(undefined) as never)
+      .mockReturnValueOnce(queryState(undefined) as never)
+
+    const scope = effectScope()
+    const mailbox = scope.run(() =>
+      useCharacterMailbox({
+        apiClient: {} as never,
+        authenticated: computed(() => true),
+        authenticationReady: computed(() => true),
+        characterId: computed(() => 7),
+        ownsCharacter: computed(() => true),
+        createdLabels: ref([]),
+        deletedLabelIds: ref(new Set()),
+        deletedMailIds: ref(new Set()),
+        deletePendingIds: ref(new Set()),
+        labelOverrides: ref(new Map()),
+        readStateOverrides: ref(new Map()),
+        reconcileCreatedLabels: vi.fn(),
+        reconcileLabelState: vi.fn(),
+        reconcileReadState: vi.fn(),
+      }),
+    )!
+    expect(mailbox.displayedHeaders.value).toHaveLength(1)
+    mailbox.selectMail(1)
+
+    headers.data.value = undefined
+    await nextTick()
+
+    expect(mailbox.displayedHeaders.value).toEqual([])
+    expect(mailbox.nextLastMailId.value).toBeNull()
+    expect(mailbox.selectedMailId.value).toBeNull()
+
+    mailbox.activeLabelId.value = 2
+    mailbox.search.value = 'private subject'
+    mailbox.unreadOnly.value = true
+    mailbox.selectedMailingListId.value = 77
+    mailbox.resetMailboxPrivateState()
+    expect(mailbox.activeLabelId.value).toBeNull()
+    expect(mailbox.search.value).toBe('')
+    expect(mailbox.unreadOnly.value).toBe(false)
+    expect(mailbox.selectedMailingListId.value).toBeNull()
     scope.stop()
   })
 })

@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
     exchangeAuthorizationCode: vi.fn(),
     findOwnedCharacter: vi.fn(),
     findSession: vi.fn(),
+    renewSession: vi.fn(),
     getCharacterAffiliation: vi.fn(),
     observeCharacterAffiliation: vi.fn(),
     getCharacterCorporationRoles: vi.fn(),
@@ -42,7 +43,6 @@ vi.mock('../../src/env.js', () => ({
     ESI_USER_AGENT: 'EveSpace/Test',
     EVE_CALLBACK_URL: 'http://localhost:8788/auth/eve/callback',
     PORT: 8788,
-    SESSION_COOKIE_SECURE: false,
     WEB_ORIGIN: 'http://localhost:3000',
   },
   getSsoConfig: () => ({
@@ -83,6 +83,7 @@ vi.mock('../../src/auth/character-transfer.js', () => ({
 vi.mock('../../src/auth/session-store.js', () => ({
   deleteSession: mocks.deleteSession,
   findSession: mocks.findSession,
+  renewSession: mocks.renewSession,
 }))
 
 vi.mock('../../src/auth/sso.js', () => ({
@@ -1232,7 +1233,10 @@ describe('account sessions', () => {
     const sessionToken = 'local-fixture-session-token-0000000000000000'
     const response = await app.request('/auth/local-fixture-session', {
       method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        Origin: env.WEB_ORIGIN,
+      },
       body: new URLSearchParams({ sessionToken }),
     })
 
@@ -1243,11 +1247,30 @@ describe('account sessions', () => {
     expect(mocks.findSession).toHaveBeenCalledWith(sessionToken)
   })
 
+  test('accepts the opaque origin of the file-based fixture handoff form', async () => {
+    const sessionToken = 'local-fixture-session-token-0000000000000000'
+    const response = await app.request('/auth/local-fixture-session', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        Origin: 'null',
+        'Sec-Fetch-Site': 'cross-site',
+      },
+      body: new URLSearchParams({ sessionToken }),
+    })
+
+    expect(response.status).toBe(303)
+    expect(response.headers.get('set-cookie')).toContain(`eve_space_session=${sessionToken}`)
+  })
+
   test('refuses an invalid local fixture bearer', async () => {
     mocks.findSession.mockResolvedValueOnce(null)
     const response = await app.request('/auth/local-fixture-session', {
       method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        Origin: env.WEB_ORIGIN,
+      },
       body: new URLSearchParams({
         sessionToken: 'invalid-local-fixture-session-000000000000000',
       }),
@@ -1263,7 +1286,10 @@ describe('account sessions', () => {
     try {
       const response = await app.request('/auth/local-fixture-session', {
         method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+          Origin: env.WEB_ORIGIN,
+        },
         body: new URLSearchParams({
           sessionToken: 'local-fixture-session-token-0000000000000000',
         }),
@@ -1285,6 +1311,36 @@ describe('account sessions', () => {
     const expired = await client.auth.session.$get({}, { headers: sessionHeader() })
     expect(await expired.json()).toEqual({ authenticated: false })
     expect(expired.headers.get('set-cookie')).toContain('Max-Age=0')
+    expect(mocks.renewSession).not.toHaveBeenCalled()
+  })
+
+  test('renews a verified session and reissues its cookie for the renewed lifetime', async () => {
+    const idleSeconds = 14 * 24 * 60 * 60
+    mocks.renewSession.mockResolvedValueOnce(new Date(Date.now() + idleSeconds * 1_000))
+
+    const response = await client.auth.session.$get({}, { headers: sessionHeader() })
+    const cookie = response.headers.get('set-cookie') ?? ''
+    const maxAge = Number(/Max-Age=(\d+)/.exec(cookie)?.[1])
+
+    expect(await response.json()).toEqual({ authenticated: true, account })
+    expect(mocks.renewSession).toHaveBeenCalledWith('active-session', {
+      idleSeconds,
+      absoluteSeconds: 30 * 24 * 60 * 60,
+      renewalIntervalSeconds: 24 * 60 * 60,
+    })
+    expect(cookie).toContain('eve_space_session=active-session')
+    expect(cookie).toContain('HttpOnly')
+    expect(maxAge).toBeGreaterThan(idleSeconds - 5)
+    expect(maxAge).toBeLessThanOrEqual(idleSeconds)
+  })
+
+  test('leaves the session cookie untouched when renewal is not due', async () => {
+    mocks.renewSession.mockResolvedValueOnce(null)
+
+    const response = await client.auth.session.$get({}, { headers: sessionHeader() })
+
+    expect(await response.json()).toEqual({ authenticated: true, account })
+    expect(response.headers.get('set-cookie')).toBeNull()
   })
 
   test('returns user identity with a nested current-main summary and private headers', async () => {
@@ -1296,7 +1352,10 @@ describe('account sessions', () => {
   })
 
   test('deletes persisted and browser sessions on logout', async () => {
-    const response = await client.auth.logout.$post({}, { headers: sessionHeader() })
+    const response = await client.auth.logout.$post(
+      {},
+      { headers: { ...sessionHeader(), Origin: env.WEB_ORIGIN } },
+    )
 
     expect(response.status).toBe(204)
     expect(mocks.deleteSession).toHaveBeenCalledWith('active-session')

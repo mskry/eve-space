@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type {
   AssetCollection,
   AssetFilterState,
@@ -28,6 +29,7 @@ type AssetSortKey =
 const props = defineProps<{
   collection: AssetCollection | null
   hierarchy?: readonly AssetLocationGroup[]
+  presentation?: EsiQueryPersistencePresentation
   routeJumpsBySystemId?: ReadonlyMap<number, number>
   state: AssetResourceState
 }>()
@@ -216,111 +218,116 @@ function optionsByIdentity(assets: readonly AssetRecord[], kind: 'type' | 'group
 
 <template>
   <div class="assets-workspace">
-    <AssetsResourceState v-if="!collection" :state="state" @retry="emit('retry')" />
-
-    <template v-else>
-      <AssetsSummary
-        :asset-count="collection.assets.length"
-        :known-volume="knownVolume"
-        :location-count="hierarchy.length"
-      />
-      <AssetsNotices
-        :collection="collection"
-        :state="state"
-        @authorize="authorize"
-        @retry="emit('retry')"
-      />
-
-      <template v-if="collection.assets.length > 0">
-        <AssetsToolbar
-          v-model:sort="sortModel"
-          :category-options="categoryOptions"
-          :filters="filters"
-          :flag-options="flagOptions"
-          :group-options="groupOptions"
-          :location-options="locationOptions"
-          :match-count="filtered.matchCount"
-          :sort-options="sortOptions"
-          :source-count="filtered.sourceCount"
-          :type-options="typeOptions"
-          @change="changeFilters"
+    <AssetsResourceState
+      :has-data="Boolean(collection)"
+      :presentation="presentation"
+      :state="state"
+      @retry="emit('retry')"
+    >
+      <template v-if="collection">
+        <AssetsSummary
+          :asset-count="collection.assets.length"
+          :known-volume="knownVolume"
+          :location-count="hierarchy.length"
+        />
+        <AssetsNotices
+          :collection="collection"
+          :state="state"
+          @authorize="authorize"
+          @retry="emit('retry')"
         />
 
-        <section class="assets-results" aria-labelledby="assets-results-title">
-          <h2 id="assets-results-title" class="sr-only">Inventory by location</h2>
+        <template v-if="collection.assets.length > 0">
+          <AssetsToolbar
+            v-model:sort="sortModel"
+            :category-options="categoryOptions"
+            :filters="filters"
+            :flag-options="flagOptions"
+            :group-options="groupOptions"
+            :location-options="locationOptions"
+            :match-count="filtered.matchCount"
+            :sort-options="sortOptions"
+            :source-count="filtered.sourceCount"
+            :type-options="typeOptions"
+            @change="changeFilters"
+          />
 
-          <UiStatePanel
-            v-if="filtered.groups.length === 0"
-            class="assets-filtered-empty"
-            compact
-            role="status"
-            title="No inventory matches"
-          >
-            <p>Change the search or filters to restore the complete inventory view.</p>
-          </UiStatePanel>
+          <section class="assets-results" aria-labelledby="assets-results-title">
+            <h2 id="assets-results-title" class="sr-only">Inventory by location</h2>
 
-          <UiScrollArea v-else class="assets-table-scroll" horizontal>
-            <table class="assets-manifest">
-              <caption class="sr-only">
-                Personal inventory grouped by location
-              </caption>
-              <colgroup>
-                <col class="assets-column-item" />
-                <col class="assets-column-quantity" />
-                <col class="assets-column-group" />
-                <col class="assets-column-category" />
-                <col class="assets-column-placement" />
-                <col class="assets-column-volume" />
-                <col class="assets-column-volume" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th
-                    v-for="column in columns"
-                    :key="column.key"
-                    :class="{ 'assets-manifest-number': column.numeric }"
-                    scope="col"
-                    :aria-sort="ariaSort(column.key)"
-                  >
-                    <button type="button" @click="toggleSort(column.key)">
-                      {{ column.label }}
-                      <span aria-hidden="true">{{ sortIndicator(column.key) }}</span>
-                    </button>
-                  </th>
-                </tr>
-              </thead>
+            <UiStatePanel
+              v-if="filtered.groups.length === 0"
+              class="assets-filtered-empty"
+              compact
+              role="status"
+              title="No inventory matches"
+            >
+              <p>Change the search or filters to restore the complete inventory view.</p>
+            </UiStatePanel>
 
-              <AssetsLocationSection
-                v-for="group in filtered.groups"
-                :key="group.key"
-                :container-expansion="containerExpansion"
-                :expanded="isLocationExpanded(group.key)"
-                :group="group"
-                :jump-count="
-                  group.solarSystemId === null
-                    ? null
-                    : (routeJumpsBySystemId?.get(group.solarSystemId) ?? null)
-                "
-                :visible="visibleLocation(group)"
-                @item-information="emit('itemInformation', $event)"
-                @toggle-container="toggleContainer"
-                @toggle-location="toggleLocation"
-              />
-            </table>
-          </UiScrollArea>
-        </section>
+            <UiScrollArea v-else class="assets-table-scroll" horizontal>
+              <table class="assets-manifest">
+                <caption class="sr-only">
+                  Personal inventory grouped by location
+                </caption>
+                <colgroup>
+                  <col class="assets-column-item" />
+                  <col class="assets-column-quantity" />
+                  <col class="assets-column-group" />
+                  <col class="assets-column-category" />
+                  <col class="assets-column-placement" />
+                  <col class="assets-column-volume" />
+                  <col class="assets-column-volume" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th
+                      v-for="column in columns"
+                      :key="column.key"
+                      :class="{ 'assets-manifest-number': column.numeric }"
+                      scope="col"
+                      :aria-sort="ariaSort(column.key)"
+                    >
+                      <button type="button" @click="toggleSort(column.key)">
+                        {{ column.label }}
+                        <span aria-hidden="true">{{ sortIndicator(column.key) }}</span>
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+
+                <AssetsLocationSection
+                  v-for="group in filtered.groups"
+                  :key="group.key"
+                  :container-expansion="containerExpansion"
+                  :expanded="isLocationExpanded(group.key)"
+                  :group="group"
+                  :jump-count="
+                    group.solarSystemId === null
+                      ? null
+                      : (routeJumpsBySystemId?.get(group.solarSystemId) ?? null)
+                  "
+                  :visible="visibleLocation(group)"
+                  @item-information="emit('itemInformation', $event)"
+                  @toggle-container="toggleContainer"
+                  @toggle-location="toggleLocation"
+                />
+              </table>
+            </UiScrollArea>
+          </section>
+        </template>
+
+        <UiStatePanel
+          v-else
+          class="assets-empty"
+          compact
+          role="status"
+          title="Personal inventory empty"
+        >
+          <p>No personal assets were returned in the complete collection.</p>
+        </UiStatePanel>
       </template>
-
-      <UiStatePanel
-        v-else
-        class="assets-empty"
-        compact
-        role="status"
-        title="Personal inventory empty"
-      >
-        <p>No personal assets were returned in the complete collection.</p>
-      </UiStatePanel>
-    </template>
+    </AssetsResourceState>
   </div>
 </template>
 

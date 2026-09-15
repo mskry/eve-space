@@ -10,6 +10,8 @@ import FinancePage from '../../app/pages/characters/[characterId]/finance.vue'
 import { provideCharacterReauthorization } from '../../app/composables/useCharacterReauthorization'
 import { PRIVATE_QUERY_KEYS } from '../../app/queries/query-keys'
 import type { FinanceContract, FinanceResourceState } from '../../app/types/finance'
+import { cacheAdmissionForCharacter } from '../support/cache-admission'
+import { clearQueryCache } from '../support/clear-query-cache'
 import { queryServer } from '../support/query-server'
 
 interface FinanceScenario {
@@ -70,6 +72,7 @@ beforeAll(() => queryServer.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => queryServer.close())
 
 beforeEach(() => {
+  clearQueryCache()
   vi.setSystemTime('2026-09-02T12:00:00.000Z')
   requests.length = 0
   scenario = {
@@ -83,6 +86,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   for (const wrapper of mountedWrappers.splice(0)) wrapper.unmount()
+  clearQueryCache()
   queryServer.resetHandlers()
   await settle()
   document.body.replaceChildren()
@@ -698,6 +702,9 @@ function installHandlers() {
           mainCharacter: { characterId: activeCharacterId, name: 'Finance Pilot' },
         },
       }),
+    ),
+    http.get('*/api/me/cache-admission', () =>
+      HttpResponse.json(cacheAdmissionForCharacter('finance-component-user', activeCharacterId)),
     ),
     http.get('*/api/me/characters', () =>
       HttpResponse.json({ characters: [ownedCharacter(activeCharacterId)] }),

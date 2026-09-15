@@ -1,6 +1,7 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import type { ApplyGlobalResponse } from 'hono/client'
 import { cors } from 'hono/cors'
+import { csrf } from 'hono/csrf'
 import { HTTPException } from 'hono/http-exception'
 import { secureHeaders } from 'hono/secure-headers'
 import { honoLogLayer, type HonoLogLayerVariables } from '@loglayer/hono'
@@ -14,6 +15,7 @@ import { mailRoutes } from './mail/routes.js'
 import { adminRoutes } from './admin/routes.js'
 import { characterRoutes } from './characters/routes.js'
 import { corporationRoutes } from './corporations/routes.js'
+import { cacheAdmissionRoutes } from './cache-admission/routes.js'
 import { healthRoutes } from './system/health-routes.js'
 import { moduleRuntimeRoutes } from './platform/routes.js'
 import { publicCharacterRoutes } from './characters/public-routes.js'
@@ -48,6 +50,7 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
       .info('request completed')
   })
   .use('*', secureHeaders())
+  .use('*', csrf({ origin: isTrustedFormOrigin }))
   .use('/api/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
   .use('/auth/*', cors({ origin: env.WEB_ORIGIN, credentials: true }))
   .route('/health', healthRoutes)
@@ -58,6 +61,7 @@ export const app = new Hono<{ Variables: HonoLogLayerVariables }>()
   .use('/api/characters/*', loadSession, requireSession)
   .use('/api/corporations/*', loadSession, requireSession)
   .route('/api/admin', adminRoutes)
+  .route('/api/me/cache-admission', cacheAdmissionRoutes)
   .route('/api/me/characters', characterRoutes)
   .route('/api/me/characters', mailRoutes)
   .route('/api/characters', publicCharacterRoutes)
@@ -78,7 +82,8 @@ app.onError((error, context) => {
     return context.json(error.body, error.status)
   }
   if (error instanceof HTTPException) {
-    return context.json({ message: error.message }, error.status)
+    const message = error.message || (error.status === 403 ? 'Forbidden' : 'Request failed.')
+    return context.json({ message }, error.status)
   }
 
   const request = safeRequestMetadata(context.req.raw, context.req.path)
@@ -105,3 +110,14 @@ export type AppType = ApplyGlobalResponse<
     503: { json: GlobalErrorBody }
   }
 >
+
+function isTrustedFormOrigin(origin: string, context: Context) {
+  if (origin === env.WEB_ORIGIN) return true
+  // The file-based local fixture handoff form submits from an opaque origin.
+  return (
+    env.NODE_ENV === 'development' &&
+    origin === 'null' &&
+    context.req.method === 'POST' &&
+    context.req.path === '/auth/local-fixture-session'
+  )
+}

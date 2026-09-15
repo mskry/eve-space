@@ -19,6 +19,7 @@ const {
   exceptions,
   hasOlderAuditEvents,
   initialize,
+  invalidationRevision,
   loadOlderAuditEvents,
   loading,
   mutationPending,
@@ -39,6 +40,14 @@ onMounted(initialize)
 onBeforeUnmount(() => clearTimeout(expirationTimer))
 
 watch(exceptions, scheduleNextExpiration, { immediate: true })
+watch(
+  invalidationRevision,
+  () => {
+    closeApproval()
+    closeDecision()
+  },
+  { flush: 'sync' },
+)
 
 function isExceptionActive(exception: CharacterException) {
   return (

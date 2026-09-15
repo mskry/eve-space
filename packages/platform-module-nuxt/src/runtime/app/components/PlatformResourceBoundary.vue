@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '../../query-persistence-presentation.js'
 import type { PlatformResourceState } from '../../resource-state.js'
+import PlatformQueryPersistenceStatus from './PlatformQueryPersistenceStatus.vue'
 
 withDefaults(
   defineProps<{
     hasData?: boolean
+    presentation?: EsiQueryPersistencePresentation
     state: PlatformResourceState
   }>(),
-  { hasData: false },
+  { hasData: false, presentation: () => ({ kind: 'fresh' }) },
 )
 
 const emit = defineEmits<{
@@ -25,6 +28,8 @@ defineSlots<{
 
 <template>
   <slot v-if="hasData || state.status === 'ready'" />
+
+  <PlatformQueryPersistenceStatus :presentation="presentation" />
 
   <slot v-if="!hasData && state.status === 'loading'" name="loading" :state="state">
     <output class="platform-resource-state">
@@ -60,7 +65,7 @@ defineSlots<{
         Do not retry before <time :datetime="state.retryAt">{{ state.retryAt }}</time
         >.
       </p>
-      <button v-if="state.retryLabel" type="button" @click="emit('retry')">
+      <button v-if="'retryLabel' in state && state.retryLabel" type="button" @click="emit('retry')">
         {{ state.retryLabel }}
       </button>
     </section>
@@ -76,9 +81,16 @@ defineSlots<{
   </output>
 
   <slot v-else-if="hasData && state.status !== 'ready'" name="retained" :state="state">
-    <output v-if="state.status === 'stale'" class="platform-resource-retained">
-      {{ state.message ?? state.title }}
-      <button v-if="state.retryLabel" type="button" @click="emit('retry')">
+    <output
+      class="platform-resource-retained"
+      :role="state.status === 'error' || state.status === 'unavailable' ? 'alert' : 'status'"
+    >
+      {{ state.message ?? ('title' in state ? state.title : '') }}
+      <template v-if="state.retryAt">
+        Retry no earlier than <time :datetime="state.retryAt">{{ state.retryAt }}</time
+        >.
+      </template>
+      <button v-if="'retryLabel' in state && state.retryLabel" type="button" @click="emit('retry')">
         {{ state.retryLabel }}
       </button>
     </output>

@@ -2,6 +2,7 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import {
   ApiQueryError,
   readPlatformApiResponse,
+  selectEsiQueryPersistencePresentation,
   usePlatformIdentity,
   type PlatformResourceState,
 } from '@eve-space/platform-module-nuxt/runtime'
@@ -29,7 +30,9 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
     () => enabledModuleIds.value.has('organization-activity') && validActivity.value,
   )
   const detail = usePlatformProtectedQuery(() => ({
+    esiPersistence: { kind: 'organization-esi' },
     moduleId: 'organization-activity',
+    routeId: 'activity-details',
     resource: ['detail', toValue(kind), activityId.value, corporationId.value],
     subject: { kind: 'organization', organizationVersion: identity.organizationVersion.value },
     access: {
@@ -50,7 +53,9 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
       ),
   }))
   const participation = usePlatformProtectedQuery(() => ({
+    esiPersistence: { kind: 'none' },
     moduleId: 'organization-activity',
+    routeId: 'activity-participation',
     resource: [
       'participation',
       identity.organizationVersion.value,
@@ -87,6 +92,14 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
     detail.data.value?.activity
       ? detail.data.value.resource
       : (participation.data.value?.resource ?? detail.data.value?.resource),
+  )
+  const activityPresentation = computed(() =>
+    detail.data.value?.activity
+      ? detail.persistencePresentation.value
+      : selectEsiQueryPersistencePresentation([
+          participation.persistencePresentation.value,
+          detail.persistencePresentation.value,
+        ]),
   )
   const authorizationUrl = computed(() =>
     selectedCharacter.value
@@ -139,6 +152,58 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
       }
     return { status: 'ready' }
   })
+  const participationState = computed<PlatformResourceState>(() => {
+    const error = participation.error.value
+    const resource = participation.data.value?.resource
+    const resourceMessage =
+      resource?.status === 'authorization-required' &&
+      'message' in resource &&
+      typeof resource.message === 'string'
+        ? resource.message
+        : undefined
+    if (
+      resource?.status === 'authorization-required' ||
+      (error instanceof ApiQueryError && (error.status === 401 || error.status === 403))
+    ) {
+      return {
+        status: 'authorization-required',
+        title: selectedCharacter.value
+          ? `Authorize ${selectedCharacter.value.name}`
+          : 'Character authorization required',
+        message:
+          resourceMessage ??
+          (error instanceof Error
+            ? error.message
+            : 'This character needs additional authorization to show participation.'),
+        action: authorizationUrl.value
+          ? { href: authorizationUrl.value, label: 'Authorize character' }
+          : null,
+      }
+    }
+    if (error)
+      return {
+        status: 'unavailable',
+        title: 'Participation unavailable',
+        message: error.message,
+        retryLabel: 'Retry',
+      }
+    if (participation.status.value === 'pending' && !participation.data.value)
+      return { status: 'loading', title: 'Loading participation' }
+    if (resource?.status === 'stale')
+      return {
+        status: 'stale',
+        title: 'Participation is stale',
+        message: 'Showing the last successful participation collection.',
+        retryLabel: 'Retry',
+      }
+    if (!participation.data.value)
+      return {
+        status: 'unavailable',
+        title: 'Participation unavailable',
+        message: 'No current participation collection is available.',
+      }
+    return { status: 'ready' }
+  })
   return {
     identity,
     detail,
@@ -146,7 +211,9 @@ export function useActivityDetail(kind: MaybeRefOrGetter<'project' | 'job' | 'ca
     selectedCharacter,
     characterId,
     activity,
+    activityPresentation,
     activityResource,
+    participationState,
     state,
     authorizationUrl,
   }

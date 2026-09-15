@@ -13,6 +13,7 @@ import {
 } from '../db/schema.js'
 import { getInstalledResourceCollectionStatus } from '../platform/collection-status.js'
 import { corporationMembershipScope } from './corporation-membership.js'
+import { earliestIsoTimestamp } from './freshness.js'
 
 const sourceCharacters = alias(characters, 'source_characters')
 const sourceTokens = alias(eveTokens, 'source_tokens')
@@ -249,36 +250,67 @@ export async function listOrganizationRosterCoverage() {
       : null
   const managedStatus = configuredManagedStatus ?? collectedManagedStatus
 
+  const managedCorporations = {
+    status: managedStatus?.status ?? 'unavailable',
+    validatedAt: managedStatus?.validatedAt ?? null,
+    attemptedAt: managedStatus && 'attemptedAt' in managedStatus ? managedStatus.attemptedAt : null,
+    lastFailureClass: managedStatus?.lastFailureClass ?? null,
+  }
+  const projectedCorporations = corporations.map((corporation, index) => {
+    const collection = corporationStatuses[index]
+    return {
+      organizationVersion: corporation.organizationVersion,
+      corporationId: corporation.corporationId,
+      managedLastObservedAt: corporation.managedLastObservedAt.toISOString(),
+      source:
+        corporation.sourceId && corporation.sourceCharacterId
+          ? { sourceId: corporation.sourceId, characterId: corporation.sourceCharacterId }
+          : null,
+      status: projectRosterStatus(collection),
+      validatedAt: collection?.validatedAt ?? null,
+      attemptedAt: corporation.attemptedAt?.toISOString() ?? null,
+      lastFailureClass: collection?.lastFailureClass ?? null,
+      unregisteredCharacters: unregistered
+        .filter(({ corporationId }) => corporationId === corporation.corporationId)
+        .map(({ characterId, observedAt }) => ({
+          characterId,
+          observedAt: observedAt.toISOString(),
+        })),
+    }
+  })
   return {
-    managedCorporations: {
-      status: managedStatus?.status ?? 'unavailable',
-      validatedAt: managedStatus?.validatedAt ?? null,
-      attemptedAt:
-        managedStatus && 'attemptedAt' in managedStatus ? managedStatus.attemptedAt : null,
-      lastFailureClass: managedStatus?.lastFailureClass ?? null,
-    },
-    corporations: corporations.map((corporation, index) => {
-      const collection = corporationStatuses[index]
-      return {
-        organizationVersion: corporation.organizationVersion,
-        corporationId: corporation.corporationId,
-        managedLastObservedAt: corporation.managedLastObservedAt.toISOString(),
-        source:
-          corporation.sourceId && corporation.sourceCharacterId
-            ? { sourceId: corporation.sourceId, characterId: corporation.sourceCharacterId }
-            : null,
-        status: projectRosterStatus(collection),
-        validatedAt: collection?.validatedAt ?? null,
-        attemptedAt: corporation.attemptedAt?.toISOString() ?? null,
-        lastFailureClass: collection?.lastFailureClass ?? null,
-        unregisteredCharacters: unregistered
-          .filter(({ corporationId }) => corporationId === corporation.corporationId)
-          .map(({ characterId, observedAt }) => ({
-            characterId,
-            observedAt: observedAt.toISOString(),
-          })),
-      }
-    }),
+    managedCorporations,
+    corporations: projectedCorporations,
+    ...aggregateRosterFreshness([managedCorporations, ...projectedCorporations]),
+  }
+}
+
+function aggregateRosterFreshness(
+  collections: readonly {
+    readonly status: string
+    readonly validatedAt: string | null
+    readonly lastFailureClass: string | null
+  }[],
+) {
+  const staleCollections = collections.filter(({ status }) => status === 'stale')
+  const validatedAt = earliestIsoTimestamp(
+    staleCollections.flatMap((collection) =>
+      collection.validatedAt ? [collection.validatedAt] : [],
+    ),
+  )
+  const failureValidatedAt = earliestIsoTimestamp(
+    staleCollections.flatMap((collection) =>
+      collection.lastFailureClass && collection.validatedAt ? [collection.validatedAt] : [],
+    ),
+  )
+  const refreshFailureClass =
+    staleCollections.find((collection) => collection.validatedAt === failureValidatedAt)
+      ?.lastFailureClass ??
+    staleCollections.find(({ lastFailureClass }) => lastFailureClass)?.lastFailureClass
+  return {
+    stale: staleCollections.length > 0,
+    ...(validatedAt ? { validatedAt } : {}),
+    ...(refreshFailureClass ? { refreshFailureClass } : {}),
   }
 }
 

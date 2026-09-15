@@ -67,5 +67,5 @@ export interface EsiCachedResult<Data> {
 
 export type EsiResultMetadata = Pick<
   EsiCachedResult<unknown>,
-  'cachedUntil' | 'validatedAt' | 'stale' | 'refreshFailureClass'
+  'cachedUntil' | 'validatedAt' | 'stale' | 'retryAt' | 'refreshFailureClass'
 >

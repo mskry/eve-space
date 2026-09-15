@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type {
   FinanceJournal,
   FinanceJournalEntry,
@@ -18,6 +19,7 @@ const props = defineProps<{
   filter: FinanceJournalGroupFilter
   journal: FinanceJournal | null
   now: number
+  presentation?: EsiQueryPersistencePresentation
   scopeNote: string
   state: FinanceResourceState
 }>()
@@ -52,6 +54,7 @@ const countLabel = computed(() =>
   <div class="finance-service-body">
     <FinanceServicePanel
       :has-data="Boolean(journal)"
+      :presentation="presentation"
       :state="state"
       title="Wallet journal"
       :validated-at="journal?.validatedAt"

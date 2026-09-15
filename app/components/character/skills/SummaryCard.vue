@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { EsiQueryPersistencePresentation } from '@eve-space/platform-module-nuxt/runtime'
 import type { CharacterAttributes, CharacterSkills } from '../../../queries/characters'
 import type { EsiResourceState } from '../../../types/esi-resource'
 
@@ -8,6 +9,7 @@ const props = defineProps<{
   attributesStatus: string
   attributesMessage: string
   attributesAuthorizeUrl: string
+  attributesPresentation?: EsiQueryPersistencePresentation
 }>()
 
 const emit = defineEmits<{ retryAttributes: [] }>()
@@ -119,6 +121,7 @@ function formatDate(value: string) {
         <EsiResourceBoundary
           :state="attributesResourceState"
           :has-data="Boolean(attributes)"
+          :presentation="attributesPresentation"
           @retry="emit('retryAttributes')"
         >
           <template #loading>

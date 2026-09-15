@@ -1,10 +1,16 @@
 import { useMutation, useQuery, useQueryCache } from '@pinia/colada'
+import { readonly, ref, shallowRef } from 'vue'
 import { adminSetupQuery } from '../queries/admin'
 import {
   organizationContextQuery,
   organizationRolesQuery,
   type DelegatedOrganizationRole,
 } from '../queries/organization'
+import { refreshPrivateAuthorization } from '../queries/query-cache'
+import {
+  reportPrivateQueryAuthorizationDenial,
+  subscribePrivateQueryInvalidation,
+} from '../query-persistence/runtime'
 import type { ApiClient } from '../utils/api-client'
 import { toApiQueryError } from '../utils/query-error'
 
@@ -57,6 +63,10 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
       return response.json()
     },
   })
+  const invalidationRevision = ref(0)
+  const actionError = shallowRef<unknown>()
+
+  subscribePrivateQueryInvalidation(queryCache, { kind: 'organization' }, resetAuthorityState)
 
   const authorityContext = computed(() => contextQuery.data.value)
   const roleGrants = computed(() => rolesQuery.data.value?.grants ?? [])
@@ -73,6 +83,7 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   )
   const errorMessage = computed(() => {
     const error =
+      actionError.value ??
       grantMutation.error.value ??
       revokeMutation.error.value ??
       setupQuery.error.value ??
@@ -87,20 +98,48 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
   }
 
   async function refreshRoles() {
-    await queryCache.invalidateQueries({
-      exact: true,
-      key: organizationRolesQuery(apiClient).key,
-    })
+    await refreshPrivateAuthorization(queryCache, { kind: 'organization' })
   }
 
   async function grantRole(input: GrantOrganizationRoleInput) {
-    await grantMutation.mutateAsync(input)
+    const operationRevision = invalidationRevision.value
+    actionError.value = undefined
+    try {
+      await grantMutation.mutateAsync(input)
+    } catch (error) {
+      const current = operationRevision === invalidationRevision.value
+      if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
+        if (current) actionError.value = error
+      }
+      throw error
+    }
+    if (operationRevision !== invalidationRevision.value) return false
     await refreshRoles()
+    return true
   }
 
   async function revokeRole(grantId: string, reason: string) {
-    await revokeMutation.mutateAsync({ grantId, reason })
+    const operationRevision = invalidationRevision.value
+    actionError.value = undefined
+    try {
+      await revokeMutation.mutateAsync({ grantId, reason })
+    } catch (error) {
+      const current = operationRevision === invalidationRevision.value
+      if (reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'organization' }, error)) {
+        if (current) actionError.value = error
+      }
+      throw error
+    }
+    if (operationRevision !== invalidationRevision.value) return false
     await refreshRoles()
+    return true
+  }
+
+  function resetAuthorityState() {
+    invalidationRevision.value += 1
+    actionError.value = undefined
+    grantMutation.reset()
+    revokeMutation.reset()
   }
 
   return {
@@ -109,6 +148,7 @@ export function useOrganizationAuthority(apiClient: ApiClient) {
     errorMessage,
     grantRole,
     initialize,
+    invalidationRevision: readonly(invalidationRevision),
     loading,
     mutationPending,
     revokeRole,

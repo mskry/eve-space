@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
+import { toEsiReadResultMetadata } from '../esi-gateway/feature-execution.js'
 import { privateNoStore } from '../http/private-response.js'
 import { zValidator } from '../http/validation.js'
-import { getCorporationPublic, getNpcCorporations } from './public-data.js'
+import { getCorporationPublicResult, getNpcCorporations } from './public-data.js'
 import { corporationIdParams, limitPublicCorporationRequests } from './public-route-policy.js'
 import { corporationResourceError, npcCorporationsError } from './route-responses.js'
 
@@ -22,8 +23,8 @@ export const corporationCoreRoutes = new Hono()
     async (context) => {
       const { corporationId } = context.req.valid('param')
       try {
-        const corporation = await getCorporationPublic(corporationId)
-        return context.json({ corporation })
+        const result = await getCorporationPublicResult(corporationId)
+        return context.json({ corporation: result.data, ...toEsiReadResultMetadata(result) })
       } catch (error) {
         return corporationResourceError(
           context,

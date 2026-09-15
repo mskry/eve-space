@@ -1,6 +1,6 @@
-import { getCookie } from 'hono/cookie'
 import { createMiddleware } from 'hono/factory'
 import { findSession, type SessionAccount } from '../auth/session-store.js'
+import { readAuthCookie } from '../http/auth-cookie.js'
 import { authRequiredBody } from '../http/contracts.js'
 
 export const sessionCookie = 'eve_space_session'
@@ -12,7 +12,7 @@ export type SessionEnv = {
 }
 
 export const loadSession = createMiddleware<SessionEnv>(async (context, next) => {
-  const sessionToken = getCookie(context, sessionCookie)
+  const sessionToken = readAuthCookie(context, sessionCookie)
   context.set('session', sessionToken ? await findSession(sessionToken) : null)
   await next()
 })

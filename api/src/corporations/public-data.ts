@@ -139,7 +139,13 @@ export async function getCorporationPublicResult(
 export async function getCorporationAllianceHistory(
   corporationId: number,
 ): Promise<AllianceHistoryEntry[]> {
-  return (await corporationAllianceHistoryRead.execute({ corporationId })).data
+  return (await getCorporationAllianceHistoryResult(corporationId)).data
+}
+
+export function getCorporationAllianceHistoryResult(
+  corporationId: number,
+): Promise<EsiReadResult<AllianceHistoryEntry[]>> {
+  return corporationAllianceHistoryRead.execute({ corporationId })
 }
 
 export async function getNpcCorporations(): Promise<number[]> {

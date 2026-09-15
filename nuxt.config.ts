@@ -1,6 +1,9 @@
 import platformNuxtModule from '@eve-space/platform-module-nuxt'
+import { fileURLToPath } from 'node:url'
 import { installedNuxtModules } from './generated/platform/installed-nuxt-modules'
 import { installedNuxtContributions } from './generated/platform/installed-nuxt-contributions'
+
+const queryPersistenceFixtureEnabled = process.env.EVE_SPACE_E2E_PERSISTENCE_FIXTURE === '1'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -43,6 +46,19 @@ export default defineNuxtConfig({
   experimental: {
     viewTransition: true,
   },
+  hooks: queryPersistenceFixtureEnabled
+    ? {
+        'pages:extend'(pages) {
+          pages.push({
+            name: 'e2e-query-persistence',
+            path: '/__e2e/query-persistence',
+            file: fileURLToPath(
+              new URL('./tests/e2e/fixtures/QueryPersistencePage.vue', import.meta.url),
+            ),
+          })
+        },
+      }
+    : {},
   modules: [
     [platformNuxtModule, { contributions: installedNuxtContributions }],
     ...installedNuxtModules,

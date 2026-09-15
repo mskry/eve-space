@@ -15,7 +15,7 @@ interface MailCompositionOptions {
 }
 
 export function useMailComposition(options: MailCompositionOptions) {
-  const { openConfirmDialog } = useConfirmDialog()
+  const { closeConfirmDialog, openConfirmDialog } = useConfirmDialog()
   const { dismissToast, showToast } = useToast()
   let toastKey: number | undefined
   let preserveToastOnDispose = false
@@ -29,7 +29,7 @@ export function useMailComposition(options: MailCompositionOptions) {
 
   const draft = useMailCompositionDraft({
     ...options,
-    onReset: () => submission?.resetOutcomes(),
+    onReset: () => submission?.resetSubmissionState(),
     openConfirmDialog,
     sending,
     showToast: showCompositionToast,
@@ -41,6 +41,14 @@ export function useMailComposition(options: MailCompositionOptions) {
     openConfirmDialog,
     showToast: showCompositionToast,
   })
+
+  function resetPrivateState() {
+    closeConfirmDialog()
+    draft.resetDraft()
+    if (toastKey !== undefined) dismissToast(toastKey)
+    toastKey = undefined
+    preserveToastOnDispose = false
+  }
 
   onBeforeUnmount(() => {
     draft.dispose()
@@ -71,6 +79,7 @@ export function useMailComposition(options: MailCompositionOptions) {
     requestClose: draft.requestClose,
     resolveRecipient: draft.resolveRecipient,
     resolving: draft.resolving,
+    resetPrivateState,
     searchAuthorization: draft.searchAuthorization,
     searchFeedback: draft.searchFeedback,
     searching: draft.searching,

@@ -21,6 +21,7 @@ import {
   type MailMutationTarget,
   type MailReadTarget,
 } from '../queries/mail-cache'
+import { reportPrivateQueryAuthorizationDenial } from '../query-persistence/runtime'
 import type { ApiClient } from '../utils/api-client'
 import {
   reconcileMailLabelOverrides,
@@ -30,6 +31,7 @@ import {
 
 export interface MailMutationOutcome {
   error?: unknown
+  invalidated?: boolean
   reusedDeletedLabelId?: number
   success: boolean
 }
@@ -138,17 +140,16 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
 
     try {
       await readMutation.mutateAsync(target)
-      commitMailReadState(queryCache, target)
-      return {
-        success:
-          generation === operationGeneration && readOperationVersions.get(mailId) === version,
-      }
-    } catch (error) {
       if (generation !== operationGeneration || readOperationVersions.get(mailId) !== version) {
-        return { success: false }
+        return { invalidated: true, success: false }
       }
-      replaceReadStateOverride(mailId, previousOverride)
-      return { error, success: false }
+      commitMailReadState(queryCache, target)
+      return { success: true }
+    } catch (error) {
+      const current =
+        generation === operationGeneration && readOperationVersions.get(mailId) === version
+      if (current) replaceReadStateOverride(mailId, previousOverride)
+      return failedOutcome(target.characterId, error, current)
     } finally {
       if (generation === operationGeneration && readOperationVersions.get(mailId) === version) {
         replacePendingMail(readPendingIds, mailId, false)
@@ -174,17 +175,16 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
 
     try {
       await deleteMutation.mutateAsync(target)
-      commitMailDeletion(queryCache, target)
-      return {
-        success:
-          generation === operationGeneration && deleteOperationVersions.get(mailId) === version,
-      }
-    } catch (error) {
       if (generation !== operationGeneration || deleteOperationVersions.get(mailId) !== version) {
-        return { success: false }
+        return { invalidated: true, success: false }
       }
-      replaceDeletedMail(mailId, false)
-      return { error, success: false }
+      commitMailDeletion(queryCache, target)
+      return { success: true }
+    } catch (error) {
+      const current =
+        generation === operationGeneration && deleteOperationVersions.get(mailId) === version
+      if (current) replaceDeletedMail(mailId, false)
+      return failedOutcome(target.characterId, error, current)
     } finally {
       if (generation === operationGeneration && deleteOperationVersions.get(mailId) === version) {
         replacePendingMail(deletePendingIds, mailId, false)
@@ -211,21 +211,20 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
 
     try {
       await assignLabelsMutation.mutateAsync(target)
+      if (generation !== operationGeneration || labelOperationVersions.get(mailId) !== version) {
+        return { invalidated: true, success: false }
+      }
       localLabelCommits.set(mailId, target.labels)
       commitMailLabels(queryCache, target)
       queueMicrotask(() => {
         if (localLabelCommits.get(mailId) === target.labels) localLabelCommits.delete(mailId)
       })
-      return {
-        success:
-          generation === operationGeneration && labelOperationVersions.get(mailId) === version,
-      }
+      return { success: true }
     } catch (error) {
-      if (generation !== operationGeneration || labelOperationVersions.get(mailId) !== version) {
-        return { success: false }
-      }
-      replaceLabelOverride(mailId, previousOverride)
-      return { error, success: false }
+      const current =
+        generation === operationGeneration && labelOperationVersions.get(mailId) === version
+      if (current) replaceLabelOverride(mailId, previousOverride)
+      return failedOutcome(target.characterId, error, current)
     } finally {
       if (generation === operationGeneration && labelOperationVersions.get(mailId) === version) {
         replacePendingMail(labelPendingIds, mailId, false)
@@ -241,7 +240,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     try {
       const labelId = await createLabelMutation.mutateAsync(target)
       if (generation !== operationGeneration || createLabelVersion !== version) {
-        return { success: false }
+        return { invalidated: true, success: false }
       }
       const label: MailLabel = {
         color: target.color ?? '#ffffff',
@@ -260,10 +259,11 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
         success: true,
       }
     } catch (error) {
-      if (generation !== operationGeneration || createLabelVersion !== version) {
-        return { success: false }
-      }
-      return { error, success: false }
+      return failedOutcome(
+        target.characterId,
+        error,
+        generation === operationGeneration && createLabelVersion === version,
+      )
     } finally {
       if (generation === operationGeneration && createLabelVersion === version) {
         createLabelPending.value = false
@@ -279,7 +279,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     replacePendingMail(deleteLabelPendingIds, target.labelId, true)
     try {
       await deleteLabelMutation.mutateAsync(target)
-      if (generation !== operationGeneration) return { success: false }
+      if (generation !== operationGeneration) return { invalidated: true, success: false }
       deletedLabelIds.value = new Set([...deletedLabelIds.value, target.labelId])
       commitMailLabelDeletion(queryCache, target.characterId, target.labelId)
       createdLabels.value = createdLabels.value.filter((label) => label.labelId !== target.labelId)
@@ -291,8 +291,7 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
       )
       return { success: true }
     } catch (error) {
-      if (generation !== operationGeneration) return { success: false }
-      return { error, success: false }
+      return failedOutcome(target.characterId, error, generation === operationGeneration)
     } finally {
       if (generation === operationGeneration) {
         replacePendingMail(deleteLabelPendingIds, target.labelId, false)
@@ -344,6 +343,11 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
 
   function resetMailMutations() {
     generation += 1
+    readMutation.reset()
+    deleteMutation.reset()
+    assignLabelsMutation.reset()
+    createLabelMutation.reset()
+    deleteLabelMutation.reset()
     readStateOverrides.value = new Map()
     deletedMailIds.value = new Set()
     deletedLabelIds.value = new Set()
@@ -357,6 +361,16 @@ export function useMailOrganizationMutations(apiClient: ApiClient) {
     createLabelPending.value = false
     localLabelCommits.clear()
     localCreatedLabelIds.clear()
+  }
+
+  // Callers read currency before reporting because a denial can synchronously reset this state.
+  function failedOutcome(
+    characterId: number,
+    error: unknown,
+    current: boolean,
+  ): MailMutationOutcome {
+    reportPrivateQueryAuthorizationDenial(queryCache, { kind: 'character', characterId }, error)
+    return current ? { error, success: false } : { invalidated: true, success: false }
   }
 
   return {

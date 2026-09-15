@@ -777,6 +777,15 @@ describe('platform module registry generation', () => {
     )
   })
 
+  it('generates deduplicated organization admission scopes from routes and activity providers', () => {
+    const runtime = generateRegistryFiles([manifest('alpha')]).get(
+      'api/src/generated/platform/installed-module-runtime.ts',
+    )
+
+    expect(runtime).toContain('installedModuleOrganizationAdmissionScopes')
+    expect(runtime?.match(/organization:v1:alpha:member:alpha\.view/g)).toHaveLength(1)
+  })
+
   it('combines ESI operation imports from the same server package', () => {
     const declaration = manifest('alpha')
     declaration.server.esiOperations.push({

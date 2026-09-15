@@ -7,11 +7,12 @@ definePageMeta({ title: 'Corporation Alliance History', layout: 'headerless' })
 
 const runtimeConfig = useRuntimeConfig()
 const apiClient = createApiClient(runtimeConfig.public.apiBase)
-const { corporationId, corporation } = useCorporationRecord()
+const { corporationId, corporation, recordAccessAllowed } = useCorporationRecord()
 const historyQuery = useQuery(() => ({
   ...corporationAllianceHistoryQuery({ apiClient, corporationId: corporationId.value ?? 0 }),
   enabled:
     import.meta.client &&
+    recordAccessAllowed.value &&
     corporationId.value !== undefined &&
     corporation.value?.type === 'player_owned',
 }))
@@ -27,7 +28,9 @@ const historyMessage = computed(() =>
     : 'Alliance history is unavailable.',
 )
 const searchableHistory = computed(() =>
-  buildHistoryTimeline(historyQuery.data.value?.history ?? []).map((entry) => ({
+  buildHistoryTimeline(
+    recordAccessAllowed.value ? (historyQuery.data.value?.history ?? []) : [],
+  ).map((entry) => ({
     recordId: entry.recordId,
     startDate: entry.startDate,
     endDate: entry.endDate,
