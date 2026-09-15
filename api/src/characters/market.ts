@@ -3,6 +3,7 @@ import type {
   GetCharactersCharacterIdOrdersHistoryResponse,
   GetCharactersCharacterIdOrdersResponse,
 } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
@@ -46,10 +47,46 @@ interface CharacterMarketOrdersData {
 
 type CharacterMarketOrdersResult = CharacterMarketOrdersData & EsiReadResultMetadata
 
+const characterMarketOrderCacheSchema = z.object({
+  orderId: z.number(),
+  typeId: z.number(),
+  typeName: z.string(),
+  isBuy: z.boolean(),
+  price: z.number(),
+  volumeRemain: z.number(),
+  volumeTotal: z.number(),
+  minimumVolume: z.number().nullable(),
+  escrow: z.number().nullable(),
+  range: z.enum([
+    '1',
+    '10',
+    '2',
+    '20',
+    '3',
+    '30',
+    '4',
+    '40',
+    '5',
+    'region',
+    'solarsystem',
+    'station',
+  ]),
+  locationId: z.number(),
+  locationName: z.string().nullable(),
+  regionId: z.number(),
+  issuedAt: z.string(),
+  durationDays: z.number(),
+  expiresAt: z.string(),
+})
+const characterMarketOrdersCacheSchema = z.object({
+  orders: z.array(characterMarketOrderCacheSchema),
+})
+
 const characterMarketOrdersRead = createCharacterEsiRead({
   operation: 'market-orders',
   name: 'market-orders-core',
   descriptor: operationRegistry.GetCharactersCharacterIdOrders.transport,
+  cacheSchema: characterMarketOrdersCacheSchema,
   encodeRequest: (input: CharacterMarketOrdersRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -81,10 +118,19 @@ interface CharacterMarketOrderHistoryData {
 
 type CharacterMarketOrderHistoryResult = CharacterMarketOrderHistoryData & EsiReadResultMetadata
 
+const characterMarketOrderHistoryCacheSchema = z.object({
+  orders: z.array(
+    characterMarketOrderCacheSchema.extend({ state: z.enum(['cancelled', 'expired']) }),
+  ),
+  page: z.number(),
+  totalPages: z.number(),
+})
+
 const characterMarketOrderHistoryRead = createCharacterEsiRead({
   operation: 'market-order-history',
   name: 'market-order-history-core',
   descriptor: operationRegistry.GetCharactersCharacterIdOrdersHistory.transport,
+  cacheSchema: characterMarketOrderHistoryCacheSchema,
   encodeRequest: (input: CharacterMarketOrderHistoryRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },

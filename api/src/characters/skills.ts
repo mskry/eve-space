@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdSkillsResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
@@ -13,10 +14,24 @@ interface CharacterSkillsRepresentationInput {
   subjectLifecycleId: string
 }
 
+const characterSkillsCacheSchema = z.object({
+  totalSp: z.number(),
+  unallocatedSp: z.number(),
+  skills: z.array(
+    z.object({
+      typeId: z.number(),
+      activeLevel: z.number(),
+      trainedLevel: z.number(),
+      skillpoints: z.number(),
+    }),
+  ),
+})
+
 const characterSkillsRead = createCharacterEsiRead({
   operation: 'skills',
   name: 'character-skills-core',
   descriptor: operationRegistry.GetCharactersCharacterIdSkills.transport,
+  cacheSchema: characterSkillsCacheSchema,
   encodeRequest: (input: CharacterSkillsRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),

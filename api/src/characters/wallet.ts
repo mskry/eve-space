@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersCharacterIdWalletJournalResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import {
   createCharacterEsiRead,
   toEsiReadResultMetadata,
@@ -19,6 +20,7 @@ const walletBalanceRead = createCharacterEsiRead({
   operation: 'wallet-balance',
   name: 'wallet-balance-core',
   descriptor: operationRegistry.GetCharactersCharacterIdWallet.transport,
+  cacheSchema: operationRegistry.GetCharactersCharacterIdWallet.responseSchema,
   encodeRequest: (input: WalletBalanceRepresentationInput) => ({
     path: { character_id: input.characterId },
   }),
@@ -73,10 +75,52 @@ interface WalletJournalData {
 
 type WalletJournalResult = WalletJournalData & EsiReadResultMetadata
 
+const walletJournalCacheSchema = z
+  .object({
+    entries: z.array(
+      z.object({
+        journalId: z.number(),
+        date: z.string(),
+        amount: z.number().nullable(),
+        balance: z.number().nullable(),
+        referenceType: z.string(),
+        description: z.string(),
+        reason: z.string().nullable(),
+        taxAmount: z.number().nullable(),
+        context: z.object({ id: z.number(), type: z.enum(safeJournalContextTypes) }).nullable(),
+      }),
+    ),
+    page: z.number(),
+    totalPages: z.number(),
+  })
+  .transform((data, context): WalletJournalData => {
+    const references =
+      operationRegistry.GetCharactersCharacterIdWalletJournal.responseSchema.safeParse(
+        data.entries.map((entry) => ({
+          date: '2000-01-01T00:00:00Z',
+          description: '',
+          id: 1,
+          ref_type: entry.referenceType,
+        })),
+      )
+    if (!references.success) {
+      context.addIssue({ code: 'custom', message: 'Invalid wallet journal reference type' })
+      return z.NEVER
+    }
+    return {
+      ...data,
+      entries: data.entries.map((entry, index) => ({
+        ...entry,
+        referenceType: references.data[index]!.ref_type,
+      })),
+    }
+  })
+
 const walletJournalRead = createCharacterEsiRead({
   operation: 'wallet-journal',
   name: 'wallet-journal-core',
   descriptor: operationRegistry.GetCharactersCharacterIdWalletJournal.transport,
+  cacheSchema: walletJournalCacheSchema,
   encodeRequest: (input: WalletJournalRepresentationInput) => ({
     path: { character_id: input.characterId },
     query: { page: input.page },
@@ -126,10 +170,31 @@ type WalletTransactionsResult = WalletTransactionsData & EsiReadResultMetadata
 
 const walletTransactionPageSize = 2_500
 
+const walletTransactionsCacheSchema = z.object({
+  transactions: z.array(
+    z.object({
+      transactionId: z.number(),
+      journalRefId: z.number(),
+      date: z.string(),
+      typeId: z.number(),
+      typeName: z.string(),
+      quantity: z.number(),
+      unitPrice: z.number(),
+      totalPrice: z.number(),
+      isBuy: z.boolean(),
+      locationId: z.number(),
+      locationName: z.string().nullable(),
+    }),
+  ),
+  fromId: z.number().nullable(),
+  nextFromId: z.number().nullable(),
+})
+
 const walletTransactionsRead = createCharacterEsiRead({
   operation: 'wallet-transactions',
   name: 'wallet-transactions-core',
   descriptor: operationRegistry.GetCharactersCharacterIdWalletTransactions.transport,
+  cacheSchema: walletTransactionsCacheSchema,
   encodeRequest: (input: WalletTransactionsRepresentationInput) => ({
     path: { character_id: input.characterId },
     ...(input.fromId === null ? {} : { query: { from_id: input.fromId } }),

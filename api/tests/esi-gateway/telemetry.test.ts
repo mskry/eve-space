@@ -170,11 +170,13 @@ describe('ESI resilience telemetry', () => {
     recordEsiCacheEnvelopeRejection({ success: false, reason: 'versionMismatch', found: 2 })
     recordEsiCacheEnvelopeRejection({ success: false, reason: 'invalidShape' })
     recordEsiCacheEnvelopeRejection({ success: false, reason: 'invalidShape' })
+    recordEsiCacheEnvelopeRejection({ success: false, reason: 'invalidPayload' })
 
     const after = await probeEsiResilienceTelemetry(operationalObservation, dependencies)
     expect(after.cache.envelopeRejections).toEqual({
       versionMismatch: before.cache.envelopeRejections.versionMismatch + 1,
       invalidShape: before.cache.envelopeRejections.invalidShape + 2,
+      invalidPayload: before.cache.envelopeRejections.invalidPayload + 1,
       malformedJson: before.cache.envelopeRejections.malformedJson,
       incoherentFreshnessWindow: before.cache.envelopeRejections.incoherentFreshnessWindow,
     })

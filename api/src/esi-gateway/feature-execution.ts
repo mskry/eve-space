@@ -2,6 +2,7 @@ import type { EsiResponse } from '@evespace/esi-client'
 import type {
   OperationExecutionDescriptor,
   OperationRequestArguments,
+  OperationSchema,
 } from '@evespace/esi-client/operations'
 import { getEsiOperationContract } from './internal/catalog-access.js'
 import type { CharacterMutationEsiOperation, EsiOperation } from './internal/catalog.js'
@@ -32,6 +33,7 @@ interface EsiReadDefinition<
   readonly operation: Operation
   readonly name: string
   readonly descriptor: OperationExecutionDescriptor<Arguments, WireResult>
+  readonly cacheSchema: OperationSchema<Result>
   readonly encodeRequest: (input: Input) => EsiFeatureRequest<Arguments>
   readonly map: (response: EsiResponse<WireResult>, input: Input) => Result | Promise<Result>
   readonly recover?: (error: unknown, input: Input) => EsiLoadResult<Result> | undefined

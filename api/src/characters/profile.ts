@@ -1,5 +1,6 @@
 import { operationRegistry } from '@evespace/esi-client/operations'
 import type { GetCharactersDetailResponse } from '@evespace/esi-client/types'
+import { z } from 'zod'
 import { getAlliancePublicResult } from '../alliances/public-data.js'
 import { getCorporationPublicResult } from '../corporations/public-data.js'
 import {
@@ -43,10 +44,28 @@ interface PublicBloodlineResult {
   name: string
 }
 
+const publicCharacterCacheSchema = z.object({
+  name: z.string(),
+  birthday: z.string(),
+  gender: z.string(),
+  raceId: z.number(),
+  bloodlineId: z.number(),
+  securityStatus: z.number(),
+  achievementScore: z.number(),
+  corporationId: z.number(),
+  corporationTitle: z.string().optional(),
+  description: z.string().optional(),
+  factionId: z.number().nullable(),
+  allianceId: z.number().nullable(),
+})
+const publicRacesCacheSchema = z.array(z.object({ raceId: z.number(), name: z.string() }))
+const publicBloodlinesCacheSchema = z.array(z.object({ bloodlineId: z.number(), name: z.string() }))
+
 const publicCharacterRead = createPublicEsiRead({
   operation: 'public-character',
   name: 'public-character-core',
   descriptor: operationRegistry.GetCharactersDetail.transport,
+  cacheSchema: publicCharacterCacheSchema,
   encodeRequest: (input: { characterId: number }) => ({
     path: { character_id: input.characterId },
   }),
@@ -57,6 +76,7 @@ const universeRacesRead = createPublicEsiRead({
   operation: 'universe-races',
   name: 'universe-races-core',
   descriptor: operationRegistry.GetUniverseRaces.transport,
+  cacheSchema: publicRacesCacheSchema,
   encodeRequest: () => ({}),
   map: (response): PublicRaceResult[] =>
     response.data.map((race) => ({ raceId: race.race_id, name: race.name })),
@@ -66,6 +86,7 @@ const universeBloodlinesRead = createPublicEsiRead({
   operation: 'universe-bloodlines',
   name: 'universe-bloodlines-core',
   descriptor: operationRegistry.GetUniverseBloodlines.transport,
+  cacheSchema: publicBloodlinesCacheSchema,
   encodeRequest: () => ({}),
   map: (response): PublicBloodlineResult[] =>
     response.data.map((bloodline) => ({

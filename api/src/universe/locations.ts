@@ -9,6 +9,7 @@ const universeSolarSystemRead = createPublicEsiRead({
   operation: 'universe-solar-system',
   name: 'universe-solar-system-core',
   descriptor: operationRegistry.GetUniverseSystemsSystemId.transport,
+  cacheSchema: operationRegistry.GetUniverseSystemsSystemId.responseSchema,
   encodeRequest: (input: { systemId: number }) => ({ path: { system_id: input.systemId } }),
   map: (response): GetUniverseSystemsSystemIdResponse => response.data,
 })
@@ -17,6 +18,7 @@ const universeStationRead = createPublicEsiRead({
   operation: 'universe-station',
   name: 'universe-station-core',
   descriptor: operationRegistry.GetUniverseStationsStationId.transport,
+  cacheSchema: operationRegistry.GetUniverseStationsStationId.responseSchema,
   encodeRequest: (input: { stationId: number }) => ({ path: { station_id: input.stationId } }),
   map: (response): GetUniverseStationsStationIdResponse => response.data,
 })

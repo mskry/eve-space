@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { z } from 'zod'
 import {
   createCacheEnvelope,
   ESI_CACHE_ENVELOPE_VERSION,
@@ -18,15 +19,18 @@ const policy = getEsiOperationContract('public-character')
 const retentionMilliseconds = policy.cache.kind === 'none' ? 0 : policy.cache.retentionMilliseconds
 const now = Date.parse('2026-08-20T12:00:00.000Z')
 const maximumRetentionMs = 86_400_000
+const cachedNameSchema = z.object({ name: z.string() })
+const unknownSchema = z.unknown()
 
 describe('ESI cache envelopes', () => {
   test('validates cache metadata while preserving the original envelope fields', () => {
-    const parsed = parseEnvelope<{ name: string }>(
+    const parsed = parseEnvelope(
       serializedEnvelope({
         authorization: { kind: 'character', principal: 'character-1', generation: 3 },
         resourceRevision: { namespace: 'mailbox', value: 4 },
         futureField: 'preserved',
       }),
+      cachedNameSchema,
     )
 
     expect(parsed).toEqual({
@@ -41,21 +45,23 @@ describe('ESI cache envelopes', () => {
   })
 
   test('distinguishes obsolete versions from malformed envelopes', () => {
-    expect(parseEnvelope(serializedEnvelope({ version: 2 }))).toEqual({
+    expect(parseEnvelope(serializedEnvelope({ version: 2 }), unknownSchema)).toEqual({
       success: false,
       reason: 'versionMismatch',
       found: 2,
     })
-    expect(parseEnvelope(serializedEnvelope({ version: undefined }))).toEqual({
+    expect(parseEnvelope(serializedEnvelope({ version: undefined }), unknownSchema)).toEqual({
       success: false,
       reason: 'versionMismatch',
       found: undefined,
     })
-    expect(parseEnvelope('{')).toEqual({ success: false, reason: 'malformedJson' })
-    expect(parseEnvelope(serializedEnvelope({ freshUntil: now + 1, staleUntil: now }))).toEqual({
+    expect(parseEnvelope('{', unknownSchema)).toEqual({
       success: false,
-      reason: 'incoherentFreshnessWindow',
+      reason: 'malformedJson',
     })
+    expect(
+      parseEnvelope(serializedEnvelope({ freshUntil: now + 1, staleUntil: now }), unknownSchema),
+    ).toEqual({ success: false, reason: 'incoherentFreshnessWindow' })
 
     for (const serialized of [
       'null',
@@ -67,7 +73,22 @@ describe('ESI cache envelopes', () => {
       }),
       serializedEnvelope({ resourceRevision: { namespace: 'mailbox', value: -1 } }),
     ])
-      expect(parseEnvelope(serialized)).toEqual({ success: false, reason: 'invalidShape' })
+      expect(parseEnvelope(serialized, unknownSchema)).toEqual({
+        success: false,
+        reason: 'invalidShape',
+      })
+  })
+
+  test('rejects an invalid representation payload without exposing validation details', () => {
+    const serialized = serializedEnvelope({
+      data: { name: 'private-cache-value', rank: 'invalid' },
+    })
+    const schema = z.object({ name: z.string(), rank: z.number() })
+
+    const parsed = parseEnvelope(serialized, schema)
+
+    expect(parsed).toEqual({ success: false, reason: 'invalidPayload' })
+    expect(JSON.stringify(parsed)).not.toContain('private-cache-value')
   })
 
   test('uses upstream expiry and retains stale values only within policy bounds', () => {
